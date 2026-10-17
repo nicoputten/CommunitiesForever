@@ -339,6 +339,7 @@ local function refreshMessages()
     ns.MemberTracker.UPDATED,
     ns.PresenceTracker.UPDATED,
     ns.CommunitySelection.CHANGED,
+    ns.Sync.PEOPLE_UPDATED,
   }
 end
 

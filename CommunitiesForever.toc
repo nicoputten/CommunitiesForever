@@ -33,6 +33,7 @@ src\services\PresenceTracker.lua
 src\services\ViewModel.lua
 src\services\Messenger.lua
 src\services\Ping.lua
+src\services\Sync.lua
 
 src\ui\Settings.lua
 src\ui\MainFrame.lua

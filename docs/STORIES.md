@@ -84,6 +84,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - HELLO / REQ / RECORD as in ARCHITECTURE.md, with per-peer dedupe (60 s) and debounce (5 s).
 - Merge accept rules unit tested: wrong sender BattleTag rejected, older or equal version rejected, spoofed `bt` rejected, unknown `pv` rejected.
 - Outgoing RECORD contains only own characters that are current community members (unit test).
+- Decided in CF-11: same-version HELLO deduped per peer for 60 s, newer versions always sent; version bumps when the shared set of own community characters changes; REQ answered after member data has loaded; `/cf sync` forces a HELLO; window refreshes on `CF_PEOPLE_UPDATED`.
 - Manual (2 clients): friend levels up, your window shows the new level within ~10 s. Friend logs in on a community alt, it appears under them.
 
 ## E5 UI
