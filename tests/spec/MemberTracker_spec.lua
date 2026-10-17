@@ -40,7 +40,7 @@ describe("MemberTracker", function()
     load(CLUB)
     assert.are.same({ CLUB }, state.focusedClubs)
     assert.are.same({ name = "Garraka Doombringer", classID = 8, level = 11, zone = "Orgrimmar",
-                      presence = 1, raceID = 2, faction = 0 }, Tracker.members()[GARRAKA])
+                      presence = 1, raceID = 2, faction = 0, role = 4 }, Tracker.members()[GARRAKA])
     assert.is_not_nil(Tracker.members()[VES])
     assert.are.equal(1, updates())
   end)

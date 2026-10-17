@@ -39,6 +39,20 @@ function Settings.options()
         order = 2,
         name = "Only character communities are listed. Guilds and Battle.net communities are not supported.",
       },
+      inviteLink = {
+        type = "input",
+        order = 5,
+        width = "full",
+        name = "Community invite link",
+        desc = "Paste an invite link for this community (Communities window, invite, link). Friends see a "
+          .. "Join button on characters that are not in the community. Leave empty to stop sharing it.",
+        hidden = function() return not ns.Invites.canSet() end,
+        get = function() return ns.Invites.ownText() end,
+        set = function(_, value)
+          local ok, message = ns.Invites.set(value)
+          if not ok then ns:Print(message) end
+        end,
+      },
       minimap = {
         type = "toggle",
         order = 3,

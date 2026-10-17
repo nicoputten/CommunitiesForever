@@ -3,9 +3,9 @@ local _, ns = ...
 
 local Members = {}
 
-local FIELDS = { "name", "classID", "level", "zone", "presence", "raceID", "faction" }
+local FIELDS = { "name", "classID", "level", "zone", "presence", "raceID", "faction", "role" }
 
--- Builds members[guid] = { name, classID, level, zone, presence, raceID, faction }
+-- Builds members[guid] = { name, classID, level, zone, presence, raceID, faction, role }
 -- from raw C_Club member infos. Members without a GUID are skipped (GUID is the key).
 -- The C_Club field `race` becomes raceID.
 function Members.build(infos)
@@ -19,6 +19,7 @@ function Members.build(infos)
         zone = info.zone,
         presence = info.presence,
         raceID = info.race,
+        role = info.role,             -- 1 Owner, 2 Leader, 3 Moderator, 4 Member (CF-21)
         faction = info.faction,
       }
     end

@@ -37,6 +37,14 @@ function Community.subscribedClubs()
   return list
 end
 
+-- Joins a community with an invite code (CF-21). C_Club.RedeemTicket is unverified for addons
+-- (VERIFY.md V25/V26). Returns false when the function does not exist.
+function Community.redeemTicket(code)
+  if not (C_Club and C_Club.RedeemTicket) then return false end
+  C_Club.RedeemTicket(code)
+  return true
+end
+
 -- Asks the client to load member data; it arrives async via CLUB_MEMBERS_UPDATED.
 function Community.focusMembers(clubId)
   if C_Club and C_Club.FocusMembers then

@@ -172,6 +172,11 @@ function Sync.start(addon)
   broadcastHello(false)
 end
 
+-- The own record changed outside SelfTracker (e.g. invite link, CF-21): HELLO after the debounce.
+function Sync.ownRecordChanged()
+  helloDebounced()
+end
+
 -- /cf sync: announce the own version to every friend in Forever now (no dedupe).
 function Sync.announce()
   broadcastHello(true)

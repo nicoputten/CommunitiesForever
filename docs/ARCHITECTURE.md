@@ -35,6 +35,7 @@ CommunitiesForever/
       Format.lua             view model -> tree nodes, detail cards, last seen, empty states
       Clubs.lua              selectable communities, stored-selection status
       Members.lua            member map by GUID, change compare
+      Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
@@ -47,6 +48,7 @@ CommunitiesForever/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
+      Invites.lua            shared invite link: set (owner/leaders/moderators), newest, Join (CF-21)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
@@ -86,9 +88,10 @@ global = {
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
                 sendInterval = 0.2 },                -- seconds between outgoing chunks
-  self      = { battleTag, displayName, version, chars = { [guid] = Char } },
+  self      = { battleTag, displayName, version, chars = { [guid] = Char },
+                invite = { clubId, code, setAt } },  -- CF-21: shared invite link (owner/leaders/moderators)
   people    = { [battleTag] = { displayName, version, receivedAt,
-                                chars = { [guid] = Char }, via } },   -- via: BattleTag that relayed it (CF-20)
+                                chars = { [guid] = Char }, via, invite } },  -- via: relayed by (CF-20); invite (CF-21)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
 }

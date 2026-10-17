@@ -188,7 +188,31 @@ function renderDetail.character(parent, detail)
   label(talents, GREY .. "Not available yet. Coming in a later version.|r", GameFontHighlight)
 end
 
-local function showDetail(path, messageText)
+-- CF-21: on a character outside the community, a Join button when an invite link is known.
+local function joinBlock(parent)
+  local invite = ns.Invites.current()
+  if not invite then return end
+  spacer(parent)
+  local state = ns.Invites.joinState()
+  if state == "joining" then
+    label(parent, GREY .. "Joining...|r", GameFontHighlight)
+    return
+  elseif state == "failed" then
+    label(parent, string.format("Joining didn't work. The invite link may have expired. Ask %s for a new one.",
+      tostring(invite.setByName)), GameFontHighlight)
+  elseif state == "unavailable" then
+    label(parent, "Joining with an invite link is not possible in this version of the game.", GameFontHighlight)
+    return
+  end
+  local button = createWidget("Button")
+  button:SetText("Join " .. (ns.CommunitySelection.name() or "the community"))
+  button:SetWidth(240)
+  button:SetCallback("OnClick", function() ns.Invites.join() end)
+  parent:AddChild(button)
+end
+
+-- extra(scroll): optional, adds widgets after the detail (e.g. the Join button).
+local function showDetail(path, messageText, extra)
   tree:ReleaseChildren()
   local scroll = createWidget("ScrollFrame")
   scroll:SetLayout("List")
@@ -202,6 +226,8 @@ local function showDetail(path, messageText)
     detail = ns.Format.detail(view, path, GetServerTime())
   end
   renderDetail[detail.kind](scroll, detail, path and (ns.Format.splitPath(path)))
+
+  if extra then extra(scroll) end
 
   local hint = not messageText and ns.Format.friendsHint(view)
   if hint then
@@ -266,7 +292,8 @@ function MainFrame.render()
   })
   if empty then
     tree:SetTree({})
-    showDetail(nil, empty)
+    local notMember = ns.CommunitySelection.selected() and not ns.CommunitySelection.active()
+    showDetail(nil, empty, notMember and joinBlock or nil)
     return
   end
 
@@ -350,6 +377,7 @@ local function refreshMessages()
     ns.PresenceTracker.UPDATED,
     ns.CommunitySelection.CHANGED,
     ns.Sync.PEOPLE_UPDATED,
+    ns.Invites.CHANGED,
   }
 end
 

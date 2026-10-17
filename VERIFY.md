@@ -32,3 +32,14 @@ Needs three Battle.net accounts on this build (A, B, C): relaying always involve
 | Later B and C are online together (if they are friends) | The `via` line disappears: B's own record replaced the relayed copy. | open |
 | B changes something (level up) while A is online and C is offline; then C logs on while B is offline | C gets B's new level through A. | open |
 | `/reload` on C | B's relayed data stays. | open |
+
+### CF-21 Join with a shared invite link
+Built before V25/V26 were checked. Do V25 first (one `/dump`); if `RedeemTicket` is missing, the button will say joining is not possible.
+
+| Step | Expected | Status |
+|---|---|---|
+| As owner/leader/moderator: `/cf settings` | A "Community invite link" field. As a normal member the field is not shown. | open |
+| Create an invite link (Communities window, invite, link) and paste it into the field | Saved; `/cf settings` shows the code. Typing nonsense prints `That doesn't look like a community invite link or code.` | open |
+| Log in on an alt that is not in the community, `/cf` (after ~10 s of sync with a friend online, or on the same account right away) | The "isn't a member" message plus a `Join <community>` button. | open |
+| Click `Join <community>` | The alt joins; the window switches to the community. If instead you see `Joining didn't work...` or nothing happens, note what chat/errors show (this answers V26). | open |
+| Clear the field (empty) | The Join button disappears for others after the next sync. | open |
