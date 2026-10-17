@@ -8,7 +8,8 @@
 --   /fp clubs [clubId]  communities (C_Club): club types, clubIds, all member fields
 --   /fp ticket <code>   C_Club.RequestTicket: look up an invite code or link (result via CLUB_TICKET_RECEIVED)
 --   /fp redeem <code>   C_Club.RedeemTicket: join with an invite code or link (logs blocked/forbidden actions)
---   /fp talents         C_ClassTalents / C_Traits: config, trees, point pools, nodes with ranks spent
+--   /fp talents [all]   specializations + C_ClassTalents / C_Traits: config, trees, point pools, nodes
+--                       with ranks spent (all: every node of the tree)
 --   /fp clear           wipe the saved log
 
 local PREFIX = "FProbe"
@@ -158,8 +159,9 @@ local function EntrySpellName(configID, entryID)
   return GetSpellInfo and (GetSpellInfo(spellID))
 end
 
--- Logs how talents are stored: active config, trees, point pools, nodes with ranks spent.
-local function Talents()
+-- Logs how talents are stored: active config, trees, point pools, nodes (all with showAll, else
+-- only nodes with ranks spent), then the specialization API (does Forever map its Vanilla trees?).
+local function Talents(showAll)
   log("== TALENTS ==")
   for _, name in ipairs({ "GetActiveConfigID", "GetConfigIDsBySpecID", "GetStarterBuildActive" }) do
     log("exists C_ClassTalents." .. name, C_ClassTalents and C_ClassTalents[name] ~= nil)
@@ -189,8 +191,8 @@ local function Talents()
     log("nodes in tree", #nodes)
     for _, nodeID in ipairs(nodes) do
       local node = C_Traits.GetNodeInfo(configID, nodeID)
-      if node and (node.ranksPurchased or 0) > 0 then
-        spent = spent + node.ranksPurchased
+      if node and (showAll or (node.ranksPurchased or 0) > 0) then
+        spent = spent + (node.ranksPurchased or 0)
         shown = shown + 1
         local entryID = node.activeEntry and node.activeEntry.entryID or (node.entryIDs and node.entryIDs[1])
         log("node", nodeID, "ranks", node.ranksPurchased, "/", node.maxRanks, "pos", node.posX, node.posY,
@@ -200,6 +202,40 @@ local function Talents()
       end
     end
     log("ranks spent in tree", treeID, "=", spent)
+  end
+end
+
+-- Logs every return value of fn(...) guarded, under label.
+local function LogCall(label, fn, ...)
+  if not fn then log(label, "does not exist") return end
+  local results = { pcall(fn, ...) }
+  if not results[1] then log(label, "error", results[2]) return end
+  log(label, "->", unpack(results, 2, table.maxn(results)))
+end
+
+local function Specializations()
+  log("== SPECIALIZATIONS ==")
+  local cs = C_SpecializationInfo
+  if cs then
+    local names = {}
+    for name, value in pairs(cs) do
+      if type(value) == "function" then names[#names + 1] = name end
+    end
+    table.sort(names)
+    log("C_SpecializationInfo functions:", table.concat(names, ", "))
+  end
+  LogCall("GetNumSpecializations()", GetNumSpecializations)
+  LogCall("C_SpecializationInfo.GetSpecialization()", cs and cs.GetSpecialization)
+  local count = GetNumSpecializations and GetNumSpecializations() or 0
+  for i = 1, math.max(count, 3) do
+    LogCall("C_SpecializationInfo.GetSpecializationInfo(" .. i .. ")", cs and cs.GetSpecializationInfo, i)
+    LogCall("GetSpecializationInfo(" .. i .. ")", GetSpecializationInfo, i)
+    LogCall("GetSpecializationRole(" .. i .. ")", GetSpecializationRole, i)
+  end
+  local _, _, classID = UnitClass("player")
+  for i = 1, 4 do
+    LogCall("GetSpecializationInfoForClassID(" .. tostring(classID) .. ", " .. i .. ")",
+      GetSpecializationInfoForClassID, classID, i)
   end
 end
 
@@ -265,12 +301,14 @@ SlashCmdList.FRIENDPROBE = function(msg)
   elseif cmd == "clubs" then Clubs(arg)
   elseif cmd == "ticket" or cmd == "redeem" then Ticket(cmd, arg)
   elseif cmd == "talents" then
-    local ok, err = pcall(Talents)
+    local okSpecs, errSpecs = pcall(Specializations)
+    if not okSpecs then log("specializations error", errSpecs) end
+    local ok, err = pcall(Talents, arg == "all")
     if not ok then log("talents error", err) end
   elseif cmd == "clear" then
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | clear")
   end
 end
