@@ -1,0 +1,12 @@
+## Interface: 16001
+## Title: CommunitiesForever
+## Notes: Shows which community characters belong to which Battle.net friend.
+## Author: Nico van der Putten
+## Version: @project-version@
+## SavedVariables: CommunitiesForeverDB
+
+embeds.xml
+
+src\core\Store.lua
+
+src\Core.lua

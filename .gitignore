@@ -1,0 +1,8 @@
+# Libraries fetched from .pkgmeta externals (tools/fetch-libs.ps1 or the packager)
+Libs/
+
+# Local build output (tools/build.ps1)
+dist/
+
+# Project-local Lua toolchain (tools/setup-lua.ps1)
+.lua/
