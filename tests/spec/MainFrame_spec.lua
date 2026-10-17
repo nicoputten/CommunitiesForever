@@ -94,9 +94,10 @@ describe("MainFrame", function()
     local childFonts, groupFonts = 0, 0
     for _, button in ipairs(tree().buttons) do
       if button.level > 1 then
-        assert.are.equal(_G.GameFontHighlight, button.font)
+        assert.are.equal(_G.GameFontHighlight, button.normalFont) -- kept on hover and click
+        assert.are.equal(_G.GameFontHighlight, button.highlightFont)
         childFonts = childFonts + 1
-      elseif button.font == nil then
+      elseif button.normalFont == nil then
         groupFonts = groupFonts + 1 -- group rows keep AceGUI's own font
       end
     end

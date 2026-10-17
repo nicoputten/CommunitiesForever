@@ -132,7 +132,8 @@ local function fakeLibs(state)
       for _, node in ipairs(self.tree or {}) do
         for level, n in ipairs({ node, unpack(node.children or {}) }) do
           local button = { level = level == 1 and 1 or 2, text = {} }
-          function button.text.SetFontObject(_, font) button.font = font end
+          function button:SetNormalFontObject(font) self.normalFont = font end
+          function button:SetHighlightFontObject(font) self.highlightFont = font end
           button.node = n
           self.buttons[#self.buttons + 1] = button
         end

@@ -278,14 +278,17 @@ local function create()
   end
 
   tree = createWidget("TreeGroup")
-  -- TreeGroup uses GameFontHighlightSmall for child rows; use the regular size for characters.
-  -- RefreshTree rebuilds the buttons (expand, scroll, SetTree), so restyle after every refresh.
+  -- TreeGroup gives child rows GameFontHighlightSmall as the button's normal and highlight
+  -- font. The Button reapplies those on hover and click, so set them on the button (not on
+  -- its text) and every state keeps the regular size. AceGUI sets them again in RefreshTree
+  -- (SetTree, expand, scroll), hence once per refresh.
   local refreshTree = tree.RefreshTree
   tree.RefreshTree = function(widget, ...)
     refreshTree(widget, ...)
     for _, button in ipairs(widget.buttons or {}) do
       if button.level and button.level > 1 then
-        button.text:SetFontObject(GameFontHighlight)
+        button:SetNormalFontObject(GameFontHighlight)
+        button:SetHighlightFontObject(GameFontHighlight)
       end
     end
   end

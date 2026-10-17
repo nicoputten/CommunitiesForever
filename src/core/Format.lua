@@ -23,7 +23,7 @@ function Format.ago(timestamp, now)
   return string.format("%d d ago", math.floor(seconds / DAY))
 end
 
--- Secondary professions by skillLine: First Aid 129, Cooking 185 (verified), Fishing 356.
+-- Secondary professions by skillLine (verified): First Aid 129, Cooking 185, Fishing 356.
 local SECONDARY_SKILL_LINES = { [129] = true, [185] = true, [356] = true }
 
 -- Professions sorted by name: { { name, rank, max, fraction } }, fraction in 0..1.
