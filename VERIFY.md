@@ -16,9 +16,4 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-12 Main window (round 5)
-Round 4 passed. One fix left:
-
-| Step | Expected | Status |
-|---|---|---|
-| Hover, click and select character names in the tree | The text size stays the same in every state (normal, hover, selected), also after expanding/collapsing. If it still jumps, I'll revert character rows to AceGUI's default (smaller) size. | open |
+None open. CF-01, CF-03, CF-05 to CF-08 and CF-12 passed. CF-09 is pure logic (unit tests only).

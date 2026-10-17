@@ -31,4 +31,22 @@ function helpers.loadAddon()
   return ns
 end
 
+-- Pure-Lua libraries from Libs/ (fetched by tools/fetch-libs.ps1). Without LibStub they
+-- return themselves. Cached, so a spec gets the same instance as the addon would.
+local libs = {}
+local LIB_PATHS = {
+  LibSerialize = "Libs/LibSerialize/LibSerialize.lua",
+  LibDeflate = "Libs/LibDeflate/LibDeflate.lua",
+}
+
+function helpers.lib(name)
+  if not libs[name] then
+    local path = assert(LIB_PATHS[name], "unknown lib " .. name)
+    local chunk = loadfile(path)
+    assert(chunk, path .. " not found: run tools/fetch-libs.ps1")
+    libs[name] = chunk()
+  end
+  return libs[name]
+end
+
 return helpers
