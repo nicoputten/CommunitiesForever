@@ -28,6 +28,8 @@ function addon:OnEnable()
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)
   ns.Minimap.start(self)
+  ns.Messenger.start(self)
+  ns.Ping.start(self)
 end
 
 local function SelectedCommunityName()
@@ -39,7 +41,7 @@ local function SelectedCommunityName()
 end
 
 function addon:OnSlashCommand(input)
-  local command = self:GetArgs(input, 1)
+  local command, argument = self:GetArgs(input, 2)
   command = command and command:lower()
 
   if command == nil then
@@ -74,6 +76,14 @@ function addon:OnSlashCommand(input)
     for _, line in ipairs(lines) do
       self:Print(line)
     end
+  elseif command == "ping" then
+    if argument == "stats" then
+      local s = ns.Messenger.stats()
+      self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued.", s.sent, s.received,
+        s.dropped, s.queued))
+    else
+      ns.Ping.send(tonumber(argument))
+    end
   elseif command == "settings" then
     ns.Settings.open()
   else
@@ -84,6 +94,7 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf members - show members of the selected community")
     self:Print("  /cf friends - show Battle.net friends in Forever")
     self:Print("  /cf people - show who owns which community character")
+    self:Print("  /cf ping [bytes] - test messages with friends who run the addon; /cf ping stats")
     self:Print("  /cf settings - open the settings")
   end
 end

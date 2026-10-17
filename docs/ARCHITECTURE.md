@@ -28,6 +28,7 @@ CommunitiesForever/
       Merge.lua              record accept rules, version rules
       Linker.lua             visibility + linking -> view model (people, unlinked)
       Protocol.lua           encode/decode (LibSerialize + LibDeflate injected), chunk/reassemble
+      Outbox.lua             outgoing chunk queue with send-rate limit
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
       Format.lua             view model -> tree nodes, detail cards, last seen, empty states
@@ -40,13 +41,15 @@ CommunitiesForever/
       SelfInfo.lua           Unit*, GetProfessions, item level
       Community.lua          C_Club (club list, members, club and member events)
       Presence.lua           C_BattleNet friend accounts, BN events
-      Transport.lua          BNSendGameData, throttle, combat queue
+      Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId, clears it when the club is gone
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
+      Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
+      Ping.lua               /cf ping test messages (PING/PONG)
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
@@ -79,7 +82,8 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
   schemaVersion = 1,
-  settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {} },  -- window, tree: AceGUI status tables
+  settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
+                sendInterval = 0.2 },                -- seconds between outgoing chunks
   self      = { battleTag, displayName, version, chars = { [guid] = Char } },
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char } } },

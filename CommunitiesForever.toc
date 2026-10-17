@@ -16,6 +16,7 @@ src\core\Members.lua
 src\core\Friends.lua
 src\core\Linker.lua
 src\core\Protocol.lua
+src\core\Outbox.lua
 src\core\Format.lua
 
 src\adapters\Events.lua
@@ -23,12 +24,15 @@ src\adapters\Timer.lua
 src\adapters\SelfInfo.lua
 src\adapters\Community.lua
 src\adapters\Presence.lua
+src\adapters\Transport.lua
 
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\MemberTracker.lua
 src\services\PresenceTracker.lua
 src\services\ViewModel.lua
+src\services\Messenger.lua
+src\services\Ping.lua
 
 src\ui\Settings.lua
 src\ui\MainFrame.lua

@@ -71,6 +71,11 @@ function PresenceTracker.battleTagFor(gameAccountID)
   return snapshot and snapshot.gameAccounts[gameAccountID]
 end
 
+-- All Forever game accounts online now: { [gameAccountID] = battleTag }. Do not modify.
+function PresenceTracker.gameAccounts()
+  return snapshot and snapshot.gameAccounts or {}
+end
+
 -- Set of current Battle.net friends: { [battleTag] = true }. Do not modify.
 function PresenceTracker.friends()
   return snapshot and snapshot.friends or {}
