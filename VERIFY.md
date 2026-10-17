@@ -6,8 +6,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Open API questions
 | # | Question | How to test | Status |
 |---|---|---|---|
-| V2 | Real `BNSendGameData` payload limit | FriendProbe `/fp big N` with receiver logging | open (3500 chunk assumed safe) |
-| V3 | Is addon BNet messaging restricted in instances or combat? | ping during combat / in dungeon | open |
+| V3 | Is addon BNet messaging restricted in combat? (instances verified: works) | CF-10 combat step below | open |
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V9 | Character names with last names: any API returning them differently (e.g. hyphenated)? | watch during development | open |
 | V24 | Do `InCombatLockdown`, `GetTime` and `PLAYER_REGEN_ENABLED` exist? (combat queue and send rate) | `/dump InCombatLockdown ~= nil, GetTime(), C_EventUtils.IsEventValid("PLAYER_REGEN_ENABLED")` | open |
@@ -17,13 +16,10 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-10 Transport
-Needs a friend (e.g. Sjaakovich) running this build too, both online in Forever. `/cf ping` sends a test message; the other side prints it and answers automatically, then you see the answer. `/cf ping stats` shows counters.
+### CF-10 Transport (remaining)
+Ping, 20 KB ping, dungeon and "friend without the addon" passed.
 
 | Step | Expected | Status |
 |---|---|---|
-| You: `/cf ping` | You: `Ping sent to 1 game account(s).` Friend: `Ping from <your character> (<your BattleTag>), 0 bytes padding.` You: `Pong from <their character> (<their BattleTag>) for 0 bytes.` | open |
-| You: `/cf ping 20000` (forces ~6 chunks, sent 0.2 s apart) | Same three lines with `20000 bytes`, within ~3 s. Covers the chunk size (V2): if this fails, try `/cf ping 3000` and tell me which sizes work. | open |
-| Start a fight, then `/cf ping` while in combat | Nothing is sent until the fight ends; then the ping goes out and the pong arrives. `/cf ping stats` during the fight shows `queued` > 0. (V24, V3 combat part) | open |
-| Inside a dungeon instance: `/cf ping` | Ping and pong arrive (V3 instance part). | open |
-| Friend disables the addon (or is online without it), you: `/cf ping` | Only `Ping sent to 1 game account(s).`; no pong, no error on either side. | open |
+| Start a fight, then `/cf ping` while in combat; `/cf ping stats` during the fight | Nothing is sent until the fight ends (`queued` > 0 in stats); then the ping goes out and the pong arrives. (V24, V3) | open |
+| Tree with a long character name (or drag the tree narrower) | The name is cut with `...` and the level stays visible. No `(you)` behind characters. Drag the tree wider: more of the name shows. | open |
