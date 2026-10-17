@@ -110,23 +110,49 @@ function handlers.REQ(message, _, gameAccountID)
   end
 end
 
-function handlers.RECORD(message, battleTag)
+-- Relayed records that arrived before community member data had loaded (login), by BattleTag.
+-- Checked again when the member list changes; kept in memory only.
+local waitingForMembers = {}
+
+local function receiveRecord(message, battleTag)
   local people = global().people
-  local relay = { ownBattleTag = global().self.battleTag, now = now(), members = ns.MemberTracker.members() }
-  if not ns.Merge.accept(people[message.bt], message, battleTag, relay) then return end
+  local members = ns.MemberTracker.members()
+  local relay = { ownBattleTag = global().self.battleTag, now = now(), members = members }
+  local ok, reason = ns.Merge.accept(people[message.bt], message, battleTag, relay)
+  if not ok then
+    if reason == "community" and next(members) == nil then
+      waitingForMembers[message.bt] = { message = message, sender = battleTag }
+    end
+    return
+  end
+  waitingForMembers[message.bt] = nil
   ns.Merge.store(people, message, now(), battleTag)
   addonRef:SendMessage(Sync.PEOPLE_UPDATED, message.bt)
   helloDebounced() -- tell other friends we can relay something new
 end
 
+function handlers.RECORD(message, battleTag)
+  receiveRecord(message, battleTag)
+end
+
+local function retryWaiting()
+  if next(ns.MemberTracker.members()) == nil then return end
+  local waiting = waitingForMembers
+  waitingForMembers = {}
+  for _, entry in pairs(waiting) do
+    receiveRecord(entry.message, entry.sender)
+  end
+end
+
 function Sync.start(addon)
   addonRef = addon
-  lastHello, lastReq, noticeShown = {}, {}, false
+  lastHello, lastReq, noticeShown, waitingForMembers = {}, {}, false, {}
   helloDebounced = ns.Timer.debounce(HELLO_DEBOUNCE, function() broadcastHello(false) end)
 
   -- Own AceEvent object: other modules listen to some of these messages on the addon object.
   local events = LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.SelfTracker.UPDATED, function() helloDebounced() end)
+  events:RegisterMessage(ns.MemberTracker.UPDATED, function() retryWaiting() end)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag)
     for gameAccountID, bt in pairs(ns.PresenceTracker.gameAccounts()) do
       if bt == battleTag then sendHello(gameAccountID, true) end

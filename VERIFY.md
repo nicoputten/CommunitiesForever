@@ -23,7 +23,7 @@ Round 2 passed. One fix left:
 | Log in on Marks Man (the alt that showed only "Marks"), then `/cf self` | Shows `Marks Man`. On your friend's side the name updates within ~10 s. `/cf ping` from that alt says `Ping from Marks Man`. | works |
 
 ### CF-20 Relay
-Needs three accounts on this build (A, B, C), or two plus timing. A is Battle.net friends with both; B and C do not need to be friends with each other. All have a character in the community.
+Needs three Battle.net accounts on this build (A, B, C): relaying always involves three different BattleTags. A is Battle.net friends with both; B and C do not need to be friends with each other. All have a character in the community. Can wait until a third person is available.
 
 | Step | Expected | Status |
 |---|---|---|

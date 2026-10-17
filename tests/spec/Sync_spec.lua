@@ -325,6 +325,36 @@ describe("Sync", function()
       assert.are.equal(addon.db.global.self.battleTag, ME)
     end)
 
+    it("keeps a relayed record that arrives before member data has loaded, then accepts it", function()
+      local members
+      load(function(s)
+        members = s.clubMembers[CLUB]
+        s.clubMembers[CLUB] = nil -- login: community members not loaded yet
+      end)
+      table.insert(members, { memberId = 7, guid = BRAM_CHAR, name = "Bram Stonefist", classID = 1, level = 40,
+                              presence = 3 })
+      outgoing()
+      state.serverTime = 3000
+      fromSjaak(bramRecord(3000))
+      assert.is_nil(addon.db.global.people[BRAM]) -- cannot check the community yet
+
+      state.clubMembers[CLUB] = members
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+      settle()
+      assert.are.equal(3000, addon.db.global.people[BRAM].version)
+      assert.are.equal(SJAAK, addon.db.global.people[BRAM].via)
+    end)
+
+    it("still drops a relayed record without a community character once members are known", function()
+      loadWithBram()
+      local outsider = bramRecord(3000)
+      outsider.chars = { ["Player-1-NOPE"] = { name = "Nope" } }
+      fromSjaak(outsider)
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+      settle()
+      assert.is_nil(addon.db.global.people[BRAM])
+    end)
+
     it("answers a REQ for a stored record with that record", function()
       loadWithBram()
       addon.db.global.people[BRAM] = { version = 3000, displayName = "Bram",
