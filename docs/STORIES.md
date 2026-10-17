@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 18, 19, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 13, 14, 15, 16, 18, 19, 04, 02.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -156,3 +156,19 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unit tests: overlap with one alt, with several alts, none; headers ignored; quest progress change does not bump the version; accept/abandon does; matching by ID with different titles (locale).
 - Manual (2 clients): both accept the same quest on any character; within ~10 s it appears on the friend's character card; abandon it, it disappears.
 - Depends on sync (CF-09, CF-10, CF-11).
+
+### CF-20 Relay records through friends
+- Goal: records travel through any friend running the addon, so people in different time zones still get each other's data. Example: A and B are online together, B logs off, C logs on while A is online: C gets B's record from A.
+- Decided: trust is the community. A relayed record links its community characters to its owner even when the owner is not your own Battle.net friend (changes core rules 2 and 4). Relayed records are marked subtly: the person card says `Updated 3 h ago via Sjaak`; nothing extra for records that came from the owner.
+- Protocol (pv stays 1; old clients ignore the new field):
+  - `HELLO {bt, ver, known = { [battleTag] = version } }`: every record the sender holds (own included), only people with at least one character in the sender's selected community.
+  - The receiver sends `REQ {bt = <wanted BattleTag>}` to that peer for every entry newer than what it stores; the peer answers with that `RECORD` (own or stored).
+  - A RECORD whose `bt` differs from the sender's BattleTag is a relayed record; it is stored with `via = <sender BattleTag>`.
+- Accept rules (Merge, unit tested):
+  - Direct record (from its owner): as CF-11, and it always replaces a relayed copy, even one with a higher version, so a broken or forged copy can never block the owner's real data.
+  - Relayed record: sender is a friend in Forever (transport), `record.bt` is not your own BattleTag, version newer than stored, version not more than 5 minutes ahead of server time (versions are close to server time; a far-future version would block real updates), and at least one of its characters is a member of your selected community (your own community data).
+  - Relayed records may be relayed again (A -> C -> D); versions only go up, so loops stop by themselves.
+- Linker: people from relayed records are linked like direct ones (presence still wins on conflicts); CF-17 rules for alts outside the community apply unchanged.
+- Unit tests: relayed record stored with `via`; direct replaces relayed even at a lower version; relayed never replaces direct at an equal or lower version; far-future version rejected; own BattleTag rejected; record without a community member rejected; HELLO `known` lists only community people; REQ for a stored person answered with the stored record; a non-friend owner is linked through a relayed record.
+- Manual (3 clients, or 2 plus timing): A and B online, B logs off; C logs on while A is online: within ~10 s C sees B's characters under B with `via <A's name>`; later B and C online together: the label disappears (direct record).
+- Depends on CF-11. Build order: right after CF-17.

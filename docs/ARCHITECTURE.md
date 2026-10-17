@@ -3,12 +3,13 @@
 ## Core rules
 1. A character is **visible** only if its GUID is a member of the selected community.
    Exception (CF-17): a **non-member alt** is visible if it arrived in its owner's record AND the owner has at least one visible, linked member character. It is shown under that person, marked "not in community", and never in Unlinked.
-2. A visible character is **linked** to a person (BattleTag) only if that BattleTag is a current Battle.net friend AND either:
-   - BNet presence showed that friend logged in on that character, or
-   - that friend's addon sent a record containing the character directly.
+2. A visible character is **linked** to a person (BattleTag) only if either:
+   - that BattleTag is a current Battle.net friend AND BNet presence showed them logged in on that character, or
+   - that BattleTag is a current Battle.net friend AND their addon sent a record containing the character, or
+   - (CF-20) a friend relayed that person's record and the character is in it. Trust is the community: the owner does not have to be your own Battle.net friend.
 3. Visible but not linked: shown in the **Unlinked** section with community data only.
-4. No relay in V1. Records are accepted only from their owner over BNet, and only for the sender's own BattleTag.
-5. Only the owner changes their record. Version = `max(prev + 1, GetServerTime())`. Higher version wins.
+4. Records come from their owner over BNet, or (CF-20) relayed by a friend running the addon. Records are only accepted from current friends in Forever. A record from its owner always replaces a relayed copy; a relayed copy only replaces an older relayed copy, and never a version more than 5 minutes ahead of server time. Until CF-20 is built: owner only.
+5. Only the owner changes their record. Version = `max(prev + 1, GetServerTime())`. Higher version wins (with the owner-first exception above).
 
 Consequences:
 - Transport is BNet only (`BNSendGameData`). Addon whispers are not used in V1.
