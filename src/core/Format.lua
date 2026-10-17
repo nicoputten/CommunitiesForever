@@ -172,7 +172,7 @@ end
 
 --[[ Detail model for the selected tree path, or a message when nothing (valid) is selected:
   { kind = "message", text }
-  { kind = "person", title, battleTag, online, status, current,
+  { kind = "person", title, battleTag, online, status, current, source,   -- source: "Updated 3 h ago via Sjaak"
     characters = { { guid, name, classFile, classID, level, seen } } }
   { kind = "unlinked", characters = ... }                        -- same character entries
   { kind = "character", guid, name, classFile, classID, owner, status, online, stats,
@@ -227,8 +227,14 @@ function Format.detail(view, path, now)
     end
     status = latest and offlineStatus(latest, now, true) or "Offline"
   end
+  -- CF-20: a relayed record says who passed it on and how old its data is.
+  local source
+  if person.via then
+    source = person.updatedAt and string.format("Updated %s via %s", Format.ago(person.updatedAt, now),
+      tostring(person.viaName)) or ("Via " .. tostring(person.viaName))
+  end
   return { kind = "person", title = personTitle(person), battleTag = person.battleTag, online = person.online,
-           status = status, current = person.currentChar, characters = characters }
+           status = status, current = person.currentChar, characters = characters, source = source }
 end
 
 -- Message for the whole window instead of tree and detail, or nil.

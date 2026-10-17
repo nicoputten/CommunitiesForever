@@ -172,6 +172,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unit tests: relayed record stored with `via`; direct replaces relayed even at a lower version; relayed never replaces direct at an equal or lower version; far-future version rejected; own BattleTag rejected; record without a community member rejected; HELLO `known` lists only community people; REQ for a stored person answered with the stored record; a non-friend owner is linked through a relayed record.
 - Manual (3 clients, or 2 plus timing): A and B online, B logs off; C logs on while A is online: within ~10 s C sees B's characters under B with `via <A's name>`; later B and C online together: the label disappears (direct record).
 - Depends on CF-11. Build order: right after CF-17.
+- Decided in CF-20: REQ carries `want` (nil = the peer's own record), backward compatible; on a character that cannot see the community, HELLO `known` lists every stored record (the receiver still checks the community); accepting a new record triggers a debounced HELLO so other friends learn it; relayed records link even when the owner is not your Battle.net friend.
 
 ### CF-21 Join the community with a shared invite code
 - Goal: on a character that is not in the selected community, the addon offers a "Join <community>" button, so alts can join without asking someone online to invite them.

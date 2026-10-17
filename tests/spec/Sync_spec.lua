@@ -253,6 +253,112 @@ describe("Sync", function()
     end)
   end)
 
+  describe("relay (CF-20)", function()
+    local BRAM = "Bram#4444" -- not our Battle.net friend; Sjaak relays his record
+    local BRAM_CHAR = "Player-4619-0000BRAM"
+
+    local function bramRecord(version)
+      return { t = "RECORD", bt = BRAM, displayName = "Bram", version = version,
+               chars = { [BRAM_CHAR] = { guid = BRAM_CHAR, name = "Bram Stonefist", classFile = "WARRIOR",
+                                         level = 40, updatedAt = version } } }
+    end
+
+    local function loadWithBram()
+      load()
+      table.insert(state.clubMembers[CLUB], { memberId = 7, guid = BRAM_CHAR, name = "Bram Stonefist",
+                                              classID = 1, level = 40, presence = 3 })
+      wowapi.fireEvent(state, "CLUB_MEMBER_ADDED", CLUB, 7)
+      settle()
+      outgoing()
+    end
+
+    it("asks a friend for records it knows newer versions of", function()
+      loadWithBram()
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 1, known = { [BRAM] = 3000 } })
+      local reqs = ofType(outgoing(), "REQ")
+      local wanted = {}
+      for _, r in ipairs(reqs) do wanted[tostring(r.want)] = true end
+      assert.is_true(wanted[BRAM])
+    end)
+
+    it("does not ask for our own record or for versions it already has", function()
+      loadWithBram()
+      addon.db.global.people[BRAM] = { version = 3000, chars = {} }
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 1, known = { [BRAM] = 3000, [ME] = 99999 } })
+      for _, r in ipairs(ofType(outgoing(), "REQ")) do
+        assert.is_nil(r.want)
+      end
+    end)
+
+    it("stores a relayed record with via and links its owner although he is no friend", function()
+      loadWithBram()
+      state.serverTime = 3000
+      fromSjaak(bramRecord(3000))
+      local stored = addon.db.global.people[BRAM]
+      assert.are.equal(3000, stored.version)
+      assert.are.equal(SJAAK, stored.via)
+
+      local view = ns.ViewModel.build(addon)
+      local bram
+      for _, p in ipairs(view.people) do
+        if p.battleTag == BRAM then bram = p end
+      end
+      assert.are.equal("Bram", bram.displayName)
+      assert.are.equal("record", bram.chars[1].linkSource)
+      assert.are.equal("Sjaakovich", bram.viaName)
+      local detail = ns.Format.detail(view, BRAM, 3000 + 3 * 3600)
+      assert.are.equal("Updated 3 h ago via Sjaakovich", detail.source)
+    end)
+
+    it("rejects relayed records of our own BattleTag, far-future versions and outsiders", function()
+      loadWithBram()
+      local own = bramRecord(3000)
+      own.bt = ME
+      fromSjaak(own)
+      fromSjaak(bramRecord(state.serverTime + 301))
+      local outsider = bramRecord(3000)
+      outsider.bt = "Stranger#5"
+      outsider.chars = { ["Player-1-NOPE"] = { name = "Nope" } }
+      fromSjaak(outsider)
+      assert.is_nil(addon.db.global.people[BRAM])
+      assert.is_nil(addon.db.global.people["Stranger#5"])
+      assert.are.equal(addon.db.global.self.battleTag, ME)
+    end)
+
+    it("answers a REQ for a stored record with that record", function()
+      loadWithBram()
+      addon.db.global.people[BRAM] = { version = 3000, displayName = "Bram",
+                                       chars = bramRecord(3000).chars }
+      fromSjaak({ t = "REQ", bt = SJAAK, want = BRAM })
+      local records = ofType(outgoing(), "RECORD")
+      assert.are.equal(1, #records)
+      assert.are.equal(BRAM, records[1].bt)
+      assert.are.equal(3000, records[1].version)
+    end)
+
+    it("lists relayable records in HELLO, and says HELLO after accepting a new one", function()
+      loadWithBram()
+      state.serverTime = 3000
+      fromSjaak(bramRecord(3000))
+      local hellos = ofType(outgoing(), "HELLO")
+      assert.are.equal(1, #hellos)
+      assert.are.equal(3000, hellos[1].known[BRAM])
+    end)
+
+    it("replaces a relayed copy with the owner's own record, even at a lower version", function()
+      load()
+      addon.db.global.people[SJAAK] = { version = 9000, via = "Anna#3333", chars = {} }
+      outgoing()
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 2000 })
+      local reqs = ofType(outgoing(), "REQ")
+      assert.are.equal(1, #reqs)
+      assert.is_nil(reqs[1].want)
+      fromSjaak(sjaakRecord(2000))
+      assert.are.equal(2000, addon.db.global.people[SJAAK].version)
+      assert.is_nil(addon.db.global.people[SJAAK].via)
+    end)
+  end)
+
   it("tells once per session when a friend uses a newer protocol", function()
     load()
     local serializer, deflate = helpers.lib("LibSerialize"), helpers.lib("LibDeflate")

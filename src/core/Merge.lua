@@ -33,27 +33,77 @@ local function validChars(chars)
   return true
 end
 
--- Accept rule for an incoming RECORD (ARCHITECTURE "Accept rule"):
---   senderBattleTag is what the sender's gameAccountID resolved to via presence (nil: unknown sender)
---   record.bt must equal it, record.version must be newer than the stored one.
--- The protocol version is checked earlier by the codec. Returns true, or false and a reason:
--- "sender" (unknown sender or bt mismatch / spoof), "old", "malformed".
-function Merge.accept(stored, record, senderBattleTag)
+-- Relayed versions may be at most this far ahead of server time (versions are close to server time).
+Merge.MAX_FUTURE_SECONDS = 300
+
+local function hasMember(chars, members)
+  for guid in pairs(chars) do
+    if members[guid] then return true end
+  end
+  return false
+end
+
+--[[ Accept rule for an incoming RECORD (ARCHITECTURE core rule 4, "Accept rule").
+  senderBattleTag: what the sender's gameAccountID resolved to via presence (nil: unknown sender)
+  relay (CF-20, optional): { ownBattleTag, now, members } enables relayed records; without it only
+    the owner's own record is accepted (CF-11 behavior).
+  Direct record (record.bt == sender): newer than stored, or stored is a relayed copy (the owner's
+    record always replaces a relayed one, even at a lower version).
+  Relayed record (record.bt ~= sender): not our own BattleTag, newer than stored, not more than
+    MAX_FUTURE_SECONDS ahead of server time, at least one character in our selected community.
+The protocol version is checked earlier by the codec. Returns true, or false and a reason:
+"sender", "old", "malformed", "own", "future", "community".
+]]
+function Merge.accept(stored, record, senderBattleTag, relay)
   if type(record) ~= "table" then return false, "malformed" end
-  if not senderBattleTag or record.bt ~= senderBattleTag then return false, "sender" end
+  if not senderBattleTag or type(record.bt) ~= "string" then return false, "sender" end
   if type(record.version) ~= "number" or not validChars(record.chars) then return false, "malformed" end
+
+  if record.bt == senderBattleTag then
+    if stored and not stored.via and (stored.version or 0) >= record.version then return false, "old" end
+    return true
+  end
+
+  if not relay then return false, "sender" end
+  if record.bt == relay.ownBattleTag then return false, "own" end
   if stored and (stored.version or 0) >= record.version then return false, "old" end
+  if record.version > relay.now + Merge.MAX_FUTURE_SECONDS then return false, "future" end
+  if not hasMember(record.chars, relay.members or {}) then return false, "community" end
   return true
 end
 
--- Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars }.
-function Merge.store(people, record, now)
+-- Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, via }.
+-- via is the BattleTag of the friend who relayed it, nil when it came from the owner.
+function Merge.store(people, record, now, senderBattleTag)
   people[record.bt] = {
     displayName = type(record.displayName) == "string" and record.displayName or nil,
     version = record.version,
     receivedAt = now,
     chars = record.chars,
+    via = senderBattleTag ~= record.bt and senderBattleTag or nil,
   }
+end
+
+-- Versions of the records we can relay, for HELLO.known: { [battleTag] = version }.
+-- Only people with at least one character in our selected community; when we cannot see the
+-- community on this character (members empty), everything we hold.
+function Merge.knownVersions(people, members)
+  local known = {}
+  local checkMembers = next(members or {}) ~= nil
+  for bt, person in pairs(people or {}) do
+    if type(person.version) == "number" and (not checkMembers or hasMember(person.chars or {}, members)) then
+      known[bt] = person.version
+    end
+  end
+  return known
+end
+
+-- A stored record as a RECORD message, to relay it (CF-20).
+function Merge.relayRecord(people, battleTag)
+  local person = people[battleTag]
+  if not person then return nil end
+  return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
+           chars = person.chars }
 end
 
 ns.Merge = Merge

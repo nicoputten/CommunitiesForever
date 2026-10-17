@@ -88,7 +88,7 @@ global = {
                 sendInterval = 0.2 },                -- seconds between outgoing chunks
   self      = { battleTag, displayName, version, chars = { [guid] = Char } },
   people    = { [battleTag] = { displayName, version, receivedAt,
-                                chars = { [guid] = Char } } },
+                                chars = { [guid] = Char }, via } },   -- via: BattleTag that relayed it (CF-20)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   nicknames = { [battleTag] = "Sjaak" },             -- local only, never synced
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
@@ -117,15 +117,15 @@ Char = {
 - Every message carries `pv` (protocol version, starts at 1).
 
 Messages:
-- `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one.
-- `REQ {bt}`: sent when a peer's advertised `ver` is higher than stored.
+- `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
+- `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
 - `RECORD {bt, displayName, version, chars}`: own record with all own characters.
 
 Accept rule (Merge.lua):
-- sender `gameAccountID` resolves to BattleTag B via presence
-- `record.bt == B`
-- `record.version > stored version`
+- sender `gameAccountID` resolves to BattleTag B via presence (a friend in Forever)
 - `pv` supported
+- own record (`record.bt == B`): `record.version > stored version`, or the stored copy was relayed (the owner always replaces a relayed copy)
+- relayed record (`record.bt ~= B`, CF-20): not our own BattleTag, `record.version > stored version`, at most 5 minutes ahead of server time, at least one character in our selected community; stored with `via = B`
 Otherwise drop silently (debug log only).
 
 Other:

@@ -1,7 +1,10 @@
 -- Sync: HELLO / REQ / RECORD flow between friends (ARCHITECTURE "Sync protocol").
---   HELLO {bt, ver}  on login, when a friend starts Forever, after an own record change (5 s debounce)
---   REQ   {bt}       when a friend advertises a newer version than we have
---   RECORD {...}     answer to REQ: own record with all own characters
+--   HELLO {bt, ver, known}  on login, when a friend starts Forever, after an own record change or a
+--                           newly accepted record (5 s debounce). known = { [battleTag] = version }
+--                           of the records we can relay (CF-20).
+--   REQ   {bt, want}        for the sender's own record when its ver is newer, or for a relayed
+--                           record (want = BattleTag) when its known version is newer.
+--   RECORD {...}            answer to REQ: own record (all own characters) or a stored one (relay).
 local _, ns = ...
 
 local Sync = {}
@@ -25,18 +28,36 @@ local function now()
   return GetServerTime()
 end
 
--- Same message (kind + version) to the same game account at most once per 60 s.
-local function recentlySent(log, gameAccountID, version)
-  local last = log[gameAccountID]
-  return last and last.version == version and now() - last.at < DEDUPE_SECONDS
+-- Same message (same key) to the same game account at most once per 60 s.
+local function recentlySent(log, key, value)
+  local last = log[key]
+  return last and last.value == value and now() - last.at < DEDUPE_SECONDS
+end
+
+local function remember(log, key, value)
+  log[key] = { value = value, at = now() }
+end
+
+local function knownVersions()
+  return ns.Merge.knownVersions(global().people, ns.MemberTracker.members())
+end
+
+-- Stable text for "what this HELLO says", so a HELLO is repeated only when something changed.
+local function helloSignature(version, known)
+  local parts = {}
+  for bt, v in pairs(known) do parts[#parts + 1] = bt .. "=" .. v end
+  table.sort(parts)
+  return tostring(version) .. ";" .. table.concat(parts, ",")
 end
 
 local function sendHello(gameAccountID, force)
   local own = global().self
   if not own.battleTag then return end -- BNet not ready: nothing to identify us by
-  if not force and recentlySent(lastHello, gameAccountID, own.version) then return end
-  lastHello[gameAccountID] = { version = own.version, at = now() }
-  ns.Messenger.send(gameAccountID, { t = "HELLO", bt = own.battleTag, ver = own.version })
+  local known = knownVersions()
+  local signature = helloSignature(own.version, known)
+  if not force and recentlySent(lastHello, gameAccountID, signature) then return end
+  remember(lastHello, gameAccountID, signature)
+  ns.Messenger.send(gameAccountID, { t = "HELLO", bt = own.battleTag, ver = own.version, known = known })
 end
 
 local function broadcastHello(force)
@@ -45,34 +66,57 @@ local function broadcastHello(force)
   end
 end
 
--- All own characters are always shared (CF-17), so the record does not depend on the
--- community member list and can be sent on any character.
-local function sendRecord(gameAccountID)
-  local own = global().self
-  if not own.battleTag then return end
-  ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own))
+-- Asks a peer for one record (want = BattleTag; nil = the peer's own record), once per version per 60 s.
+local function request(gameAccountID, want, version)
+  local key = gameAccountID .. "|" .. tostring(want)
+  if recentlySent(lastReq, key, version) then return end
+  remember(lastReq, key, version)
+  ns.Messenger.send(gameAccountID, { t = "REQ", bt = global().self.battleTag, want = want })
+end
+
+local function storedVersion(battleTag)
+  local stored = global().people[battleTag]
+  return stored and stored.version or 0
 end
 
 local handlers = {}
 
 function handlers.HELLO(message, battleTag, gameAccountID)
   if type(message.ver) ~= "number" or message.bt ~= battleTag then return end
-  local stored = global().people[battleTag]
-  if stored and (stored.version or 0) >= message.ver then return end
-  if recentlySent(lastReq, gameAccountID, message.ver) then return end
-  lastReq[gameAccountID] = { version = message.ver, at = now() }
-  ns.Messenger.send(gameAccountID, { t = "REQ", bt = global().self.battleTag })
+  local person = global().people[battleTag]
+  -- The owner's record also replaces a relayed copy with a higher version.
+  if message.ver > storedVersion(battleTag) or (person and person.via) then
+    request(gameAccountID, nil, message.ver)
+  end
+  if type(message.known) ~= "table" then return end
+  local own = global().self.battleTag
+  for bt, version in pairs(message.known) do
+    if type(bt) == "string" and type(version) == "number" and bt ~= own and bt ~= battleTag
+        and version > storedVersion(bt) then
+      request(gameAccountID, bt, version)
+    end
+  end
 end
 
-function handlers.REQ(_, _, gameAccountID)
-  sendRecord(gameAccountID)
+function handlers.REQ(message, _, gameAccountID)
+  local own = global().self
+  if not own.battleTag then return end
+  if message.want == nil or message.want == own.battleTag then
+    -- All own characters are always shared (CF-17), so this works on any character.
+    ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own))
+  elseif type(message.want) == "string" then
+    local record = ns.Merge.relayRecord(global().people, message.want)
+    if record then ns.Messenger.send(gameAccountID, record) end
+  end
 end
 
 function handlers.RECORD(message, battleTag)
   local people = global().people
-  if not ns.Merge.accept(people[battleTag], message, battleTag) then return end
-  ns.Merge.store(people, message, now())
-  addonRef:SendMessage(Sync.PEOPLE_UPDATED, battleTag)
+  local relay = { ownBattleTag = global().self.battleTag, now = now(), members = ns.MemberTracker.members() }
+  if not ns.Merge.accept(people[message.bt], message, battleTag, relay) then return end
+  ns.Merge.store(people, message, now(), battleTag)
+  addonRef:SendMessage(Sync.PEOPLE_UPDATED, message.bt)
+  helloDebounced() -- tell other friends we can relay something new
 end
 
 function Sync.start(addon)
@@ -100,10 +144,6 @@ function Sync.start(addon)
   end)
 
   broadcastHello(false)
-end
-
--- Settings changed what friends receive (share alts): bump the version and say HELLO.
-function Sync.settingsChanged()
 end
 
 -- /cf sync: announce the own version to every friend in Forever now (no dedupe).

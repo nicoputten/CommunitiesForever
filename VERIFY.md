@@ -21,3 +21,14 @@ Round 2 passed. One fix left:
 | Step | Expected | Status |
 |---|---|---|
 | Log in on Marks Man (the alt that showed only "Marks"), then `/cf self` | Shows `Marks Man`. On your friend's side the name updates within ~10 s. `/cf ping` from that alt says `Ping from Marks Man`. | works |
+
+### CF-20 Relay
+Needs three accounts on this build (A, B, C), or two plus timing. A is Battle.net friends with both; B and C do not need to be friends with each other. All have a character in the community.
+
+| Step | Expected | Status |
+|---|---|---|
+| A and B online together for ~10 s, then B logs off. Later C logs on while A is online (B stays offline) | Within ~10 s C sees B's community characters under B (not in Unlinked), and B's card says `Updated <time> via <A's name>`. | open |
+| B and C not Battle.net friends at all | Same as above: B is shown under his name through A (trust is the community). | open |
+| Later B and C are online together (if they are friends) | The `via` line disappears: B's own record replaced the relayed copy. | open |
+| B changes something (level up) while A is online and C is offline; then C logs on while B is offline | C gets B's new level through A. | open |
+| `/reload` on C | B's relayed data stays. | open |

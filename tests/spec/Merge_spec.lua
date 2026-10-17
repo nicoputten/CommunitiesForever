@@ -60,6 +60,78 @@ describe("Merge", function()
     end)
   end)
 
+  describe("accept relayed records (CF-20)", function()
+    local ANNA = "Anna#3333" -- relays Sjaak's record
+    local function relay(overrides)
+      local r = { ownBattleTag = "Vestras#2858", now = 2000, members = { ["Player-1-G"] = {} } }
+      for k, v in pairs(overrides or {}) do r[k] = v end
+      return r
+    end
+
+    it("rejects relayed records when relaying is not enabled", function()
+      assert.are.same({ false, "sender" }, { Merge.accept(nil, record(), ANNA) })
+    end)
+
+    it("accepts a newer relayed record with a community character", function()
+      assert.is_true(Merge.accept(nil, record(), ANNA, relay()))
+      assert.is_true(Merge.accept({ version = 1999, via = "X#1" }, record(), ANNA, relay()))
+    end)
+
+    it("rejects a relayed copy of our own record", function()
+      assert.are.same({ false, "own" }, { Merge.accept(nil, record({ bt = "Vestras#2858" }), ANNA, relay()) })
+    end)
+
+    it("rejects a relayed record that is not newer, also over the owner's record", function()
+      assert.are.same({ false, "old" }, { Merge.accept({ version = 2000 }, record(), ANNA, relay()) })
+      assert.are.same({ false, "old" }, { Merge.accept({ version = 2000, via = "X#1" }, record(), ANNA, relay()) })
+    end)
+
+    it("rejects a relayed version more than 5 minutes in the future", function()
+      assert.is_true(Merge.accept(nil, record({ version = 2300 }), ANNA, relay()))
+      assert.are.same({ false, "future" }, { Merge.accept(nil, record({ version = 2301 }), ANNA, relay()) })
+    end)
+
+    it("rejects a relayed record without a character in our community", function()
+      assert.are.same({ false, "community" }, { Merge.accept(nil, record(), ANNA, relay({ members = {} })) })
+    end)
+
+    it("lets the owner's record replace a relayed copy, even at a lower version", function()
+      local relayed = { version = 9000, via = ANNA }
+      assert.is_true(Merge.accept(relayed, record({ version = 2000 }), SJAAK, relay()))
+      local direct = { version = 9000 }
+      assert.are.same({ false, "old" }, { Merge.accept(direct, record({ version = 2000 }), SJAAK, relay()) })
+    end)
+  end)
+
+  describe("relay helpers", function()
+    local people = {
+      [SJAAK] = { version = 2000, displayName = "Sjaak", chars = { G = { name = "Garraka" } } },
+      ["Out#1"] = { version = 50, chars = { X = { name = "Elsewhere" } } },
+    }
+
+    it("lists versions of people with a community character", function()
+      assert.are.same({ [SJAAK] = 2000 }, Merge.knownVersions(people, { G = {} }))
+    end)
+
+    it("lists everything when the community is not visible on this character", function()
+      assert.are.same({ [SJAAK] = 2000, ["Out#1"] = 50 }, Merge.knownVersions(people, {}))
+    end)
+
+    it("turns a stored record into a RECORD message", function()
+      assert.are.same({ t = "RECORD", bt = SJAAK, displayName = "Sjaak", version = 2000,
+                        chars = { G = { name = "Garraka" } } }, Merge.relayRecord(people, SJAAK))
+      assert.is_nil(Merge.relayRecord(people, "Nobody#1"))
+    end)
+
+    it("stores who relayed a record", function()
+      local stored = {}
+      Merge.store(stored, record(), 5, "Anna#3333")
+      assert.are.equal("Anna#3333", stored[SJAAK].via)
+      Merge.store(stored, record(), 6, SJAAK)
+      assert.is_nil(stored[SJAAK].via)
+    end)
+  end)
+
   describe("store", function()
     it("stores displayName, version, receivedAt and chars", function()
       local people = {}

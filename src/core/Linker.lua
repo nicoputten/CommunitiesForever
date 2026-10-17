@@ -34,7 +34,8 @@ local function linkFor(guid, input)
 
   local best, bestUpdated
   for bt, person in pairs(input.people) do
-    local char = input.friends[bt] and person.chars and person.chars[guid]
+    -- A friend's own record, or a record relayed by a friend (CF-20: trust is the community).
+    local char = (input.friends[bt] or person.via) and person.chars and person.chars[guid]
     if char then
       local updated = char.updatedAt or 0
       if not best or updated > bestUpdated or (updated == bestUpdated and bt < best) then
@@ -104,7 +105,8 @@ input = {
   nicknames = { [battleTag] = "Name" },
 }
 returns {
-  people   = { { battleTag, displayName, isSelf, online, currentChar, chars = { row, ... } }, ... },
+  people   = { { battleTag, displayName, isSelf, online, currentChar, chars = { row, ... },
+                 via, viaName, updatedAt }, ... },   -- via: relayed record (CF-20)
   unlinked = { row, ... },
 }
 Only people with at least one visible (community member) character are listed. Their alts outside
@@ -149,7 +151,7 @@ function Linker.build(raw)
   local candidates = {}
   for guid in pairs(self.chars) do candidates[guid] = true end
   for bt, person in pairs(input.people) do
-    if input.friends[bt] then
+    if input.friends[bt] or person.via then
       for guid in pairs(person.chars or {}) do candidates[guid] = true end
     end
   end
@@ -172,6 +174,13 @@ function Linker.build(raw)
     table.sort(rows, byOnlineThenName)
     local isSelf = bt == self.battleTag
     local ownerName = isSelf and self.displayName or (input.people[bt] and input.people[bt].displayName)
+    -- CF-20: relayed record (via = friend who passed it on) and when its data last changed.
+    local record = not isSelf and input.people[bt]
+    local via = record and record.via or nil
+    local updatedAt
+    for _, c in pairs(record and record.chars or {}) do
+      if c.updatedAt and (not updatedAt or c.updatedAt > updatedAt) then updatedAt = c.updatedAt end
+    end
 
     local currentGuid, current
     if isSelf then
@@ -201,6 +210,10 @@ function Linker.build(raw)
       online = isSelf or input.online[bt] ~= nil,
       currentChar = current,
       chars = rows,
+      via = via,
+      viaName = via and Linker.displayName(via, input.people[via] and input.people[via].displayName,
+        input.nicknames[via]),
+      updatedAt = updatedAt,
     }
   end
 
