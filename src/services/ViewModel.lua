@@ -16,7 +16,6 @@ function ViewModel.build(addon)
     locations = global.locations,
     self = global.self,
     selfGuid = player.guid,
-    nicknames = global.nicknames,
   })
   view.selfName = player.name
   return view

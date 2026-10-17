@@ -231,6 +231,7 @@ function wowapi.install(opts)
       },
     },
     focusedClubs = {},
+    redeemed = {},         -- C_Club.RedeemTicket calls
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
       { battleTag = "Sjaakovich#2232", gameAccounts = {
@@ -300,6 +301,9 @@ function wowapi.install(opts)
         for _, m in ipairs(state.clubMembers[clubId] or {}) do
           if m.memberId == memberId then return deepCopy(m) end
         end
+      end,
+      RedeemTicket = function(code)
+        state.redeemed[#state.redeemed + 1] = code
       end,
       FocusMembers = function(clubId)
         state.focusedClubs[#state.focusedClubs + 1] = clubId

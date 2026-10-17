@@ -13,6 +13,7 @@ src\core\Snapshot.lua
 src\core\Describe.lua
 src\core\Clubs.lua
 src\core\Members.lua
+src\core\Invite.lua
 src\core\Friends.lua
 src\core\Linker.lua
 src\core\Protocol.lua
@@ -34,6 +35,7 @@ src\services\ViewModel.lua
 src\services\Messenger.lua
 src\services\Ping.lua
 src\services\Sync.lua
+src\services\Invites.lua
 
 src\ui\Settings.lua
 src\ui\MainFrame.lua

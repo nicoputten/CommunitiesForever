@@ -35,6 +35,7 @@ CommunitiesForever/
       Format.lua             view model -> tree nodes, detail cards, last seen, empty states
       Clubs.lua              selectable communities, stored-selection status
       Members.lua            member map by GUID, change compare
+      Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
@@ -47,6 +48,7 @@ CommunitiesForever/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
+      Invites.lua            shared invite link: set (owner/leaders/moderators), newest, post as chat link (CF-21)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
@@ -86,11 +88,11 @@ global = {
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
                 sendInterval = 0.2 },                -- seconds between outgoing chunks
-  self      = { battleTag, displayName, version, chars = { [guid] = Char } },
+  self      = { battleTag, displayName, version, chars = { [guid] = Char },
+                invite = { clubId, code, setAt } },  -- CF-21: shared invite link (owner/leaders/moderators)
   people    = { [battleTag] = { displayName, version, receivedAt,
-                                chars = { [guid] = Char }, via } },   -- via: BattleTag that relayed it (CF-20)
+                                chars = { [guid] = Char }, via, invite } },  -- via: relayed by (CF-20); invite (CF-21)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
-  nicknames = { [battleTag] = "Sjaak" },             -- local only, never synced
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
 }
 
@@ -106,7 +108,7 @@ Char = {
 ```
 - Zone and online state are NOT synced. They are live data from presence and C_Club.
 - Bump `self.version` only when a synced field actually changes (Snapshot compare).
-- Display name priority: local nickname > owner's displayName > BattleTag name part (before `#`).
+- Display name priority: owner's displayName > BattleTag name part (before `#`). (Local nicknames, CF-13, were dropped.)
 - Sender always includes all own characters (decided in CF-17 testing; no setting). The receiver decides what to show (core rule 1), so the record does not depend on the sender's community member list and can be sent from any character.
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.

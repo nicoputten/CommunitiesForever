@@ -21,7 +21,6 @@ describe("Store", function()
       assert.are.same({ version = 0, chars = {} }, global.self)
       assert.are.same({}, global.people)
       assert.are.same({}, global.presence)
-      assert.are.same({}, global.nicknames)
       assert.are.same({}, global.locations)
     end)
 

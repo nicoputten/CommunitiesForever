@@ -188,7 +188,35 @@ function renderDetail.character(parent, detail)
   label(talents, GREY .. "Not available yet. Coming in a later version.|r", GameFontHighlight)
 end
 
-local function showDetail(path, messageText)
+-- CF-21: on a character outside the community, step-by-step instructions to join with the shared
+-- invite link. Addons may not join themselves (V26); the link opens Blizzard's join window (V27).
+local function joinBlock(parent)
+  local invite = ns.Invites.current()
+  if not invite then return end
+  local community = ns.CommunitySelection.name() or "the community"
+  local posted = ns.Invites.linkPosted()
+  local done = "|cff40c040"
+
+  spacer(parent)
+  heading(parent, string.format("How to join %s with %s", community, tostring(view.selfName or "this character")))
+  label(parent, string.format("%s1. Click \"Post invite link in chat\" below.|r", posted and done or ""),
+    GameFontHighlight)
+  label(parent, string.format("2. In your chat window, click the gold [Join %s] link.%s", community,
+    posted and "  <- do this now" or ""), GameFontHighlight)
+  label(parent, "3. In Blizzard's window that opens, click Join.", GameFontHighlight)
+  label(parent, GREY .. "This window then shows the community. If Blizzard says the link is invalid, ask "
+    .. tostring(invite.setByName) .. " for a new one.|r", GameFontHighlightSmall)
+  spacer(parent)
+
+  local button = createWidget("Button")
+  button:SetText(posted and "Post the link again" or "Post invite link in chat")
+  button:SetWidth(240)
+  button:SetCallback("OnClick", function() ns.Invites.postLink() end)
+  parent:AddChild(button)
+end
+
+-- extra(scroll): optional, adds widgets after the detail (e.g. the Join button).
+local function showDetail(path, messageText, extra)
   tree:ReleaseChildren()
   local scroll = createWidget("ScrollFrame")
   scroll:SetLayout("List")
@@ -202,6 +230,8 @@ local function showDetail(path, messageText)
     detail = ns.Format.detail(view, path, GetServerTime())
   end
   renderDetail[detail.kind](scroll, detail, path and (ns.Format.splitPath(path)))
+
+  if extra then extra(scroll) end
 
   local hint = not messageText and ns.Format.friendsHint(view)
   if hint then
@@ -266,7 +296,8 @@ function MainFrame.render()
   })
   if empty then
     tree:SetTree({})
-    showDetail(nil, empty)
+    local notMember = ns.CommunitySelection.selected() and not ns.CommunitySelection.active()
+    showDetail(nil, empty, notMember and joinBlock or nil)
     return
   end
 
@@ -350,6 +381,7 @@ local function refreshMessages()
     ns.PresenceTracker.UPDATED,
     ns.CommunitySelection.CHANGED,
     ns.Sync.PEOPLE_UPDATED,
+    ns.Invites.CHANGED,
   }
 end
 

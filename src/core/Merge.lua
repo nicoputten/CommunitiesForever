@@ -9,6 +9,15 @@ function Merge.nextVersion(previous, now)
   return math.max((previous or 0) + 1, now)
 end
 
+-- Invite code shared with the record (CF-21): only the expected fields, or nil.
+local function cleanInvite(invite)
+  if type(invite) ~= "table" or type(invite.code) ~= "string" or type(invite.setAt) ~= "number"
+      or invite.clubId == nil then
+    return nil
+  end
+  return { clubId = invite.clubId, code = invite.code, setAt = invite.setAt }
+end
+
 -- The RECORD message for the own record: all own characters (CF-17 feedback: always shared;
 -- the receiver decides what to show, see core rule 1).
 function Merge.outgoingRecord(selfRecord)
@@ -22,6 +31,7 @@ function Merge.outgoingRecord(selfRecord)
     displayName = selfRecord.displayName,
     version = selfRecord.version,
     chars = chars,
+    invite = cleanInvite(selfRecord.invite),
   }
 end
 
@@ -81,6 +91,7 @@ function Merge.store(people, record, now, senderBattleTag)
     receivedAt = now,
     chars = record.chars,
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
+    invite = cleanInvite(record.invite),
   }
 end
 
@@ -103,7 +114,7 @@ function Merge.relayRecord(people, battleTag)
   local person = people[battleTag]
   if not person then return nil end
   return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
-           chars = person.chars }
+           chars = person.chars, invite = cleanInvite(person.invite) }
 end
 
 ns.Merge = Merge

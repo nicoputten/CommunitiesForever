@@ -18,7 +18,7 @@ describe("Members", function()
     it("keys members by GUID with the tracked fields only", function()
       assert.are.same({
         ["Player-1-A"] = { name = "Ves Doombringer", classID = 2, level = 11, zone = "Durotar",
-                           presence = 1, raceID = 6, faction = 0 },
+                           presence = 1, raceID = 6, faction = 0, role = 1 },
       }, Members.build({ info() }))
     end)
 

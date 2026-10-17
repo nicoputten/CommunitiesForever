@@ -37,6 +37,16 @@ function Community.subscribedClubs()
   return list
 end
 
+-- Clickable community invite link for chat (CF-21). Addons may not join themselves
+-- (C_Club.RedeemTicket is protected, V26), but a printed link opens Blizzard's own join
+-- window when clicked (V27). GetClubTicketLink is used when it exists.
+function Community.ticketLink(code, communityName)
+  if GetClubTicketLink then
+    return GetClubTicketLink(code, communityName, Community.characterType())
+  end
+  return string.format("|cffffd100|HclubTicket:%s|h[Join %s]|h|r", code, communityName)
+end
+
 -- Asks the client to load member data; it arrives async via CLUB_MEMBERS_UPDATED.
 function Community.focusMembers(clubId)
   if C_Club and C_Club.FocusMembers then

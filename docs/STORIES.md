@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 13, 14, 15, 16, 18, 19, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02. (CF-13 dropped.)
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -55,7 +55,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Manual: `/cf friends` shows friends in Forever and presence links.
 
 ### CF-08 Linker (pure)
-- Input: members, current friends (BattleTag set), people, presence, self, nicknames. Output view model `{ people = [ {bt, displayName, online, currentChar, chars=[...]} ], unlinked = [...] }`.
+- Input: members, current friends (BattleTag set), people, presence, self. Output view model `{ people = [ {bt, displayName, online, currentChar, chars=[...]} ], unlinked = [...] }`.
 - Unit tests:
   - non-member characters are excluded
   - characters of a non-friend go to Unlinked
@@ -97,9 +97,8 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Empty states: no community selected; no linked people yet.
 - Decided in CF-12: AceGUI window, draft B layout: tree left (people with online dot, expandable to class-colored characters, Unlinked group), detail right (person card: name, BattleTag, status, character list; character card: class, owner, status, Level / Item level / Last seen boxes, professions with bars). New people start expanded; expansion, selection and tree width are saved (`settings.tree`). No realm shown (one ruleset). Minimap: left-click window, right-click settings, hide toggle. `/cf` toggles the window, `/cf help` lists commands. Round 3: green dot on the character a person is playing; stats as plain text; Professions and Talents (placeholder until CF-18) side by side; offline status shows the last zone seen in the community (`locations`, local only), the character and the time.
 
-### CF-13 Nicknames
-- Right-click person header: "Set nickname" (input popup) and "Clear nickname". Local only, stored in `nicknames`.
-- Display uses the priority rule everywhere (window, tooltip, notifications).
+### CF-13 Nicknames (dropped)
+- Removed on request: no local nicknames. Display names come from the owner's displayName (CF-04) or the BattleTag name part.
 
 ## E6 Tooltip and notifications
 
@@ -179,8 +178,9 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - First (blocking): verify on Forever that an addon may look up and redeem invite codes (V25 existence, V26 real call with FriendProbe `/fp ticket` and `/fp redeem`). If `C_Club.RedeemTicket` is missing or blocked for addons, this story stops and we revisit option B (direct invites by someone with invite rights).
 - Setting (only for the owner, leaders and moderators of the selected community, role from `C_Club.GetMemberInfoForSelf`, guarded): "Community invite link". Accepts a full invite link or just the code; stored as the code plus `setAt`.
 - Sync: the code travels in the setter's record as `invite = { clubId, code, setAt }` (pv stays 1; old clients ignore it). Receivers keep the newest by `setAt` across all records (relayed records included, CF-20).
-- Join button: in the "not a member" message (CF-17) when an invite code for the selected community is known. Before showing it, `C_Club.RequestTicket` checks the code; an expired or used-up code shows "The invite link has expired. Ask <setter> for a new one." instead. Clicking calls `C_Club.RedeemTicket(code)` (a real click, in case the call requires one); on `CLUB_ADDED` the window switches to the community.
+- Join steps: in the "not a member" message (CF-17) when an invite code for the selected community is known (see "Decided in CF-21" below; the original direct-join plan was blocked by Blizzard).
 - Invite links expire or have a use limit, so the setter may need to paste a new one now and then; the setting shows when it was set.
 - Unit tests: link and code parsing; newest invite wins; invite only for the selected community; button only on a non-member character with a valid code; expired code shows the message.
 - Manual: owner pastes a link; on an alt outside the community (after a sync) the Join button appears; click it: the alt joins and the window shows the community.
 - Depends on CF-17 (not-a-member message) and CF-11 (sync); best after CF-20 (relay).
+- Decided in CF-21: addons may not join (C_Club.RedeemTicket is protected, V26). The window shows step-by-step instructions and a "Post invite link in chat" button; the posted clubTicket link opens Blizzard's own join window (V27). Who may set the link comes from the verified `role` member field (1-3). Links must end in the code.
