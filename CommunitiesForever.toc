@@ -36,6 +36,7 @@ src\services\Messenger.lua
 src\services\Ping.lua
 src\services\Sync.lua
 src\services\Invites.lua
+src\services\Notify.lua
 
 src\ui\Settings.lua
 src\ui\MainFrame.lua

@@ -255,6 +255,16 @@ function Format.emptyState(view, state)
   return nil
 end
 
+-- Login notification (CF-15): "Sjaak is online on Garraka Doombringer (Mage 11)".
+-- character = { name, className, level }; className and level are left out when unknown.
+function Format.loginNotice(displayName, character)
+  local details = {}
+  if character.className and character.className ~= "" then details[#details + 1] = character.className end
+  if character.level then details[#details + 1] = tostring(character.level) end
+  local suffix = #details > 0 and (" (" .. table.concat(details, " ") .. ")") or ""
+  return string.format("%s is online on %s%s", tostring(displayName), tostring(character.name), suffix)
+end
+
 Format.TOOLTIP_UNLINKED = "CommunitiesForever member"
 
 -- Tooltip lines for hovered units (CF-14): { [guid] = text } for every character in the view.

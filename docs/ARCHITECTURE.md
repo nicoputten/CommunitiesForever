@@ -54,7 +54,7 @@ CommunitiesForever/
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
       Ping.lua               /cf ping test messages (PING/PONG)
       Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
-      Notify.lua             login notifications
+      Notify.lua             login notifications in chat (30 s per person, settings.notifications)
     ui/
       MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right)
       Settings.lua           AceConfig options (Blizzard panel + /cf settings)

@@ -53,6 +53,15 @@ function Settings.options()
           if not ok then ns:Print(message) end
         end,
       },
+      notifications = {
+        type = "toggle",
+        order = 4,
+        width = "full",
+        name = "Login notifications",
+        desc = "A chat line when a friend in the community comes online in Forever or switches character.",
+        get = function() return ns.db.global.settings.notifications ~= false end,
+        set = function(_, value) ns.db.global.settings.notifications = value end,
+      },
       minimap = {
         type = "toggle",
         order = 3,

@@ -30,3 +30,14 @@ Needs three Battle.net accounts on this build (A, B, C): relaying always involve
 | Later B and C are online together (if they are friends) | The `via` line disappears: B's own record replaced the relayed copy. | open |
 | B changes something (level up) while A is online and C is offline; then C logs on while B is offline | C gets B's new level through A. | open |
 | `/reload` on C | B's relayed data stays. | open |
+
+### CF-15 Login notifications
+Needs a friend linked to you in the community (they do not need the addon).
+
+| Step | Expected | Status |
+|---|---|---|
+| Friend logs in to Forever while you are online | Chat: `CommunitiesForever: Sjaak is online on Garraka Doombringer (Mage 11)`. | open |
+| Friend switches to another character | Chat line again with the new character (if more than 30 s since the last one). | open |
+| Friend logs out and back in within 30 s | No second line. | open |
+| You log in while the friend is already online | No line for them. | open |
+| `/cf settings` → untick "Login notifications", friend logs in again | No line. | open |
