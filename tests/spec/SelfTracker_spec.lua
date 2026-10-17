@@ -94,6 +94,15 @@ describe("SelfTracker", function()
     assert.are.equal(2, updates()) -- one refresh for three events
   end)
 
+  it("marks the character as played on login and on logout", function()
+    load()
+    assert.are.equal(1000, self_().chars[GUID].lastPlayed)
+    state.serverTime = 4600
+    wowapi.fireEvent(state, "PLAYER_LOGOUT")
+    assert.are.equal(4600, self_().chars[GUID].lastPlayed)
+    assert.are.equal(1000, self_().version) -- no bump
+  end)
+
   it("stores ilvl nil without error when GetAverageItemLevel is missing", function()
     load({ missing = { GetAverageItemLevel = true } })
     assert.is_nil(self_().chars[GUID].ilvl)

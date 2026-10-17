@@ -52,7 +52,7 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `C_EventUtils.IsEventValid` | Exists, `IsEventValid("PLAYER_LEVEL_UP")` is true (V13) |
 | `C_Timer.NewTimer` | Exists (V14) |
 | `UnitRace`, `UnitLevel`, `UnitFactionGroup` | Work; snapshot stores raceID (3rd return of `UnitRace`), level and faction (V11, CF-03) |
-| First Aid | Is a profession. With First Aid, Fishing and Cooking: `GetProfessions()` slot 3 = First Aid, 4 = Fishing, 5 = Cooking. First Aid skillLine = 129 (V7) |
+| First Aid | Is a profession. With First Aid, Fishing and Cooking: `GetProfessions()` slot 3 = First Aid, 4 = Fishing, 5 = Cooking. First Aid skillLine = 129 (V7). Fishing skillLine = 356 (CF-12) |
 | `SKILL_LINES_CHANGED` | Fires on a profession skill-up (V12, CF-03) |
 | `PLAYER_LEVEL_UP` | Fires; the new level is stored right after the ding (V12, CF-03) |
 | `PLAYER_EQUIPMENT_CHANGED` | Fires on gear swaps (V12, CF-03) |
@@ -60,6 +60,8 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `CLUB_MEMBERS_UPDATED`, `CLUB_MEMBER_ADDED`, `CLUB_MEMBER_REMOVED`, `CLUB_MEMBER_PRESENCE_UPDATED`, `CLUB_MEMBER_UPDATED` | Valid events (V17). Invite, kick, log in/out and zone changes update `C_Club.GetMemberInfo` and fire member events without polling (V18, CF-06) |
 | `BNET_CLIENT_WOW` | `"WoW"` (V19) |
 | `BN_FRIEND_INFO_CHANGED`, `BN_FRIEND_ACCOUNT_ONLINE`, `BN_FRIEND_ACCOUNT_OFFLINE`, `BN_CONNECTED` | Valid events (V19). Log out, log in and character switches of a friend update `C_BattleNet` game accounts; Battle.net app and other WoW versions report a different clientProgram or wowProjectID (CF-07) |
+| `PLAYER_LOGOUT` | Fires on logout and character switch early enough for the change to be saved (V22, CF-12) |
+| `C_CreatureInfo.GetClassInfo(classID)` | Returns `classFile` (V21, class colors on Unlinked rows) |
 | `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16) |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 

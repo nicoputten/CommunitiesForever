@@ -54,17 +54,30 @@ local function fakeLibs(state)
     return (input or ""):match("^%s*(%S+)")
   end
 
-  -- AceEvent: function callbacks receive (eventOrMessage, ...)
-  function mixin:RegisterEvent(event, handler)
+  -- AceEvent: one handler per (object, event/message), like the real library; function
+  -- callbacks receive (eventOrMessage, ...). state.events[event] keeps the last handler.
+  local eventMixin = {}
+  function eventMixin:RegisterEvent(event, handler)
     state.events[event] = handler
+    state.eventHandlers[event] = state.eventHandlers[event] or {}
+    state.eventHandlers[event][self] = handler
   end
-  function mixin:RegisterMessage(message, handler)
-    state.messageHandlers[message] = handler
+  function eventMixin:RegisterMessage(message, handler)
+    state.messageHandlers[message] = state.messageHandlers[message] or {}
+    state.messageHandlers[message][self] = handler
   end
-  function mixin:SendMessage(message, ...)
+  function eventMixin:SendMessage(message, ...)
     state.sent[#state.sent + 1] = { message, ... }
-    local handler = state.messageHandlers[message]
-    if handler then handler(message, ...) end
+    for _, handler in pairs(state.messageHandlers[message] or {}) do
+      handler(message, ...)
+    end
+  end
+  for k, v in pairs(eventMixin) do mixin[k] = v end
+
+  local AceEvent = {}
+  function AceEvent:Embed(target)
+    for k, v in pairs(eventMixin) do target[k] = v end
+    return target
   end
 
   local AceAddon = {}
@@ -97,11 +110,76 @@ local function fakeLibs(state)
     state.openedDialog = appName
   end
 
+  -- AceGUI: widgets record what was set on them; containers keep their children.
+  local AceGUI = {}
+  function AceGUI:Create(widgetType)
+    local w = { type = widgetType, children = {}, callbacks = {}, shown = true, frame = {} }
+    function w.frame.IsShown() return w.shown end
+    function w:SetCallback(name, fn) self.callbacks[name] = fn end
+    function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
+    function w:AddChild(child) self.children[#self.children + 1] = child end
+    function w:ReleaseChildren() self.children = {} end
+    function w:Show() self.shown = true end
+    function w:Hide() self.shown = false; self:Fire("OnClose") end
+    function w:SetStatusTable(t) self.status = t end
+    function w:PauseLayout() self.paused = true end
+    function w:ResumeLayout() self.paused = false end
+    function w:DoLayout() self.layouts = (self.layouts or 0) + 1 end
+    function w:SetTree(t) self.tree = t; self:RefreshTree() end
+    -- Like TreeGroup: one button per visible row, level 1 = group, 2 = child.
+    function w:RefreshTree()
+      self.buttons = {}
+      for _, node in ipairs(self.tree or {}) do
+        for level, n in ipairs({ node, unpack(node.children or {}) }) do
+          local button = { level = level == 1 and 1 or 2, text = {} }
+          function button:SetNormalFontObject(font) self.normalFont = font end
+          function button:SetHighlightFontObject(font) self.highlightFont = font end
+          button.node = n
+          self.buttons[#self.buttons + 1] = button
+        end
+      end
+    end
+    function w:SetTreeWidth(width, resizable) self.treeWidth, self.treeResizable = width, resizable end
+    function w:SelectByValue(path)
+      self.status = self.status or {}
+      self.status.selected = path
+      self:Fire("OnGroupSelected", path)
+    end
+    function w:SelectByPath(...) self:SelectByValue(table.concat({ ... }, "\001")) end
+    for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FontObject",
+                              "Color", "Width", "Height", "RelativeWidth" }) do
+      w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
+    end
+    if widgetType == "Frame" then
+      w.statusbg = { Hide = function(bg) bg.hidden = true end }
+      w.statustext = { GetParent = function() return w.statusbg end }
+    end
+    state.guiWidgets[#state.guiWidgets + 1] = w
+    return w
+  end
+
+  local LDB = {}
+  function LDB:NewDataObject(name, object)
+    state.ldbObjects[name] = object
+    return object
+  end
+
+  local DBIcon = {}
+  function DBIcon:Register(name, object, db)
+    state.minimapIcon = { name = name, object = object, db = db, shown = not db.hide }
+  end
+  function DBIcon:Show(name) state.minimapIcon.shown = true; assert(name == state.minimapIcon.name) end
+  function DBIcon:Hide(name) state.minimapIcon.shown = false; assert(name == state.minimapIcon.name) end
+
   return {
     ["AceAddon-3.0"] = AceAddon,
     ["AceDB-3.0"] = AceDB,
+    ["AceEvent-3.0"] = AceEvent,
     ["AceConfig-3.0"] = AceConfig,
     ["AceConfigDialog-3.0"] = AceConfigDialog,
+    ["AceGUI-3.0"] = AceGUI,
+    ["LibDataBroker-1.1"] = LDB,
+    ["LibDBIcon-1.0"] = DBIcon,
   }, mixin
 end
 
@@ -116,6 +194,9 @@ function wowapi.install(opts)
     printed = {},
     slash = {},
     events = {},
+    eventHandlers = {},
+    guiWidgets = {},
+    ldbObjects = {},
     messageHandlers = {},
     sent = {},
     timers = {},
@@ -126,6 +207,7 @@ function wowapi.install(opts)
     clubs = {
       { clubId = "23125681", name = "Forever Friends", clubType = 1 },
       { clubId = "999", name = "My Guild", clubType = 2 },
+      { clubId = "777", name = "Other Friends", clubType = 1 },
     },
     -- clubMembers[clubId] = list of C_Club.GetMemberInfo results (fields as verified)
     clubMembers = {
@@ -201,6 +283,24 @@ function wowapi.install(opts)
         state.focusedClubs[#state.focusedClubs + 1] = clubId
       end,
     },
+    GameFontNormal = { name = "GameFontNormal" },
+    GameFontNormalHuge = { name = "GameFontNormalHuge" },
+    GameFontNormalLarge = { name = "GameFontNormalLarge" },
+    GameFontHighlight = { name = "GameFontHighlight" },
+    GameFontHighlightLarge = { name = "GameFontHighlightLarge" },
+    GameFontHighlightSmall = { name = "GameFontHighlightSmall" },
+    GameFontDisable = { name = "GameFontDisable" },
+    RAID_CLASS_COLORS = {
+      MAGE = { r = 0.25, g = 0.78, b = 0.92 },
+      PALADIN = { r = 0.96, g = 0.55, b = 0.73 },
+    },
+    C_CreatureInfo = {
+      GetClassInfo = function(classID)
+        local files = { [2] = "PALADIN", [8] = "MAGE" }
+        local names = { [2] = "Paladin", [8] = "Mage" }
+        return files[classID] and { classFile = files[classID], className = names[classID] }
+      end,
+    },
     BNET_CLIENT_WOW = "WoW",
     BNGetNumFriends = function()
       return #state.friends
@@ -235,8 +335,10 @@ end
 
 -- Fires a registered WoW event handler (as AceEvent would).
 function wowapi.fireEvent(state, event, ...)
-  local handler = assert(state.events[event], "no handler registered for " .. event)
-  handler(event, ...)
+  local handlers = assert(state.eventHandlers[event], "no handler registered for " .. event)
+  for _, handler in pairs(handlers) do
+    handler(event, ...)
+  end
 end
 
 -- Runs all pending, non-cancelled C_Timer timers.

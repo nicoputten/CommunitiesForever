@@ -39,6 +39,14 @@ function Settings.options()
         order = 2,
         name = "Only character communities are listed. Guilds and Battle.net communities are not supported.",
       },
+      minimap = {
+        type = "toggle",
+        order = 3,
+        width = "full",
+        name = "Show minimap button",
+        get = function() return ns.Minimap.isShown() end,
+        set = function(_, value) ns.Minimap.setShown(value) end,
+      },
     },
   }
 end

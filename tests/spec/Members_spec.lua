@@ -35,6 +35,25 @@ describe("Members", function()
     end)
   end)
 
+  describe("recordLocations", function()
+    it("remembers the zone of in-game members and keeps it after they log off", function()
+      local locations = {}
+      Members.recordLocations(locations, Members.build({ info({ zone = "The Barrens", presence = 1 }) }), 500)
+      assert.are.same({ ["Player-1-A"] = { zone = "The Barrens", seenAt = 500 } }, locations)
+
+      Members.recordLocations(locations, Members.build({ info({ zone = "", presence = 3 }) }), 900)
+      assert.are.same({ zone = "The Barrens", seenAt = 500 }, locations["Player-1-A"])
+    end)
+
+    it("counts Away and Busy as in game, Mobile not", function()
+      for presence, expected in pairs({ [4] = true, [5] = true, [2] = false }) do
+        local locations = {}
+        Members.recordLocations(locations, Members.build({ info({ presence = presence }) }), 1)
+        assert.are.equal(expected, locations["Player-1-A"] ~= nil, "presence " .. presence)
+      end
+    end)
+  end)
+
   describe("equal", function()
     it("is true for the same members", function()
       assert.is_true(Members.equal(Members.build({ info() }), Members.build({ info({ isSelf = false }) })))
