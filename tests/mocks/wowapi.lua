@@ -125,6 +125,14 @@ local function fakeLibs(state)
     function w:PauseLayout() self.paused = true end
     function w:ResumeLayout() self.paused = false end
     function w:DoLayout() self.layouts = (self.layouts or 0) + 1 end
+    function w:SetTree(t) self.tree = t end
+    function w:SetTreeWidth(width, resizable) self.treeWidth, self.treeResizable = width, resizable end
+    function w:SelectByValue(path)
+      self.status = self.status or {}
+      self.status.selected = path
+      self:Fire("OnGroupSelected", path)
+    end
+    function w:SelectByPath(...) self:SelectByValue(table.concat({ ... }, "\001")) end
     for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FontObject",
                               "Color", "Width", "Height", "RelativeWidth" }) do
       w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
@@ -259,6 +267,9 @@ function wowapi.install(opts)
       end,
     },
     GameFontNormal = { name = "GameFontNormal" },
+    GameFontNormalHuge = { name = "GameFontNormalHuge" },
+    GameFontHighlight = { name = "GameFontHighlight" },
+    GameFontHighlightLarge = { name = "GameFontHighlightLarge" },
     GameFontHighlightSmall = { name = "GameFontHighlightSmall" },
     GameFontDisable = { name = "GameFontDisable" },
     RAID_CLASS_COLORS = {
@@ -268,7 +279,8 @@ function wowapi.install(opts)
     C_CreatureInfo = {
       GetClassInfo = function(classID)
         local files = { [2] = "PALADIN", [8] = "MAGE" }
-        return files[classID] and { classFile = files[classID] }
+        local names = { [2] = "Paladin", [8] = "Mage" }
+        return files[classID] and { classFile = files[classID], className = names[classID] }
       end,
     },
     BNET_CLIENT_WOW = "WoW",

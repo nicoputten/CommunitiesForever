@@ -7,37 +7,33 @@ describe("Format", function()
   local function charRow(overrides)
     local row = { guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, ilvl = 20,
                   online = true, zone = "Orgrimmar", realm = "Classic Beta PvP",
-                  professions = { [186] = { name = "Mining", rank = 64, max = 150 },
-                                  [185] = { name = "Cooking", rank = 2, max = 75 } } }
+                  professions = { [186] = { name = "Mining", rank = 60, max = 150 },
+                                  [185] = { name = "Cooking", rank = 75, max = 75 } } }
     for k, v in pairs(overrides or {}) do row[k] = v end
     return row
   end
 
   local function person(overrides)
     local p = { battleTag = "Sjaakovich#2232", displayName = "Sjaak", isSelf = false, online = true,
-                chars = { charRow() } }
+                chars = { charRow(), charRow({ guid = "G2", name = "Grom", classFile = "WARRIOR", online = false,
+                                               lastSeen = NOW - 7200, ilvl = false, professions = {} }) } }
     p.currentChar = p.chars[1]
     for k, v in pairs(overrides or {}) do p[k] = v end
     return p
   end
 
-  local function state(overrides)
-    local s = { communitySelected = true, collapsed = {}, now = NOW }
-    for k, v in pairs(overrides or {}) do s[k] = v end
-    return s
+  local function me()
+    return person({ battleTag = "Vestras#2858", displayName = "Vestras", isSelf = true,
+                    chars = { charRow({ guid = "G-ME", name = "Ves" }) } })
   end
 
-  local function kinds(rows)
-    local list = {}
-    for _, r in ipairs(rows) do list[#list + 1] = r.kind end
-    return list
-  end
+  local unlinked = { { guid = "U1", name = "Stranger", classID = 8, level = 9, online = false } }
 
   before_each(function()
     Format = helpers.loadAddonFile("src/core/Format.lua", {})
   end)
 
-  describe("ago", function()
+  describe("ago and seen", function()
     it("formats durations", function()
       assert.are.equal("just now", Format.ago(NOW - 30, NOW))
       assert.are.equal("5 min ago", Format.ago(NOW - 300, NOW))
@@ -46,107 +42,134 @@ describe("Format", function()
       assert.are.equal("never", Format.ago(nil, NOW))
       assert.are.equal("just now", Format.ago(NOW + 50, NOW)) -- clock skew
     end)
-  end)
 
-  describe("professions", function()
-    it("lists rank/max sorted by name", function()
-      assert.are.equal("Cooking 2/75, Mining 64/150", Format.professions(charRow().professions))
-      assert.are.equal("", Format.professions(nil))
-      assert.are.equal("", Format.professions({}))
+    it("uses the latest of presence, lastPlayed and data change", function()
+      assert.are.equal("Now", Format.seen(charRow(), NOW))
+      assert.are.equal("2 h ago", Format.seen(charRow({ online = false, lastSeen = NOW - 7200 }), NOW))
+      assert.are.equal("just now", -- own alt: last played beats an old data change
+        Format.seen(charRow({ online = false, updatedAt = NOW - 7200, lastPlayed = NOW - 10 }), NOW))
+      assert.are.equal("never", Format.seen(charRow({ online = false }), NOW))
     end)
   end)
 
-  describe("status", function()
-    it("shows online with zone, else last seen, else offline", function()
-      assert.are.equal("Online - Orgrimmar", Format.status(charRow(), NOW))
-      assert.are.equal("Online", Format.status(charRow({ zone = "" }), NOW))
-      assert.are.equal("Seen 2 h ago", Format.status(charRow({ online = false, lastSeen = NOW - 7200 }), NOW))
-      assert.are.equal("Seen 5 min ago",
-        Format.status(charRow({ online = false, lastSeen = NOW - 7200, updatedAt = NOW - 300 }), NOW))
-      assert.are.equal("Offline", Format.status(charRow({ online = false }), NOW))
-      assert.are.equal("Seen just now", -- own alt: last played beats an old data change
-        Format.status(charRow({ online = false, updatedAt = NOW - 7200, lastPlayed = NOW - 10 }), NOW))
+  describe("professionList", function()
+    it("sorts by name with a progress fraction", function()
+      assert.are.same({
+        { name = "Cooking", rank = 75, max = 75, fraction = 1 },
+        { name = "Mining", rank = 60, max = 150, fraction = 0.4 },
+      }, Format.professionList(charRow().professions))
+      assert.are.same({}, Format.professionList(nil))
+      assert.are.equal(0, Format.professionList({ [1] = { name = "X", rank = 5, max = 0 } })[1].fraction)
     end)
   end)
 
-  describe("rows", function()
-    it("shows only the empty state without a selected community", function()
-      local rows = Format.rows({ people = {}, unlinked = {} }, state({ communitySelected = false }))
-      assert.are.same({ { kind = "empty", text = "Select a community in settings (/cf settings)." } }, rows)
+  describe("paths", function()
+    it("joins and splits group and character", function()
+      local path = Format.path("Sjaakovich#2232", "G1")
+      assert.are.equal("Sjaakovich#2232\001G1", path)
+      assert.are.same({ "Sjaakovich#2232", "G1" }, { Format.splitPath(path) })
+      assert.are.same({ "Sjaakovich#2232" }, { Format.splitPath("Sjaakovich#2232") })
+    end)
+  end)
+
+  describe("tree", function()
+    it("lists people with their characters, then Unlinked", function()
+      local nodes = Format.tree({ people = { person(), me() }, unlinked = unlinked })
+      assert.are.equal(3, #nodes)
+      assert.are.same({ "Sjaakovich#2232", "Sjaak", true, false },
+        { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
+      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true },
+        nodes[1].children[1])
+      assert.are.equal("Vestras (you)", nodes[2].text)
+      assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
+      assert.are.equal("U1", nodes[3].children[1].value)
     end)
 
-    it("shows a note when no friend is linked yet", function()
-      local me = person({ battleTag = "Vestras#2858", displayName = "Vestras", isSelf = true })
-      local rows = Format.rows({ people = { me }, unlinked = {} }, state())
-      assert.are.same({ "section", "person", "char", "note" }, kinds(rows))
-      assert.are.equal("No linked friends yet.", rows[4].text)
+    it("has no Unlinked group without unlinked characters", function()
+      assert.are.equal(1, #Format.tree({ people = { person() }, unlinked = {} }))
     end)
 
-    it("renders a person header with the display name and current character", function()
-      local rows = Format.rows({ people = { person() }, unlinked = {} }, state())
-      assert.are.same({ kind = "person", key = "Sjaakovich#2232", online = true, expanded = true, isSelf = false,
-                        text = "Sjaak", current = { name = "Garraka", classFile = "MAGE", classID = 8,
-                                                     outside = false } }, rows[2])
+    it("uses a special value for own characters without a BattleTag", function()
+      local nodes = Format.tree({ people = { person({ battleTag = false, isSelf = true }) }, unlinked = {} })
+      assert.are.equal(Format.SELF, nodes[1].value)
+    end)
+  end)
+
+  describe("detail", function()
+    local view
+
+    before_each(function()
+      view = { people = { person(), me() }, unlinked = unlinked }
     end)
 
-    it("marks offline people, self, and a current character outside the community", function()
-      local offline = Format.rows({ people = { person({ online = false, currentChar = false }) }, unlinked = {} },
-        state())
-      assert.are.equal("Sjaak - offline", offline[2].text)
-      assert.is_nil(offline[2].current)
-
-      local me = Format.rows({ people = { person({ isSelf = true, displayName = "Vestras" }) }, unlinked = {} },
-        state())
-      assert.are.equal("Vestras (you)", me[2].text)
-
-      local outside = Format.rows({ people = { person({ currentChar = { name = "Alt", visible = false } }) },
-                                    unlinked = {} }, state())
-      assert.is_true(outside[2].current.outside)
+    it("asks for a selection without a path", function()
+      assert.are.same({ kind = "message", text = "Select a person or character on the left." },
+        Format.detail(view, nil, NOW))
     end)
 
-    it("puts a spacer between people", function()
-      local rows = Format.rows({ people = { person(), person({ battleTag = "Other#1", displayName = "Other" }) },
-                                 unlinked = {} }, state())
-      assert.are.same({ "section", "person", "char", "spacer", "person", "char" }, kinds(rows))
+    it("describes a person with status and characters", function()
+      local d = Format.detail(view, "Sjaakovich#2232", NOW)
+      assert.are.equal("person", d.kind)
+      assert.are.equal("Sjaak", d.title)
+      assert.are.equal("Sjaakovich#2232", d.battleTag)
+      assert.are.equal("Online on Garraka", d.status)
+      assert.are.same({ guid = "G2", name = "Grom", classFile = "WARRIOR", classID = 8, level = 11, seen = "2 h ago" },
+        d.characters[2])
     end)
 
-    it("renders two-line character rows", function()
-      local rows = Format.rows({ people = { person() }, unlinked = {} }, state())
-      assert.are.same({ kind = "char", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8,
-                        line1 = "Lvl 11  iLvl 20  Online - Orgrimmar",
-                        line2 = "Cooking 2/75, Mining 64/150", online = true }, rows[3]) -- no realm
+    it("describes an offline person and one on a character outside the community", function()
+      view.people[1] = person({ online = false, currentChar = false })
+      assert.are.equal("Offline", Format.detail(view, "Sjaakovich#2232", NOW).status)
+      view.people[1] = person({ currentChar = { name = "Alt", visible = false } })
+      assert.are.equal("Online on Alt (not in community)", Format.detail(view, "Sjaakovich#2232", NOW).status)
     end)
 
-    it("leaves out missing ilvl and professions", function()
-      local p = person({ chars = { charRow({ ilvl = false, professions = {}, realm = false }) } })
-      local row = Format.rows({ people = { p }, unlinked = {} }, state())[3]
-      assert.are.equal("Lvl 11  Online - Orgrimmar", row.line1)
-      assert.are.equal("", row.line2)
+    it("describes a character with stats and professions", function()
+      local d = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
+      assert.are.same({
+        kind = "character", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, owner = "Sjaak",
+        status = "Online in Orgrimmar", online = true,
+        stats = { { label = "Level", value = "11" }, { label = "Item level", value = "20" },
+                  { label = "Last seen", value = "Now" } },
+        professions = Format.professionList(charRow().professions),
+      }, d)
     end)
 
-    it("hides characters of a collapsed person", function()
-      local rows = Format.rows({ people = { person() }, unlinked = {} },
-        state({ collapsed = { ["Sjaakovich#2232"] = true } }))
-      assert.are.same({ "section", "person" }, kinds(rows))
-      assert.is_false(rows[2].expanded)
+    it("shows missing item level and offline characters", function()
+      local d = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      assert.are.equal("Offline", d.status)
+      assert.are.equal("-", d.stats[2].value)
+      assert.are.equal("2 h ago", d.stats[3].value)
+      assert.are.same({}, d.professions)
     end)
 
-    it("uses key \"self\" for own characters without a BattleTag", function()
-      local rows = Format.rows({ people = { person({ battleTag = false, isSelf = true, displayName = "You" }) },
-                                 unlinked = {} }, state())
-      assert.are.equal("self", rows[2].key)
+    it("describes the Unlinked group and its characters", function()
+      assert.are.equal("unlinked", Format.detail(view, Format.UNLINKED, NOW).kind)
+      local d = Format.detail(view, Format.path(Format.UNLINKED, "U1"), NOW)
+      assert.are.equal("Stranger", d.name)
+      assert.are.equal("Unlinked", d.owner)
     end)
 
-    it("renders the Unlinked section with community data only", function()
-      local rows = Format.rows({ people = {}, unlinked = {
-        { guid = "U1", name = "Stranger", classID = 8, level = 9, online = true, zone = "Durotar" },
-        { guid = "U2", name = "Gone", classID = 2, level = 60, online = false, zone = "Silithus" },
-      } }, state())
-      assert.are.same({ "section", "note", "section", "char", "char" }, kinds(rows))
-      assert.are.equal("Unlinked", rows[3].text)
-      assert.are.equal("Lvl 9  Online - Durotar", rows[4].line1)
-      assert.are.equal("Lvl 60  Offline", rows[5].line1) -- no zone when offline
-      assert.are.equal("", rows[5].line2)
+    it("falls back to the message for paths that no longer exist", function()
+      assert.are.equal("message", Format.detail(view, "Gone#1", NOW).kind)
+      assert.are.equal("message", Format.detail(view, Format.path("Sjaakovich#2232", "G9"), NOW).kind)
+    end)
+  end)
+
+  describe("empty state and hint", function()
+    it("asks to select a community", function()
+      assert.are.equal("Select a community in settings (/cf settings).",
+        Format.emptyState({ people = {}, unlinked = {} }, false))
+    end)
+
+    it("says when the community has nobody to show", function()
+      assert.are.equal("Nobody in this community yet.", Format.emptyState({ people = {}, unlinked = {} }, true))
+      assert.is_nil(Format.emptyState({ people = { me() }, unlinked = {} }, true))
+    end)
+
+    it("hints when only you are linked", function()
+      assert.matches("^No linked friends yet", Format.friendsHint({ people = { me() }, unlinked = {} }))
+      assert.is_nil(Format.friendsHint({ people = { me(), person() }, unlinked = {} }))
     end)
   end)
 end)

@@ -1,10 +1,17 @@
--- Format: turns the Linker view model into flat display rows for the main window.
--- Pure Lua, no WoW globals. Colors and textures are applied by the UI.
+-- Format: turns the Linker view model into the main window's tree and detail models.
+-- Pure Lua, no WoW globals. Colors, textures and class names are applied by the UI.
 local _, ns = ...
 
 local Format = {}
 
 local MINUTE, HOUR, DAY = 60, 3600, 86400
+
+-- Tree value of the Unlinked group, and of own characters without a known BattleTag.
+Format.UNLINKED = "~unlinked" -- BattleTags never start with "~"
+Format.SELF = "~self"
+
+-- Separator AceGUI TreeGroup uses between path parts ("parent\001child").
+local PATH_SEPARATOR = "\001"
 
 -- "just now", "5 min ago", "3 h ago", "2 d ago"; "never" without a timestamp.
 function Format.ago(timestamp, now)
@@ -16,101 +23,178 @@ function Format.ago(timestamp, now)
   return string.format("%d d ago", math.floor(seconds / DAY))
 end
 
--- "Cooking 2/75, Mining 64/150" sorted by name; "" without professions.
-function Format.professions(professions)
+-- Professions sorted by name: { { name, rank, max, fraction } }, fraction in 0..1.
+function Format.professionList(professions)
   local list = {}
   for _, p in pairs(professions or {}) do
-    list[#list + 1] = p
+    local fraction = 0
+    if (p.max or 0) > 0 then fraction = math.min(1, math.max(0, (p.rank or 0) / p.max)) end
+    list[#list + 1] = { name = p.name, rank = p.rank, max = p.max, fraction = fraction }
   end
   table.sort(list, function(a, b) return (a.name or "") < (b.name or "") end)
-  local parts = {}
-  for _, p in ipairs(list) do
-    parts[#parts + 1] = string.format("%s %s/%s", tostring(p.name), tostring(p.rank), tostring(p.max))
-  end
-  return table.concat(parts, ", ")
+  return list
 end
 
--- Status of a character row: "Online - Durotar", "Seen 3 h ago" or "Offline".
-function Format.status(row, now)
-  if row.online then
-    return row.zone and row.zone ~= "" and ("Online - " .. row.zone) or "Online"
-  end
-  -- lastPlayed: own characters (login/logout); lastSeen: presence; updatedAt: last data change.
+-- When a character was last seen: presence (friends), lastPlayed (own), last data change.
+local function lastSeen(row)
   local seen = math.max(row.lastSeen or 0, row.lastPlayed or 0, row.updatedAt or 0)
-  if seen > 0 then
-    return "Seen " .. Format.ago(seen, now)
-  end
-  return "Offline"
+  return seen > 0 and seen or nil
 end
 
--- line1 is the text after the (class-colored) name; line2 holds the professions.
--- The realm is not shown: everyone plays the same ruleset (one mega-realm).
-local function charLines(row, now)
-  local line1 = string.format("Lvl %s%s  %s", tostring(row.level or "?"),
-    row.ilvl and ("  iLvl " .. row.ilvl) or "", Format.status(row, now))
-  return line1, Format.professions(row.professions)
+-- "Now" when online, else "3 h ago" / "never".
+function Format.seen(row, now)
+  if row.online then return "Now" end
+  return Format.ago(lastSeen(row), now)
 end
 
---[[ Flattens the view model into display rows, in order:
-  { kind = "empty",   text }                                   -- whole-window empty state
-  { kind = "section", text }                                   -- "People", "Unlinked"
-  { kind = "spacer" }                                          -- blank line between people
-  { kind = "person",  key, text, online, expanded, isSelf, current }  -- clickable header
-      current = { name, classFile, classID, outside } or nil: "on <name>", outside = not in community
-  { kind = "char",    guid, name, classFile, classID, line1, line2, online }  -- line1 follows the name
-  { kind = "note",    text }                                   -- empty state inside a section
-state = { communitySelected = bool, collapsed = { [personKey] = true }, now = serverTime }
-personKey is the BattleTag, or "self" for own characters without a known BattleTag.
+-- Unique tree path of a character under its group.
+function Format.path(groupValue, guid)
+  return groupValue .. PATH_SEPARATOR .. guid
+end
+
+-- Splits a TreeGroup path into group value and character GUID (nil for a group).
+function Format.splitPath(path)
+  local group, guid = path:match("^([^\001]+)\001(.+)$")
+  if group then return group, guid end
+  return path, nil
+end
+
+local function groupValue(person)
+  return person.battleTag or Format.SELF
+end
+
+local function personTitle(person)
+  return person.isSelf and (person.displayName .. " (you)") or person.displayName
+end
+
+--[[ Tree for AceGUI TreeGroup. Each node:
+  { value, text, online, isSelf, children = { { value = guid, name, classFile, classID, level, online } } }
+People first (Linker order), then an "Unlinked" group when there are unlinked characters.
+The UI turns name/classFile into colored text.
 ]]
-function Format.rows(view, state)
-  local rows = {}
-  if not state.communitySelected then
-    rows[1] = { kind = "empty", text = "Select a community in settings (/cf settings)." }
-    return rows
+function Format.tree(view)
+  local nodes = {}
+  for _, person in ipairs(view.people) do
+    local children = {}
+    for _, c in ipairs(person.chars) do
+      children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
+                                  level = c.level, online = c.online }
+    end
+    nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
+                          isSelf = person.isSelf, children = children }
+  end
+  if #view.unlinked > 0 then
+    local children = {}
+    for _, c in ipairs(view.unlinked) do
+      children[#children + 1] = { value = c.guid, name = c.name, classID = c.classID, level = c.level,
+                                  online = c.online }
+    end
+    nodes[#nodes + 1] = { value = Format.UNLINKED, text = "Unlinked", unlinked = true, children = children }
+  end
+  return nodes
+end
+
+local function findPerson(view, value)
+  for _, person in ipairs(view.people) do
+    if groupValue(person) == value then return person end
+  end
+end
+
+local function characterDetail(row, owner, now)
+  local where
+  if row.online then
+    where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
+  else
+    where = "Offline"
+  end
+  return {
+    kind = "character",
+    guid = row.guid,
+    name = row.name,
+    classFile = row.classFile,
+    classID = row.classID,
+    owner = owner,
+    status = where,
+    online = row.online,
+    stats = {
+      { label = "Level", value = tostring(row.level or "?") },
+      { label = "Item level", value = row.ilvl and tostring(row.ilvl) or "-" },
+      { label = "Last seen", value = Format.seen(row, now) },
+    },
+    professions = Format.professionList(row.professions),
+  }
+end
+
+--[[ Detail model for the selected tree path, or a message when nothing (valid) is selected:
+  { kind = "message", text }
+  { kind = "person", title, battleTag, online, status, current,
+    characters = { { guid, name, classFile, classID, level, seen } } }
+  { kind = "unlinked", characters = ... }                        -- same character entries
+  { kind = "character", guid, name, classFile, classID, owner, status, online, stats, professions }
+]]
+function Format.detail(view, path, now)
+  if not path then
+    return { kind = "message", text = "Select a person or character on the left." }
+  end
+  local group, guid = Format.splitPath(path)
+
+  local rows, person
+  if group == Format.UNLINKED then
+    rows = view.unlinked
+  else
+    person = findPerson(view, group)
+    if not person then return Format.detail(view, nil, now) end
+    rows = person.chars
   end
 
-  rows[#rows + 1] = { kind = "section", text = "People" }
-  local friendsShown = 0
-  for index, person in ipairs(view.people) do
-    if not person.isSelf then friendsShown = friendsShown + 1 end
-    local key = person.battleTag or "self"
-    local expanded = not state.collapsed[key]
-
-    local text = person.displayName
-    if person.isSelf then text = text .. " (you)" end
-    local current
-    if person.online and person.currentChar then
-      local c = person.currentChar
-      current = { name = c.name, classFile = c.classFile, classID = c.classID, outside = c.visible == false }
-    elseif not person.online then
-      text = text .. " - offline"
-    end
-
-    if index > 1 then rows[#rows + 1] = { kind = "spacer" } end
-    rows[#rows + 1] = { kind = "person", key = key, text = text, online = person.online,
-                        expanded = expanded, isSelf = person.isSelf, current = current }
-    if expanded then
-      for _, c in ipairs(person.chars) do
-        local line1, line2 = charLines(c, state.now)
-        rows[#rows + 1] = { kind = "char", guid = c.guid, name = c.name, classFile = c.classFile,
-                            classID = c.classID, line1 = line1, line2 = line2, online = c.online }
+  if guid then
+    for _, row in ipairs(rows) do
+      if row.guid == guid then
+        return characterDetail(row, person and person.displayName or "Unlinked", now)
       end
     end
-  end
-  if friendsShown == 0 then
-    rows[#rows + 1] = { kind = "note", text = "No linked friends yet." }
+    return Format.detail(view, nil, now)
   end
 
-  if #view.unlinked > 0 then
-    rows[#rows + 1] = { kind = "section", text = "Unlinked" }
-    for _, c in ipairs(view.unlinked) do
-      local line1 = string.format("Lvl %s  %s", tostring(c.level or "?"),
-        c.online and Format.status(c, state.now) or "Offline")
-      rows[#rows + 1] = { kind = "char", guid = c.guid, name = c.name, classID = c.classID,
-                          line1 = line1, line2 = "", online = c.online }
-    end
+  local characters = {}
+  for _, row in ipairs(rows) do
+    characters[#characters + 1] = { guid = row.guid, name = row.name, classFile = row.classFile,
+                                    classID = row.classID, level = row.level, seen = Format.seen(row, now) }
   end
-  return rows
+  if not person then
+    return { kind = "unlinked", characters = characters }
+  end
+
+  local status
+  if person.online and person.currentChar then
+    status = "Online on " .. tostring(person.currentChar.name) ..
+      (person.currentChar.visible == false and " (not in community)" or "")
+  elseif person.online then
+    status = "Online"
+  else
+    status = "Offline"
+  end
+  return { kind = "person", title = personTitle(person), battleTag = person.battleTag, online = person.online,
+           status = status, current = person.currentChar, characters = characters }
+end
+
+-- Message for the whole window instead of tree and detail, or nil.
+function Format.emptyState(view, communitySelected)
+  if not communitySelected then
+    return "Select a community in settings (/cf settings)."
+  end
+  if #view.people == 0 and #view.unlinked == 0 then
+    return "Nobody in this community yet."
+  end
+  return nil
+end
+
+-- Hint shown under the detail when only you are linked so far.
+function Format.friendsHint(view)
+  for _, person in ipairs(view.people) do
+    if not person.isSelf then return nil end
+  end
+  return "No linked friends yet. Friends show up when they log in while you are online, or when they run the addon."
 end
 
 ns.Format = Format

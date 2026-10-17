@@ -16,13 +16,18 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-12 Main window (retest after feedback)
-All first-round steps passed. These cover the fixes from your feedback.
+### CF-12 Main window (new layout, draft B)
+The first-round list layout passed; the window is now a tree on the left and a detail card on the right.
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf` | Person headers show only the display name (no BattleTag), `(you)` for you, and `on <character>` with that character class-colored. A blank line between people. No realm on character rows. | open |
-| Play character A for a bit, log out to the character screen, log in on character B, `/cf` | Character A shows `Seen just now` / `Seen N min ago` (when you logged out), not hours ago (V22). | open |
-| With nothing selected and exactly one character community: `/reload` | Chat: `Showing community <name>. Change it with /cf settings.`; it is selected. | open |
-| With nothing selected and two or more communities: join (or create) a new character community | The new community gets selected with the same chat line. | open |
-| With a community selected, join another one | Selection does not change. | open |
+| `/cf` | Left: people with a green/grey dot and their display name (`(you)` for you), each expanded to class-colored characters with level; `Unlinked` at the bottom if any. Right: the first person is selected. Status bar `N people, M unlinked`. | open |
+| Click a person | Right: big display name, BattleTag in grey, dot + `Online on <class-colored character>` or `Offline`, a "Characters" list (name, level, Online / Seen … ago). | open |
+| Click a character in that list, or in the tree | Right: class-colored name, `Class  -  Owner  -  Online in <zone>` / `Offline`, three boxes Level / Item level / Last seen, "Professions" with `rank / max` and a green bar. | open |
+| Collapse a person in the tree, select something, drag the tree border wider, `/reload`, `/cf` | Same person collapsed, same selection, same tree width. A friend who is new to the list starts expanded. | open |
+| Readability | Text is clearly larger than before. Tell me what still feels too small or crowded. | open |
+| A friend logs in/out while the window is open | Their dot and status update by themselves within ~2 s; your selection stays. | open |
+| Play character A, log out, log in on B, `/cf`, select A | Last seen `just now` / `N min ago` (V22). | open |
+| Nothing selected, exactly one character community, `/reload` | Chat: `Showing community <name>. Change it with /cf settings.`, window shows it. | open |
+| Nothing selected, two or more communities: join or create a new character community | The new one gets selected, same chat line. | open |
+| No community selected | Window shows `Select a community in settings (/cf settings).` | open |

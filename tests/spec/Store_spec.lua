@@ -16,7 +16,7 @@ describe("Store", function()
   describe("defaults", function()
     it("matches the data model sections", function()
       local global = Store.defaults().global
-      assert.are.same({ notifications = true, minimap = {}, window = {}, collapsed = {} }, global.settings)
+      assert.are.same({ notifications = true, minimap = {}, window = {}, tree = {} }, global.settings)
       assert.are.same({ version = 0, chars = {} }, global.self)
       assert.are.same({}, global.people)
       assert.are.same({}, global.presence)
