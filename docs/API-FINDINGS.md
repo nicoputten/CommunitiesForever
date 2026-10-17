@@ -57,6 +57,7 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `PLAYER_LEVEL_UP` | Fires; the new level is stored right after the ding (V12, CF-03) |
 | `PLAYER_EQUIPMENT_CHANGED` | Fires on gear swaps (V12, CF-03) |
 | `INITIAL_CLUBS_LOADED`, `CLUB_ADDED`, `CLUB_REMOVED`, `CLUB_UPDATED` | Valid events per `C_EventUtils.IsEventValid` (V15); leaving a community fires the removal path (CF-05) |
+| `CLUB_MEMBERS_UPDATED`, `CLUB_MEMBER_ADDED`, `CLUB_MEMBER_REMOVED`, `CLUB_MEMBER_PRESENCE_UPDATED`, `CLUB_MEMBER_UPDATED` | Valid events (V17). Invite, kick, log in/out and zone changes update `C_Club.GetMemberInfo` and fire member events without polling (V18, CF-06) |
 | `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16) |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
