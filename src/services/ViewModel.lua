@@ -11,6 +11,7 @@ function ViewModel.build(addon)
     online = ns.PresenceTracker.online(),
     people = global.people,
     presence = global.presence,
+    locations = global.locations,
     self = global.self,
     selfGuid = ns.SelfInfo.read().guid,
     nicknames = global.nicknames,

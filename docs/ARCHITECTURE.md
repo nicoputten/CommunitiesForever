@@ -85,6 +85,7 @@ global = {
                                 chars = { [guid] = Char } } },
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   nicknames = { [battleTag] = "Sjaak" },             -- local only, never synced
+  locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
 }
 
 Char = {

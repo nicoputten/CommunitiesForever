@@ -187,6 +187,15 @@ describe("Linker", function()
       assert.is_true(row.online)
     end)
 
+    it("adds the last zone seen", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Garraka") },
+        locations = { G1 = { zone = "The Barrens", seenAt = 77 } },
+      }))
+      assert.are.equal("The Barrens", view.unlinked[1].lastZone)
+      assert.are.equal(77, view.unlinked[1].lastZoneAt)
+    end)
+
     it("treats Online, Away and Busy as online; Mobile and Offline not", function()
       for presence, expected in pairs({ [1] = true, [2] = false, [3] = false, [4] = true, [5] = true }) do
         local view = Linker.build(input({ members = { G1 = member("X", presence) } }))

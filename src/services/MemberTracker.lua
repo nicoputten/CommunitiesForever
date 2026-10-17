@@ -15,6 +15,7 @@ local changedAt
 local function refresh()
   local clubId = ns.CommunitySelection.selected()
   local members = clubId and ns.Members.build(ns.Community.members(clubId)) or {}
+  ns.Members.recordLocations(addonRef.db.global.locations, members, GetServerTime())
   if not ns.Members.equal(current, members) then
     current = members
     changedAt = GetServerTime()

@@ -21,6 +21,7 @@ describe("Store", function()
       assert.are.same({}, global.people)
       assert.are.same({}, global.presence)
       assert.are.same({}, global.nicknames)
+      assert.are.same({}, global.locations)
     end)
 
     it("does not default schemaVersion", function()

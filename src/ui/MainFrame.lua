@@ -12,6 +12,7 @@ local OFFLINE_ICON = "Interface\\COMMON\\Indicator-Gray"
 local BAR_TEXTURE = "Interface\\Buttons\\WHITE8X8"
 local BAR_WIDTH = 180
 local GREY = "|cffa0a0a0"
+local ONLINE_DOT = "|T" .. ONLINE_ICON .. ":12:12|t "
 
 local addonRef, events, frame, tree, refreshDebounced
 local view -- last view model, used by the selection callback
@@ -69,6 +70,30 @@ local function spacer(parent)
   label(parent, " ")
 end
 
+local function heading(parent, text)
+  local widget = createWidget("Heading")
+  widget:SetText(text)
+  widget:SetFullWidth(true)
+  parent:AddChild(widget)
+end
+
+-- Borderless row of columns (SimpleGroup has no frame, unlike InlineGroup).
+local function columns(parent)
+  local row = createWidget("SimpleGroup")
+  row:SetFullWidth(true)
+  row:SetLayout("Flow")
+  parent:AddChild(row)
+  return row
+end
+
+local function column(row, relativeWidth)
+  local col = createWidget("SimpleGroup")
+  col:SetRelativeWidth(relativeWidth)
+  col:SetLayout("List")
+  row:AddChild(col)
+  return col
+end
+
 -- Clickable character list (person and Unlinked details).
 local function characterList(parent, groupValue, characters)
   for _, c in ipairs(characters) do
@@ -102,10 +127,7 @@ function renderDetail.person(parent, detail, groupValue)
     GameFontHighlightLarge)
   spacer(parent)
 
-  local heading = createWidget("Heading")
-  heading:SetText("Characters")
-  heading:SetFullWidth(true)
-  parent:AddChild(heading)
+  heading(parent, "Characters")
   characterList(parent, groupValue, detail.characters)
 end
 
@@ -126,31 +148,29 @@ function renderDetail.character(parent, detail)
   label(parent, GREY .. table.concat(subtitle, "  -  ") .. "|r", GameFontHighlight)
   spacer(parent)
 
-  local stats = createWidget("SimpleGroup")
-  stats:SetFullWidth(true)
-  stats:SetLayout("Flow")
+  -- Stats as plain text (caption over value), no borders.
+  local stats = columns(parent)
   for _, stat in ipairs(detail.stats) do
-    local box = createWidget("InlineGroup")
-    box:SetTitle(stat.label)
-    box:SetRelativeWidth(0.33)
-    box:SetLayout("List") -- auto height; "Fill" needs a fixed height
+    local box = column(stats, 0.33)
+    label(box, GREY .. stat.label .. "|r", GameFontHighlightSmall)
     label(box, stat.value, GameFontHighlightLarge)
-    stats:AddChild(box)
   end
-  parent:AddChild(stats)
   spacer(parent)
 
-  local heading = createWidget("Heading")
-  heading:SetText("Professions")
-  heading:SetFullWidth(true)
-  parent:AddChild(heading)
+  -- Professions and talents side by side.
+  local sections = columns(parent)
+  local professions = column(sections, 0.5)
+  heading(professions, "Professions")
   if #detail.professions == 0 then
-    label(parent, GREY .. "No professions known.|r", GameFontHighlight)
+    label(professions, GREY .. "No professions known.|r", GameFontHighlight)
   end
   for _, p in ipairs(detail.professions) do
-    label(parent, string.format("%s  %s%s / %s|r\n%s", tostring(p.name), GREY, tostring(p.rank), tostring(p.max),
-      bar(p.fraction)), GameFontHighlight)
+    label(professions, string.format("%s  %s%s / %s|r\n%s", tostring(p.name), GREY, tostring(p.rank),
+      tostring(p.max), bar(p.fraction)), GameFontHighlight)
   end
+  local talents = column(sections, 0.5)
+  heading(talents, "Talents")
+  label(talents, GREY .. "Not available yet. Coming in a later version.|r", GameFontHighlight)
 end
 
 local function showDetail(path, messageText)
@@ -194,7 +214,9 @@ local function aceTree(nodes)
     for _, c in ipairs(node.children) do
       children[#children + 1] = {
         value = c.value,
-        text = string.format("%s  %s%s|r", colorName(c.name, c.classFile, c.classID), GREY, tostring(c.level or "?")),
+        -- Green dot on the character a person is playing; spaces keep the names aligned.
+        text = string.format("%s%s  %s%s|r", c.online and ONLINE_DOT or "     ",
+          colorName(c.name, c.classFile, c.classID), GREY, tostring(c.level or "?")),
       }
     end
     result[#result + 1] = {

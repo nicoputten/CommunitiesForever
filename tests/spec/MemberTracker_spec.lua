@@ -96,6 +96,11 @@ describe("MemberTracker", function()
     assert.are.equal(1, updates())
   end)
 
+  it("saves the last zone of online members", function()
+    load(CLUB)
+    assert.are.same({ zone = "Orgrimmar", seenAt = 1000 }, addon.db.global.locations[GARRAKA])
+  end)
+
   it("records when the member map last changed", function()
     load(CLUB)
     assert.are.equal(1000, Tracker.changedAt())

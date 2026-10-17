@@ -41,5 +41,18 @@ function Members.equal(a, b)
   return true
 end
 
+-- Same "in game" presence values as core/Linker.lua (Online, Away, Busy).
+local IN_GAME_PRESENCE = { [1] = true, [4] = true, [5] = true }
+
+-- Remembers where in-game members are: locations[guid] = { zone, seenAt }.
+-- Kept after they log off, so "last seen in <zone>" can be shown. Local only, never synced.
+function Members.recordLocations(locations, members, now)
+  for guid, m in pairs(members) do
+    if IN_GAME_PRESENCE[m.presence] and m.zone and m.zone ~= "" then
+      locations[guid] = { zone = m.zone, seenAt = now }
+    end
+  end
+end
+
 ns.Members = Members
 return Members

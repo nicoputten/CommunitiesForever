@@ -35,10 +35,24 @@ function Format.professionList(professions)
   return list
 end
 
--- When a character was last seen: presence (friends), lastPlayed (own), last data change.
+-- When a character was last seen: presence (friends), lastPlayed (own), last zone seen
+-- in the community, last data change.
 local function lastSeen(row)
-  local seen = math.max(row.lastSeen or 0, row.lastPlayed or 0, row.updatedAt or 0)
+  local seen = math.max(row.lastSeen or 0, row.lastPlayed or 0, row.lastZoneAt or 0, row.updatedAt or 0)
   return seen > 0 and seen or nil
+end
+
+-- "Offline - last seen in The Barrens[ on Garraka], 2 h ago"; parts are left out when unknown.
+local function offlineStatus(row, now, withName)
+  local seen = lastSeen(row)
+  if not row.lastZone and not seen then return "Offline" end
+  local parts = {}
+  if row.lastZone then parts[#parts + 1] = "in " .. row.lastZone end
+  if withName then parts[#parts + 1] = "on " .. tostring(row.name) end
+  local text = "Offline - last seen"
+  if #parts > 0 then text = text .. " " .. table.concat(parts, " ") end
+  if seen then text = text .. (#parts > 0 and ", " or " ") .. Format.ago(seen, now) end
+  return text
 end
 
 -- "Now" when online, else "3 h ago" / "never".
@@ -105,7 +119,7 @@ local function characterDetail(row, owner, now)
   if row.online then
     where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
   else
-    where = "Offline"
+    where = offlineStatus(row, now, false)
   end
   return {
     kind = "character",
@@ -172,7 +186,13 @@ function Format.detail(view, path, now)
   elseif person.online then
     status = "Online"
   else
-    status = "Offline"
+    -- The character seen most recently tells where the person was last.
+    local latest, latestAt
+    for _, row in ipairs(rows) do
+      local at = lastSeen(row) or 0
+      if not latest or at > latestAt then latest, latestAt = row, at end
+    end
+    status = latest and offlineStatus(latest, now, true) or "Offline"
   end
   return { kind = "person", title = personTitle(person), battleTag = person.battleTag, online = person.online,
            status = status, current = person.currentChar, characters = characters }

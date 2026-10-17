@@ -59,7 +59,7 @@ local function recordFor(guid, bt, input)
 end
 
 -- Row for a visible character: live community data plus record data when available.
-local function charRow(guid, member, record, presence, source)
+local function charRow(guid, member, record, presence, location, source)
   record = record or {}
   return {
     guid = guid,
@@ -76,6 +76,8 @@ local function charRow(guid, member, record, presence, source)
     updatedAt = record.updatedAt,
     lastPlayed = record.lastPlayed,
     lastSeen = presence and presence.lastSeen,
+    lastZone = location and location.zone,
+    lastZoneAt = location and location.seenAt,
     linkSource = source,
   }
 end
@@ -94,6 +96,7 @@ input = {
   online    = { [battleTag] = { guid, name, className, level, gameAccountID } },      -- friends in Forever now
   people    = { [battleTag] = { displayName, version, chars = { [guid] = Char } } },  -- accepted records
   presence  = { [guid] = { battleTag, lastSeen } },
+  locations = { [guid] = { zone, seenAt } },                                       -- last zone seen
   self      = { battleTag, displayName, chars = { [guid] = Char } },
   selfGuid  = current character GUID,
   nicknames = { [battleTag] = "Name" },
@@ -116,6 +119,7 @@ function Linker.build(raw)
     online = raw.online or {},
     people = raw.people or {},
     presence = raw.presence or {},
+    locations = raw.locations or {},
     nicknames = raw.nicknames or {},
     self = { battleTag = selfKey, displayName = self.displayName, chars = self.chars or {} },
     selfGuid = raw.selfGuid,
@@ -125,7 +129,7 @@ function Linker.build(raw)
   local byTag, unlinked = {}, {}
   for guid, member in pairs(input.members) do
     local bt, source = linkFor(guid, input)
-    local row = charRow(guid, member, recordFor(guid, bt, input), input.presence[guid], source)
+    local row = charRow(guid, member, recordFor(guid, bt, input), input.presence[guid], input.locations[guid], source)
     if bt then
       byTag[bt] = byTag[bt] or {}
       table.insert(byTag[bt], row)

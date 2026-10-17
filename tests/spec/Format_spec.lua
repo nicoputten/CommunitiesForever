@@ -119,7 +119,7 @@ describe("Format", function()
 
     it("describes an offline person and one on a character outside the community", function()
       view.people[1] = person({ online = false, currentChar = false })
-      assert.are.equal("Offline", Format.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Offline - last seen on Grom, 2 h ago", Format.detail(view, "Sjaakovich#2232", NOW).status)
       view.people[1] = person({ currentChar = { name = "Alt", visible = false } })
       assert.are.equal("Online on Alt (not in community)", Format.detail(view, "Sjaakovich#2232", NOW).status)
     end)
@@ -137,7 +137,7 @@ describe("Format", function()
 
     it("shows missing item level and offline characters", function()
       local d = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
-      assert.are.equal("Offline", d.status)
+      assert.are.equal("Offline - last seen 2 h ago", d.status)
       assert.are.equal("-", d.stats[2].value)
       assert.are.equal("2 h ago", d.stats[3].value)
       assert.are.same({}, d.professions)
@@ -148,6 +148,24 @@ describe("Format", function()
       local d = Format.detail(view, Format.path(Format.UNLINKED, "U1"), NOW)
       assert.are.equal("Stranger", d.name)
       assert.are.equal("Unlinked", d.owner)
+    end)
+
+    it("shows the last seen zone, character and time for an offline person", function()
+      local p = person({ online = false, currentChar = false })
+      p.chars[1].online = false
+      p.chars[1].lastZone, p.chars[1].lastZoneAt = "The Barrens", NOW - 600
+      view.people[1] = p
+      assert.are.equal("Offline - last seen in The Barrens on Garraka, 10 min ago",
+        Format.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Offline - last seen in The Barrens, 10 min ago",
+        Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).status)
+    end)
+
+    it("says just Offline when nothing is known", function()
+      local p = person({ online = false, currentChar = false,
+                         chars = { charRow({ online = false }) } })
+      view.people[1] = p
+      assert.are.equal("Offline", Format.detail(view, "Sjaakovich#2232", NOW).status)
     end)
 
     it("falls back to the message for paths that no longer exist", function()
