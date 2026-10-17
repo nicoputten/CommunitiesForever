@@ -83,8 +83,7 @@ describe("MainFrame", function()
     assert.matches("|cff40c7ebGarraka Doombringer|r", nodes[1].children[1].text, 1, true)
     assert.matches("^|TInterface\\COMMON\\Indicator%-Green:14:14|t ", nodes[1].children[1].text) -- playing it
     assert.are.equal("Vestras (you)  |cffa0a0a01|r", nodes[2].text)
-    assert.matches("|cffa0a0a011  (you)|r", nodes[2].children[1].text, 1, true) -- the character you are on
-    assert.is_nil(nodes[1].children[1].text:find("(you)", 1, true))
+    assert.is_nil(nodes[2].children[1].text:find("(you)", 1, true)) -- no marker on characters
     assert.is_true(frame().statusbg.hidden) -- no status bar
   end)
 
@@ -117,6 +116,20 @@ describe("MainFrame", function()
       end
     end
     assert.is_true(aligned >= 2)
+  end)
+
+  it("shortens long character names in the tree but keeps the level", function()
+    load("23125681")
+    state.clubMembers["23125681"][2].name = "Garrakathorian Doombringerson"
+    wowapi.fireEvent(state, "CLUB_MEMBER_UPDATED", "23125681", 2)
+    wowapi.runTimers(state)
+    ns.MainFrame.toggle()
+    local text = tree().tree[1].children[1].text
+    assert.matches("Garrakathorian Do...|r  |cffa0a0a011|r", text, 1, true) -- 20 chars at 210 px
+
+    addon.db.global.settings.tree.treewidth = 400 -- wider tree: the full name fits
+    tree():Fire("OnTreeResize", 400)
+    assert.matches("Garrakathorian Doombringerson|r", tree().tree[1].children[1].text, 1, true)
   end)
 
   it("expands new people once, then leaves expansion to the user", function()

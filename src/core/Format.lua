@@ -6,6 +6,17 @@ local Format = {}
 
 local MINUTE, HOUR, DAY = 60, 3600, 86400
 
+-- Shortens text to at most maxChars characters, ending in "..." when cut. UTF-8 safe.
+function Format.truncate(text, maxChars)
+  text = tostring(text)
+  local chars = {}
+  for char in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+    chars[#chars + 1] = char
+  end
+  if #chars <= maxChars then return text end
+  return table.concat(chars, "", 1, math.max(1, maxChars - 3)) .. "..."
+end
+
 -- Tree value of the Unlinked group, and of own characters without a known BattleTag.
 Format.UNLINKED = "~unlinked" -- BattleTags never start with "~"
 Format.SELF = "~self"
@@ -98,8 +109,7 @@ local function personTitle(person)
 end
 
 --[[ Tree for AceGUI TreeGroup. Each node:
-  { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online,
-                                                       playing } } }   -- playing: the character you are on
+  { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online } } }
 People first (Linker order), then an "Unlinked" group when there are unlinked characters.
 The UI turns name/classFile into colored text.
 ]]
@@ -107,10 +117,9 @@ function Format.tree(view)
   local nodes = {}
   for _, person in ipairs(view.people) do
     local children = {}
-    local playingGuid = person.isSelf and person.currentChar and person.currentChar.guid
     for _, c in ipairs(person.chars) do
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
-                                  level = c.level, online = c.online, playing = c.guid == playingGuid }
+                                  level = c.level, online = c.online }
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
                           isSelf = person.isSelf, count = #children, children = children }

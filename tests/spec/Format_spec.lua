@@ -65,6 +65,19 @@ describe("Format", function()
     end)
   end)
 
+  describe("truncate", function()
+    it("keeps short text and cuts long text with dots", function()
+      assert.are.equal("Garraka", Format.truncate("Garraka", 10))
+      assert.are.equal("Kawkartha Skystrider", Format.truncate("Kawkartha Skystrider", 20))
+      assert.are.equal("Kawkartha Sky...", Format.truncate("Kawkartha Skystrider", 16))
+    end)
+
+    it("counts characters, not bytes", function()
+      assert.are.equal("Åsa Öberg", Format.truncate("Åsa Öberg", 9))
+      assert.are.equal("Åsa Ö...", Format.truncate("Åsa Öbergström", 8))
+    end)
+  end)
+
   describe("professionGroups", function()
     it("splits primary and secondary professions, leaving out empty groups", function()
       local groups = Format.professionGroups({
@@ -101,8 +114,7 @@ describe("Format", function()
       assert.are.same({ "Sjaakovich#2232", "Sjaak", true, false },
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
       assert.are.equal(2, nodes[1].count)
-      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
-                        playing = false },
+      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true },
         nodes[1].children[1])
       assert.are.equal("Vestras (you)", nodes[2].text)
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
@@ -186,14 +198,11 @@ describe("Format", function()
         Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).status)
     end)
 
-    it("marks the character you are playing and says \"played\" for your own characters", function()
+    it("says \"played\" for your own characters", function()
       local mine = me()
       mine.chars[2] = charRow({ guid = "G-ALT", name = "Alt", online = false, lastZone = "Durotar",
                                 lastPlayed = NOW - 60 })
       view.people[2] = mine
-      local node = Format.tree(view)[2]
-      assert.is_true(node.children[1].playing)
-      assert.is_false(node.children[2].playing)
       local d = Format.detail(view, Format.path("Vestras#2858", "G-ALT"), NOW)
       assert.are.equal("Offline - last played in Durotar", d.status)
       assert.are.same({ label = "Last played", value = "1 min ago" }, d.stats[3])

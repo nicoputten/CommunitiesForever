@@ -50,8 +50,13 @@ local function fakeLibs(state)
   function mixin:RegisterChatCommand(command, method)
     state.slash[command] = function(input) self[method](self, input) end
   end
-  function mixin:GetArgs(input)
-    return (input or ""):match("^%s*(%S+)")
+  -- Like AceConsole: up to n whitespace-separated arguments.
+  function mixin:GetArgs(input, n)
+    local args = {}
+    for word in (input or ""):gmatch("%S+") do
+      if #args < (n or 1) then args[#args + 1] = word end
+    end
+    return unpack(args, 1, n or 1)
   end
 
   -- AceEvent: one handler per (object, event/message), like the real library; function
@@ -180,6 +185,9 @@ local function fakeLibs(state)
     ["AceGUI-3.0"] = AceGUI,
     ["LibDataBroker-1.1"] = LDB,
     ["LibDBIcon-1.0"] = DBIcon,
+    -- The real pure-Lua libraries (tests/helpers.lua loads them from Libs/).
+    LibSerialize = require("helpers").lib("LibSerialize"),
+    LibDeflate = require("helpers").lib("LibDeflate"),
   }, mixin
 end
 
@@ -202,6 +210,10 @@ function wowapi.install(opts)
     timers = {},
     metadata = opts.metadata or { Version = "0.1.0" },
     serverTime = 1000,
+    time = 500,            -- GetTime()
+    inCombat = false,      -- InCombatLockdown()
+    bnSent = {},           -- BNSendGameData calls: { gameAccountID, prefix, text }
+    prefixes = {},         -- registered addon message prefixes
     player = defaultPlayer(),
     -- C_Club.GetSubscribedClubs() result; clubType 1 = Character, 2 = Guild, 0 = BattleNet
     clubs = {
@@ -267,6 +279,14 @@ function wowapi.install(opts)
     end,
     GetProfessionInfo = function(index) return unpack(p.professionInfo[index]) end,
     BNGetInfo = function() return nil, p.battleTag end,
+    BNSendGameData = function(gameAccountID, prefix, text)
+      state.bnSent[#state.bnSent + 1] = { gameAccountID, prefix, text }
+    end,
+    C_ChatInfo = {
+      RegisterAddonMessagePrefix = function(prefix) state.prefixes[prefix] = true; return 0 end,
+    },
+    InCombatLockdown = function() return state.inCombat end,
+    GetTime = function() return state.time end,
     C_Club = {
       GetSubscribedClubs = function() return deepCopy(state.clubs) end,
       GetClubMembers = function(clubId)

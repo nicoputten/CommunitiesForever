@@ -209,7 +209,15 @@ local function showDetail(path, messageText)
 end
 
 -- AceGUI tree from Format nodes. New people start expanded; after that AceGUI remembers.
+-- How many name characters fit in a tree row: tree width minus indent, dot and level,
+-- at roughly 7 px per character of GameFontHighlight.
+local function nameCharsForTree()
+  local width = settings().tree.treewidth or TREE_WIDTH
+  return math.max(8, math.floor((width - 70) / 7))
+end
+
 local function aceTree(nodes)
+  local maxNameChars = nameCharsForTree()
   local status = settings().tree
   status.groups = status.groups or {}
   status.known = status.known or {}
@@ -225,8 +233,10 @@ local function aceTree(nodes)
       children[#children + 1] = {
         value = c.value,
         -- Green dot on the character a person is playing; spaces keep the names aligned.
-        text = string.format("%s%s  %s%s%s|r", c.online and ONLINE_DOT or "      ",
-          colorName(c.name, c.classFile, c.classID), GREY, tostring(c.level or "?"), c.playing and "  (you)" or ""),
+        -- Long names are shortened so the level stays visible.
+        text = string.format("%s%s  %s%s|r", c.online and ONLINE_DOT or "      ",
+          colorName(ns.Format.truncate(c.name, maxNameChars), c.classFile, c.classID), GREY,
+          tostring(c.level or "?")),
       }
     end
     result[#result + 1] = {
@@ -297,6 +307,10 @@ local function create()
   tree:SetLayout("Fill")
   tree:SetCallback("OnGroupSelected", function(_, _, path)
     showDetail(path)
+  end)
+  -- Dragging the tree border changes how much of a name fits: rebuild the rows.
+  tree:SetCallback("OnTreeResize", function()
+    if view then MainFrame.render() end
   end)
   frame:AddChild(tree)
 end
