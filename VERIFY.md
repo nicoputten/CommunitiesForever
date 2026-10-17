@@ -30,15 +30,3 @@ Needs three Battle.net accounts on this build (A, B, C): relaying always involve
 | Later B and C are online together (if they are friends) | The `via` line disappears: B's own record replaced the relayed copy. | open |
 | B changes something (level up) while A is online and C is offline; then C logs on while B is offline | C gets B's new level through A. | open |
 | `/reload` on C | B's relayed data stays. | open |
-
-### CF-21 Join with a shared invite link
-Addons may not join themselves (V26), so the window walks the alt through Blizzard's own join window via a chat link (V27 works).
-
-| Step | Expected | Status |
-|---|---|---|
-| As owner/leader/moderator: `/cf settings` | A "Community invite link" field. As a normal member the field is not shown. | open |
-| Paste an invite link into the field | Saved; `/cf settings` shows the code. Nonsense prints `That doesn't look like a community invite link or code.` | open |
-| On an alt that is not in the community, `/cf` | The "isn't a member" message, then "How to join <community> with <alt>" with steps 1-3 and a `Post invite link in chat` button. | open |
-| Click `Post invite link in chat` | Chat: a hint line and a gold `[Join <community>]` link. Step 1 turns green, step 2 says `<- do this now`, the button says `Post the link again`. | open |
-| Click the link in chat, then Join in Blizzard's window | The alt joins; the window switches to the community. No "blocked" warning anywhere. | open |
-| Clear the field (empty) | The steps disappear for others after the next sync. | open |
