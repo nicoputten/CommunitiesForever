@@ -8,7 +8,7 @@ local addonRef
 
 -- Sends PING to every friend online in Forever. size pads the message (bytes) to force chunking.
 function Ping.send(size)
-  local message = { t = "PING", from = UnitName("player"), at = GetServerTime() }
+  local message = { t = "PING", from = ns.SelfInfo.read().name, at = GetServerTime() }
   if size and size > 0 then
     message.padding = string.rep("x", size)
   end
@@ -29,7 +29,7 @@ function Ping.start(addon)
     if message.t == "PING" then
       addonRef:Print(string.format("Ping from %s (%s), %d bytes padding.", tostring(message.from), battleTag,
         message.padding and #message.padding or 0))
-      ns.Messenger.send(senderID, { t = "PONG", from = UnitName("player"), at = message.at,
+      ns.Messenger.send(senderID, { t = "PONG", from = ns.SelfInfo.read().name, at = message.at,
                                     size = message.padding and #message.padding or 0 })
     elseif message.t == "PONG" then
       addonRef:Print(string.format("Pong from %s (%s) for %d bytes.", tostring(message.from), battleTag,
