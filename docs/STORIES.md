@@ -1,0 +1,108 @@
+# Backlog
+
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 13, 14, 15, 04, 02.
+Each story: criteria are testable. "Manual" items go into VERIFY.md.
+
+## E0 Foundation
+
+### CF-01 Scaffold and tooling
+- Repo layout as in ARCHITECTURE.md. TOC Interface 16001, SavedVariables `CommunitiesForeverDB`, loads all files in order via TOC and `embeds.xml`.
+- `.pkgmeta` with externals for all listed libraries; `Libs/` gitignored; `tools/` and `tests/` excluded from the package.
+- `busted` runs with `tests/mocks/wowapi.lua`; one sample spec passes.
+- `.luacheckrc` with WoW globals used by adapters/UI; `src/core` configured to allow no WoW globals.
+- GitHub Action runs busted and luacheck on push and PR.
+- MIT LICENSE.
+- Manual: addon loads in Forever without errors; `/cf version` prints the version.
+
+### CF-02 Release pipeline
+- Pushing a git tag `v*` runs the BigWigs packager and uploads to CurseForge (Forever flavor) using the `CF_API_TOKEN` secret. CurseForge project ID in the TOC (`## X-Curse-Project-ID`).
+- Untagged pushes produce no release.
+- Manual: install via the CurseForge app; publishing a new tag delivers an update.
+
+## E1 Own data
+
+### CF-03 Self snapshot
+- On login, current character stored in `self.chars[guid]` with all `Char` fields.
+- Updates on level up, profession skill change, and equipment change (ilvl, debounced 2 s).
+- `self.version` bumps only on a real change of a synced field (unit test: identical snapshot, no bump).
+- If `GetAverageItemLevel` is missing, `ilvl = nil`, no error.
+- `self.battleTag` from `BNGetInfo()` (2nd return).
+- Manual: level up / train a profession / change gear, then `/dump` the DB shows updates.
+
+### CF-04 Own display name
+- Settings field "Display name" stored in `self.displayName`; changing it bumps the version and triggers a debounced HELLO.
+
+## E2 Community
+
+### CF-05 Community selection
+- AceConfig dropdown lists subscribed non-guild communities (name plus type).
+- Selection stored in `settings.clubId`, survives reload.
+- If the stored club no longer exists: selection cleared, main window shows "Select a community in settings".
+
+### CF-06 Member tracking
+- Adapter exposes `members[guid] = { name, classID, level, zone, presence, raceID, faction }` for the selected club.
+- Calls `FocusMembers` on selection; refreshes on CLUB_MEMBERS_UPDATED, CLUB_MEMBER_ADDED, CLUB_MEMBER_REMOVED, CLUB_MEMBER_PRESENCE_UPDATED, CLUB_REMOVED (debounced 1 s; event names guarded).
+- Manual: invite or kick a character; main window updates within a few seconds.
+
+## E3 Presence and linking
+
+### CF-07 BNet presence tracking
+- Tracks friends' game accounts where `clientProgram == BNET_CLIENT_WOW` and `wowProjectID == WOW_PROJECT_ID`, including friends with multiple game accounts.
+- Maintains `gameAccountID -> battleTag` map (session only) and writes `presence[guid] = { battleTag, lastSeen }` when a friend is seen on a character.
+- Refresh on BN_FRIEND_INFO_CHANGED, BN_FRIEND_ACCOUNT_ONLINE, BN_FRIEND_ACCOUNT_OFFLINE, BN_CONNECTED (debounced).
+- Emits internal events: friend online in Forever, friend switched character, friend offline.
+
+### CF-08 Linker (pure)
+- Input: members, current friends (BattleTag set), people, presence, self, nicknames. Output view model `{ people = [ {bt, displayName, online, currentChar, chars=[...]} ], unlinked = [...] }`.
+- Unit tests:
+  - non-member characters are excluded
+  - characters of a non-friend go to Unlinked
+  - a presence link alone links a character
+  - addon-record characters link only if the sender is a current friend
+  - conflict: presence wins
+  - own characters link to self
+  - a character removed from the community disappears
+  - display name priority rule
+  - sorting: online first, then display name
+
+## E4 Sync
+
+### CF-09 Protocol (pure)
+- encode -> chunk -> reassemble -> decode round trip for payloads from 10 B to 50 KB.
+- Out-of-order chunks reassemble; duplicate chunks ignored; incomplete messages expire after 30 s (time injected).
+- Messages with unsupported `pv` rejected.
+
+### CF-10 Transport
+- Sends via `BNSendGameData` with throttle (configurable, default max 1 chunk per 0.2 s); queues during combat, flushes on PLAYER_REGEN_ENABLED.
+- Receives BN_CHAT_MSG_ADDON for prefix `CommForever`, resolves sender BattleTag via presence, passes reassembled messages to Sync.
+
+### CF-11 Sync flow
+- HELLO / REQ / RECORD as in ARCHITECTURE.md, with per-peer dedupe (60 s) and debounce (5 s).
+- Merge accept rules unit tested: wrong sender BattleTag rejected, older or equal version rejected, spoofed `bt` rejected, unknown `pv` rejected.
+- Outgoing RECORD contains only own characters that are current community members (unit test).
+- Manual (2 clients): friend levels up, your window shows the new level within ~10 s. Friend logs in on a community alt, it appears under them.
+
+## E5 UI
+
+### CF-12 Main window
+- `/cf` and the minimap button toggle a movable, resizable window; position and size saved.
+- People section: header per person (display name, BattleTag, online dot plus current character). Expandable to character rows: class-colored name, level, ilvl, professions (rank/max), realm, "Online" or last seen.
+- Unlinked section: community data only (name, class, level, zone if online).
+- Renders from the Linker view model only. Refreshes on change events, no polling.
+- Empty states: no community selected; no linked people yet.
+
+### CF-13 Nicknames
+- Right-click person header: "Set nickname" (input popup) and "Clear nickname". Local only, stored in `nicknames`.
+- Display uses the priority rule everywhere (window, tooltip, notifications).
+
+## E6 Tooltip and notifications
+
+### CF-14 Unit tooltip
+- Hovering a player unit whose GUID is linked adds: `<display name> (<BattleTag>) · N characters`.
+- Unlinked community member: `CommunitiesForever member`.
+- Implemented via TooltipDataProcessor behind an existence check (V6).
+
+### CF-15 Login notifications
+- When a linked person comes online in Forever or switches character: chat message `Sjaak is online on Garraka Doombringer (Mage 11)`.
+- Only for people linked in the selected community. Not for yourself. No repeat for the same person within 30 s.
+- Toggle in settings (default on).

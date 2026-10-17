@@ -1,0 +1,19 @@
+# In-game verification
+
+Claude Code cannot run WoW. Every unverified API and every story's manual test lives here. Nico runs them and records results.
+
+## Open API questions
+| # | Question | How to test | Status |
+|---|---|---|---|
+| V1 | Does `GetAverageItemLevel()` exist in Forever and return equipped ilvl? | `/dump GetAverageItemLevel()` | open |
+| V2 | Real `BNSendGameData` payload limit | FriendProbe `/fp big N` with receiver logging | open (3500 chunk assumed safe) |
+| V3 | Is addon BNet messaging restricted in instances or combat? | ping during combat / in dungeon | open |
+| V4 | Do Ace3, LibDBIcon load cleanly under TOC 16001? | load addon, check errors | open |
+| V5 | `ScrollBox` / `ScrollUtil` / `CreateScrollBoxListLinearView` available? | `/dump ScrollUtil ~= nil` | open |
+| V6 | `TooltipDataProcessor.AddTooltipPostCall` + `Enum.TooltipDataType.Unit` available? | `/dump TooltipDataProcessor ~= nil` | open |
+| V7 | Is First Aid a profession in Forever, and in which `GetProfessions()` slot? | char with First Aid, `/fp info` | open |
+| V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
+| V9 | Character names with last names: any API returning them differently (e.g. hyphenated)? | watch during development | open |
+
+## Manual test steps per story
+(Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)

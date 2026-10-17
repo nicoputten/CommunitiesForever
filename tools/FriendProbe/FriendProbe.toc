@@ -1,0 +1,6 @@
+## Interface: 16001
+## Title: FriendProbe
+## Notes: API probe for the friend roster addon (Forever beta)
+## SavedVariables: FriendProbeDB
+
+FriendProbe.lua

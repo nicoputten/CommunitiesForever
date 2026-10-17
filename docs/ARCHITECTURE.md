@@ -1,0 +1,105 @@
+# Architecture
+
+## Core rules
+1. A character is **visible** only if its GUID is a member of the selected community.
+2. A visible character is **linked** to a person (BattleTag) only if that BattleTag is a current Battle.net friend AND either:
+   - BNet presence showed that friend logged in on that character, or
+   - that friend's addon sent a record containing the character directly.
+3. Visible but not linked: shown in the **Unlinked** section with community data only.
+4. No relay in V1. Records are accepted only from their owner over BNet, and only for the sender's own BattleTag.
+5. Only the owner changes their record. Version = `max(prev + 1, GetServerTime())`. Higher version wins.
+
+Consequences:
+- Transport is BNet only (`BNSendGameData`). Addon whispers are not used in V1.
+- Every alt must be invited to the community to be visible. Membership is per character, not per account (verified).
+- Nothing depends on `clubId` being identical across clients (unverified). Filtering is by GUID membership.
+
+## Layering
+```
+CommunitiesForever/
+  CommunitiesForever.toc     ## Interface: 16001
+  .pkgmeta  embeds.xml  .luacheckrc  .busted  LICENSE (MIT)
+  Libs/                      packager externals, gitignored
+  src/
+    Core.lua                 AceAddon init, wiring, internal event bus
+    core/                    PURE Lua, unit tested
+      Store.lua              schema, defaults, migrations
+      Merge.lua              record accept rules, version rules
+      Linker.lua             visibility + linking -> view model
+      Protocol.lua           encode/decode, chunk/reassemble
+      Snapshot.lua           build and compare character snapshots
+    adapters/                WoW API wrappers only
+      SelfInfo.lua           Unit*, GetProfessions, item level
+      Community.lua          C_Club
+      Presence.lua           C_BattleNet, BN events
+      Transport.lua          BNSendGameData, throttle, combat queue
+    services/
+      Sync.lua               HELLO / REQ / RECORD flow
+      Notify.lua             login notifications
+    ui/
+      MainFrame.lua          custom frame + ScrollBox
+      Settings.lua           AceConfig options
+      Tooltip.lua            unit tooltip line
+      Minimap.lua            LibDBIcon button
+  tests/
+    mocks/wowapi.lua
+    spec/*_spec.lua
+  tools/FriendProbe/         diagnostic addon (not packaged)
+  .github/workflows/         test.yml, release.yml
+```
+
+Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
+
+## Libraries
+Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
+
+UI choice: AceConfig for settings (also registered in the Blizzard settings panel). Custom frame with ScrollBox for the main window (native look).
+
+## Data model
+SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
+```lua
+global = {
+  schemaVersion = 1,
+  settings  = { clubId = nil, notifications = true, minimap = {}, window = {} },
+  self      = { battleTag, displayName, version, chars = { [guid] = Char } },
+  people    = { [battleTag] = { displayName, version, receivedAt,
+                                chars = { [guid] = Char } } },
+  presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
+  nicknames = { [battleTag] = "Sjaak" },             -- local only, never synced
+}
+
+Char = {
+  guid, name, classFile, raceID, level, faction, realm,
+  ilvl,                                              -- nil if API unavailable
+  professions = { [skillLineID] = { name, rank, max } },
+  updatedAt,
+}
+```
+- Zone and online state are NOT synced. They are live data from presence and C_Club.
+- Bump `self.version` only when a synced field actually changes (Snapshot compare).
+- Display name priority: local nickname > owner's displayName > BattleTag name part (before `#`).
+- Sender includes only own characters that are current community members. Receiver filters again, authoritatively.
+- Link conflict (two BattleTags claim one GUID): presence wins.
+- Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
+
+## Sync protocol
+- Prefix `CommForever`. Payload: LibSerialize -> LibDeflate compress -> `EncodeForWoWAddonChannel`.
+- Chunking: max 3500 bytes per message including a `msgId/seq/total` header. The real BNet limit is unverified; 3500 is safely below it.
+- Every message carries `pv` (protocol version, starts at 1).
+
+Messages:
+- `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). Max once per peer per 60 s.
+- `REQ {bt}`: sent when a peer's advertised `ver` is higher than stored.
+- `RECORD {bt, displayName, version, chars}`: own record, filtered to community members.
+
+Accept rule (Merge.lua):
+- sender `gameAccountID` resolves to BattleTag B via presence
+- `record.bt == B`
+- `record.version > stored version`
+- `pv` supported
+Otherwise drop silently (debug log only).
+
+Other:
+- Queue outgoing while `InCombatLockdown()`, flush on `PLAYER_REGEN_ENABLED`.
+- Unknown higher `pv`: ignore, show "a friend has a newer CommunitiesForever version" once per session.
+- Incomplete chunked messages expire after 30 s.
