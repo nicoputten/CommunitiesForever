@@ -14,12 +14,4 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-08 Linker
-CF-08 is pure logic, fully unit tested. `/cf people` shows its result in game: each person with their community characters and how each character was linked (`via self`, `via presence`, `via record`), then the Unlinked characters.
-Records from friends (`via record`) only arrive with sync (CF-11), so for now you will see `self` and `presence` links only.
-
-| Step | Expected | Status |
-|---|---|---|
-| Your community is selected and a friend (e.g. Sjaakovich) is in it and online. `/cf people` | You `[you]` with your community characters (`via self`); the friend with the character they are on (`via presence`), `online on <character>`. | open |
-| A community member who is not your Battle.net friend, or a friend's character they have never logged in on while you were online. `/cf people` | That character is listed under `Unlinked:`. | open |
-| Friend logs out. Wait ~3 s, `/cf people` | Friend is still listed (presence link is stored) but `offline`, sorted after online people. | open |
+None open. CF-01, CF-03, CF-05, CF-06, CF-07 and CF-08 passed.
