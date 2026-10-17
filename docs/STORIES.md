@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 13, 14, 15, 16, 18, 19, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 13, 14, 15, 16, 18, 19, 04, 02.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -172,3 +172,14 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unit tests: relayed record stored with `via`; direct replaces relayed even at a lower version; relayed never replaces direct at an equal or lower version; far-future version rejected; own BattleTag rejected; record without a community member rejected; HELLO `known` lists only community people; REQ for a stored person answered with the stored record; a non-friend owner is linked through a relayed record.
 - Manual (3 clients, or 2 plus timing): A and B online, B logs off; C logs on while A is online: within ~10 s C sees B's characters under B with `via <A's name>`; later B and C online together: the label disappears (direct record).
 - Depends on CF-11. Build order: right after CF-17.
+
+### CF-21 Join the community with a shared invite code
+- Goal: on a character that is not in the selected community, the addon offers a "Join <community>" button, so alts can join without asking someone online to invite them.
+- First (blocking): verify on Forever that an addon may look up and redeem invite codes (V25 existence, V26 real call with FriendProbe `/fp ticket` and `/fp redeem`). If `C_Club.RedeemTicket` is missing or blocked for addons, this story stops and we revisit option B (direct invites by someone with invite rights).
+- Setting (only for the owner, leaders and moderators of the selected community, role from `C_Club.GetMemberInfoForSelf`, guarded): "Community invite link". Accepts a full invite link or just the code; stored as the code plus `setAt`.
+- Sync: the code travels in the setter's record as `invite = { clubId, code, setAt }` (pv stays 1; old clients ignore it). Receivers keep the newest by `setAt` across all records (relayed records included, CF-20).
+- Join button: in the "not a member" message (CF-17) when an invite code for the selected community is known. Before showing it, `C_Club.RequestTicket` checks the code; an expired or used-up code shows "The invite link has expired. Ask <setter> for a new one." instead. Clicking calls `C_Club.RedeemTicket(code)` (a real click, in case the call requires one); on `CLUB_ADDED` the window switches to the community.
+- Invite links expire or have a use limit, so the setter may need to paste a new one now and then; the setting shows when it was set.
+- Unit tests: link and code parsing; newest invite wins; invite only for the selected community; button only on a non-member character with a valid code; expired code shows the message.
+- Manual: owner pastes a link; on an alt outside the community (after a sync) the Join button appears; click it: the alt joins and the window shows the community.
+- Depends on CF-17 (not-a-member message) and CF-11 (sync); best after CF-20 (relay).
