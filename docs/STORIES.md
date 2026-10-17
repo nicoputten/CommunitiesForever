@@ -78,6 +78,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 ### CF-10 Transport
 - Sends via `BNSendGameData` with throttle (configurable, default max 1 chunk per 0.2 s); queues during combat, flushes on PLAYER_REGEN_ENABLED.
 - Receives BN_CHAT_MSG_ADDON for prefix `CommForever`, resolves sender BattleTag via presence, passes reassembled messages to Sync.
+- Decided in CF-10: queue and rate limit in pure `core/Outbox`, wiring in `services/Messenger` (the adapter stays thin); interval in `settings.sendInterval`; `/cf ping [bytes]` and `/cf ping stats` for in-game testing before sync.
 
 ### CF-11 Sync flow
 - HELLO / REQ / RECORD as in ARCHITECTURE.md, with per-peer dedupe (60 s) and debounce (5 s).
