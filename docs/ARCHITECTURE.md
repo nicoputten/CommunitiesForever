@@ -89,6 +89,7 @@ Char = {
   guid, name, classFile, raceID, level, faction, realm,
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max } },
+  talents, mainTree, role, roleOverride,           -- CF-18 (future): talent split per tree, heal/dps/tank
   updatedAt,
 }
 ```
