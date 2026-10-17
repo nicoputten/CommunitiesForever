@@ -31,7 +31,7 @@ stds.wow = {
     "BNGetInfo", "BNGetNumFriends", "BNSendGameData", "BNET_CLIENT_WOW",
     -- UI
     "CreateFrame", "UIParent", "GameTooltip", "TooltipDataProcessor", "C_CreatureInfo",
-    "GameFontNormal", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
+    "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",
     "ScrollUtil", "CreateScrollBoxListLinearView", "RAID_CLASS_COLORS",
     -- constants

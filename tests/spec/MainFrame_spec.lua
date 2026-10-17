@@ -77,13 +77,15 @@ describe("MainFrame", function()
     ns.MainFrame.toggle()
     local nodes = tree().tree
     assert.are.equal(SJAAK, nodes[1].value)
-    assert.are.equal("Sjaakovich", nodes[1].text)
+    assert.are.equal("Sjaakovich  |cffa0a0a01|r", nodes[1].text) -- with character count
     assert.are.equal("Interface\\COMMON\\Indicator-Green", nodes[1].icon)
     assert.are.equal(GARRAKA, nodes[1].children[1].value)
     assert.matches("|cff40c7ebGarraka Doombringer|r", nodes[1].children[1].text, 1, true)
-    assert.matches("^|TInterface\\COMMON\\Indicator%-Green:12:12|t ", nodes[1].children[1].text) -- playing it
-    assert.are.equal("Vestras (you)", nodes[2].text)
-    assert.are.equal("2 people, 0 unlinked", frame().statusText)
+    assert.matches("^|TInterface\\COMMON\\Indicator%-Green:14:14|t ", nodes[1].children[1].text) -- playing it
+    assert.are.equal("Vestras (you)  |cffa0a0a01|r", nodes[2].text)
+    assert.matches("|cffa0a0a011  (you)|r", nodes[2].children[1].text, 1, true) -- the character you are on
+    assert.is_nil(nodes[1].children[1].text:find("(you)", 1, true))
+    assert.is_true(frame().statusbg.hidden) -- no status bar
   end)
 
   it("shows character rows in the tree with the regular font size", function()
@@ -143,7 +145,7 @@ describe("MainFrame", function()
     assert.is_true(hasText("Paladin  -  Vestras  -  Online in Durotar"))
     assert.is_true(hasText("|cffa0a0a0Level|r"))
     assert.is_true(hasText("|cffa0a0a0Item level|r"))
-    assert.is_true(hasText("|cffa0a0a0Last seen|r"))
+    assert.is_true(hasText("|cffa0a0a0Last played|r")) -- own character
     assert.is_true(hasText("Talents"))
     assert.is_true(hasText("Not available yet."))
     assert.is_true(hasText("Mining  |cffa0a0a064 / 150|r"))

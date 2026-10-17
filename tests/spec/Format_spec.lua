@@ -23,8 +23,10 @@ describe("Format", function()
   end
 
   local function me()
-    return person({ battleTag = "Vestras#2858", displayName = "Vestras", isSelf = true,
-                    chars = { charRow({ guid = "G-ME", name = "Ves" }) } })
+    local p = person({ battleTag = "Vestras#2858", displayName = "Vestras", isSelf = true,
+                       chars = { charRow({ guid = "G-ME", name = "Ves" }) } })
+    p.currentChar = p.chars[1]
+    return p
   end
 
   local unlinked = { { guid = "U1", name = "Stranger", classID = 8, level = 9, online = false } }
@@ -78,7 +80,9 @@ describe("Format", function()
       assert.are.equal(3, #nodes)
       assert.are.same({ "Sjaakovich#2232", "Sjaak", true, false },
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
-      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true },
+      assert.are.equal(2, nodes[1].count)
+      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
+                        playing = false },
         nodes[1].children[1])
       assert.are.equal("Vestras (you)", nodes[2].text)
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
@@ -113,7 +117,8 @@ describe("Format", function()
       assert.are.equal("Sjaak", d.title)
       assert.are.equal("Sjaakovich#2232", d.battleTag)
       assert.are.equal("Online on Garraka", d.status)
-      assert.are.same({ guid = "G2", name = "Grom", classFile = "WARRIOR", classID = 8, level = 11, seen = "2 h ago" },
+      assert.are.same({ guid = "G2", name = "Grom", classFile = "WARRIOR", classID = 8, level = 11, seen = "2 h ago",
+                        own = false },
         d.characters[2])
     end)
 
@@ -137,7 +142,7 @@ describe("Format", function()
 
     it("shows missing item level and offline characters", function()
       local d = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
-      assert.are.equal("Offline - last seen 2 h ago", d.status)
+      assert.are.equal("Offline", d.status) -- the time is in the Last seen box, not repeated here
       assert.are.equal("-", d.stats[2].value)
       assert.are.equal("2 h ago", d.stats[3].value)
       assert.are.same({}, d.professions)
@@ -157,8 +162,22 @@ describe("Format", function()
       view.people[1] = p
       assert.are.equal("Offline - last seen in The Barrens on Garraka, 10 min ago",
         Format.detail(view, "Sjaakovich#2232", NOW).status)
-      assert.are.equal("Offline - last seen in The Barrens, 10 min ago",
+      assert.are.equal("Offline - last seen in The Barrens",
         Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).status)
+    end)
+
+    it("marks the character you are playing and says \"played\" for your own characters", function()
+      local mine = me()
+      mine.chars[2] = charRow({ guid = "G-ALT", name = "Alt", online = false, lastZone = "Durotar",
+                                lastPlayed = NOW - 60 })
+      view.people[2] = mine
+      local node = Format.tree(view)[2]
+      assert.is_true(node.children[1].playing)
+      assert.is_false(node.children[2].playing)
+      local d = Format.detail(view, Format.path("Vestras#2858", "G-ALT"), NOW)
+      assert.are.equal("Offline - last played in Durotar", d.status)
+      assert.are.same({ label = "Last played", value = "1 min ago" }, d.stats[3])
+      assert.is_true(Format.detail(view, "Vestras#2858", NOW).characters[2].own)
     end)
 
     it("says just Offline when nothing is known", function()

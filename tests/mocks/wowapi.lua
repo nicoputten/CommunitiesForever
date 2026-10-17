@@ -149,6 +149,10 @@ local function fakeLibs(state)
                               "Color", "Width", "Height", "RelativeWidth" }) do
       w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
     end
+    if widgetType == "Frame" then
+      w.statusbg = { Hide = function(bg) bg.hidden = true end }
+      w.statustext = { GetParent = function() return w.statusbg end }
+    end
     state.guiWidgets[#state.guiWidgets + 1] = w
     return w
   end
@@ -280,6 +284,7 @@ function wowapi.install(opts)
     },
     GameFontNormal = { name = "GameFontNormal" },
     GameFontNormalHuge = { name = "GameFontNormalHuge" },
+    GameFontNormalLarge = { name = "GameFontNormalLarge" },
     GameFontHighlight = { name = "GameFontHighlight" },
     GameFontHighlightLarge = { name = "GameFontHighlightLarge" },
     GameFontHighlightSmall = { name = "GameFontHighlightSmall" },

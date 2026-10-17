@@ -15,10 +15,13 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-12 Main window (round 4)
-Round 3 passed except the Talents position. Screenshot feedback fixed:
-
+### CF-12 Main window (round 4: screenshot review)
 | Step | Expected | Status |
 |---|---|---|
 | Character card of a character with many professions, then one with few | "Talents" starts at the same height as "Professions" in both cases. | open |
-| Tree | Character names in the tree are the same text size as the right-hand lists (larger than before); group rows unchanged. Still true after collapsing/expanding and scrolling. | open |
+| Tree | Character names are the regular text size (not small), also after collapsing/expanding and scrolling. Each person shows their character count in grey (`Sjaakovich  3`). Green dots are slightly bigger (14 px). The character you are on has a grey `(you)` after its level. | open |
+| Bottom of the window | No status bar text any more; the Close button is still there. | open |
+| Character card, offline friend character | Subtitle `Offline - last seen in <zone>` (or `Offline`), without a time; the time is only in the "Last seen" value. | open |
+| Character card, one of your own other characters | Subtitle `Offline - last played in <zone>`, value caption "Last played". In your person card the list says `Played N min ago`. | open |
+| Section titles | "Characters", "Professions", "Talents" are left-aligned gold text without lines. | open |
+| Profession bars | Bars fill most of the Professions column instead of a short fixed width. Resize the window and reselect the character: bars follow the new width. | open |

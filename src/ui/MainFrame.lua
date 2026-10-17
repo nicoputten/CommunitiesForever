@@ -10,9 +10,10 @@ local TREE_WIDTH = 210
 local ONLINE_ICON = "Interface\\COMMON\\Indicator-Green"
 local OFFLINE_ICON = "Interface\\COMMON\\Indicator-Gray"
 local BAR_TEXTURE = "Interface\\Buttons\\WHITE8X8"
-local BAR_WIDTH = 180
+local MIN_BAR_WIDTH = 120
+local DOT_SIZE = 14
 local GREY = "|cffa0a0a0"
-local ONLINE_DOT = "|T" .. ONLINE_ICON .. ":12:12|t "
+local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZE)
 
 local addonRef, events, frame, tree, refreshDebounced
 local view -- last view model, used by the selection callback
@@ -44,15 +45,15 @@ local function colorName(name, classFile, classID)
   return string.format("|cff%02x%02x%02x%s|r", hex(color.r), hex(color.g), hex(color.b), tostring(name))
 end
 
--- Progress bar from two inline textures (filled green, rest dark grey).
-local function bar(fraction)
-  local filled = math.floor(BAR_WIDTH * fraction + 0.5)
+-- Progress bar from two inline textures (filled green, rest dark grey), width in pixels.
+local function bar(fraction, width)
+  local filled = math.floor(width * fraction + 0.5)
   local parts = {}
   if filled > 0 then
     parts[#parts + 1] = string.format("|T%s:8:%d:0:0:8:8:0:8:0:8:99:153:34|t", BAR_TEXTURE, filled)
   end
-  if filled < BAR_WIDTH then
-    parts[#parts + 1] = string.format("|T%s:8:%d:0:0:8:8:0:8:0:8:60:60:60|t", BAR_TEXTURE, BAR_WIDTH - filled)
+  if filled < width then
+    parts[#parts + 1] = string.format("|T%s:8:%d:0:0:8:8:0:8:0:8:60:60:60|t", BAR_TEXTURE, width - filled)
   end
   return table.concat(parts)
 end
@@ -70,11 +71,9 @@ local function spacer(parent)
   label(parent, " ")
 end
 
+-- Section title: left-aligned gold text, no divider lines.
 local function heading(parent, text)
-  local widget = createWidget("Heading")
-  widget:SetText(text)
-  widget:SetFullWidth(true)
-  parent:AddChild(widget)
+  label(parent, text, GameFontNormalLarge)
 end
 
 -- Borderless row of columns (SimpleGroup has no frame, unlike InlineGroup).
@@ -101,7 +100,7 @@ end
 local function characterList(parent, groupValue, characters)
   for _, c in ipairs(characters) do
     local text = string.format("%s  %sLvl %s  -  %s|r", colorName(c.name, c.classFile, c.classID), GREY,
-      tostring(c.level or "?"), c.seen == "Now" and "Online" or ("Seen " .. c.seen))
+      tostring(c.level or "?"), c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen))
     local entry = label(parent, text, GameFontHighlight, "InteractiveLabel")
     entry:SetCallback("OnClick", function()
       tree:SelectByPath(groupValue, c.guid)
@@ -126,7 +125,8 @@ function renderDetail.person(parent, detail, groupValue)
     status = "Online on " .. colorName(detail.current.name, detail.current.classFile, detail.current.classID) ..
       (detail.current.visible == false and (GREY .. " (not in community)|r") or "")
   end
-  label(parent, string.format("|T%s:12:12|t %s", detail.online and ONLINE_ICON or OFFLINE_ICON, status),
+  label(parent, string.format("|T%s:%d:%d|t %s", detail.online and ONLINE_ICON or OFFLINE_ICON, DOT_SIZE, DOT_SIZE,
+    status),
     GameFontHighlightLarge)
   spacer(parent)
 
@@ -167,9 +167,12 @@ function renderDetail.character(parent, detail)
   if #detail.professions == 0 then
     label(professions, GREY .. "No professions known.|r", GameFontHighlight)
   end
+  -- Bars fill the column: half the detail pane minus padding (measured at render time).
+  local paneWidth = tree.content and tree.content:GetWidth() or 0
+  local barWidth = math.max(MIN_BAR_WIDTH, math.floor(paneWidth / 2) - 40)
   for _, p in ipairs(detail.professions) do
     label(professions, string.format("%s  %s%s / %s|r\n%s", tostring(p.name), GREY, tostring(p.rank),
-      tostring(p.max), bar(p.fraction)), GameFontHighlight)
+      tostring(p.max), bar(p.fraction, barWidth)), GameFontHighlight)
   end
   local talents = column(sections, 0.5)
   heading(talents, "Talents")
@@ -218,13 +221,13 @@ local function aceTree(nodes)
       children[#children + 1] = {
         value = c.value,
         -- Green dot on the character a person is playing; spaces keep the names aligned.
-        text = string.format("%s%s  %s%s|r", c.online and ONLINE_DOT or "     ",
-          colorName(c.name, c.classFile, c.classID), GREY, tostring(c.level or "?")),
+        text = string.format("%s%s  %s%s%s|r", c.online and ONLINE_DOT or "      ",
+          colorName(c.name, c.classFile, c.classID), GREY, tostring(c.level or "?"), c.playing and "  (you)" or ""),
       }
     end
     result[#result + 1] = {
       value = node.value,
-      text = node.text,
+      text = string.format("%s  %s%d|r", node.text, GREY, node.count or #node.children), -- character count
       icon = not node.unlinked and (node.online and ONLINE_ICON or OFFLINE_ICON) or nil,
       children = children,
     }
@@ -235,7 +238,6 @@ end
 function MainFrame.render()
   if not frame then return end
   view = ns.ViewModel.build(addonRef)
-  frame:SetStatusText(string.format("%d people, %d unlinked", #view.people, #view.unlinked))
 
   local empty = ns.Format.emptyState(view, ns.CommunitySelection.selected() ~= nil)
   if empty then
@@ -266,6 +268,10 @@ local function create()
   frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
   frame:SetLayout("Fill")
   frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
+  -- No status bar: hide its background and text (the Close button is separate and stays).
+  if frame.statustext and frame.statustext:GetParent() then
+    frame.statustext:GetParent():Hide()
+  end
 
   tree = createWidget("TreeGroup")
   -- TreeGroup uses GameFontHighlightSmall for child rows; use the regular size for characters.

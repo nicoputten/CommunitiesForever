@@ -82,7 +82,8 @@ local function personTitle(person)
 end
 
 --[[ Tree for AceGUI TreeGroup. Each node:
-  { value, text, online, isSelf, children = { { value = guid, name, classFile, classID, level, online } } }
+  { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online,
+                                                       playing } } }   -- playing: the character you are on
 People first (Linker order), then an "Unlinked" group when there are unlinked characters.
 The UI turns name/classFile into colored text.
 ]]
@@ -90,12 +91,13 @@ function Format.tree(view)
   local nodes = {}
   for _, person in ipairs(view.people) do
     local children = {}
+    local playingGuid = person.isSelf and person.currentChar and person.currentChar.guid
     for _, c in ipairs(person.chars) do
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
-                                  level = c.level, online = c.online }
+                                  level = c.level, online = c.online, playing = c.guid == playingGuid }
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
-                          isSelf = person.isSelf, children = children }
+                          isSelf = person.isSelf, count = #children, children = children }
   end
   if #view.unlinked > 0 then
     local children = {}
@@ -114,12 +116,15 @@ local function findPerson(view, value)
   end
 end
 
-local function characterDetail(row, owner, now)
+-- own: one of your characters ("played" instead of "seen"). The time is in the stats, not the status.
+local function characterDetail(row, owner, now, own)
   local where
   if row.online then
     where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
+  elseif row.lastZone then
+    where = string.format("Offline - last %s in %s", own and "played" or "seen", row.lastZone)
   else
-    where = offlineStatus(row, now, false)
+    where = "Offline"
   end
   return {
     kind = "character",
@@ -133,7 +138,7 @@ local function characterDetail(row, owner, now)
     stats = {
       { label = "Level", value = tostring(row.level or "?") },
       { label = "Item level", value = row.ilvl and tostring(row.ilvl) or "-" },
-      { label = "Last seen", value = Format.seen(row, now) },
+      { label = own and "Last played" or "Last seen", value = Format.seen(row, now) },
     },
     professions = Format.professionList(row.professions),
   }
@@ -164,7 +169,7 @@ function Format.detail(view, path, now)
   if guid then
     for _, row in ipairs(rows) do
       if row.guid == guid then
-        return characterDetail(row, person and person.displayName or "Unlinked", now)
+        return characterDetail(row, person and person.displayName or "Unlinked", now, person and person.isSelf)
       end
     end
     return Format.detail(view, nil, now)
@@ -173,7 +178,8 @@ function Format.detail(view, path, now)
   local characters = {}
   for _, row in ipairs(rows) do
     characters[#characters + 1] = { guid = row.guid, name = row.name, classFile = row.classFile,
-                                    classID = row.classID, level = row.level, seen = Format.seen(row, now) }
+                                    classID = row.classID, level = row.level, seen = Format.seen(row, now),
+                                    own = person and person.isSelf or false }
   end
   if not person then
     return { kind = "unlinked", characters = characters }
