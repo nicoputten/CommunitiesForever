@@ -107,11 +107,11 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Only for people linked in the selected community. Not for yourself. No repeat for the same person within 30 s.
 - Toggle in settings (default on).
 
-### CF-16 Level-up announcements (DRAFT, idea from CF-03 testing)
+### CF-16 Level-up announcements
 - When a linked person's character in the selected community levels up, show a chat line: `Sjaak's Garraka Doombringer reached level 12`.
 - Detected on the receiving side: an accepted RECORD whose character `level` is higher than the stored one. No new message type and no protocol change.
 - Only for characters visible and linked per the core rules. Not for yourself. No message for characters seen for the first time.
 - Toggle in settings "Announce friends' level-ups" (default on), separate from login notifications.
 - Unit tests: level increase announces; same or lower level, new character, own record, unlinked character do not.
 - Manual (2 clients): friend levels up; within ~10 s the line appears in your chat.
-- Open: reaches only people who are your Battle.net friends and run the addon (V1 has no relay). Placement in the build order: after CF-15.
+- Scope (accepted): only reaches people who are your Battle.net friends and run the addon (V1 has no relay).

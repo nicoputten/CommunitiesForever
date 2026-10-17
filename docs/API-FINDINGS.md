@@ -47,10 +47,12 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | Ace3 (AceAddon, AceDB, AceEvent, AceConsole, AceGUI, AceConfig), LibDBIcon, LibDataBroker, LibSerialize, LibDeflate | Load under TOC 16001 without Lua errors (V4) |
 | `C_AddOns.GetAddOnMetadata(addon, "Version")` | Exists, returns the TOC `## Version` (V10) |
 | `GetAverageItemLevel()` | Exists, returns 3 numbers, all `1.5625` on the test character (V1). Assumed retail order: overall, equipped, PvP. |
-| `ScrollUtil` | Exists (V5). `CreateScrollBoxListLinearView` not checked separately. |
-| `TooltipDataProcessor` | Exists (V6). `AddTooltipPostCall` and `Enum.TooltipDataType.Unit` not checked separately. |
+| `ScrollUtil`, `CreateScrollBoxListLinearView` | Exist (V5) |
+| `TooltipDataProcessor`, `TooltipDataProcessor.AddTooltipPostCall`, `Enum.TooltipDataType.Unit` | Exist (V6) |
+| `C_EventUtils.IsEventValid` | Exists, `IsEventValid("PLAYER_LEVEL_UP")` is true (V13) |
+| `C_Timer.NewTimer` | Exists (V14) |
 | `UnitRace`, `UnitLevel`, `UnitFactionGroup` | Work; snapshot stores raceID (3rd return of `UnitRace`), level and faction (V11, CF-03) |
-| First Aid | Is a profession. With First Aid, Fishing and Cooking: `GetProfessions()` slot 3 = First Aid, 4 = Fishing, 5 = Cooking (V7). skillLine ID still open. |
+| First Aid | Is a profession. With First Aid, Fishing and Cooking: `GetProfessions()` slot 3 = First Aid, 4 = Fishing, 5 = Cooking. First Aid skillLine = 129 (V7) |
 | `SKILL_LINES_CHANGED` | Fires on a profession skill-up (V12, CF-03) |
 | `PLAYER_LEVEL_UP` | Fires; the new level is stored right after the ding (V12, CF-03) |
 | `PLAYER_EQUIPMENT_CHANGED` | Fires on gear swaps (V12, CF-03) |
