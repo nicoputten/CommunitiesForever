@@ -84,7 +84,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - HELLO / REQ / RECORD as in ARCHITECTURE.md, with per-peer dedupe (60 s) and debounce (5 s).
 - Merge accept rules unit tested: wrong sender BattleTag rejected, older or equal version rejected, spoofed `bt` rejected, unknown `pv` rejected.
 - Outgoing RECORD contains only own characters that are current community members (unit test).
-- Decided in CF-11: same-version HELLO deduped per peer for 60 s, newer versions always sent; version bumps when the shared set of own community characters changes; REQ answered after member data has loaded; `/cf sync` forces a HELLO; window refreshes on `CF_PEOPLE_UPDATED`.
+- Decided in CF-11: same-version HELLO deduped per peer for 60 s, newer versions always sent; version bumps when the shared set of own community characters changes; REQ answered after member data has loaded; `/cf sync` forces a HELLO; window refreshes on `CF_PEOPLE_UPDATED`. Superseded in CF-17: the shared-set version bump and the wait for member data were removed, because all own characters are always shared.
 - Manual (2 clients): friend levels up, your window shows the new level within ~10 s. Friend logs in on a community alt, it appears under them.
 
 ## E5 UI
@@ -123,14 +123,14 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Scope (accepted): only reaches people who are your Battle.net friends and run the addon (V1 has no relay).
 
 ### CF-17 Alts outside the community
-- Setting "Share alts outside the community" (default on), stored in `settings`. On: the outgoing RECORD contains all own characters. Off: only current community members (CF-11 behavior). Changing it bumps the version and triggers a debounced HELLO.
+- All own characters are always shared (decided in CF-17 testing: the "Share alts outside the community" setting was removed). The outgoing RECORD contains every own character; the receiver decides what to show.
 - Receiver (Linker): a character from a record that is not a member of the selected community is shown only as a non-member alt, under its owner, if the owner is a current friend with at least one visible, linked member character. Otherwise it is ignored. It never appears in Unlinked.
 - Membership is always decided by the receiver's own community data, never by the sender.
-- UI: non-member alts are listed after the person's community characters, dimmed and tagged "not in community".
-- Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Sender filter respects the setting both ways.
-- Manual (2 clients): the friend has an alt that is not invited; with the setting on it shows dimmed under them; after they turn the setting off it disappears.
-- Privacy note: default on means alts are shared with Battle.net friends who run the addon and are in the community, unless the owner turns it off.
-- Decided in CF-17: your own alts outside the community are shown dimmed under you too (your record is `self.chars`); setting stored as `settings.shareAlts`; a friend online on an outside alt has that row as current character.
+- UI: non-member alts are listed after the person's community characters, class-colored, with "not in community" on the cards.
+- Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Outgoing RECORD contains all own characters.
+- Manual (2 clients): the friend has an alt that is not invited; it shows under them with its class color and a "not in community" label on the cards.
+- Privacy note: alts are always shared with Battle.net friends who run the addon; they are only shown when the owner has a character in the community.
+- Decided in CF-17: your own alts outside the community are shown under you too (your record is `self.chars`); alts outside the community keep their class color (not dimmed), the cards say "Not in community"; a friend online on an outside alt has that row as current character.
 
 ### CF-18 Talents and role (future)
 - First: find the talent API on Forever (V20). Forever uses the Mainline API with Vanilla content, so it may be the classic-style `GetNumTalentTabs` / `GetTalentTabInfo` or the retail-style `C_ClassTalents` / `C_Traits`. Extend FriendProbe (`/fp talents`) to dump what exists before building.

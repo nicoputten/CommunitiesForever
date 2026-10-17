@@ -142,7 +142,7 @@ describe("MainFrame", function()
       if node.value == "Vestras#2858" then mine = node end
     end
     local last = mine.children[#mine.children]
-    assert.matches("|cff707070Old Alt|r", last.text, 1, true) -- dimmed, not class-colored
+    assert.matches("|cff40c7ebOld Alt|r", last.text, 1, true) -- class-colored like any character
 
     tree():SelectByPath("Vestras#2858", "Player-4619-0000OLD1")
     assert.is_true(hasText("Not in community"))

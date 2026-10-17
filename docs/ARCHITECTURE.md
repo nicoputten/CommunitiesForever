@@ -84,9 +84,8 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 global = {
   schemaVersion = 1,
   settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
-                sendInterval = 0.2,                  -- seconds between outgoing chunks
-                shareAlts = true },                  -- CF-17: send own alts outside the community
-  self      = { battleTag, displayName, version, chars = { [guid] = Char }, sharedSignature },
+                sendInterval = 0.2 },                -- seconds between outgoing chunks
+  self      = { battleTag, displayName, version, chars = { [guid] = Char } },
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char } } },
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
@@ -107,7 +106,7 @@ Char = {
 - Zone and online state are NOT synced. They are live data from presence and C_Club.
 - Bump `self.version` only when a synced field actually changes (Snapshot compare).
 - Display name priority: local nickname > owner's displayName > BattleTag name part (before `#`).
-- Sender includes only own characters that are current community members, plus all other own characters when the setting "Share alts outside the community" is on (CF-17, default on). Receiver filters again, authoritatively (core rule 1).
+- Sender always includes all own characters (decided in CF-17 testing; no setting). The receiver decides what to show (core rule 1), so the record does not depend on the sender's community member list and can be sent from any character.
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
 
@@ -119,8 +118,7 @@ Char = {
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one.
 - `REQ {bt}`: sent when a peer's advertised `ver` is higher than stored.
-- `RECORD {bt, displayName, version, chars}`: own record, filtered to community members (plus non-member alts when sharing is on, CF-17).
-- The own version also bumps when the set of own characters that are community members changes (`self.sharedSignature`), because that changes what friends receive. A REQ that arrives before community member data has loaded is answered once it has (decided in CF-11).
+- `RECORD {bt, displayName, version, chars}`: own record with all own characters.
 
 Accept rule (Merge.lua):
 - sender `gameAccountID` resolves to BattleTag B via presence

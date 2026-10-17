@@ -76,25 +76,17 @@ describe("Merge", function()
   end)
 
   describe("outgoing record", function()
-    local own = { battleTag = "Vestras#2858", displayName = "Nico", version = 7000,
-                  chars = { A = { name = "Ves" }, B = { name = "Alt in community" }, C = { name = "Alt outside" } } }
-    local members = { A = {}, B = {}, X = {} }
-
-    it("contains only own characters that are current community members", function()
+    it("contains all own characters (always shared, CF-17)", function()
+      local own = { battleTag = "Vestras#2858", displayName = "Nico", version = 7000,
+                    chars = { A = { name = "Ves" }, C = { name = "Alt outside" } } }
       assert.are.same({
         t = "RECORD", bt = "Vestras#2858", displayName = "Nico", version = 7000,
-        chars = { A = { name = "Ves" }, B = { name = "Alt in community" } },
-      }, Merge.outgoingRecord(own, members))
+        chars = { A = { name = "Ves" }, C = { name = "Alt outside" } },
+      }, Merge.outgoingRecord(own))
     end)
 
-    it("contains no characters without community members", function()
-      assert.are.same({}, Merge.outgoingRecord(own, {}).chars)
-    end)
-
-    it("describes the shared set with a stable signature", function()
-      assert.are.same({ "A", "B" }, Merge.sharedGuids(own, members))
-      assert.are.equal("A,B", Merge.sharedSignature(own, members))
-      assert.are.equal("A", Merge.sharedSignature(own, { A = {} }))
+    it("handles a record without characters", function()
+      assert.are.same({}, Merge.outgoingRecord({ battleTag = "X#1", version = 1 }).chars)
     end)
   end)
 end)

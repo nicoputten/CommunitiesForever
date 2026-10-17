@@ -1,7 +1,7 @@
 -- Sync: HELLO / REQ / RECORD flow between friends (ARCHITECTURE "Sync protocol").
 --   HELLO {bt, ver}  on login, when a friend starts Forever, after an own record change (5 s debounce)
 --   REQ   {bt}       when a friend advertises a newer version than we have
---   RECORD {...}     answer to REQ: own record, only characters in the community
+--   RECORD {...}     answer to REQ: own record with all own characters
 local _, ns = ...
 
 local Sync = {}
@@ -15,7 +15,7 @@ local HELLO_DEBOUNCE = 5
 local DEDUPE_SECONDS = 60
 
 local addonRef, helloDebounced
-local lastHello, lastReq, waitingForMembers, noticeShown
+local lastHello, lastReq, noticeShown
 
 local function global()
   return addonRef.db.global
@@ -23,11 +23,6 @@ end
 
 local function now()
   return GetServerTime()
-end
-
--- "Share alts outside the community" (CF-17, default on).
-local function shareAll()
-  return global().settings.shareAlts ~= false
 end
 
 -- Same message (kind + version) to the same game account at most once per 60 s.
@@ -50,36 +45,12 @@ local function broadcastHello(force)
   end
 end
 
--- Member data is loaded async; until then the shared set would be empty and wrong.
-local function membersReady()
-  return next(ns.MemberTracker.members()) ~= nil
-end
-
+-- All own characters are always shared (CF-17), so the record does not depend on the
+-- community member list and can be sent on any character.
 local function sendRecord(gameAccountID)
-  if not membersReady() then
-    waitingForMembers[gameAccountID] = true
-    return
-  end
   local own = global().self
   if not own.battleTag then return end
-  ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own, ns.MemberTracker.members(), shareAll()))
-end
-
--- The record friends get is filtered by community membership (and the share setting), so a change in which own
--- characters are members changes the record: bump the version so friends ask again.
-local function checkSharedSet()
-  if not membersReady() then return end
-  local own = global().self
-  local signature = ns.Merge.sharedSignature(own, ns.MemberTracker.members(), shareAll())
-  if own.sharedSignature ~= signature then
-    own.sharedSignature = signature
-    own.version = ns.Merge.nextVersion(own.version, now())
-    helloDebounced()
-  end
-  for gameAccountID in pairs(waitingForMembers) do
-    waitingForMembers[gameAccountID] = nil
-    sendRecord(gameAccountID)
-  end
+  ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own))
 end
 
 local handlers = {}
@@ -106,13 +77,12 @@ end
 
 function Sync.start(addon)
   addonRef = addon
-  lastHello, lastReq, waitingForMembers, noticeShown = {}, {}, {}, false
+  lastHello, lastReq, noticeShown = {}, {}, false
   helloDebounced = ns.Timer.debounce(HELLO_DEBOUNCE, function() broadcastHello(false) end)
 
   -- Own AceEvent object: other modules listen to some of these messages on the addon object.
   local events = LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.SelfTracker.UPDATED, function() helloDebounced() end)
-  events:RegisterMessage(ns.MemberTracker.UPDATED, function() checkSharedSet() end)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag)
     for gameAccountID, bt in pairs(ns.PresenceTracker.gameAccounts()) do
       if bt == battleTag then sendHello(gameAccountID, true) end
@@ -129,13 +99,11 @@ function Sync.start(addon)
     end
   end)
 
-  checkSharedSet()
   broadcastHello(false)
 end
 
 -- Settings changed what friends receive (share alts): bump the version and say HELLO.
 function Sync.settingsChanged()
-  checkSharedSet()
 end
 
 -- /cf sync: announce the own version to every friend in Forever now (no dedupe).
