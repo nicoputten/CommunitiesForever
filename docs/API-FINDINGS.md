@@ -56,6 +56,8 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `SKILL_LINES_CHANGED` | Fires on a profession skill-up (V12, CF-03) |
 | `PLAYER_LEVEL_UP` | Fires; the new level is stored right after the ding (V12, CF-03) |
 | `PLAYER_EQUIPMENT_CHANGED` | Fires on gear swaps (V12, CF-03) |
+| `INITIAL_CLUBS_LOADED`, `CLUB_ADDED`, `CLUB_REMOVED`, `CLUB_UPDATED` | Valid events per `C_EventUtils.IsEventValid` (V15); leaving a community fires the removal path (CF-05) |
+| `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16) |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
 ## Not available / not useful
