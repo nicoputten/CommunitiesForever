@@ -5,7 +5,7 @@
 --   /fp ping            BNSendGameData ping to same-project WoW friends (they auto-reply PONG)
 --   /fp big [bytes]     send a large BNet payload to find the size limit (default 4000)
 --   /fp whisper <name>  addon WHISPER ping to a character name (tests name format + mega-realm)
---   /fp communities [id] communities (C_Club): types, ids, all member fields (alias: /fp clubs)
+--   /fp clubs [clubId]  communities (C_Club): club types, clubIds, all member fields
 --   /fp clear           wipe the saved log
 
 local PREFIX = "FProbe"
@@ -110,14 +110,14 @@ if Enum and Enum.ClubType then
 end
 
 local function Clubs(filter)
-  log("== COMMUNITIES ==")
+  log("== CLUBS ==")
   if not (C_Club and C_Club.GetSubscribedClubs) then log("C_Club missing") return end
   local clubs = C_Club.GetSubscribedClubs() or {}
-  log("subscribed communities:", #clubs)
+  log("subscribed clubs:", #clubs)
   for _, club in ipairs(clubs) do
     if filter == "" or S(club.clubId) == filter then
-      log("-- community", club.name, "id", club.clubId, "type", CLUB_TYPES[club.clubType] or club.clubType)
-      DumpTable("communityinfo", club)
+      log("-- club", club.clubId, club.name, "type", CLUB_TYPES[club.clubType] or club.clubType)
+      DumpTable("clubinfo", club)
       -- Member data loads async; this asks the client to fetch it
       if C_Club.FocusMembers then pcall(C_Club.FocusMembers, club.clubId) end
       local ids = C_Club.GetClubMembers(club.clubId) or {}
@@ -132,16 +132,6 @@ end
 
 local clubUpdateSeen = {}
 
--- "Name (id)" from the subscribed list; the id alone if the name is unknown.
-local function CommunityName(clubId)
-  if C_Club and C_Club.GetSubscribedClubs then
-    for _, club in ipairs(C_Club.GetSubscribedClubs() or {}) do
-      if S(club.clubId) == clubId then return S(club.name) .. " (" .. clubId .. ")" end
-    end
-  end
-  return clubId
-end
-
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("BN_CHAT_MSG_ADDON")
@@ -151,8 +141,7 @@ f:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
     if ... == "FriendProbe" then
       FriendProbeDB = FriendProbeDB or {}
-      local result = C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
-      log("loaded; message prefix", PREFIX, result == 0 and "registered" or ("NOT registered, result " .. S(result)))
+      log("loaded; register prefix:", C_ChatInfo.RegisterAddonMessagePrefix(PREFIX))
     end
   elseif event == "BN_CHAT_MSG_ADDON" then
     local prefix, text, channel, senderID = ...
@@ -173,7 +162,7 @@ f:SetScript("OnEvent", function(_, event, ...)
     local clubId = S(...)
     if not clubUpdateSeen[clubId] then
       clubUpdateSeen[clubId] = true
-      log("member data arrived for community", CommunityName(clubId), "(run /fp communities again)")
+      log("member data arrived for club", clubId, "(run /fp clubs again)")
     end
   end
 end)
@@ -190,11 +179,11 @@ SlashCmdList.FRIENDPROBE = function(msg)
     SendBN("BIG" .. string.rep("x", size - 3))
   elseif cmd == "whisper" and arg ~= "" then
     log("whisper send result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPING", "WHISPER", arg))
-  elseif cmd == "communities" or cmd == "clubs" then Clubs(arg)
+  elseif cmd == "clubs" then Clubs(arg)
   elseif cmd == "clear" then
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | communities [id] | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | clear")
   end
 end
