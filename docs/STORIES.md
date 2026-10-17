@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 18, 04, 02.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -126,3 +126,17 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Sender filter respects the setting both ways.
 - Manual (2 clients): the friend has an alt that is not invited; with the setting on it shows dimmed under them; after they turn the setting off it disappears.
 - Privacy note: default on means alts are shared with Battle.net friends who run the addon and are in the community, unless the owner turns it off.
+
+### CF-18 Talents and role (future)
+- First: find the talent API on Forever (V20). Forever uses the Mainline API with Vanilla content, so it may be the classic-style `GetNumTalentTabs` / `GetTalentTabInfo` or the retail-style `C_ClassTalents` / `C_Traits`. Extend FriendProbe (`/fp talents`) to dump what exists before building.
+- Snapshot (CF-03) adds per character:
+  - `talents = { { name, points }, ... }` per talent tree, in the game's tree order
+  - `mainTree` = index of the tree with the most points; nil with no points spent; ties go to the lower index
+  - `role` = `"tank"`, `"heal"` or `"dps"`; nil below talent level / no points
+  - `roleOverride` = `"tank"`, `"heal"`, `"dps"` or nil (auto)
+  All are synced fields: a change bumps the version. Refresh on the talent-change event (V20).
+- Auto role (pure, unit tested): table `classFile + mainTree -> role`, e.g. Warrior Protection = tank, Priest Holy/Discipline = heal, Paladin Holy = heal, Paladin Protection = tank, Druid Restoration = heal, Shaman Restoration = heal; everything else dps. Druid Feral defaults to dps (override to tank).
+- Override: the owner sets the role per own character in settings ("Role: Auto / Tank / Healer / DPS" for each own character). Effective role = override, else auto. Friends see the effective role.
+- Display (CF-12 character rows): role (icon or short text) plus the talent split, e.g. `Heal · Holy 31 / Protection 5 / Retribution 15` with the main tree highlighted. Unknown: `-`.
+- Unit tests: auto role per class/tree; ties; no points -> nil; override wins over auto; clearing override returns to auto; talent change bumps version, identical talents do not.
+- Manual: spend a talent point, `/cf self` shows the new split and role; set an override, a friend sees it in their window.
