@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 13, 14, 15, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 04, 02.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -106,3 +106,21 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - When a linked person comes online in Forever or switches character: chat message `Sjaak is online on Garraka Doombringer (Mage 11)`.
 - Only for people linked in the selected community. Not for yourself. No repeat for the same person within 30 s.
 - Toggle in settings (default on).
+
+### CF-16 Level-up announcements
+- When a linked person's character in the selected community levels up, show a chat line: `Sjaak's Garraka Doombringer reached level 12`.
+- Detected on the receiving side: an accepted RECORD whose character `level` is higher than the stored one. No new message type and no protocol change.
+- Only for characters visible and linked per the core rules. Not for yourself. No message for characters seen for the first time.
+- Toggle in settings "Announce friends' level-ups" (default on), separate from login notifications.
+- Unit tests: level increase announces; same or lower level, new character, own record, unlinked character do not.
+- Manual (2 clients): friend levels up; within ~10 s the line appears in your chat.
+- Scope (accepted): only reaches people who are your Battle.net friends and run the addon (V1 has no relay).
+
+### CF-17 Alts outside the community
+- Setting "Share alts outside the community" (default on), stored in `settings`. On: the outgoing RECORD contains all own characters. Off: only current community members (CF-11 behavior). Changing it bumps the version and triggers a debounced HELLO.
+- Receiver (Linker): a character from a record that is not a member of the selected community is shown only as a non-member alt, under its owner, if the owner is a current friend with at least one visible, linked member character. Otherwise it is ignored. It never appears in Unlinked.
+- Membership is always decided by the receiver's own community data, never by the sender.
+- UI: non-member alts are listed after the person's community characters, dimmed and tagged "not in community".
+- Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Sender filter respects the setting both ways.
+- Manual (2 clients): the friend has an alt that is not invited; with the setting on it shows dimmed under them; after they turn the setting off it disappears.
+- Privacy note: default on means alts are shared with Battle.net friends who run the addon and are in the community, unless the owner turns it off.

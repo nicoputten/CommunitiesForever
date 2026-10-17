@@ -8,5 +8,13 @@
 embeds.xml
 
 src\core\Store.lua
+src\core\Merge.lua
+src\core\Snapshot.lua
+src\core\Describe.lua
+
+src\adapters\Events.lua
+src\adapters\SelfInfo.lua
+
+src\services\SelfTracker.lua
 
 src\Core.lua

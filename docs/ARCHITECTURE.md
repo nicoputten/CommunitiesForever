@@ -2,6 +2,7 @@
 
 ## Core rules
 1. A character is **visible** only if its GUID is a member of the selected community.
+   Exception (CF-17): a **non-member alt** is visible if it arrived in its owner's record AND the owner has at least one visible, linked member character. It is shown under that person, marked "not in community", and never in Unlinked.
 2. A visible character is **linked** to a person (BattleTag) only if that BattleTag is a current Battle.net friend AND either:
    - BNet presence showed that friend logged in on that character, or
    - that friend's addon sent a record containing the character directly.
@@ -11,7 +12,7 @@
 
 Consequences:
 - Transport is BNet only (`BNSendGameData`). Addon whispers are not used in V1.
-- Every alt must be invited to the community to be visible. Membership is per character, not per account (verified).
+- Membership is per character, not per account (verified). An alt that is not invited is only visible as a non-member alt of a person who has at least one member character (CF-17).
 - Nothing depends on `clubId` being identical across clients (unverified). Filtering is by GUID membership.
 
 ## Layering
@@ -28,12 +29,15 @@ CommunitiesForever/
       Linker.lua             visibility + linking -> view model
       Protocol.lua           encode/decode, chunk/reassemble
       Snapshot.lua           build and compare character snapshots
+      Describe.lua           stable text output for debug commands (/cf self)
     adapters/                WoW API wrappers only
+      Events.lua             guarded event registration (C_EventUtils.IsEventValid)
       SelfInfo.lua           Unit*, GetProfessions, item level
       Community.lua          C_Club
       Presence.lua           C_BattleNet, BN events
       Transport.lua          BNSendGameData, throttle, combat queue
     services/
+      SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
@@ -51,6 +55,8 @@ CommunitiesForever/
 ```
 
 Module sharing: every file reads the WoW private addon table via `local ADDON_NAME, ns = ...` and registers on it (`ns.Store = Store`). `Core.lua` turns `ns` into the AceAddon object and exposes it as the `CommunitiesForever` global. Specs load files with `loadfile(path)("CommunitiesForever", ns)` (`tests/helpers.lua`), so core modules need no globals.
+
+Internal event bus: AceEvent messages on the addon object (`SendMessage` / `RegisterMessage`), named `CF_*` and defined as constants in the emitting module (e.g. `SelfInfo.CHANGED`, `SelfTracker.UPDATED`).
 
 Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
 
@@ -74,7 +80,7 @@ global = {
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,
-  ilvl,                                              -- nil if API unavailable
+  ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max } },
   updatedAt,
 }
@@ -82,7 +88,7 @@ Char = {
 - Zone and online state are NOT synced. They are live data from presence and C_Club.
 - Bump `self.version` only when a synced field actually changes (Snapshot compare).
 - Display name priority: local nickname > owner's displayName > BattleTag name part (before `#`).
-- Sender includes only own characters that are current community members. Receiver filters again, authoritatively.
+- Sender includes only own characters that are current community members, plus all other own characters when the setting "Share alts outside the community" is on (CF-17, default on). Receiver filters again, authoritatively (core rule 1).
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
 
@@ -94,7 +100,7 @@ Char = {
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). Max once per peer per 60 s.
 - `REQ {bt}`: sent when a peer's advertised `ver` is higher than stored.
-- `RECORD {bt, displayName, version, chars}`: own record, filtered to community members.
+- `RECORD {bt, displayName, version, chars}`: own record, filtered to community members (plus non-member alts when sharing is on, CF-17).
 
 Accept rule (Merge.lua):
 - sender `gameAccountID` resolves to BattleTag B via presence

@@ -18,14 +18,24 @@ function addon:OnInitialize()
   self:RegisterChatCommand("cf", "OnSlashCommand")
 end
 
+function addon:OnEnable()
+  ns.SelfInfo.watch(self)
+  ns.SelfTracker.start(self)
+end
+
 function addon:OnSlashCommand(input)
   local command = self:GetArgs(input, 1)
   command = command and command:lower()
 
   if command == "version" then
     self:Print("Version " .. GetVersion())
+  elseif command == "self" then
+    for _, line in ipairs(ns.Describe.selfRecord(self.db.global.self, GetServerTime())) do
+      self:Print(line)
+    end
   else
     self:Print("Commands:")
     self:Print("  /cf version - show the addon version")
+    self:Print("  /cf self - show your stored characters")
   end
 end
