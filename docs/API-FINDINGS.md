@@ -49,6 +49,12 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `GetAverageItemLevel()` | Exists, returns 3 numbers, all `1.5625` on the test character (V1). Assumed retail order: overall, equipped, PvP. |
 | `ScrollUtil` | Exists (V5). `CreateScrollBoxListLinearView` not checked separately. |
 | `TooltipDataProcessor` | Exists (V6). `AddTooltipPostCall` and `Enum.TooltipDataType.Unit` not checked separately. |
+| `UnitRace`, `UnitLevel`, `UnitFactionGroup` | Work; snapshot stores raceID (3rd return of `UnitRace`), level and faction (V11, CF-03) |
+| First Aid | Is a profession. With First Aid, Fishing and Cooking: `GetProfessions()` slot 3 = First Aid, 4 = Fishing, 5 = Cooking (V7). skillLine ID still open. |
+| `SKILL_LINES_CHANGED` | Fires on a profession skill-up (V12, CF-03) |
+| `PLAYER_LEVEL_UP` | Fires; the new level is stored right after the ding (V12, CF-03) |
+| `PLAYER_EQUIPMENT_CHANGED` | Fires on gear swaps (V12, CF-03) |
+| `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
 ## Not available / not useful
 - LanMiaoApi (CurseForge) reports none of the above as present in `APIDocumentation`; it only confirms runtime existence. Not a source of signatures or secret flags for these APIs.

@@ -70,6 +70,19 @@ describe("SelfTracker", function()
     assert.are.equal(2000, self_().version)
   end)
 
+  it("keeps every Char field, including updatedAt, after a skill-up", function()
+    load()
+    state.serverTime = 2000
+    state.player.professionInfo[10][3] = 65
+    wowapi.fireEvent(state, "SKILL_LINES_CHANGED")
+    local char = self_().chars[GUID]
+    for _, field in ipairs({ "guid", "name", "classFile", "raceID", "level", "faction", "realm", "ilvl",
+                             "professions", "updatedAt" }) do
+      assert.is_not_nil(char[field], field)
+    end
+    assert.are.equal(2000, char.updatedAt)
+  end)
+
   it("debounces equipment changes", function()
     load()
     state.serverTime = 2000

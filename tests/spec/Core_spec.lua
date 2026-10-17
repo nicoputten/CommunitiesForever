@@ -8,6 +8,7 @@ describe("Core", function()
     state = wowapi.install(opts)
     ns = {}
     helpers.loadAddonFile("src/core/Store.lua", ns)
+    helpers.loadAddonFile("src/core/Describe.lua", ns)
     helpers.loadAddonFile("src/Core.lua", ns)
     state.addon:OnInitialize()
   end
@@ -59,6 +60,18 @@ describe("Core", function()
       state.slash.cf("")
       assert.are.equal("Commands:", state.printed[1])
       assert.matches("/cf version", state.printed[2], 1, true)
+    end)
+
+    it("prints the own record for /cf self", function()
+      load()
+      state.slash.cf("self")
+      assert.are.same({ "BattleTag nil, version 0, 0 character(s)" }, state.printed)
+    end)
+
+    it("lists /cf self in the help", function()
+      load()
+      state.slash.cf("")
+      assert.matches("/cf self", state.printed[3], 1, true)
     end)
 
     it("prints help for unknown commands", function()

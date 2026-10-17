@@ -28,6 +28,7 @@ CommunitiesForever/
       Linker.lua             visibility + linking -> view model
       Protocol.lua           encode/decode, chunk/reassemble
       Snapshot.lua           build and compare character snapshots
+      Describe.lua           stable text output for debug commands (/cf self)
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
       SelfInfo.lua           Unit*, GetProfessions, item level
