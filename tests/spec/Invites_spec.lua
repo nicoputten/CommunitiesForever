@@ -47,13 +47,6 @@ describe("Invites (CF-21)", function()
     return list
   end
 
-  local function joinButton()
-    for i = #state.guiWidgets, 1, -1 do
-      local w = state.guiWidgets[i]
-      if w.type == "Button" and w.text and w.text:find("^Join ") then return w end
-    end
-  end
-
   after_each(function()
     wowapi.uninstall()
   end)
@@ -91,68 +84,80 @@ describe("Invites (CF-21)", function()
     end)
   end)
 
-  describe("join button", function()
-    local function withFriendInvite()
-      load()
+  describe("joining a character outside the community", function()
+    local function withFriendInvite(setup)
+      load(setup)
       addon.db.global.people[SJAAK] = { version = 10, displayName = "Sjaak", chars = {},
                                         invite = { clubId = CLUB, code = "AbC123xyz", setAt = 900 } }
       asNonMember()
       ns.MainFrame.toggle()
     end
 
-    it("shows on a character outside the community when an invite is known", function()
+    local function postButton()
+      for i = #state.guiWidgets, 1, -1 do
+        local w = state.guiWidgets[i]
+        if w.type == "Button" and w.text and w.text:find("^Post ") then return w end
+      end
+    end
+
+    local function hasText(needle)
+      for _, text in ipairs(texts()) do
+        if text:find(needle, 1, true) then return true end
+      end
+      return false
+    end
+
+    it("explains the steps when an invite is known", function()
       withFriendInvite()
       assert.matches("isn't a member", texts()[1])
-      assert.are.equal("Join Forever Friends", joinButton().text)
+      assert.is_true(hasText("How to join Forever Friends with Ves Doombringer"))
+      assert.is_true(hasText("1. Click \"Post invite link in chat\" below."))
+      assert.is_true(hasText("2. In your chat window, click the gold [Join Forever Friends] link."))
+      assert.is_true(hasText("3. In Blizzard's window that opens, click Join."))
+      assert.is_true(hasText("ask Sjaak for a new one"))
+      assert.are.equal("Post invite link in chat", postButton().text)
     end)
 
-    it("is not shown without an invite for the community", function()
+    it("shows no steps without an invite for the community", function()
       load()
       asNonMember()
       ns.MainFrame.toggle()
-      assert.is_nil(joinButton())
+      assert.is_nil(postButton())
+      assert.is_false(hasText("How to join"))
     end)
 
-    it("redeems the code and shows the community once joined", function()
+    it("posts a clickable invite link in chat and points at it", function()
       withFriendInvite()
-      joinButton():Fire("OnClick")
-      assert.are.same({ "AbC123xyz" }, state.redeemed)
+      postButton():Fire("OnClick")
+      assert.are.same({
+        "Click the link below to join Forever Friends, then click Join in Blizzard's window:",
+        "|cffffd100|HclubTicket:AbC123xyz|h[Join Forever Friends]|h|r",
+      }, state.printed)
       settle()
-      -- The game adds the community for this character.
+      assert.is_true(hasText("<- do this now"))
+      assert.are.equal("Post the link again", postButton().text)
+      assert.are.same({}, state.redeemed) -- never joins by itself (blocked for addons, V26)
+    end)
+
+    it("uses GetClubTicketLink when the game has it", function()
+      withFriendInvite(function()
+        _G.GetClubTicketLink = function(code, name, clubType)
+          return string.format("LINK(%s,%s,%s)", code, name, tostring(clubType))
+        end
+      end)
+      postButton():Fire("OnClick")
+      assert.are.equal("LINK(AbC123xyz,Forever Friends,1)", state.printed[2])
+      _G.GetClubTicketLink = nil
+    end)
+
+    it("goes back to the community once the character has joined", function()
+      withFriendInvite()
+      postButton():Fire("OnClick")
       state.clubs = { { clubId = CLUB, name = "Forever Friends", clubType = 1 } }
       wowapi.fireEvent(state, "CLUB_ADDED", CLUB)
       settle()
       assert.are.equal(CLUB, ns.CommunitySelection.active())
-      assert.is_nil(ns.Invites.joinState())
-    end)
-
-    it("says who to ask when joining did not work", function()
-      withFriendInvite()
-      joinButton():Fire("OnClick")
-      settle() -- 10 s pass without the community showing up
-      local found = false
-      for _, text in ipairs(texts()) do
-        if text == "Joining didn't work. The invite link may have expired. Ask Sjaak for a new one." then
-          found = true
-        end
-      end
-      assert.is_true(found)
-    end)
-
-    it("explains when the game has no invite API", function()
-      load()
-      _G.C_Club.RedeemTicket = nil
-      addon.db.global.people[SJAAK] = { version = 10, chars = {},
-                                        invite = { clubId = CLUB, code = "AbC123xyz", setAt = 900 } }
-      asNonMember()
-      ns.MainFrame.toggle()
-      joinButton():Fire("OnClick")
-      settle()
-      local found = false
-      for _, text in ipairs(texts()) do
-        if text:find("not possible in this version of the game", 1, true) then found = true end
-      end
-      assert.is_true(found)
+      assert.is_false(ns.Invites.linkPosted())
     end)
   end)
 end)

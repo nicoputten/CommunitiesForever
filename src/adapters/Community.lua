@@ -37,12 +37,14 @@ function Community.subscribedClubs()
   return list
 end
 
--- Joins a community with an invite code (CF-21). C_Club.RedeemTicket is unverified for addons
--- (VERIFY.md V25/V26). Returns false when the function does not exist.
-function Community.redeemTicket(code)
-  if not (C_Club and C_Club.RedeemTicket) then return false end
-  C_Club.RedeemTicket(code)
-  return true
+-- Clickable community invite link for chat (CF-21). Addons may not join themselves
+-- (C_Club.RedeemTicket is protected, V26), but a printed link opens Blizzard's own join
+-- window when clicked (V27). GetClubTicketLink is used when it exists.
+function Community.ticketLink(code, communityName)
+  if GetClubTicketLink then
+    return GetClubTicketLink(code, communityName, Community.characterType())
+  end
+  return string.format("|cffffd100|HclubTicket:%s|h[Join %s]|h|r", code, communityName)
 end
 
 -- Asks the client to load member data; it arrives async via CLUB_MEMBERS_UPDATED.

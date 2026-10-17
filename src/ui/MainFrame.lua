@@ -188,26 +188,30 @@ function renderDetail.character(parent, detail)
   label(talents, GREY .. "Not available yet. Coming in a later version.|r", GameFontHighlight)
 end
 
--- CF-21: on a character outside the community, a Join button when an invite link is known.
+-- CF-21: on a character outside the community, step-by-step instructions to join with the shared
+-- invite link. Addons may not join themselves (V26); the link opens Blizzard's join window (V27).
 local function joinBlock(parent)
   local invite = ns.Invites.current()
   if not invite then return end
+  local community = ns.CommunitySelection.name() or "the community"
+  local posted = ns.Invites.linkPosted()
+  local done = "|cff40c040"
+
   spacer(parent)
-  local state = ns.Invites.joinState()
-  if state == "joining" then
-    label(parent, GREY .. "Joining...|r", GameFontHighlight)
-    return
-  elseif state == "failed" then
-    label(parent, string.format("Joining didn't work. The invite link may have expired. Ask %s for a new one.",
-      tostring(invite.setByName)), GameFontHighlight)
-  elseif state == "unavailable" then
-    label(parent, "Joining with an invite link is not possible in this version of the game.", GameFontHighlight)
-    return
-  end
+  heading(parent, string.format("How to join %s with %s", community, tostring(view.selfName or "this character")))
+  label(parent, string.format("%s1. Click \"Post invite link in chat\" below.|r", posted and done or ""),
+    GameFontHighlight)
+  label(parent, string.format("2. In your chat window, click the gold [Join %s] link.%s", community,
+    posted and "  <- do this now" or ""), GameFontHighlight)
+  label(parent, "3. In Blizzard's window that opens, click Join.", GameFontHighlight)
+  label(parent, GREY .. "This window then shows the community. If Blizzard says the link is invalid, ask "
+    .. tostring(invite.setByName) .. " for a new one.|r", GameFontHighlightSmall)
+  spacer(parent)
+
   local button = createWidget("Button")
-  button:SetText("Join " .. (ns.CommunitySelection.name() or "the community"))
+  button:SetText(posted and "Post the link again" or "Post invite link in chat")
   button:SetWidth(240)
-  button:SetCallback("OnClick", function() ns.Invites.join() end)
+  button:SetCallback("OnClick", function() ns.Invites.postLink() end)
   parent:AddChild(button)
 end
 

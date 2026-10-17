@@ -48,7 +48,7 @@ CommunitiesForever/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
-      Invites.lua            shared invite link: set (owner/leaders/moderators), newest, Join (CF-21)
+      Invites.lua            shared invite link: set (owner/leaders/moderators), newest, post as chat link (CF-21)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag

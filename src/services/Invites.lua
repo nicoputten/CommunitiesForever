@@ -1,23 +1,21 @@
 -- Invites: the shared community invite link (CF-21).
 -- Owners, leaders and moderators set it; it travels in their record; on a character that is not a
--- member, the window offers "Join <community>" with the newest invite for the selected community.
+-- member, the window explains how to join and posts the newest invite as a clickable chat link.
 local _, ns = ...
 
 local Invites = {}
 
--- Internal message, sent when the join state or the known invite changes (window refresh).
+-- Internal message, sent when the link was posted or the instructions are done (window refresh).
 Invites.CHANGED = "CF_INVITES_CHANGED"
 
-local JOIN_TIMEOUT = 10
-
-local addonRef, joinState, joinTimer
+local addonRef, linkPosted
 
 local function global()
   return addonRef.db.global
 end
 
-local function setJoinState(value)
-  joinState = value
+local function setLinkPosted(value)
+  linkPosted = value
   addonRef:SendMessage(Invites.CHANGED)
 end
 
@@ -71,37 +69,30 @@ function Invites.current()
   return ns.Invite.newest(sources, clubId)
 end
 
--- nil, "joining" (waiting for the community to show up), "failed" or "unavailable".
-function Invites.joinState()
-  return joinState
+-- True after the invite link was posted in chat (this session, until the character joins).
+function Invites.linkPosted()
+  return linkPosted
 end
 
-function Invites.join()
+-- Posts the newest invite as a clickable link in chat with a short hint. The player clicks it
+-- there; Blizzard's own window does the joining (addons may not, V26).
+function Invites.postLink()
   local invite = Invites.current()
   if not invite then return end
-  if not ns.Community.redeemTicket(invite.code) then
-    setJoinState("unavailable") -- C_Club.RedeemTicket does not exist on this client
-    return
-  end
-  setJoinState("joining")
-  if joinTimer then joinTimer:Cancel() end
-  joinTimer = C_Timer.NewTimer(JOIN_TIMEOUT, function()
-    joinTimer = nil
-    if joinState == "joining" and not ns.CommunitySelection.active() then
-      setJoinState("failed")
-    end
-  end)
+  local name = ns.CommunitySelection.name() or "the community"
+  addonRef:Print("Click the link below to join " .. name .. ", then click Join in Blizzard's window:")
+  addonRef:Print(ns.Community.ticketLink(invite.code, name))
+  setLinkPosted(true)
 end
 
 function Invites.start(addon)
   addonRef = addon
-  joinState, joinTimer = nil, nil
+  linkPosted = false
   local events = LibStub("AceEvent-3.0"):Embed({})
-  -- Joined (or switched): the community is visible now, the join attempt is over.
+  -- Joined (or switched): the community is visible now, the instructions are done.
   events:RegisterMessage(ns.CommunitySelection.CHANGED, function()
-    if ns.CommunitySelection.active() and joinState then
-      joinState = nil
-      addonRef:SendMessage(Invites.CHANGED)
+    if ns.CommunitySelection.active() and linkPosted then
+      setLinkPosted(false)
     end
   end)
 end
