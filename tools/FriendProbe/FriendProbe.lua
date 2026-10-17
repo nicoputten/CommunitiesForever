@@ -8,6 +8,7 @@
 --   /fp clubs [clubId]  communities (C_Club): club types, clubIds, all member fields
 --   /fp ticket <code>   C_Club.RequestTicket: look up an invite code or link (result via CLUB_TICKET_RECEIVED)
 --   /fp redeem <code>   C_Club.RedeemTicket: join with an invite code or link (logs blocked/forbidden actions)
+--   /fp talents         C_ClassTalents / C_Traits: config, trees, point pools, nodes with ranks spent
 --   /fp clear           wipe the saved log
 
 local PREFIX = "FProbe"
@@ -146,6 +147,62 @@ local function Ticket(cmd, arg)
   log("C_Club." .. fn, code, "->", pcall(C_Club[fn], code))
 end
 
+-- Spell name for a trait entry (definition -> spellID -> name); nil when unknown.
+local function EntrySpellName(configID, entryID)
+  if not (entryID and C_Traits.GetEntryInfo and C_Traits.GetDefinitionInfo) then return nil end
+  local entry = C_Traits.GetEntryInfo(configID, entryID)
+  local definition = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
+  local spellID = definition and (definition.spellID or definition.overriddenSpellID)
+  if not spellID then return nil end
+  if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
+  return GetSpellInfo and (GetSpellInfo(spellID))
+end
+
+-- Logs how talents are stored: active config, trees, point pools, nodes with ranks spent.
+local function Talents()
+  log("== TALENTS ==")
+  for _, name in ipairs({ "GetActiveConfigID", "GetConfigIDsBySpecID", "GetStarterBuildActive" }) do
+    log("exists C_ClassTalents." .. name, C_ClassTalents and C_ClassTalents[name] ~= nil)
+  end
+  for _, name in ipairs({ "GetConfigInfo", "GetTreeInfo", "GetTreeNodes", "GetNodeInfo", "GetTreeCurrencyInfo",
+      "GetEntryInfo", "GetDefinitionInfo" }) do
+    log("exists C_Traits." .. name, C_Traits and C_Traits[name] ~= nil)
+  end
+  log("exists C_SpecializationInfo", C_SpecializationInfo ~= nil, "GetNumSpecializations", GetNumSpecializations ~= nil)
+  if not (C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits) then return end
+
+  local configID = C_ClassTalents.GetActiveConfigID()
+  log("activeConfigID", configID)
+  if not configID then return end
+  local info = C_Traits.GetConfigInfo(configID)
+  DumpTable("configInfo", info)
+  for _, treeID in ipairs(info and info.treeIDs or {}) do
+    log("-- tree", treeID)
+    if C_Traits.GetTreeInfo then DumpTable("treeInfo", C_Traits.GetTreeInfo(configID, treeID)) end
+    if C_Traits.GetTreeCurrencyInfo then
+      for i, currency in ipairs(C_Traits.GetTreeCurrencyInfo(configID, treeID, false) or {}) do
+        DumpTable("currency" .. i, currency)
+      end
+    end
+    local nodes = C_Traits.GetTreeNodes(treeID) or {}
+    local spent, shown = 0, 0
+    log("nodes in tree", #nodes)
+    for _, nodeID in ipairs(nodes) do
+      local node = C_Traits.GetNodeInfo(configID, nodeID)
+      if node and (node.ranksPurchased or 0) > 0 then
+        spent = spent + node.ranksPurchased
+        shown = shown + 1
+        local entryID = node.activeEntry and node.activeEntry.entryID or (node.entryIDs and node.entryIDs[1])
+        log("node", nodeID, "ranks", node.ranksPurchased, "/", node.maxRanks, "pos", node.posX, node.posY,
+          "subTree", node.subTreeID, "groups", node.groupIDs and table.concat(node.groupIDs, ",") or "-",
+          "spell", EntrySpellName(configID, entryID))
+        if shown == 1 then DumpTable("firstNodeInfo", node) end
+      end
+    end
+    log("ranks spent in tree", treeID, "=", spent)
+  end
+end
+
 local clubUpdateSeen = {}
 
 local f = CreateFrame("Frame")
@@ -207,10 +264,13 @@ SlashCmdList.FRIENDPROBE = function(msg)
     log("whisper send result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPING", "WHISPER", arg))
   elseif cmd == "clubs" then Clubs(arg)
   elseif cmd == "ticket" or cmd == "redeem" then Ticket(cmd, arg)
+  elseif cmd == "talents" then
+    local ok, err = pcall(Talents)
+    if not ok then log("talents error", err) end
   elseif cmd == "clear" then
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents | clear")
   end
 end
