@@ -14,4 +14,4 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-None open. CF-01 and CF-03 passed.
+None open. CF-01, CF-03 and CF-05 passed.

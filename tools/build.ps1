@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   1. Fetches Libs/ via fetch-libs.ps1 (skips libs that already exist).
-  2. Stages dist/CommunitiesForever with the addon files only.
+  2. Deletes dist/, then stages dist/CommunitiesForever with the addon files only.
   3. Stamps the version 0.1.<commit count> into the TOC (with "-dirty" if the
      working tree has uncommitted changes). Release builds get their version
      from the git tag via the packager instead (CF-02).
@@ -33,9 +33,10 @@ if ($LASTEXITCODE -ne 0) { throw 'git rev-list failed' }
 $version = "0.1.$count"
 if (& git -C $root status --porcelain) { $version += '-dirty' }
 
+# Always start from an empty dist/ so old builds and zips never linger.
 $dist = Join-Path $root 'dist'
+if (Test-Path $dist) { Remove-Item -Recurse -Force $dist }
 $stage = Join-Path $dist $addonName
-if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force $stage | Out-Null
 
 # Keep in sync with what .pkgmeta packages (everything tracked minus "ignore:").
@@ -48,7 +49,6 @@ $toc = $toc.Replace('@project-version@', $version)
 [IO.File]::WriteAllText((Join-Path $stage "$addonName.toc"), $toc)
 
 $zip = Join-Path $dist "$addonName-$version.zip"
-if (Test-Path $zip) { Remove-Item -Force $zip }
 Compress-Archive -Path $stage -DestinationPath $zip
 
 Write-Host "Built $addonName $version"

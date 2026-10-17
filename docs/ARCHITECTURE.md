@@ -30,23 +30,25 @@ CommunitiesForever/
       Protocol.lua           encode/decode, chunk/reassemble
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
+      Clubs.lua              selectable communities, stored-selection status
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
       SelfInfo.lua           Unit*, GetProfessions, item level
-      Community.lua          C_Club
+      Community.lua          C_Club (club list, club events; members in CF-06)
       Presence.lua           C_BattleNet, BN events
       Transport.lua          BNSendGameData, throttle, combat queue
     services/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
+      CommunitySelection.lua owns settings.clubId, clears it when the club is gone
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
       MainFrame.lua          custom frame + ScrollBox
-      Settings.lua           AceConfig options
+      Settings.lua           AceConfig options (Blizzard panel + /cf settings)
       Tooltip.lua            unit tooltip line
       Minimap.lua            LibDBIcon button
   tests/
-    helpers.lua              loads addon files with (addonName, ns) varargs
+    helpers.lua              loads addon files in TOC order with (addonName, ns) varargs
     mocks/wowapi.lua
     spec/*_spec.lua
   tools/FriendProbe/         diagnostic addon (not packaged)

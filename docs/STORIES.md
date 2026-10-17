@@ -35,9 +35,9 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 ## E2 Community
 
 ### CF-05 Community selection
-- AceConfig dropdown lists subscribed non-guild communities (name plus type).
+- AceConfig dropdown lists subscribed **character** communities by name (decided in CF-05: guild and Battle.net communities excluded, since membership must be per character with GUIDs). Also in the Blizzard settings panel; `/cf settings` opens it.
 - Selection stored in `settings.clubId`, survives reload.
-- If the stored club no longer exists: selection cleared, main window shows "Select a community in settings".
+- If the stored club no longer exists: selection cleared, one chat notice "Your community is no longer available. Select one with /cf settings." The main window empty state follows in CF-12.
 
 ### CF-06 Member tracking
 - Adapter exposes `members[guid] = { name, classID, level, zone, presence, raceID, faction }` for the selected club.

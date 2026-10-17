@@ -83,9 +83,25 @@ local function fakeLibs(state)
     return db
   end
 
+  local AceConfig = {}
+  function AceConfig:RegisterOptionsTable(appName, options)
+    state.optionsApp = appName
+    state.options = type(options) == "function" and options() or options
+  end
+
+  local AceConfigDialog = {}
+  function AceConfigDialog:AddToBlizOptions(appName, name)
+    state.blizOptions = { appName, name }
+  end
+  function AceConfigDialog:Open(appName)
+    state.openedDialog = appName
+  end
+
   return {
     ["AceAddon-3.0"] = AceAddon,
     ["AceDB-3.0"] = AceDB,
+    ["AceConfig-3.0"] = AceConfig,
+    ["AceConfigDialog-3.0"] = AceConfigDialog,
   }, mixin
 end
 
@@ -106,6 +122,11 @@ function wowapi.install(opts)
     metadata = opts.metadata or { Version = "0.1.0" },
     serverTime = 1000,
     player = defaultPlayer(),
+    -- C_Club.GetSubscribedClubs() result; clubType 1 = Character, 2 = Guild, 0 = BattleNet
+    clubs = {
+      { clubId = "23125681", name = "Forever Friends", clubType = 1 },
+      { clubId = "999", name = "My Guild", clubType = 2 },
+    },
   }
   local libs, mixin = fakeLibs(state)
   state.aceMixin = mixin
@@ -140,6 +161,12 @@ function wowapi.install(opts)
     end,
     GetProfessionInfo = function(index) return unpack(p.professionInfo[index]) end,
     BNGetInfo = function() return nil, p.battleTag end,
+    C_Club = {
+      GetSubscribedClubs = function() return deepCopy(state.clubs) end,
+    },
+    Enum = {
+      ClubType = { BattleNet = 0, Character = 1, Guild = 2, Other = 3 },
+    },
   }
   if opts.validEvents then
     local valid = {}

@@ -8,12 +8,7 @@ describe("SelfTracker", function()
 
   local function load(opts)
     state = wowapi.install(opts)
-    ns = {}
-    for _, path in ipairs({ "src/core/Store.lua", "src/core/Merge.lua", "src/core/Snapshot.lua",
-                            "src/adapters/Events.lua", "src/adapters/SelfInfo.lua",
-                            "src/services/SelfTracker.lua", "src/Core.lua" }) do
-      helpers.loadAddonFile(path, ns)
-    end
+    ns = helpers.loadAddon()
     SelfTracker = ns.SelfTracker
     addon = state.addon
     addon:OnInitialize()
