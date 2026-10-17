@@ -137,6 +137,20 @@ function wowapi.install(opts)
       },
     },
     focusedClubs = {},
+    -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
+    friends = {
+      { battleTag = "Sjaakovich#2232", gameAccounts = {
+        { clientProgram = "WoW", wowProjectID = 18, isOnline = true, characterName = "Garraka Doombringer",
+          realmName = "ClassicBetaPvP", realmDisplayName = "Classic Beta PvP", className = "Mage",
+          characterLevel = 11, factionName = "Horde", playerGuid = "Player-4619-01789956", gameAccountID = 5 },
+        { clientProgram = "BSAp", isOnline = true, gameAccountID = 6 },
+      } },
+      { battleTag = "Retailer#1111", gameAccounts = {
+        { clientProgram = "WoW", wowProjectID = 1, isOnline = true, characterName = "Mainline Guy",
+          playerGuid = "Player-1-AAAA", gameAccountID = 7 },
+      } },
+      { battleTag = "Offline#3333", gameAccounts = {} },
+    },
   }
   local libs, mixin = fakeLibs(state)
   state.aceMixin = mixin
@@ -185,6 +199,22 @@ function wowapi.install(opts)
       end,
       FocusMembers = function(clubId)
         state.focusedClubs[#state.focusedClubs + 1] = clubId
+      end,
+    },
+    BNET_CLIENT_WOW = "WoW",
+    BNGetNumFriends = function()
+      return #state.friends
+    end,
+    C_BattleNet = {
+      GetFriendAccountInfo = function(i)
+        local f = state.friends[i]
+        return f and { battleTag = f.battleTag }
+      end,
+      GetFriendNumGameAccounts = function(i)
+        return #state.friends[i].gameAccounts
+      end,
+      GetFriendGameAccountInfo = function(i, j)
+        return deepCopy(state.friends[i].gameAccounts[j])
       end,
     },
     Enum = {

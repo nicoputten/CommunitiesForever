@@ -24,6 +24,8 @@ function addon:OnEnable()
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
   ns.MemberTracker.start(self)
+  ns.Presence.watch(self)
+  ns.PresenceTracker.start(self)
 end
 
 local function SelectedCommunityName()
@@ -54,6 +56,12 @@ function addon:OnSlashCommand(input)
     for _, line in ipairs(lines) do
       self:Print(line)
     end
+  elseif command == "friends" then
+    local lines = ns.Describe.friends(ns.PresenceTracker.friends(), ns.PresenceTracker.online(),
+      self.db.global.presence, GetServerTime())
+    for _, line in ipairs(lines) do
+      self:Print(line)
+    end
   elseif command == "settings" then
     ns.Settings.open()
   else
@@ -61,6 +69,7 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf version - show the addon version")
     self:Print("  /cf self - show your stored characters")
     self:Print("  /cf members - show members of the selected community")
+    self:Print("  /cf friends - show Battle.net friends in Forever")
     self:Print("  /cf settings - open the settings")
   end
 end

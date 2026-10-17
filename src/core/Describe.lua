@@ -66,5 +66,30 @@ function Describe.members(members, communityName, changedAt, now)
   return lines
 end
 
+-- Lines describing Battle.net friends in Forever and stored presence links, sorted by BattleTag.
+function Describe.friends(friends, online, presence, now)
+  local friendCount = 0
+  for _ in pairs(friends) do friendCount = friendCount + 1 end
+  local tags = sortedKeys(online)
+
+  local lines = { string.format("%d Battle.net friend(s), %d online in Forever", friendCount, #tags) }
+  for _, bt in ipairs(tags) do
+    local c = online[bt]
+    lines[#lines + 1] = string.format("%s: %s (%s %s), game account %s, %s",
+      bt, tostring(c.name), tostring(c.className), tostring(c.level), tostring(c.gameAccountID), c.guid)
+  end
+
+  local guids = sortedKeys(presence, function(a, b)
+    if presence[a].battleTag ~= presence[b].battleTag then return presence[a].battleTag < presence[b].battleTag end
+    return a < b
+  end)
+  lines[#lines + 1] = string.format("Presence links: %d", #guids)
+  for _, guid in ipairs(guids) do
+    local p = presence[guid]
+    lines[#lines + 1] = string.format("  %s -> %s, seen %s", guid, p.battleTag, age(p.lastSeen, now))
+  end
+  return lines
+end
+
 ns.Describe = Describe
 return Describe
