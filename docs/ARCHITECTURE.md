@@ -42,11 +42,15 @@ CommunitiesForever/
       Tooltip.lua            unit tooltip line
       Minimap.lua            LibDBIcon button
   tests/
+    helpers.lua              loads addon files with (addonName, ns) varargs
     mocks/wowapi.lua
     spec/*_spec.lua
   tools/FriendProbe/         diagnostic addon (not packaged)
+  tools/*.ps1                setup-lua, fetch-libs, build (dev only)
   .github/workflows/         test.yml, release.yml
 ```
+
+Module sharing: every file reads the WoW private addon table via `local ADDON_NAME, ns = ...` and registers on it (`ns.Store = Store`). `Core.lua` turns `ns` into the AceAddon object and exposes it as the `CommunitiesForever` global. Specs load files with `loadfile(path)("CommunitiesForever", ns)` (`tests/helpers.lua`), so core modules need no globals.
 
 Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
 

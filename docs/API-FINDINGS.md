@@ -40,5 +40,15 @@ Cooking appeared in slot 5 (`2/75`, skillLine 185). First Aid: unknown (no chara
 - Membership is **per character**: alts of a member are NOT members unless invited themselves.
 - Data loads async: fire `FocusMembers`, then re-read after `CLUB_MEMBERS_UPDATED`.
 
+## Verified during development
+Recorded by Nico in `VERIFY.md`, 2026-10-17.
+| API | Result |
+|---|---|
+| Ace3 (AceAddon, AceDB, AceEvent, AceConsole, AceGUI, AceConfig), LibDBIcon, LibDataBroker, LibSerialize, LibDeflate | Load under TOC 16001 without Lua errors (V4) |
+| `C_AddOns.GetAddOnMetadata(addon, "Version")` | Exists, returns the TOC `## Version` (V10) |
+| `GetAverageItemLevel()` | Exists, returns 3 numbers, all `1.5625` on the test character (V1). Assumed retail order: overall, equipped, PvP. |
+| `ScrollUtil` | Exists (V5). `CreateScrollBoxListLinearView` not checked separately. |
+| `TooltipDataProcessor` | Exists (V6). `AddTooltipPostCall` and `Enum.TooltipDataType.Unit` not checked separately. |
+
 ## Not available / not useful
 - LanMiaoApi (CurseForge) reports none of the above as present in `APIDocumentation`; it only confirms runtime existence. Not a source of signatures or secret flags for these APIs.

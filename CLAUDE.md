@@ -24,9 +24,15 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
 6. English strings, hardcoded. No localization system.
 7. No dependencies beyond those listed in `docs/ARCHITECTURE.md` without asking.
 
-## Commands (set up in CF-01)
+## Commands
+- One-time toolchain: `tools\setup-lua.ps1` (project-local Lua 5.1 in `.lua\`, gitignored). Put `.lua\bin` on PATH first: `$env:PATH = "$PWD\.lua\bin;$env:PATH"`
 - `busted` runs unit tests
 - `luacheck src tests` lints
+- `tools\fetch-libs.ps1` fetches `.pkgmeta` externals into `Libs\` and checks `embeds.xml`
+- `tools\build.ps1` builds `dist\CommunitiesForever` (version `0.1.<commit count>`) for manual copy into the game
+
+## Branches
+Gitflow: `feature/cf-XX-<slug>` off `develop`, PRs into `develop`. `main` receives releases.
 
 ## Definition of done (per story)
 - All acceptance criteria met
