@@ -6,10 +6,7 @@ describe("Core", function()
 
   local function load(opts)
     state = wowapi.install(opts)
-    ns = {}
-    helpers.loadAddonFile("src/core/Store.lua", ns)
-    helpers.loadAddonFile("src/core/Describe.lua", ns)
-    helpers.loadAddonFile("src/Core.lua", ns)
+    ns = helpers.loadAddon()
     state.addon:OnInitialize()
   end
 
