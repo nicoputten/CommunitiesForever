@@ -62,6 +62,7 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `BNET_CLIENT_WOW` | `"WoW"` (V19) |
 | `BN_FRIEND_INFO_CHANGED`, `BN_FRIEND_ACCOUNT_ONLINE`, `BN_FRIEND_ACCOUNT_OFFLINE`, `BN_CONNECTED` | Valid events (V19). Log out, log in and character switches of a friend update `C_BattleNet` game accounts; Battle.net app and other WoW versions report a different clientProgram or wowProjectID (CF-07) |
 | `PLAYER_LOGOUT` | Fires on logout and character switch early enough for the change to be saved (V22, CF-12) |
+| Unit tooltip post-call | `TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, ...)` adds lines on hovered players, also in dungeons and combat without errors (V28, CF-14) |
 | `C_Club.RedeemTicket` | Protected: calling it from an addon shows "CommunitiesForever has been blocked from an action only available to the Blizzard UI" (V26, CF-21). Addons cannot join a community themselves. |
 | `C_CreatureInfo.GetClassInfo(classID)` | Returns `classFile` (V21, class colors on Unlinked rows) |
 | `BNSendGameData` payload | 3500-byte chunks arrive; a 20 KB message in ~6 chunks at 0.2 s arrives complete (V2, CF-10). The real per-message limit is still unknown and not needed. |
