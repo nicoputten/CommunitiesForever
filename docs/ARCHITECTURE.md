@@ -92,7 +92,8 @@ Char = {
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max } },
   talents, mainTree, role, roleOverride,           -- CF-18 (future): talent split per tree, heal/dps/tank
-  updatedAt,
+  updatedAt,                                         -- last synced-field change
+  lastPlayed,                                        -- own chars: login/logout time (not compared, no bump)
 }
 ```
 - Zone and online state are NOT synced. They are live data from presence and C_Club.

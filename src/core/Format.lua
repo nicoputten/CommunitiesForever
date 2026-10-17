@@ -35,28 +35,28 @@ function Format.status(row, now)
   if row.online then
     return row.zone and row.zone ~= "" and ("Online - " .. row.zone) or "Online"
   end
-  local seen = math.max(row.lastSeen or 0, row.updatedAt or 0)
+  -- lastPlayed: own characters (login/logout); lastSeen: presence; updatedAt: last data change.
+  local seen = math.max(row.lastSeen or 0, row.lastPlayed or 0, row.updatedAt or 0)
   if seen > 0 then
     return "Seen " .. Format.ago(seen, now)
   end
   return "Offline"
 end
 
--- line1 is the text after the (class-colored) name; line2 holds professions and realm.
+-- line1 is the text after the (class-colored) name; line2 holds the professions.
+-- The realm is not shown: everyone plays the same ruleset (one mega-realm).
 local function charLines(row, now)
   local line1 = string.format("Lvl %s%s  %s", tostring(row.level or "?"),
     row.ilvl and ("  iLvl " .. row.ilvl) or "", Format.status(row, now))
-  local details = {}
-  local professions = Format.professions(row.professions)
-  if professions ~= "" then details[#details + 1] = professions end
-  if row.realm then details[#details + 1] = row.realm end
-  return line1, table.concat(details, "  -  ")
+  return line1, Format.professions(row.professions)
 end
 
 --[[ Flattens the view model into display rows, in order:
   { kind = "empty",   text }                                   -- whole-window empty state
   { kind = "section", text }                                   -- "People", "Unlinked"
-  { kind = "person",  key, text, online, expanded, isSelf }    -- clickable header
+  { kind = "spacer" }                                          -- blank line between people
+  { kind = "person",  key, text, online, expanded, isSelf, current }  -- clickable header
+      current = { name, classFile, classID, outside } or nil: "on <name>", outside = not in community
   { kind = "char",    guid, name, classFile, classID, line1, line2, online }  -- line1 follows the name
   { kind = "note",    text }                                   -- empty state inside a section
 state = { communitySelected = bool, collapsed = { [personKey] = true }, now = serverTime }
@@ -71,25 +71,24 @@ function Format.rows(view, state)
 
   rows[#rows + 1] = { kind = "section", text = "People" }
   local friendsShown = 0
-  for _, person in ipairs(view.people) do
+  for index, person in ipairs(view.people) do
     if not person.isSelf then friendsShown = friendsShown + 1 end
     local key = person.battleTag or "self"
     local expanded = not state.collapsed[key]
 
     local text = person.displayName
-    if person.battleTag and person.battleTag ~= person.displayName then
-      text = text .. " (" .. person.battleTag .. ")"
-    end
-    if person.isSelf then text = text .. " - you" end
+    if person.isSelf then text = text .. " (you)" end
+    local current
     if person.online and person.currentChar then
-      text = text .. " - on " .. tostring(person.currentChar.name) ..
-        (person.currentChar.visible == false and " (not in community)" or "")
+      local c = person.currentChar
+      current = { name = c.name, classFile = c.classFile, classID = c.classID, outside = c.visible == false }
     elseif not person.online then
       text = text .. " - offline"
     end
 
+    if index > 1 then rows[#rows + 1] = { kind = "spacer" } end
     rows[#rows + 1] = { kind = "person", key = key, text = text, online = person.online,
-                        expanded = expanded, isSelf = person.isSelf }
+                        expanded = expanded, isSelf = person.isSelf, current = current }
     if expanded then
       for _, c in ipairs(person.chars) do
         local line1, line2 = charLines(c, state.now)

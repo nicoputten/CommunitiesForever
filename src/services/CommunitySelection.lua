@@ -7,6 +7,7 @@ local CommunitySelection = {}
 CommunitySelection.CHANGED = "CF_COMMUNITY_CHANGED"
 
 CommunitySelection.GONE_NOTICE = "Your community is no longer available. Select one with /cf settings."
+CommunitySelection.AUTO_NOTICE = "Showing community %s. Change it with /cf settings."
 
 local addonRef
 local initialClubsLoaded = false
@@ -30,12 +31,37 @@ local function clearGone()
   end
 end
 
+local function autoSelect(club)
+  setClub(club.clubId)
+  addonRef:Print(string.format(CommunitySelection.AUTO_NOTICE, tostring(club.name)))
+end
+
+-- With nothing selected: pick the one just joined, or the only character community.
+-- excludedClubId: a club being removed (it can still be listed while CLUB_REMOVED fires).
+local function autoSelectIfNone(joinedClubId, excludedClubId)
+  if settings().clubId ~= nil then return end
+  local list = {}
+  for _, club in ipairs(CommunitySelection.list()) do
+    if club.clubId ~= excludedClubId then list[#list + 1] = club end
+  end
+  for _, club in ipairs(list) do
+    if joinedClubId ~= nil and club.clubId == joinedClubId then
+      autoSelect(club)
+      return
+    end
+  end
+  if #list == 1 then
+    autoSelect(list[1])
+  end
+end
+
 local function validate()
   local status = ns.Clubs.status(settings().clubId, ns.Community.subscribedClubs(),
     ns.Community.characterType(), initialClubsLoaded)
   if status == "missing" then
     clearGone()
   end
+  autoSelectIfNone()
 end
 
 function CommunitySelection.start(addon)
@@ -49,7 +75,11 @@ function CommunitySelection.start(addon)
     -- The removed club may still be listed while CLUB_REMOVED fires, so clear directly.
     if event == "CLUB_REMOVED" and clubId ~= nil and clubId == settings().clubId then
       clearGone()
+      autoSelectIfNone(nil, clubId)
       return
+    end
+    if event == "CLUB_ADDED" then
+      autoSelectIfNone(clubId)
     end
     validate()
   end)

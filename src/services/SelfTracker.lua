@@ -22,17 +22,24 @@ function SelfTracker.start(addon)
 
   local refreshDebounced = ns.Timer.debounce(EQUIPMENT_DEBOUNCE, function() refresh() end)
 
+  local function markPlayed()
+    ns.Snapshot.markPlayed(addon.db.global.self, ns.SelfInfo.read().guid, GetServerTime())
+  end
+
   addon:RegisterMessage(ns.SelfInfo.CHANGED, function(_, reason, arg)
     if reason == "equipment" then
       refreshDebounced()
     elseif reason == "level" then
       refresh(arg)
+    elseif reason == "logout" then
+      markPlayed()
     else
       refresh()
     end
   end)
 
   refresh()
+  markPlayed()
 end
 
 ns.SelfTracker = SelfTracker

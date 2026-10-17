@@ -37,6 +37,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 ### CF-05 Community selection
 - AceConfig dropdown lists subscribed **character** communities by name (decided in CF-05: guild and Battle.net communities excluded, since membership must be per character with GUIDs). Also in the Blizzard settings panel; `/cf settings` opens it.
 - Selection stored in `settings.clubId`, survives reload.
+- Auto-select (added in CF-12 feedback): with nothing selected, the only character community is selected, or the one you just joined; a chat line says which.
 - If the stored club no longer exists: selection cleared, one chat notice "Your community is no longer available. Select one with /cf settings." The main window empty state follows in CF-12.
 
 ### CF-06 Member tracking
@@ -92,7 +93,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unlinked section: community data only (name, class, level, zone if online).
 - Renders from the Linker view model only. Refreshes on change events, no polling.
 - Empty states: no community selected; no linked people yet.
-- Decided in CF-12: AceGUI window; people expanded by default, collapse state saved per person (`settings.collapsed`); two-line character rows; minimap left-click window, right-click settings, hide toggle in settings; `/cf` toggles the window, `/cf help` lists commands.
+- Decided in CF-12: AceGUI window; people expanded by default, collapse state saved per person (`settings.collapsed`); two-line character rows (no realm: one ruleset for everyone); headers show the display name only, current character class-colored, blank line between people; minimap left-click window, right-click settings, hide toggle in settings; `/cf` toggles the window, `/cf help` lists commands.
 
 ### CF-13 Nicknames
 - Right-click person header: "Set nickname" (input popup) and "Clear nickname". Local only, stored in `nicknames`.

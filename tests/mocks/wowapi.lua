@@ -182,6 +182,7 @@ function wowapi.install(opts)
     clubs = {
       { clubId = "23125681", name = "Forever Friends", clubType = 1 },
       { clubId = "999", name = "My Guild", clubType = 2 },
+      { clubId = "777", name = "Other Friends", clubType = 1 },
     },
     -- clubMembers[clubId] = list of C_Club.GetMemberInfo results (fields as verified)
     clubMembers = {

@@ -74,6 +74,7 @@ local function charRow(guid, member, record, presence, source)
     professions = record.professions,
     realm = record.realm,
     updatedAt = record.updatedAt,
+    lastPlayed = record.lastPlayed,
     lastSeen = presence and presence.lastSeen,
     linkSource = source,
   }

@@ -67,9 +67,15 @@ function MainFrame.render()
       heading:SetText(row.text)
       heading:SetFullWidth(true)
       scroll:AddChild(heading)
+    elseif row.kind == "spacer" then
+      addLabel("Label", " ")
     elseif row.kind == "person" then
       local text = string.format("%s %s %s", row.expanded and "-" or "+",
         row.online and ONLINE_ICON or OFFLINE_ICON, row.text)
+      if row.current then
+        text = text .. " - on " .. colorName(row.current.name, row.current.classFile, row.current.classID) ..
+          (row.current.outside and " (not in community)" or "")
+      end
       local label = addLabel("InteractiveLabel", text, GameFontNormal)
       label:SetCallback("OnClick", function() toggleCollapsed(row.key) end)
     elseif row.kind == "char" then

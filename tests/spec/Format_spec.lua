@@ -64,6 +64,8 @@ describe("Format", function()
       assert.are.equal("Seen 5 min ago",
         Format.status(charRow({ online = false, lastSeen = NOW - 7200, updatedAt = NOW - 300 }), NOW))
       assert.are.equal("Offline", Format.status(charRow({ online = false }), NOW))
+      assert.are.equal("Seen just now", -- own alt: last played beats an old data change
+        Format.status(charRow({ online = false, updatedAt = NOW - 7200, lastPlayed = NOW - 10 }), NOW))
     end)
   end)
 
@@ -80,34 +82,42 @@ describe("Format", function()
       assert.are.equal("No linked friends yet.", rows[4].text)
     end)
 
-    it("renders a person header with BattleTag and current character", function()
+    it("renders a person header with the display name and current character", function()
       local rows = Format.rows({ people = { person() }, unlinked = {} }, state())
       assert.are.same({ kind = "person", key = "Sjaakovich#2232", online = true, expanded = true, isSelf = false,
-                        text = "Sjaak (Sjaakovich#2232) - on Garraka" }, rows[2])
+                        text = "Sjaak", current = { name = "Garraka", classFile = "MAGE", classID = 8,
+                                                     outside = false } }, rows[2])
     end)
 
     it("marks offline people, self, and a current character outside the community", function()
       local offline = Format.rows({ people = { person({ online = false, currentChar = false }) }, unlinked = {} },
         state())
-      assert.are.equal("Sjaak (Sjaakovich#2232) - offline", offline[2].text)
+      assert.are.equal("Sjaak - offline", offline[2].text)
+      assert.is_nil(offline[2].current)
 
-      local me = Format.rows({ people = { person({ isSelf = true, displayName = "Sjaakovich#2232" }) },
-                               unlinked = {} }, state())
-      assert.are.equal("Sjaakovich#2232 - you - on Garraka", me[2].text)
+      local me = Format.rows({ people = { person({ isSelf = true, displayName = "Vestras" }) }, unlinked = {} },
+        state())
+      assert.are.equal("Vestras (you)", me[2].text)
 
       local outside = Format.rows({ people = { person({ currentChar = { name = "Alt", visible = false } }) },
                                     unlinked = {} }, state())
-      assert.are.equal("Sjaak (Sjaakovich#2232) - on Alt (not in community)", outside[2].text)
+      assert.is_true(outside[2].current.outside)
+    end)
+
+    it("puts a spacer between people", function()
+      local rows = Format.rows({ people = { person(), person({ battleTag = "Other#1", displayName = "Other" }) },
+                                 unlinked = {} }, state())
+      assert.are.same({ "section", "person", "char", "spacer", "person", "char" }, kinds(rows))
     end)
 
     it("renders two-line character rows", function()
       local rows = Format.rows({ people = { person() }, unlinked = {} }, state())
       assert.are.same({ kind = "char", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8,
                         line1 = "Lvl 11  iLvl 20  Online - Orgrimmar",
-                        line2 = "Cooking 2/75, Mining 64/150  -  Classic Beta PvP", online = true }, rows[3])
+                        line2 = "Cooking 2/75, Mining 64/150", online = true }, rows[3]) -- no realm
     end)
 
-    it("leaves out missing ilvl, professions and realm", function()
+    it("leaves out missing ilvl and professions", function()
       local p = person({ chars = { charRow({ ilvl = false, professions = {}, realm = false }) } })
       local row = Format.rows({ people = { p }, unlinked = {} }, state())[3]
       assert.are.equal("Lvl 11  Online - Orgrimmar", row.line1)

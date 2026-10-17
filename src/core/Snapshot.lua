@@ -4,7 +4,7 @@ local _, ns = ...
 
 local Snapshot = {}
 
--- Synced scalar Char fields. updatedAt is metadata and never compared.
+-- Synced scalar Char fields. updatedAt and lastPlayed are metadata and never compared.
 local SCALAR_FIELDS = { "guid", "name", "classFile", "raceID", "level", "faction", "realm", "ilvl" }
 
 -- Builds a Char from raw SelfInfo values.
@@ -69,9 +69,20 @@ function Snapshot.apply(record, info, now)
   end
 
   char.updatedAt = now
+  local previous = record.chars[char.guid]
+  char.lastPlayed = previous and previous.lastPlayed
   record.chars[char.guid] = char
   record.version = ns.Merge.nextVersion(record.version, now)
   return true
+end
+
+-- Records when a character was last played (login, logout). Not a synced-field change:
+-- no version bump; the value travels with the next record that is sent anyway.
+function Snapshot.markPlayed(record, guid, now)
+  local char = guid and record.chars[guid]
+  if char then
+    char.lastPlayed = now
+  end
 end
 
 ns.Snapshot = Snapshot

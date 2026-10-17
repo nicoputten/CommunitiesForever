@@ -4,14 +4,15 @@ local _, ns = ...
 
 local SelfInfo = {}
 
--- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment".
+-- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment", "logout".
 SelfInfo.CHANGED = "CF_SELF_CHANGED"
 
 local EVENT_REASONS = {
   PLAYER_ENTERING_WORLD = "world",
-  PLAYER_LEVEL_UP = "level",                 -- arg 1 is the new level (VERIFY.md V12)
-  SKILL_LINES_CHANGED = "skills",            -- VERIFY.md V12
-  PLAYER_EQUIPMENT_CHANGED = "equipment",    -- VERIFY.md V12
+  PLAYER_LEVEL_UP = "level",                 -- arg 1 is the new level
+  SKILL_LINES_CHANGED = "skills",
+  PLAYER_EQUIPMENT_CHANGED = "equipment",
+  PLAYER_LOGOUT = "logout",                  -- VERIFY.md V22: handlers run before SavedVariables are written
 }
 
 -- prof1, prof2, archaeology, fishing, cooking, with nil holes (API-FINDINGS.md).

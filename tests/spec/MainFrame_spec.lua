@@ -57,10 +57,13 @@ describe("MainFrame", function()
     ns.MainFrame.toggle()
     local t = texts()
     assert.are.equal("People", t[1])
-    assert.matches("Sjaakovich %(Sjaakovich#2232%) %- on Garraka Doombringer", t[2])
+    assert.matches("Sjaakovich - on |cff40c7ebGarraka Doombringer|r", t[2], 1, true) -- current char colored
+    assert.is_nil(t[2]:find("#2232", 1, true)) -- no BattleTag in the header
     assert.matches("|cff40c7ebGarraka Doombringer|r  Lvl 11", t[3], 1, true) -- MAGE color via classID
-    assert.matches("Vestras %(Vestras#2858%) %- you", t[4])
-    assert.matches("\n", t[5], 1, true) -- own char has professions: second line
+    assert.are.equal(" ", t[4]) -- blank line between people
+    assert.matches("Vestras (you) - on |cfff58cbaVes Doombringer|r", t[5], 1, true)
+    assert.matches("\n", t[6], 1, true) -- own char has professions: second line
+    assert.is_nil(t[6]:find("Classic Beta PvP", 1, true)) -- no realm
     assert.are.equal("2 people, 0 unlinked", frame().statusText)
   end)
 
@@ -77,7 +80,8 @@ describe("MainFrame", function()
     header:Fire("OnClick")
     assert.is_true(addon.db.global.settings.collapsed["Sjaakovich#2232"])
     assert.matches("^%+ ", texts()[2])
-    assert.matches("^Vestras", texts()[3]:gsub("^%- |T[^|]+|t ", ""))
+    assert.are.equal(" ", texts()[3]) -- characters hidden, spacer follows the header
+    assert.matches("Vestras (you)", texts()[4], 1, true)
 
     scroll().children[2]:Fire("OnClick")
     assert.is_nil(addon.db.global.settings.collapsed["Sjaakovich#2232"])
@@ -91,7 +95,7 @@ describe("MainFrame", function()
     wowapi.fireEvent(state, "BN_FRIEND_ACCOUNT_OFFLINE")
     wowapi.runTimers(state) -- presence refresh, then window refresh
     wowapi.runTimers(state)
-    assert.matches("Sjaakovich#2232%) %- offline", texts()[4])
+    assert.matches("Sjaakovich %- offline$", texts()[5])
   end)
 
   it("does not render while hidden", function()
