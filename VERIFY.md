@@ -8,7 +8,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V25 | Do the invite code functions exist? (CF-21) | `/dump C_Club.RedeemTicket ~= nil, C_Club.RequestTicket ~= nil, C_Club.CreateTicket ~= nil, C_Club.GetMemberInfoForSelf ~= nil` | open |
-| V26 | May an addon really use invite codes? (CF-21) | Create an invite link for the community (Communities window, invite, link). With FriendProbe on: `/fp ticket <link>` on any character: expect a `CLUB_TICKET_RECEIVED` line with the community. Then on an alt that is NOT a member: `/fp redeem <link>`: does the alt join (`CLUB_ADDED`), or do you see `ADDON_ACTION_BLOCKED` / `ADDON_ACTION_FORBIDDEN`? Paste the `FP` lines here. | open |
+| V27 | Is a community invite link printed by an addon clickable, and does it open Blizzard's join dialog? (CF-21: chat link instead of joining directly) | 1. `/dump GetClubTicketLink ~= nil`. 2. Copy the code from your invite link (the part after the last `/`). 3. On an alt that is NOT in the community, type this one line (replace CODE): `/run local c="CODE" print(GetClubTicketLink and GetClubTicketLink(c,"Forever Friends",1) or ("\124cffffd100\124HclubTicket:"..c.."\124h[Join Forever Friends]\124h\124r"))` 4. A link appears in chat. Click it: does Blizzard's community invite window open, and does its Join button work without a "blocked" warning? | open |
 | V23 | Which quest log API and events does Forever have, and how big is the quest log? (for CF-19, can be checked any time) | `/dump C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries(), GetNumQuestLogEntries and GetNumQuestLogEntries()` and `/dump C_QuestLog.GetInfo and C_QuestLog.GetInfo(1)`. Events: `/dump C_EventUtils.IsEventValid("QUEST_ACCEPTED"), C_EventUtils.IsEventValid("QUEST_TURNED_IN"), C_EventUtils.IsEventValid("QUEST_REMOVED"), C_EventUtils.IsEventValid("QUEST_LOG_UPDATE")`. Log size: `/dump C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()` | open |
 | V20 | Which talent API does Forever have? (for CF-18, can be checked any time) | `/dump GetNumTalentTabs and GetNumTalentTabs(), GetTalentTabInfo and GetTalentTabInfo(1)` and `/dump C_ClassTalents ~= nil, C_Traits ~= nil, GetSpecialization ~= nil`. Also: which event fires after spending a talent point (`CHARACTER_POINTS_CHANGED`, `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED`)? `/dump C_EventUtils.IsEventValid("CHARACTER_POINTS_CHANGED"), C_EventUtils.IsEventValid("PLAYER_TALENT_UPDATE"), C_EventUtils.IsEventValid("TRAIT_CONFIG_UPDATED")` | open |
 
@@ -34,7 +34,7 @@ Needs three Battle.net accounts on this build (A, B, C): relaying always involve
 | `/reload` on C | B's relayed data stays. | open |
 
 ### CF-21 Join with a shared invite link
-Built before V25/V26 were checked. Do V25 first (one `/dump`); if `RedeemTicket` is missing, the button will say joining is not possible.
+V26 answered: `C_Club.RedeemTicket` is blocked for addons, so the Join button cannot work. Do not click it again. Next: V27 (chat link). The steps below are on hold until V27 is known.
 
 | Step | Expected | Status |
 |---|---|---|
