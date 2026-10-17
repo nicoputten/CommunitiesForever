@@ -41,11 +41,11 @@ function Settings.options()
       },
       inviteLink = {
         type = "input",
-        order = 5,
+        order = 6,
         width = "full",
         name = "Community invite link",
-        desc = "Paste an invite link for this community (Communities window, invite, link). Friends see a "
-          .. "Join button on characters that are not in the community. Leave empty to stop sharing it.",
+        desc = "Paste an invite link for this community (Communities window, invite, link). On characters "
+          .. "that are not in the community, friends see how to join with it. Leave empty to stop sharing it.",
         hidden = function() return not ns.Invites.canSet() end,
         get = function() return ns.Invites.ownText() end,
         set = function(_, value)
@@ -61,6 +61,16 @@ function Settings.options()
         desc = "A chat line when a friend in the community comes online in Forever or switches character.",
         get = function() return ns.db.global.settings.notifications ~= false end,
         set = function(_, value) ns.db.global.settings.notifications = value end,
+      },
+      levelUps = {
+        type = "toggle",
+        order = 5,
+        width = "full",
+        name = "Announce friends' level-ups",
+        desc = "A chat line when a character of a friend in the community reaches a new level "
+          .. "(friends running CommunitiesForever).",
+        get = function() return ns.db.global.settings.levelUps ~= false end,
+        set = function(_, value) ns.db.global.settings.levelUps = value end,
       },
       minimap = {
         type = "toggle",

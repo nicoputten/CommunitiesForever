@@ -393,6 +393,56 @@ describe("Sync", function()
     end)
   end)
 
+  describe("level-up announcements (CF-16)", function()
+    -- Sjaak's alt is a community member, so it is visible and linked through his record.
+    local function loadWithAlt()
+      load()
+      table.insert(state.clubMembers[CLUB], { memberId = 3, guid = SJAAK_ALT, name = "Alt Doombringer",
+                                              classID = 4, level = 30, presence = 3 })
+      wowapi.fireEvent(state, "CLUB_MEMBER_ADDED", CLUB, 3)
+      settle()
+      state.serverTime = 5000
+      fromSjaak(sjaakRecord(4000, { [SJAAK_ALT] = { guid = SJAAK_ALT, name = "Alt Doombringer", level = 30,
+                                                    updatedAt = 4000 } }))
+      state.printed = {}
+    end
+
+    local function levelTo(level, version, updatedAt)
+      fromSjaak(sjaakRecord(version, { [SJAAK_ALT] = { guid = SJAAK_ALT, name = "Alt Doombringer", level = level,
+                                                       updatedAt = updatedAt or version } }))
+    end
+
+    it("announces a friend's character reaching a new level", function()
+      loadWithAlt()
+      levelTo(31, 5000)
+      assert.are.same({ "Sjaak's Alt Doombringer reached level 31" }, state.printed)
+    end)
+
+    it("stays quiet for unchanged levels and characters seen for the first time", function()
+      loadWithAlt()
+      levelTo(30, 5000)
+      fromSjaak(sjaakRecord(5001, {
+        [SJAAK_ALT] = { guid = SJAAK_ALT, name = "Alt Doombringer", level = 30, updatedAt = 5001 },
+        ["Player-4619-0000NEW9"] = { guid = "Player-4619-0000NEW9", name = "Brand New", level = 9, updatedAt = 5001 },
+      }))
+      assert.are.same({}, state.printed)
+    end)
+
+    it("stays quiet for level-ups older than 15 minutes (late relayed records)", function()
+      loadWithAlt()
+      state.serverTime = 5000 + 16 * 60
+      levelTo(31, 5001, 5000)
+      assert.are.same({}, state.printed)
+    end)
+
+    it("can be switched off in settings", function()
+      loadWithAlt()
+      state.options.args.levelUps.set({}, false)
+      levelTo(31, 5000)
+      assert.are.same({}, state.printed)
+    end)
+  end)
+
   it("tells once per session when a friend uses a newer protocol", function()
     load()
     local serializer, deflate = helpers.lib("LibSerialize"), helpers.lib("LibDeflate")

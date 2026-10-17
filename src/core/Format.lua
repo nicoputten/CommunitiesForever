@@ -265,6 +265,11 @@ function Format.loginNotice(displayName, character)
   return string.format("%s is online on %s%s", tostring(displayName), tostring(character.name), suffix)
 end
 
+-- Level-up announcement (CF-16): "Sjaak's Garraka Doombringer reached level 12".
+function Format.levelUpNotice(displayName, characterName, level)
+  return string.format("%s's %s reached level %s", tostring(displayName), tostring(characterName), tostring(level))
+end
+
 Format.TOOLTIP_UNLINKED = "CommunitiesForever member"
 
 -- Tooltip lines for hovered units (CF-14): { [guid] = text } for every character in the view.
