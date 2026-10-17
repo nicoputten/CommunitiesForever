@@ -43,7 +43,7 @@ describe("Core", function()
     end)
 
     it("prints unknown when the metadata API is missing", function()
-      load({ noAddOnsApi = true })
+      load({ missing = { C_AddOns = true } })
       state.slash.cf("version")
       assert.are.same({ "Version unknown" }, state.printed)
     end)

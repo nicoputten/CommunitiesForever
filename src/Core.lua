@@ -18,6 +18,11 @@ function addon:OnInitialize()
   self:RegisterChatCommand("cf", "OnSlashCommand")
 end
 
+function addon:OnEnable()
+  ns.SelfInfo.watch(self)
+  ns.SelfTracker.start(self)
+end
+
 function addon:OnSlashCommand(input)
   local command = self:GetArgs(input, 1)
   command = command and command:lower()

@@ -29,11 +29,13 @@ CommunitiesForever/
       Protocol.lua           encode/decode, chunk/reassemble
       Snapshot.lua           build and compare character snapshots
     adapters/                WoW API wrappers only
+      Events.lua             guarded event registration (C_EventUtils.IsEventValid)
       SelfInfo.lua           Unit*, GetProfessions, item level
       Community.lua          C_Club
       Presence.lua           C_BattleNet, BN events
       Transport.lua          BNSendGameData, throttle, combat queue
     services/
+      SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
@@ -51,6 +53,8 @@ CommunitiesForever/
 ```
 
 Module sharing: every file reads the WoW private addon table via `local ADDON_NAME, ns = ...` and registers on it (`ns.Store = Store`). `Core.lua` turns `ns` into the AceAddon object and exposes it as the `CommunitiesForever` global. Specs load files with `loadfile(path)("CommunitiesForever", ns)` (`tests/helpers.lua`), so core modules need no globals.
+
+Internal event bus: AceEvent messages on the addon object (`SendMessage` / `RegisterMessage`), named `CF_*` and defined as constants in the emitting module (e.g. `SelfInfo.CHANGED`, `SelfTracker.UPDATED`).
 
 Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
 
@@ -74,7 +78,7 @@ global = {
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,
-  ilvl,                                              -- nil if API unavailable
+  ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max } },
   updatedAt,
 }
