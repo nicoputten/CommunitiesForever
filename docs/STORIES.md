@@ -112,6 +112,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - When a linked person comes online in Forever or switches character: chat message `Sjaak is online on Garraka Doombringer (Mage 11)`.
 - Only for people linked in the selected community. Not for yourself. No repeat for the same person within 30 s.
 - Toggle in settings (default on).
+- Decided in CF-15: the same message for coming online and switching character; uses the display name and the localized class name and level from Battle.net presence; friends already online at login give no message (CF-07 baseline).
 
 ### CF-16 Level-up announcements
 - When a linked person's character in the selected community levels up, show a chat line: `Sjaak's Garraka Doombringer reached level 12`.
