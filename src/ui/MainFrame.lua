@@ -120,6 +120,9 @@ function renderDetail.person(parent, detail, groupValue)
   if detail.battleTag then
     label(parent, GREY .. detail.battleTag .. "|r", GameFontHighlightSmall)
   end
+  if detail.source then
+    label(parent, GREY .. detail.source .. "|r", GameFontHighlightSmall)
+  end
   spacer(parent)
   local status = detail.status
   if detail.current and detail.online then

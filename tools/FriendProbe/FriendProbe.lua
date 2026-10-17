@@ -6,6 +6,8 @@
 --   /fp big [bytes]     send a large BNet payload to find the size limit (default 4000)
 --   /fp whisper <name>  addon WHISPER ping to a character name (tests name format + mega-realm)
 --   /fp clubs [clubId]  communities (C_Club): club types, clubIds, all member fields
+--   /fp ticket <code>   C_Club.RequestTicket: look up an invite code or link (result via CLUB_TICKET_RECEIVED)
+--   /fp redeem <code>   C_Club.RedeemTicket: join with an invite code or link (logs blocked/forbidden actions)
 --   /fp clear           wipe the saved log
 
 local PREFIX = "FProbe"
@@ -130,13 +132,30 @@ local function Clubs(filter)
   end
 end
 
+-- Invite code from a code or a full invite link (last path segment).
+local function TicketCode(text)
+  return (text or ""):match("([%w]+)%/?%s*$")
+end
+
+local function Ticket(cmd, arg)
+  local code = TicketCode(arg)
+  if not code then log("usage: /fp " .. cmd .. " <invite code or link>") return end
+  local fn = cmd == "ticket" and "RequestTicket" or "RedeemTicket"
+  if not (C_Club and C_Club[fn]) then log("C_Club." .. fn, "does not exist") return end
+  -- A protected function does not raise a Lua error; it fires ADDON_ACTION_BLOCKED/FORBIDDEN (logged).
+  log("C_Club." .. fn, code, "->", pcall(C_Club[fn], code))
+end
+
 local clubUpdateSeen = {}
 
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterEvent("BN_CHAT_MSG_ADDON")
+for _, event in ipairs({ "CLUB_MEMBERS_UPDATED", "CLUB_TICKET_RECEIVED", "CLUB_ADDED", "CLUB_ERROR",
+    "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }) do
+  pcall(f.RegisterEvent, f, event) -- names unverified on Forever: ignore unknown ones
+end
 f:RegisterEvent("CHAT_MSG_ADDON")
-pcall(f.RegisterEvent, f, "CLUB_MEMBERS_UPDATED")
 f:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
     if ... == "FriendProbe" then
@@ -157,6 +176,13 @@ f:SetScript("OnEvent", function(_, event, ...)
     log("addon recv <-", sender, "ch", channel, "len", #text, text:sub(1, 24))
     if text == "WPING" then
       log("whisper reply result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPONG", "WHISPER", sender))
+    end
+  elseif event == "CLUB_TICKET_RECEIVED" or event == "CLUB_ADDED" or event == "CLUB_ERROR"
+      or event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
+    local args = { ... }
+    log(event, unpack(args, 1, select("#", ...)))
+    for _, value in ipairs(args) do
+      if type(value) == "table" then DumpTable(event, value) end
     end
   elseif event == "CLUB_MEMBERS_UPDATED" then
     local clubId = S(...)
@@ -180,10 +206,11 @@ SlashCmdList.FRIENDPROBE = function(msg)
   elseif cmd == "whisper" and arg ~= "" then
     log("whisper send result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPING", "WHISPER", arg))
   elseif cmd == "clubs" then Clubs(arg)
+  elseif cmd == "ticket" or cmd == "redeem" then Ticket(cmd, arg)
   elseif cmd == "clear" then
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | clear")
   end
 end
