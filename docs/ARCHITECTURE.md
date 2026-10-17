@@ -27,7 +27,7 @@ CommunitiesForever/
       Store.lua              schema, defaults, migrations
       Merge.lua              record accept rules, version rules
       Linker.lua             visibility + linking -> view model (people, unlinked)
-      Protocol.lua           encode/decode, chunk/reassemble
+      Protocol.lua           encode/decode (LibSerialize + LibDeflate injected), chunk/reassemble
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
       Format.lua             view model -> tree nodes, detail cards, last seen, empty states
@@ -107,7 +107,7 @@ Char = {
 
 ## Sync protocol
 - Prefix `CommForever`. Payload: LibSerialize -> LibDeflate compress -> `EncodeForWoWAddonChannel`.
-- Chunking: max 3500 bytes per message including a `msgId/seq/total` header. The real BNet limit is unverified; 3500 is safely below it.
+- Chunking: max 3500 bytes per message including a `msgId/seq/total` header, written as `<msgId>:<seq>:<total>:<slice>` (msgId alphanumeric, unique per sender). The real BNet limit is unverified; 3500 is safely below it. Reassembly is per sender + msgId, any order, duplicates ignored.
 - Every message carries `pv` (protocol version, starts at 1).
 
 Messages:
