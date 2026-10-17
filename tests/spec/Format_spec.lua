@@ -114,7 +114,8 @@ describe("Format", function()
       assert.are.same({ "Sjaakovich#2232", "Sjaak", true, false },
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
       assert.are.equal(2, nodes[1].count)
-      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true },
+      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
+                        outside = false },
         nodes[1].children[1])
       assert.are.equal("Vestras (you)", nodes[2].text)
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
@@ -150,7 +151,7 @@ describe("Format", function()
       assert.are.equal("Sjaakovich#2232", d.battleTag)
       assert.are.equal("Online on Garraka", d.status)
       assert.are.same({ guid = "G2", name = "Grom", classFile = "WARRIOR", classID = 8, level = 11, seen = "2 h ago",
-                        own = false },
+                        own = false, outside = false },
         d.characters[2])
     end)
 
@@ -165,7 +166,7 @@ describe("Format", function()
       local d = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
       assert.are.same({
         kind = "character", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, owner = "Sjaak",
-        status = "Online in Orgrimmar", online = true,
+        status = "Online in Orgrimmar", online = true, outside = false,
         stats = { { label = "Level", value = "11" }, { label = "Item level", value = "20" },
                   { label = "Last seen", value = "Now" } },
         professions = Format.professionGroups(charRow().professions),
@@ -225,12 +226,22 @@ describe("Format", function()
   describe("empty state and hint", function()
     it("asks to select a community", function()
       assert.are.equal("Select a community in settings (/cf settings).",
-        Format.emptyState({ people = {}, unlinked = {} }, false))
+        Format.emptyState({ people = {}, unlinked = {} }, { selected = false }))
+    end)
+
+    it("explains that this character is not a member of the community", function()
+      assert.are.equal("Your account has characters in Forever Friends, but Kawkartha Skystrider isn't a member, "
+        .. "so it can't be shown here. Log in on a member character, or invite this one.",
+        Format.emptyState({ people = {}, unlinked = {} }, { selected = true, active = false,
+          communityName = "Forever Friends", characterName = "Kawkartha Skystrider" }))
+      assert.matches("characters in the selected community, but this character",
+        Format.emptyState({ people = {}, unlinked = {} }, { selected = true, active = false }), 1, true)
     end)
 
     it("says when the community has nobody to show", function()
-      assert.are.equal("Nobody in this community yet.", Format.emptyState({ people = {}, unlinked = {} }, true))
-      assert.is_nil(Format.emptyState({ people = { me() }, unlinked = {} }, true))
+      assert.are.equal("Nobody in this community yet.",
+        Format.emptyState({ people = {}, unlinked = {} }, { selected = true, active = true }))
+      assert.is_nil(Format.emptyState({ people = { me() }, unlinked = {} }, { selected = true, active = true }))
     end)
 
     it("hints when only you are linked", function()

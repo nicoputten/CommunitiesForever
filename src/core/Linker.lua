@@ -82,7 +82,9 @@ local function charRow(guid, member, record, presence, location, source)
   }
 end
 
+-- Community characters first, then alts outside the community (CF-17); online first, then name.
 local function byOnlineThenName(a, b)
+  if (a.outside or false) ~= (b.outside or false) then return not a.outside end
   if a.online ~= b.online then return a.online end
   local na, nb = (a.name or ""):lower(), (b.name or ""):lower()
   if na ~= nb then return na < nb end
@@ -105,9 +107,11 @@ returns {
   people   = { { battleTag, displayName, isSelf, online, currentChar, chars = { row, ... } }, ... },
   unlinked = { row, ... },
 }
-Only people with at least one visible (community member) character are listed.
-currentChar is the visible row of the character they are on now, or a minimal
-{ guid, name, className, level, visible = false } when that character is not in the community.
+Only people with at least one visible (community member) character are listed. Their alts outside
+the community that are known from a record are listed after their community characters with
+row.outside = true (CF-17).
+currentChar is the row of the character they are on now, or a minimal
+{ guid, name, className, level, visible = false } when that character is not known at all.
 ]]
 function Linker.build(raw)
   local self = raw.self or {}
@@ -136,6 +140,30 @@ function Linker.build(raw)
     else
       row.linkSource = nil
       unlinked[#unlinked + 1] = row
+    end
+  end
+
+  -- Alts outside the community (CF-17): characters from the own record or a friend's record that
+  -- are not members. Shown only under an owner who already has a visible member character,
+  -- never in Unlinked. Owner resolution is the same as for members (self, presence, record).
+  local candidates = {}
+  for guid in pairs(self.chars) do candidates[guid] = true end
+  for bt, person in pairs(input.people) do
+    if input.friends[bt] then
+      for guid in pairs(person.chars or {}) do candidates[guid] = true end
+    end
+  end
+  for guid in pairs(candidates) do
+    if not input.members[guid] then
+      local bt, source = linkFor(guid, input)
+      if bt and byTag[bt] then
+        local record = recordFor(guid, bt, input)
+        local row = charRow(guid, {}, record, input.presence[guid], input.locations[guid], source)
+        row.outside = true
+        local o = bt ~= self.battleTag and input.online[bt]
+        row.online = (bt == self.battleTag and guid == input.selfGuid) or (o and o.guid == guid) or false
+        table.insert(byTag[bt], row)
+      end
     end
   end
 

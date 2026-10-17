@@ -43,6 +43,16 @@ local function readItemLevel()
   return equipped
 end
 
+-- Full "First Last" name. UnitName returns first and last name separately for some characters
+-- (last name in the second return, V9); GetUnitName("player", true) returns "Marks Man".
+local function fullName()
+  if GetUnitName then
+    local name = GetUnitName("player", true)
+    if name and name ~= "" then return name end
+  end
+  return (UnitName("player"))
+end
+
 -- UnitRace and UnitLevel/UnitFactionGroup are unverified on Forever (VERIFY.md V11).
 function SelfInfo.read()
   local raceID
@@ -52,7 +62,7 @@ function SelfInfo.read()
 
   return {
     guid = UnitGUID("player"),
-    name = UnitName("player"),
+    name = fullName(),
     classFile = UnitClassBase("player"),
     raceID = raceID,
     level = UnitLevel and UnitLevel("player") or nil,

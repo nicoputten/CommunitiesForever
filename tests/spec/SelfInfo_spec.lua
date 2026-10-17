@@ -29,6 +29,19 @@ describe("SelfInfo", function()
       assert.are.equal("Vestras#2858", info.battleTag)
     end)
 
+    it("reads the full name even when UnitName splits first and last name (V9)", function()
+      load()
+      state.player.name = "Marks Man"
+      assert.are.same({ "Marks", "Man" }, { _G.UnitName("player") })
+      assert.are.equal("Marks Man", SelfInfo.read().name)
+    end)
+
+    it("falls back to UnitName without GetUnitName", function()
+      load({ missing = { GetUnitName = true } })
+      state.player.name = "Marks Man"
+      assert.are.equal("Marks", SelfInfo.read().name)
+    end)
+
     it("uses the equipped item level (2nd return)", function()
       load()
       state.player.itemLevel = { 30.5, 20.25, 10 }

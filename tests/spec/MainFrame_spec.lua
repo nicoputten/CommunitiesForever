@@ -132,6 +132,24 @@ describe("MainFrame", function()
     assert.matches("Garrakathorian Doombringerson|r", tree().tree[1].children[1].text, 1, true)
   end)
 
+  it("shows alts outside the community dimmed and tagged (CF-17)", function()
+    load("23125681")
+    addon.db.global.self.chars["Player-4619-0000OLD1"] = { guid = "Player-4619-0000OLD1", name = "Old Alt",
+                                                           classFile = "MAGE", level = 7, updatedAt = 900 }
+    ns.MainFrame.toggle()
+    local mine
+    for _, node in ipairs(tree().tree) do
+      if node.value == "Vestras#2858" then mine = node end
+    end
+    local last = mine.children[#mine.children]
+    assert.matches("|cff40c7ebOld Alt|r", last.text, 1, true) -- class-colored like any character
+
+    tree():SelectByPath("Vestras#2858", "Player-4619-0000OLD1")
+    assert.is_true(hasText("Not in community"))
+    tree():SelectByValue("Vestras#2858")
+    assert.is_true(hasText("not in community"))
+  end)
+
   it("expands new people once, then leaves expansion to the user", function()
     load("23125681")
     ns.MainFrame.toggle()
@@ -196,6 +214,17 @@ describe("MainFrame", function()
     wowapi.runTimers(state)
     wowapi.runTimers(state)
     assert.are.equal("Vestras#2858", addon.db.global.settings.tree.selected)
+  end)
+
+  it("explains on a character outside the community, and keeps syncing", function()
+    load("23125681")
+    state.clubs = { { clubId = "777", name = "Other Friends", clubType = 1 } } -- this alt is not a member
+    wowapi.fireEvent(state, "CLUB_UPDATED", "777")
+    ns.MainFrame.toggle()
+    assert.are.same({}, tree().tree)
+    assert.matches("^Your account has characters in Forever Friends, but Ves Doombringer isn't a member",
+      detailTexts()[1])
+    assert.are.equal("23125681", addon.db.global.settings.clubId)
   end)
 
   it("shows the empty state without a community", function()

@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 18, 19, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 13, 14, 15, 16, 18, 19, 04, 02.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -38,7 +38,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - AceConfig dropdown lists subscribed **character** communities by name (decided in CF-05: guild and Battle.net communities excluded, since membership must be per character with GUIDs). Also in the Blizzard settings panel; `/cf settings` opens it.
 - Selection stored in `settings.clubId`, survives reload.
 - Auto-select (added in CF-12 feedback): with nothing selected, the only character community is selected, or the one you just joined; a chat line says which.
-- If the stored club no longer exists: selection cleared, one chat notice "Your community is no longer available. Select one with /cf settings." The main window empty state follows in CF-12.
+- ~~If the stored club no longer exists: selection cleared~~ Changed in CF-17: membership is per character but the selection is account-wide, so the selection is never cleared automatically. On a character that is not a member (or after leaving the community) the window says: "Your account has characters in <community>, but <character> isn't a member, so it can't be shown here." The community name is remembered (`settings.clubName`). Sync keeps working on that character.
 
 ### CF-06 Member tracking
 - Adapter exposes `members[guid] = { name, classID, level, zone, presence, raceID, faction }` for the selected club.
@@ -84,7 +84,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - HELLO / REQ / RECORD as in ARCHITECTURE.md, with per-peer dedupe (60 s) and debounce (5 s).
 - Merge accept rules unit tested: wrong sender BattleTag rejected, older or equal version rejected, spoofed `bt` rejected, unknown `pv` rejected.
 - Outgoing RECORD contains only own characters that are current community members (unit test).
-- Decided in CF-11: same-version HELLO deduped per peer for 60 s, newer versions always sent; version bumps when the shared set of own community characters changes; REQ answered after member data has loaded; `/cf sync` forces a HELLO; window refreshes on `CF_PEOPLE_UPDATED`.
+- Decided in CF-11: same-version HELLO deduped per peer for 60 s, newer versions always sent; version bumps when the shared set of own community characters changes; REQ answered after member data has loaded; `/cf sync` forces a HELLO; window refreshes on `CF_PEOPLE_UPDATED`. Superseded in CF-17: the shared-set version bump and the wait for member data were removed, because all own characters are always shared.
 - Manual (2 clients): friend levels up, your window shows the new level within ~10 s. Friend logs in on a community alt, it appears under them.
 
 ## E5 UI
@@ -123,13 +123,14 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Scope (accepted): only reaches people who are your Battle.net friends and run the addon (V1 has no relay).
 
 ### CF-17 Alts outside the community
-- Setting "Share alts outside the community" (default on), stored in `settings`. On: the outgoing RECORD contains all own characters. Off: only current community members (CF-11 behavior). Changing it bumps the version and triggers a debounced HELLO.
+- All own characters are always shared (decided in CF-17 testing: the "Share alts outside the community" setting was removed). The outgoing RECORD contains every own character; the receiver decides what to show.
 - Receiver (Linker): a character from a record that is not a member of the selected community is shown only as a non-member alt, under its owner, if the owner is a current friend with at least one visible, linked member character. Otherwise it is ignored. It never appears in Unlinked.
 - Membership is always decided by the receiver's own community data, never by the sender.
-- UI: non-member alts are listed after the person's community characters, dimmed and tagged "not in community".
-- Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Sender filter respects the setting both ways.
-- Manual (2 clients): the friend has an alt that is not invited; with the setting on it shows dimmed under them; after they turn the setting off it disappears.
-- Privacy note: default on means alts are shared with Battle.net friends who run the addon and are in the community, unless the owner turns it off.
+- UI: non-member alts are listed after the person's community characters, class-colored, with "not in community" on the cards.
+- Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Outgoing RECORD contains all own characters.
+- Manual (2 clients): the friend has an alt that is not invited; it shows under them with its class color and a "not in community" label on the cards.
+- Privacy note: alts are always shared with Battle.net friends who run the addon; they are only shown when the owner has a character in the community.
+- Decided in CF-17: your own alts outside the community are shown under you too (your record is `self.chars`); alts outside the community keep their class color (not dimmed), the cards say "Not in community"; a friend online on an outside alt has that row as current character.
 
 ### CF-18 Talents and role (future)
 - First: find the talent API on Forever (V20). Forever uses the Mainline API with Vanilla content, so it may be the classic-style `GetNumTalentTabs` / `GetTalentTabInfo` or the retail-style `C_ClassTalents` / `C_Traits`. Extend FriendProbe (`/fp talents`) to dump what exists before building.
@@ -155,3 +156,19 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unit tests: overlap with one alt, with several alts, none; headers ignored; quest progress change does not bump the version; accept/abandon does; matching by ID with different titles (locale).
 - Manual (2 clients): both accept the same quest on any character; within ~10 s it appears on the friend's character card; abandon it, it disappears.
 - Depends on sync (CF-09, CF-10, CF-11).
+
+### CF-20 Relay records through friends
+- Goal: records travel through any friend running the addon, so people in different time zones still get each other's data. Example: A and B are online together, B logs off, C logs on while A is online: C gets B's record from A.
+- Decided: trust is the community. A relayed record links its community characters to its owner even when the owner is not your own Battle.net friend (changes core rules 2 and 4). Relayed records are marked subtly: the person card says `Updated 3 h ago via Sjaak`; nothing extra for records that came from the owner.
+- Protocol (pv stays 1; old clients ignore the new field):
+  - `HELLO {bt, ver, known = { [battleTag] = version } }`: every record the sender holds (own included), only people with at least one character in the sender's selected community.
+  - The receiver sends `REQ {bt = <wanted BattleTag>}` to that peer for every entry newer than what it stores; the peer answers with that `RECORD` (own or stored).
+  - A RECORD whose `bt` differs from the sender's BattleTag is a relayed record; it is stored with `via = <sender BattleTag>`.
+- Accept rules (Merge, unit tested):
+  - Direct record (from its owner): as CF-11, and it always replaces a relayed copy, even one with a higher version, so a broken or forged copy can never block the owner's real data.
+  - Relayed record: sender is a friend in Forever (transport), `record.bt` is not your own BattleTag, version newer than stored, version not more than 5 minutes ahead of server time (versions are close to server time; a far-future version would block real updates), and at least one of its characters is a member of your selected community (your own community data).
+  - Relayed records may be relayed again (A -> C -> D); versions only go up, so loops stop by themselves.
+- Linker: people from relayed records are linked like direct ones (presence still wins on conflicts); CF-17 rules for alts outside the community apply unchanged.
+- Unit tests: relayed record stored with `via`; direct replaces relayed even at a lower version; relayed never replaces direct at an equal or lower version; far-future version rejected; own BattleTag rejected; record without a community member rejected; HELLO `known` lists only community people; REQ for a stored person answered with the stored record; a non-friend owner is linked through a relayed record.
+- Manual (3 clients, or 2 plus timing): A and B online, B logs off; C logs on while A is online: within ~10 s C sees B's characters under B with `via <A's name>`; later B and C online together: the label disappears (direct record).
+- Depends on CF-11. Build order: right after CF-17.

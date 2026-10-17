@@ -99,8 +99,9 @@ end
 -- Clickable character list (person and Unlinked details).
 local function characterList(parent, groupValue, characters)
   for _, c in ipairs(characters) do
-    local text = string.format("%s  %sLvl %s  -  %s|r", colorName(c.name, c.classFile, c.classID), GREY,
-      tostring(c.level or "?"), c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen))
+    local text = string.format("%s  %sLvl %s  -  %s%s|r", colorName(c.name, c.classFile, c.classID), GREY,
+      tostring(c.level or "?"), c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen),
+      c.outside and "  -  not in community" or "")
     local entry = label(parent, text, GameFontHighlight, "InteractiveLabel")
     entry:SetCallback("OnClick", function()
       tree:SelectByPath(groupValue, c.guid)
@@ -123,7 +124,7 @@ function renderDetail.person(parent, detail, groupValue)
   local status = detail.status
   if detail.current and detail.online then
     status = "Online on " .. colorName(detail.current.name, detail.current.classFile, detail.current.classID) ..
-      (detail.current.visible == false and (GREY .. " (not in community)|r") or "")
+      ((detail.current.visible == false or detail.current.outside) and (GREY .. " (not in community)|r") or "")
   end
   label(parent, string.format("|T%s:%d:%d|t %s", detail.online and ONLINE_ICON or OFFLINE_ICON, DOT_SIZE, DOT_SIZE,
     status),
@@ -148,6 +149,7 @@ function renderDetail.character(parent, detail)
   if className then subtitle[#subtitle + 1] = className end
   subtitle[#subtitle + 1] = detail.owner
   subtitle[#subtitle + 1] = detail.status
+  if detail.outside then subtitle[#subtitle + 1] = "Not in community" end
   label(parent, GREY .. table.concat(subtitle, "  -  ") .. "|r", GameFontHighlight)
   spacer(parent)
 
@@ -253,7 +255,12 @@ function MainFrame.render()
   if not frame then return end
   view = ns.ViewModel.build(addonRef)
 
-  local empty = ns.Format.emptyState(view, ns.CommunitySelection.selected() ~= nil)
+  local empty = ns.Format.emptyState(view, {
+    selected = ns.CommunitySelection.selected() ~= nil,
+    active = ns.CommunitySelection.active() ~= nil,
+    communityName = ns.CommunitySelection.name(),
+    characterName = view.selfName,
+  })
   if empty then
     tree:SetTree({})
     showDetail(nil, empty)

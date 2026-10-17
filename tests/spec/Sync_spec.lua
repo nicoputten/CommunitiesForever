@@ -158,10 +158,8 @@ describe("Sync", function()
   end)
 
   describe("RECORD out", function()
-    it("answers a REQ with only own characters that are community members", function()
-      load(function(s)
-        s.player.guid = VES
-      end)
+    it("answers a REQ with all own characters, also those outside the community", function()
+      load(function(s) s.player.guid = VES end)
       addon.db.global.self.chars["Player-4619-0000NOTM"] = { guid = "Player-4619-0000NOTM", name = "Not Member" }
       outgoing()
       fromSjaak({ t = "REQ", bt = SJAAK })
@@ -170,41 +168,19 @@ describe("Sync", function()
       assert.are.equal(ME, records[1].bt)
       assert.are.equal(addon.db.global.self.version, records[1].version)
       assert.is_not_nil(records[1].chars[VES])
-      assert.is_nil(records[1].chars["Player-4619-0000NOTM"])
+      assert.is_not_nil(records[1].chars["Player-4619-0000NOTM"])
     end)
 
-    it("waits for community member data before answering", function()
-      local members
-      load(function(s)
-        members = s.clubMembers[CLUB]
-        s.clubMembers[CLUB] = nil -- not loaded yet
-      end)
+    it("answers right away, even before community member data has loaded", function()
+      load(function(s) s.clubMembers[CLUB] = nil end)
       outgoing()
       fromSjaak({ t = "REQ", bt = SJAAK })
-      assert.are.same({}, ofType(outgoing(), "RECORD"))
-
-      state.clubMembers[CLUB] = members
-      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
       local records = ofType(outgoing(), "RECORD")
       assert.are.equal(1, #records)
       assert.is_not_nil(records[1].chars[VES])
     end)
 
-    it("bumps the version and says HELLO when an own character joins the community", function()
-      load()
-      outgoing()
-      local before = addon.db.global.self.version
-      addon.db.global.self.chars["Player-4619-0000NEW1"] = { guid = "Player-4619-0000NEW1", name = "New Alt" }
-      table.insert(state.clubMembers[CLUB], { memberId = 3, guid = "Player-4619-0000NEW1", name = "New Alt",
-                                              classID = 1, level = 5, presence = 3 })
-      state.serverTime = 3000
-      wowapi.fireEvent(state, "CLUB_MEMBER_ADDED", CLUB, 3)
-      wowapi.runTimers(state) -- member refresh debounce
-      assert.is_true(addon.db.global.self.version > before)
-      assert.are.equal(1, #ofType(outgoing(), "HELLO"))
-    end)
-
-    it("does not bump the version when the shared set is unchanged", function()
+    it("does not change the version when community membership changes", function()
       load()
       outgoing()
       local before = addon.db.global.self.version
@@ -212,6 +188,11 @@ describe("Sync", function()
       wowapi.fireEvent(state, "CLUB_MEMBER_UPDATED", CLUB, 2)
       settle()
       assert.are.equal(before, addon.db.global.self.version)
+    end)
+
+    it("has no share setting any more", function()
+      load()
+      assert.is_nil(state.options.args.shareAlts)
     end)
   end)
 

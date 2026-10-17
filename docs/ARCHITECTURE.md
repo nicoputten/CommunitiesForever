@@ -3,12 +3,13 @@
 ## Core rules
 1. A character is **visible** only if its GUID is a member of the selected community.
    Exception (CF-17): a **non-member alt** is visible if it arrived in its owner's record AND the owner has at least one visible, linked member character. It is shown under that person, marked "not in community", and never in Unlinked.
-2. A visible character is **linked** to a person (BattleTag) only if that BattleTag is a current Battle.net friend AND either:
-   - BNet presence showed that friend logged in on that character, or
-   - that friend's addon sent a record containing the character directly.
+2. A visible character is **linked** to a person (BattleTag) only if either:
+   - that BattleTag is a current Battle.net friend AND BNet presence showed them logged in on that character, or
+   - that BattleTag is a current Battle.net friend AND their addon sent a record containing the character, or
+   - (CF-20) a friend relayed that person's record and the character is in it. Trust is the community: the owner does not have to be your own Battle.net friend.
 3. Visible but not linked: shown in the **Unlinked** section with community data only.
-4. No relay in V1. Records are accepted only from their owner over BNet, and only for the sender's own BattleTag.
-5. Only the owner changes their record. Version = `max(prev + 1, GetServerTime())`. Higher version wins.
+4. Records come from their owner over BNet, or (CF-20) relayed by a friend running the addon. Records are only accepted from current friends in Forever. A record from its owner always replaces a relayed copy; a relayed copy only replaces an older relayed copy, and never a version more than 5 minutes ahead of server time. Until CF-20 is built: owner only.
+5. Only the owner changes their record. Version = `max(prev + 1, GetServerTime())`. Higher version wins (with the owner-first exception above).
 
 Consequences:
 - Transport is BNet only (`BNSendGameData`). Addon whispers are not used in V1.
@@ -44,7 +45,7 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
-      CommunitySelection.lua owns settings.clubId, clears it when the club is gone
+      CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
@@ -82,9 +83,10 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
   schemaVersion = 1,
-  settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
+  settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
+                notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
                 sendInterval = 0.2 },                -- seconds between outgoing chunks
-  self      = { battleTag, displayName, version, chars = { [guid] = Char }, sharedSignature },
+  self      = { battleTag, displayName, version, chars = { [guid] = Char } },
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char } } },
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
@@ -105,7 +107,7 @@ Char = {
 - Zone and online state are NOT synced. They are live data from presence and C_Club.
 - Bump `self.version` only when a synced field actually changes (Snapshot compare).
 - Display name priority: local nickname > owner's displayName > BattleTag name part (before `#`).
-- Sender includes only own characters that are current community members, plus all other own characters when the setting "Share alts outside the community" is on (CF-17, default on). Receiver filters again, authoritatively (core rule 1).
+- Sender always includes all own characters (decided in CF-17 testing; no setting). The receiver decides what to show (core rule 1), so the record does not depend on the sender's community member list and can be sent from any character.
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
 
@@ -117,8 +119,7 @@ Char = {
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one.
 - `REQ {bt}`: sent when a peer's advertised `ver` is higher than stored.
-- `RECORD {bt, displayName, version, chars}`: own record, filtered to community members (plus non-member alts when sharing is on, CF-17).
-- The own version also bumps when the set of own characters that are community members changes (`self.sharedSignature`), because that changes what friends receive. A REQ that arrives before community member data has loaded is answered once it has (decided in CF-11).
+- `RECORD {bt, displayName, version, chars}`: own record with all own characters.
 
 Accept rule (Merge.lua):
 - sender `gameAccountID` resolves to BattleTag B via presence

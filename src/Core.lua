@@ -33,12 +33,18 @@ function addon:OnEnable()
   ns.Sync.start(self)
 end
 
-local function SelectedCommunityName()
-  local clubId = ns.CommunitySelection.selected()
-  for _, club in ipairs(ns.CommunitySelection.list()) do
-    if club.clubId == clubId then return club.name end
+-- Prints why a community command can't run here, or returns true when it can.
+local function CommunityAvailable(self)
+  if not ns.CommunitySelection.selected() then
+    self:Print("No community selected. Select one with /cf settings.")
+    return false
   end
-  return clubId
+  if not ns.CommunitySelection.active() then
+    self:Print(string.format("This character is not a member of %s.",
+      ns.CommunitySelection.name() or "the selected community"))
+    return false
+  end
+  return true
 end
 
 function addon:OnSlashCommand(input)
@@ -54,20 +60,14 @@ function addon:OnSlashCommand(input)
       self:Print(line)
     end
   elseif command == "members" then
-    if not ns.CommunitySelection.selected() then
-      self:Print("No community selected. Select one with /cf settings.")
-      return
-    end
-    local lines = ns.Describe.members(ns.MemberTracker.members(), SelectedCommunityName(),
+    if not CommunityAvailable(self) then return end
+    local lines = ns.Describe.members(ns.MemberTracker.members(), ns.CommunitySelection.name(),
       ns.MemberTracker.changedAt(), GetServerTime())
     for _, line in ipairs(lines) do
       self:Print(line)
     end
   elseif command == "people" then
-    if not ns.CommunitySelection.selected() then
-      self:Print("No community selected. Select one with /cf settings.")
-      return
-    end
+    if not CommunityAvailable(self) then return end
     for _, line in ipairs(ns.Describe.view(ns.ViewModel.build(self), GetServerTime())) do
       self:Print(line)
     end

@@ -24,7 +24,7 @@ stds.wow = {
     "C_AddOns", "C_BattleNet", "C_ChatInfo", "C_Club", "C_EventUtils", "C_Timer",
     -- client and unit info
     "GetBuildInfo", "GetServerTime", "GetTime", "GetRealmName", "GetNormalizedRealmName",
-    "UnitGUID", "UnitName", "UnitLevel", "UnitClassBase", "UnitRace", "UnitFactionGroup",
+    "UnitGUID", "UnitName", "GetUnitName", "UnitLevel", "UnitClassBase", "UnitRace", "UnitFactionGroup",
     "GetProfessions", "GetProfessionInfo", "GetAverageItemLevel",
     "InCombatLockdown",
     -- Battle.net

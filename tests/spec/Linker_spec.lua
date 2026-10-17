@@ -50,14 +50,89 @@ describe("Linker", function()
   end)
 
   describe("visibility", function()
-    it("excludes characters that are not community members", function()
+    it("excludes non-members that are not in any record (presence only)", function()
       local view = Linker.build(input({
         members = { G1 = member("Garraka") },
         presence = { G1 = { battleTag = SJAAK, lastSeen = 1 }, G2 = { battleTag = SJAAK, lastSeen = 1 } },
-        people = { [SJAAK] = { chars = { G3 = char("Recorded Alt") } } },
       }))
       assert.are.same({ "G1" }, guids(person(view, SJAAK).chars))
       assert.are.same({}, view.unlinked)
+    end)
+  end)
+
+  describe("alts outside the community (CF-17)", function()
+    it("shows a record alt under a person who has a member character, after the members", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Zed Main") },
+        presence = { G1 = { battleTag = SJAAK, lastSeen = 1 } },
+        people = { [SJAAK] = { chars = { G3 = char("Alt Outside", { level = 30 }) } } },
+      }))
+      local rows = person(view, SJAAK).chars
+      assert.are.same({ "G1", "G3" }, guids(rows))
+      assert.is_true(rows[2].outside)
+      assert.is_nil(rows[1].outside)
+      assert.are.equal(30, rows[2].level)
+      assert.are.equal("MAGE", rows[2].classFile)
+      assert.are.equal("record", rows[2].linkSource)
+      assert.are.same({}, view.unlinked)
+    end)
+
+    it("hides it when the person has no member character", function()
+      local view = Linker.build(input({
+        people = { [SJAAK] = { chars = { G3 = char("Alt Outside") } } },
+      }))
+      assert.are.same({}, view.people)
+      assert.are.same({}, view.unlinked)
+    end)
+
+    it("hides it for someone who is not a friend", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Garraka") },
+        presence = { G1 = { battleTag = SJAAK, lastSeen = 1 } },
+        friends = { [SJAAK] = true },
+        people = { [OTHER] = { chars = { G3 = char("Not My Friend's Alt") } } },
+      }))
+      assert.are.same({ "G1" }, guids(person(view, SJAAK).chars))
+    end)
+
+    it("turns into a normal member row when the character joins the community", function()
+      local data = input({
+        members = { G1 = member("Garraka") },
+        presence = { G1 = { battleTag = SJAAK, lastSeen = 1 } },
+        people = { [SJAAK] = { chars = { G3 = char("Alt") } } },
+      })
+      assert.is_true(person(Linker.build(data), SJAAK).chars[2].outside)
+      data.members.G3 = member("Alt")
+      local rows = person(Linker.build(data), SJAAK).chars
+      assert.are.equal(2, #rows)
+      for _, row in ipairs(rows) do assert.is_nil(row.outside) end
+    end)
+
+    it("shows own alts outside the community, the current one as online", function()
+      local view = Linker.build(input({
+        members = { ["G-MAIN"] = member("Main", 3) },
+        self = { battleTag = ME, chars = { ["G-MAIN"] = char("Main"), ["G-ME"] = char("Playing Now"),
+                                           ["G-OLD"] = char("Old Alt") } },
+      }))
+      local rows = person(view, ME).chars
+      assert.are.same({ "G-MAIN", "G-ME", "G-OLD" }, guids(rows))
+      assert.is_true(rows[2].online)
+      assert.is_true(rows[2].outside)
+      assert.is_false(rows[3].online)
+      assert.are.equal("G-ME", person(view, ME).currentChar.guid)
+    end)
+
+    it("marks a friend online on an outside alt, with that row as current character", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Garraka") },
+        presence = { G1 = { battleTag = SJAAK, lastSeen = 1 } },
+        people = { [SJAAK] = { chars = { G3 = char("Alt") } } },
+        online = { [SJAAK] = { guid = "G3", name = "Alt" } },
+      }))
+      local sjaak = person(view, SJAAK)
+      assert.are.equal("G3", sjaak.currentChar.guid)
+      assert.is_true(sjaak.currentChar.outside)
+      assert.is_true(sjaak.currentChar.online)
     end)
 
     it("drops a character removed from the community", function()

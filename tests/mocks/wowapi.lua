@@ -266,7 +266,9 @@ function wowapi.install(opts)
       end,
     },
     UnitGUID = function() return p.guid end,
-    UnitName = function() return p.name end,
+    -- Like Forever for some characters: first and last name split over two returns (V9).
+    UnitName = function() return p.name:match("^(%S+)"), p.name:match("^%S+ (.+)$") end,
+    GetUnitName = function(_, showServer) assert(showServer == true); return p.name end,
     UnitClassBase = function() return p.classFile end,
     UnitRace = function() return unpack(p.race) end,
     UnitLevel = function() return p.level end,

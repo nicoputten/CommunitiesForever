@@ -7,7 +7,8 @@ Source: FriendProbe run on Forever beta, build `1.60.1 70450 (Oct 15 2026)`, TOC
 |---|---|
 | `GetBuildInfo()` | `1.60.1  70450  Oct 15 2026  16001` |
 | `WOW_PROJECT_ID` | `18` |
-| `UnitName("player")` | `"Ves Doombringer"` (first + last name, one string) |
+| `UnitName("player")` | `"Ves Doombringer"` (first + last name, one string) on some characters; on others first and last name are split: `"Marks", "Man"` (last name in the realm slot) (V9). Use `GetUnitName("player", true)` for the full name. |
+| `GetUnitName("player", true)` | `"Marks Man"`: full name, also where `UnitName` splits it (V9) |
 | `UnitFullName("player")` | `"Ves Doombringer"` (realm return nil for own realm) |
 | `GetRealmName()` / `GetNormalizedRealmName()` | `"Classic Beta PvP"` / `"ClassicBetaPvP"` |
 | `UnitGUID("player")` | `"Player-4619-01627852"` |
