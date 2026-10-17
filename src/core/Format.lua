@@ -23,16 +23,32 @@ function Format.ago(timestamp, now)
   return string.format("%d d ago", math.floor(seconds / DAY))
 end
 
+-- Secondary professions by skillLine: First Aid 129, Cooking 185 (verified), Fishing 356.
+local SECONDARY_SKILL_LINES = { [129] = true, [185] = true, [356] = true }
+
 -- Professions sorted by name: { { name, rank, max, fraction } }, fraction in 0..1.
-function Format.professionList(professions)
+-- filter(skillLine) limits the list when given.
+function Format.professionList(professions, filter)
   local list = {}
-  for _, p in pairs(professions or {}) do
-    local fraction = 0
-    if (p.max or 0) > 0 then fraction = math.min(1, math.max(0, (p.rank or 0) / p.max)) end
-    list[#list + 1] = { name = p.name, rank = p.rank, max = p.max, fraction = fraction }
+  for skillLine, p in pairs(professions or {}) do
+    if not filter or filter(skillLine) then
+      local fraction = 0
+      if (p.max or 0) > 0 then fraction = math.min(1, math.max(0, (p.rank or 0) / p.max)) end
+      list[#list + 1] = { name = p.name, rank = p.rank, max = p.max, fraction = fraction }
+    end
   end
   table.sort(list, function(a, b) return (a.name or "") < (b.name or "") end)
   return list
+end
+
+-- Professions grouped: { { title = "Primary", list }, { title = "Secondary", list } }, empty groups left out.
+function Format.professionGroups(professions)
+  local groups = {}
+  local primary = Format.professionList(professions, function(id) return not SECONDARY_SKILL_LINES[id] end)
+  local secondary = Format.professionList(professions, function(id) return SECONDARY_SKILL_LINES[id] end)
+  if #primary > 0 then groups[#groups + 1] = { title = "Primary", list = primary } end
+  if #secondary > 0 then groups[#groups + 1] = { title = "Secondary", list = secondary } end
+  return groups
 end
 
 -- When a character was last seen: presence (friends), lastPlayed (own), last zone seen
@@ -140,7 +156,7 @@ local function characterDetail(row, owner, now, own)
       { label = "Item level", value = row.ilvl and tostring(row.ilvl) or "-" },
       { label = own and "Last played" or "Last seen", value = Format.seen(row, now) },
     },
-    professions = Format.professionList(row.professions),
+    professions = Format.professionGroups(row.professions),
   }
 end
 
@@ -149,7 +165,8 @@ end
   { kind = "person", title, battleTag, online, status, current,
     characters = { { guid, name, classFile, classID, level, seen } } }
   { kind = "unlinked", characters = ... }                        -- same character entries
-  { kind = "character", guid, name, classFile, classID, owner, status, online, stats, professions }
+  { kind = "character", guid, name, classFile, classID, owner, status, online, stats,
+    professions = { { title, list } } }   -- see professionGroups
 ]]
 function Format.detail(view, path, now)
   if not path then

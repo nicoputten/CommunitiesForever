@@ -10,6 +10,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V3 | Is addon BNet messaging restricted in instances or combat? | ping during combat / in dungeon | open |
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V9 | Character names with last names: any API returning them differently (e.g. hyphenated)? | watch during development | open |
+| V23 | Which quest log API and events does Forever have, and how big is the quest log? (for CF-19, can be checked any time) | `/dump C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries(), GetNumQuestLogEntries and GetNumQuestLogEntries()` and `/dump C_QuestLog.GetInfo and C_QuestLog.GetInfo(1)`. Events: `/dump C_EventUtils.IsEventValid("QUEST_ACCEPTED"), C_EventUtils.IsEventValid("QUEST_TURNED_IN"), C_EventUtils.IsEventValid("QUEST_REMOVED"), C_EventUtils.IsEventValid("QUEST_LOG_UPDATE")`. Log size: `/dump C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()` | open |
 | V20 | Which talent API does Forever have? (for CF-18, can be checked any time) | `/dump GetNumTalentTabs and GetNumTalentTabs(), GetTalentTabInfo and GetTalentTabInfo(1)` and `/dump C_ClassTalents ~= nil, C_Traits ~= nil, GetSpecialization ~= nil`. Also: which event fires after spending a talent point (`CHARACTER_POINTS_CHANGED`, `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED`)? `/dump C_EventUtils.IsEventValid("CHARACTER_POINTS_CHANGED"), C_EventUtils.IsEventValid("PLAYER_TALENT_UPDATE"), C_EventUtils.IsEventValid("TRAIT_CONFIG_UPDATED")` | open |
 
 ## Manual test steps per story
@@ -25,3 +26,4 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | Character card, one of your own other characters | Subtitle `Offline - last played in <zone>`, value caption "Last played". In your person card the list says `Played N min ago`. | open |
 | Section titles | "Characters", "Professions", "Talents" are left-aligned gold text without lines. | open |
 | Profession bars | Bars fill most of the Professions column instead of a short fixed width. Resize the window and reselect the character: bars follow the new width. | open |
+| Character card with primary and secondary professions | "Professions" shows a grey "Primary" group (e.g. Blacksmithing, Mining) and a "Secondary" group (Cooking, First Aid, Fishing). Fishing must be in Secondary; if it shows under Primary, run `/cf self` and note its `[id]` here. | open |

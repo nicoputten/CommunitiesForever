@@ -93,6 +93,7 @@ Char = {
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max } },
   talents, mainTree, role, roleOverride,           -- CF-18 (future): talent split per tree, heal/dps/tank
+  quests = { [questID] = title },                    -- CF-19 (future): quest log, names only, no progress
   updatedAt,                                         -- last synced-field change
   lastPlayed,                                        -- own chars: login/logout time (not compared, no bump)
 }

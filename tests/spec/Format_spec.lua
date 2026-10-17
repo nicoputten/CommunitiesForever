@@ -65,6 +65,26 @@ describe("Format", function()
     end)
   end)
 
+  describe("professionGroups", function()
+    it("splits primary and secondary professions, leaving out empty groups", function()
+      local groups = Format.professionGroups({
+        [186] = { name = "Mining", rank = 1, max = 75 },
+        [164] = { name = "Blacksmithing", rank = 1, max = 75 },
+        [129] = { name = "First Aid", rank = 1, max = 75 },
+        [185] = { name = "Cooking", rank = 1, max = 75 },
+        [356] = { name = "Fishing", rank = 1, max = 75 },
+      })
+      assert.are.same({ "Primary", "Secondary" }, { groups[1].title, groups[2].title })
+      assert.are.same({ "Blacksmithing", "Mining" }, { groups[1].list[1].name, groups[1].list[2].name })
+      assert.are.same({ "Cooking", "First Aid", "Fishing" },
+        { groups[2].list[1].name, groups[2].list[2].name, groups[2].list[3].name })
+
+      local onlySecondary = Format.professionGroups({ [185] = { name = "Cooking", rank = 1, max = 75 } })
+      assert.are.same({ "Secondary" }, { onlySecondary[1].title })
+      assert.are.same({}, Format.professionGroups(nil))
+    end)
+  end)
+
   describe("paths", function()
     it("joins and splits group and character", function()
       local path = Format.path("Sjaakovich#2232", "G1")
@@ -136,7 +156,7 @@ describe("Format", function()
         status = "Online in Orgrimmar", online = true,
         stats = { { label = "Level", value = "11" }, { label = "Item level", value = "20" },
                   { label = "Last seen", value = "Now" } },
-        professions = Format.professionList(charRow().professions),
+        professions = Format.professionGroups(charRow().professions),
       }, d)
     end)
 

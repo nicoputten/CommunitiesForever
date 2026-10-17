@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 18, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 13, 14, 15, 16, 18, 19, 04, 02.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -142,3 +142,14 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Display (CF-12 character rows): role (icon or short text) plus the talent split, e.g. `Heal · Holy 31 / Protection 5 / Retribution 15` with the main tree highlighted. Unknown: `-`.
 - Unit tests: auto role per class/tree; ties; no points -> nil; override wins over auto; clearing override returns to auto; talent change bumps version, identical talents do not.
 - Manual: spend a talent point, `/cf self` shows the new split and role; set an override, a friend sees it in their window.
+
+### CF-19 Shared quests (future)
+- Goal: on a friend's character card, show the quests it has in common with any of your characters, so you know who to group with. Names only, no objective progress (decided: keeps sync small and changes rare).
+- First: find the quest log API on Forever (V23). Mainline style `C_QuestLog.GetNumQuestLogEntries` / `C_QuestLog.GetInfo(i)` (questID, title, isHeader), or classic style `GetNumQuestLogEntries` / `GetQuestLogTitle`. Also the events for accept, turn-in and abandon, and the real log size (vanilla 20; possibly more on Forever). Extend FriendProbe (`/fp quests`) before building.
+- Snapshot (CF-03) adds per own character `quests = { [questID] = title }`, headers skipped. Synced field: the version bumps only when the set of quest IDs changes (accept, turn in, abandon), not on progress. Your alts' quests are as of their last login.
+- Sync: part of each Char in RECORD (title included, so the receiver needs no quest cache). Rough size: 25 quests x ~40 bytes per character, compressed; fits the existing chunking.
+- Pure core function `sharedQuests(friendChar, ownChars)` -> `{ { questID, title, ownChars = { guid, ... } } }`, sorted by title; matching by questID, never by title.
+- Display: character card of a friend's character gets a "Shared quests" section: quest title plus which of your characters has it (class-colored names), e.g. `The Barrens Oases  -  Ves, Kawkartha`. None: `No shared quests.` Not shown on your own or Unlinked characters (no quest data).
+- Unit tests: overlap with one alt, with several alts, none; headers ignored; quest progress change does not bump the version; accept/abandon does; matching by ID with different titles (locale).
+- Manual (2 clients): both accept the same quest on any character; within ~10 s it appears on the friend's character card; abandon it, it disappears.
+- Depends on sync (CF-09, CF-10, CF-11).

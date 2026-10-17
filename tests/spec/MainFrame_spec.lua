@@ -149,6 +149,8 @@ describe("MainFrame", function()
     assert.is_true(hasText("Talents"))
     assert.is_true(hasText("Not available yet."))
     assert.is_true(hasText("Mining  |cffa0a0a064 / 150|r"))
+    assert.is_true(hasText("|cffa0a0a0Primary|r"))
+    assert.is_true(hasText("|cffa0a0a0Secondary|r")) -- Cooking
     assert.is_true(hasText("Interface\\Buttons\\WHITE8X8")) -- progress bar
   end)
 

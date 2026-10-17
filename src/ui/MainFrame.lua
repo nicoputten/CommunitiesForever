@@ -170,9 +170,13 @@ function renderDetail.character(parent, detail)
   -- Bars fill the column: half the detail pane minus padding (measured at render time).
   local paneWidth = tree.content and tree.content:GetWidth() or 0
   local barWidth = math.max(MIN_BAR_WIDTH, math.floor(paneWidth / 2) - 40)
-  for _, p in ipairs(detail.professions) do
-    label(professions, string.format("%s  %s%s / %s|r\n%s", tostring(p.name), GREY, tostring(p.rank),
-      tostring(p.max), bar(p.fraction, barWidth)), GameFontHighlight)
+  for index, group in ipairs(detail.professions) do
+    if index > 1 then spacer(professions) end
+    label(professions, GREY .. group.title .. "|r", GameFontHighlightSmall)
+    for _, p in ipairs(group.list) do
+      label(professions, string.format("%s  %s%s / %s|r\n%s", tostring(p.name), GREY, tostring(p.rank),
+        tostring(p.max), bar(p.fraction, barWidth)), GameFontHighlight)
+    end
   end
   local talents = column(sections, 0.5)
   heading(talents, "Talents")
