@@ -90,7 +90,6 @@ global = {
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char }, via } },   -- via: BattleTag that relayed it (CF-20)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
-  nicknames = { [battleTag] = "Sjaak" },             -- local only, never synced
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
 }
 
@@ -106,7 +105,7 @@ Char = {
 ```
 - Zone and online state are NOT synced. They are live data from presence and C_Club.
 - Bump `self.version` only when a synced field actually changes (Snapshot compare).
-- Display name priority: local nickname > owner's displayName > BattleTag name part (before `#`).
+- Display name priority: owner's displayName > BattleTag name part (before `#`). (Local nicknames, CF-13, were dropped.)
 - Sender always includes all own characters (decided in CF-17 testing; no setting). The receiver decides what to show (core rule 1), so the record does not depend on the sender's community member list and can be sent from any character.
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.

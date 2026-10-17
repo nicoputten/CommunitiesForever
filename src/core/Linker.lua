@@ -11,9 +11,8 @@ local IN_GAME_PRESENCE = { [1] = true, [4] = true, [5] = true }
 -- Internal grouping key for own characters while the own BattleTag is unknown.
 local SELF_KEY = "\0self"
 
--- Display name priority: local nickname > owner's displayName > BattleTag name part.
-function Linker.displayName(battleTag, ownerDisplayName, nickname)
-  if nickname and nickname ~= "" then return nickname end
+-- Display name priority: owner's displayName > BattleTag name part.
+function Linker.displayName(battleTag, ownerDisplayName)
   if ownerDisplayName and ownerDisplayName ~= "" then return ownerDisplayName end
   return (tostring(battleTag):match("^([^#]+)")) or tostring(battleTag)
 end
@@ -102,7 +101,6 @@ input = {
   locations = { [guid] = { zone, seenAt } },                                       -- last zone seen
   self      = { battleTag, displayName, chars = { [guid] = Char } },
   selfGuid  = current character GUID,
-  nicknames = { [battleTag] = "Name" },
 }
 returns {
   people   = { { battleTag, displayName, isSelf, online, currentChar, chars = { row, ... },
@@ -126,7 +124,6 @@ function Linker.build(raw)
     people = raw.people or {},
     presence = raw.presence or {},
     locations = raw.locations or {},
-    nicknames = raw.nicknames or {},
     self = { battleTag = selfKey, displayName = self.displayName, chars = self.chars or {} },
     selfGuid = raw.selfGuid,
   }
@@ -200,7 +197,7 @@ function Linker.build(raw)
     if bt == SELF_KEY then
       displayName = (ownerName and ownerName ~= "") and ownerName or "You"
     else
-      displayName = Linker.displayName(bt, ownerName, input.nicknames[bt])
+      displayName = Linker.displayName(bt, ownerName)
     end
 
     people[#people + 1] = {
@@ -211,8 +208,7 @@ function Linker.build(raw)
       currentChar = current,
       chars = rows,
       via = via,
-      viaName = via and Linker.displayName(via, input.people[via] and input.people[via].displayName,
-        input.nicknames[via]),
+      viaName = via and Linker.displayName(via, input.people[via] and input.people[via].displayName),
       updatedAt = updatedAt,
     }
   end

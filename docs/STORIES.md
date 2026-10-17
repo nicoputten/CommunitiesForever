@@ -1,6 +1,6 @@
 # Backlog
 
-Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 13, 14, 15, 16, 18, 19, 04, 02.
+Build order: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02. (CF-13 dropped.)
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ## E0 Foundation
@@ -55,7 +55,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Manual: `/cf friends` shows friends in Forever and presence links.
 
 ### CF-08 Linker (pure)
-- Input: members, current friends (BattleTag set), people, presence, self, nicknames. Output view model `{ people = [ {bt, displayName, online, currentChar, chars=[...]} ], unlinked = [...] }`.
+- Input: members, current friends (BattleTag set), people, presence, self. Output view model `{ people = [ {bt, displayName, online, currentChar, chars=[...]} ], unlinked = [...] }`.
 - Unit tests:
   - non-member characters are excluded
   - characters of a non-friend go to Unlinked
@@ -97,9 +97,8 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Empty states: no community selected; no linked people yet.
 - Decided in CF-12: AceGUI window, draft B layout: tree left (people with online dot, expandable to class-colored characters, Unlinked group), detail right (person card: name, BattleTag, status, character list; character card: class, owner, status, Level / Item level / Last seen boxes, professions with bars). New people start expanded; expansion, selection and tree width are saved (`settings.tree`). No realm shown (one ruleset). Minimap: left-click window, right-click settings, hide toggle. `/cf` toggles the window, `/cf help` lists commands. Round 3: green dot on the character a person is playing; stats as plain text; Professions and Talents (placeholder until CF-18) side by side; offline status shows the last zone seen in the community (`locations`, local only), the character and the time.
 
-### CF-13 Nicknames
-- Right-click person header: "Set nickname" (input popup) and "Clear nickname". Local only, stored in `nicknames`.
-- Display uses the priority rule everywhere (window, tooltip, notifications).
+### CF-13 Nicknames (dropped)
+- Removed on request: no local nicknames. Display names come from the owner's displayName (CF-04) or the BattleTag name part.
 
 ## E6 Tooltip and notifications
 

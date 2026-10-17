@@ -15,7 +15,6 @@ function Store.defaults()
       self = { version = 0, chars = {} },
       people = {},
       presence = {},
-      nicknames = {},
       locations = {},
     },
   }

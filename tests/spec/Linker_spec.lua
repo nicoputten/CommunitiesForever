@@ -27,7 +27,6 @@ describe("Linker", function()
       presence = {},
       self = { battleTag = ME, chars = {} },
       selfGuid = "G-ME",
-      nicknames = {},
     }
     for k, v in pairs(overrides or {}) do base[k] = v end
     return base
@@ -329,11 +328,10 @@ describe("Linker", function()
   end)
 
   describe("display name", function()
-    it("prefers nickname, then owner's displayName, then the BattleTag name part", function()
-      assert.are.equal("Sjaak", Linker.displayName(SJAAK, "Sjaakie", "Sjaak"))
-      assert.are.equal("Sjaakie", Linker.displayName(SJAAK, "Sjaakie", nil))
-      assert.are.equal("Sjaakovich", Linker.displayName(SJAAK, nil, nil))
-      assert.are.equal("Sjaakovich", Linker.displayName(SJAAK, "", ""))
+    it("prefers the owner's displayName, then the BattleTag name part", function()
+      assert.are.equal("Sjaakie", Linker.displayName(SJAAK, "Sjaakie"))
+      assert.are.equal("Sjaakovich", Linker.displayName(SJAAK, nil))
+      assert.are.equal("Sjaakovich", Linker.displayName(SJAAK, ""))
     end)
 
     it("applies the rule in the view model", function()
@@ -341,9 +339,8 @@ describe("Linker", function()
         members = { G1 = member("Garraka") },
         presence = { G1 = { battleTag = SJAAK, lastSeen = 1 } },
         people = { [SJAAK] = { displayName = "Sjaakie", chars = {} } },
-        nicknames = { [SJAAK] = "Sjaak" },
       }))
-      assert.are.equal("Sjaak", person(view, SJAAK).displayName)
+      assert.are.equal("Sjaakie", person(view, SJAAK).displayName)
     end)
 
     it("uses the own displayName for self", function()
