@@ -232,9 +232,16 @@ function Format.detail(view, path, now)
 end
 
 -- Message for the whole window instead of tree and detail, or nil.
-function Format.emptyState(view, communitySelected)
-  if not communitySelected then
+-- state = { selected = bool, active = bool, communityName = string|nil, characterName = string|nil }
+-- active is false on a character that is not a member of the selected community.
+function Format.emptyState(view, state)
+  if not state.selected then
     return "Select a community in settings (/cf settings)."
+  end
+  if not state.active then
+    return string.format("Your account has characters in %s, but %s isn't a member, so it can't be shown "
+      .. "here. Log in on a member character, or invite this one.", state.communityName or "the selected community",
+      state.characterName or "this character")
   end
   if #view.people == 0 and #view.unlinked == 0 then
     return "Nobody in this community yet."

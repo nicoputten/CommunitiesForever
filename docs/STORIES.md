@@ -38,7 +38,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - AceConfig dropdown lists subscribed **character** communities by name (decided in CF-05: guild and Battle.net communities excluded, since membership must be per character with GUIDs). Also in the Blizzard settings panel; `/cf settings` opens it.
 - Selection stored in `settings.clubId`, survives reload.
 - Auto-select (added in CF-12 feedback): with nothing selected, the only character community is selected, or the one you just joined; a chat line says which.
-- If the stored club no longer exists: selection cleared, one chat notice "Your community is no longer available. Select one with /cf settings." The main window empty state follows in CF-12.
+- ~~If the stored club no longer exists: selection cleared~~ Changed in CF-17: membership is per character but the selection is account-wide, so the selection is never cleared automatically. On a character that is not a member (or after leaving the community) the window says: "Your account has characters in <community>, but <character> isn't a member, so it can't be shown here." The community name is remembered (`settings.clubName`). Sync keeps working on that character.
 
 ### CF-06 Member tracking
 - Adapter exposes `members[guid] = { name, classID, level, zone, presence, raceID, faction }` for the selected club.

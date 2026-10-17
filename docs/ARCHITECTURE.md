@@ -45,7 +45,7 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
-      CommunitySelection.lua owns settings.clubId, clears it when the club is gone
+      CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
@@ -83,7 +83,8 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
   schemaVersion = 1,
-  settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
+  settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
+                notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
                 sendInterval = 0.2 },                -- seconds between outgoing chunks
   self      = { battleTag, displayName, version, chars = { [guid] = Char } },
   people    = { [battleTag] = { displayName, version, receivedAt,

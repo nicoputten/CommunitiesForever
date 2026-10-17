@@ -54,47 +54,53 @@ describe("CommunitySelection", function()
     assert.are.same({}, state.printed)
   end)
 
-  it("clears a stored community that no longer exists, with one notice", function()
-    load("42")
-    assert.is_nil(settings().clubId)
-    assert.are.same({ { nil } }, changes())
-    assert.are.same({ Selection.GONE_NOTICE }, state.printed)
-
-    wowapi.fireEvent(state, "CLUB_UPDATED", "23125681")
-    assert.are.equal(1, #state.printed)
-  end)
-
-  it("waits while club data is not loaded yet", function()
-    load("23125681", function(s) s.clubs = {} end) -- empty list at login
-    assert.are.equal("23125681", settings().clubId)
-
-    state.clubs = { { clubId = "23125681", name = "Forever Friends", clubType = 1 } }
-    wowapi.fireEvent(state, "INITIAL_CLUBS_LOADED")
-    assert.are.equal("23125681", settings().clubId)
+  it("keeps a selection this character cannot see, marked not active", function()
+    load("42") -- not in this character's list
+    assert.are.equal("42", settings().clubId)
+    assert.is_nil(Selection.active())
     assert.are.same({}, state.printed)
   end)
 
-  it("clears once club data is loaded and the community is gone", function()
-    load(nil)
-    state.clubs = {}
-    addon.db.global.settings.clubId = "23125681"
+  it("treats a selection as active while club data is not loaded yet", function()
+    load("23125681", function(s) s.clubs = {} end) -- empty list at login
+    assert.are.equal("23125681", Selection.active())
+
+    state.clubs = { { clubId = "23125681", name = "Forever Friends", clubType = 1 } }
     wowapi.fireEvent(state, "INITIAL_CLUBS_LOADED")
-    assert.is_nil(settings().clubId)
+    assert.are.equal("23125681", Selection.active())
+    assert.are.same({}, state.printed)
   end)
 
-  it("clears on CLUB_REMOVED for the selected community, even if still listed", function()
-    load("23125681", function(s) table.insert(s.clubs, { clubId = "555", name = "Third", clubType = 1 }) end)
-    wowapi.fireEvent(state, "CLUB_REMOVED", "23125681")
-    assert.is_nil(settings().clubId) -- two others left: no auto-select
-    assert.are.same({ Selection.GONE_NOTICE }, state.printed)
+  it("marks it not active once club data is loaded and the community is not listed", function()
+    load("23125681", function(s) s.clubs = {} end)
+    wowapi.fireEvent(state, "INITIAL_CLUBS_LOADED")
+    assert.are.equal("23125681", settings().clubId)
+    assert.is_nil(Selection.active())
+    assert.are.same({ { "23125681" } }, changes()) -- availability change announced
   end)
 
-  it("auto-selects the only remaining community after CLUB_REMOVED", function()
+  it("keeps the selection on CLUB_REMOVED but marks it not active, even if still listed", function()
     load("23125681")
-    wowapi.fireEvent(state, "CLUB_REMOVED", "23125681") -- still listed while the event fires
-    assert.are.equal("777", settings().clubId)
-    assert.are.same({ Selection.GONE_NOTICE, "Showing community Other Friends. Change it with /cf settings." },
-      state.printed)
+    wowapi.fireEvent(state, "CLUB_REMOVED", "23125681")
+    assert.are.equal("23125681", settings().clubId)
+    assert.is_nil(Selection.active())
+    assert.are.same({}, state.printed)
+  end)
+
+  it("remembers the community name for characters that cannot see it", function()
+    load("23125681")
+    assert.are.equal("Forever Friends", Selection.name())
+    state.clubs = { { clubId = "777", name = "Other Friends", clubType = 1 } } -- an alt outside it
+    wowapi.fireEvent(state, "CLUB_UPDATED", "777")
+    assert.is_nil(Selection.active())
+    assert.are.equal("Forever Friends", Selection.name())
+  end)
+
+  it("becomes active again when the character joins the community", function()
+    load("23125681")
+    wowapi.fireEvent(state, "CLUB_REMOVED", "23125681")
+    wowapi.fireEvent(state, "CLUB_ADDED", "23125681")
+    assert.are.equal("23125681", Selection.active())
   end)
 
   describe("auto-select", function()

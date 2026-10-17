@@ -216,6 +216,17 @@ describe("MainFrame", function()
     assert.are.equal("Vestras#2858", addon.db.global.settings.tree.selected)
   end)
 
+  it("explains on a character outside the community, and keeps syncing", function()
+    load("23125681")
+    state.clubs = { { clubId = "777", name = "Other Friends", clubType = 1 } } -- this alt is not a member
+    wowapi.fireEvent(state, "CLUB_UPDATED", "777")
+    ns.MainFrame.toggle()
+    assert.are.same({}, tree().tree)
+    assert.matches("^Your account has characters in Forever Friends, but Ves Doombringer isn't a member",
+      detailTexts()[1])
+    assert.are.equal("23125681", addon.db.global.settings.clubId)
+  end)
+
   it("shows the empty state without a community", function()
     load(nil)
     ns.MainFrame.toggle()

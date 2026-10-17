@@ -13,7 +13,7 @@ local current = {}
 local changedAt
 
 local function refresh()
-  local clubId = ns.CommunitySelection.selected()
+  local clubId = ns.CommunitySelection.active()
   local members = clubId and ns.Members.build(ns.Community.members(clubId)) or {}
   ns.Members.recordLocations(addonRef.db.global.locations, members, GetServerTime())
   if not ns.Members.equal(current, members) then
@@ -36,17 +36,18 @@ function MemberTracker.start(addon)
   changedAt = nil
   local refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, refresh)
 
-  addon:RegisterMessage(ns.CommunitySelection.CHANGED, function(_, clubId)
-    select(clubId)
+  -- The message carries the selected club; only read members when this character can see it.
+  addon:RegisterMessage(ns.CommunitySelection.CHANGED, function()
+    select(ns.CommunitySelection.active())
   end)
   addon:RegisterMessage(ns.Community.MEMBERS_CHANGED, function(_, _, clubId)
     -- Events carry the clubId; ignore other clubs. Refresh if the event has none.
-    if clubId == nil or clubId == ns.CommunitySelection.selected() then
+    if clubId == nil or clubId == ns.CommunitySelection.active() then
       refreshDebounced()
     end
   end)
 
-  select(ns.CommunitySelection.selected())
+  select(ns.CommunitySelection.active())
 end
 
 -- Current members[guid] = { name, classID, level, zone, presence, raceID, faction }. Do not modify.

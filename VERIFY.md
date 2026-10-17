@@ -21,4 +21,6 @@ Passed: friend's outside alt shown and tagged, joining the community turns it in
 |---|---|---|
 | Your own and your friend's alts outside the community | Class-colored like other characters (not dimmed); cards still say `Not in community`. | open |
 | Your alt that only shows its first name (V9) | On that alt: does it have a last name in game? If yes, paste the output of `/dump UnitName("player"), UnitFullName("player"), GetUnitName("player", true)` here. | open |
-| Friend logs in on an alt outside the community | Waiting for your decision on the "character not in the community" message (see chat). | open |
+| Log in on one of your alts that is NOT in the community, `/cf` | Window: `Your account has characters in <community>, but <alt> isn't a member, so it can't be shown here. Log in on a member character, or invite this one.` No chat notice, nothing cleared. `/cf members` and `/cf people` say the character is not a member. | open |
+| Back on a member character, `/cf` | Same community still selected and shown as before. | open |
+| A friend logs in on an alt outside the community | On your side: it shows online (green dot) under them, card `Online on <alt> (not in community)`. Their record keeps syncing from that alt. | open |

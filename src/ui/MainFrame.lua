@@ -255,7 +255,12 @@ function MainFrame.render()
   if not frame then return end
   view = ns.ViewModel.build(addonRef)
 
-  local empty = ns.Format.emptyState(view, ns.CommunitySelection.selected() ~= nil)
+  local empty = ns.Format.emptyState(view, {
+    selected = ns.CommunitySelection.selected() ~= nil,
+    active = ns.CommunitySelection.active() ~= nil,
+    communityName = ns.CommunitySelection.name(),
+    characterName = view.selfName,
+  })
   if empty then
     tree:SetTree({})
     showDetail(nil, empty)
