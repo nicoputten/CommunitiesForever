@@ -23,6 +23,15 @@ function addon:OnEnable()
   ns.SelfTracker.start(self)
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
+  ns.MemberTracker.start(self)
+end
+
+local function SelectedClubName()
+  local clubId = ns.CommunitySelection.selected()
+  for _, club in ipairs(ns.CommunitySelection.list()) do
+    if club.clubId == clubId then return club.name end
+  end
+  return clubId
 end
 
 function addon:OnSlashCommand(input)
@@ -35,12 +44,21 @@ function addon:OnSlashCommand(input)
     for _, line in ipairs(ns.Describe.selfRecord(self.db.global.self, GetServerTime())) do
       self:Print(line)
     end
+  elseif command == "members" then
+    if not ns.CommunitySelection.selected() then
+      self:Print("No community selected. Select one with /cf settings.")
+      return
+    end
+    for _, line in ipairs(ns.Describe.members(ns.MemberTracker.members(), SelectedClubName())) do
+      self:Print(line)
+    end
   elseif command == "settings" then
     ns.Settings.open()
   else
     self:Print("Commands:")
     self:Print("  /cf version - show the addon version")
     self:Print("  /cf self - show your stored characters")
+    self:Print("  /cf members - show members of the selected community")
     self:Print("  /cf settings - open the settings")
   end
 end

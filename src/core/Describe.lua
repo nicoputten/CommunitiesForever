@@ -46,5 +46,23 @@ function Describe.selfRecord(record, now)
   return lines
 end
 
+-- Lines describing community members, sorted by name (then GUID).
+function Describe.members(members, clubName)
+  local guids = sortedKeys(members, function(a, b)
+    local na, nb = members[a].name or a, members[b].name or b
+    if na ~= nb then return na < nb end
+    return a < b
+  end)
+
+  local lines = { string.format("%s: %d member(s)", tostring(clubName), #guids) }
+  for _, guid in ipairs(guids) do
+    local m = members[guid]
+    lines[#lines + 1] = string.format("%s: level %s, class %s, race %s, faction %s, presence %s, zone %s, %s",
+      tostring(m.name), tostring(m.level), tostring(m.classID), tostring(m.raceID), tostring(m.faction),
+      tostring(m.presence), tostring(m.zone), guid)
+  end
+  return lines
+end
+
 ns.Describe = Describe
 return Describe

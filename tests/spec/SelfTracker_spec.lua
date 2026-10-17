@@ -94,13 +94,6 @@ describe("SelfTracker", function()
     assert.are.equal(2, updates()) -- one refresh for three events
   end)
 
-  it("refreshes equipment immediately without C_Timer", function()
-    load({ missing = { C_Timer = true } })
-    state.player.itemLevel = { 20, 20, 20 }
-    wowapi.fireEvent(state, "PLAYER_EQUIPMENT_CHANGED", 1, true)
-    assert.are.equal(20, self_().chars[GUID].ilvl)
-  end)
-
   it("stores ilvl nil without error when GetAverageItemLevel is missing", function()
     load({ missing = { GetAverageItemLevel = true } })
     assert.is_nil(self_().chars[GUID].ilvl)

@@ -42,7 +42,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 ### CF-06 Member tracking
 - Adapter exposes `members[guid] = { name, classID, level, zone, presence, raceID, faction }` for the selected club.
 - Calls `FocusMembers` on selection; refreshes on CLUB_MEMBERS_UPDATED, CLUB_MEMBER_ADDED, CLUB_MEMBER_REMOVED, CLUB_MEMBER_PRESENCE_UPDATED, CLUB_REMOVED (debounced 1 s; event names guarded).
-- Manual: invite or kick a character; main window updates within a few seconds.
+- Manual: invite or kick a character; `/cf members` (and later the main window) updates within a few seconds.
 
 ## E3 Presence and linking
 
