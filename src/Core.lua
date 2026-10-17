@@ -26,7 +26,7 @@ function addon:OnEnable()
   ns.MemberTracker.start(self)
 end
 
-local function SelectedClubName()
+local function SelectedCommunityName()
   local clubId = ns.CommunitySelection.selected()
   for _, club in ipairs(ns.CommunitySelection.list()) do
     if club.clubId == clubId then return club.name end
@@ -49,7 +49,9 @@ function addon:OnSlashCommand(input)
       self:Print("No community selected. Select one with /cf settings.")
       return
     end
-    for _, line in ipairs(ns.Describe.members(ns.MemberTracker.members(), SelectedClubName())) do
+    local lines = ns.Describe.members(ns.MemberTracker.members(), SelectedCommunityName(),
+      ns.MemberTracker.changedAt(), GetServerTime())
+    for _, line in ipairs(lines) do
       self:Print(line)
     end
   elseif command == "settings" then

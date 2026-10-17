@@ -47,14 +47,16 @@ function Describe.selfRecord(record, now)
 end
 
 -- Lines describing community members, sorted by name (then GUID).
-function Describe.members(members, clubName)
+-- The header says when the member data last changed, so event-driven updates can be checked.
+function Describe.members(members, communityName, changedAt, now)
   local guids = sortedKeys(members, function(a, b)
     local na, nb = members[a].name or a, members[b].name or b
     if na ~= nb then return na < nb end
     return a < b
   end)
 
-  local lines = { string.format("%s: %d member(s)", tostring(clubName), #guids) }
+  local lines = { string.format("%s: %d member(s), last change %s", tostring(communityName), #guids,
+    age(changedAt, now)) }
   for _, guid in ipairs(guids) do
     local m = members[guid]
     lines[#lines + 1] = string.format("%s: level %s, class %s, race %s, faction %s, presence %s, zone %s, %s",

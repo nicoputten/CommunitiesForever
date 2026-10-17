@@ -96,6 +96,19 @@ describe("MemberTracker", function()
     assert.are.equal(1, updates())
   end)
 
+  it("records when the member map last changed", function()
+    load(CLUB)
+    assert.are.equal(1000, Tracker.changedAt())
+    state.serverTime = 1050
+    wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+    wowapi.runTimers(state)
+    assert.are.equal(1000, Tracker.changedAt()) -- no change
+    members(CLUB)[2].zone = "Durotar"
+    wowapi.fireEvent(state, "CLUB_MEMBER_UPDATED", CLUB, 2)
+    wowapi.runTimers(state)
+    assert.are.equal(1050, Tracker.changedAt())
+  end)
+
   it("picks up member data that arrives after focusing", function()
     local later
     state = wowapi.install()
@@ -126,7 +139,7 @@ describe("MemberTracker", function()
     it("prints members sorted by name", function()
       load(CLUB)
       state.slash.cf("members")
-      assert.are.equal("Forever Friends: 2 member(s)", state.printed[1])
+      assert.are.equal("Forever Friends: 2 member(s), last change 0s ago", state.printed[1])
       assert.matches("^Garraka Doombringer: level 11", state.printed[2])
       assert.matches("^Ves Doombringer: level 11", state.printed[3])
     end)

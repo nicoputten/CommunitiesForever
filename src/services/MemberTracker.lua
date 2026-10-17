@@ -10,12 +10,14 @@ local REFRESH_DEBOUNCE = 1
 
 local addonRef
 local current = {}
+local changedAt
 
 local function refresh()
   local clubId = ns.CommunitySelection.selected()
   local members = clubId and ns.Members.build(ns.Community.members(clubId)) or {}
   if not ns.Members.equal(current, members) then
     current = members
+    changedAt = GetServerTime()
     addonRef:SendMessage(MemberTracker.UPDATED)
   end
 end
@@ -30,6 +32,7 @@ end
 function MemberTracker.start(addon)
   addonRef = addon
   current = {}
+  changedAt = nil
   local refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, refresh)
 
   addon:RegisterMessage(ns.CommunitySelection.CHANGED, function(_, clubId)
@@ -48,6 +51,11 @@ end
 -- Current members[guid] = { name, classID, level, zone, presence, raceID, faction }. Do not modify.
 function MemberTracker.members()
   return current
+end
+
+-- Server time of the last real change of the member map, nil if none yet.
+function MemberTracker.changedAt()
+  return changedAt
 end
 
 ns.MemberTracker = MemberTracker
