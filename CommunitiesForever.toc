@@ -40,5 +40,6 @@ src\services\Invites.lua
 src\ui\Settings.lua
 src\ui\MainFrame.lua
 src\ui\Minimap.lua
+src\ui\Tooltip.lua
 
 src\Core.lua

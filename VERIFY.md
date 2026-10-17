@@ -7,6 +7,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | # | Question | How to test | Status |
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
+| V28 | Unit tooltip data: does `data.guid` hold the hovered player's GUID, and do secret values show up? (CF-14) | Covered by the CF-14 steps; if the line never appears, run `/dump issecretvalue ~= nil` and tell me. | open |
 | V23 | Which quest log API and events does Forever have, and how big is the quest log? (for CF-19, can be checked any time) | `/dump C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries(), GetNumQuestLogEntries and GetNumQuestLogEntries()` and `/dump C_QuestLog.GetInfo and C_QuestLog.GetInfo(1)`. Events: `/dump C_EventUtils.IsEventValid("QUEST_ACCEPTED"), C_EventUtils.IsEventValid("QUEST_TURNED_IN"), C_EventUtils.IsEventValid("QUEST_REMOVED"), C_EventUtils.IsEventValid("QUEST_LOG_UPDATE")`. Log size: `/dump C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()` | open |
 | V20 | Which talent API does Forever have? (for CF-18, can be checked any time) | `/dump GetNumTalentTabs and GetNumTalentTabs(), GetTalentTabInfo and GetTalentTabInfo(1)` and `/dump C_ClassTalents ~= nil, C_Traits ~= nil, GetSpecialization ~= nil`. Also: which event fires after spending a talent point (`CHARACTER_POINTS_CHANGED`, `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED`)? `/dump C_EventUtils.IsEventValid("CHARACTER_POINTS_CHANGED"), C_EventUtils.IsEventValid("PLAYER_TALENT_UPDATE"), C_EventUtils.IsEventValid("TRAIT_CONFIG_UPDATED")` | open |
 
@@ -31,14 +32,10 @@ Needs three Battle.net accounts on this build (A, B, C): relaying always involve
 | B changes something (level up) while A is online and C is offline; then C logs on while B is offline | C gets B's new level through A. | open |
 | `/reload` on C | B's relayed data stays. | open |
 
-### CF-21 Join with a shared invite link
-Addons may not join themselves (V26), so the window walks the alt through Blizzard's own join window via a chat link (V27 works).
-
+### CF-14 Unit tooltip
 | Step | Expected | Status |
 |---|---|---|
-| As owner/leader/moderator: `/cf settings` | A "Community invite link" field. As a normal member the field is not shown. | open |
-| Paste an invite link into the field | Saved; `/cf settings` shows the code. Nonsense prints `That doesn't look like a community invite link or code.` | open |
-| On an alt that is not in the community, `/cf` | The "isn't a member" message, then "How to join <community> with <alt>" with steps 1-3 and a `Post invite link in chat` button. | open |
-| Click `Post invite link in chat` | Chat: a hint line and a gold `[Join <community>]` link. Step 1 turns green, step 2 says `<- do this now`, the button says `Post the link again`. | open |
-| Click the link in chat, then Join in Blizzard's window | The alt joins; the window switches to the community. No "blocked" warning anywhere. | open |
-| Clear the field (empty) | The steps disappear for others after the next sync. | open |
+| Hover a friend's character (in the world, or their portrait/name in a group) | The tooltip has an extra blue line `Sjaak · 3 characters` (display name and number of their characters). | open |
+| Hover a community member who is not linked to anyone | `CommunitiesForever member`. | open |
+| Hover yourself, an NPC, or a player outside the community | No extra line. | open |
+| Hover a friend's character inside a dungeon and in combat | Either the line or nothing; never a Lua error (V28: secret values). | open |

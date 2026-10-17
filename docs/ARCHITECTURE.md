@@ -58,7 +58,7 @@ CommunitiesForever/
     ui/
       MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right)
       Settings.lua           AceConfig options (Blizzard panel + /cf settings)
-      Tooltip.lua            unit tooltip line
+      Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
     helpers.lua              loads addon files in TOC order with (addonName, ns) varargs

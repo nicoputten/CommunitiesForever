@@ -86,7 +86,11 @@ describe("Sync", function()
       outgoing()
       state.serverTime = 1010
       wowapi.fireEvent(state, "PLAYER_LEVEL_UP", 12)
-      assert.are.equal(5, state.timers[#state.timers].seconds)
+      local hasHelloTimer = false
+      for _, timer in ipairs(state.timers) do
+        if timer.seconds == 5 then hasHelloTimer = true end
+      end
+      assert.is_true(hasHelloTimer) -- HELLO debounce
       local hellos = ofType(outgoing(), "HELLO")
       assert.are.equal(1, #hellos)
       assert.are.equal(addon.db.global.self.version, hellos[1].ver)
