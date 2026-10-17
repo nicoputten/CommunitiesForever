@@ -103,9 +103,10 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 ## E6 Tooltip and notifications
 
 ### CF-14 Unit tooltip
-- Hovering a player unit whose GUID is linked adds: `<display name> (<BattleTag>) · N characters`.
+- Hovering a player unit whose GUID is linked adds: `<display name> · N characters` (no BattleTag, decided in CF-14).
 - Unlinked community member: `CommunitiesForever member`.
 - Implemented via TooltipDataProcessor behind an existence check (V6).
+- Decided in CF-14: the line shows the display name without BattleTag (`Sjaak · 3 characters`, the count includes alts outside the community); nothing on your own characters; GUIDs that are secret values (Midnight) are skipped.
 
 ### CF-15 Login notifications
 - When a linked person comes online in Forever or switches character: chat message `Sjaak is online on Garraka Doombringer (Mage 11)`.

@@ -232,6 +232,7 @@ function wowapi.install(opts)
     },
     focusedClubs = {},
     redeemed = {},         -- C_Club.RedeemTicket calls
+    tooltipPostCalls = {}, -- TooltipDataProcessor.AddTooltipPostCall registrations
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
       { battleTag = "Sjaakovich#2232", gameAccounts = {
@@ -343,8 +344,14 @@ function wowapi.install(opts)
         return deepCopy(state.friends[i].gameAccounts[j])
       end,
     },
+    TooltipDataProcessor = {
+      AddTooltipPostCall = function(dataType, callback)
+        state.tooltipPostCalls[#state.tooltipPostCalls + 1] = { dataType = dataType, callback = callback }
+      end,
+    },
     Enum = {
       ClubType = { BattleNet = 0, Character = 1, Guild = 2, Other = 3 },
+      TooltipDataType = { Unit = 2 },
     },
   }
   if opts.validEvents then
@@ -377,6 +384,22 @@ function wowapi.runTimers(state)
 end
 
 -- Messages sent with the given name, as arrays of their arguments.
+-- Simulates hovering a unit: runs the registered unit tooltip post-calls and returns the added lines.
+-- data defaults to { guid = guid }; pass data to test other shapes.
+function wowapi.hoverUnit(state, guid, data)
+  local added = {}
+  local tooltip = {
+    AddLine = function(_, text, r, g, b) added[#added + 1] = { text = text, r = r, g = g, b = b } end,
+    GetUnit = function() return "Someone", "mouseover" end,
+  }
+  for _, call in ipairs(state.tooltipPostCalls) do
+    if call.dataType == _G.Enum.TooltipDataType.Unit then
+      call.callback(tooltip, data or { guid = guid })
+    end
+  end
+  return added
+end
+
 function wowapi.sentMessages(state, message)
   local found = {}
   for _, entry in ipairs(state.sent) do

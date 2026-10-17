@@ -7,6 +7,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | # | Question | How to test | Status |
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
+| V28 | Unit tooltip data: does `data.guid` hold the hovered player's GUID, and do secret values show up? (CF-14) | Covered by the CF-14 steps; if the line never appears, run `/dump issecretvalue ~= nil` and tell me. | open |
 | V23 | Which quest log API and events does Forever have, and how big is the quest log? (for CF-19, can be checked any time) | `/dump C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries(), GetNumQuestLogEntries and GetNumQuestLogEntries()` and `/dump C_QuestLog.GetInfo and C_QuestLog.GetInfo(1)`. Events: `/dump C_EventUtils.IsEventValid("QUEST_ACCEPTED"), C_EventUtils.IsEventValid("QUEST_TURNED_IN"), C_EventUtils.IsEventValid("QUEST_REMOVED"), C_EventUtils.IsEventValid("QUEST_LOG_UPDATE")`. Log size: `/dump C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()` | open |
 | V20 | Which talent API does Forever have? (for CF-18, can be checked any time) | `/dump GetNumTalentTabs and GetNumTalentTabs(), GetTalentTabInfo and GetTalentTabInfo(1)` and `/dump C_ClassTalents ~= nil, C_Traits ~= nil, GetSpecialization ~= nil`. Also: which event fires after spending a talent point (`CHARACTER_POINTS_CHANGED`, `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED`)? `/dump C_EventUtils.IsEventValid("CHARACTER_POINTS_CHANGED"), C_EventUtils.IsEventValid("PLAYER_TALENT_UPDATE"), C_EventUtils.IsEventValid("TRAIT_CONFIG_UPDATED")` | open |
 
@@ -30,3 +31,11 @@ Needs three Battle.net accounts on this build (A, B, C): relaying always involve
 | Later B and C are online together (if they are friends) | The `via` line disappears: B's own record replaced the relayed copy. | open |
 | B changes something (level up) while A is online and C is offline; then C logs on while B is offline | C gets B's new level through A. | open |
 | `/reload` on C | B's relayed data stays. | open |
+
+### CF-14 Unit tooltip
+| Step | Expected | Status |
+|---|---|---|
+| Hover a friend's character (in the world, or their portrait/name in a group) | The tooltip has an extra blue line `Sjaak · 3 characters` (display name and number of their characters). | open |
+| Hover a community member who is not linked to anyone | `CommunitiesForever member`. | open |
+| Hover yourself, an NPC, or a player outside the community | No extra line. | open |
+| Hover a friend's character inside a dungeon and in combat | Either the line or nothing; never a Lua error (V28: secret values). | open |

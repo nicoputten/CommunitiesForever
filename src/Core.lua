@@ -32,6 +32,7 @@ function addon:OnEnable()
   ns.Ping.start(self)
   ns.Sync.start(self)
   ns.Invites.start(self)
+  ns.Tooltip.start(self)
 end
 
 -- Prints why a community command can't run here, or returns true when it can.

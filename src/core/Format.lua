@@ -255,6 +255,28 @@ function Format.emptyState(view, state)
   return nil
 end
 
+Format.TOOLTIP_UNLINKED = "CommunitiesForever member"
+
+-- Tooltip lines for hovered units (CF-14): { [guid] = text } for every character in the view.
+-- Linked to someone else: "Sjaak · 3 characters". Unlinked member: "CommunitiesForever member".
+-- Your own characters get no line.
+function Format.tooltipLines(view)
+  local lines = {}
+  for _, person in ipairs(view.people) do
+    if not person.isSelf then
+      local count = #person.chars
+      local text = string.format("%s \194\183 %d character%s", person.displayName, count, count == 1 and "" or "s")
+      for _, row in ipairs(person.chars) do
+        lines[row.guid] = text
+      end
+    end
+  end
+  for _, row in ipairs(view.unlinked) do
+    lines[row.guid] = Format.TOOLTIP_UNLINKED
+  end
+  return lines
+end
+
 -- Hint shown under the detail when only you are linked so far.
 function Format.friendsHint(view)
   for _, person in ipairs(view.people) do
