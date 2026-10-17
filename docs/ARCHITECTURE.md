@@ -30,6 +30,7 @@ CommunitiesForever/
       Protocol.lua           encode/decode, chunk/reassemble
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
+      Format.lua             view model -> display rows (texts, last seen, empty states)
       Clubs.lua              selectable communities, stored-selection status
       Members.lua            member map by GUID, change compare
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
@@ -49,10 +50,10 @@ CommunitiesForever/
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
-      MainFrame.lua          custom frame + ScrollBox
+      MainFrame.lua          AceGUI Frame + ScrollFrame, renders Format rows
       Settings.lua           AceConfig options (Blizzard panel + /cf settings)
       Tooltip.lua            unit tooltip line
-      Minimap.lua            LibDBIcon button
+      Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
     helpers.lua              loads addon files in TOC order with (addonName, ns) varargs
     mocks/wowapi.lua
@@ -71,14 +72,14 @@ Data flow: adapters emit internal events -> services and core compute -> Linker 
 ## Libraries
 Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
 
-UI choice: AceConfig for settings (also registered in the Blizzard settings panel). Custom frame with ScrollBox for the main window (native look).
+UI choice: AceConfig for settings (also registered in the Blizzard settings panel). Main window: AceGUI `Frame` (move, resize, saved position and size via its status table) with a `ScrollFrame` of labels (decided in CF-12, replacing the earlier custom frame + ScrollBox plan: no unverified templates, enough for a small group). Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
 
 ## Data model
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
   schemaVersion = 1,
-  settings  = { clubId = nil, notifications = true, minimap = {}, window = {} },
+  settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, collapsed = {} },
   self      = { battleTag, displayName, version, chars = { [guid] = Char } },
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char } } },

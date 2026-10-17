@@ -11,7 +11,7 @@ Store.SCHEMA_VERSION = 1
 function Store.defaults()
   return {
     global = {
-      settings = { notifications = true, minimap = {}, window = {} },
+      settings = { notifications = true, minimap = {}, window = {}, collapsed = {} },
       self = { version = 0, chars = {} },
       people = {},
       presence = {},

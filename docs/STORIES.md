@@ -92,6 +92,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unlinked section: community data only (name, class, level, zone if online).
 - Renders from the Linker view model only. Refreshes on change events, no polling.
 - Empty states: no community selected; no linked people yet.
+- Decided in CF-12: AceGUI window; people expanded by default, collapse state saved per person (`settings.collapsed`); two-line character rows; minimap left-click window, right-click settings, hide toggle in settings; `/cf` toggles the window, `/cf help` lists commands.
 
 ### CF-13 Nicknames
 - Right-click person header: "Set nickname" (input popup) and "Clear nickname". Local only, stored in `nicknames`.

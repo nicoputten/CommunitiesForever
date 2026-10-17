@@ -26,6 +26,8 @@ function addon:OnEnable()
   ns.MemberTracker.start(self)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
+  ns.MainFrame.start(self)
+  ns.Minimap.start(self)
 end
 
 local function SelectedCommunityName()
@@ -40,7 +42,9 @@ function addon:OnSlashCommand(input)
   local command = self:GetArgs(input, 1)
   command = command and command:lower()
 
-  if command == "version" then
+  if command == nil then
+    ns.MainFrame.toggle()
+  elseif command == "version" then
     self:Print("Version " .. GetVersion())
   elseif command == "self" then
     for _, line in ipairs(ns.Describe.selfRecord(self.db.global.self, GetServerTime())) do
@@ -74,6 +78,7 @@ function addon:OnSlashCommand(input)
     ns.Settings.open()
   else
     self:Print("Commands:")
+    self:Print("  /cf - open or close the window")
     self:Print("  /cf version - show the addon version")
     self:Print("  /cf self - show your stored characters")
     self:Print("  /cf members - show members of the selected community")
