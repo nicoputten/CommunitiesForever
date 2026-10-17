@@ -36,10 +36,6 @@ function Ping.start(addon)
         message.size or 0))
     end
   end)
-  events:RegisterMessage(ns.Messenger.UNSUPPORTED, function(_, pv, battleTag)
-    addonRef:Print(string.format("Ping: %s sent protocol version %s, which this version does not support.",
-      battleTag, tostring(pv)))
-  end)
 end
 
 ns.Ping = Ping

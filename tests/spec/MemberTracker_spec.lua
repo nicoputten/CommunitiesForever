@@ -85,8 +85,9 @@ describe("MemberTracker", function()
 
   it("ignores events for other clubs", function()
     load(CLUB)
+    local timers = #state.timers -- Sync may have a HELLO pending
     wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", "999")
-    assert.are.equal(0, #state.timers)
+    assert.are.equal(timers, #state.timers)
   end)
 
   it("does not announce when nothing changed", function()

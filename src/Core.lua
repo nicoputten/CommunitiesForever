@@ -30,6 +30,7 @@ function addon:OnEnable()
   ns.Minimap.start(self)
   ns.Messenger.start(self)
   ns.Ping.start(self)
+  ns.Sync.start(self)
 end
 
 local function SelectedCommunityName()
@@ -84,6 +85,9 @@ function addon:OnSlashCommand(input)
     else
       ns.Ping.send(tonumber(argument))
     end
+  elseif command == "sync" then
+    ns.Sync.announce()
+    self:Print("Sync: announced your record to friends online in Forever.")
   elseif command == "settings" then
     ns.Settings.open()
   else
@@ -94,6 +98,7 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf members - show members of the selected community")
     self:Print("  /cf friends - show Battle.net friends in Forever")
     self:Print("  /cf people - show who owns which community character")
+    self:Print("  /cf sync - announce your characters to friends now")
     self:Print("  /cf ping [bytes] - test messages with friends who run the addon; /cf ping stats")
     self:Print("  /cf settings - open the settings")
   end

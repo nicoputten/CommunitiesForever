@@ -2,7 +2,7 @@ local helpers = require("helpers")
 local wowapi = require("mocks.wowapi")
 
 describe("Messenger", function()
-  local state, ns, addon, Messenger, Protocol
+  local state, ns, addon, Messenger, Protocol, baseline
 
   local SJAAK, SJAAK_GA = "Sjaakovich#2232", 5
 
@@ -14,6 +14,13 @@ describe("Messenger", function()
     addon:OnInitialize()
     addon.db.global.settings.clubId = "23125681"
     addon:OnEnable()
+    -- Let the startup sync traffic (HELLO) go out, then start each test from a quiet state.
+    for _ = 1, 50 do
+      state.time = state.time + 5
+      wowapi.runTimers(state)
+    end
+    state.bnSent = {}
+    baseline = Messenger.stats()
   end
 
   -- Delivers what this client sent as if it came back from a game account (loopback).
@@ -169,7 +176,9 @@ describe("Messenger", function()
       load()
       Messenger.send(SJAAK_GA, { t = "HELLO" })
       state.slash.cf("ping stats")
-      assert.are.same({ "Messages: 1 chunks sent, 0 received, 0 dropped, 0 queued." }, state.printed)
+      local expected = string.format("Messages: %d chunks sent, 0 received, 0 dropped, 0 queued.", baseline.sent + 1)
+      assert.are.same({ expected },
+        state.printed)
     end)
   end)
 end)

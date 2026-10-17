@@ -50,7 +50,7 @@ CommunitiesForever/
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
       Ping.lua               /cf ping test messages (PING/PONG)
-      Sync.lua               HELLO / REQ / RECORD flow
+      Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
       Notify.lua             login notifications
     ui/
       MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right)
@@ -84,7 +84,7 @@ global = {
   schemaVersion = 1,
   settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
                 sendInterval = 0.2 },                -- seconds between outgoing chunks
-  self      = { battleTag, displayName, version, chars = { [guid] = Char } },
+  self      = { battleTag, displayName, version, chars = { [guid] = Char }, sharedSignature },
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char } } },
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
@@ -115,9 +115,10 @@ Char = {
 - Every message carries `pv` (protocol version, starts at 1).
 
 Messages:
-- `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). Max once per peer per 60 s.
+- `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one.
 - `REQ {bt}`: sent when a peer's advertised `ver` is higher than stored.
 - `RECORD {bt, displayName, version, chars}`: own record, filtered to community members (plus non-member alts when sharing is on, CF-17).
+- The own version also bumps when the set of own characters that are community members changes (`self.sharedSignature`), because that changes what friends receive. A REQ that arrives before community member data has loaded is answered once it has (decided in CF-11).
 
 Accept rule (Merge.lua):
 - sender `gameAccountID` resolves to BattleTag B via presence

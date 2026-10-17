@@ -14,4 +14,15 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-None open. CF-01, CF-03, CF-05 to CF-08, CF-10 and CF-12 passed; CF-09 is unit tested only.
+### CF-11 Sync
+Needs a friend (e.g. Sjaakovich) running this build, both in the selected community and online in Forever. In `/cf people`, characters that came from your friend's addon say `via record`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Both log in. After ~10 s, `/cf people` and `/cf` | Your friend's community characters are listed under them, including alts they are not on right now (`via record`), with class color, level, item level and professions. | open |
+| Friend levels up (or gains a profession point, or swaps gear) | Within ~10 s your window shows the new value without `/reload` (5 s debounce + messages). | open |
+| Friend logs in on a community alt you have never seen online | The alt is already listed under them (from the record) and now shows online. | open |
+| Friend invites one of their alts to the community | Within ~10 s the alt appears under them on your side. | open |
+| Friend `/cf sync` | Nothing changes and no errors (you already have their version). | open |
+| `/reload` on your side, `/cf people` | Your friend's characters are still there (stored records survive reloads). | open |
+| Friend has an alt that is not in the community | It does not appear on your side (only community members are sent). | open |
