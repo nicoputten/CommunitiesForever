@@ -127,6 +127,16 @@ function wowapi.install(opts)
       { clubId = "23125681", name = "Forever Friends", clubType = 1 },
       { clubId = "999", name = "My Guild", clubType = 2 },
     },
+    -- clubMembers[clubId] = list of C_Club.GetMemberInfo results (fields as verified)
+    clubMembers = {
+      ["23125681"] = {
+        { memberId = 1, guid = "Player-4619-01627852", name = "Ves Doombringer", classID = 2, level = 11,
+          zone = "Durotar", presence = 1, race = 6, faction = 0, isSelf = true, clubType = 1, role = 1 },
+        { memberId = 2, guid = "Player-4619-01789956", name = "Garraka Doombringer", classID = 8, level = 11,
+          zone = "Orgrimmar", presence = 1, race = 2, faction = 0, isSelf = false, clubType = 1, role = 4 },
+      },
+    },
+    focusedClubs = {},
   }
   local libs, mixin = fakeLibs(state)
   state.aceMixin = mixin
@@ -163,6 +173,19 @@ function wowapi.install(opts)
     BNGetInfo = function() return nil, p.battleTag end,
     C_Club = {
       GetSubscribedClubs = function() return deepCopy(state.clubs) end,
+      GetClubMembers = function(clubId)
+        local ids = {}
+        for _, m in ipairs(state.clubMembers[clubId] or {}) do ids[#ids + 1] = m.memberId end
+        return ids
+      end,
+      GetMemberInfo = function(clubId, memberId)
+        for _, m in ipairs(state.clubMembers[clubId] or {}) do
+          if m.memberId == memberId then return deepCopy(m) end
+        end
+      end,
+      FocusMembers = function(clubId)
+        state.focusedClubs[#state.focusedClubs + 1] = clubId
+      end,
     },
     Enum = {
       ClubType = { BattleNet = 0, Character = 1, Guild = 2, Other = 3 },

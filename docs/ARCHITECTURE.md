@@ -31,15 +31,18 @@ CommunitiesForever/
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
       Clubs.lua              selectable communities, stored-selection status
+      Members.lua            member map by GUID, change compare
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
+      Timer.lua              C_Timer debounce
       SelfInfo.lua           Unit*, GetProfessions, item level
-      Community.lua          C_Club (club list, club events; members in CF-06)
+      Community.lua          C_Club (club list, members, club and member events)
       Presence.lua           C_BattleNet, BN events
       Transport.lua          BNSendGameData, throttle, combat queue
     services/
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId, clears it when the club is gone
+      MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
