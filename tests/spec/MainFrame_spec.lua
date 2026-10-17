@@ -132,6 +132,24 @@ describe("MainFrame", function()
     assert.matches("Garrakathorian Doombringerson|r", tree().tree[1].children[1].text, 1, true)
   end)
 
+  it("shows alts outside the community dimmed and tagged (CF-17)", function()
+    load("23125681")
+    addon.db.global.self.chars["Player-4619-0000OLD1"] = { guid = "Player-4619-0000OLD1", name = "Old Alt",
+                                                           classFile = "MAGE", level = 7, updatedAt = 900 }
+    ns.MainFrame.toggle()
+    local mine
+    for _, node in ipairs(tree().tree) do
+      if node.value == "Vestras#2858" then mine = node end
+    end
+    local last = mine.children[#mine.children]
+    assert.matches("|cff707070Old Alt|r", last.text, 1, true) -- dimmed, not class-colored
+
+    tree():SelectByPath("Vestras#2858", "Player-4619-0000OLD1")
+    assert.is_true(hasText("Not in community"))
+    tree():SelectByValue("Vestras#2858")
+    assert.is_true(hasText("not in community"))
+  end)
+
   it("expands new people once, then leaves expansion to the user", function()
     load("23125681")
     ns.MainFrame.toggle()

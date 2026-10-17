@@ -130,6 +130,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Unit tests (Linker): non-member alt shown under a person with a member character; hidden when the person has no member character; hidden for a non-friend; a character that joins the community becomes a normal member row. Sender filter respects the setting both ways.
 - Manual (2 clients): the friend has an alt that is not invited; with the setting on it shows dimmed under them; after they turn the setting off it disappears.
 - Privacy note: default on means alts are shared with Battle.net friends who run the addon and are in the community, unless the owner turns it off.
+- Decided in CF-17: your own alts outside the community are shown dimmed under you too (your record is `self.chars`); setting stored as `settings.shareAlts`; a friend online on an outside alt has that row as current character.
 
 ### CF-18 Talents and role (future)
 - First: find the talent API on Forever (V20). Forever uses the Mainline API with Vanilla content, so it may be the classic-style `GetNumTalentTabs` / `GetTalentTabInfo` or the retail-style `C_ClassTalents` / `C_Traits`. Extend FriendProbe (`/fp talents`) to dump what exists before building.

@@ -25,6 +25,11 @@ local function now()
   return GetServerTime()
 end
 
+-- "Share alts outside the community" (CF-17, default on).
+local function shareAll()
+  return global().settings.shareAlts ~= false
+end
+
 -- Same message (kind + version) to the same game account at most once per 60 s.
 local function recentlySent(log, gameAccountID, version)
   local last = log[gameAccountID]
@@ -57,15 +62,15 @@ local function sendRecord(gameAccountID)
   end
   local own = global().self
   if not own.battleTag then return end
-  ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own, ns.MemberTracker.members()))
+  ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own, ns.MemberTracker.members(), shareAll()))
 end
 
--- The record friends get is filtered by community membership, so a change in which own
+-- The record friends get is filtered by community membership (and the share setting), so a change in which own
 -- characters are members changes the record: bump the version so friends ask again.
 local function checkSharedSet()
   if not membersReady() then return end
   local own = global().self
-  local signature = ns.Merge.sharedSignature(own, ns.MemberTracker.members())
+  local signature = ns.Merge.sharedSignature(own, ns.MemberTracker.members(), shareAll())
   if own.sharedSignature ~= signature then
     own.sharedSignature = signature
     own.version = ns.Merge.nextVersion(own.version, now())
@@ -126,6 +131,11 @@ function Sync.start(addon)
 
   checkSharedSet()
   broadcastHello(false)
+end
+
+-- Settings changed what friends receive (share alts): bump the version and say HELLO.
+function Sync.settingsChanged()
+  checkSharedSet()
 end
 
 -- /cf sync: announce the own version to every friend in Forever now (no dedupe).

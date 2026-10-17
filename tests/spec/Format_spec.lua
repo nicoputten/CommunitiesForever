@@ -114,7 +114,8 @@ describe("Format", function()
       assert.are.same({ "Sjaakovich#2232", "Sjaak", true, false },
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
       assert.are.equal(2, nodes[1].count)
-      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true },
+      assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
+                        outside = false },
         nodes[1].children[1])
       assert.are.equal("Vestras (you)", nodes[2].text)
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
@@ -150,7 +151,7 @@ describe("Format", function()
       assert.are.equal("Sjaakovich#2232", d.battleTag)
       assert.are.equal("Online on Garraka", d.status)
       assert.are.same({ guid = "G2", name = "Grom", classFile = "WARRIOR", classID = 8, level = 11, seen = "2 h ago",
-                        own = false },
+                        own = false, outside = false },
         d.characters[2])
     end)
 
@@ -165,7 +166,7 @@ describe("Format", function()
       local d = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
       assert.are.same({
         kind = "character", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, owner = "Sjaak",
-        status = "Online in Orgrimmar", online = true,
+        status = "Online in Orgrimmar", online = true, outside = false,
         stats = { { label = "Level", value = "11" }, { label = "Item level", value = "20" },
                   { label = "Last seen", value = "Now" } },
         professions = Format.professionGroups(charRow().professions),

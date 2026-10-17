@@ -13,6 +13,7 @@ local BAR_TEXTURE = "Interface\\Buttons\\WHITE8X8"
 local MIN_BAR_WIDTH = 120
 local DOT_SIZE = 14
 local GREY = "|cffa0a0a0"
+local DIM = "|cff707070"
 local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZE)
 
 local addonRef, events, frame, tree, refreshDebounced
@@ -43,6 +44,14 @@ local function colorName(name, classFile, classID)
   end
   local function hex(value) return math.floor(value * 255 + 0.5) end
   return string.format("|cff%02x%02x%02x%s|r", hex(color.r), hex(color.g), hex(color.b), tostring(name))
+end
+
+-- Character name: class-colored, or dimmed grey for alts outside the community (CF-17).
+local function nameText(name, classFile, classID, outside)
+  if outside then
+    return DIM .. tostring(name) .. "|r"
+  end
+  return colorName(name, classFile, classID)
 end
 
 -- Progress bar from two inline textures (filled green, rest dark grey), width in pixels.
@@ -99,8 +108,9 @@ end
 -- Clickable character list (person and Unlinked details).
 local function characterList(parent, groupValue, characters)
   for _, c in ipairs(characters) do
-    local text = string.format("%s  %sLvl %s  -  %s|r", colorName(c.name, c.classFile, c.classID), GREY,
-      tostring(c.level or "?"), c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen))
+    local text = string.format("%s  %sLvl %s  -  %s%s|r", nameText(c.name, c.classFile, c.classID, c.outside), GREY,
+      tostring(c.level or "?"), c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen),
+      c.outside and "  -  not in community" or "")
     local entry = label(parent, text, GameFontHighlight, "InteractiveLabel")
     entry:SetCallback("OnClick", function()
       tree:SelectByPath(groupValue, c.guid)
@@ -123,7 +133,7 @@ function renderDetail.person(parent, detail, groupValue)
   local status = detail.status
   if detail.current and detail.online then
     status = "Online on " .. colorName(detail.current.name, detail.current.classFile, detail.current.classID) ..
-      (detail.current.visible == false and (GREY .. " (not in community)|r") or "")
+      ((detail.current.visible == false or detail.current.outside) and (GREY .. " (not in community)|r") or "")
   end
   label(parent, string.format("|T%s:%d:%d|t %s", detail.online and ONLINE_ICON or OFFLINE_ICON, DOT_SIZE, DOT_SIZE,
     status),
@@ -148,6 +158,7 @@ function renderDetail.character(parent, detail)
   if className then subtitle[#subtitle + 1] = className end
   subtitle[#subtitle + 1] = detail.owner
   subtitle[#subtitle + 1] = detail.status
+  if detail.outside then subtitle[#subtitle + 1] = "Not in community" end
   label(parent, GREY .. table.concat(subtitle, "  -  ") .. "|r", GameFontHighlight)
   spacer(parent)
 
@@ -235,7 +246,7 @@ local function aceTree(nodes)
         -- Green dot on the character a person is playing; spaces keep the names aligned.
         -- Long names are shortened so the level stays visible.
         text = string.format("%s%s  %s%s|r", c.online and ONLINE_DOT or "      ",
-          colorName(ns.Format.truncate(c.name, maxNameChars), c.classFile, c.classID), GREY,
+          nameText(ns.Format.truncate(c.name, maxNameChars), c.classFile, c.classID, c.outside), GREY,
           tostring(c.level or "?")),
       }
     end

@@ -158,10 +158,11 @@ describe("Sync", function()
   end)
 
   describe("RECORD out", function()
-    it("answers a REQ with only own characters that are community members", function()
+    it("answers a REQ with only own community characters when sharing alts is off", function()
       load(function(s)
         s.player.guid = VES
       end)
+      addon.db.global.settings.shareAlts = false
       addon.db.global.self.chars["Player-4619-0000NOTM"] = { guid = "Player-4619-0000NOTM", name = "Not Member" }
       outgoing()
       fromSjaak({ t = "REQ", bt = SJAAK })
@@ -171,6 +172,37 @@ describe("Sync", function()
       assert.are.equal(addon.db.global.self.version, records[1].version)
       assert.is_not_nil(records[1].chars[VES])
       assert.is_nil(records[1].chars["Player-4619-0000NOTM"])
+    end)
+
+    it("answers a REQ with all own characters when sharing alts is on (default)", function()
+      load()
+      addon.db.global.self.chars["Player-4619-0000NOTM"] = { guid = "Player-4619-0000NOTM", name = "Not Member" }
+      outgoing()
+      fromSjaak({ t = "REQ", bt = SJAAK })
+      local records = ofType(outgoing(), "RECORD")
+      assert.is_not_nil(records[1].chars[VES])
+      assert.is_not_nil(records[1].chars["Player-4619-0000NOTM"])
+    end)
+
+    it("bumps the version and says HELLO when the share setting changes", function()
+      load()
+      addon.db.global.self.chars["Player-4619-0000NOTM"] = { guid = "Player-4619-0000NOTM", name = "Not Member" }
+      ns.Sync.settingsChanged() -- Sync takes the new alt into account (shared set now includes it)
+      outgoing()
+      local option = state.options.args.shareAlts
+      assert.is_true(option.get())
+      local before = addon.db.global.self.version
+      state.serverTime = 5000
+      option.set({}, false)
+      assert.is_false(addon.db.global.settings.shareAlts)
+      assert.is_true(addon.db.global.self.version > before)
+      assert.are.equal(1, #ofType(outgoing(), "HELLO"))
+      fromSjaak({ t = "REQ", bt = SJAAK })
+      assert.is_nil(ofType(outgoing(), "RECORD")[1].chars["Player-4619-0000NOTM"])
+
+      state.serverTime = 6000
+      option.set({}, true)
+      assert.are.equal(6000, addon.db.global.self.version)
     end)
 
     it("waits for community member data before answering", function()

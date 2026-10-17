@@ -83,7 +83,8 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 global = {
   schemaVersion = 1,
   settings  = { clubId = nil, notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
-                sendInterval = 0.2 },                -- seconds between outgoing chunks
+                sendInterval = 0.2,                  -- seconds between outgoing chunks
+                shareAlts = true },                  -- CF-17: send own alts outside the community
   self      = { battleTag, displayName, version, chars = { [guid] = Char }, sharedSignature },
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char } } },

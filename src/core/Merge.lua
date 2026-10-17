@@ -9,26 +9,27 @@ function Merge.nextVersion(previous, now)
   return math.max((previous or 0) + 1, now)
 end
 
--- Own characters that are members of the selected community, as a sorted list of GUIDs.
-function Merge.sharedGuids(selfRecord, members)
+-- Own characters friends receive, as a sorted list of GUIDs: community members only, or all
+-- own characters when shareAll is set ("Share alts outside the community", CF-17).
+function Merge.sharedGuids(selfRecord, members, shareAll)
   local guids = {}
   for guid in pairs(selfRecord.chars or {}) do
-    if members[guid] then guids[#guids + 1] = guid end
+    if shareAll or members[guid] then guids[#guids + 1] = guid end
   end
   table.sort(guids)
   return guids
 end
 
 -- Stable text for the shared set; when it changes, the record a friend receives changes too.
-function Merge.sharedSignature(selfRecord, members)
-  return table.concat(Merge.sharedGuids(selfRecord, members), ",")
+function Merge.sharedSignature(selfRecord, members, shareAll)
+  return table.concat(Merge.sharedGuids(selfRecord, members, shareAll), ",")
 end
 
--- The RECORD message for the own record: only own characters that are community members
--- (ARCHITECTURE "Sender includes only own characters that are current community members").
-function Merge.outgoingRecord(selfRecord, members)
+-- The RECORD message for the own record: own community characters, plus all other own
+-- characters when shareAll is set (ARCHITECTURE "Sender includes only ...", CF-17).
+function Merge.outgoingRecord(selfRecord, members, shareAll)
   local chars = {}
-  for _, guid in ipairs(Merge.sharedGuids(selfRecord, members)) do
+  for _, guid in ipairs(Merge.sharedGuids(selfRecord, members, shareAll)) do
     chars[guid] = selfRecord.chars[guid]
   end
   return {

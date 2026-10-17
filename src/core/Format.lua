@@ -119,7 +119,7 @@ function Format.tree(view)
     local children = {}
     for _, c in ipairs(person.chars) do
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
-                                  level = c.level, online = c.online }
+                                  level = c.level, online = c.online, outside = c.outside or false }
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
                           isSelf = person.isSelf, count = #children, children = children }
@@ -159,6 +159,7 @@ local function characterDetail(row, owner, now, own)
     classID = row.classID,
     owner = owner,
     status = where,
+    outside = row.outside or false,
     online = row.online,
     stats = {
       { label = "Level", value = tostring(row.level or "?") },
@@ -205,7 +206,7 @@ function Format.detail(view, path, now)
   for _, row in ipairs(rows) do
     characters[#characters + 1] = { guid = row.guid, name = row.name, classFile = row.classFile,
                                     classID = row.classID, level = row.level, seen = Format.seen(row, now),
-                                    own = person and person.isSelf or false }
+                                    own = person and person.isSelf or false, outside = row.outside or false }
   end
   if not person then
     return { kind = "unlinked", characters = characters }
@@ -214,7 +215,7 @@ function Format.detail(view, path, now)
   local status
   if person.online and person.currentChar then
     status = "Online on " .. tostring(person.currentChar.name) ..
-      (person.currentChar.visible == false and " (not in community)" or "")
+      ((person.currentChar.visible == false or person.currentChar.outside) and " (not in community)" or "")
   elseif person.online then
     status = "Online"
   else

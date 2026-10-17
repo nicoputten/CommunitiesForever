@@ -14,4 +14,14 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-None open. CF-01, CF-03, CF-05 to CF-08 and CF-10 to CF-12 passed; CF-09 is unit tested only.
+### CF-17 Alts outside the community
+Needs a friend running this build. Their alt must NOT be invited to the community, and they must have logged in on it once since installing (so it is in their record).
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf` on your side | The friend's alt outside the community is listed under them, after their community characters, with a dimmed grey name. Its card says `Not in community`; the friend's card lists it with `- not in community`. | open |
+| Your own alts outside the community | Listed dimmed under you as well (you have at least one character in the community). | open |
+| Friend logs in on that alt | It shows online (green dot) under them; their card says `Online on <alt> (not in community)`. | open |
+| Friend unticks "Share alts outside the community" in `/cf settings` | Within ~10 s the alt disappears on your side. Tick it again: it comes back. | open |
+| Friend invites the alt to the community | It becomes a normal, class-colored row (no longer dimmed). | open |
+| A friend with no character in the community | Not shown at all, even if their record has alts. | open |

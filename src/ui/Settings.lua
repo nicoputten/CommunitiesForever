@@ -5,6 +5,11 @@ local Settings = {}
 
 Settings.APP_NAME = ADDON_NAME
 
+-- ns is the addon object (Core.lua), so its saved settings are here.
+local function addonSettings()
+  return ns.db.global.settings
+end
+
 -- Options table. Data comes from services only.
 function Settings.options()
   return {
@@ -38,6 +43,19 @@ function Settings.options()
         type = "description",
         order = 2,
         name = "Only character communities are listed. Guilds and Battle.net communities are not supported.",
+      },
+      shareAlts = {
+        type = "toggle",
+        order = 4,
+        width = "full",
+        name = "Share alts outside the community",
+        desc = "Friends also see your characters that are not in the selected community. "
+          .. "They are only shown under you when at least one of your characters is in the community.",
+        get = function() return addonSettings().shareAlts ~= false end,
+        set = function(_, value)
+          addonSettings().shareAlts = value
+          ns.Sync.settingsChanged()
+        end,
       },
       minimap = {
         type = "toggle",
