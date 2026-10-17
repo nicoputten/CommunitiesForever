@@ -26,7 +26,7 @@ CommunitiesForever/
     core/                    PURE Lua, unit tested
       Store.lua              schema, defaults, migrations
       Merge.lua              record accept rules, version rules
-      Linker.lua             visibility + linking -> view model
+      Linker.lua             visibility + linking -> view model (people, unlinked)
       Protocol.lua           encode/decode, chunk/reassemble
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
@@ -45,6 +45,7 @@ CommunitiesForever/
       CommunitySelection.lua owns settings.clubId, clears it when the club is gone
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
+      ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Sync.lua               HELLO / REQ / RECORD flow
       Notify.lua             login notifications
     ui/
