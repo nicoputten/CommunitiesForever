@@ -50,7 +50,8 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Tracks friends' game accounts where `clientProgram == BNET_CLIENT_WOW` and `wowProjectID == WOW_PROJECT_ID`, including friends with multiple game accounts.
 - Maintains `gameAccountID -> battleTag` map (session only) and writes `presence[guid] = { battleTag, lastSeen }` when a friend is seen on a character.
 - Refresh on BN_FRIEND_INFO_CHANGED, BN_FRIEND_ACCOUNT_ONLINE, BN_FRIEND_ACCOUNT_OFFLINE, BN_CONNECTED (debounced).
-- Emits internal events: friend online in Forever, friend switched character, friend offline.
+- Emits internal events: friend online in Forever, friend switched character, friend offline. Friends already online at login are the baseline and produce no "online" event (decided in CF-07).
+- Manual: `/cf friends` shows friends in Forever and presence links.
 
 ### CF-08 Linker (pure)
 - Input: members, current friends (BattleTag set), people, presence, self, nicknames. Output view model `{ people = [ {bt, displayName, online, currentChar, chars=[...]} ], unlinked = [...] }`.
