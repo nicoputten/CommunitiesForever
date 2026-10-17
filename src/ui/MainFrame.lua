@@ -90,6 +90,9 @@ local function column(row, relativeWidth)
   local col = createWidget("SimpleGroup")
   col:SetRelativeWidth(relativeWidth)
   col:SetLayout("List")
+  -- AceGUI's Flow layout centers a widget vertically on its row unless alignoffset says
+  -- otherwise; 0 aligns all columns at the top (Talents next to Professions, not below).
+  col.alignoffset = 0
   row:AddChild(col)
   return col
 end
@@ -265,6 +268,17 @@ local function create()
   frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
 
   tree = createWidget("TreeGroup")
+  -- TreeGroup uses GameFontHighlightSmall for child rows; use the regular size for characters.
+  -- RefreshTree rebuilds the buttons (expand, scroll, SetTree), so restyle after every refresh.
+  local refreshTree = tree.RefreshTree
+  tree.RefreshTree = function(widget, ...)
+    refreshTree(widget, ...)
+    for _, button in ipairs(widget.buttons or {}) do
+      if button.level and button.level > 1 then
+        button.text:SetFontObject(GameFontHighlight)
+      end
+    end
+  end
   tree:SetStatusTable(settings().tree) -- AceGUI saves expanded groups, selection and tree width here
   tree:SetTreeWidth(TREE_WIDTH, true)
   tree:SetLayout("Fill")

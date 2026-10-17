@@ -125,7 +125,19 @@ local function fakeLibs(state)
     function w:PauseLayout() self.paused = true end
     function w:ResumeLayout() self.paused = false end
     function w:DoLayout() self.layouts = (self.layouts or 0) + 1 end
-    function w:SetTree(t) self.tree = t end
+    function w:SetTree(t) self.tree = t; self:RefreshTree() end
+    -- Like TreeGroup: one button per visible row, level 1 = group, 2 = child.
+    function w:RefreshTree()
+      self.buttons = {}
+      for _, node in ipairs(self.tree or {}) do
+        for level, n in ipairs({ node, unpack(node.children or {}) }) do
+          local button = { level = level == 1 and 1 or 2, text = {} }
+          function button.text.SetFontObject(_, font) button.font = font end
+          button.node = n
+          self.buttons[#self.buttons + 1] = button
+        end
+      end
+    end
     function w:SetTreeWidth(width, resizable) self.treeWidth, self.treeResizable = width, resizable end
     function w:SelectByValue(path)
       self.status = self.status or {}

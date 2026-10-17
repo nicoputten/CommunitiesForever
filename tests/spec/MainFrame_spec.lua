@@ -86,6 +86,36 @@ describe("MainFrame", function()
     assert.are.equal("2 people, 0 unlinked", frame().statusText)
   end)
 
+  it("shows character rows in the tree with the regular font size", function()
+    load("23125681")
+    ns.MainFrame.toggle()
+    local childFonts, groupFonts = 0, 0
+    for _, button in ipairs(tree().buttons) do
+      if button.level > 1 then
+        assert.are.equal(_G.GameFontHighlight, button.font)
+        childFonts = childFonts + 1
+      elseif button.font == nil then
+        groupFonts = groupFonts + 1 -- group rows keep AceGUI's own font
+      end
+    end
+    assert.are.equal(2, childFonts)
+    assert.are.equal(2, groupFonts)
+  end)
+
+  it("aligns the Professions and Talents columns at the top", function()
+    load("23125681")
+    ns.MainFrame.toggle()
+    tree():SelectByPath("Vestras#2858", "Player-4619-01627852")
+    local aligned = 0
+    for _, w in ipairs(state.guiWidgets) do
+      if w.type == "SimpleGroup" and w.relativeWidth == 0.5 then
+        assert.are.equal(0, w.alignoffset)
+        aligned = aligned + 1
+      end
+    end
+    assert.is_true(aligned >= 2)
+  end)
+
   it("expands new people once, then leaves expansion to the user", function()
     load("23125681")
     ns.MainFrame.toggle()

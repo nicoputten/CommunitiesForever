@@ -15,12 +15,10 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-12 Main window (round 3)
-Everything else in draft B passed. These cover your last feedback.
+### CF-12 Main window (round 4)
+Round 3 passed except the Talents position. Screenshot feedback fixed:
 
 | Step | Expected | Status |
 |---|---|---|
-| Tree | The character each person is playing has a green dot in front of it; other characters have none (names stay aligned). | open |
-| Character card | Level / Item level / Last seen are plain text (small grey caption, larger value), no box border. Professions and Talents side by side; Talents says "Not available yet." | open |
-| A friend in the community walks into another zone, then logs out. Click them | Person card: `Offline - last seen in <zone> on <character>, N min ago`. Their character card: `Offline - last seen in <zone>, N min ago`. | open |
-| Same for someone who logged off before you logged in today (no zone seen yet) | `Offline - last seen on <character>, N h ago` or just `Offline`; no error. | open |
+| Character card of a character with many professions, then one with few | "Talents" starts at the same height as "Professions" in both cases. | open |
+| Tree | Character names in the tree are the same text size as the right-hand lists (larger than before); group rows unchanged. Still true after collapsing/expanding and scrolling. | open |
