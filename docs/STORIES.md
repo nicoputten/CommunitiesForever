@@ -65,6 +65,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
   - a character removed from the community disappears
   - display name priority rule
   - sorting: online first, then display name
+- Decided in CF-08: own characters link to self first, then presence (friend only), then a friend's record. Two records claiming one GUID: newest `updatedAt` wins, then BattleTag order. Only people with at least one visible character are listed (self included). Input also takes `online` (PresenceTracker) and `selfGuid` for `online`/`currentChar`. `/cf people` prints the view model.
 
 ## E4 Sync
 

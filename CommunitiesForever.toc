@@ -14,6 +14,7 @@ src\core\Describe.lua
 src\core\Clubs.lua
 src\core\Members.lua
 src\core\Friends.lua
+src\core\Linker.lua
 
 src\adapters\Events.lua
 src\adapters\Timer.lua
@@ -25,6 +26,7 @@ src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\MemberTracker.lua
 src\services\PresenceTracker.lua
+src\services\ViewModel.lua
 
 src\ui\Settings.lua
 

@@ -91,5 +91,38 @@ function Describe.friends(friends, online, presence, now)
   return lines
 end
 
+local function describeRow(row, now)
+  local where = row.online and ("online, " .. tostring(row.zone)) or "offline"
+  local seen = row.lastSeen and (", seen " .. age(row.lastSeen, now)) or ""
+  local source = row.linkSource and (", via " .. row.linkSource) or ""
+  return string.format("%s: level %s, ilvl %s, %s%s%s",
+    tostring(row.name), tostring(row.level), tostring(row.ilvl), where, seen, source)
+end
+
+-- Lines describing the Linker view model: people with their characters, then Unlinked.
+function Describe.view(view, now)
+  local lines = { string.format("%d people, %d unlinked", #view.people, #view.unlinked) }
+  for _, p in ipairs(view.people) do
+    local status = "offline"
+    if p.online then
+      local current = p.currentChar
+      status = current and ("online on " .. tostring(current.name) ..
+        (current.visible == false and " (not in community)" or "")) or "online"
+    end
+    lines[#lines + 1] = string.format("%s (%s)%s, %s",
+      p.displayName, tostring(p.battleTag), p.isSelf and " [you]" or "", status)
+    for _, row in ipairs(p.chars) do
+      lines[#lines + 1] = "  " .. describeRow(row, now)
+    end
+  end
+  if #view.unlinked > 0 then
+    lines[#lines + 1] = "Unlinked:"
+    for _, row in ipairs(view.unlinked) do
+      lines[#lines + 1] = "  " .. describeRow(row, now)
+    end
+  end
+  return lines
+end
+
 ns.Describe = Describe
 return Describe

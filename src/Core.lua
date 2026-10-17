@@ -56,6 +56,14 @@ function addon:OnSlashCommand(input)
     for _, line in ipairs(lines) do
       self:Print(line)
     end
+  elseif command == "people" then
+    if not ns.CommunitySelection.selected() then
+      self:Print("No community selected. Select one with /cf settings.")
+      return
+    end
+    for _, line in ipairs(ns.Describe.view(ns.ViewModel.build(self), GetServerTime())) do
+      self:Print(line)
+    end
   elseif command == "friends" then
     local lines = ns.Describe.friends(ns.PresenceTracker.friends(), ns.PresenceTracker.online(),
       self.db.global.presence, GetServerTime())
@@ -70,6 +78,7 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf self - show your stored characters")
     self:Print("  /cf members - show members of the selected community")
     self:Print("  /cf friends - show Battle.net friends in Forever")
+    self:Print("  /cf people - show who owns which community character")
     self:Print("  /cf settings - open the settings")
   end
 end
