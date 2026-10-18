@@ -78,6 +78,30 @@ describe("Format", function()
     end)
   end)
 
+  describe("talentSummary (CF-18)", function()
+    local function talents(a, b, c)
+      return { { name = "Holy", points = a }, { name = "Protection", points = b },
+               { name = "Retribution", points = c } }
+    end
+
+    it("uses the classic notation with the main tree", function()
+      assert.are.same({ role = "Healer", roleSource = "talents", mainName = "Holy", numbers = "31 / 5 / 15",
+                        treeNames = "Holy \194\183 Protection \194\183 Retribution" },
+        Format.talentSummary({ talents = talents(31, 5, 15), role = "heal" }))
+    end)
+
+    it("has no main tree without spent points and says when the role was set by the player", function()
+      local summary = Format.talentSummary({ talents = talents(0, 0, 0), role = "tank", roleOverride = "tank" })
+      assert.is_nil(summary.mainName)
+      assert.are.equal("0 / 0 / 0", summary.numbers)
+      assert.are.equal("player", summary.roleSource)
+    end)
+
+    it("returns nil without talent data", function()
+      assert.is_nil(Format.talentSummary({}))
+    end)
+  end)
+
   describe("professionGroups", function()
     it("splits primary and secondary professions, leaving out empty groups", function()
       local groups = Format.professionGroups({

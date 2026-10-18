@@ -128,7 +128,8 @@ describe("talents and role in the window (CF-18)", function()
     walk(tree)
     local all = table.concat(texts, "\n")
     assert.is_truthy(all:find("Role: Tank  |cffa0a0a0(set by player)|r", 1, true))
-    assert.is_truthy(all:find("|cffffd100Arms|r  |cffa0a0a017|r", 1, true))
-    assert.is_truthy(all:find("Fury  |cffa0a0a00|r", 1, true))
+    assert.is_truthy(all:find("|cffffd100Arms|r  17 / 0 / 0", 1, true)) -- classic notation, main tree gold
+    assert.is_truthy(all:find("Arms \194\183 Fury \194\183 Protection", 1, true))
+    assert.is_falsy(all:find("WHITE8X8", 1, true) and all:find("Arms|r  |cffa0a0a0", 1, true)) -- no talent bars
   end)
 end)

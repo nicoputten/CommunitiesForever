@@ -195,12 +195,11 @@ function renderDetail.character(parent, detail)
       label(talents, string.format("Role: %s  %s(%s)|r", summary.role, GREY,
         summary.roleSource == "player" and "set by player" or "from talents"), GameFontHighlight)
     end
-    -- One line per Vanilla tree, the main tree in gold, with a bar for its share of the points.
-    for _, t in ipairs(summary.trees) do
-      local name = t.main and ("|cffffd100" .. t.name .. "|r") or tostring(t.name)
-      label(talents, string.format("%s  %s%d|r\n%s", name, GREY, t.points, bar(t.fraction, barWidth)),
-        GameFontHighlight)
-    end
+    -- Classic notation: "Arms 17 / 0 / 0" (main tree in gold), tree names in order below.
+    local build = summary.mainName and string.format("|cffffd100%s|r  %s", summary.mainName, summary.numbers)
+      or summary.numbers
+    label(talents, build, GameFontHighlightLarge)
+    label(talents, GREY .. summary.treeNames .. "|r", GameFontHighlightSmall)
   end
 end
 

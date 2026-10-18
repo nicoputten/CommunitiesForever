@@ -9,6 +9,32 @@ function Merge.nextVersion(previous, now)
   return math.max((previous or 0) + 1, now)
 end
 
+-- Display names (CF-04) are shown in other players' UI, so only plain text: WoW escape sequences
+-- ('|', e.g. colors or textures) are removed, whitespace is collapsed and the length is capped.
+Merge.MAX_DISPLAY_NAME = 24
+
+function Merge.cleanName(text)
+  if type(text) ~= "string" then return nil end
+  text = text:gsub("|", ""):gsub("%s+", " "):match("^%s*(.-)%s*$")
+  local chars = {}
+  for char in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+    if #chars == Merge.MAX_DISPLAY_NAME then break end
+    chars[#chars + 1] = char
+  end
+  text = table.concat(chars):match("^(.-)%s*$")
+  return text ~= "" and text or nil
+end
+
+-- Copy of received character data with WoW escape sequences ('|') removed from every string
+-- (names, professions, talents), so a modified addon cannot inject colors, textures or links.
+local function stripEscapes(value, depth)
+  if type(value) == "string" then return (value:gsub("|", "")) end
+  if type(value) ~= "table" or depth > 4 then return value end
+  local copy = {}
+  for k, v in pairs(value) do copy[k] = stripEscapes(v, depth + 1) end
+  return copy
+end
+
 -- Invite code shared with the record (CF-21): only the expected fields, or nil.
 local function cleanInvite(invite)
   if type(invite) ~= "table" or type(invite.code) ~= "string" or type(invite.setAt) ~= "number"
@@ -86,10 +112,10 @@ end
 -- via is the BattleTag of the friend who relayed it, nil when it came from the owner.
 function Merge.store(people, record, now, senderBattleTag)
   people[record.bt] = {
-    displayName = type(record.displayName) == "string" and record.displayName or nil,
+    displayName = Merge.cleanName(record.displayName),
     version = record.version,
     receivedAt = now,
-    chars = record.chars,
+    chars = stripEscapes(record.chars, 0),
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
     invite = cleanInvite(record.invite),
   }

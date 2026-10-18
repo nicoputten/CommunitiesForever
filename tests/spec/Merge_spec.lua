@@ -151,6 +151,42 @@ describe("Merge", function()
     end)
   end)
 
+  describe("cleanName (CF-04)", function()
+    it("keeps plain names and trims whitespace", function()
+      assert.are.equal("Nico", Merge.cleanName("  Nico  "))
+      assert.are.equal("Nico the Great", Merge.cleanName("Nico   the\tGreat"))
+    end)
+
+    it("removes escape sequences so names cannot carry colors or textures", function()
+      assert.are.equal("cffff0000Redr", Merge.cleanName("|cffff0000Red|r"))
+      assert.is_nil(Merge.cleanName("|"))
+    end)
+
+    it("caps the length at 24 characters, counting UTF-8 characters", function()
+      assert.are.equal(string.rep("a", 24), Merge.cleanName(string.rep("a", 30)))
+      assert.are.equal(string.rep("\195\169", 24), Merge.cleanName(string.rep("\195\169", 30))) -- é
+    end)
+
+    it("returns nil for empty or non-text input", function()
+      assert.is_nil(Merge.cleanName(""))
+      assert.is_nil(Merge.cleanName("   "))
+      assert.is_nil(Merge.cleanName(42))
+    end)
+  end)
+
+  describe("store", function()
+    it("cleans the display name and all text in received characters", function()
+      local people = {}
+      Merge.store(people, record({ displayName = "|TX:0|tSjaak",
+        chars = { G = { name = "|cff00ff00Garraka|r", level = 11,
+                        professions = { [186] = { name = "Mining|r", rank = 1, max = 75 } } } } }), 1)
+      assert.are.equal("TX:0tSjaak", people[SJAAK].displayName)
+      assert.are.equal("cff00ff00Garrakar", people[SJAAK].chars.G.name)
+      assert.are.equal("Miningr", people[SJAAK].chars.G.professions[186].name)
+      assert.are.equal(11, people[SJAAK].chars.G.level)
+    end)
+  end)
+
   describe("store", function()
     it("stores displayName, version, receivedAt and chars", function()
       local people = {}

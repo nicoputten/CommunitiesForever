@@ -63,6 +63,16 @@ function Settings.options()
         get = function() return ns.CommunitySelection.selected() end,
         set = function(_, clubId) ns.CommunitySelection.select(clubId) end,
       },
+      displayName = {
+        type = "input",
+        order = 0,
+        width = "double",
+        name = "Display name",
+        desc = "How your friends see you in their window, tooltips and chat lines. Plain text, up to 24 characters. "
+          .. "Leave empty to use the first part of your BattleTag.",
+        get = function() return ns.db.global.self.displayName or "" end,
+        set = function(_, value) ns.SelfTracker.setDisplayName(ns, value) end,
+      },
       communityHelp = {
         type = "description",
         order = 2,

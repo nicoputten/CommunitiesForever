@@ -111,6 +111,7 @@ Char = {
 - Zone and online state are NOT synced. They are live data from presence and C_Club.
 - Bump `self.version` only when a synced field actually changes (Snapshot compare).
 - Display name priority: owner's displayName > BattleTag name part (before `#`). (Local nicknames, CF-13, were dropped.)
+- Text from other players is untrusted: `Merge.store` removes WoW escape sequences (`|`) from the display name and every string in received characters; display names are capped at 24 characters (CF-04).
 - Sender always includes all own characters (decided in CF-17 testing; no setting). The receiver decides what to show (core rule 1), so the record does not depend on the sender's community member list and can be sent from any character.
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
