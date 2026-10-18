@@ -37,6 +37,7 @@ CommunitiesForever/
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
+      Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
@@ -103,7 +104,9 @@ global = {
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
                 chatAlert = true, chatSound = false, chatKeepGeneral = true,
                 chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
-                activityDebug = nil },               -- CF-23: /cf activity debug prints instance events
+                activityDebug = nil,                 -- CF-23: /cf activity debug prints instance events
+                onboarded, onboardedVersion,         -- CF-26: setup wizard done (Skip and close count)
+                chatTabPrompt = { [guid] = true } }, -- CF-26: no Community tab prompt on these characters
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days

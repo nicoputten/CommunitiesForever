@@ -18,6 +18,7 @@ src\core\Clubs.lua
 src\core\Members.lua
 src\core\Invite.lua
 src\core\Talents.lua
+src\core\Onboarding.lua
 src\core\Quests.lua
 src\core\Chat.lua
 src\core\Friends.lua
@@ -54,5 +55,6 @@ src\ui\Settings.lua
 src\ui\MainFrame.lua
 src\ui\Minimap.lua
 src\ui\Tooltip.lua
+src\ui\Setup.lua
 
 src\Core.lua

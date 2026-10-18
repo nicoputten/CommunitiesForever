@@ -156,9 +156,14 @@ local function fakeLibs(state)
     function w:EnableButtonTooltips(enable) self.buttonTooltips = enable end
     for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FullHeight", "Highlight",
                               "FontObject",
-                              "Color", "Width", "Height", "RelativeWidth" }) do
+                              "Color", "Width", "Height", "RelativeWidth",
+                              "Label", "Value", "Disabled", "MaxLetters" }) do
       w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
     end
+    function w:SetList(list, order) self.list, self.order = list, order end
+    function w:DisableButton(disabled) self.buttonDisabled = disabled end
+    function w:GetText() return self.text end
+    function w:GetValue() return self.value end
     if widgetType == "Frame" then
       w.statusbg = { Hide = function(bg) bg.hidden = true end }
       w.statustext = { GetParent = function() return w.statusbg end }

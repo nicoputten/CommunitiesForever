@@ -259,6 +259,7 @@ describe("MainFrame", function()
 
   it("does not render while hidden", function()
     load("23125681")
+    wowapi.runTimers(state) -- the login timers (CF-26 setup wizard) first
     ns.MainFrame.toggle()
     ns.MainFrame.toggle()
     local before = #state.guiWidgets

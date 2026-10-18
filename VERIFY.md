@@ -14,6 +14,17 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 
 ## Manual test steps per story
 
+### CF-26 Onboarding wizard
+| Step | Expected | Status |
+|---|---|---|
+| Log in after updating (you have no `onboarded` setting yet) | About 5 s after login the setup window opens at Step 1 of 6 with the welcome text. All steps fit in the window, the buttons stay in the same place on every step. | open |
+| Next through the steps | Community: your community is selected. Your name: your current display name. Community chat: a purple sample line, the big Create button (or "This character has a ... chat tab"), three switches matching `/cf settings`. Notifications: four switches matching `/cf settings`. | open |
+| Change a switch in the wizard, then open `/cf settings` | The same value there. | open |
+| Change the display name, Next | `/cf self` shows the new name. | open |
+| Click Finish (or Skip, or X); `/reload` | The wizard does not open again. `/cf setup` opens it. | open |
+| Log in on an alt in the community without a Community tab | After ~5 s only the small prompt "Create a Community tab on this character too?". Not now: it asks again after the next login. Don't ask again: never on this alt. Create: the tab appears. | open |
+| Log in on a character that is not in the community | No prompt. | open |
+
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.
 

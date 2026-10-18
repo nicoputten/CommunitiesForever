@@ -1,0 +1,87 @@
+-- Onboarding: which setup steps to show (CF-26). Pure Lua, no WoW globals.
+-- The wizard runs once per account; steps added in a later version are shown once to existing users.
+-- Chat windows are saved per character, so other characters get only the Community tab prompt.
+local _, ns = ...
+
+local Onboarding = {}
+
+-- Bump when steps are added; give new steps `since = <new version>`.
+Onboarding.VERSION = 1
+
+Onboarding.STEPS = {
+  { id = "welcome", title = "Welcome", since = 1 },
+  { id = "community", title = "Community", since = 1 },
+  { id = "name", title = "Your name", since = 1 },
+  { id = "chat", title = "Community chat", since = 1 },
+  { id = "notifications", title = "Notifications and sharing", since = 1 },
+  { id = "done", title = "Done", since = 1 },
+}
+
+-- What the wizard switches start at (the same as Store.defaults: the wizard only presents settings).
+Onboarding.DEFAULTS = {
+  chatKeepGeneral = true, chatAlert = true, chatSound = false,
+  notifications = true, levelUps = true, shareActivity = true, minimap = true,
+}
+
+local function copy(step)
+  return { id = step.id, title = step.title, since = step.since }
+end
+
+-- Steps of the full wizard (/cf setup), or only those newer than `afterVersion`. The welcome and
+-- done steps frame a list of new steps.
+function Onboarding.steps(afterVersion)
+  local steps = {}
+  for _, step in ipairs(Onboarding.STEPS) do
+    if not afterVersion or step.since > afterVersion then steps[#steps + 1] = copy(step) end
+  end
+  if afterVersion and #steps > 0 then
+    if steps[1].id ~= "welcome" then table.insert(steps, 1, copy(Onboarding.STEPS[1])) end
+    if steps[#steps].id ~= "done" then steps[#steps + 1] = copy(Onboarding.STEPS[#Onboarding.STEPS]) end
+  end
+  return steps
+end
+
+--[[ What to show at login:
+  settings: db.global.settings (onboarded, onboardedVersion, chatTabPrompt = { [guid] = true })
+  char = { guid, hasTab, inCommunity }: the current character; hasTab: it has a Community chat tab.
+Returns { kind = "wizard", steps } for the first run or new steps, { kind = "chatPrompt" } for a
+character in the community without a Community tab that was not answered with "Don't ask again", or nil.
+]]
+function Onboarding.plan(settings, char)
+  settings = settings or {}
+  if not settings.onboarded then
+    return { kind = "wizard", steps = Onboarding.steps() }
+  end
+  local seen = settings.onboardedVersion or 1
+  if seen < Onboarding.VERSION then
+    local steps = Onboarding.steps(seen)
+    if #steps > 0 then return { kind = "wizard", steps = steps } end
+  end
+  if char and char.guid and char.inCommunity and not char.hasTab
+     and not (settings.chatTabPrompt and settings.chatTabPrompt[char.guid]) then
+    return { kind = "chatPrompt" }
+  end
+  return nil
+end
+
+-- The wizard was finished, skipped or closed (in place). The character it ran on saw the chat step,
+-- so it gets no extra prompt.
+function Onboarding.finish(settings, guid)
+  settings.onboarded = true
+  settings.onboardedVersion = Onboarding.VERSION
+  if guid then Onboarding.dontAsk(settings, guid) end
+end
+
+-- "Don't ask again for this character" on the chat prompt (in place).
+function Onboarding.dontAsk(settings, guid)
+  settings.chatTabPrompt = settings.chatTabPrompt or {}
+  settings.chatTabPrompt[guid] = true
+end
+
+-- "Step 4 of 6".
+function Onboarding.progress(index, total)
+  return string.format("Step %d of %d", index, total)
+end
+
+ns.Onboarding = Onboarding
+return Onboarding

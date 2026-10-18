@@ -82,12 +82,13 @@ describe("SelfTracker", function()
     load()
     state.serverTime = 2000
     state.player.itemLevel = { 20, 20, 20 }
+    local timers = #state.timers -- login timers (CF-26 setup)
     wowapi.fireEvent(state, "PLAYER_EQUIPMENT_CHANGED", 1, true)
     wowapi.fireEvent(state, "PLAYER_EQUIPMENT_CHANGED", 5, true)
     wowapi.fireEvent(state, "PLAYER_EQUIPMENT_CHANGED", 7, true)
     assert.are.equal(1, self_().chars[GUID].ilvl) -- not yet
-    assert.are.equal(3, #state.timers)
-    assert.are.equal(2, state.timers[3].seconds)
+    assert.are.equal(timers + 3, #state.timers)
+    assert.are.equal(2, state.timers[#state.timers].seconds)
 
     wowapi.runTimers(state)
     assert.are.equal(20, self_().chars[GUID].ilvl)
