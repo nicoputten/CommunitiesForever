@@ -138,9 +138,11 @@ describe("activity feed (CF-22)", function()
 
     click("Show all (2)")
     text = activityText()
-    assert.is_truthy(text:find("questing in Durotar and Barrens (6)", 1, true))
-    assert.is_truthy(text:find("Friend Alt", 1, true) and text:find(": questing in Durotar (1)", 1, true))
-    assert.is_truthy(text:find("Show less", 1, true))
+    -- Expanded: one part per line, then the other character with its parts, then Show less.
+    assert.is_truthy(text:find("\n   12 to 14\n   Mining reached Journeyman\n   learned Alchemy\n"
+      .. "   questing in Durotar and Barrens (6)\n   |cffa0a0a0on|r ", 1, true))
+    assert.is_truthy(text:find("Friend Alt", 1, true) and text:find("\n      questing in Durotar (1)\n", 1, true))
+    assert.is_truthy(text:find("\n   |cff6aa7ffShow less|r", 1, true))
     click("Show less")
     assert.is_falsy(activityText():find("Friend Alt", 1, true))
 

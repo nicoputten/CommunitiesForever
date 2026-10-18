@@ -19,6 +19,7 @@ local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons
 local GOLD = "|cffffd100"
 local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" } } -- CF-22
 local TAB_WIDTH = 90
+local TAB_INDENT = 12 -- px, lines the tabs up with the text inside the content box
 
 local addonRef, events, frame, content, tree, refreshDebounced
 local tabLinks = {} -- CF-22: tab value -> its text link
@@ -439,25 +440,30 @@ function renderActivity(messageText)
       end
       label(scroll, who, GameFontHighlight)
 
-      local what = "   " .. table.concat(expanded and line.parts or line.shown, DOT)
-      local hidden = line.more
-      for _, other in ipairs(line.others) do hidden = hidden + #other.parts end
-      if line.more > 0 or line.extraChars > 0 then
-        what = what .. "   " .. LINK .. (expanded and "Show less" or string.format("Show all (%d)", hidden)) .. "|r"
-        local row = label(scroll, what, GameFontHighlight, "InteractiveLabel")
+      local function toggle(text)
+        local row = label(scroll, text, GameFontHighlight, "InteractiveLabel")
         if row.SetHighlight then row:SetHighlight(HIGHLIGHT) end
         row:SetCallback("OnClick", function()
           expandedFeed[key] = not expanded or nil
           MainFrame.render()
         end)
-      else
-        label(scroll, what, GameFontHighlight)
       end
+      local expandable = line.more > 0 or line.extraChars > 0
       if expanded then
+        -- Expanded: one part per line, the other characters below, then "Show less".
+        for _, part in ipairs(line.parts) do label(scroll, "   " .. part, GameFontHighlight) end
         for _, other in ipairs(line.others) do
-          label(scroll, string.format("   %son|r %s: %s", GREY, colorName(other.char.name, other.char.classFile),
-            table.concat(other.parts, DOT)), GameFontHighlight)
+          label(scroll, string.format("   %son|r %s", GREY, colorName(other.char.name, other.char.classFile)),
+            GameFontHighlight)
+          for _, part in ipairs(other.parts) do label(scroll, "      " .. part, GameFontHighlight) end
         end
+        toggle("   " .. LINK .. "Show less|r")
+      elseif expandable then
+        local hidden = line.more
+        for _, other in ipairs(line.others) do hidden = hidden + #other.parts end
+        toggle(string.format("   %s   %sShow all (%d)|r", table.concat(line.shown, DOT), LINK, hidden))
+      else
+        label(scroll, "   " .. table.concat(line.shown, DOT), GameFontHighlight)
       end
     end
   end
@@ -521,6 +527,11 @@ local function create()
   tabBar:SetFullWidth(true)
   tabBar:SetLayout("Flow")
   frame:AddChild(tabBar)
+  -- Indent the tabs to the text inside the content box below.
+  local indent = createWidget("Label")
+  indent:SetText("")
+  indent:SetWidth(TAB_INDENT)
+  tabBar:AddChild(indent)
   for _, tab in ipairs(TABS) do
     local link = createWidget("InteractiveLabel")
     link:SetFontObject(GameFontNormalLarge)
