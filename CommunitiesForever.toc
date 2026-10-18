@@ -20,6 +20,7 @@ src\core\Invite.lua
 src\core\Talents.lua
 src\core\Onboarding.lua
 src\core\Quests.lua
+src\core\Dungeons.lua
 src\core\Chat.lua
 src\core\Friends.lua
 src\core\Linker.lua
@@ -34,6 +35,7 @@ src\adapters\Community.lua
 src\adapters\ChatFrames.lua
 src\adapters\Presence.lua
 src\adapters\Instance.lua
+src\adapters\Calendar.lua
 src\adapters\Transport.lua
 
 src\services\FeedTracker.lua
@@ -52,6 +54,7 @@ src\services\Invites.lua
 src\services\Notify.lua
 
 src\ui\Settings.lua
+src\ui\DungeonsTab.lua
 src\ui\MainFrame.lua
 src\ui\Minimap.lua
 src\ui\Tooltip.lua

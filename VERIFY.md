@@ -10,17 +10,22 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp feed` logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 | V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/dump GetChatWindowInfo(<n>)` with `n` the tab's number (6 if it was the first new tab). Expected: the name is still there, the 7th value (`shown`) is false/nil and the 9th (`docked`) nil. Then Create in `/cf setup` (Community chat step) or `/cf settings` makes the tab again. | open |
+| V42 | How does a community calendar event look to addons, and does `ToggleCalendar` open the calendar? (CF-24) | Create a community event by hand in the calendar, title `Deadmines run`, a few days ahead; sign up for it. `/fp calendar` and send the `event` lines: `calendarType` (expected something other than `HOLIDAY`), `startTime`, `inviteStatus`. Then `/run ToggleCalendar()`: the calendar opens. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-26 Onboarding wizard (round 2)
-Round 1 passed. Two changes from the feedback:
+### CF-24 Dungeon planner
+Needs your characters and a friend's in a dungeon's level range (or `/cf debugon` for a fake friend at level 28 and 30).
 
 | Step | Expected | Status |
 |---|---|---|
-| Close the Community tab, then `/cf setup` → Community chat | The big Create button is back; clicking it creates the tab again (see V41). | open |
-| Log in on an alt in the community without a Community tab (or `/run CommunitiesForeverDB.global.settings.chatTabPrompt = nil` and `/reload`) | The prompt has one big "Yes, create a Community tab" button. Clicking it creates the tab; closing the window (X) means no. Either way the alt is not asked again after the next login. | open |
+| `/cf`, Dungeons tab | Left: only dungeons with one of your characters in range, most people first, each with the number of people and a dungeon icon plus the number of quests when someone has quests for it. | open |
+| Select a dungeon | Right: the name and level range; Suggested group (you first, then a tank and a healer when someone set or has that role, then shared quests, online); at most one character per person; Also in range lists the rest. | open |
+| A community member without the addon in range | Listed with level and "community member" (no role or quests). | open |
+| Create a community event `Deadmines run` (see V42), back to the tab | Under Calendar: its day and time, and your sign-up. A title without the dungeon name: not listed. | open |
+| Plan a run: click Event title and Group, Ctrl+C, paste in the calendar event | The texts copy (`The Deadmines run`, the names with roles). Open calendar opens Blizzard's calendar. | open |
+| Switch tabs and back, `/reload` | The selected dungeon stays selected. | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.

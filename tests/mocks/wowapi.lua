@@ -492,6 +492,20 @@ function wowapi.install(opts)
       state.unitGuids[(state.inRaid and "raid" or "party") .. i] = guid
     end
   end
+  -- CF-24: calendar. state.calendarEvents[monthOffset][day] = { GetDayEvent results }; OpenCalendar
+  -- calls are counted in state.calendarOpened, ToggleCalendar sets state.calendarToggled.
+  state.calendarEvents, state.calendarOpened = {}, 0
+  globals.C_Calendar = {
+    OpenCalendar = function() state.calendarOpened = state.calendarOpened + 1 end,
+    GetMonthInfo = function() return { numDays = 31 } end,
+    GetNumDayEvents = function(offset, day)
+      local month = state.calendarEvents[offset]
+      return month and month[day] and #month[day] or 0
+    end,
+    GetDayEvent = function(offset, day, i) return state.calendarEvents[offset][day][i] end,
+  }
+  globals.ToggleCalendar = function() state.calendarToggled = true end
+
   state.setGroup = function(guids, inRaid)
     state.group, state.inRaid = guids, inRaid
     groupUnits()

@@ -17,13 +17,14 @@ local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZ
 
 local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
-local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" } } -- CF-22
+local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
+               { value = "dungeons", text = "Dungeons" } }                                         -- CF-24
 local TAB_WIDTH = 90
 local TAB_INDENT = 12 -- px, lines the tabs up with the text inside the content box
 
 local addonRef, events, frame, content, tree, refreshDebounced
 local tabLinks = {} -- CF-22: tab value -> its text link
-local activeTab = "friends" -- CF-22: "friends" or "activity"
+local activeTab = "friends" -- CF-22: "friends", "activity" or "dungeons" (CF-24)
 local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTag -> true), until /reload
 local renderActivity -- CF-22, defined below
 local view -- last view model, used by the selection callback
@@ -96,6 +97,13 @@ end
 -- Section title: left-aligned gold text, no divider lines.
 local function heading(parent, text)
   label(parent, text, GameFontNormalLarge)
+end
+
+-- CF-24: the widget helpers the Dungeons tab (ui/DungeonsTab.lua) builds with.
+local function uiHelpers()
+  return { createWidget = createWidget, label = label, spacer = spacer, heading = heading,
+           colorName = colorName, dungeonIcon = dungeonIcon, settings = settings, GREY = GREY, GOLD = GOLD,
+           print = function(text) addonRef:Print(text) end }
 end
 
 -- Borderless row of columns (SimpleGroup has no frame, unlike InlineGroup).
@@ -379,6 +387,10 @@ function MainFrame.render()
     renderActivity(empty)
     return
   end
+  if activeTab == "dungeons" then
+    ns.DungeonsTab.render(view, empty)
+    return
+  end
   if empty then
     tree:SetTree({})
     local notMember = ns.CommunitySelection.selected() and not ns.CommunitySelection.active()
@@ -565,7 +577,7 @@ local function create()
   MainFrame.selectTab(activeTab)
 end
 
--- Shows a tab ("friends" or "activity").
+-- Shows a tab ("friends", "activity" or "dungeons").
 function MainFrame.selectTab(value)
   if not frame then return end
   activeTab = value
@@ -574,6 +586,7 @@ function MainFrame.selectTab(value)
   end
   content:ReleaseChildren()
   if value == "friends" then createTree() end
+  if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
   if view then MainFrame.render() end
 end
 
@@ -604,6 +617,7 @@ local function refreshMessages()
     ns.Sync.PEOPLE_UPDATED,
     ns.Invites.CHANGED,
     ns.FeedTracker.CHANGED,
+    ns.Calendar.UPDATED, -- CF-24: calendar events for the Dungeons tab
   }
 end
 
@@ -612,6 +626,7 @@ function MainFrame.start(addon)
   frame, content, tree, view = nil, nil, nil, nil
   tabLinks = {}
   activeTab, expandedFeed = "friends", {}
+  ns.DungeonsTab.reset()
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end
   end)
