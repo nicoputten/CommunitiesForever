@@ -21,9 +21,11 @@ Quests.DUNGEON_AREAS = {
 --[[ Quest log as stored in a Char: { [questID] = { title, area, dungeon } } from raw log entries:
   entries = { { questID, title, isHeader, isHidden, tagID } } in log order; headers name the area of the
   quests below them. Hidden entries and entries without a questID are skipped. Returns nil for nil input
-  (quest log not readable), so a snapshot can keep its previous data.
+  (quest log not readable), so a snapshot can keep its previous data. An empty log also returns nil
+  (it may not be loaded yet, e.g. right after login) unless allowEmpty: the player just turned in or
+  abandoned a quest, so an empty log is real.
 ]]
-function Quests.fromLog(entries)
+function Quests.fromLog(entries, allowEmpty)
   if type(entries) ~= "table" then return nil end
   local quests, area = {}, nil
   for _, entry in ipairs(entries) do
@@ -34,8 +36,11 @@ function Quests.fromLog(entries)
       quests[entry.questID] = { title = entry.title, area = area, dungeon = dungeon }
     end
   end
+  if next(quests) == nil and not allowEmpty then return nil end
   return quests
 end
+
+local function byName(a, b) return tostring(a.name) < tostring(b.name) end
 
 --[[ Quests a friend's character shares with any of your characters, matched by quest ID:
   friendQuests = { [questID] = { title, area, dungeon } }
@@ -49,11 +54,11 @@ function Quests.shared(friendQuests, ownChars)
     local mine = {}
     for _, own in ipairs(ownChars or {}) do
       if own.quests and own.quests[questID] then
-        mine[#mine + 1] = { name = own.name, classFile = own.classFile }
+        mine[#mine + 1] = { name = own.name, classFile = own.classFile, classID = own.classID }
       end
     end
     if #mine > 0 then
-      table.sort(mine, function(a, b) return tostring(a.name) < tostring(b.name) end)
+      table.sort(mine, byName)
       local key = quest.area or "Other"
       local area = byArea[key]
       if not area then
@@ -62,7 +67,8 @@ function Quests.shared(friendQuests, ownChars)
         areas[#areas + 1] = area
       end
       area.dungeon = area.dungeon or quest.dungeon == true
-      area.quests[#area.quests + 1] = { questID = questID, title = quest.title, ownChars = mine }
+      area.quests[#area.quests + 1] = { questID = questID, title = quest.title, ownChars = mine,
+                                        theirChars = quest.theirChars }
       total = total + 1
     end
   end
@@ -74,6 +80,28 @@ function Quests.shared(friendQuests, ownChars)
     return a.area < b.area
   end)
   return areas, total
+end
+
+--[[ Quests any of a friend's characters shares with any of yours (CF-19, person card):
+  friendChars = { { name, classFile, quests } }, ownChars as for shared.
+Same result as shared; each quest also has theirChars = { { name, classFile } }, the friend's characters
+with that quest (sorted by name).
+]]
+function Quests.sharedAcross(friendChars, ownChars)
+  local merged = {}
+  for _, char in ipairs(friendChars or {}) do
+    for questID, quest in pairs(char.quests or {}) do
+      local entry = merged[questID]
+      if not entry then
+        entry = { title = quest.title, area = quest.area, dungeon = quest.dungeon, theirChars = {} }
+        merged[questID] = entry
+      end
+      entry.dungeon = entry.dungeon or quest.dungeon
+      entry.theirChars[#entry.theirChars + 1] = { name = char.name, classFile = char.classFile, classID = char.classID }
+    end
+  end
+  for _, entry in pairs(merged) do table.sort(entry.theirChars, byName) end
+  return Quests.shared(merged, ownChars)
 end
 
 -- True if the friend's character shares at least one dungeon quest with any of your characters.

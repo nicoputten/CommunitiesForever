@@ -196,7 +196,7 @@ describe("Format", function()
         stats = { { label = "Level", value = "11" }, { label = "Item level", value = "20" },
                   { label = "Last seen", value = "Now" } },
         professions = Format.professionGroups(charRow().professions),
-        sharedQuests = { total = 0, more = 0, areas = {} }, -- CF-19: on a friend's character only
+        sharedQuests = { total = 0, more = 0, areas = {}, expandable = false, showAll = false }, -- CF-19
       }, d)
     end)
 

@@ -42,6 +42,12 @@ describe("Quests (CF-19)", function()
       assert.is_true(quests[4].dungeon)
     end)
 
+    it("treats an empty log as unreadable unless allowed (turn-in or abandon)", function()
+      assert.is_nil(Quests.fromLog({}))
+      assert.is_nil(Quests.fromLog({ { isHeader = true, title = "Durotar" } }))
+      assert.are.same({}, Quests.fromLog({}, true))
+    end)
+
     it("keeps quests before the first header without an area", function()
       assert.are.same({ [5] = { title = "Loose", dungeon = false } },
         Quests.fromLog({ { questID = 5, title = "Loose" } }))
@@ -85,6 +91,19 @@ describe("Quests (CF-19)", function()
     it("puts quests without an area under Other", function()
       local areas = Quests.shared({ [9] = { title = "Loose" } }, { { name = "A", quests = { [9] = {} } } })
       assert.are.equal("Other", areas[1].area)
+    end)
+
+    it("merges all of a friend's characters, listing theirs per quest", function()
+      local areas, total = Quests.sharedAcross({
+        { name = "Carol Example", classFile = "PRIEST", quests = { [1] = friend[1] } },
+        { name = "Ann Example", classFile = "ROGUE", quests = { [1] = friend[1], [4] = friend[4] } },
+      }, own)
+      assert.are.equal(1, total) -- quest 4 is only theirs
+      local quest = areas[1].quests[1]
+      assert.are.equal(1, quest.questID)
+      assert.are.same({ { name = "Ann Example", classFile = "ROGUE" },
+                        { name = "Carol Example", classFile = "PRIEST" } }, quest.theirChars)
+      assert.are.equal(2, #quest.ownChars)
     end)
 
     it("tells whether a dungeon quest is shared", function()

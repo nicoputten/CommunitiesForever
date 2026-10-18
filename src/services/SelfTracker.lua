@@ -9,6 +9,9 @@ SelfTracker.UPDATED = "CF_SELF_UPDATED"
 local EQUIPMENT_DEBOUNCE = 2
 
 function SelfTracker.start(addon)
+  -- CF-19: an empty quest log is stored only after a turn-in or abandon (it may not be loaded yet otherwise).
+  local questRemoved = false
+
   -- PLAYER_LEVEL_UP passes the new level; UnitLevel can still return the old one then.
   local function refresh(levelOverride)
     local info = ns.SelfInfo.read()
@@ -19,7 +22,8 @@ function SelfTracker.start(addon)
     info.talents, info.mainTree = ns.Talents.summarize(info.talentNodes, info.classFile)
     info.autoRole = ns.Talents.autoRole(info.classFile, info.mainTree)
     -- CF-19: quest log per character (nil when not readable: the snapshot keeps the old one).
-    info.quests = ns.Quests.fromLog(info.questLog)
+    info.quests = ns.Quests.fromLog(info.questLog, questRemoved)
+    questRemoved = false
     if ns.Snapshot.apply(addon.db.global.self, info, GetServerTime()) then
       addon:SendMessage(SelfTracker.UPDATED)
     end
@@ -33,6 +37,9 @@ function SelfTracker.start(addon)
 
   addon:RegisterMessage(ns.SelfInfo.CHANGED, function(_, reason, arg)
     if reason == "equipment" or reason == "talents" or reason == "quests" then
+      refreshDebounced()
+    elseif reason == "questRemoved" then
+      questRemoved = true
       refreshDebounced()
     elseif reason == "level" then
       refresh(arg)

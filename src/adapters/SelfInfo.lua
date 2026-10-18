@@ -5,7 +5,7 @@ local _, ns = ...
 local SelfInfo = {}
 
 -- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment", "logout",
--- "talents", "quests".
+-- "talents", "quests", "questRemoved".
 SelfInfo.CHANGED = "CF_SELF_CHANGED"
 
 local EVENT_REASONS = {
@@ -18,8 +18,8 @@ local EVENT_REASONS = {
   PLAYER_TALENT_UPDATE = "talents",
   TRAIT_CONFIG_UPDATED = "talents",
   QUEST_ACCEPTED = "quests",                 -- CF-19 (verified to exist, V23)
-  QUEST_REMOVED = "quests",
-  QUEST_TURNED_IN = "quests",
+  QUEST_REMOVED = "questRemoved",           -- abandoned or completed: an empty log is real then
+  QUEST_TURNED_IN = "questRemoved",
   QUEST_LOG_UPDATE = "quests",               -- also fires when the log first loads
 }
 

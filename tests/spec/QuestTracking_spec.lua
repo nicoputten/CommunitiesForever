@@ -77,6 +77,18 @@ describe("shared quests in the window (CF-19)", function()
     end
   end
 
+  local function clickLabel(text)
+    local found
+    local function walk(widget)
+      for _, child in ipairs(widget.children) do
+        if child.type == "InteractiveLabel" and child.text == text then found = child end
+        walk(child)
+      end
+    end
+    walk(treeWidget())
+    assert(found, "no label " .. text):Fire("OnClick")
+  end
+
   after_each(function()
     wowapi.uninstall()
   end)
@@ -132,7 +144,7 @@ describe("shared quests in the window (CF-19)", function()
     assert.is_truthy(treeChild(friendTag, friendGuid).text:find("|A:Dungeon:14:14|a", 1, true))
   end)
 
-  it("shows at most five quests, then +N more", function()
+  it("shows at most five quests, then Show all / Show fewer", function()
     load()
     local quests = {}
     for i = 1, 7 do
@@ -146,8 +158,52 @@ describe("shared quests in the window (CF-19)", function()
     treeWidget():SelectByPath(friendTag, friendGuid)
     local text = detailText()
     assert.is_truthy(text:find("Shared quests (7)", 1, true))
-    assert.is_truthy(text:find("+2 more", 1, true))
     assert.is_falsy(text:find("Shared 6", 1, true))
+
+    clickLabel("Show all 7")
+    text = detailText()
+    assert.is_truthy(text:find("Shared 6", 1, true))
+    assert.is_truthy(text:find("Shared 7", 1, true))
+
+    clickLabel("Show fewer")
+    assert.is_falsy(detailText():find("Shared 6", 1, true))
+  end)
+
+  it("lists quests over all of a friend's characters on the person card", function()
+    load()
+    addon.db.global.people[friendTag] = { displayName = "Friend", version = 5, chars = {
+      [friendGuid] = { guid = friendGuid, name = "Friend Char", classFile = "MAGE", level = 11,
+                       quests = { [1001] = { title = "Quest One", area = "Durotar", dungeon = false } } },
+      ["Player-0-ALT00001"] = { guid = "Player-0-ALT00001", name = "Friend Alt", classFile = "WARRIOR", level = 9,
+                                quests = { [1001] = { title = "Quest One", area = "Durotar", dungeon = false },
+                                           [1002] = { title = "Quest Two", area = "Durotar", dungeon = false } } },
+    } }
+    ns.MainFrame.toggle()
+    treeWidget():SelectByValue(friendTag)
+    local text = detailText()
+    assert.is_truthy(text:find("Shared quests (2)", 1, true))
+    -- Quest One: both of their characters (the community member shows under its community name).
+    assert.is_truthy(text:find("Them|r Friend Alt, |cff40c7eb" .. state.clubMembers["23125681"][2].name, 1, true))
+    assert.is_truthy(text:find("Them|r Friend Alt   ", 1, true)) -- Quest Two: only the alt
+
+    treeWidget():SelectByValue(myTag)
+    assert.is_falsy(detailText():find("Shared quests", 1, true))
+  end)
+
+  it("ignores an empty quest log, except right after a turn-in or abandon", function()
+    load()
+    local before = addon.db.global.self.version
+    state.serverTime = 2000
+    state.questLog = {} -- not loaded yet
+    wowapi.fireEvent(state, "QUEST_LOG_UPDATE")
+    settle()
+    assert.is_truthy(me().quests[1001])
+    assert.are.equal(before, addon.db.global.self.version)
+
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", 1001)
+    settle()
+    assert.are.same({}, me().quests)
+    assert.is_true(addon.db.global.self.version > before)
   end)
 
   it("says so when nothing is shared, and has no section on own characters", function()

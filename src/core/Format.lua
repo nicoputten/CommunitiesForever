@@ -179,30 +179,46 @@ function Format.talentSummary(row)
   }
 end
 
--- At most this many quest lines on a card; the rest is "+N more" (CF-19).
+-- At most this many quest lines on a card unless expanded with "Show all" (CF-19).
 Format.MAX_QUEST_LINES = 5
 
---[[ Quests a friend's character shares with your characters (CF-19), for the card:
-  { total, more, areas = { { area, dungeon, quests = { { questID, title, ownChars = { { name, classFile } } } } } } }
-Dungeon areas first (see Quests.shared). Only the first MAX_QUEST_LINES quests are listed; more = the rest.
-]]
-function Format.sharedQuests(row, own)
-  local all, total = ns.Quests.shared(row.quests, own)
+-- Cuts areas from Quests.shared/sharedAcross to MAX_QUEST_LINES quest lines, unless showAll.
+local function limitQuests(all, total, showAll)
   local areas, shown = {}, 0
+  local limit = showAll and math.huge or Format.MAX_QUEST_LINES
   for _, area in ipairs(all) do
-    if shown >= Format.MAX_QUEST_LINES then break end
+    if shown >= limit then break end
     local quests = {}
     for _, quest in ipairs(area.quests) do
-      if shown >= Format.MAX_QUEST_LINES then break end
+      if shown >= limit then break end
       quests[#quests + 1] = quest
       shown = shown + 1
     end
     areas[#areas + 1] = { area = area.area, dungeon = area.dungeon, quests = quests }
   end
-  return { total = total, more = total - shown, areas = areas }
+  return { total = total, more = total - shown, areas = areas,
+           expandable = total > Format.MAX_QUEST_LINES, showAll = showAll or false }
 end
 
-local function characterDetail(row, owner, now, own, sharedWith)
+--[[ Quests a friend's character shares with your characters (CF-19), for the character card:
+  { total, more, expandable, showAll,
+    areas = { { area, dungeon, quests = { { questID, title, ownChars = { { name, classFile } } } } } } }
+Dungeon areas first (see Quests.shared). Without showAll only the first MAX_QUEST_LINES quests are listed;
+more = the rest. expandable: more than MAX_QUEST_LINES in total (the UI offers Show all / Show fewer).
+]]
+function Format.sharedQuests(row, own, showAll)
+  local all, total = ns.Quests.shared(row.quests, own)
+  return limitQuests(all, total, showAll)
+end
+
+-- Same for the person card: quests any of the friend's characters shares with yours; each quest also has
+-- theirChars = { { name, classFile } } (see Quests.sharedAcross).
+function Format.personSharedQuests(rows, own, showAll)
+  local all, total = ns.Quests.sharedAcross(rows, own)
+  return limitQuests(all, total, showAll)
+end
+
+local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
   local where
   if row.online then
     where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
@@ -229,19 +245,22 @@ local function characterDetail(row, owner, now, own, sharedWith)
     professions = Format.professionGroups(row.professions),
     talents = Format.talentSummary(row),
     -- CF-19: only on a friend's characters (nil on your own and on Unlinked characters).
-    sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith) or nil,
+    sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith, showAllQuests) or nil,
   }
 end
 
 --[[ Detail model for the selected tree path, or a message when nothing (valid) is selected:
   { kind = "message", text }
   { kind = "person", title, battleTag, online, status, current, source,   -- source: "Updated 3 h ago via Sjaak"
-    characters = { { guid, name, classFile, classID, level, seen } } }
+    characters = { { guid, name, classFile, classID, level, seen } },
+    sharedQuests }                     -- CF-19: see personSharedQuests; nil on your own card
   { kind = "unlinked", characters = ... }                        -- same character entries
   { kind = "character", guid, name, classFile, classID, owner, status, online, stats,
-    professions = { { title, list } } }   -- see professionGroups
+    professions = { { title, list } },   -- see professionGroups
+    talents, sharedQuests }              -- talentSummary; sharedQuests (CF-19) only on a friend's character
+showAllQuests: list every shared quest instead of the first MAX_QUEST_LINES.
 ]]
-function Format.detail(view, path, now)
+function Format.detail(view, path, now, showAllQuests)
   if not path then
     return { kind = "message", text = "Select a person or character on the left." }
   end
@@ -261,7 +280,7 @@ function Format.detail(view, path, now)
       if row.guid == guid then
         local friend = person and not person.isSelf
         return characterDetail(row, person and person.displayName or "Unlinked", now, person and person.isSelf,
-                               friend and ownRows(view) or nil)
+                               friend and ownRows(view) or nil, showAllQuests)
       end
     end
     return Format.detail(view, nil, now)
@@ -300,7 +319,10 @@ function Format.detail(view, path, now)
       tostring(person.viaName)) or ("Via " .. tostring(person.viaName))
   end
   return { kind = "person", title = personTitle(person), battleTag = person.battleTag, online = person.online,
-           status = status, current = person.currentChar, characters = characters, source = source }
+           status = status, current = person.currentChar, characters = characters, source = source,
+           -- CF-19: all quests the friend shares with you, over all their characters (not on your own card).
+           sharedQuests = not person.isSelf and Format.personSharedQuests(rows, ownRows(view), showAllQuests)
+             or nil }
 end
 
 -- Message for the whole window instead of tree and detail, or nil.
