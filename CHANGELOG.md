@@ -11,3 +11,5 @@ Add an entry under a new version heading before tagging a release.
 - Shared quests on friends' character and person cards, with dungeon quests marked.
 - Activity tab: what you and your friends did each day (levels, quests per zone, profession ranks), one line per
   person per day. "Share my activity" in the settings turns yours off for friends.
+- Community chat stands out: purple in every chat window (color adjustable), the chat tab flashes on new messages
+  (optional sound), and a button creates a Community chat tab.

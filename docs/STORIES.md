@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-02 (part 2: tag workflow, needs the API token), 25 (after V39), 26, 23 (after V35), 24.
+Build order: CF-02 (part 2: tag workflow, needs the API token), 26, 23 (after V35), 24.
 
 ## E0 Foundation
 
@@ -36,16 +36,6 @@ Build order: CF-02 (part 2: tag workflow, needs the API token), 25 (after V39), 
 - Manual: open the tab, pick a dungeon, create the event in Blizzard's calendar from the suggestion; it shows on the dungeon page; a friend sees it and signs up.
 
 ## E8 Communication
-
-### CF-25 Community chat that stands out
-- Goal: messages in the selected community's chat are easy to notice, in Blizzard's own chat (no chat of our own).
-- V37 (verified): coloring the channel, opening a chat tab, flashing a tab and playing a sound work from an addon; `ChatFrame_AddChannel` is gone, so V39 finds how to put the channel into the new tab. V38 (verified): the message text is hidden, but the sender name and GUID are readable.
-- **Color, always on** (decided): the community channel is purple in all chat windows (`ChangeChatColor` on the channel, default `#C080FF`, readable on the dark chat background). Applied on every login and when the community selection changes. A color picker in settings changes the shade; there is no off switch.
-- **Alert on a new message** (setting, on by default): when someone else writes in the selected community, every chat tab that shows the channel and is not the selected tab flashes (`FCF_StartAlertFlash`). Optional sound (`SOUNDKIT.TELL_MESSAGE`, setting, off by default). No alert for your own messages (sender GUID is one of your characters, V38).
-- **Community chat tab** (encouraged, CF-26 offers it): a button "Create a Community tab" opens a chat tab named after the community that shows only that channel. Chat windows are saved per character by the game, so the tab is offered once per character (remembered in `settings.chatTab[guid]`); clicking again when the tab exists says so. Option "Keep community messages in General too" (on by default); off removes the channel from the other windows, so only the Community tab flashes.
-- Not in scope: a chat view inside our window, changing sender names or message text (likely blocked by secret values under Midnight).
-- Unit tests (pure core): which incoming messages alert (selected community, not you, not the selected tab); color setting default and change; tab offered once per character.
-- Manual (2 clients): a friend writes in the community while another chat tab is selected: the tab with the community chat flashes and the message is purple. Create the Community tab: it shows only community messages; with "Keep in General" off, General no longer shows them.
 
 ### CF-26 Onboarding wizard
 - Goal: new users set things up in a minute and are encouraged to create the Community chat tab (CF-25). Builds on CF-25 (tab and color code).

@@ -410,6 +410,54 @@ function wowapi.install(opts)
     globals.C_EventUtils = { IsEventValid = function(event) return valid[event] == true end }
   end
 
+  -- CF-25: chat windows. state.chatWindows[i] = { name, channels = { channel names } }; joined channels
+  -- in state.chatChannels[name] = index; ChangeChatColor calls in state.chatColors, flashes, sounds.
+  state.chatChannels = { ["Community:23125681:1"] = 6 }
+  state.chatWindows = { { name = "General", channels = { "Community:23125681:1" } },
+                        { name = "Combat Log", channels = {} } }
+  state.chatColors, state.flashed, state.sounds = {}, {}, {}
+  local function chatFrame(i)
+    local f = { id = i }
+    function f.GetID(frame) return frame.id end
+    function f.AddChannel(frame, channel)
+      table.insert(state.chatWindows[frame.id].channels, channel)
+      return state.chatChannels[channel]
+    end
+    function f.RemoveChannel(frame, channel)
+      local list = state.chatWindows[frame.id].channels
+      for k = #list, 1, -1 do if list[k] == channel then table.remove(list, k) end end
+    end
+    return f
+  end
+  for i = 1, 10 do globals["ChatFrame" .. i] = chatFrame(i) end
+  globals.NUM_CHAT_WINDOWS = 10
+  globals.SELECTED_CHAT_FRAME = globals.ChatFrame1
+  globals.SOUNDKIT = { TELL_MESSAGE = 3081 }
+  globals.Chat_GetCommunitiesChannelName = function(clubId, streamId)
+    return "Community:" .. clubId .. ":" .. streamId
+  end
+  globals.GetChannelName = function(name) return state.chatChannels[name] or 0 end
+  globals.ChangeChatColor = function(chatType, r, g, b) state.chatColors[chatType] = { r = r, g = g, b = b } end
+  globals.GetChatWindowInfo = function(i) return state.chatWindows[i] and state.chatWindows[i].name or "" end
+  globals.GetChatWindowChannels = function(i)
+    local result = {}
+    for _, c in ipairs(state.chatWindows[i] and state.chatWindows[i].channels or {}) do
+      result[#result + 1] = c
+      result[#result + 1] = state.chatChannels[c] or 0
+    end
+    return unpack(result)
+  end
+  globals.FCF_StartAlertFlash = function(frame) state.flashed[#state.flashed + 1] = frame.id end
+  globals.PlaySound = function(id) state.sounds[#state.sounds + 1] = id end
+  globals.FCF_OpenNewWindow = function(name)
+    state.chatWindows[#state.chatWindows + 1] = { name = name, channels = {} }
+    return globals["ChatFrame" .. #state.chatWindows]
+  end
+  globals.ChatFrame_RemoveAllMessageGroups = function() end
+  globals.C_Club.GetStreams = function() return { { streamId = 1, name = "General", streamType = 0 } } end
+  globals.Enum = globals.Enum or {}
+  globals.Enum.ClubStreamType = { General = 0 }
+
   for name, value in pairs(globals) do
     if not missing[name] then set(name, value) end
   end
