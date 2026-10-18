@@ -10,6 +10,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V23 | Which quest log API and events does Forever have, and how big is the quest log? (for CF-19, can be checked any time) | `/dump C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries(), GetNumQuestLogEntries and GetNumQuestLogEntries()` and `/dump C_QuestLog.GetInfo and C_QuestLog.GetInfo(1)`. Events: `/dump C_EventUtils.IsEventValid("QUEST_ACCEPTED"), C_EventUtils.IsEventValid("QUEST_TURNED_IN"), C_EventUtils.IsEventValid("QUEST_REMOVED"), C_EventUtils.IsEventValid("QUEST_LOG_UPDATE")`. Log size: `/dump C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()` | open |
 
+
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
@@ -51,19 +52,3 @@ Needs a friend running this build, linked to you in the community.
 | Friend levels up while you are both online | Within ~10 s: `Sjaak's <character> reached level N` in your chat. | open |
 | A friend's level-up older than 15 minutes (e.g. arriving through relay later) | No line. | open |
 | `/cf settings` → untick "Announce friends' level-ups", friend levels up | No line. | open |
-
-### CF-18 Talents and role
-| Step | Expected | Status |
-|---|---|---|
-| On a character with talents: `/cf self` | `talents: Arms 17 / Fury 0 / Protection 0, role dps` (your split and the guessed role). | open |
-| Spend a talent point, wait ~3 s, `/cf self` | The split changes, version goes up. | open |
-| `/cf`, click your character | Talents section: `Role: DPS (from talents)`, then `Arms  17 / 0 / 0` (main tree in gold) and `Arms · Fury · Protection` below. No bars. | open |
-| `/cf settings` → "Roles of your characters" → set a character to Tank | Card says `Role: Tank (set by player)`; your person card list shows `Tank`. A friend on this build sees it after ~10 s. Set back to Auto: the guess returns. | open |
-| A character without talent points (or never logged in since this build) | Card says `No talent data yet...` / no role. | open |
-
-### CF-04 Own display name
-| Step | Expected | Status |
-|---|---|---|
-| `/cf settings` → "Display name" → type `Nico`, Enter | Your header in the window and `/cf self` use `Nico`. A friend on this build sees `Nico` (window, tooltip, chat lines) within ~10 s. | open |
-| Type a name with color codes or more than 24 characters | Saved as plain text, at most 24 characters. | open |
-| Clear the field | Back to the first part of your BattleTag, for you and your friends. | open |
