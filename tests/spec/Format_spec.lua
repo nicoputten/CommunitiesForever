@@ -32,7 +32,9 @@ describe("Format", function()
   local unlinked = { { guid = "U1", name = "Stranger", classID = 8, level = 9, online = false } }
 
   before_each(function()
-    Format = helpers.loadAddonFile("src/core/Format.lua", {})
+    local ns = {}
+    helpers.loadAddonFile("src/core/Quests.lua", ns)
+    Format = helpers.loadAddonFile("src/core/Format.lua", ns)
   end)
 
   describe("ago and seen", function()
@@ -139,7 +141,7 @@ describe("Format", function()
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
       assert.are.equal(2, nodes[1].count)
       assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
-                        outside = false },
+                        outside = false, sharedDungeon = false },
         nodes[1].children[1])
       assert.are.equal("Vestras (you)", nodes[2].text)
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
@@ -194,6 +196,7 @@ describe("Format", function()
         stats = { { label = "Level", value = "11" }, { label = "Item level", value = "20" },
                   { label = "Last seen", value = "Now" } },
         professions = Format.professionGroups(charRow().professions),
+        sharedQuests = { total = 0, more = 0, areas = {} }, -- CF-19: on a friend's character only
       }, d)
     end)
 

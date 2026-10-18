@@ -15,6 +15,9 @@ local DOT_SIZE = 14
 local GREY = "|cffa0a0a0"
 local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZE)
 
+local DUNGEON_ATLAS = "Dungeon" -- dungeon entrance map icon (CF-19, VERIFY.md V32)
+local GOLD = "|cffffd100"
+
 local addonRef, events, frame, tree, refreshDebounced
 local view -- last view model, used by the selection callback
 
@@ -43,6 +46,17 @@ local function colorName(name, classFile, classID)
   end
   local function hex(value) return math.floor(value * 255 + 0.5) end
   return string.format("|cff%02x%02x%02x%s|r", hex(color.r), hex(color.g), hex(color.b), tostring(name))
+end
+
+-- Dungeon entrance icon for shared dungeon quests, or a text badge when the atlas is missing.
+local dungeonIconText
+local function dungeonIcon()
+  if not dungeonIconText then
+    local hasAtlas = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(DUNGEON_ATLAS)
+    dungeonIconText = hasAtlas and string.format("|A:%s:%d:%d|a", DUNGEON_ATLAS, DOT_SIZE, DOT_SIZE)
+      or (GOLD .. "[D]|r")
+  end
+  return dungeonIconText
 end
 
 -- Progress bar from two inline textures (filled green, rest dark grey), width in pixels.
@@ -201,6 +215,29 @@ function renderDetail.character(parent, detail)
     label(talents, build, GameFontHighlightLarge)
     label(talents, GREY .. summary.treeNames .. "|r", GameFontHighlightSmall)
   end
+
+  -- CF-19: quests this friend's character shares with your characters, grouped by area.
+  local shared = detail.sharedQuests
+  if shared then
+    spacer(parent)
+    heading(parent, string.format("Shared quests (%d)", shared.total))
+    if shared.total == 0 then
+      label(parent, GREY .. "No shared quests.|r", GameFontHighlight)
+    end
+    for _, area in ipairs(shared.areas) do
+      label(parent, GOLD .. tostring(area.area) .. "|r" ..
+        (area.dungeon and ("  " .. dungeonIcon() .. " " .. GREY .. "Dungeon|r") or ""), GameFontNormal)
+      for _, quest in ipairs(area.quests) do
+        local names = {}
+        for _, own in ipairs(quest.ownChars) do names[#names + 1] = colorName(own.name, own.classFile) end
+        label(parent, string.format("   %s  %s-|r  %s", tostring(quest.title), GREY, table.concat(names, ", ")),
+          GameFontHighlight)
+      end
+    end
+    if shared.more > 0 then
+      label(parent, string.format("%s+%d more|r", GREY, shared.more), GameFontHighlightSmall)
+    end
+  end
 end
 
 -- CF-21: on a character outside the community, step-by-step instructions to join with the shared
@@ -284,9 +321,10 @@ local function aceTree(nodes)
         value = c.value,
         -- Green dot on the character a person is playing; spaces keep the names aligned.
         -- Long names are shortened so the level stays visible.
-        text = string.format("%s%s  %s%s|r", c.online and ONLINE_DOT or "      ",
+        -- CF-19: dungeon entrance icon when this friend's character shares a dungeon quest with you.
+        text = string.format("%s%s  %s%s|r%s", c.online and ONLINE_DOT or "      ",
           colorName(ns.Format.truncate(c.name, maxNameChars), c.classFile, c.classID), GREY,
-          tostring(c.level or "?")),
+          tostring(c.level or "?"), c.sharedDungeon and (" " .. dungeonIcon()) or ""),
       }
     end
     result[#result + 1] = {

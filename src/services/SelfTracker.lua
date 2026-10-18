@@ -18,6 +18,8 @@ function SelfTracker.start(addon)
     -- CF-18: points per Vanilla tree and the role guessed from the main tree.
     info.talents, info.mainTree = ns.Talents.summarize(info.talentNodes, info.classFile)
     info.autoRole = ns.Talents.autoRole(info.classFile, info.mainTree)
+    -- CF-19: quest log per character (nil when not readable: the snapshot keeps the old one).
+    info.quests = ns.Quests.fromLog(info.questLog)
     if ns.Snapshot.apply(addon.db.global.self, info, GetServerTime()) then
       addon:SendMessage(SelfTracker.UPDATED)
     end
@@ -30,7 +32,7 @@ function SelfTracker.start(addon)
   end
 
   addon:RegisterMessage(ns.SelfInfo.CHANGED, function(_, reason, arg)
-    if reason == "equipment" or reason == "talents" then
+    if reason == "equipment" or reason == "talents" or reason == "quests" then
       refreshDebounced()
     elseif reason == "level" then
       refresh(arg)

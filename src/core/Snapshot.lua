@@ -35,7 +35,20 @@ function Snapshot.build(info)
     end
   end
   char.role = char.roleOverride or char.autoRole
+  char.quests = info.quests -- CF-19: { [questID] = { title, area, dungeon } }, already normalized
   return char
+end
+
+-- Same quest IDs (progress, titles and areas do not count: no version bump on quest progress).
+local function questsEqual(a, b)
+  if a == nil or b == nil then return a == b end
+  for id in pairs(a) do
+    if not b[id] then return false end
+  end
+  for id in pairs(b) do
+    if not a[id] then return false end
+  end
+  return true
 end
 
 local function talentsEqual(a, b)
@@ -69,6 +82,7 @@ function Snapshot.equal(a, b)
     if a[field] ~= b[field] then return false end
   end
   return professionsEqual(a.professions or {}, b.professions or {}) and talentsEqual(a.talents, b.talents)
+    and questsEqual(a.quests, b.quests)
 end
 
 -- Stores the current character in the own record (db.global.self).
@@ -89,6 +103,7 @@ function Snapshot.apply(record, info, now)
     if char.talents == nil then
       char.talents, char.mainTree, char.autoRole = previous.talents, previous.mainTree, previous.autoRole
     end
+    if char.quests == nil then char.quests = previous.quests end
     -- The role override is set by the player in settings, not read from the game.
     char.roleOverride = previous.roleOverride
     char.role = char.roleOverride or char.autoRole

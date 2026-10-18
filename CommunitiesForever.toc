@@ -15,6 +15,7 @@ src\core\Clubs.lua
 src\core\Members.lua
 src\core\Invite.lua
 src\core\Talents.lua
+src\core\Quests.lua
 src\core\Friends.lua
 src\core\Linker.lua
 src\core\Protocol.lua

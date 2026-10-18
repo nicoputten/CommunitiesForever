@@ -1,5 +1,6 @@
 -- Format: turns the Linker view model into the main window's tree and detail models.
 -- Pure Lua, no WoW globals. Colors, textures and class names are applied by the UI.
+-- Requires ns.Quests (load core/Quests.lua first).
 local _, ns = ...
 
 local Format = {}
@@ -113,13 +114,23 @@ end
 People first (Linker order), then an "Unlinked" group when there are unlinked characters.
 The UI turns name/classFile into colored text.
 ]]
+-- Your own character rows (CF-19: quests are matched against all of them, alts as of their last login).
+local function ownRows(view)
+  for _, person in ipairs(view.people) do
+    if person.isSelf then return person.chars end
+  end
+  return {}
+end
+
 function Format.tree(view)
   local nodes = {}
+  local own = ownRows(view)
   for _, person in ipairs(view.people) do
     local children = {}
     for _, c in ipairs(person.chars) do
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
-                                  level = c.level, online = c.online, outside = c.outside or false }
+                                  level = c.level, online = c.online, outside = c.outside or false,
+                                  sharedDungeon = not person.isSelf and ns.Quests.sharesDungeon(c.quests, own) }
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
                           isSelf = person.isSelf, count = #children, children = children }
@@ -168,7 +179,30 @@ function Format.talentSummary(row)
   }
 end
 
-local function characterDetail(row, owner, now, own)
+-- At most this many quest lines on a card; the rest is "+N more" (CF-19).
+Format.MAX_QUEST_LINES = 5
+
+--[[ Quests a friend's character shares with your characters (CF-19), for the card:
+  { total, more, areas = { { area, dungeon, quests = { { questID, title, ownChars = { { name, classFile } } } } } } }
+Dungeon areas first (see Quests.shared). Only the first MAX_QUEST_LINES quests are listed; more = the rest.
+]]
+function Format.sharedQuests(row, own)
+  local all, total = ns.Quests.shared(row.quests, own)
+  local areas, shown = {}, 0
+  for _, area in ipairs(all) do
+    if shown >= Format.MAX_QUEST_LINES then break end
+    local quests = {}
+    for _, quest in ipairs(area.quests) do
+      if shown >= Format.MAX_QUEST_LINES then break end
+      quests[#quests + 1] = quest
+      shown = shown + 1
+    end
+    areas[#areas + 1] = { area = area.area, dungeon = area.dungeon, quests = quests }
+  end
+  return { total = total, more = total - shown, areas = areas }
+end
+
+local function characterDetail(row, owner, now, own, sharedWith)
   local where
   if row.online then
     where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
@@ -194,6 +228,8 @@ local function characterDetail(row, owner, now, own)
     },
     professions = Format.professionGroups(row.professions),
     talents = Format.talentSummary(row),
+    -- CF-19: only on a friend's characters (nil on your own and on Unlinked characters).
+    sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith) or nil,
   }
 end
 
@@ -223,7 +259,9 @@ function Format.detail(view, path, now)
   if guid then
     for _, row in ipairs(rows) do
       if row.guid == guid then
-        return characterDetail(row, person and person.displayName or "Unlinked", now, person and person.isSelf)
+        local friend = person and not person.isSelf
+        return characterDetail(row, person and person.displayName or "Unlinked", now, person and person.isSelf,
+                               friend and ownRows(view) or nil)
       end
     end
     return Format.detail(view, nil, now)
