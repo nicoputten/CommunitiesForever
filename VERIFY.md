@@ -14,17 +14,6 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-24 Dungeon planner (round 4)
-The dungeon list now comes from the game's Group Finder (V46): Forever's new dungeons and the game's level ranges.
-
-| Step | Expected | Status |
-|---|---|---|
-| Dungeons tab on a character of level 26 to 33 | Excavation Site: Wetlands is listed (levels 26 to 33). Other new ones in range too: Hall of Thanes 13 to 20, Ruins of Lordaeron 15 to 22, City of Dalaran 28 to 35. | open |
-| Select an old dungeon, e.g. Shadowfang Keep | Its levels match the Group Finder (`Show All Level Ranges` there): Shadowfang Keep 20 to 30, Scarlet Monastery Graveyard 30 to 38. | open |
-| A community event titled `Excavation Site: Wetlands` | Listed under Planned like the old dungeons. | open |
-| Dungeons tab on a Horde character | Only dungeons the Group Finder offers: no The Stockade. | open |
-| Select Excavation Site: Wetlands (no quests known) | Under the suggested group: `No quests known for this dungeon yet.` | open |
-
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.
 
