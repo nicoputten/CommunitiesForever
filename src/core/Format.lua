@@ -145,24 +145,26 @@ end
 -- Role names for display (CF-18).
 Format.ROLE_NAMES = { tank = "Tank", heal = "Healer", dps = "DPS" }
 
--- Talents for the character card (CF-18): { role, roleSource, trees = { { name, points, fraction, main } } }
--- or nil without talent data. roleSource is "player" (override) or "talents" (guessed).
+-- Talents for the character card (CF-18), in the classic notation players use ("Arms 17 / 0 / 0"):
+-- { role, roleSource, mainName, numbers = "17 / 0 / 0", treeNames = "Arms · Fury · Protection" }
+-- or nil without talent data. mainName is nil without spent points. roleSource is "player"
+-- (override) or "talents" (guessed).
 function Format.talentSummary(row)
   if type(row.talents) ~= "table" or #row.talents == 0 then return nil end
-  local total, best = 0, nil
+  local best
+  local numbers, names = {}, {}
   for i, tree in ipairs(row.talents) do
-    total = total + (tree.points or 0)
-    if (tree.points or 0) > 0 and (not best or tree.points > row.talents[best].points) then best = i end
-  end
-  local trees = {}
-  for i, tree in ipairs(row.talents) do
-    trees[i] = { name = tree.name, points = tree.points or 0, main = i == best,
-                 fraction = total > 0 and (tree.points or 0) / total or 0 }
+    local points = tree.points or 0
+    if points > 0 and (not best or points > (row.talents[best].points or 0)) then best = i end
+    numbers[#numbers + 1] = tostring(points)
+    names[#names + 1] = tostring(tree.name)
   end
   return {
     role = row.role and Format.ROLE_NAMES[row.role] or nil,
     roleSource = row.roleOverride and "player" or "talents",
-    trees = trees,
+    mainName = best and row.talents[best].name or nil,
+    numbers = table.concat(numbers, " / "),
+    treeNames = table.concat(names, " \194\183 "),
   }
 end
 

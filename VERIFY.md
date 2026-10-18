@@ -57,7 +57,7 @@ Needs a friend running this build, linked to you in the community.
 |---|---|---|
 | On a character with talents: `/cf self` | `talents: Arms 17 / Fury 0 / Protection 0, role dps` (your split and the guessed role). | open |
 | Spend a talent point, wait ~3 s, `/cf self` | The split changes, version goes up. | open |
-| `/cf`, click your character | Talents section: `Role: DPS (from talents)`, one line per tree with points and a bar, the main tree in gold. | open |
+| `/cf`, click your character | Talents section: `Role: DPS (from talents)`, then `Arms  17 / 0 / 0` (main tree in gold) and `Arms · Fury · Protection` below. No bars. | open |
 | `/cf settings` → "Roles of your characters" → set a character to Tank | Card says `Role: Tank (set by player)`; your person card list shows `Tank`. A friend on this build sees it after ~10 s. Set back to Auto: the guess returns. | open |
 | A character without talent points (or never logged in since this build) | Card says `No talent data yet...` / no role. | open |
 
