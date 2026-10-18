@@ -18,6 +18,7 @@ function ViewModel.build(addon)
     selfGuid = player.guid,
   })
   view.selfName = player.name
+  if ns.Debug.enabled() then ns.Debug.decorate(view, player.guid) end -- hidden /cf debugon, view only
   return view
 end
 

@@ -67,3 +67,4 @@ Needs a friend running this build, linked to you in the community.
 | Abandon or turn in the shared quest | Within ~10 s it disappears from the card (the card says `No shared quests.` when none are left). | open |
 | Open your own character card | No Shared quests section. | open |
 | Log in on an alt with other quests | Quests shared with that alt appear too; the main's quests stay as of its last login. | open |
+| Without a friend: `/cf debugon`, open `/cf` | A `Debug Friend` with `Debug Character` appears in the tree with the dungeon icon; its card shows up to 6 of your current character's quests plus `Debug: Into the Deeps` under Blackfathom Deeps, and `+N more` when over 5. `/cf debugoff` or `/reload` removes it; nothing is saved or synced. | open |

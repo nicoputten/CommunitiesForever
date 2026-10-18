@@ -162,6 +162,28 @@ describe("shared quests in the window (CF-19)", function()
     assert.is_falsy(detailText():find("Shared quests", 1, true))
   end)
 
+  it("adds a fake friend with hidden /cf debugon, in the window only", function()
+    load()
+    local people = addon.db.global.people
+    ns.MainFrame.toggle()
+    addon:OnSlashCommand("debugon")
+    treeWidget():SelectByPath(ns.Debug.BATTLE_TAG, ns.Debug.GUID)
+    local text = detailText()
+    assert.is_truthy(text:find("Debug Character", 1, true))
+    assert.is_truthy(text:find("Shared quests (4)", 1, true)) -- 3 copied from your log + the fake dungeon quest
+    assert.is_truthy(text:find("Debug: Into the Deeps", 1, true))
+    assert.is_truthy(treeChild(ns.Debug.BATTLE_TAG, ns.Debug.GUID).text:find("|A:Dungeon:14:14|a", 1, true))
+
+    -- Nothing stored or synced.
+    assert.are.equal(people, addon.db.global.people)
+    assert.is_nil(people[ns.Debug.BATTLE_TAG])
+    assert.is_nil(me().quests[ns.Debug.DUNGEON_QUEST_ID])
+    assert.is_nil(ns.Merge.outgoingRecord(addon.db.global.self).chars[myGuid].quests[ns.Debug.DUNGEON_QUEST_ID])
+
+    addon:OnSlashCommand("debugoff")
+    assert.is_nil(treeChild(ns.Debug.BATTLE_TAG, ns.Debug.GUID))
+  end)
+
   it("falls back to a text badge without the dungeon atlas", function()
     load()
     state.atlases = {}

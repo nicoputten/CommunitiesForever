@@ -93,6 +93,11 @@ function addon:OnSlashCommand(input)
     self:Print("Sync: announced your record to friends online in Forever.")
   elseif command == "settings" then
     ns.Settings.open()
+  elseif command == "debugon" or command == "debugoff" then -- hidden: not in the help
+    ns.Debug.set(command == "debugon")
+    self:Print(command == "debugon" and "Debug on: fake friend in the window (not saved, not synced)."
+      or "Debug off.")
+    if ns.MainFrame.isShown() then ns.MainFrame.render() end
   else
     self:Print("Commands:")
     self:Print("  /cf - open or close the window")
