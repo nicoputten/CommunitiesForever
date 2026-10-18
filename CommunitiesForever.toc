@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: CommunitiesForever
 ## Notes: Shows which community characters belong to which Battle.net friend.
-## Author: Nico van der Putten
+## Author: Vestras
 ## Version: @project-version@
 ## SavedVariables: CommunitiesForeverDB
 

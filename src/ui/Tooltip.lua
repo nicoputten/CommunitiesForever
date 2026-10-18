@@ -1,4 +1,4 @@
--- Tooltip: adds "Sjaak · 3 characters" (or "CommunitiesForever member") to unit tooltips (CF-14).
+-- Tooltip: adds "Alice · 3 characters" (or "CommunitiesForever member") to unit tooltips (CF-14).
 -- TooltipDataProcessor, AddTooltipPostCall and Enum.TooltipDataType.Unit are verified (V6).
 local _, ns = ...
 

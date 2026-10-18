@@ -1,6 +1,6 @@
 -- Notify: chat lines for linked friends: coming online or switching character (CF-15), and their
 -- characters levelling up (CF-16, from accepted records).
---   "Sjaak is online on Garraka Doombringer (Mage 11)"
+--   "Alice is online on Alice Example (Mage 11)"
 -- Only for people linked in the selected community, never for yourself, at most once per person
 -- per 30 s, and only when settings.notifications is on (default). Friends already online at login
 -- are the baseline and produce no message (CF-07).
@@ -36,7 +36,7 @@ end
 -- Level-ups older than this are not announced: relayed records (CF-20) can arrive hours later.
 local LEVEL_UP_MAX_AGE = 15 * 60
 
--- CF-16: "Sjaak's Garraka Doombringer reached level 12" for characters of linked people.
+-- CF-16: "Alice's Alice Example reached level 12" for characters of linked people.
 local function announceLevelUp(battleTag, up)
   if addonRef.db.global.settings.levelUps == false then return end
   if not up.updatedAt or GetServerTime() - up.updatedAt > LEVEL_UP_MAX_AGE then return end

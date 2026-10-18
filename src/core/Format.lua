@@ -70,7 +70,7 @@ local function lastSeen(row)
   return seen > 0 and seen or nil
 end
 
--- "Offline - last seen in The Barrens[ on Garraka], 2 h ago"; parts are left out when unknown.
+-- "Offline - last seen in The Barrens[ on Alice Example], 2 h ago"; parts are left out when unknown.
 local function offlineStatus(row, now, withName)
   local seen = lastSeen(row)
   if not row.lastZone and not seen then return "Offline" end
@@ -251,7 +251,7 @@ end
 
 --[[ Detail model for the selected tree path, or a message when nothing (valid) is selected:
   { kind = "message", text }
-  { kind = "person", title, battleTag, online, status, current, source,   -- source: "Updated 3 h ago via Sjaak"
+  { kind = "person", title, battleTag, online, status, current, source,   -- source: "Updated 3 h ago via Alice"
     characters = { { guid, name, classFile, classID, level, seen } },
     sharedQuests }                     -- CF-19: see personSharedQuests; nil on your own card
   { kind = "unlinked", characters = ... }                        -- same character entries
@@ -343,7 +343,7 @@ function Format.emptyState(view, state)
   return nil
 end
 
--- Login notification (CF-15): "Sjaak is online on Garraka Doombringer (Mage 11)".
+-- Login notification (CF-15): "Alice is online on Alice Example (Mage 11)".
 -- character = { name, className, level }; className and level are left out when unknown.
 function Format.loginNotice(displayName, character)
   local details = {}
@@ -353,7 +353,7 @@ function Format.loginNotice(displayName, character)
   return string.format("%s is online on %s%s", tostring(displayName), tostring(character.name), suffix)
 end
 
--- Level-up announcement (CF-16): "Sjaak's Garraka Doombringer reached level 12".
+-- Level-up announcement (CF-16): "Alice's Alice Example reached level 12".
 function Format.levelUpNotice(displayName, characterName, level)
   return string.format("%s's %s reached level %s", tostring(displayName), tostring(characterName), tostring(level))
 end
@@ -361,7 +361,7 @@ end
 Format.TOOLTIP_UNLINKED = "CommunitiesForever member"
 
 -- Tooltip lines for hovered units (CF-14): { [guid] = text } for every character in the view.
--- Linked to someone else: "Sjaak · 3 characters". Unlinked member: "CommunitiesForever member".
+-- Linked to someone else: "Alice · 3 characters". Unlinked member: "CommunitiesForever member".
 -- Your own characters get no line.
 function Format.tooltipLines(view)
   local lines = {}
