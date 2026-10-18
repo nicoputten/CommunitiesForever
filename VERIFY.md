@@ -60,3 +60,10 @@ Needs a friend running this build, linked to you in the community.
 | `/cf`, click your character | Talents section: `Role: DPS (from talents)`, one line per tree with points and a bar, the main tree in gold. | open |
 | `/cf settings` → "Roles of your characters" → set a character to Tank | Card says `Role: Tank (set by player)`; your person card list shows `Tank`. A friend on this build sees it after ~10 s. Set back to Auto: the guess returns. | open |
 | A character without talent points (or never logged in since this build) | Card says `No talent data yet...` / no role. | open |
+
+### CF-04 Own display name
+| Step | Expected | Status |
+|---|---|---|
+| `/cf settings` → "Display name" → type `Nico`, Enter | Your header in the window and `/cf self` use `Nico`. A friend on this build sees `Nico` (window, tooltip, chat lines) within ~10 s. | open |
+| Type a name with color codes or more than 24 characters | Saved as plain text, at most 24 characters. | open |
+| Clear the field | Back to the first part of your BattleTag, for you and your friends. | open |

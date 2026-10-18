@@ -31,6 +31,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 ### CF-04 Own display name
 - Settings field "Display name" stored in `self.displayName`; changing it bumps the version and triggers a debounced HELLO.
+- Decided in CF-04: plain text only, up to 24 characters (WoW escape sequences removed); empty falls back to the BattleTag name part. Received display names and all text in received characters (names, professions, talents) are cleaned the same way, so a modified addon cannot inject colors, textures or links.
 
 ## E2 Community
 

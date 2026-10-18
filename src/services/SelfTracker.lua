@@ -45,6 +45,17 @@ function SelfTracker.start(addon)
   markPlayed()
 end
 
+-- Sets the own display name (CF-04): cleaned plain text, empty clears it. A synced change: bumps the
+-- version, and SelfTracker.UPDATED makes Sync send a HELLO after the debounce.
+function SelfTracker.setDisplayName(addon, text)
+  local own = addon.db.global.self
+  local name = ns.Merge.cleanName(text)
+  if own.displayName == name then return end
+  own.displayName = name
+  own.version = ns.Merge.nextVersion(own.version, GetServerTime())
+  addon:SendMessage(SelfTracker.UPDATED)
+end
+
 -- Sets the role of an own character (CF-18): "tank", "heal", "dps", or nil for the auto role.
 function SelfTracker.setRoleOverride(addon, guid, role)
   if ns.Snapshot.setRoleOverride(addon.db.global.self, guid, role, GetServerTime()) then
