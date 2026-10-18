@@ -37,6 +37,7 @@ function addon:OnEnable()
   ns.Invites.start(self)
   ns.Tooltip.start(self)
   ns.Notify.start(self)
+  ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
 end
 
 -- Prints why a community command can't run here, or returns true when it can.
@@ -96,6 +97,8 @@ function addon:OnSlashCommand(input)
     self:Print("Sync: announced your record to friends online in Forever.")
   elseif command == "settings" then
     ns.Settings.open()
+  elseif command == "setup" then
+    ns.Setup.open()
   elseif command == "activity" then
     if argument == "debug" then
       ns.ActivityTracker.setDebug(not ns.ActivityTracker.debugOn())
@@ -126,5 +129,6 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf activity - show the dungeon, raid or battleground run in progress")
     self:Print("  /cf activity debug - print instance events for the activity feed (on/off)")
     self:Print("  /cf settings - open the settings")
+    self:Print("  /cf setup - run the setup again")
   end
 end

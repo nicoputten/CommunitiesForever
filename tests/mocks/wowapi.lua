@@ -156,9 +156,14 @@ local function fakeLibs(state)
     function w:EnableButtonTooltips(enable) self.buttonTooltips = enable end
     for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FullHeight", "Highlight",
                               "FontObject",
-                              "Color", "Width", "Height", "RelativeWidth" }) do
+                              "Color", "Width", "Height", "RelativeWidth",
+                              "Label", "Value", "Disabled", "MaxLetters" }) do
       w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
     end
+    function w:SetList(list, order) self.list, self.order = list, order end
+    function w:DisableButton(disabled) self.buttonDisabled = disabled end
+    function w:GetText() return self.text end
+    function w:GetValue() return self.value end
     if widgetType == "Frame" then
       w.statusbg = { Hide = function(bg) bg.hidden = true end }
       w.statustext = { GetParent = function() return w.statusbg end }
@@ -442,7 +447,13 @@ function wowapi.install(opts)
   end
   globals.GetChannelName = function(name) return state.chatChannels[name] or 0 end
   globals.ChangeChatColor = function(chatType, r, g, b) state.chatColors[chatType] = { r = r, g = g, b = b } end
-  globals.GetChatWindowInfo = function(i) return state.chatWindows[i] and state.chatWindows[i].name or "" end
+  -- Like Mainline: name, fontSize, r, g, b, alpha, shown, locked, docked. A window with closed = true is
+  -- what closing a chat tab leaves: the name stays, shown and docked are off (CF-26 feedback).
+  globals.GetChatWindowInfo = function(i)
+    local w = state.chatWindows[i]
+    if not w then return "" end
+    return w.name, 14, 1, 1, 1, 1, not w.closed, false, (not w.closed) and 1 or nil
+  end
   globals.GetChatWindowChannels = function(i)
     local result = {}
     for _, c in ipairs(state.chatWindows[i] and state.chatWindows[i].channels or {}) do
