@@ -153,7 +153,9 @@ local function fakeLibs(state)
     function w:SelectByPath(...) self:SelectByValue(table.concat({ ... }, "\001")) end
     function w:SetTabs(tabs) self.tabs = tabs end
     function w:SelectTab(value) self.selectedTab = value; self:Fire("OnGroupSelected", value) end
-    for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FontObject",
+    function w:EnableButtonTooltips(enable) self.buttonTooltips = enable end
+    for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FullHeight", "Highlight",
+                              "FontObject",
                               "Color", "Width", "Height", "RelativeWidth" }) do
       w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
     end

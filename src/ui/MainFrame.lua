@@ -17,8 +17,11 @@ local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZ
 
 local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
+local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" } } -- CF-22
+local TAB_WIDTH = 90
 
-local addonRef, events, frame, tabs, tree, refreshDebounced
+local addonRef, events, frame, content, tree, refreshDebounced
+local tabLinks = {} -- CF-22: tab value -> its text link
 local activeTab = "friends" -- CF-22: "friends" or "activity"
 local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTag -> true), until /reload
 local renderActivity -- CF-22, defined below
@@ -398,13 +401,21 @@ function MainFrame.render()
   end
 end
 
--- CF-22: the Activity tab. One line per person per day (Feed.days); a click on a line with more
--- parts or characters shows all of them.
+-- CF-22: the Activity tab, in one box (no nested frames). Per person and day two rows: who and on
+-- which character, then what they did; "Show all (N)" in link blue opens the remaining parts and the
+-- other characters ("Show less" folds them back).
+local LINK = "|cff6aa7ff"
+local DOT = " \194\183 "
+local HIGHLIGHT = "Interface\\QuestFrame\\UI-QuestTitleHighlight"
+
 function renderActivity(messageText)
-  tabs:ReleaseChildren()
+  content:ReleaseChildren()
+  local box = createWidget("InlineGroup")
+  box:SetLayout("Fill")
+  content:AddChild(box)
   local scroll = createWidget("ScrollFrame")
   scroll:SetLayout("List")
-  tabs:AddChild(scroll)
+  box:AddChild(scroll)
   scroll:PauseLayout()
 
   local days = messageText and {} or ns.Feed.days(view.people, ns.FeedTracker.today())
@@ -414,31 +425,38 @@ function renderActivity(messageText)
     label(scroll, GREY .. "No activity yet. Levels, quests and professions of you and your friends show up here."
       .. "|r", GameFontHighlight)
   end
-  for _, day in ipairs(days) do
+  for dayIndex, day in ipairs(days) do
+    if dayIndex > 1 then spacer(scroll) end
     heading(scroll, day.label)
     for _, line in ipairs(day.lines) do
       local key = day.day .. ":" .. tostring(line.battleTag or "self")
       local expanded = expandedFeed[key]
-      local text = string.format("%s%s|r  %s  %s", GOLD, tostring(line.displayName),
-        colorName(line.char.name, line.char.classFile), table.concat(expanded and line.parts or line.shown, ", "))
-      if not expanded and line.more > 0 then text = text .. string.format("  %s+%d|r", GREY, line.more) end
-      if not expanded and line.extraChars > 0 then
-        text = text .. string.format("  %s+%d %s|r", GREY, line.extraChars,
+      local who = string.format("%s%s|r %son|r %s", GOLD, tostring(line.displayName), GREY,
+        colorName(line.char.name, line.char.classFile))
+      if line.extraChars > 0 then
+        who = who .. string.format(" %sand %d more %s|r", GREY, line.extraChars,
           line.extraChars == 1 and "character" or "characters")
       end
+      label(scroll, who, GameFontHighlight)
+
+      local what = "   " .. table.concat(expanded and line.parts or line.shown, DOT)
+      local hidden = line.more
+      for _, other in ipairs(line.others) do hidden = hidden + #other.parts end
       if line.more > 0 or line.extraChars > 0 then
-        local entry = label(scroll, text, GameFontHighlight, "InteractiveLabel")
-        entry:SetCallback("OnClick", function()
+        what = what .. "   " .. LINK .. (expanded and "Show less" or string.format("Show all (%d)", hidden)) .. "|r"
+        local row = label(scroll, what, GameFontHighlight, "InteractiveLabel")
+        if row.SetHighlight then row:SetHighlight(HIGHLIGHT) end
+        row:SetCallback("OnClick", function()
           expandedFeed[key] = not expanded or nil
           MainFrame.render()
         end)
       else
-        label(scroll, text, GameFontHighlight)
+        label(scroll, what, GameFontHighlight)
       end
       if expanded then
         for _, other in ipairs(line.others) do
-          label(scroll, string.format("      %s  %s", colorName(other.char.name, other.char.classFile),
-            table.concat(other.parts, ", ")), GameFontHighlight)
+          label(scroll, string.format("   %son|r %s: %s", GREY, colorName(other.char.name, other.char.classFile),
+            table.concat(other.parts, DOT)), GameFontHighlight)
         end
       end
     end
@@ -455,6 +473,8 @@ end
 
 local function createTree()
   tree = createWidget("TreeGroup")
+  -- No hover tooltip on rows: it repeated the row text on top of the detail card.
+  if tree.EnableButtonTooltips then tree:EnableButtonTooltips(false) end
   -- TreeGroup gives child rows GameFontHighlightSmall as the button's normal and highlight
   -- font. The Button reapplies those on hover and click, so set them on the button (not on
   -- its text) and every state keeps the regular size. AceGUI sets them again in RefreshTree
@@ -481,32 +501,54 @@ local function createTree()
   tree:SetCallback("OnTreeResize", function()
     if view then MainFrame.render() end
   end)
-  tabs:AddChild(tree)
+  content:AddChild(tree)
 end
 
 local function create()
   frame = createWidget("Frame")
   frame:SetTitle(ADDON_NAME)
   frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
-  frame:SetLayout("Fill")
+  frame:SetLayout("Flow") -- tab bar row, then the content filling the rest
   frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
   -- No status bar: hide its background and text (the Close button is separate and stays).
   if frame.statustext and frame.statustext:GetParent() then
     frame.statustext:GetParent():Hide()
   end
 
-  -- CF-22: Friends (the tree) and Activity tabs. Switching releases the content and builds the other.
-  tabs = createWidget("TabGroup")
-  tabs:SetLayout("Fill")
-  tabs:SetTabs({ { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" } })
-  tabs:SetCallback("OnGroupSelected", function(_, _, value)
-    activeTab = value
-    tabs:ReleaseChildren()
-    if value == "friends" then createTree() end
-    if view then MainFrame.render() end
-  end)
-  frame:AddChild(tabs)
-  tabs:SelectTab(activeTab)
+  -- CF-22: tabs as plain text (active one gold, others grey), no tab frame, so the content keeps a
+  -- single box. Switching releases the content and builds the other one.
+  local tabBar = createWidget("SimpleGroup")
+  tabBar:SetFullWidth(true)
+  tabBar:SetLayout("Flow")
+  frame:AddChild(tabBar)
+  for _, tab in ipairs(TABS) do
+    local link = createWidget("InteractiveLabel")
+    link:SetFontObject(GameFontNormalLarge)
+    link:SetWidth(TAB_WIDTH)
+    if link.SetHighlight then link:SetHighlight("Interface\\QuestFrame\\UI-QuestTitleHighlight") end
+    link:SetCallback("OnClick", function() MainFrame.selectTab(tab.value) end)
+    tabBar:AddChild(link)
+    tabLinks[tab.value] = link
+  end
+
+  content = createWidget("SimpleGroup")
+  content:SetFullWidth(true)
+  content:SetFullHeight(true)
+  content:SetLayout("Fill")
+  frame:AddChild(content)
+  MainFrame.selectTab(activeTab)
+end
+
+-- Shows a tab ("friends" or "activity").
+function MainFrame.selectTab(value)
+  if not frame then return end
+  activeTab = value
+  for _, tab in ipairs(TABS) do
+    tabLinks[tab.value]:SetText((tab.value == value and GOLD or GREY) .. tab.text .. "|r")
+  end
+  content:ReleaseChildren()
+  if value == "friends" then createTree() end
+  if view then MainFrame.render() end
 end
 
 function MainFrame.isShown()
@@ -541,7 +583,8 @@ end
 
 function MainFrame.start(addon)
   addonRef = addon
-  frame, tabs, tree, view = nil, nil, nil, nil
+  frame, content, tree, view = nil, nil, nil, nil
+  tabLinks = {}
   activeTab, expandedFeed = "friends", {}
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end

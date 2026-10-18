@@ -60,7 +60,7 @@ describe("Feed (CF-22)", function()
       assert.are.same({ name = "Alice Example", classFile = "MAGE", at = 240, levelFrom = 5, levelTo = 8,
                         quests = { Westfall = 2 }, ranks = { Mining = "Journeyman" }, learned = { Alchemy = true } },
         feed[TODAY]["G-A"])
-      assert.are.same({ "5 \226\134\146 8", "Mining reached Journeyman", "learned Alchemy",
+      assert.are.same({ "5 to 8", "Mining reached Journeyman", "learned Alchemy",
                         "questing in Westfall (2)" }, Feed.parts(feed[TODAY]["G-A"]))
     end)
 
@@ -68,7 +68,7 @@ describe("Feed (CF-22)", function()
       assert.are.same({ "reached 40" }, Feed.parts({ levelFrom = 38, levelTo = 41 }))
       assert.are.same({ "reached 60!" }, Feed.parts({ levelFrom = 59, levelTo = 60 }))
       assert.are.same({ "reached 20" }, Feed.parts({ levelFrom = 9, levelTo = 21 }))
-      assert.are.same({ "10 \226\134\146 11" }, Feed.parts({ levelFrom = 10, levelTo = 11 }))
+      assert.are.same({ "10 to 11" }, Feed.parts({ levelFrom = 10, levelTo = 11 }))
     end)
 
     it("words the questing zones for one, two and more zones", function()
@@ -122,7 +122,7 @@ describe("Feed (CF-22)", function()
       local line = days[1].lines[1]
       assert.are.equal("Alice", line.displayName)
       assert.are.same({ name = "Alice Example", classFile = "MAGE" }, line.char)
-      assert.are.same({ "5 \226\134\146 8", "Mining reached Expert", "learned Alchemy" }, line.shown)
+      assert.are.same({ "5 to 8", "Mining reached Expert", "learned Alchemy" }, line.shown)
       assert.are.equal(1, line.more)
       assert.are.equal(1, line.extraChars)
       assert.are.same({ "questing in Durotar (1)" }, line.others[1].parts)

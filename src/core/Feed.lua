@@ -223,7 +223,7 @@ function Feed.parts(entry)
     if milestone then
       parts[#parts + 1] = milestone == 60 and "reached 60!" or ("reached " .. milestone)
     else
-      parts[#parts + 1] = string.format("%d \226\134\146 %d", entry.levelFrom, entry.levelTo)
+      parts[#parts + 1] = string.format("%d to %d", entry.levelFrom, entry.levelTo) -- the WoW font has no arrow
     end
   end
   for _, name in ipairs(sortedKeys(entry.ranks)) do

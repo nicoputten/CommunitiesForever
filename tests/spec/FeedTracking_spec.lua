@@ -34,9 +34,12 @@ describe("activity feed (CF-22)", function()
 
   local function mine() return addon.db.global.self.feed[TODAY][myGuid] end
 
+  local DOT = " \194\183 "
+
+  -- The main window frame (tab bar and content).
   local function tabs()
     for _, w in ipairs(state.guiWidgets) do
-      if w.type == "TabGroup" then return w end
+      if w.type == "Frame" then return w end
     end
   end
 
@@ -121,31 +124,46 @@ describe("activity feed (CF-22)", function()
         ["Player-0-ALT00001"] = { name = "Friend Alt", classFile = "WARRIOR", at = 800, quests = { Durotar = 1 } },
       } } }, 1000, friendTag)
     ns.MainFrame.toggle()
-    tabs():SelectTab("activity")
+    ns.MainFrame.selectTab("activity")
     local text = activityText()
+    assert.is_truthy(text:find("|cffffd100Activity|r", 1, true)) -- active tab in gold
+    assert.is_truthy(text:find("|cffa0a0a0Friends|r", 1, true))
     assert.is_truthy(text:find("Today", 1, true))
-    assert.is_truthy(text:find("Friend|r  |cff40c7ebFriend Char|r  12 \226\134\146 14, Mining reached Journeyman, "
-      .. "learned Alchemy  |cffa0a0a0+1|r  |cffa0a0a0+1 character|r", 1, true))
+    assert.is_truthy(text:find("|cffffd100Friend|r |cffa0a0a0on|r |cff40c7ebFriend Char|r "
+      .. "|cffa0a0a0and 1 more character|r", 1, true))
+    assert.is_truthy(text:find("   12 to 14" .. DOT .. "Mining reached Journeyman" .. DOT .. "learned Alchemy   "
+      .. "|cff6aa7ffShow all (2)|r", 1, true))
     assert.is_truthy(text:find("questing in Westfall (1)", 1, true)) -- your own line
     assert.is_falsy(text:find("Friend Alt", 1, true))
 
-    click("Friend Char")
+    click("Show all (2)")
     text = activityText()
     assert.is_truthy(text:find("questing in Durotar and Barrens (6)", 1, true))
-    assert.is_truthy(text:find("Friend Alt", 1, true))
+    assert.is_truthy(text:find("Friend Alt", 1, true) and text:find(": questing in Durotar (1)", 1, true))
+    assert.is_truthy(text:find("Show less", 1, true))
+    click("Show less")
+    assert.is_falsy(activityText():find("Friend Alt", 1, true))
 
-    tabs():SelectTab("friends")
+    ns.MainFrame.selectTab("friends")
     assert.is_falsy(activityText():find("questing in", 1, true))
+  end)
+
+  it("turns off the tree's hover tooltips", function()
+    load()
+    ns.MainFrame.toggle()
+    for _, w in ipairs(state.guiWidgets) do
+      if w.type == "TreeGroup" then assert.is_false(w.buttonTooltips) end
+    end
   end)
 
   it("gives the hidden debug friend a sample feed", function()
     load()
     ns.MainFrame.toggle()
-    tabs():SelectTab("activity")
+    ns.MainFrame.selectTab("activity")
     addon:OnSlashCommand("debugon")
     local text = activityText()
-    assert.is_truthy(text:find("Debug Friend|r  |cff40c7ebDebug Character|r  27 \226\134\146 30, "
-      .. "Engineering reached Expert, learned Mining", 1, true))
+    assert.is_truthy(text:find("   27 to 30" .. DOT .. "Engineering reached Expert" .. DOT .. "learned Mining   "
+      .. "|cff6aa7ffShow all (2)|r", 1, true))
     assert.is_truthy(text:find("Yesterday", 1, true))
     assert.is_truthy(text:find("reached 20", 1, true))
     assert.is_nil(addon.db.global.people[ns.Debug.BATTLE_TAG]) -- view only
@@ -154,7 +172,7 @@ describe("activity feed (CF-22)", function()
   it("says so when there is no activity yet", function()
     load()
     ns.MainFrame.toggle()
-    tabs():SelectTab("activity")
+    ns.MainFrame.selectTab("activity")
     assert.is_truthy(activityText():find("No activity yet.", 1, true))
   end)
 end)

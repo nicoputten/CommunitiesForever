@@ -70,4 +70,5 @@ Copy the build into AddOns. The other steps passed (levels, quests per zone, pro
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf debugon`, `/cf`, **Activity** tab | Today: `Debug Friend  Debug Character  27 → 30, Engineering reached Expert, learned Mining  +1  +1 character`. Clicking it shows all parts (`questing in Ashenvale, Stonetalon Mountains +1 zone (10)`) and `Debug Alt  questing in Durotar (2)`. Yesterday: `Debug Alt  reached 20, questing in Barrens (4)`. | Its not clear that you  can click and it doesnt  look great |
+| `/cf` | Text tabs `Friends` (gold, active) and `Activity` (grey) above the window content; no tab frame, only the tree's own box. Hovering a tab highlights it. Hovering a tree row shows no tooltip box. | open |
+| `/cf debugon`, click **Activity** | One box. Today: `Debug Friend on Debug Character and 1 more character`, below it `27 to 30 · Engineering reached Expert · learned Mining   Show all (2)` with `Show all (2)` in blue and the row highlighting on hover. Clicking it adds `questing in Ashenvale, Stonetalon Mountains +1 zone (10)` and `on Debug Alt: questing in Durotar (2)`, and the link becomes `Show less`. Yesterday: `Debug Friend on Debug Alt`, `reached 20 · questing in Barrens (4)`. | open |
