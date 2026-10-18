@@ -173,6 +173,15 @@ describe("shared quests in the window (CF-19)", function()
     assert.is_truthy(text:find("Shared quests (4)", 1, true)) -- 3 copied from your log + the fake dungeon quest
     assert.is_truthy(text:find("Debug: Into the Deeps", 1, true))
     assert.is_truthy(treeChild(ns.Debug.BATTLE_TAG, ns.Debug.GUID).text:find("|A:Dungeon:14:14|a", 1, true))
+    assert.is_truthy(text:find("Engineering", 1, true))
+    assert.is_truthy(text:find("10 / 0 / 11", 1, true))
+
+    -- A second friend character sharing some of the same quests.
+    treeWidget():SelectByPath(ns.Debug.BATTLE_TAG, ns.Debug.ALT_GUID)
+    text = detailText()
+    assert.is_truthy(text:find("Debug Alt", 1, true))
+    assert.is_truthy(text:find("Shared quests (3)", 1, true)) -- 2 copied + the fake dungeon quest
+    assert.is_truthy(text:find("Role: Tank", 1, true))
 
     -- Nothing stored or synced.
     assert.are.equal(people, addon.db.global.people)
