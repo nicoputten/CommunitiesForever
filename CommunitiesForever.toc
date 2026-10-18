@@ -5,6 +5,7 @@
 ## Version: @project-version@
 ## X-Curse-Project-ID: 1752013
 ## SavedVariables: CommunitiesForeverDB
+## OptionalDeps: QuestieDB
 
 embeds.xml
 
@@ -36,6 +37,7 @@ src\adapters\ChatFrames.lua
 src\adapters\Presence.lua
 src\adapters\Instance.lua
 src\adapters\Calendar.lua
+src\adapters\QuestieData.lua
 src\adapters\Transport.lua
 
 src\services\FeedTracker.lua

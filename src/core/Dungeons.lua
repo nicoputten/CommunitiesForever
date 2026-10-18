@@ -9,33 +9,56 @@ Dungeons.GROUP_SIZE = 5
 Dungeons.PLANNED_DAYS = 3 -- a calendar run this close counts as planned (tab counter, Planned list)
 
 --[[ Vanilla dungeons with their usual level ranges. areas: quest log headers (CF-19) of the dungeon's
-quests; Scarlet Monastery and Dire Maul share one header over their wings. Raids are left out. ]]
+quests; Scarlet Monastery and Dire Maul share one header over their wings. areaIds: AreaTable IDs, the
+`zoneOrSort` of the dungeon's quests in QuestieDB (from its zone enum; the Scarlet Monastery wings and
+Blackrock Spire share theirs). Raids are left out. ]]
 Dungeons.LIST = {
-  { id = "rfc", name = "Ragefire Chasm", min = 13, max = 18, areas = { "Ragefire Chasm" } },
-  { id = "wc", name = "Wailing Caverns", min = 17, max = 24, areas = { "Wailing Caverns" } },
-  { id = "dm", name = "The Deadmines", min = 17, max = 26, areas = { "The Deadmines", "Deadmines" } },
-  { id = "sfk", name = "Shadowfang Keep", min = 22, max = 30, areas = { "Shadowfang Keep" } },
-  { id = "bfd", name = "Blackfathom Deeps", min = 24, max = 32, areas = { "Blackfathom Deeps" } },
-  { id = "stocks", name = "The Stockade", min = 24, max = 32, areas = { "The Stockade" } },
-  { id = "gnomer", name = "Gnomeregan", min = 29, max = 38, areas = { "Gnomeregan" } },
-  { id = "rfk", name = "Razorfen Kraul", min = 29, max = 38, areas = { "Razorfen Kraul" } },
-  { id = "smgy", name = "Scarlet Monastery Graveyard", min = 26, max = 36, areas = { "Scarlet Monastery" } },
-  { id = "smlib", name = "Scarlet Monastery Library", min = 29, max = 39, areas = { "Scarlet Monastery" } },
-  { id = "smarm", name = "Scarlet Monastery Armory", min = 32, max = 42, areas = { "Scarlet Monastery" } },
-  { id = "smcath", name = "Scarlet Monastery Cathedral", min = 35, max = 45, areas = { "Scarlet Monastery" } },
-  { id = "rfd", name = "Razorfen Downs", min = 37, max = 46, areas = { "Razorfen Downs" } },
-  { id = "ulda", name = "Uldaman", min = 41, max = 51, areas = { "Uldaman" } },
-  { id = "zf", name = "Zul'Farrak", min = 44, max = 54, areas = { "Zul'Farrak" } },
-  { id = "mara", name = "Maraudon", min = 46, max = 55, areas = { "Maraudon" } },
-  { id = "st", name = "Sunken Temple", min = 50, max = 56, areas = { "Sunken Temple", "Temple of Atal'Hakkar" } },
-  { id = "brd", name = "Blackrock Depths", min = 52, max = 60, areas = { "Blackrock Depths" } },
-  { id = "lbrs", name = "Lower Blackrock Spire", min = 55, max = 60,
+  { id = "rfc", name = "Ragefire Chasm", min = 13, max = 18, areaIds = { 2437 },
+    areas = { "Ragefire Chasm" } },
+  { id = "wc", name = "Wailing Caverns", min = 17, max = 24, areaIds = { 718 },
+    areas = { "Wailing Caverns" } },
+  { id = "dm", name = "The Deadmines", min = 17, max = 26, areaIds = { 1581 },
+    areas = { "The Deadmines", "Deadmines" } },
+  { id = "sfk", name = "Shadowfang Keep", min = 22, max = 30, areaIds = { 209 },
+    areas = { "Shadowfang Keep" } },
+  { id = "bfd", name = "Blackfathom Deeps", min = 24, max = 32, areaIds = { 719 },
+    areas = { "Blackfathom Deeps" } },
+  { id = "stocks", name = "The Stockade", min = 24, max = 32, areaIds = { 717 },
+    areas = { "The Stockade" } },
+  { id = "gnomer", name = "Gnomeregan", min = 29, max = 38, areaIds = { 721 },
+    areas = { "Gnomeregan" } },
+  { id = "rfk", name = "Razorfen Kraul", min = 29, max = 38, areaIds = { 491 },
+    areas = { "Razorfen Kraul" } },
+  { id = "smgy", name = "Scarlet Monastery Graveyard", min = 26, max = 36, areaIds = { 796 },
+    areas = { "Scarlet Monastery" } },
+  { id = "smlib", name = "Scarlet Monastery Library", min = 29, max = 39, areaIds = { 796 },
+    areas = { "Scarlet Monastery" } },
+  { id = "smarm", name = "Scarlet Monastery Armory", min = 32, max = 42, areaIds = { 796 },
+    areas = { "Scarlet Monastery" } },
+  { id = "smcath", name = "Scarlet Monastery Cathedral", min = 35, max = 45, areaIds = { 796 },
+    areas = { "Scarlet Monastery" } },
+  { id = "rfd", name = "Razorfen Downs", min = 37, max = 46, areaIds = { 722 },
+    areas = { "Razorfen Downs" } },
+  { id = "ulda", name = "Uldaman", min = 41, max = 51, areaIds = { 1337 },
+    areas = { "Uldaman" } },
+  { id = "zf", name = "Zul'Farrak", min = 44, max = 54, areaIds = { 1176 },
+    areas = { "Zul'Farrak" } },
+  { id = "mara", name = "Maraudon", min = 46, max = 55, areaIds = { 2100 },
+    areas = { "Maraudon" } },
+  { id = "st", name = "Sunken Temple", min = 50, max = 56, areaIds = { 1417, 1477 },
+    areas = { "Sunken Temple", "Temple of Atal'Hakkar" } },
+  { id = "brd", name = "Blackrock Depths", min = 52, max = 60, areaIds = { 1584 },
+    areas = { "Blackrock Depths" } },
+  { id = "lbrs", name = "Lower Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
     areas = { "Lower Blackrock Spire", "Blackrock Spire" } },
-  { id = "ubrs", name = "Upper Blackrock Spire", min = 55, max = 60,
+  { id = "ubrs", name = "Upper Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
     areas = { "Upper Blackrock Spire", "Blackrock Spire" } },
-  { id = "dme", name = "Dire Maul", min = 55, max = 60, areas = { "Dire Maul" } },
-  { id = "scholo", name = "Scholomance", min = 58, max = 60, areas = { "Scholomance" } },
-  { id = "strat", name = "Stratholme", min = 58, max = 60, areas = { "Stratholme" } },
+  { id = "dme", name = "Dire Maul", min = 55, max = 60, areaIds = { 2557 },
+    areas = { "Dire Maul" } },
+  { id = "scholo", name = "Scholomance", min = 58, max = 60, areaIds = { 2057 },
+    areas = { "Scholomance" } },
+  { id = "strat", name = "Stratholme", min = 58, max = 60, areaIds = { 2017 },
+    areas = { "Stratholme" } },
 }
 
 local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
@@ -286,6 +309,83 @@ local STATUS = { [1] = "you're available", [3] = "you confirmed", [6] = "you sig
                  [2] = "you declined", [0] = "you're invited" }
 function Dungeons.signUp(inviteStatus)
   return STATUS[inviteStatus]
+end
+
+-- ===== Dungeon quests (CF-24 feedback: "4/6", which quests you have and which you can still pick up) =====
+
+-- True if a quest's requiredRaces mask allows the faction's race mask (0 = every race). Masks reach
+-- bit 33 (Forever Skyborne races), beyond 32-bit bit operations, so this works on doubles bit by bit.
+function Dungeons.factionAllows(requiredRaces, factionMask)
+  if type(requiredRaces) ~= "number" or requiredRaces == 0 or type(factionMask) ~= "number" then return true end
+  local a, b = requiredRaces, factionMask
+  while a > 0 and b > 0 do
+    if a % 2 == 1 and b % 2 == 1 then return true end
+    a, b = math.floor(a / 2), math.floor(b / 2)
+  end
+  return false
+end
+
+--[[ The quests of a dungeon for your character, with who in range has them.
+  dungeon: a LIST entry. data: QuestieDB quests per area, or nil when QuestieDB is not installed:
+    { [areaId] = { { id, name, level, requiredLevel, requiredRaces } } }
+  ctx = { char = your character (candidate: level, quests), candidates = everyone in range (with
+          questIDs, see overview), factionMask, completed = { [questID] = true } or nil }
+Returns { complete = data ~= nil, have = n, total = n, quests = { { id, name, level, requiredLevel,
+state = "have" | "available" | "later" | "done", holders = { name, ... } } } }, sorted: have, available,
+later, done; then by level. total = have + available: quests you have or could pick up now. Without
+data, the list is what anyone in range has in their quest log. ]]
+function Dungeons.quests(dungeon, data, ctx)
+  ctx = ctx or {}
+  local char = ctx.char or {}
+  local known, list = {}, {}
+  local function add(id, name, level, requiredLevel)
+    if known[id] then return known[id] end
+    local q = { id = id, name = name, level = level, requiredLevel = requiredLevel, holders = {} }
+    known[id] = q
+    list[#list + 1] = q
+    return q
+  end
+  if data then
+    for _, areaId in ipairs(dungeon.areaIds or {}) do
+      for _, q in ipairs(data[areaId] or {}) do
+        if Dungeons.factionAllows(q.requiredRaces, ctx.factionMask) then
+          add(q.id, q.name, q.level, q.requiredLevel)
+        end
+      end
+    end
+  end
+  -- Quests in the logs of people in range (also when QuestieDB lacks one), with who has them.
+  for _, c in ipairs(ctx.candidates or {}) do
+    for _, id in ipairs(c.questIDs or questsFor(dungeon, c.quests)) do
+      local logged = c.quests and c.quests[id]
+      local q = add(id, logged and logged.title, nil, nil)
+      q.name = q.name or (logged and logged.title)
+      if c.guid ~= char.guid then q.holders[#q.holders + 1] = c.name end
+    end
+  end
+
+  local have, total = 0, 0
+  for _, q in ipairs(list) do
+    if char.quests and char.quests[q.id] then
+      q.state = "have"
+    elseif ctx.completed and ctx.completed[q.id] then
+      q.state = "done"
+    elseif type(q.requiredLevel) == "number" and type(char.level) == "number" and q.requiredLevel > char.level then
+      q.state = "later"
+    else
+      q.state = "available"
+    end
+    if q.state == "have" then have = have + 1 end
+    if q.state == "have" or q.state == "available" then total = total + 1 end
+    table.sort(q.holders)
+  end
+  local order = { have = 1, available = 2, later = 3, done = 4 }
+  table.sort(list, function(a, b)
+    if a.state ~= b.state then return order[a.state] < order[b.state] end
+    if (a.level or 0) ~= (b.level or 0) then return (a.level or 0) < (b.level or 0) end
+    return tostring(a.name) < tostring(b.name)
+  end)
+  return { complete = data ~= nil, have = have, total = total, quests = list }
 end
 
 ns.Dungeons = Dungeons

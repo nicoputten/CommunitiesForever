@@ -140,6 +140,73 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(text():find("None of your characters is in range.", 1, true))
   end)
 
+  describe("quests (QuestieDB)", function()
+    local QUESTS = {
+      [201] = { name = "Red Silk Bandanas", zoneOrSort = 1581, questLevel = 17, requiredLevel = 14, requiredRaces = 0,
+                requiredClasses = 0 },
+      [202] = { name = "Underground Assault", zoneOrSort = 1581, questLevel = 20, requiredLevel = 15,
+                requiredRaces = 77, requiredClasses = 0 }, -- Alliance only
+      [203] = { name = "Collecting Memories", zoneOrSort = 1581, questLevel = 18, requiredLevel = 13,
+                requiredRaces = 0, requiredClasses = 0 },
+      [204] = { name = "A Warrior's Task", zoneOrSort = 1581, questLevel = 20, requiredLevel = 15,
+                requiredRaces = 0, requiredClasses = 1 }, -- class quest: left out
+      [301] = { name = "Elsewhere", zoneOrSort = 40, questLevel = 10, requiredLevel = 5, requiredRaces = 0,
+                requiredClasses = 0 },
+    }
+
+    local function installQuestieDB(contract)
+      _G.LibQuestieDB = {
+        RequireContract = function(v) return v <= (contract or 4), "contract" end,
+        Enum = { factionRaceMasks = { Horde = 690, Alliance = 77 } },
+      }
+      _G.QuestDB = {
+        GetAllIds = function() return { 201, 202, 203, 204, 301 } end,
+        Get = function(id, key) return QUESTS[id] and QUESTS[id][key] end,
+      }
+    end
+
+    after_each(function()
+      _G.LibQuestieDB, _G.QuestDB = nil, nil
+    end)
+
+    it("shows the dungeon icon with have/total in the list and the quests in the detail", function()
+      load(20)
+      installQuestieDB()
+      state.questLog = { { isHeader = true, title = "The Deadmines" },
+                         { questID = 203, title = "Collecting Memories" } }
+      wowapi.fireEvent(state, "QUEST_LOG_UPDATE")
+      open()
+      local dm
+      for _, node in ipairs(dungeonTree().tree) do if node.value == "dm" then dm = node end end
+      assert.is_truthy(dm.text:find("|A:worldquest-icon-dungeon:", 1, true))
+      assert.is_truthy(dm.text:find("|cffffd1001/2|r", 1, true)) -- 203 in your log, 201 to pick up
+      local all = text()
+      assert.is_truthy(all:find("Quests  |cffa0a0a01/2|r", 1, true))
+      assert.is_truthy(all:find("|cff40c040Collecting Memories|r", 1, true))
+      assert.is_truthy(all:find("Red Silk Bandanas|cffa0a0a0 \194\183 level 17|r", 1, true))
+      assert.is_falsy(all:find("Underground Assault", 1, true)) -- Alliance
+      assert.is_falsy(all:find("A Warrior's Task", 1, true))
+      assert.is_falsy(all:find("Install QuestieDB", 1, true))
+    end)
+
+    it("leaves out completed quests and says how many", function()
+      load(20)
+      installQuestieDB()
+      _G.C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 201 end
+      open()
+      local all = text()
+      assert.is_truthy(all:find("Quests  |cffa0a0a00/1|r", 1, true))
+      assert.is_truthy(all:find("1 quest already done on this character.", 1, true))
+    end)
+
+    it("ignores an incompatible QuestieDB and says how to see every quest", function()
+      load(20)
+      installQuestieDB(2)
+      open()
+      assert.is_truthy(text():find("Install QuestieDB (it comes with Questie)", 1, true))
+    end)
+  end)
+
   it("opens Blizzard's calendar, or says how when it can't", function()
     load(20)
     open()

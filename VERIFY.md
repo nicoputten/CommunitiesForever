@@ -10,23 +10,21 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp feed` logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 | V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/dump GetChatWindowInfo(<n>)` with `n` the tab's number (6 if it was the first new tab). Expected: the name is still there, the 7th value (`shown`) is false/nil and the 9th (`docked`) nil. Then Create in `/cf setup` (Community chat step) or `/cf settings` makes the tab again. | open |
-| V43 | Can addons read an event's sign-ups? (CF-24: the number next to a planned run) | With a community event within 3 days that you and a friend signed up for: the Dungeons list shows `· 2` after its time. If no number appears after a few seconds: `/run C_Calendar.OpenEvent(0, <day>, 1)` then `/dump C_Calendar.GetNumInvites(), C_Calendar.EventGetInvite(1)` and send the output. | open |
+| V44 | Can the addon read dungeon quests from QuestieDB on Forever? (CF-24) | With Questie (and so QuestieDB) installed: `/dump LibQuestieDB.RequireContract(3)` gives `true`, and `/dump QuestDB.Get(<a Deadmines quest ID>, "zoneOrSort")` gives `1581` (e.g. from Questie's quest tooltip or `/fp quests`). In the Dungeons tab the Deadmines row shows the dungeon icon with `have/total`. | open |
+| V45 | Does `C_QuestLog.IsQuestFlaggedCompleted(questID)` work on Forever? (CF-24: completed dungeon quests are left out) | Turn in a dungeon quest, then `/dump C_QuestLog.IsQuestFlaggedCompleted(<its ID>)`: `true`; for a quest never done: `false`. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-24 Dungeon planner (round 2)
-Round 1 passed. Changes from the feedback: calmer detail, planned runs, no group field, matching on the dungeon name only.
+### CF-24 Dungeon planner (round 3)
+Round 2 passed. The dungeon quest icon is back as `<icon> have/total`, with a Quests section.
 
 | Step | Expected | Status |
 |---|---|---|
-| Dungeons tab, a dungeon with only you in range | Section titles in the normal size with a gap before each; your other characters in range on one small line under yours (`or <name> <level>, ...`), not under Also in range. No Calendar section without an event. | open |
-| Plan a run | One short hint line, one field with just the dungeon name (e.g. `The Deadmines`), Open calendar. No group field. | open |
-| Create a community event titled `Deadmines` (or `The Deadmines run`) for within 3 days; sign up; have a friend sign up | The tab reads `Dungeons (1)`. The list starts with Planned: `The Deadmines  <weekday> <time> · <signed up>` (see V43), then In range. The detail starts with Planned: date, title, `N signed up`, your status. | open |
-| An event titled with a short name only (e.g. `VC farm`) | Not matched (dungeon name only). | open |
-| A planned run for a dungeon none of your characters fits (e.g. Stratholme) | Listed under Planned in grey; its detail says none of your characters is in range. | open |
-| An event 4+ days ahead | Not in Planned and not counted on the tab; it shows in that dungeon's detail under Planned. | open |
-| Switch tabs and back, `/reload` | The selected dungeon stays selected. | open |
+| Without QuestieDB (Questie off), Dungeons tab | A dungeon where someone in range has one of its quests: the icon and `0/N` or `1/N` (only quests in someone's quest log). Its detail: Quests section, then one grey line "Only quests in someone's quest log. Install QuestieDB ...". | open |
+| With Questie / QuestieDB on (see V44) | Rows show `<icon> have/total` for every dungeon with quests for your faction: have = in the quest log of your character in the suggested group, total = have + quests you can pick up now. | open |
+| Select a dungeon | Quests: green = in your log; white = to pick up (level, and who in range has it); grey `from level N` = not yet for your level; quests of the other faction and class quests are not listed. | open |
+| A dungeon quest you already turned in, on the character you are on | Not listed; a line says `1 quest already done on this character.` (see V45). | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.

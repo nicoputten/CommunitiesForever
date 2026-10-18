@@ -34,6 +34,7 @@ stds.wow = {
     "GetProfessions", "GetProfessionInfo", "GetAverageItemLevel",
     "InCombatLockdown",
     "ToggleCalendar", -- CF-24
+    "LibQuestieDB", "QuestDB", -- CF-24: the optional QuestieDB addon (read only)
     "GetInstanceInfo", "GetNumGroupMembers", "IsInRaid", "GetBattlefieldWinner", "GetBattlefieldArenaFaction", -- CF-23
     -- Battle.net
     "BNGetInfo", "BNGetNumFriends", "BNSendGameData", "BNET_CLIENT_WOW",

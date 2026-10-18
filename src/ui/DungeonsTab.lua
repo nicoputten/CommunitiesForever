@@ -53,6 +53,70 @@ local function signUpText(event)
   return text
 end
 
+-- Every dungeon's area IDs, to read QuestieDB once for all of them.
+local function allAreaIds()
+  local ids = {}
+  for _, d in ipairs(ns.Dungeons.LIST) do
+    for _, id in ipairs(d.areaIds) do ids[#ids + 1] = id end
+  end
+  return ids
+end
+
+-- The dungeon's quests for your character in the suggested group (CF-24 feedback): QuestieDB when it
+-- is installed, else what people in range have in their logs. Completed quests are known only for
+-- the character you are on.
+local function questInfo(entry)
+  local own
+  for _, c in ipairs(ns.Dungeons.suggest(entry)) do
+    if c.own then own = c end
+  end
+  local me = ns.SelfInfo.read()
+  local data = ns.QuestieData.dungeonQuests(allAreaIds())
+  local completed
+  if data and own and own.guid == me.guid then
+    local ids = {}
+    for _, areaId in ipairs(entry.dungeon.areaIds) do
+      for _, q in ipairs(data[areaId] or {}) do ids[#ids + 1] = q.id end
+    end
+    completed = ns.QuestieData.completed(ids)
+  end
+  return ns.Dungeons.quests(entry.dungeon, data, { char = own, candidates = entry.candidates,
+    factionMask = data and ns.QuestieData.factionMask(me.faction), completed = completed })
+end
+
+local function questLine(q)
+  local name = tostring(q.name or ("Quest " .. q.id))
+  local details = {}
+  if q.state == "have" then
+    return GREEN .. name .. "|r" .. ui.GREY .. DOT .. "in your quest log|r"
+  end
+  if q.state == "later" then
+    return ui.GREY .. name .. DOT .. "from level " .. q.requiredLevel .. "|r"
+  end
+  if type(q.level) == "number" and q.level > 0 then details[#details + 1] = "level " .. q.level end
+  if #q.holders > 0 then details[#details + 1] = table.concat(q.holders, ", ") .. " has it" end
+  return name .. (#details > 0 and (ui.GREY .. DOT .. table.concat(details, DOT) .. "|r") or "")
+end
+
+local function questsSection(parent, info)
+  local hint = ui.GREY .. "Install QuestieDB (it comes with Questie) to see every quest for this dungeon.|r"
+  if #info.quests == 0 then
+    if not info.complete then ui.label(parent, hint, GameFontHighlightSmall) end
+    return
+  end
+  section(parent, string.format("Quests  %s%d/%d|r", ui.GREY, info.have, info.total))
+  local done = 0
+  for _, q in ipairs(info.quests) do
+    if q.state == "done" then done = done + 1 else ui.label(parent, questLine(q), GameFontHighlight) end
+  end
+  if done > 0 then
+    ui.label(parent, ui.GREY .. plural(done, "quest") .. " already done on this character.|r", GameFontHighlightSmall)
+  end
+  if not info.complete then
+    ui.label(parent, ui.GREY .. "Only quests in someone's quest log.|r " .. hint, GameFontHighlightSmall)
+  end
+end
+
 -- A copyable field: the text is selected when clicked, so Ctrl+C copies it.
 local function copyField(parent, text)
   local edit = ui.createWidget("EditBox")
@@ -112,6 +176,8 @@ local function showDungeon(value)
     if #group < 2 then
       ui.label(scroll, ui.GREY .. "Nobody else in range yet.|r", GameFontHighlightSmall)
     end
+
+    questsSection(scroll, questInfo(entry))
 
     local others = {}
     for _, c in ipairs(entry.candidates) do
@@ -195,10 +261,13 @@ function DungeonsTab.render(view, messageText)
   for _, entry in ipairs(overview) do
     if entry.fits then
       entries[entry.dungeon.id] = entry
-      local counts = tostring(entry.people)
-      if entry.quests > 0 then counts = counts .. DOT .. plural(entry.quests, "quest") end
-      nodes[#nodes + 1] = { value = entry.dungeon.id, text = string.format("%s  %s%s|r", entry.dungeon.name,
-        ui.GREY, counts) }
+      local text = string.format("%s  %s%d|r", entry.dungeon.name, ui.GREY, entry.people)
+      local info = questInfo(entry)
+      if info.total > 0 then
+        -- Dungeon icon and "have/total" quests (CF-24 feedback; the icon came back).
+        text = string.format("%s  %s%s%d/%d|r", text, ui.dungeonIcon(), ui.GOLD, info.have, info.total)
+      end
+      nodes[#nodes + 1] = { value = entry.dungeon.id, text = text }
     end
   end
   tree:SetTree(nodes)
