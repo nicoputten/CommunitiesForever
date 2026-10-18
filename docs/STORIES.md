@@ -18,6 +18,8 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Pushing a git tag `v*` runs the BigWigs packager and uploads to CurseForge (Forever flavor) using the `CF_API_TOKEN` secret. CurseForge project ID in the TOC (`## X-Curse-Project-ID`).
 - Untagged pushes produce no release.
 - Manual: install via the CurseForge app; publishing a new tag delivers an update.
+- No personal info in the published package. The repo stays private, but the zip ships the `src/` Lua as is: replace real names in shipped comments and strings (BattleTags, character names, display names such as "Sjaak", "Garraka Doombringer", "Vestras") with generic examples, for example in `src/core/Format.lua`, `src/services/Notify.lua` and `src/ui/Tooltip.lua`. Check: `git grep -nIiE "sjaak|vestras|doombringer|garraka|nico" -- src` finds nothing. The `## Author` line in the TOC and the LICENSE stay as they are.
+- The package contains only the addon: `.pkgmeta` ignores tests, tools, docs, `VERIFY.md`, `CLAUDE.md` and the CI config. Check: unzip the built package and list its files.
 
 ## E1 Own data
 
