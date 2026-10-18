@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-02 (part 2: tag workflow, needs the API token), 25 (after V37), 23 (after V35), 24.
+Build order: CF-02 (part 2: tag workflow, needs the API token), 25 (after V39), 26, 23 (after V35), 24.
 
 ## E0 Foundation
 
@@ -39,10 +39,26 @@ Build order: CF-02 (part 2: tag workflow, needs the API token), 25 (after V37), 
 
 ### CF-25 Community chat that stands out
 - Goal: messages in the selected community's chat are easy to notice, in Blizzard's own chat (no chat of our own).
-- V37 (verified): coloring the channel, opening a chat tab with only the community, flashing a tab and playing a sound all work from an addon. V38 (open): whether the author of a message can be read, for "not your own messages".
+- V37 (verified): coloring the channel, opening a chat tab, flashing a tab and playing a sound work from an addon; `ChatFrame_AddChannel` is gone, so V39 finds how to put the channel into the new tab. V38 (verified): the message text is hidden, but the sender name and GUID are readable.
 - **Color, always on** (decided): the community channel is purple in all chat windows (`ChangeChatColor` on the channel, default `#C080FF`, readable on the dark chat background). Applied on every login and when the community selection changes. A color picker in settings changes the shade; there is no off switch.
-- **Alert on a new message** (setting, on by default): when someone else writes in the selected community, every chat tab that shows the channel and is not the selected tab flashes (`FCF_StartAlertFlash`). Optional sound (`SOUNDKIT.TELL_MESSAGE`, setting, off by default). No alert for your own messages if V38 allows telling them apart; otherwise every message alerts except while you are typing in the community tab.
+- **Alert on a new message** (setting, on by default): when someone else writes in the selected community, every chat tab that shows the channel and is not the selected tab flashes (`FCF_StartAlertFlash`). Optional sound (`SOUNDKIT.TELL_MESSAGE`, setting, off by default). No alert for your own messages (sender GUID is one of your characters, V38).
 - **Community chat tab** (encouraged, CF-26 offers it): a button "Create a Community tab" opens a chat tab named after the community that shows only that channel. Chat windows are saved per character by the game, so the tab is offered once per character (remembered in `settings.chatTab[guid]`); clicking again when the tab exists says so. Option "Keep community messages in General too" (on by default); off removes the channel from the other windows, so only the Community tab flashes.
 - Not in scope: a chat view inside our window, changing sender names or message text (likely blocked by secret values under Midnight).
 - Unit tests (pure core): which incoming messages alert (selected community, not you, not the selected tab); color setting default and change; tab offered once per character.
 - Manual (2 clients): a friend writes in the community while another chat tab is selected: the tab with the community chat flashes and the message is purple. Create the Community tab: it shows only community messages; with "Keep in General" off, General no longer shows them.
+
+### CF-26 Onboarding wizard
+- Goal: new users set things up in a minute and are encouraged to create the Community chat tab (CF-25). Builds on CF-25 (tab and color code).
+- A small window with Back, Next and Skip, shown once per account on the first login after installing (`settings.onboarded`), reopened with `/cf setup`. Closing it counts as skipped; nothing is required.
+- Steps:
+  1. **Welcome**: what the addon does in three lines (who is who in your community, synced between friends with the addon, activity and shared quests).
+  2. **Community**: pick the community (dropdown, pre-selected when there is only one). Without a character community: how to join one (invite link from a friend, CF-21).
+  3. **Your name**: display name friends see (CF-04), prefilled with the BattleTag name part.
+  4. **Community chat**: a preview line in the purple community color, the big highlighted button **Create a Community tab** (recommended), "Keep community messages in General too" (on), "Flash the tab on new messages" (on), "Play a sound" (off).
+  5. **Notifications and sharing**: login notices (on), level-ups (on), Share my activity (on), minimap button (on), each with one line on what it does.
+  6. **Done**: "Open CommunitiesForever with /cf", and that friends need the addon too to see their professions, talents, quests and activity.
+- Every step writes the same settings as `/cf settings` (one source of truth); the wizard only presents them.
+- Alts: chat windows are per character, so on a character without the Community tab (`settings.chatTab[guid]`) a small prompt offers only step 4 ("Create a Community tab on this character too?" Create / Not now / Don't ask again for this character).
+- New steps added later (`settings.onboardedVersion`) are shown once to existing users, only the new ones.
+- Unit tests (pure core): which steps to show (first run, new version, alt without tab, don't ask again); defaults per setting.
+- Manual: fresh SavedVariables: the wizard opens on login, Skip closes it, `/cf setup` reopens it; finishing step 4 creates the Community tab; on an alt only the chat prompt appears.

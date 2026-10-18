@@ -14,6 +14,7 @@
 --   /fp feed [off]      log instance, boss, group, battleground, death, level, quest and skill events
 --   /fp chat           community chat: functions, channel name and index, which chat windows show it
 --   /fp chat watch     log community messages (CLUB_MESSAGE_ADDED, CHAT_MSG_COMMUNITIES_CHANNEL)
+--   /fp chat find      functions that could add a channel to a chat window (V39)
 --   /fp chat color|tab|flash  button: color the channel orange / open a community-only tab / flash + sound
 --   /fp talents [all]   specializations + C_ClassTalents / C_Traits: config, trees, point pools, nodes
 --                       with ranks spent (all: every node of the tree)
@@ -532,6 +533,31 @@ local function ChatInfo()
   if info then DumpTable("ChatTypeInfo.COMMUNITIES_CHANNEL", info) end
 end
 
+-- V39: functions that could add a channel to a chat window (ChatFrame_AddChannel is gone, V37):
+-- globals named ChatFrame*Channel*, ChatFrameUtil.*Channel*, and methods of ChatFrame1 with Channel.
+local function ChatFind()
+  log("== CHAT FIND ==")
+  local found = {}
+  for k, v in pairs(_G) do
+    if type(k) == "string" and type(v) == "function" and k:find("Channel") and (k:find("^ChatFrame") or k:find("^FCF")) then
+      found[#found + 1] = k
+    end
+  end
+  table.sort(found)
+  log("globals", table.concat(found, ", "))
+  for _, t in ipairs({ { "ChatFrameUtil", ChatFrameUtil }, { "ChatFrame1", ChatFrame1 },
+                       { "ChatFrameMixin", ChatFrameMixin } }) do
+    local keys = {}
+    if type(t[2]) == "table" then
+      for k, v in pairs(t[2]) do
+        if type(k) == "string" and type(v) == "function" and k:find("Channel") then keys[#keys + 1] = k end
+      end
+    end
+    table.sort(keys)
+    log(t[1], type(t[2]), table.concat(keys, ", "))
+  end
+end
+
 -- Test actions, each from a button click (may need a hardware event).
 local function ChatAction(action)
   log("== CHAT " .. action .. " ==")
@@ -544,7 +570,20 @@ local function ChatAction(action)
     log("FCF_OpenNewWindow", ok, frame and frame.GetName and frame:GetName() or frame)
     if ok and frame then
       LogCall("ChatFrame_RemoveAllMessageGroups", ChatFrame_RemoveAllMessageGroups, frame)
-      LogCall("ChatFrame_AddChannel", ChatFrame_AddChannel, frame, name)
+      -- V39: ChatFrame_AddChannel does not exist on Forever (V37); try the likely replacements.
+      if ChatFrame_AddChannel then
+        LogCall("ChatFrame_AddChannel", ChatFrame_AddChannel, frame, name)
+      elseif frame.AddChannel then
+        LogCall("frame:AddChannel", frame.AddChannel, frame, name)
+      elseif ChatFrameUtil and ChatFrameUtil.AddChannel then
+        LogCall("ChatFrameUtil.AddChannel", ChatFrameUtil.AddChannel, frame, name)
+      else
+        log("no add-channel function found; see /fp chat find")
+      end
+      local id = frame.GetID and frame:GetID()
+      if id and GetChatWindowChannels then
+        log("channels now in window", id, table.concat({ GetChatWindowChannels(id) }, ","))
+      end
       log("a tab FP Community should show only the community chat now; close it with right click -> Close")
     end
   elseif action == "flash" then
@@ -688,6 +727,9 @@ SlashCmdList.FRIENDPROBE = function(msg)
       ChatButton(arg)
     elseif arg == "watch" or arg == "unwatch" then
       ChatWatch(arg == "watch")
+    elseif arg == "find" then
+      local ok, err = pcall(ChatFind)
+      if not ok then log("chat find error", err) end
     else
       local ok, err = pcall(ChatInfo)
       if not ok then log("chat error", err) end
@@ -704,6 +746,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | calendar [create|player] | feed [off] | chat [watch|unwatch|color|tab|flash] | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | calendar [create|player] | feed [off] | chat [watch|unwatch|find|color|tab|flash] | clear")
   end
 end
