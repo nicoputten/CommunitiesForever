@@ -26,6 +26,8 @@ Build order: CF-02 (part 2: tag workflow, needs the API token), 26, 23 (after V3
 - These parts come first on a line, before milestone and level.
 - Unit tests: 10-minute and boss rule; ×2; shared line from two records; shared line from one record (companion without the addon); companions outside the community left out.
 - Manual (2 clients in one group): run a dungeon together, kill one boss, leave after 10 minutes: one shared line for both.
+- Decided in CF-23: built before V35 was run, with guarded fallbacks: a boss kill comes from `ENCOUNTER_END` (success 1) or `BOSS_KILL` (counted once per encounter); the battleground winner from `PVP_MATCH_COMPLETE` or `GetBattlefieldWinner`, your team from `GetBattlefieldArenaFaction` or your faction (Horde 0, Alliance 1). A missing API means a missing line, never an error. `/cf activity debug` prints every instance event and what the tracker concluded, so the first real dungeon answers V35.
+- Decided in CF-23: the run in progress is saved (`db.global.runs`), so `/reload` or a disconnect inside keeps it; the time inside counts until leaving (or the logout). A run counts on the day it started. Only companions who are members of the selected community are stored. Several runs with the same people on a day make one shared line per group of people (`Ann and Ben together`: `ran Deadmines ×2`); battlegrounds are counted together regardless of map.
 
 ### CF-24 Dungeon planner
 - Calendar findings: reading events works (V33); creating one is blocked for addons (V34: `AddEvent` fires `ADDON_ACTION_BLOCKED`).

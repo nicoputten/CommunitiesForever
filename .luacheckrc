@@ -33,6 +33,7 @@ stds.wow = {
     "UnitGUID", "UnitName", "GetUnitName", "UnitLevel", "UnitClassBase", "UnitRace", "UnitFactionGroup",
     "GetProfessions", "GetProfessionInfo", "GetAverageItemLevel",
     "InCombatLockdown",
+    "GetInstanceInfo", "GetNumGroupMembers", "IsInRaid", "GetBattlefieldWinner", "GetBattlefieldArenaFaction", -- CF-23
     -- Battle.net
     "BNGetInfo", "BNGetNumFriends", "BNSendGameData", "BNET_CLIENT_WOW",
     -- UI

@@ -409,6 +409,15 @@ local LINK = "|cff6aa7ff"
 local DOT = " \194\183 "
 local HIGHLIGHT = "Interface\\QuestFrame\\UI-QuestTitleHighlight"
 
+-- CF-23: community members by GUID, so companions without a linked person show by name.
+local function feedMembers()
+  local members = {}
+  for _, row in ipairs(view.unlinked or {}) do
+    if row.guid and row.name then members[row.guid] = row.name end
+  end
+  return members
+end
+
 function renderActivity(messageText)
   content:ReleaseChildren()
   local box = createWidget("InlineGroup")
@@ -419,21 +428,27 @@ function renderActivity(messageText)
   box:AddChild(scroll)
   scroll:PauseLayout()
 
-  local days = messageText and {} or ns.Feed.days(view.people, ns.FeedTracker.today())
+  local days = messageText and {} or ns.Feed.days(view.people, ns.FeedTracker.today(), feedMembers())
   if messageText then
     label(scroll, messageText, GameFontHighlight)
   elseif #days == 0 then
-    label(scroll, GREY .. "No activity yet. Levels, quests and professions of you and your friends show up here."
-      .. "|r", GameFontHighlight)
+    label(scroll, GREY .. "No activity yet. Levels, quests, professions, dungeons and battlegrounds of you and"
+      .. " your friends show up here.|r", GameFontHighlight)
   end
   for dayIndex, day in ipairs(days) do
     if dayIndex > 1 then spacer(scroll) end
     heading(scroll, day.label)
     for _, line in ipairs(day.lines) do
-      local key = day.day .. ":" .. tostring(line.battleTag or "self")
+      local key = day.day .. ":" .. tostring(line.key or line.battleTag or "self")
       local expanded = expandedFeed[key]
-      local who = string.format("%s%s|r %son|r %s", GOLD, tostring(line.displayName), GREY,
-        colorName(line.char.name, line.char.classFile))
+      local who
+      if line.shared then
+        -- CF-23: runs done together, one line for everyone in them.
+        who = string.format("%s%s|r %stogether|r", GOLD, tostring(line.title), GREY)
+      else
+        who = string.format("%s%s|r %son|r %s", GOLD, tostring(line.displayName), GREY,
+          colorName(line.char.name, line.char.classFile))
+      end
       if line.extraChars > 0 then
         who = who .. string.format(" %sand %d more %s|r", GREY, line.extraChars,
           line.extraChars == 1 and "character" or "characters")

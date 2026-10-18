@@ -165,7 +165,10 @@ describe("activity feed (CF-22)", function()
     addon:OnSlashCommand("debugon")
     local text = activityText()
     assert.is_truthy(text:find("   27 to 30" .. DOT .. "Engineering reached Expert" .. DOT .. "learned Mining   "
-      .. "|cff6aa7ffShow all (2)|r", 1, true))
+      .. "|cff6aa7ffShow all (4)|r", 1, true)) -- the alt adds a raid, battlegrounds and quests (CF-23)
+    -- CF-23: the dungeon runs with your current character show as one shared line.
+    assert.is_truthy(text:find(" and Debug Friend|r |cffa0a0a0together|r", 1, true))
+    assert.is_truthy(text:find("   ran Blackfathom Deeps \195\1512", 1, true))
     assert.is_truthy(text:find("Yesterday", 1, true))
     assert.is_truthy(text:find("reached 20", 1, true))
     assert.is_nil(addon.db.global.people[ns.Debug.BATTLE_TAG]) -- view only

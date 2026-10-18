@@ -79,7 +79,16 @@ function Debug.decorate(view, selfGuid, now)
                        levelTo = 30, quests = { Ashenvale = 6, ["Stonetalon Mountains"] = 3, Barrens = 1 },
                        ranks = { Engineering = "Expert" }, learned = { Mining = true } },
       [Debug.ALT_GUID] = { name = alt.name, classFile = alt.classFile, at = (now or 0) - 5400,
-                           quests = { Durotar = 2 } },
+                           quests = { Durotar = 2 },
+                           -- CF-23: a raid and battlegrounds of their own, and a dungeon run with you
+                           -- (your current character as companion), which shows as a shared line.
+                           runs = { { name = "Molten Core", kind = "raid", bosses = 4, with = {} },
+                                    { name = "Warsong Gulch", kind = "pvp", won = true, with = {} },
+                                    { name = "Warsong Gulch", kind = "pvp", won = false, with = {} },
+                                    { name = "Blackfathom Deeps", kind = "party", bosses = 3,
+                                      with = { selfGuid } },
+                                    { name = "Blackfathom Deeps", kind = "party", bosses = 2,
+                                      with = { selfGuid } } } },
     },
     [today - 1] = {
       [Debug.ALT_GUID] = { name = alt.name, classFile = alt.classFile, at = (now or 0) - 86400, levelFrom = 19,
