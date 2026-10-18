@@ -34,6 +34,49 @@ function Settings.rolesGroup()
   return group
 end
 
+-- CF-25: community chat. The color is always applied; the rest are switches and the tab button.
+function Settings.chatGroup()
+  local s = function() return ns.db.global.settings end
+  return {
+    type = "group", inline = true, order = 9, name = "Community chat",
+    args = {
+      info = { type = "description", order = 0, fontSize = "medium",
+               name = "Make the community chat easy to spot in your chat windows." },
+      color = {
+        type = "color", order = 1, name = "Community chat color",
+        get = function() local c = ns.Chat.color(s()) return c.r, c.g, c.b end,
+        set = function(_, r, g, b) ns.CommunityChat.setColor({ r = r, g = g, b = b }) end,
+      },
+      resetColor = {
+        type = "execute", order = 2, name = "Default purple",
+        func = function() ns.CommunityChat.setColor(nil) end,
+      },
+      alert = {
+        type = "toggle", order = 3, width = "full", name = "Flash the chat tab on new messages",
+        desc = "When someone else writes in the community, chat tabs that show it flash (not the one you look at).",
+        get = function() return s().chatAlert ~= false end,
+        set = function(_, value) s().chatAlert = value end,
+      },
+      sound = {
+        type = "toggle", order = 4, width = "full", name = "Play a sound on new messages",
+        get = function() return s().chatSound == true end,
+        set = function(_, value) s().chatSound = value end,
+      },
+      createTab = {
+        type = "execute", order = 5, width = "double", name = "Create a Community tab",
+        desc = "Opens a chat tab that shows only the community chat. Chat tabs are saved per character.",
+        func = function() ns.CommunityChat.createTab() end,
+      },
+      keepGeneral = {
+        type = "toggle", order = 6, width = "full", name = "Keep community messages in General too",
+        desc = "Off: with a Community tab, the community chat shows only there.",
+        get = function() return s().chatKeepGeneral ~= false end,
+        set = function(_, value) ns.CommunityChat.setKeepGeneral(value) end,
+      },
+    },
+  }
+end
+
 -- Options table. Data comes from services only.
 function Settings.options()
   local options = {
@@ -132,6 +175,7 @@ function Settings.options()
     },
   }
   options.args.roles = Settings.rolesGroup()
+  options.args.chat = Settings.chatGroup()
   return options
 end
 

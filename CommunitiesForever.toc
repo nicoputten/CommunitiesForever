@@ -18,6 +18,7 @@ src\core\Members.lua
 src\core\Invite.lua
 src\core\Talents.lua
 src\core\Quests.lua
+src\core\Chat.lua
 src\core\Friends.lua
 src\core\Linker.lua
 src\core\Protocol.lua
@@ -28,12 +29,14 @@ src\adapters\Events.lua
 src\adapters\Timer.lua
 src\adapters\SelfInfo.lua
 src\adapters\Community.lua
+src\adapters\ChatFrames.lua
 src\adapters\Presence.lua
 src\adapters\Transport.lua
 
 src\services\FeedTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
+src\services\CommunityChat.lua
 src\services\MemberTracker.lua
 src\services\PresenceTracker.lua
 src\services\Debug.lua

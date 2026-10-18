@@ -12,6 +12,10 @@
 --   /fp calendar        C_Calendar: functions, enums, events this month and next (dungeon planner)
 --   /fp calendar create button: try to create a community sign-up test event (/fp calendar player: private)
 --   /fp feed [off]      log instance, boss, group, battleground, death, level, quest and skill events
+--   /fp chat           community chat: functions, channel name and index, which chat windows show it
+--   /fp chat watch     log community messages (CLUB_MESSAGE_ADDED, CHAT_MSG_COMMUNITIES_CHANNEL)
+--   /fp chat find      functions that could add a channel to a chat window (V39)
+--   /fp chat color|tab|flash  button: color the channel orange / open a community-only tab / flash + sound
 --   /fp talents [all]   specializations + C_ClassTalents / C_Traits: config, trees, point pools, nodes
 --                       with ranks spent (all: every node of the tree)
 --   /fp clear           wipe the saved log
@@ -481,6 +485,159 @@ local function Feed(arg)
   LogGroup()
 end
 
+-- ===== Community chat (CF-25) =====
+-- Function names are unverified on Forever: existence is logged, every call is guarded.
+local CHAT_FUNCS = { "FCF_OpenNewWindow", "FCF_StartAlertFlash", "FCF_SetWindowName", "ChatFrame_AddChannel",
+  "ChatFrame_RemoveAllMessageGroups", "ChatFrame_RemoveChannel", "ChatFrame_AddMessageEventFilter",
+  "ChangeChatColor", "GetChannelList", "GetChannelName", "GetChatWindowInfo", "GetChatWindowChannels",
+  "Chat_GetCommunitiesChannelName", "Chat_GetCommunitiesChannel", "PlaySound", "issecretvalue" }
+local CHAT_EVENTS = { "CLUB_MESSAGE_ADDED", "CHAT_MSG_COMMUNITIES_CHANNEL" }
+
+local chatWatching = false
+
+-- The community channel name ("Community:<clubId>:<streamId>") and channel index of the first
+-- character community's general stream.
+local function CommunityChannel()
+  local clubId, clubName = FirstCharacterCommunity()
+  if not clubId then log("no character community") return end
+  local streams = C_Club.GetStreams and C_Club.GetStreams(clubId) or {}
+  local stream = streams[1]
+  for _, s in ipairs(streams) do
+    DumpTable("stream", s)
+    if Enum and Enum.ClubStreamType and s.streamType == Enum.ClubStreamType.General then stream = s end
+  end
+  if not stream then log("no stream for", clubName) return end
+  local name = Chat_GetCommunitiesChannelName and Chat_GetCommunitiesChannelName(clubId, stream.streamId)
+  local index = name and GetChannelName and GetChannelName(name)
+  log("community", clubName, clubId, "stream", stream.streamId, "channel name", name, "index", index)
+  return name, index, clubId, stream.streamId
+end
+
+local function ChatInfo()
+  log("== CHAT ==")
+  for _, fn in ipairs(CHAT_FUNCS) do log("exists " .. fn, _G[fn] ~= nil) end
+  log("NUM_CHAT_WINDOWS", NUM_CHAT_WINDOWS, "SOUNDKIT.TELL_MESSAGE", SOUNDKIT and SOUNDKIT.TELL_MESSAGE)
+  LogCall("GetChannelList", GetChannelList)
+  local name = CommunityChannel()
+  for i = 1, NUM_CHAT_WINDOWS or 10 do
+    local windowName, _, _, _, _, _, shown = GetChatWindowInfo and GetChatWindowInfo(i)
+    if windowName and windowName ~= "" then
+      local channels = { GetChatWindowChannels and GetChatWindowChannels(i) }
+      local has = false
+      for _, c in ipairs(channels) do if c == name then has = true end end
+      log("chat window", i, windowName, "shown", shown, "has community channel", has, "channels",
+        table.concat((function() local t = {} for _, c in ipairs(channels) do t[#t + 1] = S(c) end return t end)(), ","))
+    end
+  end
+  local info = ChatTypeInfo and ChatTypeInfo["COMMUNITIES_CHANNEL"]
+  if info then DumpTable("ChatTypeInfo.COMMUNITIES_CHANNEL", info) end
+end
+
+-- V39: functions that could add a channel to a chat window (ChatFrame_AddChannel is gone, V37):
+-- globals named ChatFrame*Channel*, ChatFrameUtil.*Channel*, and methods of ChatFrame1 with Channel.
+local function ChatFind()
+  log("== CHAT FIND ==")
+  local found = {}
+  for k, v in pairs(_G) do
+    if type(k) == "string" and type(v) == "function" and k:find("Channel") and (k:find("^ChatFrame") or k:find("^FCF")) then
+      found[#found + 1] = k
+    end
+  end
+  table.sort(found)
+  log("globals", table.concat(found, ", "))
+  for _, t in ipairs({ { "ChatFrameUtil", ChatFrameUtil }, { "ChatFrame1", ChatFrame1 },
+                       { "ChatFrameMixin", ChatFrameMixin } }) do
+    local keys = {}
+    if type(t[2]) == "table" then
+      for k, v in pairs(t[2]) do
+        if type(k) == "string" and type(v) == "function" and k:find("Channel") then keys[#keys + 1] = k end
+      end
+    end
+    table.sort(keys)
+    log(t[1], type(t[2]), table.concat(keys, ", "))
+  end
+end
+
+-- Test actions, each from a button click (may need a hardware event).
+local function ChatAction(action)
+  log("== CHAT " .. action .. " ==")
+  local name, index = CommunityChannel()
+  if action == "color" then
+    LogCall("ChangeChatColor CHANNEL" .. S(index), ChangeChatColor, "CHANNEL" .. S(index), 1, 0.5, 0)
+    log("send a community message: is it orange now?")
+  elseif action == "tab" then
+    local ok, frame = pcall(FCF_OpenNewWindow, "FP Community")
+    log("FCF_OpenNewWindow", ok, frame and frame.GetName and frame:GetName() or frame)
+    if ok and frame then
+      LogCall("ChatFrame_RemoveAllMessageGroups", ChatFrame_RemoveAllMessageGroups, frame)
+      -- V39: ChatFrame_AddChannel does not exist on Forever (V37); try the likely replacements.
+      if ChatFrame_AddChannel then
+        LogCall("ChatFrame_AddChannel", ChatFrame_AddChannel, frame, name)
+      elseif frame.AddChannel then
+        LogCall("frame:AddChannel", frame.AddChannel, frame, name)
+      elseif ChatFrameUtil and ChatFrameUtil.AddChannel then
+        LogCall("ChatFrameUtil.AddChannel", ChatFrameUtil.AddChannel, frame, name)
+      else
+        log("no add-channel function found; see /fp chat find")
+      end
+      local id = frame.GetID and frame:GetID()
+      if id and GetChatWindowChannels then
+        log("channels now in window", id, table.concat({ GetChatWindowChannels(id) }, ","))
+      end
+      log("a tab FP Community should show only the community chat now; close it with right click -> Close")
+    end
+  elseif action == "flash" then
+    for i = 1, NUM_CHAT_WINDOWS or 10 do
+      local frame = _G["ChatFrame" .. i]
+      local channels = { GetChatWindowChannels and GetChatWindowChannels(i) }
+      for _, c in ipairs(channels) do
+        if c == name and frame then LogCall("FCF_StartAlertFlash ChatFrame" .. i, FCF_StartAlertFlash, frame) end
+      end
+    end
+    LogCall("PlaySound TELL_MESSAGE", PlaySound, SOUNDKIT and SOUNDKIT.TELL_MESSAGE)
+  end
+end
+
+local chatButton
+local function ChatButton(action)
+  if not chatButton then
+    chatButton = CreateFrame("Button", nil, UIParent, "UIPanelButtonTemplate")
+    chatButton:SetSize(320, 28)
+    chatButton:SetPoint("CENTER", 0, 80)
+  end
+  chatButton:SetText("FriendProbe: chat " .. action)
+  chatButton:SetScript("OnClick", function(self)
+    self:Hide()
+    local ok, err = pcall(ChatAction, action)
+    if not ok then log("chat " .. action .. " error", err) end
+  end)
+  chatButton:Show()
+  log("click the button in the middle of the screen: chat " .. action)
+end
+
+-- Logs incoming community messages; whether their text is readable (secret values under Midnight).
+local chatFrame = CreateFrame("Frame")
+chatFrame:SetScript("OnEvent", function(_, event, ...)
+  if not chatWatching then return end
+  local args = {}
+  for i = 1, select("#", ...) do
+    local v = select(i, ...)
+    local secret = issecretvalue and issecretvalue(v)
+    args[#args + 1] = secret and "<secret>" or S(v)
+  end
+  log("CHAT " .. event, table.concat(args, " | "))
+end)
+
+local function ChatWatch(on)
+  chatWatching = on
+  if on then
+    for _, event in ipairs(CHAT_EVENTS) do
+      log("chat register", event, pcall(chatFrame.RegisterEvent, chatFrame, event) and "ok" or "UNKNOWN EVENT")
+    end
+  end
+  log("chat watch", on and "on (until /reload or /fp chat unwatch)" or "off")
+end
+
 local clubUpdateSeen = {}
 
 local f = CreateFrame("Frame")
@@ -565,6 +722,18 @@ SlashCmdList.FRIENDPROBE = function(msg)
     end
   elseif cmd == "feed" then
     Feed(arg)
+  elseif cmd == "chat" then
+    if arg == "color" or arg == "tab" or arg == "flash" then
+      ChatButton(arg)
+    elseif arg == "watch" or arg == "unwatch" then
+      ChatWatch(arg == "watch")
+    elseif arg == "find" then
+      local ok, err = pcall(ChatFind)
+      if not ok then log("chat find error", err) end
+    else
+      local ok, err = pcall(ChatInfo)
+      if not ok then log("chat error", err) end
+    end
   elseif cmd == "icons" then
     local ok, err = pcall(Icons)
     if not ok then log("icons error", err) end
@@ -577,6 +746,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | calendar [create|player] | feed [off] | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | calendar [create|player] | feed [off] | chat [watch|unwatch|find|color|tab|flash] | clear")
   end
 end

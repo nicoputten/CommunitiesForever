@@ -38,18 +38,21 @@ CommunitiesForever/
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22)
+      Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
       Timer.lua              C_Timer debounce
       SelfInfo.lua           Unit*, GetProfessions, item level
       Community.lua          C_Club (club list, members, club and member events)
+      ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
+      CommunityChat.lua      community chat color (always), tab flash and sound, Community chat tab (CF-25)
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       Invites.lua            shared invite link: set (owner/leaders/moderators), newest, post as chat link (CF-21)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
@@ -91,7 +94,10 @@ global = {
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
-                shareActivity = true },              -- CF-22: send the activity feed to friends
+                shareActivity = true,                -- CF-22: send the activity feed to friends
+                chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
+                chatAlert = true, chatSound = false, chatKeepGeneral = true,
+                chatTab = { [guid] = true } },       -- CF-25: characters with a Community chat tab
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days

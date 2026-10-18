@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-02, 23 (after V35), 24.
+Build order: CF-02 (part 2: tag workflow, needs the API token), 26, 23 (after V35), 24.
 
 ## E0 Foundation
 
@@ -34,3 +34,21 @@ Build order: CF-02, 23 (after V35), 24.
 - Calendar: upcoming community events (`calendarType` community, V33) whose title mentions the dungeon are listed with their time and sign-ups. Since addons cannot create events (V34), "Plan in calendar" opens Blizzard's calendar (unverified call, guarded) and puts a ready-made title (`<dungeon> run`) and the suggested characters in a chat line to copy into the event. Still to verify: how a community event shows in `GetDayEvent` (create one by hand, `/fp calendar`).
 - Unit tests: level-range filter; suggestion order (roles, quests, online); title matching for calendar events.
 - Manual: open the tab, pick a dungeon, create the event in Blizzard's calendar from the suggestion; it shows on the dungeon page; a friend sees it and signs up.
+
+## E8 Communication
+
+### CF-26 Onboarding wizard
+- Goal: new users set things up in a minute and are encouraged to create the Community chat tab (CF-25). Builds on CF-25 (tab and color code).
+- A small window with Back, Next and Skip, shown once per account on the first login after installing (`settings.onboarded`), reopened with `/cf setup`. Closing it counts as skipped; nothing is required.
+- Steps:
+  1. **Welcome**: what the addon does in three lines (who is who in your community, synced between friends with the addon, activity and shared quests).
+  2. **Community**: pick the community (dropdown, pre-selected when there is only one). Without a character community: how to join one (invite link from a friend, CF-21).
+  3. **Your name**: display name friends see (CF-04), prefilled with the BattleTag name part.
+  4. **Community chat**: a preview line in the purple community color, the big highlighted button **Create a Community tab** (recommended), "Keep community messages in General too" (on), "Flash the tab on new messages" (on), "Play a sound" (off).
+  5. **Notifications and sharing**: login notices (on), level-ups (on), Share my activity (on), minimap button (on), each with one line on what it does.
+  6. **Done**: "Open CommunitiesForever with /cf", and that friends need the addon too to see their professions, talents, quests and activity.
+- Every step writes the same settings as `/cf settings` (one source of truth); the wizard only presents them.
+- Alts: chat windows are per character, so on a character without the Community tab (`settings.chatTab[guid]`) a small prompt offers only step 4 ("Create a Community tab on this character too?" Create / Not now / Don't ask again for this character).
+- New steps added later (`settings.onboardedVersion`) are shown once to existing users, only the new ones.
+- Unit tests (pure core): which steps to show (first run, new version, alt without tab, don't ask again); defaults per setting.
+- Manual: fresh SavedVariables: the wizard opens on login, Skip closes it, `/cf setup` reopens it; finishing step 4 creates the Community tab; on an alt only the chat prompt appears.

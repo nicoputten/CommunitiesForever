@@ -24,6 +24,7 @@ function addon:OnEnable()
   ns.SelfTracker.start(self)
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
+  ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab
   ns.MemberTracker.start(self)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)

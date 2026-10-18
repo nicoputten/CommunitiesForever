@@ -17,7 +17,8 @@ describe("Store", function()
     it("matches the data model sections", function()
       local global = Store.defaults().global
       assert.are.same({ notifications = true, minimap = {}, window = {}, tree = {}, sendInterval = 0.2,
-                        shareActivity = true },
+                        shareActivity = true, chatAlert = true, chatSound = false, chatKeepGeneral = true,
+                        chatTab = {} },
         global.settings)
       assert.are.same({ version = 0, chars = {} }, global.self)
       assert.are.same({}, global.people)

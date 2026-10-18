@@ -18,6 +18,10 @@ local addonGlobals = {
 stds.wow = {
   globals = addonGlobals,
   read_globals = {
+    -- chat windows (CF-25)
+    "Chat_GetCommunitiesChannelName", "GetChannelName", "ChangeChatColor", "NUM_CHAT_WINDOWS", "GetChatWindowInfo",
+    "GetChatWindowChannels", "SELECTED_CHAT_FRAME", "FCF_StartAlertFlash", "FCF_OpenNewWindow",
+    "ChatFrame_RemoveAllMessageGroups", "PlaySound", "SOUNDKIT",
     -- libraries
     "LibStub",
     -- C_ namespaces
