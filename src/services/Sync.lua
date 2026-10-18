@@ -107,7 +107,7 @@ function handlers.REQ(message, _, gameAccountID)
   if not own.battleTag then return end
   if message.want == nil or message.want == own.battleTag then
     -- All own characters are always shared (CF-17), so this works on any character.
-    ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own))
+    ns.Messenger.send(gameAccountID, ns.Merge.outgoingRecord(own, ns.FeedTracker.shared()))
   elseif type(message.want) == "string" then
     local record = ns.Merge.relayRecord(global().people, message.want)
     if record then ns.Messenger.send(gameAccountID, record) end

@@ -71,8 +71,23 @@ function Debug.decorate(view, selfGuid, now)
     role = "tank", roleOverride = "tank",
     quests = pick(own, ids, ALT_SHARED_QUESTS, dungeonQuest),
   }
+  -- CF-22: a sample activity feed (today: more parts than fit on a line and a second character).
+  local today = ns.FeedTracker.today()
+  local feed = {
+    [today] = {
+      [Debug.GUID] = { name = main.name, classFile = main.classFile, at = (now or 0) - 600, levelFrom = 27,
+                       levelTo = 30, quests = { Ashenvale = 6, ["Stonetalon Mountains"] = 3, Barrens = 1 },
+                       ranks = { Engineering = "Expert" }, learned = { Mining = true } },
+      [Debug.ALT_GUID] = { name = alt.name, classFile = alt.classFile, at = (now or 0) - 5400,
+                           quests = { Durotar = 2 } },
+    },
+    [today - 1] = {
+      [Debug.ALT_GUID] = { name = alt.name, classFile = alt.classFile, at = (now or 0) - 86400, levelFrom = 19,
+                           levelTo = 21, quests = { Barrens = 4 } },
+    },
+  }
   view.people[#view.people + 1] = { battleTag = Debug.BATTLE_TAG, displayName = "Debug Friend", isSelf = false,
-                                    online = true, currentChar = main, chars = { main, alt } }
+                                    online = true, currentChar = main, chars = { main, alt }, feed = feed }
   return view
 end
 

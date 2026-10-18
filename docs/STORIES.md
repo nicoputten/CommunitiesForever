@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-02, 22, 23 (after V35), 24 (after V33, V34).
+Build order: CF-02, 23 (after V35), 24 (after V33, V34).
 
 ## E0 Foundation
 
@@ -15,21 +15,6 @@ Build order: CF-02, 22, 23 (after V35), 24 (after V33, V34).
 - The package contains only the addon: `.pkgmeta` ignores tests, tools, docs, `VERIFY.md`, `CLAUDE.md` and the CI config. Check: unzip the built package and list its files.
 
 ## E7 Activity and planning
-
-### CF-22 Activity feed
-- Goal: see at a glance what friends did recently, without one active player flooding the feed. One line per person per day, built from events each client records about its own characters and syncs with its record.
-- Decided: no play time, no logins without other activity, no gold, no deaths. Only what someone did.
-- Events in this story (no new API needed):
-  - **Level-up** (`PLAYER_LEVEL_UP`): per character lowest → highest level of the day: `Ves 5 → 8`.
-  - **Milestone**: reaching level 10, 20, 40 or 60 replaces the plain range: `Ves reached 40` (for 60: `Ves reached 60!`).
-  - **Questing** (`QUEST_TURNED_IN`, at least 1 quest): count per character plus the zones, sorted by most turn-ins. One zone: `questing in Westfall (9)`; two: `questing in Westfall and Redridge (12)`; three or more: `questing in Westfall, Redridge +2 zones (15)`. The zone is the area (log header) of the quest that was turned in.
-  - **Profession rank** (`SKILL_LINES_CHANGED`): only when a new rank is trained (the max goes up: 75 Apprentice, 150 Journeyman, 225 Expert, 300 Artisan), and when a profession is learned: `Mining reached Expert`, `learned Alchemy`. Skill point gains are not shown.
-- Storage: own record field `feed`, aggregated per realm day (in-game calendar date) per character, so turn-ins do not add one entry each: `feed = { [day] = { [guid] = { levelFrom, levelTo, milestone, quests = { [zone] = count }, ranks = { { name, rank } }, learned = { name } } } }`. Kept 7 days. A feed change bumps the version at most once per 60 s (debounced), so questing does not sync after every turn-in.
-- Privacy: setting "Share my activity" (on by default). Off: your own feed still shows in your window, but `outgoingRecord` leaves `feed` out and friends drop what they stored.
-- Line per person per day (pure core, unit tested): parts in order of importance: milestone, level, profession, questing (CF-23 adds dungeon, raid, battleground and activities together at the top). At most 3 parts, then `+N`; clicking the line shows all parts. With several characters the most active one is in the sentence, then `+1 character`. Example: `Vestras: Ves 5 → 8, Mining reached Expert, questing in Westfall (9) +1 character`.
-- Window: an **Activity** tab next to the current view (the dungeon planner, CF-24, becomes a third tab). Sections `Today`, `Yesterday`, then weekday names, newest first; within a day, the person active most recently first. Your own line is included. Received text is cleaned like all other received text.
-- Unit tests: aggregation per day and character; milestone replaces range; zone wording for 1, 2 and 3+ zones; only new ranks; 3-part limit with `+N`; several characters; 7-day trim; debounced version bump; share off leaves `feed` out.
-- Manual (2 clients): level up, turn in quests in two zones, train a new profession rank; within ~1 min the friend's Activity tab shows one line for you today. Share off: your line disappears for the friend after the next sync.
 
 ### CF-23 Feed: dungeons, raids, battlegrounds and playing together
 - Needs V35 (which events tell instance type, boss kills, group members and battleground results).

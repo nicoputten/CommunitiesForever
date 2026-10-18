@@ -9,6 +9,7 @@
 embeds.xml
 
 src\core\Store.lua
+src\core\Feed.lua
 src\core\Merge.lua
 src\core\Snapshot.lua
 src\core\Describe.lua
@@ -30,6 +31,7 @@ src\adapters\Community.lua
 src\adapters\Presence.lua
 src\adapters\Transport.lua
 
+src\services\FeedTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\MemberTracker.lua

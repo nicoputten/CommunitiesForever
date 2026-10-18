@@ -12,6 +12,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V33 | Can addons read community calendar events? (dungeon planner) | Copy the updated `tools\FriendProbe` into AddOns, `/reload`, `/fp calendar`. Send the log: which `C_Calendar` functions exist, the enums, and one line per event this month and next (create one community event in Blizzard's calendar first, so there is something to list). | open |
 | V34 | Can addons create a community sign-up event from a button click, or is it blocked under Midnight? (dungeon planner) | `/fp calendar create`, click the button that appears in the middle of the screen. Send the log (each call logs its result; a blocked action logs `ADDON_ACTION_BLOCKED`/`FORBIDDEN`) and say whether "FriendProbe test (delete me)" shows up in the community calendar tomorrow at 20:00. Delete it afterwards. If it is blocked, also try `/fp calendar player` (private event). | open |
 | V35 | Which events tell what you did, for the activity feed? | `/fp feed` (stays on after `/reload`), then play normally: enter and leave a dungeon, kill a boss, join a group, queue and play a battleground, turn in a quest, level up, gain a profession point, die once. `/fp feed off` afterwards and send the `FEED` lines: `ENCOUNTER_END`/`BOSS_KILL` args per boss, `instance ... type` (party/raid/pvp) from `GetInstanceInfo`, the group members with GUIDs, and the battleground status and winner. | open |
+| V36 | Does `C_DateAndTime.GetCurrentCalendarTime()` give the realm date (`year`, `month`, `monthDay`)? (CF-22: the feed groups by realm day; without it the addon falls back to the local date) | `/dump C_DateAndTime.GetCurrentCalendarTime()` (also logged by `/fp calendar`). Expected the in-game calendar date with `monthDay`. | open |
 
 
 ## Manual test steps per story
@@ -73,3 +74,16 @@ Needs a friend running this build, linked to you in the community.
 | Open your own character card | No Shared quests section. | open |
 | Log in on an alt with other quests | Quests shared with that alt appear too; the main's quests stay as of its last login. | open |
 | Without a friend: `/cf debugon`, open `/cf` | A `Debug Friend` with `Debug Character` appears in the tree with the dungeon icon; its card shows up to 6 of your current character's quests plus `Debug: Into the Deeps` under Blackfathom Deeps, and `Show all 7`. `Debug Alt` (Warrior, offline) shares 2 of them plus the dungeon quest. `/cf debugoff` or `/reload` removes it; nothing is saved or synced. | open |
+
+### CF-22 Activity feed
+Copy the build into AddOns. Solo steps first; the last two need a friend running this build.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf debugon`, `/cf`, **Activity** tab | Today: `Debug Friend  Debug Character  27 → 30, Engineering reached Expert, learned Mining  +1  +1 character`. Clicking it shows all parts (`questing in Ashenvale, Stonetalon Mountains +1 zone (10)`) and `Debug Alt  questing in Durotar (2)`. Yesterday: `Debug Alt  reached 20, questing in Barrens (4)`. | open |
+| Turn in two quests in one zone and one in another | Your own line today: `questing in <zone> and <zone> (3)`, the zones are your quest log headers. | open |
+| Level up | `<from> → <to>` on your line (10, 20, 40, 60 show as `reached N`). | open |
+| Train a new profession rank (e.g. Journeyman), learn a new profession | `<profession> reached Journeyman`, `learned <profession>`. Skill-ups alone add nothing. | open |
+| `/reload` after a day change (or the next day) | Yesterday's activity under `Yesterday`, today's under `Today`; days older than a week are gone. | open |
+| Friend does any of the above | Within ~1 min (feed changes sync at most once a minute) their line shows in your Activity tab. | open |
+| `/cf settings` → untick "Share my activity" | Within ~10 s your line disappears from the friend's Activity tab; yours still shows it, with a note that you don't share. | open |

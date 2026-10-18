@@ -12,7 +12,9 @@ describe("Merge", function()
   end
 
   before_each(function()
-    Merge = helpers.loadAddonFile("src/core/Merge.lua", {})
+    local ns = {}
+    helpers.loadAddonFile("src/core/Feed.lua", ns)
+    Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
   end)
 
   describe("nextVersion", function()
@@ -214,6 +216,27 @@ describe("Merge", function()
 
     it("handles a record without characters", function()
       assert.are.same({}, Merge.outgoingRecord({ battleTag = "X#1", version = 1 }).chars)
+    end)
+  end)
+
+  describe("activity feed (CF-22)", function()
+    local FEED = { [20744] = { ["G-1"] = { name = "Alice Example", quests = { Westfall = 2 } } } }
+
+    it("sends the feed unless sharing is off", function()
+      local own = { battleTag = "X#1", version = 1, chars = {}, feed = FEED }
+      assert.are.equal(FEED, Merge.outgoingRecord(own).feed)
+      assert.are.equal(FEED, Merge.outgoingRecord(own, true).feed)
+      assert.is_nil(Merge.outgoingRecord(own, false).feed)
+    end)
+
+    it("stores a cleaned feed, drops it when the owner stops sharing, and relays it", function()
+      local people = {}
+      Merge.store(people, { bt = "X#1", version = 2, chars = {},
+        feed = { [20744] = { ["G-1"] = { name = "Al|cffice", quests = { Westfall = 2 }, junk = true } } } }, 10, "X#1")
+      assert.are.same({ [20744] = { ["G-1"] = { name = "Alcffice", quests = { Westfall = 2 } } } }, people["X#1"].feed)
+      assert.are.same(people["X#1"].feed, Merge.relayRecord(people, "X#1").feed)
+      Merge.store(people, { bt = "X#1", version = 3, chars = {} }, 20, "X#1")
+      assert.is_nil(people["X#1"].feed)
     end)
   end)
 end)

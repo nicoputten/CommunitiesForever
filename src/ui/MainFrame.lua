@@ -18,7 +18,10 @@ local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZ
 local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
 
-local addonRef, events, frame, tree, refreshDebounced
+local addonRef, events, frame, tabs, tree, refreshDebounced
+local activeTab = "friends" -- CF-22: "friends" or "activity"
+local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTag -> true), until /reload
+local renderActivity -- CF-22, defined below
 local view -- last view model, used by the selection callback
 local showAllQuests = {} -- CF-19: tree path -> true when "Show all" is on (until /reload)
 
@@ -368,6 +371,10 @@ function MainFrame.render()
     communityName = ns.CommunitySelection.name(),
     characterName = view.selfName,
   })
+  if activeTab == "activity" then
+    renderActivity(empty)
+    return
+  end
   if empty then
     tree:SetTree({})
     local notMember = ns.CommunitySelection.selected() and not ns.CommunitySelection.active()
@@ -391,29 +398,76 @@ function MainFrame.render()
   end
 end
 
-local function create()
-  frame = createWidget("Frame")
-  frame:SetTitle(ADDON_NAME)
-  frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
-  frame:SetLayout("Fill")
-  frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
-  -- No status bar: hide its background and text (the Close button is separate and stays).
-  if frame.statustext and frame.statustext:GetParent() then
-    frame.statustext:GetParent():Hide()
+-- CF-22: the Activity tab. One line per person per day (Feed.days); a click on a line with more
+-- parts or characters shows all of them.
+function renderActivity(messageText)
+  tabs:ReleaseChildren()
+  local scroll = createWidget("ScrollFrame")
+  scroll:SetLayout("List")
+  tabs:AddChild(scroll)
+  scroll:PauseLayout()
+
+  local days = messageText and {} or ns.Feed.days(view.people, ns.FeedTracker.today())
+  if messageText then
+    label(scroll, messageText, GameFontHighlight)
+  elseif #days == 0 then
+    label(scroll, GREY .. "No activity yet. Levels, quests and professions of you and your friends show up here."
+      .. "|r", GameFontHighlight)
+  end
+  for _, day in ipairs(days) do
+    heading(scroll, day.label)
+    for _, line in ipairs(day.lines) do
+      local key = day.day .. ":" .. tostring(line.battleTag or "self")
+      local expanded = expandedFeed[key]
+      local text = string.format("%s%s|r  %s  %s", GOLD, tostring(line.displayName),
+        colorName(line.char.name, line.char.classFile), table.concat(expanded and line.parts or line.shown, ", "))
+      if not expanded and line.more > 0 then text = text .. string.format("  %s+%d|r", GREY, line.more) end
+      if not expanded and line.extraChars > 0 then
+        text = text .. string.format("  %s+%d %s|r", GREY, line.extraChars,
+          line.extraChars == 1 and "character" or "characters")
+      end
+      if line.more > 0 or line.extraChars > 0 then
+        local entry = label(scroll, text, GameFontHighlight, "InteractiveLabel")
+        entry:SetCallback("OnClick", function()
+          expandedFeed[key] = not expanded or nil
+          MainFrame.render()
+        end)
+      else
+        label(scroll, text, GameFontHighlight)
+      end
+      if expanded then
+        for _, other in ipairs(line.others) do
+          label(scroll, string.format("      %s  %s", colorName(other.char.name, other.char.classFile),
+            table.concat(other.parts, ", ")), GameFontHighlight)
+        end
+      end
+    end
+  end
+  if not messageText and not ns.FeedTracker.shared() then
+    spacer(scroll)
+    label(scroll, GREY .. "You don't share your activity: friends don't see your lines (/cf settings).|r",
+      GameFontHighlightSmall)
   end
 
+  scroll:ResumeLayout()
+  scroll:DoLayout()
+end
+
+local function createTree()
   tree = createWidget("TreeGroup")
   -- TreeGroup gives child rows GameFontHighlightSmall as the button's normal and highlight
   -- font. The Button reapplies those on hover and click, so set them on the button (not on
   -- its text) and every state keeps the regular size. AceGUI sets them again in RefreshTree
-  -- (SetTree, expand, scroll), hence once per refresh.
-  local refreshTree = tree.RefreshTree
-  tree.RefreshTree = function(widget, ...)
-    refreshTree(widget, ...)
-    for _, button in ipairs(widget.buttons or {}) do
-      if button.level and button.level > 1 then
-        button:SetNormalFontObject(GameFontHighlight)
-        button:SetHighlightFontObject(GameFontHighlight)
+  -- (SetTree, expand, scroll), hence once per refresh. AceGUI reuses released widgets: wrap once.
+  if not tree.cfRefreshTree then
+    tree.cfRefreshTree = tree.RefreshTree
+    tree.RefreshTree = function(widget, ...)
+      widget.cfRefreshTree(widget, ...)
+      for _, button in ipairs(widget.buttons or {}) do
+        if button.level and button.level > 1 then
+          button:SetNormalFontObject(GameFontHighlight)
+          button:SetHighlightFontObject(GameFontHighlight)
+        end
       end
     end
   end
@@ -427,7 +481,32 @@ local function create()
   tree:SetCallback("OnTreeResize", function()
     if view then MainFrame.render() end
   end)
-  frame:AddChild(tree)
+  tabs:AddChild(tree)
+end
+
+local function create()
+  frame = createWidget("Frame")
+  frame:SetTitle(ADDON_NAME)
+  frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
+  frame:SetLayout("Fill")
+  frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
+  -- No status bar: hide its background and text (the Close button is separate and stays).
+  if frame.statustext and frame.statustext:GetParent() then
+    frame.statustext:GetParent():Hide()
+  end
+
+  -- CF-22: Friends (the tree) and Activity tabs. Switching releases the content and builds the other.
+  tabs = createWidget("TabGroup")
+  tabs:SetLayout("Fill")
+  tabs:SetTabs({ { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" } })
+  tabs:SetCallback("OnGroupSelected", function(_, _, value)
+    activeTab = value
+    tabs:ReleaseChildren()
+    if value == "friends" then createTree() end
+    if view then MainFrame.render() end
+  end)
+  frame:AddChild(tabs)
+  tabs:SelectTab(activeTab)
 end
 
 function MainFrame.isShown()
@@ -456,12 +535,14 @@ local function refreshMessages()
     ns.CommunitySelection.CHANGED,
     ns.Sync.PEOPLE_UPDATED,
     ns.Invites.CHANGED,
+    ns.FeedTracker.CHANGED,
   }
 end
 
 function MainFrame.start(addon)
   addonRef = addon
-  frame, tree, view = nil, nil, nil
+  frame, tabs, tree, view = nil, nil, nil, nil
+  activeTab, expandedFeed = "friends", {}
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end
   end)

@@ -151,6 +151,8 @@ local function fakeLibs(state)
       self:Fire("OnGroupSelected", path)
     end
     function w:SelectByPath(...) self:SelectByValue(table.concat({ ... }, "\001")) end
+    function w:SetTabs(tabs) self.tabs = tabs end
+    function w:SelectTab(value) self.selectedTab = value; self:Fire("OnGroupSelected", value) end
     for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FontObject",
                               "Color", "Width", "Height", "RelativeWidth" }) do
       w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
@@ -236,6 +238,7 @@ function wowapi.install(opts)
     -- state.talentNodes: class talent tree nodes { posX, ranks } (CF-18); nil = not available.
     -- state.questLog: quest log entries { questID, title, isHeader, isHidden, tagID } (CF-19); nil = not available.
     atlases = { ["worldquest-icon-dungeon"] = true }, -- C_Texture.GetAtlasInfo knows these atlas names
+    calendarTime = { year = 2026, month = 10, monthDay = 18 }, -- C_DateAndTime.GetCurrentCalendarTime (realm date)
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
       { battleTag = "Sjaakovich#2232", gameAccounts = {
@@ -329,6 +332,10 @@ function wowapi.install(opts)
         end
       end,
     },
+    C_DateAndTime = {
+      GetCurrentCalendarTime = function() return state.calendarTime and deepCopy(state.calendarTime) end,
+    },
+    date = os.date,
     C_Texture = {
       GetAtlasInfo = function(name) return state.atlases[name] and { width = 32, height = 32 } or nil end,
     },
