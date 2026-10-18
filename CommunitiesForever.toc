@@ -3,6 +3,7 @@
 ## Notes: Shows which community characters belong to which Battle.net friend.
 ## Author: Vestras
 ## Version: @project-version@
+## X-Curse-Project-ID: 1752013
 ## SavedVariables: CommunitiesForeverDB
 
 embeds.xml
