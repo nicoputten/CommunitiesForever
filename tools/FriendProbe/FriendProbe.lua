@@ -11,6 +11,7 @@
 --   /fp quests          quest log API: functions, events, log size, every entry (CF-19)
 --   /fp calendar        C_Calendar: functions, enums, events this month and next (dungeon planner)
 --   /fp calendar create button: try to create a community sign-up test event (/fp calendar player: private)
+--   /fp dungeons        dungeons the client knows: Dungeon Journal (EJ_*) and Dungeon Finder (GetLFGDungeonInfo)
 --   /fp feed [off]      log instance, boss, group, battleground, death, level, quest and skill events
 --   /fp chat           community chat: functions, channel name and index, which chat windows show it
 --   /fp chat watch     log community messages (CLUB_MESSAGE_ADDED, CHAT_MSG_COMMUNITIES_CHANNEL)
@@ -316,6 +317,62 @@ local function Quests()
       end
     end
   end
+end
+
+-- ===== Dungeons the client knows (CF-24: Forever's new dungeons) =====
+-- Dungeon Journal: tiers and their instances. Dungeon Finder: every LFG dungeon ID with its type and
+-- level range. Both are Mainline APIs; each call is guarded and logged when missing.
+local LFG_MAX_ID = 3000
+
+local function Dungeons()
+  log("== DUNGEONS ==")
+  local inst = { GetInstanceInfo and GetInstanceInfo() }
+  log("GetInstanceInfo here", S(inst[1]), "type", S(inst[2]), "instanceID", S(inst[8]))
+  for _, name in ipairs({ "EJ_GetNumTiers", "EJ_SelectTier", "EJ_GetTierInfo", "EJ_GetInstanceByIndex",
+                          "GetLFGDungeonInfo", "GetNumRandomDungeons", "GetLFGRandomDungeonInfo" }) do
+    log("exists " .. name, _G[name] ~= nil)
+  end
+
+  if EJ_GetNumTiers and EJ_SelectTier and EJ_GetInstanceByIndex then
+    local ok, err = pcall(function()
+      local tiers = EJ_GetNumTiers() or 0
+      log("EJ tiers", tiers)
+      for tier = 1, tiers do
+        EJ_SelectTier(tier)
+        log("EJ tier", tier, S(EJ_GetTierInfo and EJ_GetTierInfo(tier)))
+        for _, isRaid in ipairs({ false, true }) do
+          local i = 1
+          while true do
+            local instanceID, name, _, _, _, _, _, dungeonAreaMapID, _, _, mapID = EJ_GetInstanceByIndex(i, isRaid)
+            if not instanceID then break end
+            log(isRaid and "  EJ raid" or "  EJ dungeon", instanceID, S(name), "areaMap", S(dungeonAreaMapID),
+              "mapID", S(mapID))
+            i = i + 1
+          end
+        end
+      end
+    end)
+    if not ok then log("EJ error", S(err)) end
+  end
+
+  if GetLFGDungeonInfo then
+    local found = 0
+    local ok, err = pcall(function()
+      for id = 1, LFG_MAX_ID do
+        local name, typeID, subtypeID, minLevel, maxLevel, recLevel, _, _, expansionLevel, _, _, difficulty,
+          maxPlayers = GetLFGDungeonInfo(id)
+        -- Vanilla-era entries only (expansion 0), so the list stays readable.
+        if name and (expansionLevel == 0 or expansionLevel == nil) then
+          found = found + 1
+          log("  LFG", id, S(name), "type", S(typeID), "subtype", S(subtypeID), "levels", S(minLevel) .. "-"
+            .. S(maxLevel), "rec", S(recLevel), "players", S(maxPlayers), "difficulty", S(difficulty))
+        end
+      end
+    end)
+    log("LFG expansion-0 entries", found)
+    if not ok then log("LFG error", S(err)) end
+  end
+  log("dungeons done")
 end
 
 -- ===== Calendar (dungeon planner) =====
@@ -713,6 +770,8 @@ SlashCmdList.FRIENDPROBE = function(msg)
   elseif cmd == "quests" then
     local ok, err = pcall(Quests)
     if not ok then log("quests error", err) end
+  elseif cmd == "dungeons" then
+    Dungeons()
   elseif cmd == "calendar" then
     if arg == "create" or arg == "player" then
       CalendarButton(arg == "create" and "community" or "player")
@@ -746,6 +805,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | calendar [create|player] | feed [off] | chat [watch|unwatch|find|color|tab|flash] | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | dungeons | calendar [create|player] | feed [off] | chat [watch|unwatch|find|color|tab|flash] | clear")
   end
 end
