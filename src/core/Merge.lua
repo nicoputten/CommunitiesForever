@@ -109,6 +109,21 @@ function Merge.knownVersions(people, members)
   return known
 end
 
+-- Level-ups between a stored and a newer record of the same person (CF-16):
+-- { { guid, name, level, updatedAt } } for characters that existed before with a lower level.
+-- Characters seen for the first time are not level-ups. Sorted by name.
+function Merge.levelUps(oldChars, newChars)
+  local ups = {}
+  for guid, char in pairs(newChars or {}) do
+    local before = oldChars and oldChars[guid]
+    if before and type(before.level) == "number" and type(char.level) == "number" and char.level > before.level then
+      ups[#ups + 1] = { guid = guid, name = char.name, level = char.level, updatedAt = char.updatedAt }
+    end
+  end
+  table.sort(ups, function(a, b) return tostring(a.name) < tostring(b.name) end)
+  return ups
+end
+
 -- A stored record as a RECORD message, to relay it (CF-20).
 function Merge.relayRecord(people, battleTag)
   local person = people[battleTag]

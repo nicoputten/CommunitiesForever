@@ -5,9 +5,38 @@ local Settings = {}
 
 Settings.APP_NAME = ADDON_NAME
 
+-- CF-18: "Role" per own character: Auto (guessed from talents) or Tank / Healer / DPS.
+function Settings.rolesGroup()
+  local group = { type = "group", inline = true, order = 10, name = "Roles of your characters", args = {} }
+  local chars = {}
+  for guid, char in pairs(ns.db.global.self.chars) do
+    chars[#chars + 1] = { guid = guid, char = char }
+  end
+  table.sort(chars, function(a, b) return tostring(a.char.name) < tostring(b.char.name) end)
+  for i, entry in ipairs(chars) do
+    local char = entry.char
+    local auto = char.autoRole and ns.Talents.ROLE_NAMES[char.autoRole] or "no talents yet"
+    group.args["role" .. i] = {
+      type = "select",
+      order = i,
+      name = tostring(char.name),
+      values = { auto = "Auto (" .. auto .. ")", tank = "Tank", heal = "Healer", dps = "DPS" },
+      sorting = { "auto", "tank", "heal", "dps" },
+      get = function() return char.roleOverride or "auto" end,
+      set = function(_, value)
+        ns.SelfTracker.setRoleOverride(ns, entry.guid, value ~= "auto" and value or nil)
+      end,
+    }
+  end
+  if #chars == 0 then
+    group.args.none = { type = "description", name = "No characters stored yet." }
+  end
+  return group
+end
+
 -- Options table. Data comes from services only.
 function Settings.options()
-  return {
+  local options = {
     type = "group",
     name = ADDON_NAME,
     args = {
@@ -41,11 +70,11 @@ function Settings.options()
       },
       inviteLink = {
         type = "input",
-        order = 5,
+        order = 6,
         width = "full",
         name = "Community invite link",
-        desc = "Paste an invite link for this community (Communities window, invite, link). Friends see a "
-          .. "Join button on characters that are not in the community. Leave empty to stop sharing it.",
+        desc = "Paste an invite link for this community (Communities window, invite, link). On characters "
+          .. "that are not in the community, friends see how to join with it. Leave empty to stop sharing it.",
         hidden = function() return not ns.Invites.canSet() end,
         get = function() return ns.Invites.ownText() end,
         set = function(_, value)
@@ -62,6 +91,16 @@ function Settings.options()
         get = function() return ns.db.global.settings.notifications ~= false end,
         set = function(_, value) ns.db.global.settings.notifications = value end,
       },
+      levelUps = {
+        type = "toggle",
+        order = 5,
+        width = "full",
+        name = "Announce friends' level-ups",
+        desc = "A chat line when a character of a friend in the community reaches a new level "
+          .. "(friends running CommunitiesForever).",
+        get = function() return ns.db.global.settings.levelUps ~= false end,
+        set = function(_, value) ns.db.global.settings.levelUps = value end,
+      },
       minimap = {
         type = "toggle",
         order = 3,
@@ -72,6 +111,8 @@ function Settings.options()
       },
     },
   }
+  options.args.roles = Settings.rolesGroup()
+  return options
 end
 
 function Settings.register()

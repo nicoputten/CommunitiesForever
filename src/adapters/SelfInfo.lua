@@ -4,7 +4,8 @@ local _, ns = ...
 
 local SelfInfo = {}
 
--- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment", "logout".
+-- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment", "logout",
+-- "talents".
 SelfInfo.CHANGED = "CF_SELF_CHANGED"
 
 local EVENT_REASONS = {
@@ -13,6 +14,9 @@ local EVENT_REASONS = {
   SKILL_LINES_CHANGED = "skills",
   PLAYER_EQUIPMENT_CHANGED = "equipment",
   PLAYER_LOGOUT = "logout",                  -- VERIFY.md V22: handlers run before SavedVariables are written
+  CHARACTER_POINTS_CHANGED = "talents",      -- CF-18 (verified to exist, V20)
+  PLAYER_TALENT_UPDATE = "talents",
+  TRAIT_CONFIG_UPDATED = "talents",
 }
 
 -- prof1, prof2, archaeology, fishing, cooking, with nil holes (API-FINDINGS.md).
@@ -43,6 +47,28 @@ local function readItemLevel()
   return equipped
 end
 
+-- All nodes of the active class talent tree as { posX, ranks } (CF-18, layout in V29).
+-- nil when the talent API is missing or not ready yet.
+local function readTalentNodes()
+  if not (C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits and C_Traits.GetConfigInfo
+      and C_Traits.GetTreeNodes and C_Traits.GetNodeInfo) then
+    return nil
+  end
+  local configID = C_ClassTalents.GetActiveConfigID()
+  local config = configID and C_Traits.GetConfigInfo(configID)
+  if not (config and config.treeIDs and config.treeIDs[1]) then return nil end
+  local nodes = {}
+  for _, treeID in ipairs(config.treeIDs) do
+    for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
+      local node = C_Traits.GetNodeInfo(configID, nodeID)
+      if node and node.posX then
+        nodes[#nodes + 1] = { posX = node.posX, ranks = node.ranksPurchased or 0 }
+      end
+    end
+  end
+  return #nodes > 0 and nodes or nil
+end
+
 -- Full "First Last" name. UnitName returns first and last name separately for some characters
 -- (last name in the second return, V9); GetUnitName("player", true) returns "Marks Man".
 local function fullName()
@@ -71,6 +97,7 @@ function SelfInfo.read()
     ilvl = readItemLevel(),
     professions = readProfessions(),
     battleTag = (select(2, BNGetInfo())),
+    talentNodes = readTalentNodes(),
   }
 end
 

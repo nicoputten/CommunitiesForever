@@ -42,6 +42,12 @@ function Describe.selfRecord(record, now)
       profs[#profs + 1] = string.format("%s %s/%s [%d]", tostring(p.name), tostring(p.rank), tostring(p.max), skillLine)
     end
     lines[#lines + 1] = "  " .. (#profs > 0 and table.concat(profs, ", ") or "no professions")
+    if c.talents then
+      local split = {}
+      for _, t in ipairs(c.talents) do split[#split + 1] = string.format("%s %d", tostring(t.name), t.points or 0) end
+      lines[#lines + 1] = string.format("  talents: %s, role %s%s", table.concat(split, " / "), tostring(c.role),
+        c.roleOverride and " (set by player)" or "")
+    end
   end
   return lines
 end

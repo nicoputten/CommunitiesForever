@@ -72,6 +72,9 @@ local function charRow(guid, member, record, presence, location, source)
     online = IN_GAME_PRESENCE[member.presence] == true,
     ilvl = record.ilvl,
     professions = record.professions,
+    talents = record.talents,         -- CF-18
+    role = record.role,
+    roleOverride = record.roleOverride,
     realm = record.realm,
     updatedAt = record.updatedAt,
     lastPlayed = record.lastPlayed,

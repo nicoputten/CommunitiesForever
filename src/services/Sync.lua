@@ -12,6 +12,10 @@ local Sync = {}
 -- Internal message, sent after an accepted RECORD changed people[bt].
 Sync.PEOPLE_UPDATED = "CF_PEOPLE_UPDATED"
 
+-- Internal message (CF-16): (battleTag, { guid, name, level, updatedAt }) for each character of an
+-- accepted record that has a higher level than before.
+Sync.LEVEL_UP = "CF_LEVEL_UP"
+
 Sync.NEWER_VERSION_NOTICE = "A friend uses a newer CommunitiesForever version. Update to keep syncing with them."
 
 local HELLO_DEBOUNCE = 5
@@ -126,8 +130,13 @@ local function receiveRecord(message, battleTag)
     return
   end
   waitingForMembers[message.bt] = nil
+  local previous = people[message.bt]
+  local levelUps = ns.Merge.levelUps(previous and previous.chars, message.chars)
   ns.Merge.store(people, message, now(), battleTag)
   addonRef:SendMessage(Sync.PEOPLE_UPDATED, message.bt)
+  for _, up in ipairs(levelUps) do
+    addonRef:SendMessage(Sync.LEVEL_UP, message.bt, up)
+  end
   helloDebounced() -- tell other friends we can relay something new
 end
 

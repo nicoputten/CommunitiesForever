@@ -132,6 +132,25 @@ describe("Merge", function()
     end)
   end)
 
+  describe("levelUps (CF-16)", function()
+    it("lists characters whose level went up, sorted by name", function()
+      local old = { A = { name = "Zed", level = 10 }, B = { name = "Amy", level = 5 },
+                    C = { name = "Same", level = 7 } }
+      local new = { A = { name = "Zed", level = 12, updatedAt = 9 }, B = { name = "Amy", level = 6, updatedAt = 8 },
+                    C = { name = "Same", level = 7 }, D = { name = "New", level = 3 } }
+      assert.are.same({
+        { guid = "B", name = "Amy", level = 6, updatedAt = 8 },
+        { guid = "A", name = "Zed", level = 12, updatedAt = 9 },
+      }, Merge.levelUps(old, new))
+    end)
+
+    it("ignores lower levels, missing levels and a missing old record", function()
+      assert.are.same({}, Merge.levelUps({ A = { level = 10 } }, { A = { level = 9 } }))
+      assert.are.same({}, Merge.levelUps({ A = {} }, { A = { level = 9 } }))
+      assert.are.same({}, Merge.levelUps(nil, { A = { level = 9 } }))
+    end)
+  end)
+
   describe("store", function()
     it("stores displayName, version, receivedAt and chars", function()
       local people = {}

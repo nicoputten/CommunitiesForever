@@ -15,6 +15,9 @@ function SelfTracker.start(addon)
     if levelOverride then
       info.level = levelOverride
     end
+    -- CF-18: points per Vanilla tree and the role guessed from the main tree.
+    info.talents, info.mainTree = ns.Talents.summarize(info.talentNodes, info.classFile)
+    info.autoRole = ns.Talents.autoRole(info.classFile, info.mainTree)
     if ns.Snapshot.apply(addon.db.global.self, info, GetServerTime()) then
       addon:SendMessage(SelfTracker.UPDATED)
     end
@@ -27,7 +30,7 @@ function SelfTracker.start(addon)
   end
 
   addon:RegisterMessage(ns.SelfInfo.CHANGED, function(_, reason, arg)
-    if reason == "equipment" then
+    if reason == "equipment" or reason == "talents" then
       refreshDebounced()
     elseif reason == "level" then
       refresh(arg)
@@ -40,6 +43,13 @@ function SelfTracker.start(addon)
 
   refresh()
   markPlayed()
+end
+
+-- Sets the role of an own character (CF-18): "tank", "heal", "dps", or nil for the auto role.
+function SelfTracker.setRoleOverride(addon, guid, role)
+  if ns.Snapshot.setRoleOverride(addon.db.global.self, guid, role, GetServerTime()) then
+    addon:SendMessage(SelfTracker.UPDATED)
+  end
 end
 
 ns.SelfTracker = SelfTracker

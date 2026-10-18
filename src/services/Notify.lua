@@ -1,4 +1,5 @@
--- Notify: chat line when a linked friend comes online in Forever or switches character (CF-15).
+-- Notify: chat lines for linked friends: coming online or switching character (CF-15), and their
+-- characters levelling up (CF-16, from accepted records).
 --   "Sjaak is online on Garraka Doombringer (Mage 11)"
 -- Only for people linked in the selected community, never for yourself, at most once per person
 -- per 30 s, and only when settings.notifications is on (default). Friends already online at login
@@ -32,12 +33,30 @@ local function notify(battleTag)
     { name = online.name, className = online.className, level = online.level }))
 end
 
+-- Level-ups older than this are not announced: relayed records (CF-20) can arrive hours later.
+local LEVEL_UP_MAX_AGE = 15 * 60
+
+-- CF-16: "Sjaak's Garraka Doombringer reached level 12" for characters of linked people.
+local function announceLevelUp(battleTag, up)
+  if addonRef.db.global.settings.levelUps == false then return end
+  if not up.updatedAt or GetServerTime() - up.updatedAt > LEVEL_UP_MAX_AGE then return end
+  local person = linkedPerson(battleTag)
+  if not person then return end
+  for _, row in ipairs(person.chars) do
+    if row.guid == up.guid then
+      addonRef:Print(ns.Format.levelUpNotice(person.displayName, row.name or up.name, up.level))
+      return
+    end
+  end
+end
+
 function Notify.start(addon)
   addonRef = addon
   lastNotified = {}
   local events = LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag) notify(battleTag) end)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_SWITCHED, function(_, battleTag) notify(battleTag) end)
+  events:RegisterMessage(ns.Sync.LEVEL_UP, function(_, battleTag, up) announceLevelUp(battleTag, up) end)
 end
 
 ns.Notify = Notify
