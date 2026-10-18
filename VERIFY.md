@@ -9,21 +9,18 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp feed` logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
-| V40 | Does `SELECTED_CHAT_FRAME` point at the chat tab you are looking at? (CF-25: that tab does not flash) | Select a tab other than General, `/dump SELECTED_CHAT_FRAME:GetName()`. Expected the name of the selected tab (e.g. `ChatFrame3`). Without it every tab with the community chat flashes, the selected one too. | open |
-
+| V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/dump GetChatWindowInfo(<n>)` with `n` the tab's number (6 if it was the first new tab). Expected: the name is still there, the 7th value (`shown`) is false/nil and the 9th (`docked`) nil. Then Create in `/cf setup` (Community chat step) or `/cf settings` makes the tab again. | open |
 
 ## Manual test steps per story
+(Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-26 Onboarding wizard
+### CF-26 Onboarding wizard (round 2)
+Round 1 passed. Two changes from the feedback:
+
 | Step | Expected | Status |
 |---|---|---|
-| Log in after updating (you have no `onboarded` setting yet) | About 5 s after login the setup window opens at Step 1 of 6 with the welcome text. All steps fit in the window, the buttons stay in the same place on every step. | open |
-| Next through the steps | Community: your community is selected. Your name: your current display name. Community chat: a purple sample line, the big Create button (or "This character has a ... chat tab"), three switches matching `/cf settings`. Notifications: four switches matching `/cf settings`. | open |
-| Change a switch in the wizard, then open `/cf settings` | The same value there. | open |
-| Change the display name, Next | `/cf self` shows the new name. | open |
-| Click Finish (or Skip, or X); `/reload` | The wizard does not open again. `/cf setup` opens it. | open |
-| Log in on an alt in the community without a Community tab | After ~5 s only the small prompt "Create a Community tab on this character too?". Not now: it asks again after the next login. Don't ask again: never on this alt. Create: the tab appears. | open |
-| Log in on a character that is not in the community | No prompt. | open |
+| Close the Community tab, then `/cf setup` → Community chat | The big Create button is back; clicking it creates the tab again (see V41). | open |
+| Log in on an alt in the community without a Community tab (or `/run CommunitiesForeverDB.global.settings.chatTabPrompt = nil` and `/reload`) | The prompt has one big "Yes, create a Community tab" button. Clicking it creates the tab; closing the window (X) means no. Either way the alt is not asked again after the next login. | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.
@@ -38,7 +35,6 @@ Needs a friend running this build in the same community. `/cf activity debug` on
 | With the friend in one group: run a dungeon, kill a boss, leave after 10+ min | Both clients (after ~1 min sync): one line `<you> and <friend> together` with `ran <dungeon>`, and the run is not on your own lines. | open |
 | With a community member who does not run the addon and is not your Battle.net friend | `ran <dungeon> with <their character name>` on your line. | open |
 | Finish a battleground (stay until the end) | `1 battleground (won)` or `(lost)`, matching the result. Leaving early: no line. | open |
-(Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
 ### CF-17 Alts outside the community (round 3)
 Round 2 passed. One fix left:
@@ -64,25 +60,3 @@ Needs a friend linked to you in the community (they do not need the addon).
 |---|---|---|
 
 Found a bug  that a friend logged off  and it shows that the account is offline but character is still online? even after 5min
-### CF-16 Level-up announcements
-Needs a friend running this build, linked to you in the community.
-
-| Step | Expected | Status |
-|---|---|---|
-| Friend levels up while you are both online | Within ~10 s: `Sjaak's <character> reached level N` in your chat. | open |
-| A friend's level-up older than 15 minutes (e.g. arriving through relay later) | No line. | open |
-| `/cf settings` → untick "Announce friends' level-ups", friend levels up | No line. | open |
-
-
-### CF-25 Community chat that stands out
-Needs someone else writing in the community (a friend, or one of your alts on a second client).
-
-| Step | Expected | Status |
-|---|---|---|
-| Log in | Community chat lines are purple in every chat window (also after `/reload` and on alts). | open |
-| `/cf settings` → Community chat → color picker, then "Default purple" | The chat color changes right away; "Default purple" brings it back. | open |
-| Select another chat tab (e.g. Combat Log); someone writes in the community | The tab(s) that show the community chat flash; the selected tab does not. No flash for your own messages. | open |
-| Tick "Play a sound on new messages"; someone writes | A whisper sound plays. Untick "Flash the chat tab": no flash and no sound. | open |
-| Click "Create a Community tab" | A new chat tab named after the community appears with only community messages; a chat line confirms it. Clicking again says this character already has one. | open |
-| Untick "Keep community messages in General too" | General no longer shows community messages; the Community tab still does. Tick it again: General shows them again. | open |
-| Log in on an alt | The color is applied; the alt has no Community tab yet and the button creates one there. | open |

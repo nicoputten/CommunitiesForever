@@ -45,7 +45,7 @@ end
   settings: db.global.settings (onboarded, onboardedVersion, chatTabPrompt = { [guid] = true })
   char = { guid, hasTab, inCommunity }: the current character; hasTab: it has a Community chat tab.
 Returns { kind = "wizard", steps } for the first run or new steps, { kind = "chatPrompt" } for a
-character in the community without a Community tab that was not answered with "Don't ask again", or nil.
+character in the community without a Community tab that was not asked before, or nil.
 ]]
 function Onboarding.plan(settings, char)
   settings = settings or {}
@@ -72,7 +72,7 @@ function Onboarding.finish(settings, guid)
   if guid then Onboarding.dontAsk(settings, guid) end
 end
 
--- "Don't ask again for this character" on the chat prompt (in place).
+-- The chat prompt was answered on this character (Create, or closed): not asked again (in place).
 function Onboarding.dontAsk(settings, guid)
   settings.chatTabPrompt = settings.chatTabPrompt or {}
   settings.chatTabPrompt[guid] = true

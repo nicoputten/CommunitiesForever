@@ -447,7 +447,13 @@ function wowapi.install(opts)
   end
   globals.GetChannelName = function(name) return state.chatChannels[name] or 0 end
   globals.ChangeChatColor = function(chatType, r, g, b) state.chatColors[chatType] = { r = r, g = g, b = b } end
-  globals.GetChatWindowInfo = function(i) return state.chatWindows[i] and state.chatWindows[i].name or "" end
+  -- Like Mainline: name, fontSize, r, g, b, alpha, shown, locked, docked. A window with closed = true is
+  -- what closing a chat tab leaves: the name stays, shown and docked are off (CF-26 feedback).
+  globals.GetChatWindowInfo = function(i)
+    local w = state.chatWindows[i]
+    if not w then return "" end
+    return w.name, 14, 1, 1, 1, 1, not w.closed, false, (not w.closed) and 1 or nil
+  end
   globals.GetChatWindowChannels = function(i)
     local result = {}
     for _, c in ipairs(state.chatWindows[i] and state.chatWindows[i].channels or {}) do

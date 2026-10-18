@@ -261,6 +261,8 @@ end
 
 -- ===== Community tab prompt (other characters) =====
 
+-- One big Create button; closing the window (X) is the answer "no" (CF-26 feedback). Either way this
+-- character is not asked again; /cf settings still has the button.
 function Setup.openPrompt()
   if not prompt then
     prompt = createWidget("Frame")
@@ -269,27 +271,25 @@ function Setup.openPrompt()
     prompt:SetHeight(190)
     prompt:SetLayout("List")
     if prompt.statustext and prompt.statustext.GetParent then prompt.statustext:GetParent():Hide() end
-    prompt:SetCallback("OnClose", function() end) -- closing is "Not now"
+    prompt:SetCallback("OnClose", function()
+      local guid = selfGuid()
+      if guid then ns.Onboarding.dontAsk(settings(), guid) end
+    end)
   end
   prompt:ReleaseChildren()
   label(prompt, "Create a Community tab on this character too?", GameFontNormalLarge)
-  label(prompt, GREY .. "Chat tabs are saved per character. The tab shows only the community chat.|r",
-    GameFontHighlightSmall)
+  label(prompt, GREY .. "Chat tabs are saved per character. The tab shows only the community chat. "
+    .. "Close this window if you don't want one.|r", GameFontHighlightSmall)
   spacer(prompt)
-  local row = createWidget("SimpleGroup")
-  row:SetFullWidth(true)
-  row:SetLayout("Flow")
-  prompt:AddChild(row)
-  button(row, "Create", 0.3, function()
+  local create = createWidget("Button")
+  create:SetText("Yes, create a Community tab")
+  create:SetFullWidth(true)
+  create:SetHeight(32)
+  create:SetCallback("OnClick", function()
     ns.CommunityChat.createTab()
     prompt:Hide()
   end)
-  button(row, "Not now", 0.3, function() prompt:Hide() end)
-  button(row, "Don't ask again", 0.4, function()
-    local guid = selfGuid()
-    if guid then ns.Onboarding.dontAsk(settings(), guid) end
-    prompt:Hide()
-  end)
+  prompt:AddChild(create)
   prompt:Show()
 end
 

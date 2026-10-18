@@ -167,25 +167,39 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     assert.is_false(settings().notifications)
   end)
 
-  it("asks other characters only about the Community tab", function()
+  it("asks other characters once about the Community tab: one Create button, closing is no", function()
     load(function(global)
       global.settings.onboarded, global.settings.onboardedVersion = true, 1
     end)
     wowapi.runTimers(state)
     assert.is_nil(wizard())
     assert.is_true(ns.Setup.promptShown())
-    click(prompt(), "Not now")
+    local buttons = 0
+    walk(prompt(), function(w) if w.type == "Button" then buttons = buttons + 1 end end)
+    assert.are.equal(1, buttons)
+    prompt():Hide() -- the X
     assert.is_false(ns.Setup.promptShown())
-    assert.are.same({ kind = "chatPrompt" }, ns.Setup.plan()) -- asks again next login
-
-    ns.Setup.check()
-    click(prompt(), "Don't ask again")
-    assert.is_nil(ns.Setup.plan())
+    assert.is_nil(ns.Setup.plan()) -- not asked again
 
     settings().chatTabPrompt = nil
     ns.Setup.check()
-    click(prompt(), "Create")
+    click(prompt(), "Yes, create a Community tab")
+    assert.is_false(ns.Setup.promptShown())
     assert.is_true(settings().chatTab[guid()])
     assert.is_nil(ns.Setup.plan())
+  end)
+
+  it("creates the tab again after it was closed", function()
+    load()
+    wowapi.runTimers(state)
+    forward(3)
+    click(wizard(), "Create a Community tab (recommended)")
+    local tab = state.chatWindows[#state.chatWindows]
+    tab.closed = true -- closing a chat tab keeps its name
+    ns.Setup.open()
+    forward(3)
+    local windows = #state.chatWindows
+    click(wizard(), "Create a Community tab (recommended)")
+    assert.are.equal(windows + 1, #state.chatWindows)
   end)
 end)

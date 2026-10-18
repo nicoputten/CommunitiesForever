@@ -31,12 +31,21 @@ end
 
 local function frame(index) return _G["ChatFrame" .. index] end
 
--- Chat windows in use: { { index, name, hasChannel } }.
+-- A closed chat tab keeps its name (CF-26 feedback): GetChatWindowInfo returns name, fontSize, r, g, b,
+-- alpha, shown, locked, docked (Mainline order, unverified on Forever: VERIFY.md V41). A window that is
+-- neither shown nor docked is closed. With fewer returns every named window counts, as before.
+local function closed(...)
+  if select("#", ...) < 9 then return false end
+  local shown, docked = select(7, ...), select(9, ...)
+  return not shown and not docked
+end
+
+-- Chat windows in use: { { index, name, hasChannel } }. Closed windows are left out.
 function ChatFrames.windows(channel)
   local windows = {}
   for i = 1, NUM_CHAT_WINDOWS or 10 do
     local name = GetChatWindowInfo and GetChatWindowInfo(i)
-    if name and name ~= "" then
+    if name and name ~= "" and not closed(GetChatWindowInfo(i)) then
       local has = false
       for _, c in ipairs({ GetChatWindowChannels and GetChatWindowChannels(i) }) do
         if c == channel then has = true end
