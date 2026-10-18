@@ -240,6 +240,38 @@ local function Specializations()
   end
 end
 
+-- Shows candidate icons for shared dungeon quests (CF-19, V32) in chat, numbered, so one can be picked.
+-- Atlases are checked with C_Texture.GetAtlasInfo; file textures have no existence check (blank = missing).
+local ICON_ATLASES = {
+  "Dungeon", "Raid", "questlog-questtypeicon-dungeon", "questlog-questtypeicon-raid",
+  "questlog-questtypeicon-group", "worldquest-icon-dungeon", "QuestNormal", "QuestDaily",
+  "PetJournal-FavoritesIcon", "auctionhouse-icon-favorite", "socialqueuing-icon-group",
+}
+local ICON_FILES = {
+  "Interface\\Icons\\INV_ValentinesCard01", "Interface\\Icons\\INV_ValentinesCandy",
+  "Interface\\Icons\\INV_Misc_Gem_Ruby_02", "Interface\\Icons\\INV_Misc_Key_14",
+  "Interface\\TargetingFrame\\UI-RaidTargetingIcon_1", "Interface\\TargetingFrame\\UI-RaidTargetingIcon_2",
+  "Interface\\TargetingFrame\\UI-RaidTargetingIcon_3", "Interface\\TargetingFrame\\UI-RaidTargetingIcon_4",
+  "Interface\\TargetingFrame\\UI-RaidTargetingIcon_5", "Interface\\TargetingFrame\\UI-RaidTargetingIcon_6",
+  "Interface\\TargetingFrame\\UI-RaidTargetingIcon_7",
+}
+
+local function Icons()
+  log("== ICONS == (number, icon, name; atlas: exists)")
+  local n = 0
+  local hasCheck = C_Texture ~= nil and C_Texture.GetAtlasInfo ~= nil
+  log("exists C_Texture.GetAtlasInfo", hasCheck)
+  for _, name in ipairs(ICON_ATLASES) do
+    n = n + 1
+    local exists = hasCheck and C_Texture.GetAtlasInfo(name) ~= nil
+    log(string.format("#%d |A:%s:16:16|a atlas %s: %s", n, name, name, S(exists)))
+  end
+  for _, path in ipairs(ICON_FILES) do
+    n = n + 1
+    log(string.format("#%d |T%s:16:16|t file %s", n, path, path))
+  end
+end
+
 -- Logs the quest log API (CF-19): which functions and events exist, the log size, and every entry.
 local function Quests()
   log("== QUESTS ==")
@@ -343,6 +375,9 @@ SlashCmdList.FRIENDPROBE = function(msg)
   elseif cmd == "quests" then
     local ok, err = pcall(Quests)
     if not ok then log("quests error", err) end
+  elseif cmd == "icons" then
+    local ok, err = pcall(Icons)
+    if not ok then log("icons error", err) end
   elseif cmd == "talents" then
     local okSpecs, errSpecs = pcall(Specializations)
     if not okSpecs then log("specializations error", errSpecs) end
@@ -352,6 +387,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | clear")
   end
 end
