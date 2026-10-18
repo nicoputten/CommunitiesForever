@@ -21,7 +21,7 @@ stds.wow = {
     -- libraries
     "LibStub",
     -- C_ namespaces
-    "C_AddOns", "C_BattleNet", "C_ChatInfo", "C_Club", "C_EventUtils", "C_Timer",
+    "C_AddOns", "C_BattleNet", "C_ChatInfo", "C_Club", "C_EventUtils", "C_Timer", "C_ClassTalents", "C_Traits",
     "GetClubTicketLink",
     -- client and unit info
     "GetBuildInfo", "GetServerTime", "GetTime", "GetRealmName", "GetNormalizedRealmName",

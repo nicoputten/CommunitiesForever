@@ -5,7 +5,8 @@ local _, ns = ...
 local Snapshot = {}
 
 -- Synced scalar Char fields. updatedAt and lastPlayed are metadata and never compared.
-local SCALAR_FIELDS = { "guid", "name", "classFile", "raceID", "level", "faction", "realm", "ilvl" }
+local SCALAR_FIELDS = { "guid", "name", "classFile", "raceID", "level", "faction", "realm", "ilvl",
+  "mainTree", "autoRole", "roleOverride", "role" }   -- CF-18: talents and role
 
 -- Builds a Char from raw SelfInfo values.
 -- info.professions is a list of { name, rank, max, skillLine }; entries without skillLine are skipped.
@@ -25,7 +26,25 @@ function Snapshot.build(info)
       char.professions[p.skillLine] = { name = p.name, rank = p.rank, max = p.max }
     end
   end
+
+  -- CF-18: info.talents = { { name, points } x3 } (already summarized), info.autoRole from the main tree.
+  if type(info.talents) == "table" then
+    char.talents = {}
+    for i, tree in ipairs(info.talents) do
+      char.talents[i] = { name = tree.name, points = tree.points }
+    end
+  end
+  char.role = char.roleOverride or char.autoRole
   return char
+end
+
+local function talentsEqual(a, b)
+  if a == nil or b == nil then return a == b end
+  if #a ~= #b then return false end
+  for i = 1, #a do
+    if a[i].name ~= b[i].name or a[i].points ~= b[i].points then return false end
+  end
+  return true
 end
 
 local function professionsEqual(a, b)
@@ -49,7 +68,7 @@ function Snapshot.equal(a, b)
   for _, field in ipairs(SCALAR_FIELDS) do
     if a[field] ~= b[field] then return false end
   end
-  return professionsEqual(a.professions or {}, b.professions or {})
+  return professionsEqual(a.professions or {}, b.professions or {}) and talentsEqual(a.talents, b.talents)
 end
 
 -- Stores the current character in the own record (db.global.self).
@@ -63,15 +82,35 @@ function Snapshot.apply(record, info, now)
     return false
   end
 
+  local previous = record.chars[info.guid]
   local char = Snapshot.build(info)
-  if Snapshot.equal(record.chars[char.guid], char) then
+  if previous then
+    -- Talent data may not be readable yet (login): keep what we had instead of wiping it.
+    if char.talents == nil then
+      char.talents, char.mainTree, char.autoRole = previous.talents, previous.mainTree, previous.autoRole
+    end
+    -- The role override is set by the player in settings, not read from the game.
+    char.roleOverride = previous.roleOverride
+    char.role = char.roleOverride or char.autoRole
+  end
+  if Snapshot.equal(previous, char) then
     return false
   end
 
   char.updatedAt = now
-  local previous = record.chars[char.guid]
   char.lastPlayed = previous and previous.lastPlayed
   record.chars[char.guid] = char
+  record.version = ns.Merge.nextVersion(record.version, now)
+  return true
+end
+
+-- Sets or clears (nil) the role override of an own character (CF-18). A synced change: bumps the
+-- version. Returns true if something changed.
+function Snapshot.setRoleOverride(record, guid, override, now)
+  local char = guid and record.chars[guid]
+  if not char or char.roleOverride == override then return false end
+  char.roleOverride = override
+  char.role = override or char.autoRole
   record.version = ns.Merge.nextVersion(record.version, now)
   return true
 end

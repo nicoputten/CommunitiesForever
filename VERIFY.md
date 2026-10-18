@@ -7,7 +7,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | # | Question | How to test | Status |
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
-| V29 | How are talents laid out in Forever's C_ClassTalents / C_Traits, and is there a specialization API? (CF-18) | First run done (Warrior: one tree, 52 nodes, one point pool, see API-FINDINGS). Second run: copy the updated `toolsriendprobe` again, then on a character with talent points: `/fp clear`, `/fp talents all`, `/reload`, and paste the `fp` lines from `wtfaccount<account>savedvariablesriendprobe.lua` (the specialization lines first, then all nodes). | open |
+| V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V23 | Which quest log API and events does Forever have, and how big is the quest log? (for CF-19, can be checked any time) | `/dump C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries(), GetNumQuestLogEntries and GetNumQuestLogEntries()` and `/dump C_QuestLog.GetInfo and C_QuestLog.GetInfo(1)`. Events: `/dump C_EventUtils.IsEventValid("QUEST_ACCEPTED"), C_EventUtils.IsEventValid("QUEST_TURNED_IN"), C_EventUtils.IsEventValid("QUEST_REMOVED"), C_EventUtils.IsEventValid("QUEST_LOG_UPDATE")`. Log size: `/dump C_QuestLog.GetMaxNumQuestsCanAccept and C_QuestLog.GetMaxNumQuestsCanAccept()` | open |
 
 ## Manual test steps per story
@@ -36,8 +36,27 @@ Needs a friend linked to you in the community (they do not need the addon).
 
 | Step | Expected | Status |
 |---|---|---|
-| Friend logs in to Forever while you are online | Chat: `CommunitiesForever: Sjaak is online on Garraka Doombringer (Mage 11)`. | open |
-| Friend switches to another character | Chat line again with the new character (if more than 30 s since the last one). | open |
-| Friend logs out and back in within 30 s | No second line. | open |
-| You log in while the friend is already online | No line for them. | open |
-| `/cf settings` → untick "Login notifications", friend logs in again | No line. | open |
+| Friend logs in to Forever while you are online | Chat: `CommunitiesForever: Sjaak is online on Garraka Doombringer (Mage 11)`. | works |
+| Friend switches to another character | Chat line again with the new character (if more than 30 s since the last one). | works |
+| Friend logs out and back in within 30 s | No second line. | works |
+| You log in while the friend is already online | No line for them. | works |
+| `/cf settings` → untick "Login notifications", friend logs in again | No line. | works |
+
+Found a bug  that a friend logged off  and it shows that the account is offline but character is still online? even after 5min
+### CF-16 Level-up announcements
+Needs a friend running this build, linked to you in the community.
+
+| Step | Expected | Status |
+|---|---|---|
+| Friend levels up while you are both online | Within ~10 s: `Sjaak's <character> reached level N` in your chat. | open |
+| A friend's level-up older than 15 minutes (e.g. arriving through relay later) | No line. | open |
+| `/cf settings` → untick "Announce friends' level-ups", friend levels up | No line. | open |
+
+### CF-18 Talents and role
+| Step | Expected | Status |
+|---|---|---|
+| On a character with talents: `/cf self` | `talents: Arms 17 / Fury 0 / Protection 0, role dps` (your split and the guessed role). | open |
+| Spend a talent point, wait ~3 s, `/cf self` | The split changes, version goes up. | open |
+| `/cf`, click your character | Talents section: `Role: DPS (from talents)`, one line per tree with points and a bar, the main tree in gold. | open |
+| `/cf settings` → "Roles of your characters" → set a character to Tank | Card says `Role: Tank (set by player)`; your person card list shows `Tank`. A friend on this build sees it after ~10 s. Set back to Auto: the guess returns. | open |
+| A character without talent points (or never logged in since this build) | Card says `No talent data yet...` / no role. | open |

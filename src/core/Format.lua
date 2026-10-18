@@ -142,6 +142,30 @@ local function findPerson(view, value)
 end
 
 -- own: one of your characters ("played" instead of "seen"). The time is in the stats, not the status.
+-- Role names for display (CF-18).
+Format.ROLE_NAMES = { tank = "Tank", heal = "Healer", dps = "DPS" }
+
+-- Talents for the character card (CF-18): { role, roleSource, trees = { { name, points, fraction, main } } }
+-- or nil without talent data. roleSource is "player" (override) or "talents" (guessed).
+function Format.talentSummary(row)
+  if type(row.talents) ~= "table" or #row.talents == 0 then return nil end
+  local total, best = 0, nil
+  for i, tree in ipairs(row.talents) do
+    total = total + (tree.points or 0)
+    if (tree.points or 0) > 0 and (not best or tree.points > row.talents[best].points) then best = i end
+  end
+  local trees = {}
+  for i, tree in ipairs(row.talents) do
+    trees[i] = { name = tree.name, points = tree.points or 0, main = i == best,
+                 fraction = total > 0 and (tree.points or 0) / total or 0 }
+  end
+  return {
+    role = row.role and Format.ROLE_NAMES[row.role] or nil,
+    roleSource = row.roleOverride and "player" or "talents",
+    trees = trees,
+  }
+end
+
 local function characterDetail(row, owner, now, own)
   local where
   if row.online then
@@ -167,6 +191,7 @@ local function characterDetail(row, owner, now, own)
       { label = own and "Last played" or "Last seen", value = Format.seen(row, now) },
     },
     professions = Format.professionGroups(row.professions),
+    talents = Format.talentSummary(row),
   }
 end
 
@@ -206,6 +231,7 @@ function Format.detail(view, path, now)
   for _, row in ipairs(rows) do
     characters[#characters + 1] = { guid = row.guid, name = row.name, classFile = row.classFile,
                                     classID = row.classID, level = row.level, seen = Format.seen(row, now),
+                                    role = row.role,
                                     own = person and person.isSelf or false, outside = row.outside or false }
   end
   if not person then

@@ -99,8 +99,9 @@ end
 -- Clickable character list (person and Unlinked details).
 local function characterList(parent, groupValue, characters)
   for _, c in ipairs(characters) do
-    local text = string.format("%s  %sLvl %s  -  %s%s|r", colorName(c.name, c.classFile, c.classID), GREY,
-      tostring(c.level or "?"), c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen),
+    local text = string.format("%s  %sLvl %s%s  -  %s%s|r", colorName(c.name, c.classFile, c.classID), GREY,
+      tostring(c.level or "?"), c.role and ("  -  " .. (ns.Format.ROLE_NAMES[c.role] or c.role)) or "",
+      c.seen == "Now" and "Online" or ((c.own and "Played " or "Seen ") .. c.seen),
       c.outside and "  -  not in community" or "")
     local entry = label(parent, text, GameFontHighlight, "InteractiveLabel")
     entry:SetCallback("OnClick", function()
@@ -185,7 +186,22 @@ function renderDetail.character(parent, detail)
   end
   local talents = column(sections, 0.5)
   heading(talents, "Talents")
-  label(talents, GREY .. "Not available yet. Coming in a later version.|r", GameFontHighlight)
+  local summary = detail.talents
+  if not summary then
+    label(talents, GREY .. "No talent data yet. It appears after this character logs in with the addon.|r",
+      GameFontHighlight)
+  else
+    if summary.role then
+      label(talents, string.format("Role: %s  %s(%s)|r", summary.role, GREY,
+        summary.roleSource == "player" and "set by player" or "from talents"), GameFontHighlight)
+    end
+    -- One line per Vanilla tree, the main tree in gold, with a bar for its share of the points.
+    for _, t in ipairs(summary.trees) do
+      local name = t.main and ("|cffffd100" .. t.name .. "|r") or tostring(t.name)
+      label(talents, string.format("%s  %s%d|r\n%s", name, GREY, t.points, bar(t.fraction, barWidth)),
+        GameFontHighlight)
+    end
+  end
 end
 
 -- CF-21: on a character outside the community, step-by-step instructions to join with the shared

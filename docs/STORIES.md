@@ -133,7 +133,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Privacy note: alts are always shared with Battle.net friends who run the addon; they are only shown when the owner has a character in the community.
 - Decided in CF-17: your own alts outside the community are shown under you too (your record is `self.chars`); alts outside the community keep their class color (not dimmed), the cards say "Not in community"; a friend online on an outside alt has that row as current character.
 
-### CF-18 Talents and role (future)
+### CF-18 Talents and role
 - First: find the talent API on Forever (V20). Forever uses the Mainline API with Vanilla content, so it may be the classic-style `GetNumTalentTabs` / `GetTalentTabInfo` or the retail-style `C_ClassTalents` / `C_Traits`. Extend FriendProbe (`/fp talents`) to dump what exists before building.
 - Snapshot (CF-03) adds per character:
   - `talents = { { name, points }, ... }` per talent tree, in the game's tree order
@@ -146,6 +146,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Display (CF-12 character rows): role (icon or short text) plus the talent split, e.g. `Heal · Holy 31 / Protection 5 / Retribution 15` with the main tree highlighted. Unknown: `-`.
 - Unit tests: auto role per class/tree; ties; no points -> nil; override wins over auto; clearing override returns to auto; talent change bumps version, identical talents do not.
 - Manual: spend a talent point, `/cf self` shows the new split and role; set an override, a friend sees it in their window.
+- Decided in CF-18 (V20/V29): Forever has no classic talent tabs and one specialization per class, so the three Vanilla trees are the three columns of the single `C_Traits` tree, split at the two largest x gaps; tree names come from a fixed per-class table (left-to-right order verified for Warrior). Role override per own character in settings ("Roles of your characters"). Talents show on the character card (main tree in gold, bars), the role also in the person card list and `/cf self`. Talent data that cannot be read for a moment is kept, not wiped.
 
 ### CF-19 Shared quests (future)
 - Goal: on a friend's character card, show the quests it has in common with any of your characters, so you know who to group with. Names only, no objective progress (decided: keeps sync small and changes rare).

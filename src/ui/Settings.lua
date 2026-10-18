@@ -5,9 +5,38 @@ local Settings = {}
 
 Settings.APP_NAME = ADDON_NAME
 
+-- CF-18: "Role" per own character: Auto (guessed from talents) or Tank / Healer / DPS.
+function Settings.rolesGroup()
+  local group = { type = "group", inline = true, order = 10, name = "Roles of your characters", args = {} }
+  local chars = {}
+  for guid, char in pairs(ns.db.global.self.chars) do
+    chars[#chars + 1] = { guid = guid, char = char }
+  end
+  table.sort(chars, function(a, b) return tostring(a.char.name) < tostring(b.char.name) end)
+  for i, entry in ipairs(chars) do
+    local char = entry.char
+    local auto = char.autoRole and ns.Talents.ROLE_NAMES[char.autoRole] or "no talents yet"
+    group.args["role" .. i] = {
+      type = "select",
+      order = i,
+      name = tostring(char.name),
+      values = { auto = "Auto (" .. auto .. ")", tank = "Tank", heal = "Healer", dps = "DPS" },
+      sorting = { "auto", "tank", "heal", "dps" },
+      get = function() return char.roleOverride or "auto" end,
+      set = function(_, value)
+        ns.SelfTracker.setRoleOverride(ns, entry.guid, value ~= "auto" and value or nil)
+      end,
+    }
+  end
+  if #chars == 0 then
+    group.args.none = { type = "description", name = "No characters stored yet." }
+  end
+  return group
+end
+
 -- Options table. Data comes from services only.
 function Settings.options()
-  return {
+  local options = {
     type = "group",
     name = ADDON_NAME,
     args = {
@@ -82,6 +111,8 @@ function Settings.options()
       },
     },
   }
+  options.args.roles = Settings.rolesGroup()
+  return options
 end
 
 function Settings.register()

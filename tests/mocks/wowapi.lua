@@ -233,6 +233,7 @@ function wowapi.install(opts)
     focusedClubs = {},
     redeemed = {},         -- C_Club.RedeemTicket calls
     tooltipPostCalls = {}, -- TooltipDataProcessor.AddTooltipPostCall registrations
+    -- state.talentNodes: class talent tree nodes { posX, ranks } (CF-18); nil = not available.
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
       { battleTag = "Sjaakovich#2232", gameAccounts = {
@@ -291,6 +292,21 @@ function wowapi.install(opts)
     },
     InCombatLockdown = function() return state.inCombat end,
     GetTime = function() return state.time end,
+    C_ClassTalents = {
+      GetActiveConfigID = function() return state.talentNodes and 9038911 or nil end,
+    },
+    C_Traits = {
+      GetConfigInfo = function() return { name = "Warrior", treeIDs = { 1117 } } end,
+      GetTreeNodes = function()
+        local ids = {}
+        for i = 1, #(state.talentNodes or {}) do ids[i] = 100000 + i end
+        return ids
+      end,
+      GetNodeInfo = function(_, nodeID)
+        local node = state.talentNodes[nodeID - 100000]
+        return node and { ID = nodeID, posX = node.posX, ranksPurchased = node.ranks, maxRanks = 5 }
+      end,
+    },
     C_Club = {
       GetSubscribedClubs = function() return deepCopy(state.clubs) end,
       GetClubMembers = function(clubId)

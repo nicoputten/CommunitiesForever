@@ -36,6 +36,7 @@ CommunitiesForever/
       Clubs.lua              selectable communities, stored-selection status
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
+      Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
@@ -100,7 +101,8 @@ Char = {
   guid, name, classFile, raceID, level, faction, realm,
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max } },
-  talents, mainTree, role, roleOverride,           -- CF-18 (future): talent split per tree, heal/dps/tank
+  talents = { { name, points } x3 }, mainTree,       -- CF-18: points per Vanilla tree, tree with most points
+  autoRole, roleOverride, role,                      -- CF-18: guessed, player override, effective (tank/heal/dps)
   quests = { [questID] = title },                    -- CF-19 (future): quest log, names only, no progress
   updatedAt,                                         -- last synced-field change
   lastPlayed,                                        -- own chars: login/logout time (not compared, no bump)
