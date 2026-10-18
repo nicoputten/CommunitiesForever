@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <title>CommunitiesForever: friends around a campfire</title>
+  <rect width="400" height="400" fill="#1a1630"/>
+  <!-- warm glow -->
+  <circle cx="200" cy="200" r="150" fill="#2a2050"/>
+  <circle cx="200" cy="200" r="96" fill="#3a2a55"/>
+  <circle cx="200" cy="200" r="62" fill="#4d3050"/>
+  <!-- five friends, heads outward, shoulders toward the fire -->
+  <g fill="#e8b84a">
+    <g id="friend">
+      <circle cx="200" cy="78" r="21"/>
+      <path d="M170 132 C170 98 230 98 230 132 Q200 138 170 132 Z"/>
+    </g>
+    <use href="#friend" transform="rotate(72 200 200)"/>
+    <use href="#friend" transform="rotate(144 200 200)"/>
+    <use href="#friend" transform="rotate(216 200 200)"/>
+    <use href="#friend" transform="rotate(288 200 200)"/>
+  </g>
+  <g transform="translate(200 208) scale(0.72) translate(-200 -225)">
+  <!-- logs -->
+  <g stroke-linecap="round" stroke-width="16">
+    <path d="M152 262 L248 284" stroke="#7a5530"/>
+    <path d="M248 262 L152 284" stroke="#8f6a3e"/>
+  </g>
+  <!-- fire -->
+  <path d="M200 140 C236 180 248 208 232 244 C226 254 214 262 200 264 C186 262 174 254 168 244 C152 208 166 182 186 160 C188 182 196 190 204 192 C198 172 196 156 200 140 Z" fill="#f08a2c"/>
+  <path d="M202 186 C220 206 226 224 218 242 C214 252 208 258 200 258 C192 258 186 252 183 244 C178 228 188 214 196 206 C198 220 204 222 208 222 C206 208 202 198 202 186 Z" fill="#f7c64a"/>
+  <path d="M201 222 C210 232 212 242 207 250 C205 254 202 256 200 256 C197 256 194 253 193 249 C191 242 196 236 201 222 Z" fill="#fff1c2"/>
+  </g>
+</svg>
