@@ -25,7 +25,7 @@ Dungeons.STATIC = {
     areas = { "Shadowfang Keep" } },
   { id = "bfd", activities = { 801 }, name = "Blackfathom Deeps", min = 24, max = 32, areaIds = { 719 },
     areas = { "Blackfathom Deeps" } },
-  { id = "stocks", activities = {}, name = "The Stockade", min = 24, max = 32, areaIds = { 717 },
+  { id = "stocks", activities = { 802 }, name = "The Stockade", min = 24, max = 32, areaIds = { 717 },
     areas = { "The Stockade" } },
   { id = "gnomer", activities = { 803 }, name = "Gnomeregan", min = 29, max = 38, areaIds = { 721, 133 },
     areas = { "Gnomeregan" } },
@@ -68,10 +68,11 @@ Dungeons.LIST = Dungeons.STATIC
 
 --[[ Rebuilds LIST from STATIC and the Group Finder's dungeon activities (CF-24, V46):
   activities = { { activityID, name, shortName, min, max } } (C_LFGList; only dungeons).
-A dungeon in STATIC linked to activities takes the game's level range (lowest min, highest max of its
-activities, e.g. the Dire Maul wings). Activities not linked to STATIC are dungeons STATIC does not know
-(Forever's new ones): they are added with the game's name and range, without quest area data.
-Without activities LIST stays STATIC. ]]
+Only dungeons the Group Finder offers are listed (feedback: no Stockade on a Horde character). A dungeon
+in STATIC linked to activities takes the game's level range (lowest min, highest max of its activities,
+e.g. the Dire Maul wings). Activities not linked to STATIC are dungeons STATIC does not know (Forever's new
+ones): they are added with the game's name and range, without quest area data. Without activities LIST
+stays STATIC. (The Stockade's activity 802 is assumed from the numbering: Horde characters do not see it.) ]]
 function Dungeons.applyGroupFinder(activities)
   if type(activities) ~= "table" or #activities == 0 then
     Dungeons.LIST = Dungeons.STATIC
@@ -85,17 +86,17 @@ function Dungeons.applyGroupFinder(activities)
   for _, d in ipairs(Dungeons.STATIC) do
     local copy = {}
     for k, v in pairs(d) do copy[k] = v end
-    local min, max
+    local min, max, offered
     for _, activityID in ipairs(d.activities or {}) do
       local a = byActivity[activityID]
       if a then
-        linked[activityID] = true
+        linked[activityID], offered = true, true
         if type(a.min) == "number" and a.min > 0 then min = math.min(min or a.min, a.min) end
         if type(a.max) == "number" and a.max > 0 then max = math.max(max or a.max, a.max) end
       end
     end
     if min and max and min <= max then copy.min, copy.max = min, max end
-    list[#list + 1] = copy
+    if offered then list[#list + 1] = copy end
   end
   for _, a in ipairs(activities) do
     if not linked[a.activityID] and type(a.name) == "string" and type(a.min) == "number" and type(a.max) == "number"

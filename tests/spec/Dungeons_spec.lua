@@ -146,7 +146,8 @@ describe("Dungeons (CF-24)", function()
       Dungeons.applyGroupFinder(ACTIVITIES)
       assert.are.same({ 20, 30 }, { Dungeons.get("sfk").min, Dungeons.get("sfk").max })
       assert.are.same({ 54, 60 }, { Dungeons.get("dme").min, Dungeons.get("dme").max }) -- wings: lowest min
-      assert.are.same({ 17, 26 }, { Dungeons.get("dm").min, Dungeons.get("dm").max }) -- not listed: static
+      assert.is_nil(Dungeons.get("dm")) -- not offered by the Group Finder: not listed (feedback)
+      assert.is_nil(Dungeons.get("stocks"))
       local new = Dungeons.get("lfg1981")
       assert.are.equal("Excavation Site: Wetlands", new.name)
       assert.are.same({ 26, 33 }, { new.min, new.max })

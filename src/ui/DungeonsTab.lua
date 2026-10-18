@@ -101,6 +101,8 @@ end
 local function questsSection(parent, info)
   local hint = ui.GREY .. "Install QuestieDB (it comes with Questie) to see every quest for this dungeon.|r"
   if #info.quests == 0 then
+    -- Feedback: say so instead of showing nothing (e.g. Forever's new dungeons, unknown to QuestieDB).
+    ui.label(parent, ui.GREY .. "No quests known for this dungeon yet.|r", GameFontHighlightSmall)
     if not info.complete then ui.label(parent, hint, GameFontHighlightSmall) end
     return
   end

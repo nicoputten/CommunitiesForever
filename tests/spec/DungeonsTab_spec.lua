@@ -153,8 +153,10 @@ describe("Dungeons tab (CF-24)", function()
     for value, row in pairs(texts) do
       assert.is_falsy(row:find("^Wetlands"), value)
     end
+    assert.is_nil(texts.dm) -- only what the Group Finder offers
     dungeonTree():SelectByValue("lfg1981")
     assert.is_truthy(text():find("Excavation Site: Wetlands  |cffa0a0a0levels 26 to 33|r", 1, true))
+    assert.is_truthy(text():find("No quests known for this dungeon yet.", 1, true))
   end)
 
   describe("quests (QuestieDB)", function()
