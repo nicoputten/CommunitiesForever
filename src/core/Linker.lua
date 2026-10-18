@@ -172,6 +172,14 @@ function Linker.build(raw)
 
   local people = {}
   for bt, rows in pairs(byTag) do
+    -- CF-15 fix: the community presence can stay "Online" after a logout. For yourself and your
+    -- Battle.net friends, Battle.net presence (live, with the character's GUID) decides which character
+    -- is online: only the one they are on, none when they are not in Forever. People linked without a
+    -- friendship (relayed records, CF-20) keep the community presence, the only one there is.
+    if bt == selfKey or input.friends[bt] then
+      local onGuid = bt == selfKey and input.selfGuid or (input.online[bt] and input.online[bt].guid)
+      for _, row in ipairs(rows) do row.online = onGuid ~= nil and row.guid == onGuid end
+    end
     table.sort(rows, byOnlineThenName)
     local isSelf = bt == self.battleTag
     local ownerName = isSelf and self.displayName or (input.people[bt] and input.people[bt].displayName)
