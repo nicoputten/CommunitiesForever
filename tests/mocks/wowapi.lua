@@ -235,7 +235,7 @@ function wowapi.install(opts)
     tooltipPostCalls = {}, -- TooltipDataProcessor.AddTooltipPostCall registrations
     -- state.talentNodes: class talent tree nodes { posX, ranks } (CF-18); nil = not available.
     -- state.questLog: quest log entries { questID, title, isHeader, isHidden, tagID } (CF-19); nil = not available.
-    atlases = { Dungeon = true }, -- C_Texture.GetAtlasInfo knows these atlas names
+    atlases = { ["worldquest-icon-dungeon"] = true }, -- C_Texture.GetAtlasInfo knows these atlas names
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
       { battleTag = "Sjaakovich#2232", gameAccounts = {

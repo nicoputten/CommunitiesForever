@@ -160,7 +160,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Person card (decided, option B): `Shared quests (N)` over all of the friend's characters; per quest the title, then `Them <their characters>   You <yours>`. Same 5-line limit and Show all. Not on your own person card.
 - Empty quest log (decided): ignored (the stored quests stay) unless it follows QUEST_TURNED_IN or QUEST_REMOVED, since the log can be empty for a moment right after login.
 - Hidden `/cf debugon` / `/cf debugoff`: a fake Debug Friend (two characters with talents, professions and some of your current quests) in the window only, never stored or synced.
-- Tree (decided): a friend's character that shares a dungeon quest with you gets the dungeon entrance icon (`Dungeon` atlas, V32; gold `[D]` fallback) after its level. Not a skull.
+- Tree (decided): a friend's character that shares a dungeon quest with you gets the dungeon entrance icon (`worldquest-icon-dungeon` atlas, picked in-game with `/fp icons`, V32; gold `[D]` fallback) after its level. Not a skull.
 - Unit tests: overlap with one alt, with several alts, none; headers ignored; quest progress change does not bump the version; accept/abandon does; matching by ID with different titles (locale).
 - Manual (2 clients): both accept the same quest on any character; within ~10 s it appears on the friend's character card; abandon it, it disappears.
 - Depends on sync (CF-09, CF-10, CF-11).

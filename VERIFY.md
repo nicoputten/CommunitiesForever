@@ -9,7 +9,6 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V31 | Does `C_QuestLog.GetQuestTagInfo(questID)` return `tagID` 81 (Dungeon) / 62 (Raid) for dungeon and raid quests? (CF-19; a fallback list of dungeon names covers quests under a dungeon header) | With a dungeon quest in the log (e.g. a Blackfathom Deeps quest), `/dump C_QuestLog.GetQuestTagInfo(<questID>)` (questID from `/fp quests`). Expected a table with `tagID = 81`. Also try a normal quest (expected nil). | open |
-| V32 | Does the `Dungeon` atlas exist and look like the dungeon entrance map icon? (CF-19) | `/dump C_Texture.GetAtlasInfo("Dungeon")` returns a table; `/run print("|A:Dungeon:14:14|a")` shows the icon in chat. If it is missing, the addon shows a gold `[D]` instead. | open |
 
 
 ## Manual test steps per story

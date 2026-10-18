@@ -15,7 +15,7 @@ local DOT_SIZE = 14
 local GREY = "|cffa0a0a0"
 local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZE)
 
-local DUNGEON_ATLAS = "Dungeon" -- dungeon entrance map icon (CF-19, VERIFY.md V32)
+local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
 
 local addonRef, events, frame, tree, refreshDebounced
