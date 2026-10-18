@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-02, 23 (after V35), 24.
+Build order: CF-02 (part 2: tag workflow, needs the API token), 25 (after V37), 23 (after V35), 24.
 
 ## E0 Foundation
 
@@ -34,3 +34,15 @@ Build order: CF-02, 23 (after V35), 24.
 - Calendar: upcoming community events (`calendarType` community, V33) whose title mentions the dungeon are listed with their time and sign-ups. Since addons cannot create events (V34), "Plan in calendar" opens Blizzard's calendar (unverified call, guarded) and puts a ready-made title (`<dungeon> run`) and the suggested characters in a chat line to copy into the event. Still to verify: how a community event shows in `GetDayEvent` (create one by hand, `/fp calendar`).
 - Unit tests: level-range filter; suggestion order (roles, quests, online); title matching for calendar events.
 - Manual: open the tab, pick a dungeon, create the event in Blizzard's calendar from the suggestion; it shows on the dungeon page; a friend sees it and signs up.
+
+## E8 Communication
+
+### CF-25 Community chat that stands out
+- Goal: messages in the selected community's chat are easy to notice, in Blizzard's own chat (no chat of our own).
+- Needs V37 (`/fp chat`): the community channel name and index, whether coloring a channel, opening a chat tab and flashing a tab work from an addon (or are protected under Midnight), and whether message text is readable.
+- **Own color** (setting "Community chat color", default a bright orange, color picker): the community channel gets this color in all chat windows (`ChangeChatColor` on the channel, V37). Applied on login and when changed; Blizzard keeps it in its chat settings. "Reset" goes back to Blizzard's color.
+- **Alert on a new message** (setting, on by default): when someone else writes in the selected community, the chat tab that shows the channel flashes, even when another tab is open (`FCF_StartAlertFlash`, V37). Optional sound (setting, off by default). Never for your own messages, never in combat if V37 shows that is protected.
+- **Community chat tab** (opt-in button in settings, "Create a Community tab"): opens a new chat tab named after the community that shows only that channel. Only on click, never automatic, since it changes the player's chat layout. Clicking again when the tab exists says so instead of making a second one.
+- Not in scope: a chat view inside our window, changing sender names or message text (likely blocked by secret values under Midnight).
+- Unit tests (pure core): channel name from clubId and streamId; which incoming messages alert (selected community, not you); color setting stored and reset.
+- Manual (2 clients): a friend writes in the community chat while you have another chat tab open: the tab with the community chat flashes and the message shows in your color. Create the Community tab: it shows only community messages.
