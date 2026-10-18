@@ -153,6 +153,13 @@ describe("Dungeons (CF-24)", function()
       return result
     end
 
+    it("reads quests from the area IDs QuestieDB files them under", function()
+      local gnomer = Dungeons.get("gnomer")
+      local info = Dungeons.quests(gnomer, { [133] = { { id = 2904, name = "A Fine Mess", level = 30 } } },
+        { char = { guid = "G-ME", level = 30 } })
+      assert.are.equal(1, info.total)
+    end)
+
     it("checks a race mask against a faction, also above 32 bits", function()
       assert.is_true(Dungeons.factionAllows(0, HORDE))
       assert.is_true(Dungeons.factionAllows(HORDE, HORDE))

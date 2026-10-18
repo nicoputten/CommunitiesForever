@@ -10,8 +10,10 @@ Dungeons.PLANNED_DAYS = 3 -- a calendar run this close counts as planned (tab co
 
 --[[ Vanilla dungeons with their usual level ranges. areas: quest log headers (CF-19) of the dungeon's
 quests; Scarlet Monastery and Dire Maul share one header over their wings. areaIds: AreaTable IDs, the
-`zoneOrSort` of the dungeon's quests in QuestieDB (from its zone enum; the Scarlet Monastery wings and
-Blackrock Spire share theirs). Raids are left out. ]]
+`zoneOrSort` of the dungeon's quests in QuestieDB (from its zone enum and Forever dungeon table, whose
+notes give the IDs some dungeons' quests use instead: Gnomeregan 133, Razorfen Kraul 1717, Uldaman 1517,
+Zul'Farrak 978, Sunken Temple 1417; the Scarlet Monastery wings and Blackrock Spire share theirs).
+Raids are left out. ]]
 Dungeons.LIST = {
   { id = "rfc", name = "Ragefire Chasm", min = 13, max = 18, areaIds = { 2437 },
     areas = { "Ragefire Chasm" } },
@@ -25,9 +27,9 @@ Dungeons.LIST = {
     areas = { "Blackfathom Deeps" } },
   { id = "stocks", name = "The Stockade", min = 24, max = 32, areaIds = { 717 },
     areas = { "The Stockade" } },
-  { id = "gnomer", name = "Gnomeregan", min = 29, max = 38, areaIds = { 721 },
+  { id = "gnomer", name = "Gnomeregan", min = 29, max = 38, areaIds = { 721, 133 },
     areas = { "Gnomeregan" } },
-  { id = "rfk", name = "Razorfen Kraul", min = 29, max = 38, areaIds = { 491 },
+  { id = "rfk", name = "Razorfen Kraul", min = 29, max = 38, areaIds = { 491, 1717 },
     areas = { "Razorfen Kraul" } },
   { id = "smgy", name = "Scarlet Monastery Graveyard", min = 26, max = 36, areaIds = { 796 },
     areas = { "Scarlet Monastery" } },
@@ -39,9 +41,9 @@ Dungeons.LIST = {
     areas = { "Scarlet Monastery" } },
   { id = "rfd", name = "Razorfen Downs", min = 37, max = 46, areaIds = { 722 },
     areas = { "Razorfen Downs" } },
-  { id = "ulda", name = "Uldaman", min = 41, max = 51, areaIds = { 1337 },
+  { id = "ulda", name = "Uldaman", min = 41, max = 51, areaIds = { 1337, 1517 },
     areas = { "Uldaman" } },
-  { id = "zf", name = "Zul'Farrak", min = 44, max = 54, areaIds = { 1176 },
+  { id = "zf", name = "Zul'Farrak", min = 44, max = 54, areaIds = { 1176, 978 },
     areas = { "Zul'Farrak" } },
   { id = "mara", name = "Maraudon", min = 46, max = 55, areaIds = { 2100 },
     areas = { "Maraudon" } },

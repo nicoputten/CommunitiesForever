@@ -10,21 +10,9 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp feed` logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 | V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/dump GetChatWindowInfo(<n>)` with `n` the tab's number (6 if it was the first new tab). Expected: the name is still there, the 7th value (`shown`) is false/nil and the 9th (`docked`) nil. Then Create in `/cf setup` (Community chat step) or `/cf settings` makes the tab again. | open |
-| V44 | Can the addon read dungeon quests from QuestieDB on Forever? (CF-24) | With Questie (and so QuestieDB) installed: `/dump LibQuestieDB.RequireContract(3)` gives `true`, and `/dump QuestDB.Get(<a Deadmines quest ID>, "zoneOrSort")` gives `1581` (e.g. from Questie's quest tooltip or `/fp quests`). In the Dungeons tab the Deadmines row shows the dungeon icon with `have/total`. | open |
-| V45 | Does `C_QuestLog.IsQuestFlaggedCompleted(questID)` work on Forever? (CF-24: completed dungeon quests are left out) | Turn in a dungeon quest, then `/dump C_QuestLog.IsQuestFlaggedCompleted(<its ID>)`: `true`; for a quest never done: `false`. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
-
-### CF-24 Dungeon planner (round 3)
-Round 2 passed. The dungeon quest icon is back as `<icon> have/total`, with a Quests section.
-
-| Step | Expected | Status |
-|---|---|---|
-| Without QuestieDB (Questie off), Dungeons tab | A dungeon where someone in range has one of its quests: the icon and `0/N` or `1/N` (only quests in someone's quest log). Its detail: Quests section, then one grey line "Only quests in someone's quest log. Install QuestieDB ...". | open |
-| With Questie / QuestieDB on (see V44) | Rows show `<icon> have/total` for every dungeon with quests for your faction: have = in the quest log of your character in the suggested group, total = have + quests you can pick up now. | open |
-| Select a dungeon | Quests: green = in your log; white = to pick up (level, and who in range has it); grey `from level N` = not yet for your level; quests of the other faction and class quests are not listed. | open |
-| A dungeon quest you already turned in, on the character you are on | Not listed; a line says `1 quest already done on this character.` (see V45). | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.
