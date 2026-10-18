@@ -8,7 +8,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
-| V31 | Does `C_QuestLog.GetQuestTagInfo(questID)` return `tagID` 81 (Dungeon) / 62 (Raid) for dungeon and raid quests? (CF-19; a fallback list of dungeon names covers quests under a dungeon header) | With a dungeon quest in the log (e.g. a Blackfathom Deeps quest), `/dump C_QuestLog.GetQuestTagInfo(<questID>)` (questID from `/fp quests`). Expected a table with `tagID = 81`. Also try a normal quest (expected nil). | open |
+| V35 | Which events tell what you did, for the activity feed? | `/fp feed` (stays on after `/reload`), then play normally: enter and leave a dungeon, kill a boss, join a group, queue and play a battleground, turn in a quest, level up, gain a profession point, die once. `/fp feed off` afterwards and send the `FEED` lines: `ENCOUNTER_END`/`BOSS_KILL` args per boss, `instance ... type` (party/raid/pvp) from `GetInstanceInfo`, the group members with GUIDs, and the battleground status and winner. | open |
 
 
 ## Manual test steps per story
@@ -19,7 +19,6 @@ Round 2 passed. One fix left:
 
 | Step | Expected | Status |
 |---|---|---|
-| Log in on Marks Man (the alt that showed only "Marks"), then `/cf self` | Shows `Marks Man`. On your friend's side the name updates within ~10 s. `/cf ping` from that alt says `Ping from Marks Man`. | works |
 
 ### CF-20 Relay
 Needs three Battle.net accounts on this build (A, B, C): relaying always involves three different BattleTags. A is Battle.net friends with both; B and C do not need to be friends with each other. All have a character in the community. Can wait until a third person is available.
@@ -37,11 +36,6 @@ Needs a friend linked to you in the community (they do not need the addon).
 
 | Step | Expected | Status |
 |---|---|---|
-| Friend logs in to Forever while you are online | Chat: `CommunitiesForever: Sjaak is online on Garraka Doombringer (Mage 11)`. | works |
-| Friend switches to another character | Chat line again with the new character (if more than 30 s since the last one). | works |
-| Friend logs out and back in within 30 s | No second line. | works |
-| You log in while the friend is already online | No line for them. | works |
-| `/cf settings` → untick "Login notifications", friend logs in again | No line. | works |
 
 Found a bug  that a friend logged off  and it shows that the account is offline but character is still online? even after 5min
 ### CF-16 Level-up announcements
@@ -70,3 +64,11 @@ Needs a friend running this build, linked to you in the community.
 | Open your own character card | No Shared quests section. | open |
 | Log in on an alt with other quests | Quests shared with that alt appear too; the main's quests stay as of its last login. | open |
 | Without a friend: `/cf debugon`, open `/cf` | A `Debug Friend` with `Debug Character` appears in the tree with the dungeon icon; its card shows up to 6 of your current character's quests plus `Debug: Into the Deeps` under Blackfathom Deeps, and `Show all 7`. `Debug Alt` (Warrior, offline) shares 2 of them plus the dungeon quest. `/cf debugoff` or `/reload` removes it; nothing is saved or synced. | open |
+
+### CF-22 Activity feed
+Copy the build into AddOns. The other steps passed (levels, quests per zone, profession ranks, day change, sync to a friend, share off).
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf` | Text tabs `Friends` (gold, active) and `Activity` (grey) above the window content; no tab frame, only the tree's own box. Hovering a tab highlights it. Hovering a tree row shows no tooltip box. | open |
+| `/cf debugon`, click **Activity** | One box. Today: `Debug Friend on Debug Character and 1 more character`, below it `27 to 30 · Engineering reached Expert · learned Mining   Show all (2)` with `Show all (2)` in blue and the row highlighting on hover. Clicking it lists every part on its own line (`27 to 30`, `Engineering reached Expert`, `learned Mining`, `questing in Ashenvale, Stonetalon Mountains +1 zone (10)`), then `on Debug Alt` with `questing in Durotar (2)` below it, then `Show less`. Yesterday: `Debug Friend on Debug Alt`, `reached 20 · questing in Barrens (4)`. The `Friends` tab lines up with the text inside the box. | open |

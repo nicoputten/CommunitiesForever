@@ -37,6 +37,7 @@ CommunitiesForever/
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
+      Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
@@ -46,6 +47,7 @@ CommunitiesForever/
       Presence.lua           C_BattleNet friend accounts, BN events
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
+      FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
@@ -88,14 +90,21 @@ global = {
   schemaVersion = 1,
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
-                sendInterval = 0.2 },                -- seconds between outgoing chunks
+                sendInterval = 0.2,                  -- seconds between outgoing chunks
+                shareActivity = true },              -- CF-22: send the activity feed to friends
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
-                invite = { clubId, code, setAt } },  -- CF-21: shared invite link (owner/leaders/moderators)
+                invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
+                feed = Feed },                       -- CF-22: activity feed, last 7 realm days
   people    = { [battleTag] = { displayName, version, receivedAt,
-                                chars = { [guid] = Char }, via, invite } },  -- via: relayed by (CF-20); invite (CF-21)
+                                chars = { [guid] = Char }, via, invite, feed } },  -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
 }
+
+-- CF-22: [day] = realm day number (days since 1970-01-01), aggregated per character.
+Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
+                              quests = { [zone] = count }, ranks = { [profession] = rank },
+                              learned = { [profession] = true } } } }
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,
@@ -124,7 +133,7 @@ Char = {
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
-- `RECORD {bt, displayName, version, chars}`: own record with all own characters.
+- `RECORD {bt, displayName, version, chars, invite, feed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22).
 
 Accept rule (Merge.lua):
 - sender `gameAccountID` resolves to BattleTag B via presence (a friend in Forever)

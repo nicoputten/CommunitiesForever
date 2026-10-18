@@ -5,7 +5,7 @@ local _, ns = ...
 local SelfInfo = {}
 
 -- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment", "logout",
--- "talents", "quests", "questRemoved".
+-- "talents", "quests", "questRemoved", "questTurnedIn".
 SelfInfo.CHANGED = "CF_SELF_CHANGED"
 
 local EVENT_REASONS = {
@@ -19,7 +19,7 @@ local EVENT_REASONS = {
   TRAIT_CONFIG_UPDATED = "talents",
   QUEST_ACCEPTED = "quests",                 -- CF-19 (verified to exist, V23)
   QUEST_REMOVED = "questRemoved",           -- abandoned or completed: an empty log is real then
-  QUEST_TURNED_IN = "questRemoved",
+  QUEST_TURNED_IN = "questTurnedIn",         -- arg 1 is the questID (CF-22 activity feed)
   QUEST_LOG_UPDATE = "quests",               -- also fires when the log first loads
 }
 
@@ -129,6 +129,18 @@ function SelfInfo.read()
 end
 
 -- Translates WoW events into SelfInfo.CHANGED messages on the addon object.
+-- Today's realm date (CF-22: the activity feed groups by realm day): year, month, day.
+-- C_DateAndTime.GetCurrentCalendarTime is unverified on Forever (VERIFY.md V36); falls back to the
+-- local date of the server time.
+function SelfInfo.today()
+  if C_DateAndTime and C_DateAndTime.GetCurrentCalendarTime then
+    local t = C_DateAndTime.GetCurrentCalendarTime()
+    if t and t.year and t.month and t.monthDay then return t.year, t.month, t.monthDay end
+  end
+  local t = date("*t", GetServerTime())
+  return t.year, t.month, t.day
+end
+
 function SelfInfo.watch(addon)
   for event, reason in pairs(EVENT_REASONS) do
     ns.Events.register(addon, event, function(_, ...)

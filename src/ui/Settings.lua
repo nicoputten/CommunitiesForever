@@ -111,6 +111,16 @@ function Settings.options()
         get = function() return ns.db.global.settings.levelUps ~= false end,
         set = function(_, value) ns.db.global.settings.levelUps = value end,
       },
+      shareActivity = {
+        type = "toggle",
+        order = 5.5,
+        width = "full",
+        name = "Share my activity",
+        desc = "Friends see what you did in their Activity tab (levels, quests, professions). "
+          .. "Off: only you see your activity.",
+        get = function() return ns.FeedTracker.shared() end,
+        set = function(_, value) ns.FeedTracker.setShared(value) end,
+      },
       minimap = {
         type = "toggle",
         order = 3,

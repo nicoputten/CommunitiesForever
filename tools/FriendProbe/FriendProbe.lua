@@ -9,6 +9,9 @@
 --   /fp ticket <code>   C_Club.RequestTicket: look up an invite code or link (result via CLUB_TICKET_RECEIVED)
 --   /fp redeem <code>   C_Club.RedeemTicket: join with an invite code or link (logs blocked/forbidden actions)
 --   /fp quests          quest log API: functions, events, log size, every entry (CF-19)
+--   /fp calendar        C_Calendar: functions, enums, events this month and next (dungeon planner)
+--   /fp calendar create button: try to create a community sign-up test event (/fp calendar player: private)
+--   /fp feed [off]      log instance, boss, group, battleground, death, level, quest and skill events
 --   /fp talents [all]   specializations + C_ClassTalents / C_Traits: config, trees, point pools, nodes
 --                       with ranks spent (all: every node of the tree)
 --   /fp clear           wipe the saved log
@@ -311,6 +314,173 @@ local function Quests()
   end
 end
 
+-- ===== Calendar (dungeon planner) =====
+-- Function and event names are unverified on Forever: every one is checked or registered guarded.
+local CALENDAR_FUNCS = { "OpenCalendar", "GetMonthInfo", "GetNumDayEvents", "GetDayEvent", "OpenEvent",
+  "GetEventInfo", "CloseEvent", "CanAddEvent", "CreatePlayerEvent", "CreateCommunitySignUpEvent",
+  "CreateGuildSignUpEvent", "EventSetTitle", "EventSetDescription", "EventSetDate", "EventSetTime",
+  "EventSetType", "EventSetClubId", "AddEvent", "EventSignUp", "GetNumInvites", "EventGetInvite",
+  "GetMinDate", "GetMaxCreateDate" }
+local CALENDAR_EVENTS = { "CALENDAR_UPDATE_EVENT_LIST", "CALENDAR_NEW_EVENT", "CALENDAR_ACTION_PENDING",
+  "CALENDAR_UPDATE_ERROR", "CALENDAR_OPEN_EVENT", "CALENDAR_UPDATE_EVENT", "CALENDAR_UPDATE_INVITE_LIST" }
+
+local calendarListWanted = false
+
+-- Every calendar event this month and next (the list arrives after OpenCalendar, async).
+local function CalendarList()
+  local cal = C_Calendar
+  if not (cal and cal.GetNumDayEvents and cal.GetDayEvent) then log("calendar list API missing") return end
+  local dumped = false
+  for offset = 0, 1 do
+    local month = cal.GetMonthInfo and cal.GetMonthInfo(offset)
+    if offset == 0 then DumpTable("monthInfo", month) end
+    for day = 1, (month and month.numDays) or 31 do
+      for i = 1, cal.GetNumDayEvents(offset, day) or 0 do
+        local e = cal.GetDayEvent(offset, day, i)
+        if e then
+          log(string.format("event month+%d day %d: %s", offset, day, S(e.title)), "calendarType", e.calendarType,
+            "eventType", e.eventType, "clubID", e.clubID, "invitedBy", e.invitedBy, "inviteStatus", e.inviteStatus)
+          if e.startTime then DumpTable("  startTime", e.startTime) end
+          if not dumped then dumped = true DumpTable("  dayEvent", e) end
+        end
+      end
+    end
+  end
+  log("calendar list done")
+end
+
+local function Calendar()
+  log("== CALENDAR ==")
+  log("exists C_Calendar", C_Calendar ~= nil)
+  if not C_Calendar then return end
+  for _, name in ipairs(CALENDAR_FUNCS) do log("exists C_Calendar." .. name, C_Calendar[name] ~= nil) end
+  if Enum and Enum.CalendarEventType then DumpTable("Enum.CalendarEventType", Enum.CalendarEventType) end
+  if Enum and Enum.CalendarType then DumpTable("Enum.CalendarType", Enum.CalendarType) end
+  LogCall("GetCurrentCalendarTime", C_DateAndTime and C_DateAndTime.GetCurrentCalendarTime)
+  calendarListWanted = true
+  LogCall("OpenCalendar", C_Calendar.OpenCalendar) -- the list follows on CALENDAR_UPDATE_EVENT_LIST
+end
+
+local function FirstCharacterCommunity()
+  for _, club in ipairs(C_Club and C_Club.GetSubscribedClubs and C_Club.GetSubscribedClubs() or {}) do
+    if Enum and Enum.ClubType and club.clubType == Enum.ClubType.Character then return club.clubId, club.name end
+  end
+end
+
+-- Tries to create a test event tomorrow 20:00 ("community": sign-up event in the first character community,
+-- "player": a private event). Runs from a button click, since creating may need a hardware event.
+local function CalendarCreate(kind)
+  log("== CALENDAR CREATE ==", kind)
+  local cal = C_Calendar
+  if not cal then log("C_Calendar missing") return end
+  local clubId, clubName = FirstCharacterCommunity()
+  if kind == "community" then
+    log("community", clubName, clubId)
+    LogCall("CreateCommunitySignUpEvent", cal.CreateCommunitySignUpEvent)
+  else
+    LogCall("CreatePlayerEvent", cal.CreatePlayerEvent)
+  end
+  LogCall("EventSetTitle", cal.EventSetTitle, "FriendProbe test (delete me)")
+  LogCall("EventSetDescription", cal.EventSetDescription, "Test event from FriendProbe. Safe to delete.")
+  if Enum and Enum.CalendarEventType and Enum.CalendarEventType.Dungeon then
+    LogCall("EventSetType", cal.EventSetType, Enum.CalendarEventType.Dungeon)
+  end
+  local tomorrow = date("*t", time() + 86400)
+  LogCall("EventSetDate", cal.EventSetDate, tomorrow.month, tomorrow.day, tomorrow.year)
+  LogCall("EventSetTime", cal.EventSetTime, 20, 0)
+  if kind == "community" and clubId then LogCall("EventSetClubId", cal.EventSetClubId, clubId) end
+  LogCall("CanAddEvent", cal.CanAddEvent)
+  LogCall("AddEvent", cal.AddEvent)
+  log("done; check the calendar, then /fp calendar to see if the event is listed")
+end
+
+local calendarButton
+local function CalendarButton(kind)
+  if not calendarButton then
+    calendarButton = CreateFrame("Button", nil, UIParent, "UIPanelButtonTemplate")
+    calendarButton:SetSize(320, 28)
+    calendarButton:SetPoint("CENTER", 0, 120)
+  end
+  calendarButton:SetText("FriendProbe: create " .. kind .. " test event")
+  calendarButton:SetScript("OnClick", function(self)
+    self:Hide()
+    local ok, err = pcall(CalendarCreate, kind)
+    if not ok then log("calendar create error", err) end
+  end)
+  calendarButton:Show()
+  log("click the button in the middle of the screen to create a " .. kind .. " test event")
+end
+
+-- ===== Activity feed events =====
+-- /fp feed on: logs every event the activity feed could use (also after /reload) until /fp feed off.
+local FEED_EVENTS = { "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "ENCOUNTER_START", "ENCOUNTER_END",
+  "BOSS_KILL", "GROUP_ROSTER_UPDATE", "UPDATE_BATTLEFIELD_STATUS", "PVP_MATCH_ACTIVE", "PVP_MATCH_COMPLETE",
+  "PLAYER_DEAD", "PLAYER_LEVEL_UP", "QUEST_TURNED_IN", "CHAT_MSG_SKILL", "SKILL_LINES_CHANGED" }
+
+local function LogInstance()
+  if GetInstanceInfo then
+    local name, instanceType, difficultyID, difficultyName, maxPlayers, _, _, instanceID = GetInstanceInfo()
+    log("  instance", name, "type", instanceType, "difficulty", difficultyID, difficultyName, "max", maxPlayers,
+      "id", instanceID)
+  else
+    log("  GetInstanceInfo missing")
+  end
+  log("  zone", GetRealZoneText and GetRealZoneText(), "subzone", GetSubZoneText and GetSubZoneText())
+  LogCall("  IsInInstance", IsInInstance)
+end
+
+local function LogGroup()
+  LogCall("  GetNumGroupMembers", GetNumGroupMembers)
+  LogCall("  IsInRaid", IsInRaid)
+  for i = 1, 4 do
+    local unit = "party" .. i
+    if UnitExists and UnitExists(unit) then log("  " .. unit, GetUnitName(unit, true), UnitGUID(unit)) end
+  end
+end
+
+local feedFrame = CreateFrame("Frame")
+local feedRegistered = false
+local function FeedRegister()
+  if feedRegistered then return end
+  feedRegistered = true
+  for _, event in ipairs(FEED_EVENTS) do
+    local ok = pcall(feedFrame.RegisterEvent, feedFrame, event)
+    log("feed register", event, ok and "ok" or "UNKNOWN EVENT")
+  end
+end
+
+feedFrame:SetScript("OnEvent", function(_, event, ...)
+  if not (FriendProbeDB and FriendProbeDB.feed) then return end
+  local args = {}
+  for i = 1, select("#", ...) do args[#args + 1] = S((select(i, ...))) end
+  log("FEED " .. event, table.concat(args, " | "))
+  if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+    LogInstance()
+  elseif event == "GROUP_ROSTER_UPDATE" or event == "ENCOUNTER_END" or event == "BOSS_KILL" then
+    LogInstance()
+    LogGroup()
+  elseif event == "UPDATE_BATTLEFIELD_STATUS" and GetBattlefieldStatus then
+    LogCall("  GetBattlefieldStatus", GetBattlefieldStatus, (...) or 1)
+  elseif event == "PVP_MATCH_COMPLETE" then
+    LogCall("  GetBattlefieldWinner", GetBattlefieldWinner)
+    LogCall("  UnitFactionGroup", UnitFactionGroup, "player")
+  end
+end)
+
+local function Feed(arg)
+  FriendProbeDB = FriendProbeDB or {}
+  if arg == "off" then
+    FriendProbeDB.feed = nil
+    log("feed logging off")
+    return
+  end
+  FriendProbeDB.feed = true
+  FeedRegister()
+  log("feed logging on (stays on after /reload; /fp feed off stops it)")
+  LogInstance()
+  LogGroup()
+end
+
 local clubUpdateSeen = {}
 
 local f = CreateFrame("Frame")
@@ -320,12 +490,23 @@ for _, event in ipairs({ "CLUB_MEMBERS_UPDATED", "CLUB_TICKET_RECEIVED", "CLUB_A
     "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }) do
   pcall(f.RegisterEvent, f, event) -- names unverified on Forever: ignore unknown ones
 end
+for _, event in ipairs(CALENDAR_EVENTS) do pcall(f.RegisterEvent, f, event) end
 f:RegisterEvent("CHAT_MSG_ADDON")
 f:SetScript("OnEvent", function(_, event, ...)
   if event == "ADDON_LOADED" then
     if ... == "FriendProbe" then
       FriendProbeDB = FriendProbeDB or {}
+      if FriendProbeDB.feed then FeedRegister() end
       log("loaded; register prefix:", C_ChatInfo.RegisterAddonMessagePrefix(PREFIX))
+    end
+  elseif event:sub(1, 9) == "CALENDAR_" then
+    local args = {}
+    for i = 1, select("#", ...) do args[#args + 1] = S((select(i, ...))) end
+    log("calendar event", event, table.concat(args, " | "))
+    if event == "CALENDAR_UPDATE_EVENT_LIST" and calendarListWanted then
+      calendarListWanted = false
+      local ok, err = pcall(CalendarList)
+      if not ok then log("calendar list error", err) end
     end
   elseif event == "BN_CHAT_MSG_ADDON" then
     local prefix, text, channel, senderID = ...
@@ -375,6 +556,15 @@ SlashCmdList.FRIENDPROBE = function(msg)
   elseif cmd == "quests" then
     local ok, err = pcall(Quests)
     if not ok then log("quests error", err) end
+  elseif cmd == "calendar" then
+    if arg == "create" or arg == "player" then
+      CalendarButton(arg == "create" and "community" or "player")
+    else
+      local ok, err = pcall(Calendar)
+      if not ok then log("calendar error", err) end
+    end
+  elseif cmd == "feed" then
+    Feed(arg)
   elseif cmd == "icons" then
     local ok, err = pcall(Icons)
     if not ok then log("icons error", err) end
@@ -387,6 +577,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | icons | calendar [create|player] | feed [off] | clear")
   end
 end
