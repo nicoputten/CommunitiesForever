@@ -19,7 +19,6 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 - Untagged pushes produce no release.
 - Decided (CF-02 part 1): the released files contain no personal info. Author `Vestras` (TOC and LICENSE), generic examples in `src` comments, hand-written `CHANGELOG.md` (`manual-changelog` in `.pkgmeta`) instead of a changelog built from commit messages. `tests/spec/Release_spec.lua` fails on banned names in the released files. The repo stays private; its history is unchanged.
 - Manual: install via the CurseForge app; publishing a new tag delivers an update.
-- No personal info in the published package. The repo stays private, but the zip ships the `src/` Lua as is: replace real names in shipped comments and strings (BattleTags, character names, display names such as "Sjaak", "Garraka Doombringer", "Vestras") with generic examples, for example in `src/core/Format.lua`, `src/services/Notify.lua` and `src/ui/Tooltip.lua`. Check: `git grep -nIiE "sjaak|vestras|doombringer|garraka|nico" -- src` finds nothing. The `## Author` line in the TOC and the LICENSE stay as they are.
 - The package contains only the addon: `.pkgmeta` ignores tests, tools, docs, `VERIFY.md`, `CLAUDE.md` and the CI config. Check: unzip the built package and list its files.
 
 ## E1 Own data
