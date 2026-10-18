@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-02, 23 (after V35), 24 (after V33, V34).
+Build order: CF-02, 23 (after V35), 24.
 
 ## E0 Foundation
 
@@ -27,9 +27,9 @@ Build order: CF-02, 23 (after V35), 24 (after V33, V34).
 - Manual (2 clients in one group): run a dungeon together, kill one boss, leave after 10 minutes: one shared line for both.
 
 ### CF-24 Dungeon planner
-- Needs V33 (read community calendar events) and V34 (create a community sign-up event from a click).
+- Calendar findings: reading events works (V33); creating one is blocked for addons (V34: `AddEvent` fires `ADDON_ACTION_BLOCKED`).
 - A **Dungeons** tab: for each Vanilla dungeon (fixed table in core with level ranges, same names as the CF-19 list) that fits one of your characters: your characters in range, friends' characters in range (online first), and who has a quest for it (CF-19). Dungeons with the most candidates first.
 - Selecting a dungeon suggests a group automatically: up to 5 characters in level range, preferring one tank and one healer by role (CF-18), then shared quests, then online.
-- Calendar: upcoming community events whose title mentions the dungeon are listed with their sign-ups. "Plan in calendar" creates a community sign-up event (title `<dungeon> run`, time picked by you, the suggested characters in the description) if V34 allows it; otherwise the button opens Blizzard's calendar.
+- Calendar: upcoming community events (`calendarType` community, V33) whose title mentions the dungeon are listed with their time and sign-ups. Since addons cannot create events (V34), "Plan in calendar" opens Blizzard's calendar (unverified call, guarded) and puts a ready-made title (`<dungeon> run`) and the suggested characters in a chat line to copy into the event. Still to verify: how a community event shows in `GetDayEvent` (create one by hand, `/fp calendar`).
 - Unit tests: level-range filter; suggestion order (roles, quests, online); title matching for calendar events.
-- Manual: open the tab, pick a dungeon, create an event, a friend sees it in the community calendar and signs up.
+- Manual: open the tab, pick a dungeon, create the event in Blizzard's calendar from the suggestion; it shows on the dungeon page; a friend sees it and signs up.

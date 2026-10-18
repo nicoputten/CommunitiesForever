@@ -8,11 +8,7 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
-| V31 | Does `C_QuestLog.GetQuestTagInfo(questID)` return `tagID` 81 (Dungeon) / 62 (Raid) for dungeon and raid quests? (CF-19; a fallback list of dungeon names covers quests under a dungeon header) | With a dungeon quest in the log (e.g. a Blackfathom Deeps quest), `/dump C_QuestLog.GetQuestTagInfo(<questID>)` (questID from `/fp quests`). Expected a table with `tagID = 81`. Also try a normal quest (expected nil). | open |
-| V33 | Can addons read community calendar events? (dungeon planner) | Copy the updated `tools\FriendProbe` into AddOns, `/reload`, `/fp calendar`. Send the log: which `C_Calendar` functions exist, the enums, and one line per event this month and next (create one community event in Blizzard's calendar first, so there is something to list). | open |
-| V34 | Can addons create a community sign-up event from a button click, or is it blocked under Midnight? (dungeon planner) | `/fp calendar create`, click the button that appears in the middle of the screen. Send the log (each call logs its result; a blocked action logs `ADDON_ACTION_BLOCKED`/`FORBIDDEN`) and say whether "FriendProbe test (delete me)" shows up in the community calendar tomorrow at 20:00. Delete it afterwards. If it is blocked, also try `/fp calendar player` (private event). | open |
 | V35 | Which events tell what you did, for the activity feed? | `/fp feed` (stays on after `/reload`), then play normally: enter and leave a dungeon, kill a boss, join a group, queue and play a battleground, turn in a quest, level up, gain a profession point, die once. `/fp feed off` afterwards and send the `FEED` lines: `ENCOUNTER_END`/`BOSS_KILL` args per boss, `instance ... type` (party/raid/pvp) from `GetInstanceInfo`, the group members with GUIDs, and the battleground status and winner. | open |
-| V36 | Does `C_DateAndTime.GetCurrentCalendarTime()` give the realm date (`year`, `month`, `monthDay`)? (CF-22: the feed groups by realm day; without it the addon falls back to the local date) | `/dump C_DateAndTime.GetCurrentCalendarTime()` (also logged by `/fp calendar`). Expected the in-game calendar date with `monthDay`. | open |
 
 
 ## Manual test steps per story
@@ -23,7 +19,6 @@ Round 2 passed. One fix left:
 
 | Step | Expected | Status |
 |---|---|---|
-| Log in on Marks Man (the alt that showed only "Marks"), then `/cf self` | Shows `Marks Man`. On your friend's side the name updates within ~10 s. `/cf ping` from that alt says `Ping from Marks Man`. | works |
 
 ### CF-20 Relay
 Needs three Battle.net accounts on this build (A, B, C): relaying always involves three different BattleTags. A is Battle.net friends with both; B and C do not need to be friends with each other. All have a character in the community. Can wait until a third person is available.
@@ -41,11 +36,6 @@ Needs a friend linked to you in the community (they do not need the addon).
 
 | Step | Expected | Status |
 |---|---|---|
-| Friend logs in to Forever while you are online | Chat: `CommunitiesForever: Sjaak is online on Garraka Doombringer (Mage 11)`. | works |
-| Friend switches to another character | Chat line again with the new character (if more than 30 s since the last one). | works |
-| Friend logs out and back in within 30 s | No second line. | works |
-| You log in while the friend is already online | No line for them. | works |
-| `/cf settings` → untick "Login notifications", friend logs in again | No line. | works |
 
 Found a bug  that a friend logged off  and it shows that the account is offline but character is still online? even after 5min
 ### CF-16 Level-up announcements
@@ -76,14 +66,8 @@ Needs a friend running this build, linked to you in the community.
 | Without a friend: `/cf debugon`, open `/cf` | A `Debug Friend` with `Debug Character` appears in the tree with the dungeon icon; its card shows up to 6 of your current character's quests plus `Debug: Into the Deeps` under Blackfathom Deeps, and `Show all 7`. `Debug Alt` (Warrior, offline) shares 2 of them plus the dungeon quest. `/cf debugoff` or `/reload` removes it; nothing is saved or synced. | open |
 
 ### CF-22 Activity feed
-Copy the build into AddOns. Solo steps first; the last two need a friend running this build.
+Copy the build into AddOns. The other steps passed (levels, quests per zone, profession ranks, day change, sync to a friend, share off).
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf debugon`, `/cf`, **Activity** tab | Today: `Debug Friend  Debug Character  27 → 30, Engineering reached Expert, learned Mining  +1  +1 character`. Clicking it shows all parts (`questing in Ashenvale, Stonetalon Mountains +1 zone (10)`) and `Debug Alt  questing in Durotar (2)`. Yesterday: `Debug Alt  reached 20, questing in Barrens (4)`. | open |
-| Turn in two quests in one zone and one in another | Your own line today: `questing in <zone> and <zone> (3)`, the zones are your quest log headers. | open |
-| Level up | `<from> → <to>` on your line (10, 20, 40, 60 show as `reached N`). | open |
-| Train a new profession rank (e.g. Journeyman), learn a new profession | `<profession> reached Journeyman`, `learned <profession>`. Skill-ups alone add nothing. | open |
-| `/reload` after a day change (or the next day) | Yesterday's activity under `Yesterday`, today's under `Today`; days older than a week are gone. | open |
-| Friend does any of the above | Within ~1 min (feed changes sync at most once a minute) their line shows in your Activity tab. | open |
-| `/cf settings` → untick "Share my activity" | Within ~10 s your line disappears from the friend's Activity tab; yours still shows it, with a note that you don't share. | open |
+| `/cf debugon`, `/cf`, **Activity** tab | Today: `Debug Friend  Debug Character  27 → 30, Engineering reached Expert, learned Mining  +1  +1 character`. Clicking it shows all parts (`questing in Ashenvale, Stonetalon Mountains +1 zone (10)`) and `Debug Alt  questing in Durotar (2)`. Yesterday: `Debug Alt  reached 20, questing in Barrens (4)`. | Its not clear that you  can click and it doesnt  look great |
