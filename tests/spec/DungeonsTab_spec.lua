@@ -82,26 +82,62 @@ describe("Dungeons tab (CF-24)", function()
     local all = text()
     assert.is_truthy(all:find("The Deadmines  |cffa0a0a0levels 17 to 26|r", 1, true))
     assert.is_truthy(all:find("Suggested group", 1, true))
-    assert.is_truthy(all:find("you", 1, true))
-    assert.are.equal("The Deadmines run", find("EditBox", "Event title").text)
-    assert.is_truthy(find("EditBox", "Group").text:find(state.player.name, 1, true))
+    assert.is_falsy(all:find("Also in range", 1, true)) -- nobody else
+    assert.is_falsy(all:find("Planned", 1, true)) -- no calendar event
+    find("EditBox", "The Deadmines") -- the title to copy: just the dungeon name
+    local edits = 0
+    walk(window(), function(w) if w.type == "EditBox" then edits = edits + 1 end end)
+    assert.are.equal(1, edits) -- no group field (CF-24 feedback)
   end)
 
-  it("asks for the calendar once and shows events that mention the dungeon", function()
+  it("shows your other characters in range on one line under yours", function()
+    load(20)
+    addon.db.global.self.chars["Player-1-ALT"] = { guid = "Player-1-ALT", name = "Alt Example", level = 22,
+                                                   classFile = "ROGUE" }
+    state.clubMembers[CLUB][3] = { memberId = 3, guid = "Player-1-ALT", name = "Alt Example", classID = 4,
+                                   level = 22, presence = 3, clubType = 1 }
+    wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+    open()
+    assert.is_truthy(text():find("or Alt Example 22", 1, true))
+    assert.is_falsy(text():find("Also in range", 1, true))
+  end)
+
+  it("puts runs planned in the next 3 days on top, with sign-ups, and counts them on the tab", function()
     load(20)
     open()
-    assert.are.equal(1, state.calendarOpened)
-    assert.is_truthy(text():find("No upcoming calendar event mentions The Deadmines.", 1, true))
-    state.calendarEvents[0] = { [24] = { { title = "Deadmines run", calendarType = "COMMUNITY_EVENT",
-      startTime = { year = 2026, month = 10, monthDay = 24, weekday = 7, hour = 20, minute = 0 },
-      inviteStatus = 6 } } }
+    state.calendarEvents[0] = {
+      [20] = { { title = "Deadmines run", calendarType = "COMMUNITY_EVENT", inviteStatus = 6,
+                 startTime = { year = 2026, month = 10, monthDay = 20, weekday = 3, hour = 20, minute = 0 } } },
+      [24] = { { title = "Wailing Caverns", calendarType = "COMMUNITY_EVENT",
+                 startTime = { year = 2026, month = 10, monthDay = 24, weekday = 7, hour = 19, minute = 0 } } },
+    }
+    state.calendarInvites["0:20:1"] = { 6, 6, 3, 8, 2 }
     wowapi.fireEvent(state, "CALENDAR_UPDATE_EVENT_LIST")
+    assert.are.same({ { 0, 20, 1 } }, state.calendarOpenedEvents) -- only the planned run is opened
+    wowapi.fireEvent(state, "CALENDAR_OPEN_EVENT", "COMMUNITY_EVENT")
     settle()
-    assert.is_truthy(text():find("Sat 24 Oct, 20:00  Deadmines run|cffa0a0a0", 1, true))
-    assert.is_truthy(text():find("you signed up", 1, true))
-    ns.MainFrame.selectTab("friends")
-    ns.MainFrame.selectTab("dungeons")
-    assert.are.equal(1, state.calendarOpened)
+    local values = {}
+    for _, node in ipairs(dungeonTree().tree) do values[#values + 1] = node.value end
+    assert.are.same({ "header:planned", "planned:1", "header:range", "dm", "wc" }, values)
+    assert.is_truthy(dungeonTree().tree[2].text:find("Tue 20:00 \194\183 3", 1, true))
+    assert.is_truthy(text():find("|cffffd100Dungeons (1)|r", 1, true))
+    dungeonTree():SelectByValue("planned:1")
+    assert.is_truthy(text():find("Tue 20 Oct, 20:00 \194\183 Deadmines run \194\183 3 signed up \194\183 +1 tentative"
+      .. " \194\183 you signed up", 1, true))
+    dungeonTree():SelectByValue("wc") -- 6 days ahead: in the detail, not planned in the list
+    assert.is_truthy(text():find("Sat 24 Oct, 19:00 \194\183 Wailing Caverns", 1, true))
+  end)
+
+  it("lists a planned run for a dungeon none of your characters fits, greyed", function()
+    load(20)
+    open()
+    state.calendarEvents[0] = { [19] = { { title = "Stratholme", calendarType = "COMMUNITY_EVENT",
+      startTime = { year = 2026, month = 10, monthDay = 19, weekday = 2, hour = 20, minute = 0 } } } }
+    wowapi.fireEvent(state, "CALENDAR_UPDATE_EVENT_LIST")
+    settle() -- no CALENDAR_OPEN_EVENT: the sign-ups time out
+    assert.are.equal("|cffa0a0a0Stratholme|r  |cff40c040Mon 20:00|r", dungeonTree().tree[2].text)
+    dungeonTree():SelectByValue("planned:1")
+    assert.is_truthy(text():find("None of your characters is in range.", 1, true))
   end)
 
   it("opens Blizzard's calendar, or says how when it can't", function()

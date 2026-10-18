@@ -52,6 +52,7 @@ src\services\Ping.lua
 src\services\Sync.lua
 src\services\Invites.lua
 src\services\Notify.lua
+src\services\Planner.lua
 
 src\ui\Settings.lua
 src\ui\DungeonsTab.lua

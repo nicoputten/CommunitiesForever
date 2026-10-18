@@ -10,21 +10,22 @@ This file holds only open items. Answered API questions move to `docs/API-FINDIN
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp feed` logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 | V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/dump GetChatWindowInfo(<n>)` with `n` the tab's number (6 if it was the first new tab). Expected: the name is still there, the 7th value (`shown`) is false/nil and the 9th (`docked`) nil. Then Create in `/cf setup` (Community chat step) or `/cf settings` makes the tab again. | open |
-| V42 | How does a community calendar event look to addons, and does `ToggleCalendar` open the calendar? (CF-24) | Create a community event by hand in the calendar, title `Deadmines run`, a few days ahead; sign up for it. `/fp calendar` and send the `event` lines: `calendarType` (expected something other than `HOLIDAY`), `startTime`, `inviteStatus`. Then `/run ToggleCalendar()`: the calendar opens. | open |
+| V43 | Can addons read an event's sign-ups? (CF-24: the number next to a planned run) | With a community event within 3 days that you and a friend signed up for: the Dungeons list shows `· 2` after its time. If no number appears after a few seconds: `/run C_Calendar.OpenEvent(0, <day>, 1)` then `/dump C_Calendar.GetNumInvites(), C_Calendar.EventGetInvite(1)` and send the output. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-24 Dungeon planner
-Needs your characters and a friend's in a dungeon's level range (or `/cf debugon` for a fake friend at level 28 and 30).
+### CF-24 Dungeon planner (round 2)
+Round 1 passed. Changes from the feedback: calmer detail, planned runs, no group field, matching on the dungeon name only.
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Dungeons tab | Left: only dungeons with one of your characters in range, most people first, each with the number of people and a dungeon icon plus the number of quests when someone has quests for it. | open |
-| Select a dungeon | Right: the name and level range; Suggested group (you first, then a tank and a healer when someone set or has that role, then shared quests, online); at most one character per person; Also in range lists the rest. | open |
-| A community member without the addon in range | Listed with level and "community member" (no role or quests). | open |
-| Create a community event `Deadmines run` (see V42), back to the tab | Under Calendar: its day and time, and your sign-up. A title without the dungeon name: not listed. | open |
-| Plan a run: click Event title and Group, Ctrl+C, paste in the calendar event | The texts copy (`The Deadmines run`, the names with roles). Open calendar opens Blizzard's calendar. | open |
+| Dungeons tab, a dungeon with only you in range | Section titles in the normal size with a gap before each; your other characters in range on one small line under yours (`or <name> <level>, ...`), not under Also in range. No Calendar section without an event. | open |
+| Plan a run | One short hint line, one field with just the dungeon name (e.g. `The Deadmines`), Open calendar. No group field. | open |
+| Create a community event titled `Deadmines` (or `The Deadmines run`) for within 3 days; sign up; have a friend sign up | The tab reads `Dungeons (1)`. The list starts with Planned: `The Deadmines  <weekday> <time> · <signed up>` (see V43), then In range. The detail starts with Planned: date, title, `N signed up`, your status. | open |
+| An event titled with a short name only (e.g. `VC farm`) | Not matched (dungeon name only). | open |
+| A planned run for a dungeon none of your characters fits (e.g. Stratholme) | Listed under Planned in grey; its detail says none of your characters is in range. | open |
+| An event 4+ days ahead | Not in Planned and not counted on the tab; it shows in that dungeon's detail under Planned. | open |
 | Switch tabs and back, `/reload` | The selected dungeon stays selected. | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together

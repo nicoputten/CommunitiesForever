@@ -46,6 +46,14 @@ describe("Dungeons (CF-24)", function()
   end
 
   describe("overview", function()
+    it("lists a planned dungeon that fits none of your characters when asked to", function()
+      local overview = Dungeons.overview(Dungeons.candidates(view()), "G-ME", { strat = true })
+      local strat = entryFor(overview, "strat")
+      assert.is_false(strat.fits)
+      assert.are.equal(1, strat.people) -- the unlinked level 60
+      assert.is_true(entryFor(overview, "dm").fits)
+    end)
+
     it("lists only dungeons that fit one of your characters, most people first", function()
       local overview = Dungeons.overview(Dungeons.candidates(view()), "G-ME")
       for _, e in ipairs(overview) do
@@ -120,11 +128,8 @@ describe("Dungeons (CF-24)", function()
       assert.are.equal(5, #Dungeons.suggest(dm))
     end)
 
-    it("words the event title and the group", function()
-      local dm = entryFor(Dungeons.overview(Dungeons.candidates(view()), "G-ME"), "dm")
-      assert.are.equal("The Deadmines run", Dungeons.eventTitle(dm.dungeon))
-      assert.are.equal("Ann Example (DPS), Cid Example (Tank), Ben Example (Healer), Dee Example",
-        Dungeons.groupText(Dungeons.suggest(dm)))
+    it("uses the dungeon name as event title", function()
+      assert.are.equal("The Deadmines", Dungeons.eventTitle(Dungeons.get("dm")))
     end)
   end)
 
@@ -134,18 +139,44 @@ describe("Dungeons (CF-24)", function()
       return { year = 2026, month = 10, monthDay = day, weekday = 7, hour = hour, minute = 0 }
     end
 
-    it("matches titles that mention the dungeon by name or a whole-word alias, soonest first", function()
+    it("matches events on the dungeon name, \"The\" optional, soonest first", function()
       local dm = Dungeons.get("dm")
       local events = {
         { title = "Deadmines run", calendarType = "COMMUNITY_EVENT", startTime = at(25, 20) },
-        { title = "VC farm", calendarType = "PLAYER", startTime = at(24, 19) },
+        { title = "The Deadmines", calendarType = "PLAYER", startTime = at(24, 19) },
+        { title = "VC farm", calendarType = "PLAYER", startTime = at(24, 19) }, -- no short names
         { title = "Darkmoon Faire", calendarType = "HOLIDAY", startTime = at(20, 0) },
         { title = "Deadmines yesterday", calendarType = "PLAYER", startTime = at(17, 20) },
         { title = "Wailing Caverns", calendarType = "PLAYER", startTime = at(26, 20) },
-        { title = "avcd", calendarType = "PLAYER", startTime = at(26, 20) }, -- "vc" inside a word
       }
       local found = Dungeons.events(events, dm, NOW)
-      assert.are.same({ "VC farm", "Deadmines run" }, { found[1].title, found[2].title })
+      assert.are.same({ "The Deadmines", "Deadmines run" }, { found[1].title, found[2].title })
+      assert.are.equal(2, #found)
+    end)
+
+    it("picks the longest dungeon name in a title", function()
+      assert.are.equal("smcath", Dungeons.dungeonOf("Scarlet Monastery Cathedral tonight").id)
+      assert.are.equal("ubrs", Dungeons.dungeonOf("Upper Blackrock Spire").id)
+      assert.is_nil(Dungeons.dungeonOf("Raid night"))
+    end)
+
+    it("lists runs planned in the next 3 days, also across a month end", function()
+      local now = { year = 2026, month = 10, monthDay = 30, weekday = 6, hour = 12, minute = 0 }
+      local events = {
+        { title = "Deadmines", startTime = { year = 2026, month = 11, monthDay = 2, weekday = 2, hour = 11 } },
+        { title = "Stratholme", startTime = { year = 2026, month = 11, monthDay = 2, weekday = 2, hour = 13 } },
+        { title = "Wailing Caverns", startTime = { year = 2026, month = 10, monthDay = 31, weekday = 7, hour = 20 } },
+        { title = "Raid night", startTime = { year = 2026, month = 10, monthDay = 31, weekday = 7, hour = 20 } },
+      }
+      local planned = Dungeons.planned(events, now)
+      assert.are.same({ "wc", "dm" }, { planned[1].dungeon.id, planned[2].dungeon.id })
+      assert.are.equal(2, #planned) -- Stratholme is 3 days and 1 hour away
+      assert.are.equal("Sat 20:00", Dungeons.shortTime(planned[1].event.startTime))
+    end)
+
+    it("counts signed up, accepted and confirmed; tentative apart", function()
+      assert.are.same({ 3, 1 }, { Dungeons.signUps({ 6, 3, 1, 8, 2, 0, 7 }) })
+      assert.are.same({ 0, 0 }, { Dungeons.signUps(nil) })
     end)
 
     it("words the event time and your sign-up", function()

@@ -57,6 +57,7 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      Planner.lua            calendar events for the Dungeons tab, sign-ups of planned runs (OpenEvent queue) (CF-24)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member

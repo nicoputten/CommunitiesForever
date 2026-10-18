@@ -18,7 +18,7 @@ local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZ
 local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
 local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
-               { value = "dungeons", text = "Dungeons" } }                                         -- CF-24
+               { value = "dungeons", text = "Dungeons", width = 140 } } -- CF-24: room for "Dungeons (1)"
 local TAB_WIDTH = 90
 local TAB_INDENT = 12 -- px, lines the tabs up with the text inside the content box
 
@@ -376,6 +376,7 @@ end
 function MainFrame.render()
   if not frame then return end
   view = ns.ViewModel.build(addonRef)
+  MainFrame.updateTabs()
 
   local empty = ns.Format.emptyState(view, {
     selected = ns.CommunitySelection.selected() ~= nil,
@@ -562,7 +563,7 @@ local function create()
   for _, tab in ipairs(TABS) do
     local link = createWidget("InteractiveLabel")
     link:SetFontObject(GameFontNormalLarge)
-    link:SetWidth(TAB_WIDTH)
+    link:SetWidth(tab.width or TAB_WIDTH)
     if link.SetHighlight then link:SetHighlight("Interface\\QuestFrame\\UI-QuestTitleHighlight") end
     link:SetCallback("OnClick", function() MainFrame.selectTab(tab.value) end)
     tabBar:AddChild(link)
@@ -577,13 +578,22 @@ local function create()
   MainFrame.selectTab(activeTab)
 end
 
+-- Tab texts: the active one gold. CF-24: "Dungeons (N)" with N runs planned in the next days.
+function MainFrame.updateTabs()
+  if not frame then return end
+  local planned = #ns.Planner.planned()
+  for _, tab in ipairs(TABS) do
+    local text = tab.text
+    if tab.value == "dungeons" and planned > 0 then text = string.format("%s (%d)", text, planned) end
+    tabLinks[tab.value]:SetText((tab.value == activeTab and GOLD or GREY) .. text .. "|r")
+  end
+end
+
 -- Shows a tab ("friends", "activity" or "dungeons").
 function MainFrame.selectTab(value)
   if not frame then return end
   activeTab = value
-  for _, tab in ipairs(TABS) do
-    tabLinks[tab.value]:SetText((tab.value == value and GOLD or GREY) .. tab.text .. "|r")
-  end
+  MainFrame.updateTabs()
   content:ReleaseChildren()
   if value == "friends" then createTree() end
   if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
@@ -617,7 +627,7 @@ local function refreshMessages()
     ns.Sync.PEOPLE_UPDATED,
     ns.Invites.CHANGED,
     ns.FeedTracker.CHANGED,
-    ns.Calendar.UPDATED, -- CF-24: calendar events for the Dungeons tab
+    ns.Planner.UPDATED, -- CF-24: calendar events and sign-ups for the Dungeons tab
   }
 end
 
