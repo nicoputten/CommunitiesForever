@@ -103,7 +103,7 @@ Char = {
   professions = { [skillLineID] = { name, rank, max } },
   talents = { { name, points } x3 }, mainTree,       -- CF-18: points per Vanilla tree, tree with most points
   autoRole, roleOverride, role,                      -- CF-18: guessed, player override, effective (tank/heal/dps)
-  quests = { [questID] = title },                    -- CF-19 (future): quest log, names only, no progress
+  quests = { [questID] = { title, area, dungeon } },  -- CF-19: quest log, names only, no progress; area = log header
   updatedAt,                                         -- last synced-field change
   lastPlayed,                                        -- own chars: login/logout time (not compared, no bump)
 }

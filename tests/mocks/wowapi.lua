@@ -234,6 +234,8 @@ function wowapi.install(opts)
     redeemed = {},         -- C_Club.RedeemTicket calls
     tooltipPostCalls = {}, -- TooltipDataProcessor.AddTooltipPostCall registrations
     -- state.talentNodes: class talent tree nodes { posX, ranks } (CF-18); nil = not available.
+    -- state.questLog: quest log entries { questID, title, isHeader, isHidden, tagID } (CF-19); nil = not available.
+    atlases = { ["worldquest-icon-dungeon"] = true }, -- C_Texture.GetAtlasInfo knows these atlas names
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
       { battleTag = "Sjaakovich#2232", gameAccounts = {
@@ -306,6 +308,29 @@ function wowapi.install(opts)
         local node = state.talentNodes[nodeID - 100000]
         return node and { ID = nodeID, posX = node.posX, ranksPurchased = node.ranks, maxRanks = 5 }
       end,
+    },
+    C_QuestLog = {
+      GetNumQuestLogEntries = function()
+        if not state.questLog then return nil end
+        local quests = 0
+        for _, e in ipairs(state.questLog) do
+          if not e.isHeader then quests = quests + 1 end
+        end
+        return #state.questLog, quests
+      end,
+      GetInfo = function(index)
+        local e = state.questLog and state.questLog[index]
+        return e and { questID = e.isHeader and 0 or e.questID, title = e.title, level = 1,
+                       isHeader = e.isHeader or false, isHidden = e.isHidden or false }
+      end,
+      GetQuestTagInfo = function(questID)
+        for _, e in ipairs(state.questLog or {}) do
+          if e.questID == questID and e.tagID then return { tagID = e.tagID, tagName = "Dungeon" } end
+        end
+      end,
+    },
+    C_Texture = {
+      GetAtlasInfo = function(name) return state.atlases[name] and { width = 32, height = 32 } or nil end,
     },
     C_Club = {
       GetSubscribedClubs = function() return deepCopy(state.clubs) end,

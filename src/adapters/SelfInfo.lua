@@ -5,7 +5,7 @@ local _, ns = ...
 local SelfInfo = {}
 
 -- Internal message: (reason, ...event args). Reasons: "world", "level", "skills", "equipment", "logout",
--- "talents".
+-- "talents", "quests", "questRemoved".
 SelfInfo.CHANGED = "CF_SELF_CHANGED"
 
 local EVENT_REASONS = {
@@ -17,6 +17,10 @@ local EVENT_REASONS = {
   CHARACTER_POINTS_CHANGED = "talents",      -- CF-18 (verified to exist, V20)
   PLAYER_TALENT_UPDATE = "talents",
   TRAIT_CONFIG_UPDATED = "talents",
+  QUEST_ACCEPTED = "quests",                 -- CF-19 (verified to exist, V23)
+  QUEST_REMOVED = "questRemoved",           -- abandoned or completed: an empty log is real then
+  QUEST_TURNED_IN = "questRemoved",
+  QUEST_LOG_UPDATE = "quests",               -- also fires when the log first loads
 }
 
 -- prof1, prof2, archaeology, fishing, cooking, with nil holes (API-FINDINGS.md).
@@ -69,6 +73,28 @@ local function readTalentNodes()
   return #nodes > 0 and nodes or nil
 end
 
+-- Raw quest log entries in log order (CF-19, V23): { questID, title, isHeader, isHidden, tagID }.
+-- tagID from C_QuestLog.GetQuestTagInfo (unverified, VERIFY.md V31). nil when the log is not readable.
+local function readQuestLog()
+  if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return nil end
+  local count = C_QuestLog.GetNumQuestLogEntries()
+  if not count then return nil end
+  local entries = {}
+  for i = 1, count do
+    local info = C_QuestLog.GetInfo(i)
+    if info then
+      local tagID
+      if not info.isHeader and info.questID and info.questID > 0 and C_QuestLog.GetQuestTagInfo then
+        local tag = C_QuestLog.GetQuestTagInfo(info.questID)
+        tagID = tag and tag.tagID
+      end
+      entries[#entries + 1] = { questID = info.questID, title = info.title, isHeader = info.isHeader,
+                                isHidden = info.isHidden, tagID = tagID }
+    end
+  end
+  return entries
+end
+
 -- Full "First Last" name. UnitName returns first and last name separately for some characters
 -- (last name in the second return, V9); GetUnitName("player", true) returns "Marks Man".
 local function fullName()
@@ -98,6 +124,7 @@ function SelfInfo.read()
     professions = readProfessions(),
     battleTag = (select(2, BNGetInfo())),
     talentNodes = readTalentNodes(),
+    questLog = readQuestLog(),
   }
 end
 

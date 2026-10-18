@@ -73,6 +73,7 @@ local function charRow(guid, member, record, presence, location, source)
     ilvl = record.ilvl,
     professions = record.professions,
     talents = record.talents,         -- CF-18
+    quests = record.quests,           -- CF-19
     role = record.role,
     roleOverride = record.roleOverride,
     realm = record.realm,
