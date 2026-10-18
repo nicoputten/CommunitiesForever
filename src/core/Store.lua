@@ -11,7 +11,8 @@ Store.SCHEMA_VERSION = 1
 function Store.defaults()
   return {
     global = {
-      settings = { notifications = true, minimap = {}, window = {}, tree = {}, sendInterval = 0.2 },
+      settings = { notifications = true, minimap = {}, window = {}, tree = {}, sendInterval = 0.2,
+                   shareActivity = true },  -- CF-22
       self = { version = 0, chars = {} },
       people = {},
       presence = {},

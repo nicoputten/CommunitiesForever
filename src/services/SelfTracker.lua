@@ -24,9 +24,25 @@ function SelfTracker.start(addon)
     -- CF-19: quest log per character (nil when not readable: the snapshot keeps the old one).
     info.quests = ns.Quests.fromLog(info.questLog, questRemoved)
     questRemoved = false
-    if ns.Snapshot.apply(addon.db.global.self, info, GetServerTime()) then
+    -- CF-22: level-ups and new profession ranks for the activity feed, from the snapshot difference.
+    local stored = info.guid and addon.db.global.self.chars[info.guid]
+    local before = stored and { level = stored.level, professions = stored.professions }
+    local changed = ns.Snapshot.apply(addon.db.global.self, info, GetServerTime())
+    local after = info.guid and addon.db.global.self.chars[info.guid]
+    ns.FeedTracker.record(after, ns.Feed.changes(before, after), changed)
+    if changed then
       addon:SendMessage(SelfTracker.UPDATED)
     end
+  end
+
+  -- CF-22: a turned-in quest counts for the feed under its area (log header), read before the log
+  -- refresh removes it.
+  local function questTurnedIn(questID)
+    local guid = ns.SelfInfo.read().guid
+    local char = guid and addon.db.global.self.chars[guid]
+    if not char then return end
+    local quest = type(questID) == "number" and char.quests and char.quests[questID]
+    ns.FeedTracker.record(char, { { kind = "quest", zone = quest and quest.area } })
   end
 
   local refreshDebounced = ns.Timer.debounce(EQUIPMENT_DEBOUNCE, function() refresh() end)
@@ -38,7 +54,8 @@ function SelfTracker.start(addon)
   addon:RegisterMessage(ns.SelfInfo.CHANGED, function(_, reason, arg)
     if reason == "equipment" or reason == "talents" or reason == "quests" then
       refreshDebounced()
-    elseif reason == "questRemoved" then
+    elseif reason == "questRemoved" or reason == "questTurnedIn" then
+      if reason == "questTurnedIn" then questTurnedIn(arg) end
       questRemoved = true
       refreshDebounced()
     elseif reason == "level" then

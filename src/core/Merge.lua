@@ -1,4 +1,5 @@
 -- Merge: record accept rules and version rules. Pure Lua, no WoW globals.
+-- Requires ns.Feed (load core/Feed.lua first).
 local _, ns = ...
 
 local Merge = {}
@@ -45,8 +46,9 @@ local function cleanInvite(invite)
 end
 
 -- The RECORD message for the own record: all own characters (CF-17 feedback: always shared;
--- the receiver decides what to show, see core rule 1).
-function Merge.outgoingRecord(selfRecord)
+-- the receiver decides what to show, see core rule 1). CF-22: the activity feed only when
+-- shareActivity is not false ("Share my activity" setting).
+function Merge.outgoingRecord(selfRecord, shareActivity)
   local chars = {}
   for guid, char in pairs(selfRecord.chars or {}) do
     chars[guid] = char
@@ -58,6 +60,7 @@ function Merge.outgoingRecord(selfRecord)
     version = selfRecord.version,
     chars = chars,
     invite = cleanInvite(selfRecord.invite),
+    feed = shareActivity ~= false and selfRecord.feed or nil,
   }
 end
 
@@ -108,7 +111,7 @@ function Merge.accept(stored, record, senderBattleTag, relay)
   return true
 end
 
--- Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, via }.
+-- Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, via, invite, feed }.
 -- via is the BattleTag of the friend who relayed it, nil when it came from the owner.
 function Merge.store(people, record, now, senderBattleTag)
   people[record.bt] = {
@@ -118,6 +121,7 @@ function Merge.store(people, record, now, senderBattleTag)
     chars = stripEscapes(record.chars, 0),
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
     invite = cleanInvite(record.invite),
+    feed = ns.Feed.clean(record.feed), -- CF-22; nil when the owner does not share it
   }
 end
 
@@ -155,7 +159,7 @@ function Merge.relayRecord(people, battleTag)
   local person = people[battleTag]
   if not person then return nil end
   return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
-           chars = person.chars, invite = cleanInvite(person.invite) }
+           chars = person.chars, invite = cleanInvite(person.invite), feed = person.feed }
 end
 
 ns.Merge = Merge

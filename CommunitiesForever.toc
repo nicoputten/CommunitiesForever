@@ -1,13 +1,15 @@
 ## Interface: 16001
 ## Title: CommunitiesForever
 ## Notes: Shows which community characters belong to which Battle.net friend.
-## Author: Nico van der Putten
+## Author: Vestras
 ## Version: @project-version@
+## X-Curse-Project-ID: 1752013
 ## SavedVariables: CommunitiesForeverDB
 
 embeds.xml
 
 src\core\Store.lua
+src\core\Feed.lua
 src\core\Merge.lua
 src\core\Snapshot.lua
 src\core\Describe.lua
@@ -29,6 +31,7 @@ src\adapters\Community.lua
 src\adapters\Presence.lua
 src\adapters\Transport.lua
 
+src\services\FeedTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\MemberTracker.lua

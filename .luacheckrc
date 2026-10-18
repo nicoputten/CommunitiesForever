@@ -22,10 +22,10 @@ stds.wow = {
     "LibStub",
     -- C_ namespaces
     "C_AddOns", "C_BattleNet", "C_ChatInfo", "C_Club", "C_EventUtils", "C_Timer", "C_ClassTalents", "C_Traits",
-    "C_QuestLog", "C_Texture",
+    "C_QuestLog", "C_Texture", "C_DateAndTime",
     "GetClubTicketLink",
     -- client and unit info
-    "GetBuildInfo", "GetServerTime", "GetTime", "GetRealmName", "GetNormalizedRealmName",
+    "GetBuildInfo", "GetServerTime", "GetTime", "GetRealmName", "GetNormalizedRealmName", "date",
     "UnitGUID", "UnitName", "GetUnitName", "UnitLevel", "UnitClassBase", "UnitRace", "UnitFactionGroup",
     "GetProfessions", "GetProfessionInfo", "GetAverageItemLevel",
     "InCombatLockdown",

@@ -128,7 +128,7 @@ function Linker.build(raw)
     people = raw.people or {},
     presence = raw.presence or {},
     locations = raw.locations or {},
-    self = { battleTag = selfKey, displayName = self.displayName, chars = self.chars or {} },
+    self = { battleTag = selfKey, displayName = self.displayName, chars = self.chars or {}, feed = self.feed },
     selfGuid = raw.selfGuid,
   }
   self = input.self
@@ -214,6 +214,7 @@ function Linker.build(raw)
       via = via,
       viaName = via and Linker.displayName(via, input.people[via] and input.people[via].displayName),
       updatedAt = updatedAt,
+      feed = isSelf and self.feed or (record and record.feed) or nil, -- CF-22 activity feed
     }
   end
 

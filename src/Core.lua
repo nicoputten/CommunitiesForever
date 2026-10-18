@@ -20,6 +20,7 @@ end
 
 function addon:OnEnable()
   ns.SelfInfo.watch(self)
+  ns.FeedTracker.start(self) -- before SelfTracker: its first refresh may record feed events
   ns.SelfTracker.start(self)
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
