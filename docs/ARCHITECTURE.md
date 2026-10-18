@@ -37,7 +37,10 @@ CommunitiesForever/
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
-      Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22)
+      Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
+                             runs and shared lines for runs done together (CF-23)
+      Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
+                             match end, the 10-minute and boss rule (CF-23)
       Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
@@ -47,9 +50,11 @@ CommunitiesForever/
       Community.lua          C_Club (club list, members, club and member events)
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
+      Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       CommunityChat.lua      community chat color (always), tab flash and sound, Community chat tab (CF-25)
@@ -97,7 +102,8 @@ global = {
                 shareActivity = true,                -- CF-22: send the activity feed to friends
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
                 chatAlert = true, chatSound = false, chatKeepGeneral = true,
-                chatTab = { [guid] = true } },       -- CF-25: characters with a Community chat tab
+                chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
+                activityDebug = nil },               -- CF-23: /cf activity debug prints instance events
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days
@@ -105,12 +111,18 @@ global = {
                                 chars = { [guid] = Char }, via, invite, feed } },  -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
+  runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
 }
+
+-- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
+Run = { name, kind = "party"|"raid"|"pvp", instanceID, day, startedAt, lastAt,
+        bosses = { [encounterID] = true }, bossCount, with = { [guid] = true }, ended, won }
 
 -- CF-22: [day] = realm day number (days since 1970-01-01), aggregated per character.
 Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                               quests = { [zone] = count }, ranks = { [profession] = rank },
-                              learned = { [profession] = true } } } }
+                              learned = { [profession] = true },
+                              runs = { { name, kind, bosses, won, with = { guid, ... } } } } } }  -- CF-23
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,

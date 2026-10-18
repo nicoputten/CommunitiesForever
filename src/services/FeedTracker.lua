@@ -41,13 +41,14 @@ end
 
 -- Adds events (see Feed.changes, or { kind = "quest", zone }) of an own character { guid, name, classFile }.
 -- bumped: the caller already bumped the own version after these events (no extra sync needed).
-function FeedTracker.record(char, events, bumped)
+-- day: realm day number the events belong to (CF-23: a run counts on the day it started); default today.
+function FeedTracker.record(char, events, bumped, day)
   if not addonRef or not char or not char.guid or #events == 0 then return end
   local feed = own().feed or {}
   own().feed = feed
   local today, now = FeedTracker.today(), GetServerTime()
   for _, event in ipairs(events) do
-    ns.Feed.add(feed, today, char, event, now)
+    ns.Feed.add(feed, day or today, char, event, now)
   end
   ns.Feed.trim(feed, today)
   addonRef:SendMessage(FeedTracker.CHANGED)

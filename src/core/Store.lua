@@ -18,6 +18,7 @@ function Store.defaults()
       people = {},
       presence = {},
       locations = {},
+      runs = {},          -- CF-23: run in progress per own character (not synced)
     },
   }
 end

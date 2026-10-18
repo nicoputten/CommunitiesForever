@@ -275,7 +275,11 @@ function wowapi.install(opts)
         return timer
       end,
     },
-    UnitGUID = function() return p.guid end,
+    -- CF-23: other units (party1, raid3, ...) from state.unitGuids; the player otherwise.
+    UnitGUID = function(unit)
+      if unit and state.unitGuids and state.unitGuids[unit] ~= nil then return state.unitGuids[unit] end
+      return p.guid
+    end,
     -- Like Forever for some characters: first and last name split over two returns (V9).
     UnitName = function() return p.name:match("^(%S+)"), p.name:match("^%S+ (.+)$") end,
     GetUnitName = function(_, showServer) assert(showServer == true); return p.name end,
@@ -457,6 +461,30 @@ function wowapi.install(opts)
   globals.C_Club.GetStreams = function() return { { streamId = 1, name = "General", streamType = 0 } } end
   globals.Enum = globals.Enum or {}
   globals.Enum.ClubStreamType = { General = 0 }
+
+  -- CF-23: instances. state.instance = { name, type, instanceID } (outside: Kalimdor, type "none");
+  -- state.group = { guid, ... } of the other group members (party1.. or raid1.. with state.inRaid);
+  -- state.bgWinner / state.bgTeam for GetBattlefieldWinner / GetBattlefieldArenaFaction.
+  state.instance = { name = "Kalimdor", type = "none", instanceID = 1 }
+  state.group = {}
+  globals.GetInstanceInfo = function()
+    local i = state.instance
+    return i.name, i.type, 0, "", 5, 0, false, i.instanceID
+  end
+  globals.GetNumGroupMembers = function() return #state.group > 0 and #state.group + 1 or 0 end
+  globals.IsInRaid = function() return state.inRaid == true end
+  globals.GetBattlefieldWinner = function() return state.bgWinner end
+  globals.GetBattlefieldArenaFaction = function() return state.bgTeam end
+  local function groupUnits()
+    state.unitGuids = {}
+    for i, guid in ipairs(state.group) do
+      state.unitGuids[(state.inRaid and "raid" or "party") .. i] = guid
+    end
+  end
+  state.setGroup = function(guids, inRaid)
+    state.group, state.inRaid = guids, inRaid
+    groupUnits()
+  end
 
   for name, value in pairs(globals) do
     if not missing[name] then set(name, value) end

@@ -26,6 +26,7 @@ function addon:OnEnable()
   ns.CommunitySelection.start(self)
   ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab
   ns.MemberTracker.start(self)
+  ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)
@@ -95,6 +96,18 @@ function addon:OnSlashCommand(input)
     self:Print("Sync: announced your record to friends online in Forever.")
   elseif command == "settings" then
     ns.Settings.open()
+  elseif command == "activity" then
+    if argument == "debug" then
+      ns.ActivityTracker.setDebug(not ns.ActivityTracker.debugOn())
+      self:Print(ns.ActivityTracker.debugOn()
+        and "Activity debug on: instance events and run decisions are printed (stays on after /reload)."
+        or "Activity debug off.")
+    else
+      local run = ns.ActivityTracker.current()
+      self:Print(run and string.format("In %s (%s) for %d min, %d bosses killed.", tostring(run.name),
+        tostring(run.kind), math.floor((GetServerTime() - (run.startedAt or 0)) / 60), run.bossCount or 0)
+        or "Not in a dungeon, raid or battleground.")
+    end
   elseif command == "debugon" or command == "debugoff" then -- hidden: not in the help
     ns.Debug.set(command == "debugon")
     self:Print(command == "debugon" and "Debug on: fake friend in the window (not saved, not synced)."
@@ -110,6 +123,8 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf people - show who owns which community character")
     self:Print("  /cf sync - announce your characters to friends now")
     self:Print("  /cf ping [bytes] - test messages with friends who run the addon; /cf ping stats")
+    self:Print("  /cf activity - show the dungeon, raid or battleground run in progress")
+    self:Print("  /cf activity debug - print instance events for the activity feed (on/off)")
     self:Print("  /cf settings - open the settings")
   end
 end
