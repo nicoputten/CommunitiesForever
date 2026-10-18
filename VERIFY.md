@@ -11,11 +11,18 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on two clients: compare the `club` lines under V8 COMMUNITIES. | open |
 | V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/fp start` (V30 TALENTS lists the nodes with points left to right, with their spells) and `/cf self` (`talents: <tree> N / <tree> N / <tree> N`). The points should sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
-| V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/fp start`: under V41 CHAT WINDOWS the closed window still has its name, with `shown` false/nil and `docked` nil. Then Create in `/cf setup` (Community chat step) makes the tab again. | open |
-| V46 | Which dungeons does the Forever client know, with which level ranges? (CF-24: Forever's new dungeons, e.g. Excavation Site: Wetlands, are missing in the Dungeons tab) | `/fp start`: V46 GROUP FINDER lists the Group Finder categories and every activity with all its fields (name, level range, map). V46 DUNGEON FINDER lists entries beyond the Vanilla list. Expected: Excavation Site: Wetlands with 26 to 33 among the activities. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-24 Dungeon planner (round 4)
+The dungeon list now comes from the game's Group Finder (V46): Forever's new dungeons and the game's level ranges.
+
+| Step | Expected | Status |
+|---|---|---|
+| Dungeons tab on a character of level 26 to 33 | Excavation Site: Wetlands is listed (levels 26 to 33). Other new ones in range too: Hall of Thanes 13 to 20, Ruins of Lordaeron 15 to 22, City of Dalaran 28 to 35. | open |
+| Select an old dungeon, e.g. Shadowfang Keep | Its levels match the Group Finder (`Show All Level Ranges` there): Shadowfang Keep 20 to 30, Scarlet Monastery Graveyard 30 to 38. | open |
+| A community event titled `Excavation Site: Wetlands` | Listed under Planned like the old dungeons. | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.

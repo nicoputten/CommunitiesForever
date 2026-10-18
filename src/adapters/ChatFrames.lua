@@ -32,8 +32,8 @@ end
 local function frame(index) return _G["ChatFrame" .. index] end
 
 -- A closed chat tab keeps its name (CF-26 feedback): GetChatWindowInfo returns name, fontSize, r, g, b,
--- alpha, shown, locked, docked (Mainline order, unverified on Forever: VERIFY.md V41). A window that is
--- neither shown nor docked is closed. With fewer returns every named window counts, as before.
+-- alpha, shown, locked, docked (verified, V41). A window that is neither shown nor docked is closed. With
+-- fewer returns every named window counts, as before.
 local function closed(...)
   if select("#", ...) < 9 then return false end
   local shown, docked = select(7, ...), select(9, ...)

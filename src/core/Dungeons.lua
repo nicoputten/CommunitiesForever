@@ -14,54 +14,99 @@ quests; Scarlet Monastery and Dire Maul share one header over their wings. areaI
 notes give the IDs some dungeons' quests use instead: Gnomeregan 133, Razorfen Kraul 1717, Uldaman 1517,
 Zul'Farrak 978, Sunken Temple 1417; the Scarlet Monastery wings and Blackrock Spire share theirs).
 Raids are left out. ]]
-Dungeons.LIST = {
-  { id = "rfc", name = "Ragefire Chasm", min = 13, max = 18, areaIds = { 2437 },
+Dungeons.STATIC = {
+  { id = "rfc", activities = { 798 }, name = "Ragefire Chasm", min = 13, max = 18, areaIds = { 2437 },
     areas = { "Ragefire Chasm" } },
-  { id = "wc", name = "Wailing Caverns", min = 17, max = 24, areaIds = { 718 },
+  { id = "wc", activities = { 796 }, name = "Wailing Caverns", min = 17, max = 24, areaIds = { 718 },
     areas = { "Wailing Caverns" } },
-  { id = "dm", name = "The Deadmines", min = 17, max = 26, areaIds = { 1581 },
+  { id = "dm", activities = { 799 }, name = "The Deadmines", min = 17, max = 26, areaIds = { 1581 },
     areas = { "The Deadmines", "Deadmines" } },
-  { id = "sfk", name = "Shadowfang Keep", min = 22, max = 30, areaIds = { 209 },
+  { id = "sfk", activities = { 800 }, name = "Shadowfang Keep", min = 22, max = 30, areaIds = { 209 },
     areas = { "Shadowfang Keep" } },
-  { id = "bfd", name = "Blackfathom Deeps", min = 24, max = 32, areaIds = { 719 },
+  { id = "bfd", activities = { 801 }, name = "Blackfathom Deeps", min = 24, max = 32, areaIds = { 719 },
     areas = { "Blackfathom Deeps" } },
-  { id = "stocks", name = "The Stockade", min = 24, max = 32, areaIds = { 717 },
+  { id = "stocks", activities = {}, name = "The Stockade", min = 24, max = 32, areaIds = { 717 },
     areas = { "The Stockade" } },
-  { id = "gnomer", name = "Gnomeregan", min = 29, max = 38, areaIds = { 721, 133 },
+  { id = "gnomer", activities = { 803 }, name = "Gnomeregan", min = 29, max = 38, areaIds = { 721, 133 },
     areas = { "Gnomeregan" } },
-  { id = "rfk", name = "Razorfen Kraul", min = 29, max = 38, areaIds = { 491, 1717 },
+  { id = "rfk", activities = { 804 }, name = "Razorfen Kraul", min = 29, max = 38, areaIds = { 491, 1717 },
     areas = { "Razorfen Kraul" } },
-  { id = "smgy", name = "Scarlet Monastery Graveyard", min = 26, max = 36, areaIds = { 796 },
+  { id = "smgy", activities = { 805 }, name = "Scarlet Monastery Graveyard", min = 26, max = 36, areaIds = { 796 },
     areas = { "Scarlet Monastery" } },
-  { id = "smlib", name = "Scarlet Monastery Library", min = 29, max = 39, areaIds = { 796 },
+  { id = "smlib", activities = { 829 }, name = "Scarlet Monastery Library", min = 29, max = 39, areaIds = { 796 },
     areas = { "Scarlet Monastery" } },
-  { id = "smarm", name = "Scarlet Monastery Armory", min = 32, max = 42, areaIds = { 796 },
+  { id = "smarm", activities = { 827 }, name = "Scarlet Monastery Armory", min = 32, max = 42, areaIds = { 796 },
     areas = { "Scarlet Monastery" } },
-  { id = "smcath", name = "Scarlet Monastery Cathedral", min = 35, max = 45, areaIds = { 796 },
+  { id = "smcath", activities = { 828 }, name = "Scarlet Monastery Cathedral", min = 35, max = 45, areaIds = { 796 },
     areas = { "Scarlet Monastery" } },
-  { id = "rfd", name = "Razorfen Downs", min = 37, max = 46, areaIds = { 722 },
+  { id = "rfd", activities = { 806 }, name = "Razorfen Downs", min = 37, max = 46, areaIds = { 722 },
     areas = { "Razorfen Downs" } },
-  { id = "ulda", name = "Uldaman", min = 41, max = 51, areaIds = { 1337, 1517 },
+  { id = "ulda", activities = { 807 }, name = "Uldaman", min = 41, max = 51, areaIds = { 1337, 1517 },
     areas = { "Uldaman" } },
-  { id = "zf", name = "Zul'Farrak", min = 44, max = 54, areaIds = { 1176, 978 },
+  { id = "zf", activities = { 808 }, name = "Zul'Farrak", min = 44, max = 54, areaIds = { 1176, 978 },
     areas = { "Zul'Farrak" } },
-  { id = "mara", name = "Maraudon", min = 46, max = 55, areaIds = { 2100 },
+  { id = "mara", activities = { 809 }, name = "Maraudon", min = 46, max = 55, areaIds = { 2100 },
     areas = { "Maraudon" } },
-  { id = "st", name = "Sunken Temple", min = 50, max = 56, areaIds = { 1417, 1477 },
+  { id = "st", activities = { 810 }, name = "Sunken Temple", min = 50, max = 56, areaIds = { 1417, 1477 },
     areas = { "Sunken Temple", "Temple of Atal'Hakkar" } },
-  { id = "brd", name = "Blackrock Depths", min = 52, max = 60, areaIds = { 1584 },
+  { id = "brd", activities = { 811 }, name = "Blackrock Depths", min = 52, max = 60, areaIds = { 1584 },
     areas = { "Blackrock Depths" } },
-  { id = "lbrs", name = "Lower Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
+  { id = "lbrs", activities = { 812 }, name = "Lower Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
     areas = { "Lower Blackrock Spire", "Blackrock Spire" } },
-  { id = "ubrs", name = "Upper Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
+  { id = "ubrs", activities = { 837 }, name = "Upper Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
     areas = { "Upper Blackrock Spire", "Blackrock Spire" } },
-  { id = "dme", name = "Dire Maul", min = 55, max = 60, areaIds = { 2557 },
+  { id = "dme", activities = { 813, 814, 815 }, name = "Dire Maul", min = 55, max = 60, areaIds = { 2557 },
     areas = { "Dire Maul" } },
-  { id = "scholo", name = "Scholomance", min = 58, max = 60, areaIds = { 2057 },
+  { id = "scholo", activities = { 797 }, name = "Scholomance", min = 58, max = 60, areaIds = { 2057 },
     areas = { "Scholomance" } },
-  { id = "strat", name = "Stratholme", min = 58, max = 60, areaIds = { 2017 },
+  { id = "strat", activities = { 816, 1603 }, name = "Stratholme", min = 58, max = 60, areaIds = { 2017 },
     areas = { "Stratholme" } },
 }
+
+-- The dungeons in use: STATIC, updated from the Group Finder when it is available (applyGroupFinder).
+Dungeons.LIST = Dungeons.STATIC
+
+--[[ Rebuilds LIST from STATIC and the Group Finder's dungeon activities (CF-24, V46):
+  activities = { { activityID, name, shortName, min, max } } (C_LFGList; only dungeons).
+A dungeon in STATIC linked to activities takes the game's level range (lowest min, highest max of its
+activities, e.g. the Dire Maul wings). Activities not linked to STATIC are dungeons STATIC does not know
+(Forever's new ones): they are added with the game's name and range, without quest area data.
+Without activities LIST stays STATIC. ]]
+function Dungeons.applyGroupFinder(activities)
+  if type(activities) ~= "table" or #activities == 0 then
+    Dungeons.LIST = Dungeons.STATIC
+    return Dungeons.LIST
+  end
+  local byActivity = {}
+  for _, a in ipairs(activities) do
+    if type(a.activityID) == "number" then byActivity[a.activityID] = a end
+  end
+  local list, linked = {}, {}
+  for _, d in ipairs(Dungeons.STATIC) do
+    local copy = {}
+    for k, v in pairs(d) do copy[k] = v end
+    local min, max
+    for _, activityID in ipairs(d.activities or {}) do
+      local a = byActivity[activityID]
+      if a then
+        linked[activityID] = true
+        if type(a.min) == "number" and a.min > 0 then min = math.min(min or a.min, a.min) end
+        if type(a.max) == "number" and a.max > 0 then max = math.max(max or a.max, a.max) end
+      end
+    end
+    if min and max and min <= max then copy.min, copy.max = min, max end
+    list[#list + 1] = copy
+  end
+  for _, a in ipairs(activities) do
+    if not linked[a.activityID] and type(a.name) == "string" and type(a.min) == "number" and type(a.max) == "number"
+       and a.min > 0 and a.max >= a.min then
+      list[#list + 1] = { id = "lfg" .. a.activityID, activities = { a.activityID }, name = a.name, min = a.min,
+                          max = a.max, areaIds = {}, areas = { a.name } }
+    end
+  end
+  Dungeons.LIST = list
+  return list
+end
 
 local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
 local WEEKDAYS = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
@@ -265,7 +310,8 @@ started before `now` are left out. events: { { title, calendarType, startTime, i
 function Dungeons.events(events, dungeon, now)
   local result = {}
   for _, e in ipairs(events or {}) do
-    if upcoming(e, now) and Dungeons.dungeonOf(e.title) == dungeon then result[#result + 1] = e end
+    local named = upcoming(e, now) and Dungeons.dungeonOf(e.title)
+    if named and named.id == dungeon.id then result[#result + 1] = e end
   end
   table.sort(result, soonest)
   return result

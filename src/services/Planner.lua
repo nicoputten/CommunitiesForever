@@ -69,6 +69,8 @@ function Planner.start(addon)
     ns.Calendar.closeEvent()
     finishOpening({ ns.Dungeons.signUps(statuses) })
   end)
+  -- The dungeon list from the game's Group Finder (names and level ranges, Forever's new dungeons).
+  ns.Dungeons.applyGroupFinder(ns.GroupFinder.dungeons())
   ns.Calendar.request()
 end
 

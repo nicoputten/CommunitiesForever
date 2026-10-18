@@ -514,6 +514,18 @@ function wowapi.install(opts)
     CloseEvent = function() state.calendarCurrent = nil end,
   }
   globals.ToggleCalendar = function() state.calendarToggled = true end
+  -- CF-24: Group Finder. state.lfgActivities[activityID] = GetActivityInfoTable result, all in category 2.
+  state.lfgActivities = {}
+  globals.C_LFGList = {
+    GetAvailableCategories = function() return { 2 } end,
+    GetAvailableActivities = function()
+      local ids = {}
+      for id in pairs(state.lfgActivities) do ids[#ids + 1] = id end
+      table.sort(ids)
+      return ids
+    end,
+    GetActivityInfoTable = function(id) return state.lfgActivities[id] end,
+  }
 
   state.setGroup = function(guids, inRaid)
     state.group, state.inRaid = guids, inRaid

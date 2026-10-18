@@ -52,6 +52,7 @@ CommunitiesForever/
       Community.lua          C_Club (club list, members, club and member events)
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
+      GroupFinder.lua        the Group Finder's dungeon activities with level ranges (C_LFGList, CF-24)
       QuestieData.lua        dungeon quests from the optional QuestieDB addon, completed quests (CF-24, guarded)
       Calendar.lua           C_Calendar event list (this month and next), ToggleCalendar (CF-24, guarded)
       Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded)

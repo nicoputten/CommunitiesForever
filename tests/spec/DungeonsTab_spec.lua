@@ -140,6 +140,23 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(text():find("None of your characters is in range.", 1, true))
   end)
 
+  it("lists the Group Finder's dungeons, also Forever's new ones (V46)", function()
+    load(28)
+    state.lfgActivities[1981] = { fullName = "Excavation Site: Wetlands", shortName = "Excavation Site: Wetlands",
+      minLevelSuggestion = 26, maxLevelSuggestion = 33, maxNumPlayers = 5, difficultyID = 1, isPvpActivity = false }
+    state.lfgActivities[858] = { fullName = "Wetlands", minLevelSuggestion = 18, maxLevelSuggestion = 34,
+      maxNumPlayers = 0, difficultyID = 0 } -- a zone: left out
+    open()
+    local texts = {}
+    for _, node in ipairs(dungeonTree().tree) do texts[node.value] = node.text end
+    assert.is_truthy(texts.lfg1981 and texts.lfg1981:find("^Excavation Site: Wetlands"))
+    for value, row in pairs(texts) do
+      assert.is_falsy(row:find("^Wetlands"), value)
+    end
+    dungeonTree():SelectByValue("lfg1981")
+    assert.is_truthy(text():find("Excavation Site: Wetlands  |cffa0a0a0levels 26 to 33|r", 1, true))
+  end)
+
   describe("quests (QuestieDB)", function()
     local QUESTS = {
       [201] = { name = "Red Silk Bandanas", zoneOrSort = 1581, questLevel = 17, requiredLevel = 14, requiredRaces = 0,

@@ -217,6 +217,7 @@ function DungeonsTab.create(content, helpers)
   tree:SetLayout("Fill")
   tree:SetCallback("OnGroupSelected", function(_, _, value) showDungeon(value) end)
   content:AddChild(tree)
+  ns.Dungeons.applyGroupFinder(ns.GroupFinder.dungeons()) -- the game's dungeons and level ranges (V46)
   ns.Planner.request() -- fresh events; the window refreshes when they arrive
 end
 

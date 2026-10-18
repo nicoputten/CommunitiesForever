@@ -133,6 +133,44 @@ describe("Dungeons (CF-24)", function()
     end)
   end)
 
+  describe("Group Finder list (V46)", function()
+    local ACTIVITIES = {
+      { activityID = 800, name = "Shadowfang Keep", min = 20, max = 30 },
+      { activityID = 813, name = "Dire Maul (East)", min = 54, max = 60 },
+      { activityID = 815, name = "Dire Maul (North)", min = 56, max = 60 },
+      { activityID = 1981, name = "Excavation Site: Wetlands", min = 26, max = 33 },
+      { activityID = 1999, name = "Broken", min = 0, max = 0 },
+    }
+
+    it("takes the game's level ranges and adds dungeons the static table does not know", function()
+      Dungeons.applyGroupFinder(ACTIVITIES)
+      assert.are.same({ 20, 30 }, { Dungeons.get("sfk").min, Dungeons.get("sfk").max })
+      assert.are.same({ 54, 60 }, { Dungeons.get("dme").min, Dungeons.get("dme").max }) -- wings: lowest min
+      assert.are.same({ 17, 26 }, { Dungeons.get("dm").min, Dungeons.get("dm").max }) -- not listed: static
+      local new = Dungeons.get("lfg1981")
+      assert.are.equal("Excavation Site: Wetlands", new.name)
+      assert.are.same({ 26, 33 }, { new.min, new.max })
+      assert.are.same({ "Excavation Site: Wetlands" }, new.areas)
+      assert.is_nil(Dungeons.get("lfg1999"))
+      assert.are.equal(22, Dungeons.STATIC[4].min) -- the static table itself is untouched
+      assert.are.equal("lfg1981", Dungeons.dungeonOf("Excavation Site: Wetlands run").id)
+    end)
+
+    it("keeps the static list without Group Finder data", function()
+      Dungeons.applyGroupFinder(ACTIVITIES)
+      Dungeons.applyGroupFinder({})
+      assert.are.equal(Dungeons.STATIC, Dungeons.LIST)
+    end)
+
+    it("lists a new dungeon for your characters in its range", function()
+      Dungeons.applyGroupFinder(ACTIVITIES)
+      local v = view()
+      v.people[1].chars[1].level = 30
+      local overview = Dungeons.overview(Dungeons.candidates(v), "G-ME")
+      assert.is_not_nil(entryFor(overview, "lfg1981"))
+    end)
+  end)
+
   describe("dungeon quests", function()
     local HORDE, ALLIANCE = 690, 77 -- race masks (Vanilla Questie encoding)
     local DATA = { [1581] = {
