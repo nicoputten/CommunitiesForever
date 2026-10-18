@@ -8,8 +8,7 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 
 | # | Question | How to test | Status |
 |---|---|---|---|
-| V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on two clients: compare the `club` lines under V8 COMMUNITIES. | open |
-| V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/fp start` (V30 TALENTS lists the nodes with points left to right, with their spells) and `/cf self` (`talents: <tree> N / <tree> N / <tree> N`). The points should sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
+| V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on a friend's client: compare the `club` lines under V8 COMMUNITIES. Your own two characters both show 23125681 for Doombringers (2026-10-18); a friend's account is still to check. | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 
 ## Manual test steps per story
