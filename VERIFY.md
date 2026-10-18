@@ -58,5 +58,6 @@ Needs a friend linked to you in the community (they do not need the addon).
 
 | Step | Expected | Status |
 |---|---|---|
+| A Battle.net friend logs off (fix for the bug found: account offline but character still online) | Within a few seconds their account and all their characters show offline (no green dot), also when the Communities window still lists them as online. | open |
+| The friend switches to another character | Only the character they are on shows online. | open |
 
-Found a bug  that a friend logged off  and it shows that the account is offline but character is still online? even after 5min

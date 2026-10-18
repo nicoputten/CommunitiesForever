@@ -250,6 +250,7 @@ describe("Linker", function()
       local view = Linker.build(input({
         members = { G1 = member("Garraka", 1, { level = 12, zone = "Orgrimmar" }) },
         people = { [SJAAK] = { chars = { G1 = char("Garraka", { level = 11, ilvl = 25 }) } } },
+        online = { [SJAAK] = { guid = "G1", name = "Garraka", className = "Mage", level = 12 } }, -- CF-15 fix
       }))
       local row = person(view, SJAAK).chars[1]
       assert.are.equal(12, row.level) -- community level is live
@@ -308,6 +309,49 @@ describe("Linker", function()
       }))
       assert.are.same({ guid = "G9", name = "Outside", className = "Rogue", level = 5, visible = false },
         person(view, SJAAK).currentChar)
+    end)
+
+    -- CF-15 fix: the community presence can stay "Online" after a logout.
+    it("shows a friend's characters offline when Battle.net says they left, despite community presence", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Garraka", 1) },
+        presence = { G1 = { battleTag = SJAAK, lastSeen = 1 } },
+      }))
+      assert.is_false(person(view, SJAAK).online)
+      assert.is_false(person(view, SJAAK).chars[1].online)
+    end)
+
+    it("marks only the character a friend is on as online (Battle.net GUID)", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Garraka", 3), G2 = member("Stale", 1) },
+        presence = { G1 = { battleTag = SJAAK, lastSeen = 1 }, G2 = { battleTag = SJAAK, lastSeen = 1 } },
+        online = { [SJAAK] = { guid = "G1", name = "Garraka", className = "Mage", level = 11 } },
+      }))
+      local rows = {}
+      for _, row in ipairs(person(view, SJAAK).chars) do rows[row.guid] = row.online end
+      assert.are.same({ G1 = true, G2 = false }, rows)
+      assert.are.equal("G1", person(view, SJAAK).chars[1].guid) -- online first
+    end)
+
+    it("marks only your current character as online", function()
+      local view = Linker.build(input({
+        members = { ["G-ME"] = member("Ann", 3), ["G-ALT"] = member("Alt", 1) },
+        self = { battleTag = ME, chars = { ["G-ME"] = char("Ann", { guid = "G-ME" }),
+                                           ["G-ALT"] = char("Alt", { guid = "G-ALT" }) } },
+      }))
+      local rows = {}
+      for _, row in ipairs(person(view, ME).chars) do rows[row.guid] = row.online end
+      assert.are.same({ ["G-ME"] = true, ["G-ALT"] = false }, rows)
+    end)
+
+    it("keeps the community presence for people linked without a friendship (relay)", function()
+      local RELAYED = "Relayed#5555"
+      local view = Linker.build(input({
+        members = { G5 = member("Dee", 1) },
+        people = { [RELAYED] = { displayName = "Dee", version = 1, via = SJAAK,
+                                 chars = { G5 = char("Dee", { guid = "G5" }) } } },
+      }))
+      assert.is_true(person(view, RELAYED).chars[1].online)
     end)
 
     it("has no current character for an offline friend", function()
