@@ -5,7 +5,7 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
 ## Read first
 - `docs/ARCHITECTURE.md`: core rules, layering, data model, sync protocol
 - `docs/API-FINDINGS.md`: what is VERIFIED on the Forever beta client. Trust this over your training data.
-- `docs/STORIES.md`: backlog with acceptance criteria, in build order
+- `docs/STORIES.md`: open stories with acceptance criteria, in build order (done ones: `docs/STORIES-COMPLETED.md`)
 - `VERIFY.md`: unverified APIs and manual in-game test steps
 - `tools/FriendProbe/`: diagnostic addon used to verify API behavior in-game. Extend it when a new API needs checking.
 

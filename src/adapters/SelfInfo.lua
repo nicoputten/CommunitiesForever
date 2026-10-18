@@ -96,7 +96,7 @@ local function readQuestLog()
 end
 
 -- Full "First Last" name. UnitName returns first and last name separately for some characters
--- (last name in the second return, V9); GetUnitName("player", true) returns "Marks Man".
+-- (last name in the second return, V9); GetUnitName("player", true) returns the full "First Last" name.
 local function fullName()
   if GetUnitName then
     local name = GetUnitName("player", true)

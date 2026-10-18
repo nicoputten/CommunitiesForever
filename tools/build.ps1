@@ -40,7 +40,7 @@ $stage = Join-Path $dist $addonName
 New-Item -ItemType Directory -Force $stage | Out-Null
 
 # Keep in sync with what .pkgmeta packages (everything tracked minus "ignore:").
-foreach ($item in @('embeds.xml', 'LICENSE', 'src', 'Libs')) {
+foreach ($item in @('embeds.xml', 'LICENSE', 'CHANGELOG.md', 'src', 'Libs')) {
   Copy-Item -Recurse (Join-Path $root $item) $stage
 }
 
@@ -49,7 +49,10 @@ $toc = $toc.Replace('@project-version@', $version)
 [IO.File]::WriteAllText((Join-Path $stage "$addonName.toc"), $toc)
 
 $zip = Join-Path $dist "$addonName-$version.zip"
-Compress-Archive -Path $stage -DestinationPath $zip
+# Windows tar (bsdtar) writes zip entries with forward slashes; Compress-Archive in Windows PowerShell 5.1
+# writes backslashes, which other unzip tools (and possibly the CurseForge app) extract as flat file names.
+& "$env:SystemRoot\System32\tar.exe" -a -c -f $zip -C $dist $addonName
+if ($LASTEXITCODE -ne 0) { throw 'zip failed' }
 
 Write-Host "Built $addonName $version"
 Write-Host "  folder: $stage"

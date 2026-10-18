@@ -30,3 +30,8 @@ ignore:
   - .gitattributes
   - CLAUDE.md
   - VERIFY.md
+
+# CF-02: hand-written changelog instead of one generated from commit messages.
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
