@@ -492,6 +492,41 @@ function wowapi.install(opts)
       state.unitGuids[(state.inRaid and "raid" or "party") .. i] = guid
     end
   end
+  -- CF-24: calendar. state.calendarEvents[monthOffset][day] = { GetDayEvent results }; OpenCalendar
+  -- calls are counted in state.calendarOpened, ToggleCalendar sets state.calendarToggled.
+  state.calendarEvents, state.calendarOpened, state.calendarOpenedEvents, state.calendarInvites = {}, 0, {}, {}
+  globals.C_Calendar = {
+    OpenCalendar = function() state.calendarOpened = state.calendarOpened + 1 end,
+    GetMonthInfo = function() return { numDays = 31 } end,
+    GetNumDayEvents = function(offset, day)
+      local month = state.calendarEvents[offset]
+      return month and month[day] and #month[day] or 0
+    end,
+    GetDayEvent = function(offset, day, i) return state.calendarEvents[offset][day][i] end,
+    -- Opened events in state.calendarOpenedEvents ({ offset, day, index }); their invites from
+    -- state.calendarInvites["offset:day:index"] = { inviteStatus, ... }. CALENDAR_OPEN_EVENT is fired by the spec.
+    OpenEvent = function(offset, day, index)
+      state.calendarOpenedEvents[#state.calendarOpenedEvents + 1] = { offset, day, index }
+      state.calendarCurrent = offset .. ":" .. day .. ":" .. index
+    end,
+    GetNumInvites = function() return #(state.calendarInvites[state.calendarCurrent] or {}) end,
+    EventGetInvite = function(i) return { inviteStatus = state.calendarInvites[state.calendarCurrent][i] } end,
+    CloseEvent = function() state.calendarCurrent = nil end,
+  }
+  globals.ToggleCalendar = function() state.calendarToggled = true end
+  -- CF-24: Group Finder. state.lfgActivities[activityID] = GetActivityInfoTable result, all in category 2.
+  state.lfgActivities = {}
+  globals.C_LFGList = {
+    GetAvailableCategories = function() return { 2 } end,
+    GetAvailableActivities = function()
+      local ids = {}
+      for id in pairs(state.lfgActivities) do ids[#ids + 1] = id end
+      table.sort(ids)
+      return ids
+    end,
+    GetActivityInfoTable = function(id) return state.lfgActivities[id] end,
+  }
+
   state.setGroup = function(guids, inRaid)
     state.group, state.inRaid = guids, inRaid
     groupUnits()

@@ -17,13 +17,14 @@ local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZ
 
 local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
-local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" } } -- CF-22
+local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
+               { value = "dungeons", text = "Dungeons", width = 140 } } -- CF-24: room for "Dungeons (1)"
 local TAB_WIDTH = 90
 local TAB_INDENT = 12 -- px, lines the tabs up with the text inside the content box
 
 local addonRef, events, frame, content, tree, refreshDebounced
 local tabLinks = {} -- CF-22: tab value -> its text link
-local activeTab = "friends" -- CF-22: "friends" or "activity"
+local activeTab = "friends" -- CF-22: "friends", "activity" or "dungeons" (CF-24)
 local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTag -> true), until /reload
 local renderActivity -- CF-22, defined below
 local view -- last view model, used by the selection callback
@@ -96,6 +97,13 @@ end
 -- Section title: left-aligned gold text, no divider lines.
 local function heading(parent, text)
   label(parent, text, GameFontNormalLarge)
+end
+
+-- CF-24: the widget helpers the Dungeons tab (ui/DungeonsTab.lua) builds with.
+local function uiHelpers()
+  return { createWidget = createWidget, label = label, spacer = spacer, heading = heading,
+           colorName = colorName, dungeonIcon = dungeonIcon, settings = settings, GREY = GREY, GOLD = GOLD,
+           print = function(text) addonRef:Print(text) end }
 end
 
 -- Borderless row of columns (SimpleGroup has no frame, unlike InlineGroup).
@@ -368,6 +376,7 @@ end
 function MainFrame.render()
   if not frame then return end
   view = ns.ViewModel.build(addonRef)
+  MainFrame.updateTabs()
 
   local empty = ns.Format.emptyState(view, {
     selected = ns.CommunitySelection.selected() ~= nil,
@@ -377,6 +386,10 @@ function MainFrame.render()
   })
   if activeTab == "activity" then
     renderActivity(empty)
+    return
+  end
+  if activeTab == "dungeons" then
+    ns.DungeonsTab.render(view, empty)
     return
   end
   if empty then
@@ -550,7 +563,7 @@ local function create()
   for _, tab in ipairs(TABS) do
     local link = createWidget("InteractiveLabel")
     link:SetFontObject(GameFontNormalLarge)
-    link:SetWidth(TAB_WIDTH)
+    link:SetWidth(tab.width or TAB_WIDTH)
     if link.SetHighlight then link:SetHighlight("Interface\\QuestFrame\\UI-QuestTitleHighlight") end
     link:SetCallback("OnClick", function() MainFrame.selectTab(tab.value) end)
     tabBar:AddChild(link)
@@ -565,15 +578,25 @@ local function create()
   MainFrame.selectTab(activeTab)
 end
 
--- Shows a tab ("friends" or "activity").
+-- Tab texts: the active one gold. CF-24: "Dungeons (N)" with N runs planned in the next days.
+function MainFrame.updateTabs()
+  if not frame then return end
+  local planned = #ns.Planner.planned()
+  for _, tab in ipairs(TABS) do
+    local text = tab.text
+    if tab.value == "dungeons" and planned > 0 then text = string.format("%s (%d)", text, planned) end
+    tabLinks[tab.value]:SetText((tab.value == activeTab and GOLD or GREY) .. text .. "|r")
+  end
+end
+
+-- Shows a tab ("friends", "activity" or "dungeons").
 function MainFrame.selectTab(value)
   if not frame then return end
   activeTab = value
-  for _, tab in ipairs(TABS) do
-    tabLinks[tab.value]:SetText((tab.value == value and GOLD or GREY) .. tab.text .. "|r")
-  end
+  MainFrame.updateTabs()
   content:ReleaseChildren()
   if value == "friends" then createTree() end
+  if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
   if view then MainFrame.render() end
 end
 
@@ -604,6 +627,7 @@ local function refreshMessages()
     ns.Sync.PEOPLE_UPDATED,
     ns.Invites.CHANGED,
     ns.FeedTracker.CHANGED,
+    ns.Planner.UPDATED, -- CF-24: calendar events and sign-ups for the Dungeons tab
   }
 end
 
@@ -612,6 +636,7 @@ function MainFrame.start(addon)
   frame, content, tree, view = nil, nil, nil, nil
   tabLinks = {}
   activeTab, expandedFeed = "friends", {}
+  ns.DungeonsTab.reset()
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end
   end)

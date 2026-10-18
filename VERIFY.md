@@ -4,23 +4,26 @@ Claude Code cannot run WoW. Every unverified API and every story's manual test l
 This file holds only open items. Answered API questions move to `docs/API-FINDINGS.md`; passed story steps are removed.
 
 ## Open API questions
+One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (replace the old one), `/fp start`, then `/reload` and send `WTF\Account\<account>\SavedVariables\FriendProbe.lua`. `/fp start` clears the log first and switches on the V35 feed logging (stays on; `/fp feed off`).
+
 | # | Question | How to test | Status |
 |---|---|---|---|
-| V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp clubs` on two clients | open |
-| V30 | Is the left-to-right tree order the classic one for other classes too? (CF-18; verified for Warrior) | On a non-Warrior character with talents: `/cf self` shows `talents: <tree> N / <tree> N / <tree> N`. Check that the points sit under the right tree names (e.g. a Holy Paladin has its points under Holy). | open |
-| V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp feed` logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
-| V41 | Does a closed chat tab keep its name, with `shown` and `docked` off? (CF-26 feedback: Create did nothing after closing the Community tab) | Close the Community tab (right-click the tab, Close Window), then `/dump GetChatWindowInfo(<n>)` with `n` the tab's number (6 if it was the first new tab). Expected: the name is still there, the 7th value (`shown`) is false/nil and the 9th (`docked`) nil. Then Create in `/cf setup` (Community chat step) or `/cf settings` makes the tab again. | open |
+| V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on a friend's client: compare the `club` lines under V8 COMMUNITIES. Your own two characters both show 23125681 for Doombringers (2026-10-18); a friend's account is still to check. | open |
+| V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-26 Onboarding wizard (round 2)
-Round 1 passed. Two changes from the feedback:
+### CF-24 Dungeon planner (round 4)
+The dungeon list now comes from the game's Group Finder (V46): Forever's new dungeons and the game's level ranges.
 
 | Step | Expected | Status |
 |---|---|---|
-| Close the Community tab, then `/cf setup` → Community chat | The big Create button is back; clicking it creates the tab again (see V41). | open |
-| Log in on an alt in the community without a Community tab (or `/run CommunitiesForeverDB.global.settings.chatTabPrompt = nil` and `/reload`) | The prompt has one big "Yes, create a Community tab" button. Clicking it creates the tab; closing the window (X) means no. Either way the alt is not asked again after the next login. | open |
+| Dungeons tab on a character of level 26 to 33 | Excavation Site: Wetlands is listed (levels 26 to 33). Other new ones in range too: Hall of Thanes 13 to 20, Ruins of Lordaeron 15 to 22, City of Dalaran 28 to 35. | open |
+| Select an old dungeon, e.g. Shadowfang Keep | Its levels match the Group Finder (`Show All Level Ranges` there): Shadowfang Keep 20 to 30, Scarlet Monastery Graveyard 30 to 38. | open |
+| A community event titled `Excavation Site: Wetlands` | Listed under Planned like the old dungeons. | open |
+| Dungeons tab on a Horde character | Only dungeons the Group Finder offers: no The Stockade. | open |
+| Select Excavation Site: Wetlands (no quests known) | Under the suggested group: `No quests known for this dungeon yet.` | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.

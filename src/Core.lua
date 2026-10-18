@@ -37,6 +37,8 @@ function addon:OnEnable()
   ns.Invites.start(self)
   ns.Tooltip.start(self)
   ns.Notify.start(self)
+  ns.Calendar.watch(self) -- CF-24: calendar events for the Dungeons tab
+  ns.Planner.start(self)  -- CF-24: planned runs and their sign-ups
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
 end
 

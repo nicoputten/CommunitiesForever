@@ -38,6 +38,7 @@ CommunitiesForever/
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
+      Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion, calendar matching (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
@@ -51,10 +52,14 @@ CommunitiesForever/
       Community.lua          C_Club (club list, members, club and member events)
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
+      GroupFinder.lua        the Group Finder's dungeon activities with level ranges (C_LFGList, CF-24)
+      QuestieData.lua        dungeon quests from the optional QuestieDB addon, completed quests (CF-24, guarded)
+      Calendar.lua           C_Calendar event list (this month and next), ToggleCalendar (CF-24, guarded)
       Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      Planner.lua            calendar events for the Dungeons tab, sign-ups of planned runs (OpenEvent queue) (CF-24)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
@@ -68,7 +73,10 @@ CommunitiesForever/
       Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
       Notify.lua             login notifications in chat (30 s per person, settings.notifications)
     ui/
-      MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right)
+      MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right); tabs
+                             Friends, Activity (CF-22) and Dungeons (CF-24)
+      DungeonsTab.lua        Dungeons tab: dungeon list, suggested group, calendar events, copy fields (CF-24)
+      Setup.lua              onboarding wizard and Community tab prompt (CF-26)
       Settings.lua           AceConfig options (Blizzard panel + /cf settings)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
@@ -90,6 +98,8 @@ Data flow: adapters emit internal events -> services and core compute -> Linker 
 ## Libraries
 Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
 
+Optional, not embedded (CF-24): the **QuestieDB** addon (comes with Questie; `## OptionalDeps: QuestieDB`). When it is installed with contract 3 or later, the Dungeons tab reads every dungeon's quests from its public API (`LibQuestieDB`, `QuestDB`) at runtime; nothing of its data ships with this addon (it has no license). Without it, dungeon quests come from the community's quest logs.
+
 UI choice: AceConfig for settings (also registered in the Blizzard settings panel). Main window: AceGUI `Frame` (move, resize, saved position and size via its status table) with a `TreeGroup`: people expandable to their characters on the left, a detail card on the right (decided in CF-12, draft B, replacing the earlier custom frame + ScrollBox plan: no unverified templates). Profession bars are inline textures. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
 
 ## Data model
@@ -106,7 +116,8 @@ global = {
                 chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
                 activityDebug = nil,                 -- CF-23: /cf activity debug prints instance events
                 onboarded, onboardedVersion,         -- CF-26: setup wizard done (Skip and close count)
-                chatTabPrompt = { [guid] = true } }, -- CF-26: no Community tab prompt on these characters
+                chatTabPrompt = { [guid] = true },   -- CF-26: no Community tab prompt on these characters
+                dungeonTree = {} },                  -- CF-24: Dungeons tab selection and list width
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days
