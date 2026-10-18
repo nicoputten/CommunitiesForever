@@ -8,6 +8,7 @@
 --   /fp clubs [clubId]  communities (C_Club): club types, clubIds, all member fields
 --   /fp ticket <code>   C_Club.RequestTicket: look up an invite code or link (result via CLUB_TICKET_RECEIVED)
 --   /fp redeem <code>   C_Club.RedeemTicket: join with an invite code or link (logs blocked/forbidden actions)
+--   /fp quests          quest log API: functions, events, log size, every entry (CF-19)
 --   /fp talents [all]   specializations + C_ClassTalents / C_Traits: config, trees, point pools, nodes
 --                       with ranks spent (all: every node of the tree)
 --   /fp clear           wipe the saved log
@@ -239,6 +240,45 @@ local function Specializations()
   end
 end
 
+-- Logs the quest log API (CF-19): which functions and events exist, the log size, and every entry.
+local function Quests()
+  log("== QUESTS ==")
+  local q = C_QuestLog
+  for _, name in ipairs({ "GetNumQuestLogEntries", "GetInfo", "GetQuestIDForLogIndex", "GetTitleForQuestID",
+      "GetMaxNumQuestsCanAccept", "IsComplete", "GetQuestObjectives",
+      "GetLogIndexForQuestID", "IsOnQuest" }) do
+    log("exists C_QuestLog." .. name, q ~= nil and q[name] ~= nil)
+  end
+  log("exists GetQuestLogTitle", GetQuestLogTitle ~= nil, "GetNumQuestLogEntries", GetNumQuestLogEntries ~= nil)
+  for _, event in ipairs({ "QUEST_ACCEPTED", "QUEST_TURNED_IN", "QUEST_REMOVED", "QUEST_LOG_UPDATE",
+      "QUEST_COMPLETE", "UNIT_QUEST_LOG_CHANGED" }) do
+    log("event", event, C_EventUtils and C_EventUtils.IsEventValid and C_EventUtils.IsEventValid(event))
+  end
+  if not q then return end
+  if q.GetMaxNumQuestsCanAccept then log("max quests", q.GetMaxNumQuestsCanAccept()) end
+  if not (q.GetNumQuestLogEntries and q.GetInfo) then return end
+
+  local entries, quests = q.GetNumQuestLogEntries()
+  log("GetNumQuestLogEntries ->", entries, quests)
+  local dumpedHeader, dumpedQuest = false, false
+  for i = 1, entries or 0 do
+    local info = q.GetInfo(i)
+    if info then
+      log("entry", i, "questID", info.questID, "header", info.isHeader, "title", info.title, "level", info.level,
+        "hidden", info.isHidden, "task", info.isTask, "complete", q.IsComplete and info.questID and
+        q.IsComplete(info.questID))
+      -- Full field list once for a header and once for a quest.
+      if info.isHeader and not dumpedHeader then
+        dumpedHeader = true
+        DumpTable("headerInfo", info)
+      elseif not info.isHeader and not dumpedQuest then
+        dumpedQuest = true
+        DumpTable("questInfo", info)
+      end
+    end
+  end
+end
+
 local clubUpdateSeen = {}
 
 local f = CreateFrame("Frame")
@@ -300,6 +340,9 @@ SlashCmdList.FRIENDPROBE = function(msg)
     log("whisper send result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPING", "WHISPER", arg))
   elseif cmd == "clubs" then Clubs(arg)
   elseif cmd == "ticket" or cmd == "redeem" then Ticket(cmd, arg)
+  elseif cmd == "quests" then
+    local ok, err = pcall(Quests)
+    if not ok then log("quests error", err) end
   elseif cmd == "talents" then
     local okSpecs, errSpecs = pcall(Specializations)
     if not okSpecs then log("specializations error", errSpecs) end
@@ -309,6 +352,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | clear")
+    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | ticket <code> | redeem <code> | talents [all] | quests | clear")
   end
 end
