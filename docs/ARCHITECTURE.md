@@ -187,4 +187,5 @@ Store rule (Merge.store, CF-28): an accepted record is **merged per character**,
 Other:
 - Queue outgoing while `InCombatLockdown()`, flush on `PLAYER_REGEN_ENABLED`.
 - Unknown higher `pv`: ignore, show "a friend has a newer CommunitiesForever version" once per session.
-- Incomplete chunked messages expire after 30 s.
+- Incomplete chunked messages expire 30 s after their last part.
+- Reliable delivery (CF-28): the sender keeps the parts it sent for 60 s. When a message stays incomplete for 3 s, the receiver sends `!M:<msgId>:<part numbers>` (at most twice per message, up to 40 numbers) and the sender sends only those parts again (at most twice per message, only to whoever it sent them to). A MISS never matches the part header `<msgId>:<part>:<total>:`; older clients drop it as malformed. `/cf sync debug` (`settings.syncDebug`) prints every part, missing part, resend and completed message.

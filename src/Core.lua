@@ -91,12 +91,19 @@ function addon:OnSlashCommand(input)
   elseif command == "ping" then
     if argument == "stats" then
       local s = ns.Messenger.stats()
-      self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued.", s.sent, s.received,
-        s.dropped, s.queued))
+      self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed.",
+        s.sent, s.received, s.dropped, s.queued, s.resent, s.missed))
     else
       ns.Ping.send(tonumber(argument))
     end
   elseif command == "sync" then
+    if argument == "debug" then
+      -- CF-28: trace parts, missing parts and resends.
+      ns.Messenger.setDebug(not ns.Messenger.debugOn())
+      self:Print(ns.Messenger.debugOn() and "Sync debug on: message parts, missing parts and resends are printed."
+        or "Sync debug off.")
+      return
+    end
     ns.Sync.announce()
     self:Print("Sync: announced your record to friends online in Forever.")
   elseif command == "settings" then
@@ -148,6 +155,7 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf friends - show Battle.net friends in Forever")
     self:Print("  /cf people - show who owns which community character")
     self:Print("  /cf sync - announce your characters to friends now")
+    self:Print("  /cf sync debug - print message parts, missing parts and resends (on/off)")
     self:Print("  /cf ping [bytes] - test messages with friends who run the addon; /cf ping stats")
     self:Print("  /cf activity - show the dungeon, raid or battleground run in progress")
     self:Print("  /cf activity debug - print instance events for the activity feed (on/off)")
