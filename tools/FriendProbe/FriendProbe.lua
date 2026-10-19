@@ -17,6 +17,8 @@
 --   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
 --   V52      community member presence (run after a member logged out: still online?)
 --   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
+--   /fp comm channel         one addon message in the community channel (V49: run on two clients)
+--   /fp comm summary         what came back so far
 -- Already answered checks were removed; see docs/API-FINDINGS.md and the git history for the old probes.
 -- The log is saved in FriendProbeDB (WTF\Account\<account>\SavedVariables\FriendProbe.lua) on /reload or logout.
 
@@ -395,8 +397,9 @@ local function CommunityTransport()
       "WHISPER", me)
   end
   for i = 1, 30 do SendAddon("V50 burst " .. i, "V50:burst:" .. i, "WHISPER", me) end
-  log("V49/V50 sent; results arrive in a few seconds (summary after 10 s)")
-  C_Timer.After(10, function() log("== V49/V50 RECEIVED ==") CommSummary() end)
+  log("V49/V50 sent; wait 15 s before /reload (or /fp comm summary)")
+  C_Timer.After(3, function() log("== V49/V50 RECEIVED after 3 s ==") CommSummary() end)
+  C_Timer.After(10, function() log("== V49/V50 RECEIVED after 10 s ==") CommSummary() end)
 end
 
 local function CommunityPresence()
@@ -422,7 +425,10 @@ commFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender, tar
   if prefix ~= COMM_PREFIX then return end
   local tag = S(text):match("^(V%d+:%a+)") or S(text):match("^(V%d+:%d+)") or "other"
   commReceived[tag] = (commReceived[tag] or 0) + 1
-  if tag ~= "V50:burst" then
+  if tag == "V50:burst" then
+    -- Logged as they arrive (a /reload before a delayed summary lost the count in run 1).
+    if commReceived[tag] % 10 == 0 then log("received V50:burst", commReceived[tag], "so far") end
+  else
     log("addon message <-", S(sender), "channel", S(channel), "len", #S(text), "target", S(target), "zoneChannelID",
       S(zoneChannelID), "localID", S(localID), "name", S(name), "text", S(text):sub(1, 20))
   end
@@ -461,11 +467,17 @@ SlashCmdList.FRIENDPROBE = function(msg)
     Start()
   elseif cmd == "comm" then
     local target = arg:match("^whisper%s+(.+)$")
-    if target then
+    if arg == "summary" then
+      log("== V49/V50 RECEIVED ==")
+      CommSummary()
+    elseif arg == "channel" then
+      local _, index = CommunityChannel()
+      SendAddon("V49 CHANNEL send", "V49:channel from " .. S(GetUnitName("player", true)), "CHANNEL", index)
+    elseif target then
       SendAddon("V51 WHISPER " .. target, "V51:whisper from " .. S(GetUnitName("player", true)), "WHISPER", target)
       log("V51: does the other character's /fp log show 'addon message <-'? (both need FriendProbe)")
     else
-      print("|cff33ff99FP|r /fp comm whisper <character name>")
+      print("|cff33ff99FP|r /fp comm whisper <character name> | channel | summary")
     end
   elseif cmd == "invite" then
     Invite()
