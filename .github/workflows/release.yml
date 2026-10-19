@@ -1,0 +1,58 @@
+name: release
+
+# CF-02: pushing a tag "v*" tests the addon and uploads it to CurseForge (Forever, project 1752013 from the
+# TOC). Untagged pushes produce no release. Release type from the tag: "v1.2.0" = release,
+# "v1.2.0-beta1" = beta, "v1.2.0-alpha1" = alpha.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      # Author API token from https://authors.curseforge.com/#/settings/api-tokens (repo secret).
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+    steps:
+      - name: Require the CurseForge token
+        run: |
+          if [ -z "$CF_API_TOKEN" ]; then
+            echo "The CF_API_TOKEN repository secret is missing: nothing would be uploaded." >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the packager reads the tag and history
+
+      # Never release a build that fails the tests (Release_spec also checks the released files).
+      - uses: leafo/gh-actions-lua@v13
+        with:
+          luaVersion: "5.1.5"
+
+      - uses: leafo/gh-actions-luarocks@v6
+
+      - name: Install busted and luacheck
+        run: |
+          luarocks install busted
+          luarocks install luacheck
+
+      - name: Fetch libraries (LibSerialize, LibDeflate are used by specs)
+        shell: pwsh
+        run: ./tools/fetch-libs.ps1
+
+      - name: Lint
+        run: luacheck src tests
+
+      - name: Test
+        run: busted
+
+      # The packager fetches the .pkgmeta externals itself: drop the copies fetched for the tests.
+      - name: Remove test libraries
+        run: rm -rf Libs
+
+      # Packages per .pkgmeta (externals, ignore list, CHANGELOG.md) and uploads to CurseForge.
+      # Interface 16001 is detected as the Forever game type by the packager.
+      - name: Package and upload
+        uses: BigWigsMods/packager@v2

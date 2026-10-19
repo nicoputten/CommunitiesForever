@@ -9,7 +9,7 @@ Build order: CF-27 (after V47 and V48), CF-28 (after V49 to V52), CF-02 (part 2:
 
 ### CF-02 Release pipeline
 - Pushing a git tag `v*` runs the BigWigs packager and uploads to CurseForge (Forever flavor) using the `CF_API_TOKEN` secret. CurseForge project ID in the TOC (`## X-Curse-Project-ID`).
-- Still open (part 2, once the `CF_API_TOKEN` secret exists): the tag workflow itself.
+- Part 2 (built 2026-10-19, `.github/workflows/release.yml`): a tag `v*` runs lint and tests, then `BigWigsMods/packager@v2` with the `CF_API_TOKEN` secret (an **author** API token from https://authors.curseforge.com/#/settings/api-tokens, not a key from console.curseforge.com). The packager detects interface 16001 as the Forever game type. Release type from the tag: `v1.0.0` release, `v1.0.0-beta1` beta, `v1.0.0-alpha1` alpha. The workflow fails when the secret is missing, so a release never silently skips the upload. Gitflow: merge `develop` into `main`, then tag on `main`.
 - Untagged pushes produce no release.
 - Done in part 1 (PR #21, merged without the token): project ID 1752013 in the TOC, zip with forward-slash paths, campfire logo in `docs/logo/`, and the released files contain no personal info. Author `Vestras` (TOC and LICENSE), generic examples in `src` comments, hand-written `CHANGELOG.md` (`manual-changelog` in `.pkgmeta`) instead of a changelog built from commit messages. `tests/spec/Release_spec.lua` fails on banned names in the released files. The repo stays private; its history is unchanged.
 - Manual: install via the CurseForge app; publishing a new tag delivers an update.
