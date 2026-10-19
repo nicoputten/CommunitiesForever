@@ -13,6 +13,12 @@
 --   V46      dungeons the client knows: Group Finder (C_LFGList) activities with level ranges, and the old
 --            Dungeon Finder list (GetLFGDungeonInfo) beyond the Vanilla entries
 --   V35      feed logging: instance, boss, group and battleground events (stays on after /reload)
+--   V49      addon message in the community channel (does it arrive, also back at yourself?)
+--   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
+--   V52      community member presence (run after a member logged out: still online?)
+--   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
+--   /fp comm channel         one addon message in the community channel (V49: run on two clients)
+--   /fp comm summary         what came back so far
 -- Already answered checks were removed; see docs/API-FINDINGS.md and the git history for the old probes.
 -- The log is saved in FriendProbeDB (WTF\Account\<account>\SavedVariables\FriendProbe.lua) on /reload or logout.
 
@@ -341,6 +347,93 @@ local function Invite()
 end
 
 -- ===== Commands =====
+-- ===== V49-V52: community transport (CF-28) =====
+local COMM_PREFIX = "FProbe"
+local commReceived = {}
+
+local function CommunityChannel()
+  if not (C_Club and C_Club.GetSubscribedClubs) then return nil end
+  for _, club in ipairs(C_Club.GetSubscribedClubs() or {}) do
+    if Enum and Enum.ClubType and club.clubType == Enum.ClubType.Character then
+      local streams = C_Club.GetStreams and C_Club.GetStreams(club.clubId) or {}
+      local stream = streams[1]
+      for _, st in ipairs(streams) do
+        if Enum.ClubStreamType and st.streamType == Enum.ClubStreamType.General then stream = st end
+      end
+      local name = stream and Chat_GetCommunitiesChannelName and Chat_GetCommunitiesChannelName(club.clubId,
+        stream.streamId)
+      return name, name and GetChannelName and GetChannelName(name), club
+    end
+  end
+end
+
+local function SendAddon(label, text, channel, target)
+  if not (C_ChatInfo and C_ChatInfo.SendAddonMessage) then log(label, "SendAddonMessage missing") return end
+  local ok, result = pcall(C_ChatInfo.SendAddonMessage, COMM_PREFIX, text, channel, target)
+  log(label, "len", #text, "->", ok and S(result) or ("error " .. S(result)))
+end
+
+local function CommSummary()
+  local tags = {}
+  for tag in pairs(commReceived) do tags[#tags + 1] = tag end
+  table.sort(tags)
+  for _, tag in ipairs(tags) do log("received", tag, commReceived[tag]) end
+  if #tags == 0 then log("nothing received back (yet)") end
+end
+
+local function CommunityTransport()
+  if Enum and Enum.SendAddonMessageResult then DumpTable("Enum.SendAddonMessageResult", Enum.SendAddonMessageResult) end
+  commReceived = {}
+  local name, index, club = CommunityChannel()
+  log("V49 community", S(club and club.name), "channel", S(name), "index", S(index))
+  if index and index > 0 then
+    SendAddon("V49 CHANNEL send", "V49:channel", "CHANNEL", index)
+  else
+    log("V49 no community channel index (open the community chat once?)")
+  end
+  local me = GetUnitName and GetUnitName("player", true)
+  for _, size in ipairs({ 200, 255, 256 }) do
+    SendAddon("V50 WHISPER self " .. size, "V50:" .. size .. ":" .. string.rep("x", size - #("V50:" .. size .. ":")),
+      "WHISPER", me)
+  end
+  for i = 1, 30 do SendAddon("V50 burst " .. i, "V50:burst:" .. i, "WHISPER", me) end
+  log("V49/V50 sent; wait 15 s before /reload (or /fp comm summary)")
+  C_Timer.After(3, function() log("== V49/V50 RECEIVED after 3 s ==") CommSummary() end)
+  C_Timer.After(10, function() log("== V49/V50 RECEIVED after 10 s ==") CommSummary() end)
+end
+
+local function CommunityPresence()
+  local _, _, club = CommunityChannel()
+  if not club then log("no character community") return end
+  local presence = {}
+  if Enum and Enum.ClubMemberPresence then
+    for k, v in pairs(Enum.ClubMemberPresence) do presence[v] = k end
+  end
+  for _, memberId in ipairs(C_Club.GetClubMembers(club.clubId) or {}) do
+    local m = C_Club.GetMemberInfo(club.clubId, memberId)
+    if m then
+      log("member", S(m.name), "presence", S(presence[m.presence] or m.presence), "level", S(m.level),
+        "zone", S(m.zone), "self", S(m.isSelf))
+    end
+  end
+  log("V52: note who logged out and when; if they still show Online after a few minutes, presence is stale")
+end
+
+local commFrame = CreateFrame("Frame")
+commFrame:RegisterEvent("CHAT_MSG_ADDON")
+commFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender, target, zoneChannelID, localID, name)
+  if prefix ~= COMM_PREFIX then return end
+  local tag = S(text):match("^(V%d+:%a+)") or S(text):match("^(V%d+:%d+)") or "other"
+  commReceived[tag] = (commReceived[tag] or 0) + 1
+  if tag == "V50:burst" then
+    -- Logged as they arrive (a /reload before a delayed summary lost the count in run 1).
+    if commReceived[tag] % 10 == 0 then log("received V50:burst", commReceived[tag], "so far") end
+  else
+    log("addon message <-", S(sender), "channel", S(channel), "len", #S(text), "target", S(target), "zoneChannelID",
+      S(zoneChannelID), "localID", S(localID), "name", S(name), "text", S(text):sub(1, 20))
+  end
+end)
+
 local function Start()
   FriendProbeDB = FriendProbeDB or {}
   FriendProbeDB.log = {}
@@ -351,6 +444,8 @@ local function Start()
   Section("V41 CHAT WINDOWS", ChatWindows)
   Section("V46 GROUP FINDER", GroupFinder)
   Section("V46 DUNGEON FINDER", DungeonFinder)
+  Section("V52 COMMUNITY PRESENCE", CommunityPresence)
+  Section("V49/V50 COMMUNITY TRANSPORT", CommunityTransport)
   Section("V35 FEED", FeedOn)
   log("start done: /reload, then send WTF\\Account\\<account>\\SavedVariables\\FriendProbe.lua")
 end
@@ -361,6 +456,7 @@ loader:SetScript("OnEvent", function(_, _, name)
   if name ~= "FriendProbe" then return end
   FriendProbeDB = FriendProbeDB or {}
   if FriendProbeDB.feed then FeedRegister() end
+  if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then C_ChatInfo.RegisterAddonMessagePrefix(COMM_PREFIX) end
 end)
 
 SLASH_FRIENDPROBE1 = "/fp"
@@ -369,6 +465,20 @@ SlashCmdList.FRIENDPROBE = function(msg)
   cmd = cmd:lower()
   if cmd == "start" then
     Start()
+  elseif cmd == "comm" then
+    local target = arg:match("^whisper%s+(.+)$")
+    if arg == "summary" then
+      log("== V49/V50 RECEIVED ==")
+      CommSummary()
+    elseif arg == "channel" then
+      local _, index = CommunityChannel()
+      SendAddon("V49 CHANNEL send", "V49:channel from " .. S(GetUnitName("player", true)), "CHANNEL", index)
+    elseif target then
+      SendAddon("V51 WHISPER " .. target, "V51:whisper from " .. S(GetUnitName("player", true)), "WHISPER", target)
+      log("V51: does the other character's /fp log show 'addon message <-'? (both need FriendProbe)")
+    else
+      print("|cff33ff99FP|r /fp comm whisper <character name> | channel | summary")
+    end
   elseif cmd == "invite" then
     Invite()
   elseif cmd == "feed" and arg == "off" then
@@ -378,6 +488,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | comm whisper <name> | feed off | clear")
   end
 end
