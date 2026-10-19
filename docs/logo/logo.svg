@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400">
+  <title>CommunitiesForever: friends around a campfire</title>
+  <rect width="200" height="200" fill="#1a1630"/>
+  <circle cx="100" cy="104" r="62" fill="none" stroke="#3b3466" stroke-width="3"/>
+  <!-- fire -->
+  <path d="M100 72 C116 92 120 104 110 120 C108 108 102 104 100 98 C98 108 88 112 90 122 C78 108 86 90 100 72 Z" fill="#f08a2c"/>
+  <path d="M100 96 C106 106 108 112 102 122 C100 116 96 114 98 106 Z" fill="#f3d27a"/>
+  <!-- logs -->
+  <path d="M78 130 L122 140 M122 130 L78 140" stroke="#8a6b3a" stroke-width="7" stroke-linecap="round"/>
+  <!-- five friends -->
+  <g fill="#e8b84a">
+    <circle cx="100" cy="38" r="9"/><circle cx="160" cy="88" r="9"/><circle cx="140" cy="156" r="9"/>
+    <circle cx="60" cy="156" r="9"/><circle cx="40" cy="88" r="9"/>
+  </g>
+</svg>

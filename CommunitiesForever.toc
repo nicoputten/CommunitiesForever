@@ -1,0 +1,72 @@
+## Interface: 16001
+## Title: CommunitiesForever
+## Notes: Shows which community characters belong to which Battle.net friend.
+## Author: Vestras
+## Version: @project-version@
+## X-Curse-Project-ID: 1752013
+## SavedVariables: CommunitiesForeverDB
+## OptionalDeps: QuestieDB
+
+embeds.xml
+
+src\core\Store.lua
+src\core\Feed.lua
+src\core\Runs.lua
+src\core\Merge.lua
+src\core\Snapshot.lua
+src\core\Describe.lua
+src\core\Clubs.lua
+src\core\Members.lua
+src\core\Invite.lua
+src\core\Talents.lua
+src\core\Onboarding.lua
+src\core\Quests.lua
+src\core\Dungeons.lua
+src\core\GroupAsk.lua
+src\core\Chat.lua
+src\core\Friends.lua
+src\core\Identity.lua
+src\core\Linker.lua
+src\core\Protocol.lua
+src\core\Outbox.lua
+src\core\Format.lua
+
+src\adapters\Events.lua
+src\adapters\Timer.lua
+src\adapters\SelfInfo.lua
+src\adapters\Community.lua
+src\adapters\ChatFrames.lua
+src\adapters\Presence.lua
+src\adapters\Instance.lua
+src\adapters\Calendar.lua
+src\adapters\QuestieData.lua
+src\adapters\GroupFinder.lua
+src\adapters\ChatLinks.lua
+src\adapters\Party.lua
+src\adapters\Transport.lua
+
+src\services\FeedTracker.lua
+src\services\ActivityTracker.lua
+src\services\SelfTracker.lua
+src\services\CommunitySelection.lua
+src\services\CommunityChat.lua
+src\services\MemberTracker.lua
+src\services\PresenceTracker.lua
+src\services\Debug.lua
+src\services\ViewModel.lua
+src\services\Messenger.lua
+src\services\Ping.lua
+src\services\Sync.lua
+src\services\Invites.lua
+src\services\Notify.lua
+src\services\Planner.lua
+src\services\GroupAsks.lua
+
+src\ui\Settings.lua
+src\ui\DungeonsTab.lua
+src\ui\MainFrame.lua
+src\ui\Minimap.lua
+src\ui\Tooltip.lua
+src\ui\Setup.lua
+
+src\Core.lua

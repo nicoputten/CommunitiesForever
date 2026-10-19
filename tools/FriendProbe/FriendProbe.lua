@@ -1,16 +1,29 @@
--- FriendProbe: verifies the APIs the friend roster addon depends on.
+-- FriendProbe: checks the open API questions in VERIFY.md in-game (Claude Code cannot run WoW).
 -- Commands:
---   /fp info            own character, name format, professions, API existence
---   /fp friends         all BNet friend game accounts (presence data)
---   /fp ping            BNSendGameData ping to same-project WoW friends (they auto-reply PONG)
---   /fp big [bytes]     send a large BNet payload to find the size limit (default 4000)
---   /fp whisper <name>  addon WHISPER ping to a character name (tests name format + mega-realm)
---   /fp clubs [clubId]  communities (C_Club): club types, clubIds, all member fields
---   /fp clear           wipe the saved log
+--   /fp start       clear the log, then run every check below and switch on feed logging
+--   /fp invite      chat links per friend online in Forever: test link, request invite, invite by name,
+--                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
+--   /fp feed off    stop feed logging (V35)
+--   /fp clear       wipe the saved log
+-- Checks (by VERIFY.md number):
+--   context  build, character, addons (CommunitiesForever, Questie, QuestieDB)
+--   V8       community IDs, to compare between two clients
+--   V30      talents: per tree the nodes with points (position and spell), for another class than Warrior
+--   V41      chat windows: every GetChatWindowInfo return (a closed tab: shown and docked off?)
+--   V46      dungeons the client knows: Group Finder (C_LFGList) activities with level ranges, and the old
+--            Dungeon Finder list (GetLFGDungeonInfo) beyond the Vanilla entries
+--   V35      feed logging: instance, boss, group and battleground events (stays on after /reload)
+--   V49      addon message in the community channel (does it arrive, also back at yourself?)
+--   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
+--   V52      community member presence (run after a member logged out: still online?)
+--   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
+--   /fp comm channel         one addon message in the community channel (V49: run on two clients)
+--   /fp comm summary         what came back so far
+-- Already answered checks were removed; see docs/API-FINDINGS.md and the git history for the old probes.
+-- The log is saved in FriendProbeDB (WTF\Account\<account>\SavedVariables\FriendProbe.lua) on /reload or logout.
 
-local PREFIX = "FProbe"
 local MAX_LOG = 3000
-local MAX_MEMBERS = 50
+local LFG_MAX_ID = 3000
 
 local function S(v)
   local ok, s = pcall(tostring, v)
@@ -29,161 +42,452 @@ local function log(...)
   while #l > MAX_LOG do table.remove(l, 1) end
 end
 
-local function ForEachGameAccount(cb)
-  for i = 1, BNGetNumFriends() do
-    local acc = C_BattleNet.GetFriendAccountInfo(i)
-    if acc then
-      for j = 1, C_BattleNet.GetFriendNumGameAccounts(i) do
-        local ga = C_BattleNet.GetFriendGameAccountInfo(i, j)
-        if ga then cb(acc, ga) end
-      end
-    end
-  end
-end
-
-local function Info()
-  log("== INFO ==")
-  log("build", GetBuildInfo())
-  log("WOW_PROJECT_ID", WOW_PROJECT_ID)
-  log("UnitName", UnitName("player"))
-  log("UnitFullName", UnitFullName("player"))
-  log("GetUnitName(true)", GetUnitName("player", true))
-  log("realm", GetRealmName(), GetNormalizedRealmName())
-  log("GUID", UnitGUID("player"))
-  log("class/level/faction", UnitClassBase("player"), UnitLevel("player"), UnitFactionGroup("player"))
-  log("BNGetInfo", BNGetInfo())
-
-  for _, fn in ipairs({ "BNSendGameData", "BNGetNumFriends", "GetProfessions",
-      "GetProfessionInfo", "GetNumSkillLines", "GetSkillLineInfo" }) do
-    log("exists", fn, _G[fn] ~= nil)
-  end
-  log("exists C_BattleNet.GetFriendAccountInfo", C_BattleNet and C_BattleNet.GetFriendAccountInfo ~= nil)
-  log("exists C_ChatInfo.SendAddonMessage", C_ChatInfo and C_ChatInfo.SendAddonMessage ~= nil)
-
-  -- Mainline slots: prof1, prof2, archaeology, fishing, cooking (holes possible)
-  local p = { GetProfessions() }
-  for k = 1, 5 do
-    if p[k] then log("prof slot", k, GetProfessionInfo(p[k])) else log("prof slot", k, "empty") end
-  end
-  -- Classic-style skill list, if it exists, to catch professions outside the 5 slots
-  if GetNumSkillLines and GetSkillLineInfo then
-    for i = 1, GetNumSkillLines() do log("skillline", i, GetSkillLineInfo(i)) end
-  end
-end
-
-local function Friends()
-  log("== FRIENDS ==")
-  ForEachGameAccount(function(acc, ga)
-    log(acc.battleTag, ga.clientProgram, "proj", ga.wowProjectID, "online", ga.isOnline,
-      "char", ga.characterName, "realm", ga.realmName, ga.realmDisplayName,
-      "class", ga.className, "lvl", ga.characterLevel, "fac", ga.factionName,
-      "guid", ga.playerGuid, "gaID", ga.gameAccountID)
-  end)
-end
-
-local function SendBN(text)
-  local n = 0
-  ForEachGameAccount(function(acc, ga)
-    if ga.clientProgram == BNET_CLIENT_WOW and ga.wowProjectID == WOW_PROJECT_ID and ga.gameAccountID then
-      local ok, err = pcall(BNSendGameData, ga.gameAccountID, PREFIX, text)
-      log("BN send ->", acc.battleTag, ga.characterName, "len", #text, ok and "ok" or ("ERR " .. S(err)))
-      n = n + 1
-    end
-  end)
-  if n == 0 then log("no same-project WoW friends online") end
-end
-
--- Dumps every field so we see exactly what Forever returns, not what we expect
+-- Every field of a table on one line, sorted, so we see what Forever returns, not what we expect.
 local function DumpTable(label, t)
   if type(t) ~= "table" then log(label, t) return end
   local keys = {}
   for k in pairs(t) do keys[#keys + 1] = k end
   table.sort(keys, function(a, b) return S(a) < S(b) end)
   local parts = {}
-  for _, k in ipairs(keys) do parts[#parts + 1] = S(k) .. "=" .. S(t[k]) end
+  for _, k in ipairs(keys) do
+    local v = t[k]
+    if type(v) == "table" then
+      local inner = {}
+      for ik, iv in pairs(v) do inner[#inner + 1] = S(ik) .. ":" .. S(iv) end
+      v = "{" .. table.concat(inner, ",") .. "}"
+    end
+    parts[#parts + 1] = S(k) .. "=" .. S(v)
+  end
   log(label, table.concat(parts, " "))
 end
 
-local CLUB_TYPES = {}
-if Enum and Enum.ClubType then
-  for k, v in pairs(Enum.ClubType) do CLUB_TYPES[v] = k end
+-- Logs every return value of fn(...) guarded, under label.
+local function LogCall(label, fn, ...)
+  if not fn then log(label, "does not exist") return end
+  local results = { pcall(fn, ...) }
+  if not results[1] then log(label, "error", results[2]) return end
+  log(label, "->", unpack(results, 2, table.maxn(results)))
 end
 
-local function Clubs(filter)
-  log("== CLUBS ==")
+-- Runs one check; an error is logged and the next check still runs.
+local function Section(title, fn)
+  log("== " .. title .. " ==")
+  local ok, err = pcall(fn)
+  if not ok then log(title, "error", err) end
+end
+
+-- ===== Context =====
+local function Context()
+  log("build", GetBuildInfo())
+  log("WOW_PROJECT_ID", WOW_PROJECT_ID)
+  log("character", GetUnitName and GetUnitName("player", true), "class", UnitClassBase("player"),
+    "level", UnitLevel("player"), "faction", UnitFactionGroup("player"), "race", select(3, UnitRace("player")))
+  log("realm", GetRealmName())
+  local getMeta = C_AddOns and C_AddOns.GetAddOnMetadata
+  for _, addon in ipairs({ "CommunitiesForever", "Questie", "QuestieDB" }) do
+    local loaded = C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded(addon)
+    log("addon", addon, "loaded", S(loaded), "version", S(getMeta and getMeta(addon, "Version")))
+  end
+  if LibQuestieDB then
+    log("LibQuestieDB contract", S(LibQuestieDB.contractVersion), "min", S(LibQuestieDB.minSupportedContract),
+      "mode", S(LibQuestieDB.readMode))
+  end
+end
+
+-- ===== V8: community IDs =====
+local function Clubs()
   if not (C_Club and C_Club.GetSubscribedClubs) then log("C_Club missing") return end
-  local clubs = C_Club.GetSubscribedClubs() or {}
-  log("subscribed clubs:", #clubs)
-  for _, club in ipairs(clubs) do
-    if filter == "" or S(club.clubId) == filter then
-      log("-- club", club.clubId, club.name, "type", CLUB_TYPES[club.clubType] or club.clubType)
-      DumpTable("clubinfo", club)
-      -- Member data loads async; this asks the client to fetch it
-      if C_Club.FocusMembers then pcall(C_Club.FocusMembers, club.clubId) end
-      local ids = C_Club.GetClubMembers(club.clubId) or {}
-      log("members:", #ids)
-      for i = 1, math.min(#ids, MAX_MEMBERS) do
-        DumpTable("member", C_Club.GetMemberInfo(club.clubId, ids[i]))
+  local types = {}
+  if Enum and Enum.ClubType then
+    for k, v in pairs(Enum.ClubType) do types[v] = k end
+  end
+  for _, club in ipairs(C_Club.GetSubscribedClubs() or {}) do
+    log("club", club.clubId, S(club.name), "type", types[club.clubType] or club.clubType)
+  end
+  log("compare these clubIds with the same /fp start on another client (V8)")
+end
+
+-- ===== V30: talents per tree =====
+-- Spell name for a trait entry (definition -> spellID -> name); nil when unknown.
+local function EntrySpellName(configID, entryID)
+  if not (entryID and C_Traits.GetEntryInfo and C_Traits.GetDefinitionInfo) then return nil end
+  local entry = C_Traits.GetEntryInfo(configID, entryID)
+  local definition = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
+  local spellID = definition and (definition.spellID or definition.overriddenSpellID)
+  if not spellID then return nil end
+  if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
+  return GetSpellInfo and (GetSpellInfo(spellID))
+end
+
+-- Nodes with points spent, left to right (posX), with their spell: shows which tree each point is in.
+local function Talents()
+  if not (C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits) then log("talent API missing") return end
+  local configID = C_ClassTalents.GetActiveConfigID()
+  local info = configID and C_Traits.GetConfigInfo(configID)
+  log("class", UnitClassBase("player"), "activeConfigID", S(configID))
+  for _, treeID in ipairs(info and info.treeIDs or {}) do
+    local spent = {}
+    for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
+      local node = C_Traits.GetNodeInfo(configID, nodeID)
+      if node and (node.ranksPurchased or 0) > 0 then spent[#spent + 1] = node end
+    end
+    table.sort(spent, function(a, b) return (a.posX or 0) < (b.posX or 0) end)
+    log("tree", treeID, "nodes with points", #spent)
+    for _, node in ipairs(spent) do
+      local entryID = node.activeEntry and node.activeEntry.entryID or (node.entryIDs and node.entryIDs[1])
+      log("  posX", node.posX, "posY", node.posY, "ranks", node.ranksPurchased, "spell",
+        S(EntrySpellName(configID, entryID)))
+    end
+  end
+  log("compare with /cf self: the points should sit under the right tree names (V30)")
+end
+
+-- ===== V41: chat windows =====
+local function ChatWindows()
+  if not GetChatWindowInfo then log("GetChatWindowInfo missing") return end
+  for i = 1, NUM_CHAT_WINDOWS or 10 do
+    local name, fontSize, r, g, b, alpha, shown, locked, docked, uninteractable = GetChatWindowInfo(i)
+    if name and name ~= "" then
+      log("window", i, S(name), "shown", S(shown), "docked", S(docked), "locked", S(locked),
+        "uninteractable", S(uninteractable), "returns", select("#", GetChatWindowInfo(i)), "font", S(fontSize),
+        "color", S(r), S(g), S(b), S(alpha))
+    end
+  end
+  log("close a chat tab before /fp start to see what a closed one returns (V41)")
+end
+
+-- ===== V46: dungeons the client knows =====
+-- Group Finder (premade groups, the "Looking For Group" window with level ranges): categories, activity
+-- groups and every activity with all its fields.
+local function GroupFinder()
+  local lfg = C_LFGList
+  for _, name in ipairs({ "GetAvailableCategories", "GetLfgCategoryInfo", "GetAvailableActivityGroups",
+                          "GetActivityGroupInfo", "GetAvailableActivities", "GetActivityInfoTable" }) do
+    log("exists C_LFGList." .. name, lfg ~= nil and lfg[name] ~= nil)
+  end
+  if not (lfg and lfg.GetAvailableCategories and lfg.GetAvailableActivities and lfg.GetActivityInfoTable) then return end
+  if Enum and Enum.LFGListFilter then DumpTable("Enum.LFGListFilter", Enum.LFGListFilter) end
+  for _, categoryID in ipairs(lfg.GetAvailableCategories() or {}) do
+    DumpTable("category " .. categoryID, lfg.GetLfgCategoryInfo and lfg.GetLfgCategoryInfo(categoryID))
+    if lfg.GetAvailableActivityGroups and lfg.GetActivityGroupInfo then
+      for _, groupID in ipairs(lfg.GetAvailableActivityGroups(categoryID) or {}) do
+        log("  activity group", groupID, lfg.GetActivityGroupInfo(groupID))
       end
-      if #ids > MAX_MEMBERS then log("... truncated", #ids - MAX_MEMBERS) end
+    end
+    local activities = lfg.GetAvailableActivities(categoryID) or {}
+    log("  activities", #activities)
+    for _, activityID in ipairs(activities) do
+      DumpTable("  activity " .. activityID, lfg.GetActivityInfoTable(activityID))
     end
   end
 end
 
-local clubUpdateSeen = {}
-
-local f = CreateFrame("Frame")
-f:RegisterEvent("ADDON_LOADED")
-f:RegisterEvent("BN_CHAT_MSG_ADDON")
-f:RegisterEvent("CHAT_MSG_ADDON")
-pcall(f.RegisterEvent, f, "CLUB_MEMBERS_UPDATED")
-f:SetScript("OnEvent", function(_, event, ...)
-  if event == "ADDON_LOADED" then
-    if ... == "FriendProbe" then
-      FriendProbeDB = FriendProbeDB or {}
-      log("loaded; register prefix:", C_ChatInfo.RegisterAddonMessagePrefix(PREFIX))
-    end
-  elseif event == "BN_CHAT_MSG_ADDON" then
-    local prefix, text, channel, senderID = ...
-    if prefix ~= PREFIX then return end
-    local info = C_BattleNet.GetGameAccountInfoByID(senderID)
-    log("BN recv <-", info and info.characterName, "ch", channel, "len", #text, text:sub(1, 24))
-    if text:sub(1, 4) == "PING" then
-      pcall(BNSendGameData, senderID, PREFIX, "PONG from " .. S(UnitName("player")))
-    end
-  elseif event == "CHAT_MSG_ADDON" then
-    local prefix, text, channel, sender = ...
-    if prefix ~= PREFIX then return end
-    log("addon recv <-", sender, "ch", channel, "len", #text, text:sub(1, 24))
-    if text == "WPING" then
-      log("whisper reply result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPONG", "WHISPER", sender))
-    end
-  elseif event == "CLUB_MEMBERS_UPDATED" then
-    local clubId = S(...)
-    if not clubUpdateSeen[clubId] then
-      clubUpdateSeen[clubId] = true
-      log("member data arrived for club", clubId, "(run /fp clubs again)")
+-- Old Dungeon Finder IDs: a count per expansion level, and every dungeon-like entry beyond expansion 0
+-- (the Vanilla list is known: V46 first run).
+local function DungeonFinder()
+  if not GetLFGDungeonInfo then log("GetLFGDungeonInfo missing") return end
+  local perExpansion = {}
+  for id = 1, LFG_MAX_ID do
+    local name, typeID, subtypeID, minLevel, maxLevel, recLevel, _, _, expansionLevel, _, _, difficulty,
+      maxPlayers = GetLFGDungeonInfo(id)
+    if name then
+      local key = S(expansionLevel)
+      perExpansion[key] = (perExpansion[key] or 0) + 1
+      if expansionLevel ~= 0 and (typeID == 1 or typeID == 2) then
+        log("  LFG", id, S(name), "expansion", key, "type", S(typeID), "subtype", S(subtypeID), "levels",
+          S(minLevel) .. "-" .. S(maxLevel), "rec", S(recLevel), "players", S(maxPlayers), "difficulty", S(difficulty))
+      end
     end
   end
+  for key, n in pairs(perExpansion) do log("LFG entries with expansion", key, n) end
+end
+
+-- ===== V35: activity feed events (logged while on, also after /reload) =====
+local FEED_EVENTS = { "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "ENCOUNTER_START", "ENCOUNTER_END",
+  "BOSS_KILL", "GROUP_ROSTER_UPDATE", "UPDATE_BATTLEFIELD_STATUS", "PVP_MATCH_ACTIVE", "PVP_MATCH_COMPLETE" }
+
+local function LogInstance()
+  if GetInstanceInfo then
+    local name, instanceType, difficultyID, difficultyName, maxPlayers, _, _, instanceID = GetInstanceInfo()
+    log("  instance", name, "type", instanceType, "difficulty", difficultyID, difficultyName, "max", maxPlayers,
+      "id", instanceID)
+  end
+end
+
+local function LogGroup()
+  LogCall("  GetNumGroupMembers", GetNumGroupMembers)
+  LogCall("  IsInRaid", IsInRaid)
+  for i = 1, 4 do
+    local unit = "party" .. i
+    if UnitExists and UnitExists(unit) then log("  " .. unit, GetUnitName(unit, true), UnitGUID(unit)) end
+  end
+end
+
+local feedFrame = CreateFrame("Frame")
+local feedRegistered = false
+local function FeedRegister()
+  if feedRegistered then return end
+  feedRegistered = true
+  for _, event in ipairs(FEED_EVENTS) do
+    if not pcall(feedFrame.RegisterEvent, feedFrame, event) then log("feed: unknown event", event) end
+  end
+end
+
+feedFrame:SetScript("OnEvent", function(_, event, ...)
+  if not (FriendProbeDB and FriendProbeDB.feed) then return end
+  local args = {}
+  for i = 1, select("#", ...) do args[#args + 1] = S((select(i, ...))) end
+  log("FEED " .. event, table.concat(args, " | "))
+  if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+    LogInstance()
+  elseif event == "GROUP_ROSTER_UPDATE" or event == "ENCOUNTER_END" or event == "BOSS_KILL" then
+    LogInstance()
+    LogGroup()
+  elseif event == "UPDATE_BATTLEFIELD_STATUS" and GetBattlefieldStatus then
+    LogCall("  GetBattlefieldStatus", GetBattlefieldStatus, (...) or 1)
+    LogCall("  GetBattlefieldWinner", GetBattlefieldWinner)
+  elseif event == "PVP_MATCH_COMPLETE" then
+    LogCall("  GetBattlefieldWinner", GetBattlefieldWinner)
+    LogCall("  GetBattlefieldArenaFaction", GetBattlefieldArenaFaction)
+    LogCall("  UnitFactionGroup", UnitFactionGroup, "player")
+  end
+end)
+
+local function FeedOn()
+  FriendProbeDB.feed = true
+  FeedRegister()
+  log("feed logging on (stays on after /reload; /fp feed off stops it). Run a dungeon with a boss kill and a")
+  log("battleground to the end, then /reload and send the log (V35).")
+  LogInstance()
+  LogGroup()
+end
+
+-- ===== V47/V48: addon chat links and party invites (CF-27) =====
+-- Each link click is a hardware event, like the real Join and Invite links will be. Events around
+-- invites and blocked actions are logged while the probe runs.
+local INVITE_EVENTS = { "PARTY_INVITE_REQUEST", "GROUP_INVITE_CONFIRMATION", "PARTY_INVITE_CANCEL",
+  "GROUP_ROSTER_UPDATE", "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN", "UI_ERROR_MESSAGE" }
+local inviteTargets = {}
+local inviteWatching = false
+local lastLink, lastLinkAt = nil, 0
+
+local inviteFrame = CreateFrame("Frame")
+inviteFrame:SetScript("OnEvent", function(_, event, ...)
+  if not inviteWatching then return end
+  local args = {}
+  for i = 1, select("#", ...) do args[#args + 1] = S((select(i, ...))) end
+  log("INVITE EVENT " .. event, table.concat(args, " | "))
+end)
+
+local function OnLink(source, link)
+  local action, index = S(link):match("^addon:FriendProbe:(%a+):(%d+)")
+  if not action then return end
+  log("V47 link clicked via", source, action, index)
+  -- Both hooks may report the same click: act once.
+  local now = GetTime()
+  if lastLink == link and now - lastLinkAt < 1 then return end
+  lastLink, lastLinkAt = link, now
+  local t = inviteTargets[tonumber(index)]
+  if action == "test" or not t then return end
+  if action == "request" then
+    LogCall("C_PartyInfo.RequestInviteFromUnit " .. t.name, C_PartyInfo and C_PartyInfo.RequestInviteFromUnit, t.name)
+  elseif action == "name" then
+    LogCall("C_PartyInfo.InviteUnit " .. t.name, C_PartyInfo and C_PartyInfo.InviteUnit, t.name)
+  elseif action == "bnet" then
+    LogCall("BNInviteFriend " .. S(t.gameAccountID), BNInviteFriend, t.gameAccountID)
+  end
+end
+
+local linksHooked = false
+local function HookLinks()
+  if linksHooked then return end
+  linksHooked = true
+  if EventRegistry and EventRegistry.RegisterCallback then
+    EventRegistry:RegisterCallback("SetItemRef", function(_, link) OnLink("EventRegistry", link) end, {})
+    log("hooked EventRegistry SetItemRef")
+  end
+  if SetItemRef then
+    hooksecurefunc("SetItemRef", function(link) OnLink("SetItemRef hook", link) end)
+    log("hooked SetItemRef")
+  end
+end
+
+local function Link(action, index, text)
+  return string.format("|cff71d5ff|Haddon:FriendProbe:%s:%d|h[%s]|h|r", action, index, text)
+end
+
+local function Invite()
+  log("== V47/V48 INVITE ==")
+  for _, name in ipairs({ "RequestInviteFromUnit", "InviteUnit", "ConfirmInviteUnit" }) do
+    log("exists C_PartyInfo." .. name, C_PartyInfo ~= nil and C_PartyInfo[name] ~= nil)
+  end
+  log("exists BNInviteFriend", BNInviteFriend ~= nil, "EventRegistry", EventRegistry ~= nil)
+  HookLinks()
+  if not inviteWatching then
+    inviteWatching = true
+    for _, event in ipairs(INVITE_EVENTS) do pcall(inviteFrame.RegisterEvent, inviteFrame, event) end
+  end
+  print("|cff33ff99FP|r V47 " .. Link("test", 0, "click me: link test"))
+  inviteTargets = {}
+  for i = 1, BNGetNumFriends() do
+    local acc = C_BattleNet.GetFriendAccountInfo(i)
+    for j = 1, acc and C_BattleNet.GetFriendNumGameAccounts(i) or 0 do
+      local ga = C_BattleNet.GetFriendGameAccountInfo(i, j)
+      if ga and ga.isOnline and ga.clientProgram == BNET_CLIENT_WOW and ga.wowProjectID == WOW_PROJECT_ID then
+        local n = #inviteTargets + 1
+        inviteTargets[n] = { name = ga.characterName, gameAccountID = ga.gameAccountID, battleTag = acc.battleTag }
+        log("friend", n, S(ga.characterName), "gameAccountID", S(ga.gameAccountID))
+        print("|cff33ff99FP|r V48 " .. S(ga.characterName) .. ": " .. Link("request", n, "ask them for an invite")
+          .. " " .. Link("name", n, "invite by name") .. " " .. Link("bnet", n, "invite via Battle.net"))
+      end
+    end
+  end
+  if #inviteTargets == 0 then log("no friend online in Forever: the invite links need one") end
+  log("click the test link, then each invite link once (leave the group between tries); /reload and send the log")
+end
+
+-- ===== Commands =====
+-- ===== V49-V52: community transport (CF-28) =====
+local COMM_PREFIX = "FProbe"
+local commReceived = {}
+
+local function CommunityChannel()
+  if not (C_Club and C_Club.GetSubscribedClubs) then return nil end
+  for _, club in ipairs(C_Club.GetSubscribedClubs() or {}) do
+    if Enum and Enum.ClubType and club.clubType == Enum.ClubType.Character then
+      local streams = C_Club.GetStreams and C_Club.GetStreams(club.clubId) or {}
+      local stream = streams[1]
+      for _, st in ipairs(streams) do
+        if Enum.ClubStreamType and st.streamType == Enum.ClubStreamType.General then stream = st end
+      end
+      local name = stream and Chat_GetCommunitiesChannelName and Chat_GetCommunitiesChannelName(club.clubId,
+        stream.streamId)
+      return name, name and GetChannelName and GetChannelName(name), club
+    end
+  end
+end
+
+local function SendAddon(label, text, channel, target)
+  if not (C_ChatInfo and C_ChatInfo.SendAddonMessage) then log(label, "SendAddonMessage missing") return end
+  local ok, result = pcall(C_ChatInfo.SendAddonMessage, COMM_PREFIX, text, channel, target)
+  log(label, "len", #text, "->", ok and S(result) or ("error " .. S(result)))
+end
+
+local function CommSummary()
+  local tags = {}
+  for tag in pairs(commReceived) do tags[#tags + 1] = tag end
+  table.sort(tags)
+  for _, tag in ipairs(tags) do log("received", tag, commReceived[tag]) end
+  if #tags == 0 then log("nothing received back (yet)") end
+end
+
+local function CommunityTransport()
+  if Enum and Enum.SendAddonMessageResult then DumpTable("Enum.SendAddonMessageResult", Enum.SendAddonMessageResult) end
+  commReceived = {}
+  local name, index, club = CommunityChannel()
+  log("V49 community", S(club and club.name), "channel", S(name), "index", S(index))
+  if index and index > 0 then
+    SendAddon("V49 CHANNEL send", "V49:channel", "CHANNEL", index)
+  else
+    log("V49 no community channel index (open the community chat once?)")
+  end
+  local me = GetUnitName and GetUnitName("player", true)
+  for _, size in ipairs({ 200, 255, 256 }) do
+    SendAddon("V50 WHISPER self " .. size, "V50:" .. size .. ":" .. string.rep("x", size - #("V50:" .. size .. ":")),
+      "WHISPER", me)
+  end
+  for i = 1, 30 do SendAddon("V50 burst " .. i, "V50:burst:" .. i, "WHISPER", me) end
+  log("V49/V50 sent; wait 15 s before /reload (or /fp comm summary)")
+  C_Timer.After(3, function() log("== V49/V50 RECEIVED after 3 s ==") CommSummary() end)
+  C_Timer.After(10, function() log("== V49/V50 RECEIVED after 10 s ==") CommSummary() end)
+end
+
+local function CommunityPresence()
+  local _, _, club = CommunityChannel()
+  if not club then log("no character community") return end
+  local presence = {}
+  if Enum and Enum.ClubMemberPresence then
+    for k, v in pairs(Enum.ClubMemberPresence) do presence[v] = k end
+  end
+  for _, memberId in ipairs(C_Club.GetClubMembers(club.clubId) or {}) do
+    local m = C_Club.GetMemberInfo(club.clubId, memberId)
+    if m then
+      log("member", S(m.name), "presence", S(presence[m.presence] or m.presence), "level", S(m.level),
+        "zone", S(m.zone), "self", S(m.isSelf))
+    end
+  end
+  log("V52: note who logged out and when; if they still show Online after a few minutes, presence is stale")
+end
+
+local commFrame = CreateFrame("Frame")
+commFrame:RegisterEvent("CHAT_MSG_ADDON")
+commFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender, target, zoneChannelID, localID, name)
+  if prefix ~= COMM_PREFIX then return end
+  local tag = S(text):match("^(V%d+:%a+)") or S(text):match("^(V%d+:%d+)") or "other"
+  commReceived[tag] = (commReceived[tag] or 0) + 1
+  if tag == "V50:burst" then
+    -- Logged as they arrive (a /reload before a delayed summary lost the count in run 1).
+    if commReceived[tag] % 10 == 0 then log("received V50:burst", commReceived[tag], "so far") end
+  else
+    log("addon message <-", S(sender), "channel", S(channel), "len", #S(text), "target", S(target), "zoneChannelID",
+      S(zoneChannelID), "localID", S(localID), "name", S(name), "text", S(text):sub(1, 20))
+  end
+end)
+
+local function Start()
+  FriendProbeDB = FriendProbeDB or {}
+  FriendProbeDB.log = {}
+  log("FriendProbe start")
+  Section("CONTEXT", Context)
+  Section("V8 COMMUNITIES", Clubs)
+  Section("V30 TALENTS", Talents)
+  Section("V41 CHAT WINDOWS", ChatWindows)
+  Section("V46 GROUP FINDER", GroupFinder)
+  Section("V46 DUNGEON FINDER", DungeonFinder)
+  Section("V52 COMMUNITY PRESENCE", CommunityPresence)
+  Section("V49/V50 COMMUNITY TRANSPORT", CommunityTransport)
+  Section("V35 FEED", FeedOn)
+  log("start done: /reload, then send WTF\\Account\\<account>\\SavedVariables\\FriendProbe.lua")
+end
+
+local loader = CreateFrame("Frame")
+loader:RegisterEvent("ADDON_LOADED")
+loader:SetScript("OnEvent", function(_, _, name)
+  if name ~= "FriendProbe" then return end
+  FriendProbeDB = FriendProbeDB or {}
+  if FriendProbeDB.feed then FeedRegister() end
+  if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then C_ChatInfo.RegisterAddonMessagePrefix(COMM_PREFIX) end
 end)
 
 SLASH_FRIENDPROBE1 = "/fp"
 SlashCmdList.FRIENDPROBE = function(msg)
   local cmd, arg = msg:match("^(%S*)%s*(.-)$")
   cmd = cmd:lower()
-  if cmd == "info" then Info()
-  elseif cmd == "friends" then Friends()
-  elseif cmd == "ping" then SendBN("PING " .. S(UnitName("player")))
-  elseif cmd == "big" then
-    local size = tonumber(arg) or 4000
-    SendBN("BIG" .. string.rep("x", size - 3))
-  elseif cmd == "whisper" and arg ~= "" then
-    log("whisper send result:", C_ChatInfo.SendAddonMessage(PREFIX, "WPING", "WHISPER", arg))
-  elseif cmd == "clubs" then Clubs(arg)
+  if cmd == "start" then
+    Start()
+  elseif cmd == "comm" then
+    local target = arg:match("^whisper%s+(.+)$")
+    if arg == "summary" then
+      log("== V49/V50 RECEIVED ==")
+      CommSummary()
+    elseif arg == "channel" then
+      local _, index = CommunityChannel()
+      SendAddon("V49 CHANNEL send", "V49:channel from " .. S(GetUnitName("player", true)), "CHANNEL", index)
+    elseif target then
+      SendAddon("V51 WHISPER " .. target, "V51:whisper from " .. S(GetUnitName("player", true)), "WHISPER", target)
+      log("V51: does the other character's /fp log show 'addon message <-'? (both need FriendProbe)")
+    else
+      print("|cff33ff99FP|r /fp comm whisper <character name> | channel | summary")
+    end
+  elseif cmd == "invite" then
+    Invite()
+  elseif cmd == "feed" and arg == "off" then
+    FriendProbeDB.feed = nil
+    log("feed logging off")
   elseif cmd == "clear" then
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp info | friends | ping | big [bytes] | whisper <name> | clubs [clubId] | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | comm whisper <name> | feed off | clear")
   end
 end

@@ -1,0 +1,166 @@
+-- Core: AceAddon init and wiring. The private addon table is the addon object.
+local ADDON_NAME, ns = ...
+
+local addon = LibStub("AceAddon-3.0"):NewAddon(ns, ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
+CommunitiesForever = addon
+
+local function GetVersion()
+  if C_AddOns and C_AddOns.GetAddOnMetadata then
+    return C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "unknown"
+  end
+  return "unknown"
+end
+
+function addon:OnInitialize()
+  self.db = LibStub("AceDB-3.0"):New("CommunitiesForeverDB", ns.Store.defaults(), true)
+  ns.Store.init(self.db.global)
+  ns.Settings.register()
+  self:RegisterChatCommand("cf", "OnSlashCommand")
+end
+
+function addon:OnEnable()
+  ns.SelfInfo.watch(self)
+  ns.FeedTracker.start(self) -- before SelfTracker: its first refresh may record feed events
+  ns.SelfTracker.start(self)
+  ns.Community.watch(self)
+  ns.CommunitySelection.start(self)
+  ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab
+  ns.MemberTracker.start(self)
+  ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
+  ns.Presence.watch(self)
+  ns.PresenceTracker.start(self)
+  ns.MainFrame.start(self)
+  ns.Minimap.start(self)
+  ns.Messenger.start(self)
+  ns.Ping.start(self)
+  ns.Sync.start(self)
+  ns.Invites.start(self)
+  ns.Tooltip.start(self)
+  ns.Notify.start(self)
+  ns.Calendar.watch(self) -- CF-24: calendar events for the Dungeons tab
+  ns.Planner.start(self)  -- CF-24: planned runs and their sign-ups
+  ns.ChatLinks.watch(self) -- CF-27: clickable chat links
+  ns.GroupAsks.start(self) -- CF-27: "Who's up for it?"
+  ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
+end
+
+-- Prints why a community command can't run here, or returns true when it can.
+local function CommunityAvailable(self)
+  if not ns.CommunitySelection.selected() then
+    self:Print("No community selected. Select one with /cf settings.")
+    return false
+  end
+  if not ns.CommunitySelection.active() then
+    self:Print(string.format("This character is not a member of %s.",
+      ns.CommunitySelection.name() or "the selected community"))
+    return false
+  end
+  return true
+end
+
+function addon:OnSlashCommand(input)
+  local command, argument = self:GetArgs(input, 2)
+  command = command and command:lower()
+
+  if command == nil then
+    ns.MainFrame.toggle()
+  elseif command == "version" then
+    self:Print("Version " .. GetVersion())
+  elseif command == "self" then
+    for _, line in ipairs(ns.Describe.selfRecord(self.db.global.self, GetServerTime())) do
+      self:Print(line)
+    end
+  elseif command == "members" then
+    if not CommunityAvailable(self) then return end
+    local lines = ns.Describe.members(ns.MemberTracker.members(), ns.CommunitySelection.name(),
+      ns.MemberTracker.changedAt(), GetServerTime())
+    for _, line in ipairs(lines) do
+      self:Print(line)
+    end
+  elseif command == "people" then
+    if not CommunityAvailable(self) then return end
+    for _, line in ipairs(ns.Describe.view(ns.ViewModel.build(self), GetServerTime())) do
+      self:Print(line)
+    end
+  elseif command == "friends" then
+    local lines = ns.Describe.friends(ns.PresenceTracker.friends(), ns.PresenceTracker.online(),
+      self.db.global.presence, GetServerTime())
+    for _, line in ipairs(lines) do
+      self:Print(line)
+    end
+  elseif command == "ping" then
+    if argument == "stats" then
+      local s = ns.Messenger.stats()
+      self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed.",
+        s.sent, s.received, s.dropped, s.queued, s.resent, s.missed))
+    else
+      ns.Ping.send(tonumber(argument))
+    end
+  elseif command == "sync" then
+    if argument == "debug" then
+      -- CF-28: trace parts, missing parts and resends.
+      ns.Messenger.setDebug(not ns.Messenger.debugOn())
+      self:Print(ns.Messenger.debugOn() and "Sync debug on: message parts, missing parts and resends are printed."
+        or "Sync debug off.")
+      return
+    end
+    ns.Sync.announce()
+    self:Print("Sync: announced your record to friends online in Forever.")
+  elseif command == "settings" then
+    ns.Settings.open()
+  elseif command == "ask" then
+    -- CF-27: /cf ask <dungeon> (the rest of the line: names have spaces), or the state of your ask.
+    local name = input:match("^%s*%S+%s+(.-)%s*$")
+    local dungeon = name and name ~= "" and ns.Dungeons.dungeonOf(name)
+    if dungeon then
+      ns.GroupAsks.ask(dungeon)
+    elseif name and name ~= "" then
+      self:Print("No dungeon called " .. name .. ". Example: /cf ask Deadmines")
+    else
+      local ask = ns.GroupAsks.current()
+      if not ask then
+        self:Print("No open ask. /cf ask <dungeon> asks friends who's up for it.")
+      else
+        local s = ns.GroupAsk.summary(ask)
+        self:Print(string.format("%s: joining %s; later %s; no %s; waiting %s.", ask.dungeon.name,
+          table.concat(s.join, ", "), table.concat(s.later, ", "), table.concat(s.no, ", "),
+          table.concat(s.waiting, ", ")))
+      end
+    end
+  elseif command == "setup" then
+    ns.Setup.open()
+  elseif command == "activity" then
+    if argument == "debug" then
+      ns.ActivityTracker.setDebug(not ns.ActivityTracker.debugOn())
+      self:Print(ns.ActivityTracker.debugOn()
+        and "Activity debug on: instance events and run decisions are printed (stays on after /reload)."
+        or "Activity debug off.")
+    else
+      local run = ns.ActivityTracker.current()
+      self:Print(run and string.format("In %s (%s) for %d min, %d bosses killed.", tostring(run.name),
+        tostring(run.kind), math.floor((GetServerTime() - (run.startedAt or 0)) / 60), run.bossCount or 0)
+        or "Not in a dungeon, raid or battleground.")
+    end
+  elseif command == "debugon" or command == "debugoff" then -- hidden: not in the help
+    ns.Debug.set(command == "debugon")
+    self:Print(command == "debugon" and "Debug on: fake friend in the window (not saved, not synced)."
+      or "Debug off.")
+    if ns.MainFrame.isShown() then ns.MainFrame.render() end
+  else
+    self:Print("Commands:")
+    self:Print("  /cf - open or close the window")
+    self:Print("  /cf version - show the addon version")
+    self:Print("  /cf self - show your stored characters")
+    self:Print("  /cf members - show members of the selected community")
+    self:Print("  /cf friends - show Battle.net friends in Forever")
+    self:Print("  /cf people - show who owns which community character")
+    self:Print("  /cf sync - announce your characters to friends now")
+    self:Print("  /cf sync debug - print message parts, missing parts and resends (on/off)")
+    self:Print("  /cf ping [bytes] - test messages with friends who run the addon; /cf ping stats")
+    self:Print("  /cf activity - show the dungeon, raid or battleground run in progress")
+    self:Print("  /cf activity debug - print instance events for the activity feed (on/off)")
+    self:Print("  /cf settings - open the settings")
+    self:Print("  /cf setup - run the setup again")
+    self:Print("  /cf ask <dungeon> - ask friends who's up for a dungeon now")
+  end
+end
