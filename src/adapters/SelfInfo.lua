@@ -141,6 +141,16 @@ function SelfInfo.today()
   return t.year, t.month, t.day
 end
 
+-- The zone the player is in (a dungeon's name inside one), or nil. GetRealZoneText is verified but can
+-- be nil right after a loading screen (API-FINDINGS V35).
+function SelfInfo.zone()
+  if not GetRealZoneText then return nil end
+  local zone = GetRealZoneText()
+  if issecretvalue and issecretvalue(zone) then return nil end
+  if type(zone) ~= "string" or zone == "" then return nil end
+  return zone
+end
+
 function SelfInfo.watch(addon)
   for event, reason in pairs(EVENT_REASONS) do
     ns.Events.register(addon, event, function(_, ...)

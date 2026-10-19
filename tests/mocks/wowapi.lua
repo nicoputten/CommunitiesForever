@@ -488,6 +488,7 @@ function wowapi.install(opts)
     local i = state.instance
     return i.name, i.type, 0, "", 5, 0, false, i.instanceID
   end
+  globals.GetRealZoneText = function() return state.zone end
   globals.GetNumGroupMembers = function() return #state.group > 0 and #state.group + 1 or 0 end
   globals.IsInRaid = function() return state.inRaid == true end
   globals.GetBattlefieldWinner = function() return state.bgWinner end

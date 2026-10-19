@@ -3,6 +3,10 @@
 Hand-written and shipped with each release (the packager's automatic changelog from commit messages is off).
 Add an entry under a new version heading before tagging a release.
 
+## Unreleased
+- **Activity tab:** a quest picked up and turned in shortly after (common in dungeons) counts under the zone
+  you are in instead of "Other".
+
 ## v0.2.0-beta1 (2026-10-19)
 First release (beta: World of Warcraft: Forever is still in beta; please report problems).
 
