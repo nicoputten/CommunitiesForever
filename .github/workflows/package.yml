@@ -42,3 +42,4 @@ jobs:
           name: package
           path: .release/*.zip
           if-no-files-found: error
+          include-hidden-files: true # .release starts with a dot
