@@ -49,6 +49,9 @@ end
 -- the receiver decides what to show, see core rule 1). CF-22: the activity feed only when
 -- shareActivity is not false ("Share my activity" setting).
 function Merge.outgoingRecord(selfRecord, shareActivity)
+  -- false (not nil) when not shared, so relays pass "stopped sharing" on (CF-28).
+  local feed = selfRecord.feed
+  if shareActivity == false then feed = false end
   local chars = {}
   for guid, char in pairs(selfRecord.chars or {}) do
     chars[guid] = char
@@ -60,7 +63,7 @@ function Merge.outgoingRecord(selfRecord, shareActivity)
     version = selfRecord.version,
     chars = chars,
     invite = cleanInvite(selfRecord.invite),
-    feed = shareActivity ~= false and selfRecord.feed or nil,
+    feed = feed,
   }
 end
 
@@ -111,17 +114,100 @@ function Merge.accept(stored, record, senderBattleTag, relay)
   return true
 end
 
--- Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, via, invite, feed }.
--- via is the BattleTag of the friend who relayed it, nil when it came from the owner.
+-- Removal times of characters a record carries (CF-28): { [guid] = time } with numeric times only.
+local function cleanRemoved(removed)
+  if type(removed) ~= "table" then return {} end
+  local result = {}
+  for guid, at in pairs(removed) do
+    if type(guid) == "string" and type(at) == "number" and at == at then result[guid] = at end
+  end
+  return result
+end
+
+--[[ Per-character merge (CF-28, also for relay): each character is compared on its own updatedAt
+and the newer copy stays, so a record never replaces a character with older data, even when the record
+as a whole is newer. A level never goes down. removed = { [guid] = time }: characters the owner's own
+record dropped; a copy not newer than that removal is ignored. direct: the record came from its owner,
+so characters it no longer lists are removed (at `now`). Returns the merged chars and removed maps. ]]
+function Merge.mergeChars(storedChars, storedRemoved, incoming, incomingRemoved, direct, now)
+  local chars, removed = {}, {}
+  for guid, at in pairs(storedRemoved or {}) do removed[guid] = at end
+  for guid, at in pairs(incomingRemoved or {}) do
+    if not removed[guid] or at > removed[guid] then removed[guid] = at end
+  end
+  for guid, char in pairs(storedChars or {}) do chars[guid] = char end
+
+  for guid, char in pairs(incoming or {}) do
+    local stored = chars[guid]
+    local at = type(char.updatedAt) == "number" and char.updatedAt or 0
+    -- Skipped: a copy from before the owner dropped this character, or older than the copy we have.
+    local dropped = removed[guid] and at <= removed[guid]
+    local older = stored and (stored.updatedAt or 0) > at
+    if not dropped and not older then
+      local copy = char
+      if stored and type(stored.level) == "number" and type(char.level) == "number" and stored.level > char.level then
+        copy = {}
+        for k, v in pairs(char) do copy[k] = v end
+        copy.level = stored.level -- a level never goes down
+      end
+      chars[guid] = copy
+      removed[guid] = nil
+    end
+  end
+
+  if direct then
+    for guid in pairs(chars) do
+      if not (incoming or {})[guid] then
+        chars[guid] = nil
+        removed[guid] = now
+      end
+    end
+  end
+  -- Removed characters are gone; their removal time stays so older copies cannot bring them back.
+  for guid in pairs(removed) do chars[guid] = nil end
+  return chars, removed
+end
+
+--[[ The activity feed to store (CF-22, merged per day and character since CF-28). From the owner, the
+record's feed is the truth (none: drop it). Relayed: false = the owner stopped sharing (drop it when the
+record is newer); nil = unknown (keep what is stored); a feed merges with the stored one. ]]
+local function mergedFeed(stored, record, newer, direct)
+  if direct then return ns.Feed.clean(record.feed) end
+  if record.feed == false then
+    if newer then return nil end
+    return stored and stored.feed
+  end
+  return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed))
+end
+
+--[[ Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, removed, via,
+invite, feed }. via is the BattleTag of the friend who relayed it, nil when it came from the owner.
+Characters merge one by one (Merge.mergeChars); the other fields come from the record when it is not
+older than what is stored. ]]
 function Merge.store(people, record, now, senderBattleTag)
+  local stored = people[record.bt]
+  local direct = senderBattleTag == record.bt
+  local chars, removed = Merge.mergeChars(stored and stored.chars, stored and stored.removed,
+    stripEscapes(record.chars, 0), cleanRemoved(record.removed), direct, now)
+  local newer = not stored or (stored.version or 0) <= record.version or direct
+  local displayName, invite
+  if newer then
+    displayName, invite = Merge.cleanName(record.displayName), cleanInvite(record.invite)
+  else
+    displayName, invite = stored.displayName, stored.invite
+  end
   people[record.bt] = {
-    displayName = Merge.cleanName(record.displayName),
-    version = record.version,
+    displayName = displayName,
+    -- The owner's own record sets the version, even below a relayed copy's (CF-20).
+    version = direct and record.version or math.max(record.version, stored and stored.version or 0),
     receivedAt = now,
-    chars = stripEscapes(record.chars, 0),
+    chars = chars,
+    removed = next(removed) and removed or nil,
+    feedOff = (record.feed == false and newer) or (not direct and record.feed == nil and stored and stored.feedOff)
+      or nil,
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
-    invite = cleanInvite(record.invite),
-    feed = ns.Feed.clean(record.feed), -- CF-22; nil when the owner does not share it
+    invite = invite,
+    feed = mergedFeed(stored, record, newer, direct),
   }
 end
 
@@ -158,8 +244,10 @@ end
 function Merge.relayRecord(people, battleTag)
   local person = people[battleTag]
   if not person then return nil end
+  local feed = person.feed
+  if feed == nil and person.feedOff then feed = false end -- "stopped sharing" passes on (CF-28)
   return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
-           chars = person.chars, invite = cleanInvite(person.invite), feed = person.feed }
+           chars = person.chars, removed = person.removed, invite = cleanInvite(person.invite), feed = feed }
 end
 
 ns.Merge = Merge

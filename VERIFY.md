@@ -14,6 +14,15 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-28 part 1: per-character merge
+Unit tested in depth (older copies, levels, deleted characters, activity). In game only a check that nothing broke.
+
+| Step | Expected | Status |
+|---|---|---|
+| A friend with this build levels up, turns in a quest and trains a profession rank | You see the new level, the level-up line, the quest in Shared quests and the activity line as before. | open |
+| `/reload` on both sides | Nothing goes back to older data (level, quests, activity). | open |
+| Friend unticks "Share my activity" | Their activity lines disappear for you after the next sync, as before. | open |
+
 ### CF-24 Dungeon planner (round 4)
 The dungeon list now comes from the game's Group Finder (V46): Forever's new dungeons and the game's level ranges.
 
