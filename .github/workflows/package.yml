@@ -30,11 +30,14 @@ jobs:
           echo "Packaging $ref"
           git checkout --quiet "$ref"
 
-      # No CF_API_TOKEN here, and -d skips every upload.
+      # The same packager script as the release (v2), called directly: on a branch push the packager action
+      # skips commits that carry a tag ("Found future tag"), so it runs here as a manual event. No
+      # CF_API_TOKEN here, and -d skips every upload.
       - name: Package (no upload)
-        uses: BigWigsMods/packager@v2
-        with:
-          args: -d
+        run: |
+          sudo apt-get install -y -qq subversion > /dev/null
+          curl -fsSL -o /tmp/release.sh https://raw.githubusercontent.com/BigWigsMods/packager/v2/release.sh
+          GITHUB_EVENT_NAME=workflow_dispatch bash /tmp/release.sh -d
 
       - name: Keep the zip as a download
         uses: actions/upload-artifact@v4
