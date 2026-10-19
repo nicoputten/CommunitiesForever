@@ -124,60 +124,76 @@ local function cleanRemoved(removed)
   return result
 end
 
---[[ Per-character merge (CF-28, also for relay): each character is compared on its own updatedAt
-and the newer copy stays, so a record never replaces a character with older data, even when the record
-as a whole is newer. A level never goes down. removed = { [guid] = time }: characters the owner's own
-record dropped; a copy not newer than that removal is ignored. direct: the record came from its owner,
-so characters it no longer lists are removed (at `now`). Returns the merged chars and removed maps. ]]
+--[[ Per-character merge (CF-28, also for relay). Returns the merged chars and removed maps.
+  removed = { [guid] = time }: characters the owner's own record dropped.
+  direct (the record came from its owner): the owner's record is the truth for its characters. They
+    replace the stored copies (a level may go down here: that is how a wrong level gets corrected), and
+    characters it no longer lists are removed (at `now`).
+  relayed: each character is compared on its own updatedAt and the newer copy stays, so a relay never
+    puts a character back to older data; a relayed copy never lowers a level. Timestamps more than
+    MAX_FUTURE_SECONDS ahead of `now` are ignored (characters and removals), so a broken or modified
+    client cannot make a copy win forever. A removal only takes away a copy that is not newer than it. ]]
 function Merge.mergeChars(storedChars, storedRemoved, incoming, incomingRemoved, direct, now)
+  incoming = incoming or {}
   local chars, removed = {}, {}
   for guid, at in pairs(storedRemoved or {}) do removed[guid] = at end
+
+  if direct then
+    for guid, char in pairs(incoming) do
+      chars[guid] = char
+      removed[guid] = nil
+    end
+    for guid in pairs(storedChars or {}) do
+      if not incoming[guid] then removed[guid] = now end
+    end
+    return chars, removed
+  end
+
+  local limit = (now or 0) + Merge.MAX_FUTURE_SECONDS
   for guid, at in pairs(incomingRemoved or {}) do
-    if not removed[guid] or at > removed[guid] then removed[guid] = at end
+    if at <= limit and (not removed[guid] or at > removed[guid]) then removed[guid] = at end
   end
   for guid, char in pairs(storedChars or {}) do chars[guid] = char end
 
-  for guid, char in pairs(incoming or {}) do
+  for guid, char in pairs(incoming) do
     local stored = chars[guid]
     local at = type(char.updatedAt) == "number" and char.updatedAt or 0
-    -- Skipped: a copy from before the owner dropped this character, or older than the copy we have.
-    local dropped = removed[guid] and at <= removed[guid]
-    local older = stored and (stored.updatedAt or 0) > at
-    if not dropped and not older then
+    local future = at > limit
+    local older = stored and (stored.updatedAt or 0) >= at
+    if not future and not older then
       local copy = char
       if stored and type(stored.level) == "number" and type(char.level) == "number" and stored.level > char.level then
         copy = {}
         for k, v in pairs(char) do copy[k] = v end
-        copy.level = stored.level -- a level never goes down
+        copy.level = stored.level -- a relayed copy never lowers a level
       end
       chars[guid] = copy
-      removed[guid] = nil
     end
   end
 
-  if direct then
-    for guid in pairs(chars) do
-      if not (incoming or {})[guid] then
-        chars[guid] = nil
-        removed[guid] = now
-      end
+  -- A removal takes away copies that are not newer than it; a newer copy means the character is back.
+  for guid, at in pairs(removed) do
+    local char = chars[guid]
+    if char and (char.updatedAt or 0) > at then
+      removed[guid] = nil
+    else
+      chars[guid] = nil
     end
   end
-  -- Removed characters are gone; their removal time stays so older copies cannot bring them back.
-  for guid in pairs(removed) do chars[guid] = nil end
   return chars, removed
 end
 
 --[[ The activity feed to store (CF-22, merged per day and character since CF-28). From the owner, the
 record's feed is the truth (none: drop it). Relayed: false = the owner stopped sharing (drop it when the
 record is newer); nil = unknown (keep what is stored); a feed merges with the stored one. ]]
-local function mergedFeed(stored, record, newer, direct)
+local function mergedFeed(stored, record, newer, direct, now)
   if direct then return ns.Feed.clean(record.feed) end
   if record.feed == false then
     if newer then return nil end
     return stored and stored.feed
   end
-  return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed))
+  -- Relayed activity entries more than MAX_FUTURE_SECONDS ahead are ignored (as for characters).
+  return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed), now + Merge.MAX_FUTURE_SECONDS)
 end
 
 --[[ Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, removed, via,
@@ -207,7 +223,7 @@ function Merge.store(people, record, now, senderBattleTag)
       or nil,
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
     invite = invite,
-    feed = mergedFeed(stored, record, newer, direct),
+    feed = mergedFeed(stored, record, newer, direct, now),
   }
 end
 

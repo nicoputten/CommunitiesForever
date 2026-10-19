@@ -50,12 +50,29 @@ describe("per-character merge (CF-28)", function()
       assert.are.same(QUESTS_NEW, people[OWNER].chars.G1.quests)
     end)
 
-    it("never lowers a level, even with a newer copy", function()
+    it("never lowers a level through a relay, even with a newer copy", function()
       local people = {}
       Merge.store(people, record(10, { G1 = char(30, 500) }), 600, OWNER)
-      Merge.store(people, record(11, { G1 = char(28, 650, { zone = "Duskwood" }) }), 700, OWNER)
+      Merge.store(people, record(11, { G1 = char(28, 650, { zone = "Duskwood" }) }), 700, RELAY)
       assert.are.equal(30, people[OWNER].chars.G1.level)
       assert.are.equal("Duskwood", people[OWNER].chars.G1.zone) -- the rest of the newer copy is taken
+    end)
+
+    it("lets the owner's own record correct a level (and anything else)", function()
+      local people = {}
+      Merge.store(people, record(10, { G1 = char(60, 500) }), 600, RELAY) -- a wrong level via a relay
+      Merge.store(people, record(11, { G1 = char(28, 450) }), 700, OWNER)
+      assert.are.equal(28, people[OWNER].chars.G1.level)
+    end)
+
+    it("ignores relayed characters and removals timestamped in the future", function()
+      local people = {}
+      Merge.store(people, record(10, { G1 = char(20, 500), G2 = char(10, 500) }), 600, OWNER)
+      Merge.store(people, record(11, { G1 = char(21, 600 + 301) }, { removed = { G2 = 99999 } }), 600, RELAY)
+      assert.are.equal(20, people[OWNER].chars.G1.level)
+      assert.is_not_nil(people[OWNER].chars.G2)
+      Merge.store(people, record(12, { G1 = char(21, 600 + 300) }), 600, RELAY) -- within 5 minutes: fine
+      assert.are.equal(21, people[OWNER].chars.G1.level)
     end)
 
     it("removes a character the owner's record drops; an older relayed copy does not bring it back", function()
@@ -134,6 +151,15 @@ describe("per-character merge (CF-28)", function()
         OWNER)
       Merge.store(people, record(11, {}), 700, RELAY)
       assert.is_not_nil(people[OWNER].feed)
+    end)
+
+    it("ignores relayed activity entries timestamped in the future", function()
+      local people = {}
+      Merge.store(people, record(10, {}, { feed = feed({ G1 = { name = "A", at = 500, quests = { X = 1 } } }) }), 600,
+        OWNER)
+      Merge.store(people, record(11, {}, { feed = feed({ G1 = { name = "A", at = 99999, quests = { X = 9 } } }) }), 700,
+        RELAY)
+      assert.are.same({ X = 1 }, people[OWNER].feed[DAY].G1.quests)
     end)
 
     it("drops old days relative to the newest day", function()
