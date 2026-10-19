@@ -1,6 +1,9 @@
 # Libraries fetched from .pkgmeta externals (tools/fetch-libs.ps1 or the packager)
 Libs/
 
+# Release notes written by the release workflow (tools/release-notes.lua)
+RELEASE_NOTES.md
+
 # Local build output (tools/build.ps1)
 dist/
 

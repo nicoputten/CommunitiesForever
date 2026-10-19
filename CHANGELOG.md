@@ -1,7 +1,9 @@
 # Changelog
 
-Hand-written and shipped with each release (the packager's automatic changelog from commit messages is off).
-Add an entry under a new version heading before tagging a release.
+Hand-written (the packager's automatic changelog from commit messages is off). Each release gets its own
+`## <tag>` section listing only what changed since the previous release; CurseForge shows just that section
+(`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before tagging;
+the release stops if the tag has no section.
 
 ## Unreleased
 - **Activity tab:** a quest picked up and turned in shortly after (common in dungeons) counts under the zone

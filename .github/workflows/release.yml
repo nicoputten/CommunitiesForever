@@ -48,6 +48,11 @@ jobs:
       - name: Test
         run: busted
 
+      # CurseForge shows the notes of THIS release only: the tag's "## <tag>" section of CHANGELOG.md
+      # (.pkgmeta manual-changelog). Stops here, before any upload, when the section is missing or empty.
+      - name: Release notes for this tag
+        run: lua tools/release-notes.lua "$GITHUB_REF_NAME" > RELEASE_NOTES.md && cat RELEASE_NOTES.md
+
       # The packager fetches the .pkgmeta externals itself: drop the copies fetched for the tests.
       - name: Remove test libraries
         run: rm -rf Libs
