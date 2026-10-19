@@ -9,11 +9,11 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | # | Question | How to test | Status |
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on a friend's client: compare the `club` lines under V8 COMMUNITIES. Your own two characters both show 23125681 for Doombringers (2026-10-18); a friend's account is still to check. | open |
-| V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
+| V35b | Which events tell how a battleground ended? (CF-23; the dungeon part is verified, see API-FINDINGS) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then queue and finish a battleground (stay until the end). Send the FriendProbe log and the `[activity]` lines. Check: `instance:` inside shows `<name>, pvp`; `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance); `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 | V47 | Do clicks on an addon chat link reach the addon? (CF-27: the `[Join]` `[Later]` `[No]` links) | Copy the new `tools/FriendProbe`, `/fp invite`, click `[click me: link test]` in chat. Expected a line `V47 link clicked via EventRegistry test 0` (or `via SetItemRef hook`). | open |
 | V48 | Which way can an addon get a friend into your party from a click? (CF-27) | Same `/fp invite` with a friend online in Forever, you not in a group: click `[invite by name]` (does the friend get an invite? the name has a space), leave the group; `[invite via Battle.net]`, leave; then let the friend run `/fp invite` and click `[ask them for an invite]` on you (do you get a "wants to join" popup?). Send both logs: the `C_PartyInfo...` / `BNInviteFriend` lines and the `INVITE EVENT` lines (blocked actions show as `ADDON_ACTION_BLOCKED`). | open |
 | V49 | Can addons send addon messages in the community channel? (CF-28: one broadcast to every member instead of a whisper each) | Run 1: the send is accepted (`0`, channel index 6) but no copy comes back to the sender. Needs **two clients** in the community, both with the new FriendProbe: on one `/fp comm channel`; the other's log should show `addon message <- ... channel CHANNEL`. | open |
-| V50b | Do all 30 burst whispers arrive? (CF-28: send rate) | `/fp start`, wait 15 s, then `/reload`: the log shows `received V50:burst 30 so far` (or a lower count). | open |
+| V50b | Do all 30 burst whispers arrive? (CF-28: send rate) | Copy the **current** `tools/FriendProbe` first (the 2026-10-19 run used an old copy that counts only in a delayed summary, and the `/reload` came after 9 s). `/fp start`, wait 15 s, then `/reload`: the log shows `received V50:burst 30 so far` (or a lower count). | open |
 | V51 | Do addon whispers reach a character of the other faction? (CF-28) | Both characters need FriendProbe: `/fp comm whisper <the other character's name>`; the other log should show `addon message <- ... V51:whisper`. | open |
 | V52 | How stale does community presence get after a logout? (CF-28: online status for non-friends; CF-15 bug) | A few minutes after a member logged out, `/fp start`: under V52 COMMUNITY PRESENCE, does that member still show `Online`? | open |
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
@@ -84,15 +84,8 @@ Needs a friend running this build in the same community. `/cf activity debug` on
 | Alone: kill a boss, leave after 10+ min | Your Activity line today starts with `ran <dungeon>`. | open |
 | Leave a dungeon before 10 min, or without a boss kill | No line for it (debug: `not recorded, ...`). | open |
 | `/reload` inside a dungeon, then kill a boss and leave after 10+ min | Recorded: the run survived the reload. | open |
-| With the friend in one group: run a dungeon, kill a boss, leave after 10+ min | Both clients (after ~1 min sync): one line `<you> and <friend> together` with `ran <dungeon>`, and the run is not on your own lines. | open |
 | With a community member who does not run the addon and is not your Battle.net friend | `ran <dungeon> with <their character name>` on your line. | open |
 | Finish a battleground (stay until the end) | `1 battleground (won)` or `(lost)`, matching the result. Leaving early: no line. | open |
-
-### CF-17 Alts outside the community (round 3)
-Round 2 passed. One fix left:
-
-| Step | Expected | Status |
-|---|---|---|
 
 ### CF-20 Relay
 Needs three Battle.net accounts on this build (A, B, C): relaying always involves three different BattleTags. A is Battle.net friends with both; B and C do not need to be friends with each other. All have a character in the community. Can wait until a third person is available.
