@@ -108,7 +108,7 @@ describe("activity feed (CF-22)", function()
     state.serverTime = 3000
     ns.Settings.options().args.shareActivity.set({}, false)
     assert.is_true(addon.db.global.self.version > before) -- friends get the record without the feed
-    assert.is_nil(ns.Merge.outgoingRecord(addon.db.global.self, ns.FeedTracker.shared()).feed)
+    assert.is_false(ns.Merge.outgoingRecord(addon.db.global.self, ns.FeedTracker.shared()).feed) -- CF-28
     assert.is_truthy(addon.db.global.self.feed) -- still kept for your own window
   end)
 

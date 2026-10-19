@@ -131,8 +131,9 @@ local function receiveRecord(message, battleTag)
   end
   waitingForMembers[message.bt] = nil
   local previous = people[message.bt]
-  local levelUps = ns.Merge.levelUps(previous and previous.chars, message.chars)
   ns.Merge.store(people, message, now(), battleTag)
+  -- Level-ups from the merged characters (CF-28: an older copy inside the record is not a change).
+  local levelUps = ns.Merge.levelUps(previous and previous.chars, people[message.bt].chars)
   addonRef:SendMessage(Sync.PEOPLE_UPDATED, message.bt)
   for _, up in ipairs(levelUps) do
     addonRef:SendMessage(Sync.LEVEL_UP, message.bt, up)

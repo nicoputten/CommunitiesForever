@@ -213,6 +213,30 @@ function Feed.clean(feed)
   return next(result) and result or nil
 end
 
+--[[ Merges two cleaned feeds of one person (CF-28, also for relay): per day and character the entry with
+the newer `at` stays, so an older relayed copy never replaces newer activity. Days older than KEEP_DAYS
+before the newest day are dropped. Returns a new table, or nil when both are empty. ]]
+-- maxAt (optional): incoming entries with a later `at` are ignored (a timestamp in the future, CF-28).
+function Feed.merge(stored, incoming, maxAt)
+  local result, newest = {}, nil
+  for n, feed in ipairs({ stored or {}, incoming or {} }) do
+    for day, chars in pairs(feed) do
+      result[day] = result[day] or {}
+      for guid, entry in pairs(chars) do
+        local have = result[day][guid]
+        local future = n == 2 and maxAt and (entry.at or 0) > maxAt
+        if not future and (not have or (entry.at or 0) >= (have.at or 0)) then result[day][guid] = entry end
+      end
+      if not newest or day > newest then newest = day end
+    end
+  end
+  if not newest then return nil end
+  for day in pairs(result) do
+    if day <= newest - Feed.KEEP_DAYS then result[day] = nil end
+  end
+  return result
+end
+
 -- "questing in Westfall (9)", "... in Westfall and Redridge (12)", "... in Westfall, Redridge +2 zones (15)".
 local function questingText(quests)
   local zones, total = {}, 0

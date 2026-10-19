@@ -226,7 +226,7 @@ describe("Merge", function()
       local own = { battleTag = "X#1", version = 1, chars = {}, feed = FEED }
       assert.are.equal(FEED, Merge.outgoingRecord(own).feed)
       assert.are.equal(FEED, Merge.outgoingRecord(own, true).feed)
-      assert.is_nil(Merge.outgoingRecord(own, false).feed)
+      assert.is_false(Merge.outgoingRecord(own, false).feed) -- CF-28: "not shared" passes through relays
     end)
 
     it("stores a cleaned feed, drops it when the owner stops sharing, and relays it", function()

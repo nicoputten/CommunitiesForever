@@ -127,7 +127,8 @@ global = {
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days
   people    = { [battleTag] = { displayName, version, receivedAt,
-                                chars = { [guid] = Char }, via, invite, feed } },  -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
+                                chars = { [guid] = Char }, via, invite, feed,      -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
+                                removed = { [guid] = time }, feedOff } },          -- CF-28: dropped characters; feed not shared
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
@@ -170,7 +171,7 @@ Char = {
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
-- `RECORD {bt, displayName, version, chars, invite, feed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22).
+- `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22), `false` when it is off (CF-28: so relays pass "stopped sharing" on); `removed` only in relayed copies (dropped characters with the time they were dropped).
 - `ASK {id, dungeon = {id, name, min, max}, from, char, at}` (CF-27): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
 - `ANSWER {id, answer = "join"|"later"|"no", from, char}` (CF-27): back to the asker; `char` is the answerer's current character (for the invite). Clients without CF-27 ignore both (unknown `t`).
 
@@ -180,6 +181,8 @@ Accept rule (Merge.lua):
 - own record (`record.bt == B`): `record.version > stored version`, or the stored copy was relayed (the owner always replaces a relayed copy)
 - relayed record (`record.bt ~= B`, CF-20): not our own BattleTag, `record.version > stored version`, at most 5 minutes ahead of server time, at least one character in our selected community; stored with `via = B`
 Otherwise drop silently (debug log only).
+
+Store rule (Merge.store, CF-28): an accepted record is **merged per character**, not replaced (quests, professions, talents, item level and role travel inside the character). The owner's own record is the truth for its characters: it replaces them (a wrong level gets corrected) and characters it no longer lists are removed and remembered in `removed` with the time. A relayed record: each character keeps the copy with the newer `updatedAt`, a relayed copy never lowers a level, timestamps more than 5 minutes ahead of server time are ignored (characters, removals and activity entries, so a broken or modified client cannot make a copy win forever), and a removal only takes away copies that are not newer than it; relayed records pass `removed` on. The activity feed merges per day and character on the entry's `at`; from the owner its feed is the truth, a relayed `false` drops it, a relayed nil keeps it. Display name and invite come from the newest record; the owner's own record sets the version.
 
 Other:
 - Queue outgoing while `InCombatLockdown()`, flush on `PLAYER_REGEN_ENABLED`.
