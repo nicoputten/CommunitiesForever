@@ -140,18 +140,18 @@ describe("Protocol", function()
       assert.are.equal(a, r:add(1, ca[2], 0))
     end)
 
-    it("expires incomplete messages after 30 s", function()
+    it("expires incomplete messages 30 s after their last part (CF-28: resent parts keep them alive)", function()
       local encoded = noise(9000)
       local chunks = Protocol.chunk(encoded, "e")
       local r = Protocol.reassembler()
       r:add(1, chunks[1], 100)
       r:add(1, chunks[2], 110)
       assert.are.equal(1, r:pendingCount())
-      r:expire(129)
+      r:expire(139)
       assert.are.equal(1, r:pendingCount())
-      r:expire(130)
+      r:expire(140)
       assert.are.equal(0, r:pendingCount())
-      assert.is_nil(r:add(1, chunks[3], 131)) -- the earlier parts are gone
+      assert.is_nil(r:add(1, chunks[3], 141)) -- the earlier parts are gone
     end)
 
     it("expires old entries when new chunks arrive", function()

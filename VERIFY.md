@@ -20,6 +20,16 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-28 part 2a: reliable delivery
+Needs a friend running this build online in Forever. A lost part cannot be forced in game; these steps check that nothing broke and that the trace shows the parts.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf sync debug`, then `/cf ping 20000` | `[sync] to <friend>: PING <id> in 6 part(s)`; on the friend (also `/cf sync debug`): `from <you>: <id> part 1/6` ... `6/6`, then `PING complete`. | open |
+| `/cf ping stats` | The counters end with `0 resent, 0 missed` (nothing was lost). | open |
+| Normal play with a friend for a while (level, quests, logins) | Their data stays up to date as before. If `missed` / `resent` ever go above 0, send the `[sync]` lines. | open |
+| `/cf sync debug` again | `Sync debug off.` | open |
+
 ### CF-28 part 1: per-character merge
 Unit tested in depth (older copies, levels, deleted characters, activity). In game only a check that nothing broke.
 

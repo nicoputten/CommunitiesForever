@@ -176,7 +176,8 @@ describe("Messenger", function()
       load()
       Messenger.send(SJAAK_GA, { t = "HELLO" })
       state.slash.cf("ping stats")
-      local expected = string.format("Messages: %d chunks sent, 0 received, 0 dropped, 0 queued.", baseline.sent + 1)
+      local expected = string.format("Messages: %d chunks sent, 0 received, 0 dropped, 0 queued, 0 resent, 0 missed.",
+        baseline.sent + 1)
       assert.are.same({ expected },
         state.printed)
     end)
