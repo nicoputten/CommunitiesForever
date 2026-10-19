@@ -31,7 +31,8 @@ ignore:
   - CLAUDE.md
   - VERIFY.md
 
-# CF-02: hand-written changelog instead of one generated from commit messages.
+# CF-02: hand-written changelog instead of one generated from commit messages. RELEASE_NOTES.md is the
+# tag's section of CHANGELOG.md, written by the release workflow (tools/release-notes.lua).
 manual-changelog:
-  filename: CHANGELOG.md
+  filename: RELEASE_NOTES.md
   markup-type: markdown
