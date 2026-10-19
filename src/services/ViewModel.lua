@@ -10,7 +10,8 @@ function ViewModel.build(addon)
   local view = ns.Linker.build({
     members = ns.MemberTracker.members(),
     friends = ns.PresenceTracker.friends(),
-    online = ns.PresenceTracker.online(),
+    online = ns.Sync.online(),   -- CF-28: Battle.net friends and community peers
+    offline = ns.Sync.offline(), -- CF-28: said BYE since their last HELLO
     people = global.people,
     presence = global.presence,
     locations = global.locations,

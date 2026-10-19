@@ -27,6 +27,7 @@ CommunitiesForever/
     core/                    PURE Lua, unit tested
       Store.lua              schema, defaults, migrations
       Merge.lua              record accept rules, version rules
+      Identity.lua           account IDs and person keys on the community wire ("aid:<id>"), key mapping (CF-28)
       Linker.lua             visibility + linking -> view model (people, unlinked)
       Protocol.lua           encode/decode (LibSerialize + LibDeflate injected), chunk/reassemble
       Outbox.lua             outgoing chunk queue with send-rate limit
@@ -128,7 +129,8 @@ global = {
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char }, via, invite, feed,      -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
-                                removed = { [guid] = time }, feedOff } },          -- CF-28: dropped characters; feed not shared
+                                removed = { [guid] = time }, feedOff,              -- CF-28: dropped characters; feed not shared
+                                aid } },                                           -- CF-28: account ID (community key)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
@@ -188,4 +190,5 @@ Other:
 - Queue outgoing while `InCombatLockdown()`, flush on `PLAYER_REGEN_ENABLED`.
 - Unknown higher `pv`: ignore, show "a friend has a newer CommunitiesForever version" once per session.
 - Incomplete chunked messages expire 30 s after their last part.
+- Community transport (CF-28 part 2b): next to Battle.net, messages go to community members running the addon as addon whispers (`C_ChatInfo.SendAddonMessage` WHISPER, 255-byte parts, same queue and resend). Only from characters that are members of the selected community. HELLO goes to members online in the community who are not reached over Battle.net; members running the addon answer with their own HELLO. People are keyed by BattleTag when known (friends, relays) and by `aid:<accountId>` otherwise; on the community wire every key is an `aid:` key, so BattleTags never leave Battle.net. Each account makes a random `self.accountId` once and sends it as `aid` in its record; a Battle.net record that shows `aid` merges an earlier `aid:` entry into the BattleTag. A community record counts as the owner's own only when it lists the sending character and that character already belongs to the person (or the person is new); otherwise it is relayed (`via = "member:<guid>"`). `BYE` on logout and a "No player named ..." after a whisper mark the member offline until their next HELLO.
 - Reliable delivery (CF-28): the sender keeps the parts it sent for 60 s. When a message stays incomplete for 3 s, the receiver sends `!M:<msgId>:<part numbers>` (at most twice per message, up to 40 numbers) and the sender sends only those parts again (at most twice per message, only to whoever it sent them to). A MISS never matches the part header `<msgId>:<part>:<total>:`; older clients drop it as malformed. `/cf sync debug` (`settings.syncDebug`) prints every part, missing part, resend and completed message.

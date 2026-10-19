@@ -7,6 +7,7 @@ local Protocol = {}
 Protocol.PREFIX = "CommForever"
 Protocol.VERSION = 1                       -- pv carried by every message
 Protocol.MAX_CHUNK = 3500                  -- bytes per BNet message, header included
+Protocol.COMMUNITY_CHUNK = 255             -- bytes per community whisper (CF-28, V50)
 Protocol.EXPIRE_SECONDS = 30               -- incomplete messages are dropped this long after their last part
 -- CF-28: reliable delivery. A message quiet this long while incomplete gets a MISS for its missing parts
 -- (at most MAX_MISS times); the sender keeps sent parts for SENT_KEEP_SECONDS and resends at most

@@ -17,6 +17,20 @@ function Linker.displayName(battleTag, ownerDisplayName)
   return (tostring(battleTag):match("^([^#]+)")) or tostring(battleTag)
 end
 
+-- Who relayed a record: a person's display name, or (CF-28) the community member's character name.
+local function viaDisplayName(via, input)
+  local guid = type(via) == "string" and via:match("^member:(.+)$")
+  if guid then
+    local member = input.members[guid]
+    return member and member.name or "a community member"
+  end
+  return Linker.displayName(via, input.people[via] and input.people[via].displayName)
+end
+
+local function trusted(bt, person, input)
+  return input.friends[bt] or person.via or (type(bt) == "string" and bt:sub(1, 4) == "aid:")
+end
+
 -- Picks the BattleTag a visible character links to, or nil (unlinked), plus the link source.
 -- Order: own character > presence (if a current friend) > a current friend's record.
 -- Several records claiming the GUID: newest char.updatedAt wins, then BattleTag order.
@@ -33,8 +47,9 @@ local function linkFor(guid, input)
 
   local best, bestUpdated
   for bt, person in pairs(input.people) do
-    -- A friend's own record, or a record relayed by a friend (CF-20: trust is the community).
-    local char = (input.friends[bt] or person.via) and person.chars and person.chars[guid]
+    -- A friend's own record, a record relayed by a friend (CF-20), or one that came over the community
+    -- (CF-28, "aid:" key): trust is the community.
+    local char = trusted(bt, person, input) and person.chars and person.chars[guid]
     if char then
       local updated = char.updatedAt or 0
       if not best or updated > bestUpdated or (updated == bestUpdated and bt < best) then
@@ -125,6 +140,7 @@ function Linker.build(raw)
     members = raw.members or {},
     friends = raw.friends or {},
     online = raw.online or {},
+    offline = raw.offline or {},
     people = raw.people or {},
     presence = raw.presence or {},
     locations = raw.locations or {},
@@ -137,6 +153,8 @@ function Linker.build(raw)
   for guid, member in pairs(input.members) do
     local bt, source = linkFor(guid, input)
     local row = charRow(guid, member, recordFor(guid, bt, input), input.presence[guid], input.locations[guid], source)
+    -- CF-28: a BYE over the community overrules a community presence that still says online.
+    if input.offline[guid] then row.online = false end
     if bt then
       byTag[bt] = byTag[bt] or {}
       table.insert(byTag[bt], row)
@@ -152,7 +170,7 @@ function Linker.build(raw)
   local candidates = {}
   for guid in pairs(self.chars) do candidates[guid] = true end
   for bt, person in pairs(input.people) do
-    if input.friends[bt] or person.via then
+    if trusted(bt, person, input) then
       for guid in pairs(person.chars or {}) do candidates[guid] = true end
     end
   end
@@ -176,7 +194,8 @@ function Linker.build(raw)
     -- Battle.net friends, Battle.net presence (live, with the character's GUID) decides which character
     -- is online: only the one they are on, none when they are not in Forever. People linked without a
     -- friendship (relayed records, CF-20) keep the community presence, the only one there is.
-    if bt == selfKey or input.friends[bt] then
+    -- CF-28: the same for people met over the community (HELLO says which character they are on).
+    if bt == selfKey or input.friends[bt] or (bt:sub(1, 4) == "aid:" and input.online[bt]) then
       local onGuid = bt == selfKey and input.selfGuid or (input.online[bt] and input.online[bt].guid)
       for _, row in ipairs(rows) do row.online = onGuid ~= nil and row.guid == onGuid end
     end
@@ -208,6 +227,9 @@ function Linker.build(raw)
     local displayName
     if bt == SELF_KEY then
       displayName = (ownerName and ownerName ~= "") and ownerName or "You"
+    elseif bt:sub(1, 4) == "aid:" and not (ownerName and ownerName ~= "") then
+      -- CF-28: no BattleTag to fall back on: the name of their first character.
+      displayName = rows[1] and rows[1].name or "Unknown"
     else
       displayName = Linker.displayName(bt, ownerName)
     end
@@ -220,7 +242,7 @@ function Linker.build(raw)
       currentChar = current,
       chars = rows,
       via = via,
-      viaName = via and Linker.displayName(via, input.people[via] and input.people[via].displayName),
+      viaName = via and viaDisplayName(via, input),
       updatedAt = updatedAt,
       feed = isSelf and self.feed or (record and record.feed) or nil, -- CF-22 activity feed
     }

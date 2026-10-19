@@ -50,7 +50,7 @@ function GroupAsks.ask(dungeon)
     say(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
     return nil, wait
   end
-  local recipients = ns.GroupAsk.recipients(dungeon, ns.PresenceTracker.online(), addonRef.db.global.people,
+  local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), addonRef.db.global.people,
     own().battleTag)
   if #recipients == 0 then
     say("Nobody with CommunitiesForever is online with a character in range of " .. dungeon.name .. ".")
