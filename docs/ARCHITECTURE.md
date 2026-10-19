@@ -166,6 +166,7 @@ Char = {
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
 
 ## Sync protocol
+Full wire reference (every message and field, when they are sent, sizes): `docs/SYNC.md`.
 - Prefix `CommForever`. Payload: LibSerialize -> LibDeflate compress -> `EncodeForWoWAddonChannel`.
 - Chunking: max 3500 bytes per message including a `msgId/seq/total` header, written as `<msgId>:<seq>:<total>:<slice>` (msgId alphanumeric, unique per sender). The real BNet limit is unverified; 3500 is safely below it. Reassembly is per sender + msgId, any order, duplicates ignored.
 - Every message carries `pv` (protocol version, starts at 1).
