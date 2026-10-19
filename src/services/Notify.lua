@@ -25,12 +25,17 @@ local function notify(battleTag)
   if last and now - last < REPEAT_SECONDS then return end
 
   local person = linkedPerson(battleTag)
-  local online = ns.PresenceTracker.online()[battleTag]
+  local online = ns.Sync.online()[battleTag] -- CF-28: also community peers
   if not person or not online then return end
+  local className = online.className
+  if not className and online.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
+    local info = C_CreatureInfo.GetClassInfo(online.classID)
+    className = info and info.className
+  end
 
   lastNotified[battleTag] = now
   addonRef:Print(ns.Format.loginNotice(person.displayName,
-    { name = online.name, className = online.className, level = online.level }))
+    { name = online.name, className = className, level = online.level }))
 end
 
 -- Level-ups older than this are not announced: relayed records (CF-20) can arrive hours later.
@@ -57,6 +62,7 @@ function Notify.start(addon)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag) notify(battleTag) end)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_SWITCHED, function(_, battleTag) notify(battleTag) end)
   events:RegisterMessage(ns.Sync.LEVEL_UP, function(_, battleTag, up) announceLevelUp(battleTag, up) end)
+  events:RegisterMessage(ns.Sync.PEER_ONLINE, function(_, key) notify(key) end) -- CF-28
 end
 
 ns.Notify = Notify

@@ -222,6 +222,7 @@ function wowapi.install(opts)
     time = 500,            -- GetTime()
     inCombat = false,      -- InCombatLockdown()
     bnSent = {},           -- BNSendGameData calls: { gameAccountID, prefix, text }
+    whispers = {},         -- C_ChatInfo.SendAddonMessage calls (CF-28)
     prefixes = {},         -- registered addon message prefixes
     player = defaultPlayer(),
     -- C_Club.GetSubscribedClubs() result; clubType 1 = Character, 2 = Guild, 0 = BattleNet
@@ -305,6 +306,11 @@ function wowapi.install(opts)
     end,
     C_ChatInfo = {
       RegisterAddonMessagePrefix = function(prefix) state.prefixes[prefix] = true; return 0 end,
+      -- CF-28: addon whispers in state.whispers: { prefix, text, channel, target }.
+      SendAddonMessage = function(prefix, text, channel, target)
+        state.whispers[#state.whispers + 1] = { prefix, text, channel, target }
+        return 0
+      end,
     },
     InCombatLockdown = function() return state.inCombat end,
     GetTime = function() return state.time end,

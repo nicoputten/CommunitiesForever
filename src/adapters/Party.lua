@@ -15,7 +15,8 @@ function Party.invite(name, gameAccountID)
   if C_PartyInfo and C_PartyInfo.InviteUnit and name and pcall(C_PartyInfo.InviteUnit, name) then
     return "name"
   end
-  if BNInviteFriend and gameAccountID and pcall(BNInviteFriend, gameAccountID) then
+  -- Over the community (CF-28) the target is a character name: no Battle.net invite then.
+  if BNInviteFriend and type(gameAccountID) == "number" and pcall(BNInviteFriend, gameAccountID) then
     return "bnet"
   end
   return nil

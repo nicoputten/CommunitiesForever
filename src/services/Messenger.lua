@@ -1,4 +1,5 @@
--- Messenger: sends and receives protocol messages over Battle.net.
+-- Messenger: sends and receives protocol messages over Battle.net and (CF-28) community whispers.
+-- A target is a Battle.net game account ID (number) or a community member's character name (string).
 -- Out: encode -> chunk -> Outbox (throttled, held during combat) -> BNSendGameData.
 -- In: chunk -> reassemble -> decode -> resolve sender BattleTag via presence -> CF_MESSAGE_RECEIVED.
 -- CF-28 reliable delivery: sent parts are kept for a minute; a receiver missing parts of a message asks
@@ -8,7 +9,10 @@ local _, ns = ...
 local Messenger = {}
 
 -- Internal messages.
-Messenger.RECEIVED = "CF_MESSAGE_RECEIVED"           -- (message, senderBattleTag, senderGameAccountID)
+-- (message, senderKey, replyTarget, senderGuid): senderKey is the BattleTag for Battle.net; for the
+-- community (CF-28) the person key whose record lists the sending character, else "member:<guid>".
+-- replyTarget is where to answer (game account ID or character name); senderGuid only for the community.
+Messenger.RECEIVED = "CF_MESSAGE_RECEIVED"
 Messenger.UNSUPPORTED = "CF_MESSAGE_UNSUPPORTED"     -- (pv, senderBattleTag): a friend runs a newer protocol
 
 local addonRef, codec, outbox, reassembler, pumpTimer, sentStore, missTimer
@@ -28,8 +32,9 @@ local function trace(text, ...)
   if Messenger.debugOn() then addonRef:Print("|cffa0a0a0[sync]|r " .. string.format(text, ...)) end
 end
 
-local function who(gameAccountID)
-  return tostring(ns.PresenceTracker.battleTagFor(gameAccountID) or gameAccountID)
+local function who(target)
+  if type(target) == "string" then return target end
+  return tostring(ns.PresenceTracker.battleTagFor(target) or target)
 end
 
 local function nextMsgId()
@@ -45,7 +50,11 @@ local function pump()
   end
   local target, chunk = outbox:pop(ns.Transport.now())
   if target then
-    ns.Transport.send(target, ns.Protocol.PREFIX, chunk)
+    if type(target) == "string" then
+      ns.Transport.whisper(target, ns.Protocol.PREFIX, chunk) -- CF-28: a community member
+    else
+      ns.Transport.send(target, ns.Protocol.PREFIX, chunk)
+    end
     stats.sent = stats.sent + 1
   end
   if outbox:size() > 0 then
@@ -59,10 +68,12 @@ local function schedulePump()
   end
 end
 
--- Queues a message for one game account. Returns the number of chunks.
+-- Queues a message for one game account (number) or community member (character name). Returns the
+-- number of chunks.
 function Messenger.send(gameAccountID, message)
   local msgId = nextMsgId()
-  local chunks = ns.Protocol.chunk(codec:encode(message), msgId)
+  local size = type(gameAccountID) == "string" and ns.Protocol.COMMUNITY_CHUNK or nil
+  local chunks = ns.Protocol.chunk(codec:encode(message), msgId, size)
   for _, chunk in ipairs(chunks) do
     outbox:push(gameAccountID, chunk)
   end
@@ -116,12 +127,9 @@ function Messenger.broadcast(message)
   return count
 end
 
-local function receive(text, senderID)
-  local battleTag = ns.PresenceTracker.battleTagFor(senderID)
-  if not battleTag then
-    stats.dropped = stats.dropped + 1 -- not a friend in Forever right now
-    return
-  end
+-- One part (or a MISS) from a sender: senderID is the game account ID or the character name, battleTag
+-- the sender key (see RECEIVED), guid the sending character (community only).
+local function receive(text, senderID, battleTag, guid)
   local missId, missParts = ns.Protocol.parseMiss(text)
   if missId then
     onMiss(senderID, missId, missParts)
@@ -147,7 +155,30 @@ local function receive(text, senderID)
   end
   stats.received = stats.received + 1
   trace("from %s: %s complete", battleTag, tostring(message.t))
-  addonRef:SendMessage(Messenger.RECEIVED, message, battleTag, senderID)
+  addonRef:SendMessage(Messenger.RECEIVED, message, battleTag, senderID, guid)
+end
+
+local function receiveBattleNet(text, senderID)
+  local battleTag = ns.PresenceTracker.battleTagFor(senderID)
+  if not battleTag then
+    stats.dropped = stats.dropped + 1 -- not a friend in Forever right now
+    return
+  end
+  receive(text, senderID, battleTag)
+end
+
+-- CF-28: only from characters that are members of the selected community.
+local function receiveWhisper(text, name)
+  local guid
+  for g, member in pairs(ns.MemberTracker.members()) do
+    if member.name == name then guid = g end
+  end
+  if not guid then
+    stats.dropped = stats.dropped + 1
+    return
+  end
+  local key = ns.Identity.personOfGuid(addonRef.db.global.people, guid) or ("member:" .. guid)
+  receive(text, name, key, guid)
 end
 
 -- Counters for /cf ping and debugging.
@@ -170,7 +201,8 @@ function Messenger.start(addon)
 
   ns.Transport.registerPrefix(ns.Protocol.PREFIX)
   ns.Transport.watch(addon, ns.Protocol.PREFIX)
-  addon:RegisterMessage(ns.Transport.RECEIVED, function(_, text, senderID) receive(text, senderID) end)
+  addon:RegisterMessage(ns.Transport.RECEIVED, function(_, text, senderID) receiveBattleNet(text, senderID) end)
+  addon:RegisterMessage(ns.Transport.WHISPER_RECEIVED, function(_, text, name) receiveWhisper(text, name) end)
   addon:RegisterMessage(ns.Transport.COMBAT_ENDED, function() schedulePump() end)
 end
 

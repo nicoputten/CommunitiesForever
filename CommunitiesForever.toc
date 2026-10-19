@@ -25,6 +25,7 @@ src\core\Dungeons.lua
 src\core\GroupAsk.lua
 src\core\Chat.lua
 src\core\Friends.lua
+src\core\Identity.lua
 src\core\Linker.lua
 src\core\Protocol.lua
 src\core\Outbox.lua

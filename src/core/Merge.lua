@@ -64,6 +64,7 @@ function Merge.outgoingRecord(selfRecord, shareActivity)
     chars = chars,
     invite = cleanInvite(selfRecord.invite),
     feed = feed,
+    aid = selfRecord.accountId, -- CF-28: links this BattleTag to its community key for friends
   }
 end
 
@@ -222,9 +223,29 @@ function Merge.store(people, record, now, senderBattleTag)
     feedOff = (record.feed == false and newer) or (not direct and record.feed == nil and stored and stored.feedOff)
       or nil,
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
+    -- CF-28: the account ID (community key) of this person, once known.
+    aid = (type(record.aid) == "string" and record.aid:match("^[0-9a-f]+$") and #record.aid <= 32 and record.aid)
+      or (stored and stored.aid) or nil,
     invite = invite,
     feed = mergedFeed(stored, record, newer, direct, now),
   }
+end
+
+--[[ CF-28: when people[key] (a BattleTag) has an account ID and data arrived earlier over the community
+under "aid:<id>", that copy is merged into people[key] as a relayed record and the "aid:" entry removed,
+so one person never shows twice. Returns true when it merged. ]]
+function Merge.absorb(people, key, now)
+  local person = people[key]
+  local aidKey = person and person.aid and ("aid:" .. person.aid)
+  local other = aidKey and aidKey ~= key and people[aidKey]
+  if not other then return false end
+  local via = person.via
+  Merge.store(people, { bt = key, version = math.min(other.version or 0, person.version or 0), chars = other.chars,
+                        removed = other.removed, displayName = person.displayName, invite = person.invite,
+                        feed = other.feed }, now, "aid-merge")
+  people[key].via = via -- the merge itself is not a relay
+  people[aidKey] = nil
+  return true
 end
 
 -- Versions of the records we can relay, for HELLO.known: { [battleTag] = version }.

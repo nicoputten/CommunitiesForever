@@ -46,10 +46,12 @@ function GroupAsk.recipients(dungeon, online, records, selfTag)
   local result = {}
   for battleTag, presence in pairs(online or {}) do
     local record = records and records[battleTag]
-    if battleTag ~= selfTag and record and type(presence) == "table" and presence.gameAccountID then
+    -- CF-28: a Battle.net game account, or a community member's character name (presence.target).
+    local target = type(presence) == "table" and (presence.gameAccountID or presence.target)
+    if battleTag ~= selfTag and record and target then
       local chars = GroupAsk.charsInRange(record.chars, dungeon.min, dungeon.max)
       if #chars > 0 then
-        result[#result + 1] = { battleTag = battleTag, gameAccountID = presence.gameAccountID,
+        result[#result + 1] = { battleTag = battleTag, gameAccountID = target,
                                 displayName = record.displayName, chars = chars }
       end
     end
