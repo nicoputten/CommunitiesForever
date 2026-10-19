@@ -30,8 +30,12 @@ ignore:
   - .gitattributes
   - CLAUDE.md
   - VERIFY.md
+  # LibDeflate's docs hold README.md.html and readme.md.html: a case-only clash that CurseForge cannot
+  # process ("General error processing file", v0.2.0-beta1). Only LibDeflate.lua/.toc/lib.xml are needed.
+  - Libs/LibDeflate/docs
 
-# CF-02: hand-written changelog instead of one generated from commit messages.
+# CF-02: hand-written changelog instead of one generated from commit messages. RELEASE_NOTES.md is the
+# tag's section of CHANGELOG.md, written by the release workflow (tools/release-notes.lua).
 manual-changelog:
-  filename: CHANGELOG.md
+  filename: RELEASE_NOTES.md
   markup-type: markdown

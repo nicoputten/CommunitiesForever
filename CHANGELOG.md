@@ -1,10 +1,13 @@
 # Changelog
 
-Hand-written and shipped with each release (the packager's automatic changelog from commit messages is off).
-Add an entry under a new version heading before tagging a release.
+Hand-written (the packager's automatic changelog from commit messages is off). Each release gets its own
+`## <tag>` section listing only what changed since the previous release; CurseForge shows just that section
+(`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before tagging;
+the release stops if the tag has no section.
 
-## v0.2.0-beta1 (2026-10-19)
-First release (beta: World of Warcraft: Forever is still in beta; please report problems).
+## v0.2.0-beta2 (2026-10-20)
+First release (beta: World of Warcraft: Forever is still in beta; please report problems). v0.2.0-beta1 was
+rejected by CurseForge for a packaging problem and never reached users.
 
 - **Who is who:** members of a selected community grouped per person, with class, level, item level,
   professions, talents and role, and their alts outside the community. `/cf` or the minimap button.

@@ -36,13 +36,15 @@ function SelfTracker.start(addon)
   end
 
   -- CF-22: a turned-in quest counts for the feed under its area (log header), read before the log
-  -- refresh removes it.
+  -- refresh removes it. A quest the stored log does not know (accepted and turned in between two log
+  -- reads, common in dungeons) counts under the zone you are in.
   local function questTurnedIn(questID)
     local guid = ns.SelfInfo.read().guid
     local char = guid and addon.db.global.self.chars[guid]
     if not char then return end
     local quest = type(questID) == "number" and char.quests and char.quests[questID]
-    ns.FeedTracker.record(char, { { kind = "quest", zone = quest and quest.area } })
+    local zone = quest and quest.area or ns.SelfInfo.zone()
+    ns.FeedTracker.record(char, { { kind = "quest", zone = zone } })
   end
 
   local refreshDebounced = ns.Timer.debounce(EQUIPMENT_DEBOUNCE, function() refresh() end)

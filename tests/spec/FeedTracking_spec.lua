@@ -85,6 +85,16 @@ describe("activity feed (CF-22)", function()
     assert.are.same({ Westfall = 1 }, mine().quests)
   end)
 
+  it("counts a quest the stored log does not know under the zone you are in, else Other", function()
+    load()
+    state.zone = "Shadowfang Keep"
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", 999, 500, 0)
+    state.zone = nil -- right after a loading screen
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", 998, 500, 0)
+    settle()
+    assert.are.same({ ["Shadowfang Keep"] = 1, Other = 1 }, mine().quests)
+  end)
+
   it("bumps the version for a feed-only change once, after 60 s", function()
     load()
     settle()

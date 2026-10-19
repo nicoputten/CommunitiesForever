@@ -37,7 +37,9 @@ describe("release contents (CF-02)", function()
     end
   end)
 
-  it("uses the hand-written changelog, not one from commit messages", function()
-    assert.is_truthy(read(".pkgmeta"):find("manual%-changelog:%s+filename: CHANGELOG%.md"))
+  it("uses the hand-written notes of the tagged release, not commit messages", function()
+    assert.is_truthy(read(".pkgmeta"):find("manual%-changelog:%s+filename: RELEASE_NOTES%.md"))
+    assert.is_truthy(read(".github/workflows/release.yml")
+      :find("lua tools/release-notes.lua \"$GITHUB_REF_NAME\" > RELEASE_NOTES.md", 1, true))
   end)
 end)
