@@ -1,0 +1,44 @@
+name: package
+
+# Builds the release package exactly like the release workflow (BigWigs packager, .pkgmeta) but does NOT
+# upload: the zip is kept as a download on the run page (Artifacts). For checking a package before or
+# after a release.
+#   Run it: push a branch "package/<tag or ref>" (e.g. package/v0.2.0-beta1), or from the Actions tab
+#   ("Run workflow") with the ref to package.
+on:
+  push:
+    branches:
+      - "package/**"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag, branch or commit to package (e.g. v0.2.0-beta1)"
+        required: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the packager reads tags and history for the version
+
+      - name: Check out the ref to package
+        run: |
+          ref="${{ inputs.ref }}"
+          [ -z "$ref" ] && ref="${GITHUB_REF_NAME#package/}"
+          echo "Packaging $ref"
+          git checkout --quiet "$ref"
+
+      # No CF_API_TOKEN here, and -d skips every upload.
+      - name: Package (no upload)
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -d
+
+      - name: Keep the zip as a download
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: .release/*.zip
+          if-no-files-found: error
