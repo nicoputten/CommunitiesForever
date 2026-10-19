@@ -39,6 +39,8 @@ function addon:OnEnable()
   ns.Notify.start(self)
   ns.Calendar.watch(self) -- CF-24: calendar events for the Dungeons tab
   ns.Planner.start(self)  -- CF-24: planned runs and their sign-ups
+  ns.ChatLinks.watch(self) -- CF-27: clickable chat links
+  ns.GroupAsks.start(self) -- CF-27: "Who's up for it?"
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
 end
 
@@ -99,6 +101,25 @@ function addon:OnSlashCommand(input)
     self:Print("Sync: announced your record to friends online in Forever.")
   elseif command == "settings" then
     ns.Settings.open()
+  elseif command == "ask" then
+    -- CF-27: /cf ask <dungeon> (the rest of the line: names have spaces), or the state of your ask.
+    local name = input:match("^%s*%S+%s+(.-)%s*$")
+    local dungeon = name and name ~= "" and ns.Dungeons.dungeonOf(name)
+    if dungeon then
+      ns.GroupAsks.ask(dungeon)
+    elseif name and name ~= "" then
+      self:Print("No dungeon called " .. name .. ". Example: /cf ask Deadmines")
+    else
+      local ask = ns.GroupAsks.current()
+      if not ask then
+        self:Print("No open ask. /cf ask <dungeon> asks friends who's up for it.")
+      else
+        local s = ns.GroupAsk.summary(ask)
+        self:Print(string.format("%s: joining %s; later %s; no %s; waiting %s.", ask.dungeon.name,
+          table.concat(s.join, ", "), table.concat(s.later, ", "), table.concat(s.no, ", "),
+          table.concat(s.waiting, ", ")))
+      end
+    end
   elseif command == "setup" then
     ns.Setup.open()
   elseif command == "activity" then
@@ -132,5 +153,6 @@ function addon:OnSlashCommand(input)
     self:Print("  /cf activity debug - print instance events for the activity feed (on/off)")
     self:Print("  /cf settings - open the settings")
     self:Print("  /cf setup - run the setup again")
+    self:Print("  /cf ask <dungeon> - ask friends who's up for a dungeon now")
   end
 end

@@ -119,6 +119,33 @@ local function questsSection(parent, info)
   end
 end
 
+-- CF-27: ask friends who's up for it now, or how your ask stands.
+local function askSection(parent, entry)
+  if not entry.fits then return end
+  local ask = ns.GroupAsks.current()
+  if ask and ask.dungeon.id == entry.dungeon.id then
+    local s = ns.GroupAsk.summary(ask)
+    local parts = {}
+    if #s.join > 0 then parts[#parts + 1] = GREEN .. "joining: " .. table.concat(s.join, ", ") .. "|r" end
+    if #s.later > 0 then parts[#parts + 1] = "later: " .. table.concat(s.later, ", ") end
+    if #s.no > 0 then parts[#parts + 1] = ui.GREY .. "not now: " .. table.concat(s.no, ", ") .. "|r" end
+    if #s.waiting > 0 then parts[#parts + 1] = ui.GREY .. "waiting: " .. table.concat(s.waiting, ", ") .. "|r" end
+    ui.label(parent, "Asked who's up for it" .. DOT .. table.concat(parts, DOT), GameFontHighlight)
+    return
+  end
+  local ok, wait = ns.GroupAsks.canAsk()
+  if not ok then
+    ui.label(parent, string.format("%sYou can ask again in %d min.|r", ui.GREY, math.ceil(wait / 60)),
+      GameFontHighlightSmall)
+    return
+  end
+  local button = ui.createWidget("Button")
+  button:SetText("Ask who's up for it")
+  button:SetWidth(200)
+  button:SetCallback("OnClick", function() ns.GroupAsks.ask(entry.dungeon) end)
+  parent:AddChild(button)
+end
+
 -- A copyable field: the text is selected when clicked, so Ctrl+C copies it.
 local function copyField(parent, text)
   local edit = ui.createWidget("EditBox")
@@ -178,6 +205,7 @@ local function showDungeon(value)
     if #group < 2 then
       ui.label(scroll, ui.GREY .. "Nobody else in range yet.|r", GameFontHighlightSmall)
     end
+    askSection(scroll, entry)
 
     questsSection(scroll, questInfo(entry))
 

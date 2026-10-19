@@ -164,6 +164,16 @@ function Settings.options()
         get = function() return ns.FeedTracker.shared() end,
         set = function(_, value) ns.FeedTracker.setShared(value) end,
       },
+      groupAsks = {
+        type = "toggle",
+        order = 5.6,
+        width = "full",
+        name = "Receive group asks",
+        desc = "A chat line with a sound when a friend asks who's up for a dungeon you have a character for "
+          .. "(with Join, Later and No to click).",
+        get = function() return ns.db.global.settings.groupAsks ~= false end,
+        set = function(_, value) ns.db.global.settings.groupAsks = value end,
+      },
       minimap = {
         type = "toggle",
         order = 3,

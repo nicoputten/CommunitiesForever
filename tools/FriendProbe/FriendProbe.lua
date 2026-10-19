@@ -1,6 +1,8 @@
 -- FriendProbe: checks the open API questions in VERIFY.md in-game (Claude Code cannot run WoW).
 -- Commands:
 --   /fp start       clear the log, then run every check below and switch on feed logging
+--   /fp invite      chat links per friend online in Forever: test link, request invite, invite by name,
+--                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
 --   /fp feed off    stop feed logging (V35)
 --   /fp clear       wipe the saved log
 -- Checks (by VERIFY.md number):
@@ -254,6 +256,90 @@ local function FeedOn()
   LogGroup()
 end
 
+-- ===== V47/V48: addon chat links and party invites (CF-27) =====
+-- Each link click is a hardware event, like the real Join and Invite links will be. Events around
+-- invites and blocked actions are logged while the probe runs.
+local INVITE_EVENTS = { "PARTY_INVITE_REQUEST", "GROUP_INVITE_CONFIRMATION", "PARTY_INVITE_CANCEL",
+  "GROUP_ROSTER_UPDATE", "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN", "UI_ERROR_MESSAGE" }
+local inviteTargets = {}
+local inviteWatching = false
+local lastLink, lastLinkAt = nil, 0
+
+local inviteFrame = CreateFrame("Frame")
+inviteFrame:SetScript("OnEvent", function(_, event, ...)
+  if not inviteWatching then return end
+  local args = {}
+  for i = 1, select("#", ...) do args[#args + 1] = S((select(i, ...))) end
+  log("INVITE EVENT " .. event, table.concat(args, " | "))
+end)
+
+local function OnLink(source, link)
+  local action, index = S(link):match("^addon:FriendProbe:(%a+):(%d+)")
+  if not action then return end
+  log("V47 link clicked via", source, action, index)
+  -- Both hooks may report the same click: act once.
+  local now = GetTime()
+  if lastLink == link and now - lastLinkAt < 1 then return end
+  lastLink, lastLinkAt = link, now
+  local t = inviteTargets[tonumber(index)]
+  if action == "test" or not t then return end
+  if action == "request" then
+    LogCall("C_PartyInfo.RequestInviteFromUnit " .. t.name, C_PartyInfo and C_PartyInfo.RequestInviteFromUnit, t.name)
+  elseif action == "name" then
+    LogCall("C_PartyInfo.InviteUnit " .. t.name, C_PartyInfo and C_PartyInfo.InviteUnit, t.name)
+  elseif action == "bnet" then
+    LogCall("BNInviteFriend " .. S(t.gameAccountID), BNInviteFriend, t.gameAccountID)
+  end
+end
+
+local linksHooked = false
+local function HookLinks()
+  if linksHooked then return end
+  linksHooked = true
+  if EventRegistry and EventRegistry.RegisterCallback then
+    EventRegistry:RegisterCallback("SetItemRef", function(_, link) OnLink("EventRegistry", link) end, {})
+    log("hooked EventRegistry SetItemRef")
+  end
+  if SetItemRef then
+    hooksecurefunc("SetItemRef", function(link) OnLink("SetItemRef hook", link) end)
+    log("hooked SetItemRef")
+  end
+end
+
+local function Link(action, index, text)
+  return string.format("|cff71d5ff|Haddon:FriendProbe:%s:%d|h[%s]|h|r", action, index, text)
+end
+
+local function Invite()
+  log("== V47/V48 INVITE ==")
+  for _, name in ipairs({ "RequestInviteFromUnit", "InviteUnit", "ConfirmInviteUnit" }) do
+    log("exists C_PartyInfo." .. name, C_PartyInfo ~= nil and C_PartyInfo[name] ~= nil)
+  end
+  log("exists BNInviteFriend", BNInviteFriend ~= nil, "EventRegistry", EventRegistry ~= nil)
+  HookLinks()
+  if not inviteWatching then
+    inviteWatching = true
+    for _, event in ipairs(INVITE_EVENTS) do pcall(inviteFrame.RegisterEvent, inviteFrame, event) end
+  end
+  print("|cff33ff99FP|r V47 " .. Link("test", 0, "click me: link test"))
+  inviteTargets = {}
+  for i = 1, BNGetNumFriends() do
+    local acc = C_BattleNet.GetFriendAccountInfo(i)
+    for j = 1, acc and C_BattleNet.GetFriendNumGameAccounts(i) or 0 do
+      local ga = C_BattleNet.GetFriendGameAccountInfo(i, j)
+      if ga and ga.isOnline and ga.clientProgram == BNET_CLIENT_WOW and ga.wowProjectID == WOW_PROJECT_ID then
+        local n = #inviteTargets + 1
+        inviteTargets[n] = { name = ga.characterName, gameAccountID = ga.gameAccountID, battleTag = acc.battleTag }
+        log("friend", n, S(ga.characterName), "gameAccountID", S(ga.gameAccountID))
+        print("|cff33ff99FP|r V48 " .. S(ga.characterName) .. ": " .. Link("request", n, "ask them for an invite")
+          .. " " .. Link("name", n, "invite by name") .. " " .. Link("bnet", n, "invite via Battle.net"))
+      end
+    end
+  end
+  if #inviteTargets == 0 then log("no friend online in Forever: the invite links need one") end
+  log("click the test link, then each invite link once (leave the group between tries); /reload and send the log")
+end
+
 -- ===== Commands =====
 local function Start()
   FriendProbeDB = FriendProbeDB or {}
@@ -283,6 +369,8 @@ SlashCmdList.FRIENDPROBE = function(msg)
   cmd = cmd:lower()
   if cmd == "start" then
     Start()
+  elseif cmd == "invite" then
+    Invite()
   elseif cmd == "feed" and arg == "off" then
     FriendProbeDB.feed = nil
     log("feed logging off")
@@ -290,6 +378,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | feed off | clear")
   end
 end
