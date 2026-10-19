@@ -38,6 +38,7 @@ CommunitiesForever/
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
+      GroupAsk.lua           "who's up for it?": recipients, throttle, expiry, cleaning, answer summary (CF-27)
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion, calendar matching (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
@@ -52,6 +53,8 @@ CommunitiesForever/
       Community.lua          C_Club (club list, members, club and member events)
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
+      ChatLinks.lua          clickable addon chat links (|Haddon:CommunitiesForever:...|h), click dispatch (CF-27)
+      Party.lua              invite request / invite by name / via Battle.net from a click (CF-27, guarded)
       GroupFinder.lua        the Group Finder's dungeon activities with level ranges (C_LFGList, CF-24)
       QuestieData.lua        dungeon quests from the optional QuestieDB addon, completed quests (CF-24, guarded)
       Calendar.lua           C_Calendar event list (this month and next), ToggleCalendar (CF-24, guarded)
@@ -59,6 +62,7 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            calendar events for the Dungeons tab, sign-ups of planned runs (OpenEvent queue) (CF-24)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
@@ -117,6 +121,7 @@ global = {
                 activityDebug = nil,                 -- CF-23: /cf activity debug prints instance events
                 onboarded, onboardedVersion,         -- CF-26: setup wizard done (Skip and close count)
                 chatTabPrompt = { [guid] = true },   -- CF-26: no Community tab prompt on these characters
+                groupAsks = true,                    -- CF-27: receive "who's up for it?" asks
                 dungeonTree = {} },                  -- CF-24: Dungeons tab selection and list width
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
@@ -167,6 +172,8 @@ Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
 - `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22), `false` when it is off (CF-28: so relays pass "stopped sharing" on); `removed` only in relayed copies (dropped characters with the time they were dropped).
+- `ASK {id, dungeon = {id, name, min, max}, from, char, at}` (CF-27): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
+- `ANSWER {id, answer = "join"|"later"|"no", from, char}` (CF-27): back to the asker; `char` is the answerer's current character (for the invite). Clients without CF-27 ignore both (unknown `t`).
 
 Accept rule (Merge.lua):
 - sender `gameAccountID` resolves to BattleTag B via presence (a friend in Forever)

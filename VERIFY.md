@@ -10,6 +10,8 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 |---|---|---|---|
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on a friend's client: compare the `club` lines under V8 COMMUNITIES. Your own two characters both show 23125681 for Doombringers (2026-10-18); a friend's account is still to check. | open |
 | V35 | Which events tell what you did in dungeons and battlegrounds? (CF-23 is built on the Mainline signatures; this checks them) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then in a group with a community member: enter a dungeon, kill a boss, leave after 10 min; queue and finish a battleground. Send the `[activity]` lines. Check: `instance:` inside shows `<name>, party` (raid, pvp); `ENCOUNTER_END` passes `encounterID, name, difficulty, groupSize, 1` on a kill (`BOSS_KILL` too?); `group:` counts the other players and the community companion; at the battleground end `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance) and `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
+| V47 | Do clicks on an addon chat link reach the addon? (CF-27: the `[Join]` `[Later]` `[No]` links) | Copy the new `tools/FriendProbe`, `/fp invite`, click `[click me: link test]` in chat. Expected a line `V47 link clicked via EventRegistry test 0` (or `via SetItemRef hook`). | open |
+| V48 | Which way can an addon get a friend into your party from a click? (CF-27) | Same `/fp invite` with a friend online in Forever, you not in a group: click `[invite by name]` (does the friend get an invite? the name has a space), leave the group; `[invite via Battle.net]`, leave; then let the friend run `/fp invite` and click `[ask them for an invite]` on you (do you get a "wants to join" popup?). Send both logs: the `C_PartyInfo...` / `BNInviteFriend` lines and the `INVITE EVENT` lines (blocked actions show as `ADDON_ACTION_BLOCKED`). | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
@@ -23,16 +25,18 @@ Unit tested in depth (older copies, levels, deleted characters, activity). In ga
 | `/reload` on both sides | Nothing goes back to older data (level, quests, activity). | open |
 | Friend unticks "Share my activity" | Their activity lines disappear for you after the next sync, as before. | open |
 
-### CF-24 Dungeon planner (round 4)
-The dungeon list now comes from the game's Group Finder (V46): Forever's new dungeons and the game's level ranges.
+### CF-27 Who's up for it?
+Needs a friend running this build, online in Forever, with a character in range of a dungeon you also fit (an alt counts). Run V47 and V48 first if you can.
 
 | Step | Expected | Status |
 |---|---|---|
-| Dungeons tab on a character of level 26 to 33 | Excavation Site: Wetlands is listed (levels 26 to 33). Other new ones in range too: Hall of Thanes 13 to 20, Ruins of Lordaeron 15 to 22, City of Dalaran 28 to 35. | open |
-| Select an old dungeon, e.g. Shadowfang Keep | Its levels match the Group Finder (`Show All Level Ranges` there): Shadowfang Keep 20 to 30, Scarlet Monastery Graveyard 30 to 38. | open |
-| A community event titled `Excavation Site: Wetlands` | Listed under Planned like the old dungeons. | open |
-| Dungeons tab on a Horde character | Only dungeons the Group Finder offers: no The Stockade. | open |
-| Select Excavation Site: Wetlands (no quests known) | Under the suggested group: `No quests known for this dungeon yet.` | open |
+| Dungeons tab, a dungeon you fit: **Ask who's up for it** | Chat: `Asked <friend> who's up for <dungeon>.` The button turns into `Asked who's up for it · waiting: <friend>`. Asking again within 3 minutes: `You can ask again in N min.` | open |
+| On the friend's client | A sound and a chat line `<you> asks: <dungeon> now? (min-max)`, `You could come on: <their characters in range>`, `[Join] [Later] [No]`. | open |
+| Friend clicks **[Later]** (or **[No]**) | Friend: `You answered Later to <you>.` You: `<friend>: later for <dungeon>.`, and the Dungeons tab shows `later: <friend>`. | open |
+| Ask again after 3 min; friend clicks **[Join]** | Friend: `Asked <your character> for a party invite.` (you get Blizzard's "wants to join" popup) or `<you> gets a link to invite you.` You: `<friend> joins your <dungeon> run on <their character>: [Invite]`. Clicking [Invite] invites them (see V48). | open |
+| A click after 10 minutes | `This ask has expired.` | open |
+| `/cf settings` → untick "Receive group asks"; friend asks | No chat line, no sound. | open |
+| `/cf ask Deadmines`, then `/cf ask` | Same as the button; `/cf ask` shows joining, later, no and waiting. | open |
 
 ### CF-23 Dungeons, raids, battlegrounds and playing together
 Needs a friend running this build in the same community. `/cf activity debug` on shows why something is or is not recorded (V35). `/cf debugon` shows sample lines (a raid, battlegrounds and a shared dungeon line) without playing.

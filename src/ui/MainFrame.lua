@@ -628,6 +628,7 @@ local function refreshMessages()
     ns.Invites.CHANGED,
     ns.FeedTracker.CHANGED,
     ns.Planner.UPDATED, -- CF-24: calendar events and sign-ups for the Dungeons tab
+    ns.GroupAsks.CHANGED, -- CF-27: your ask and its answers
   }
 end
 
