@@ -3,8 +3,8 @@
 Hand-written and shipped with each release (the packager's automatic changelog from commit messages is off).
 Add an entry under a new version heading before tagging a release.
 
-## Unreleased
-First release.
+## v0.2.0-beta1 (2026-10-19)
+First release (beta: World of Warcraft: Forever is still in beta; please report problems).
 
 - **Who is who:** members of a selected community grouped per person, with class, level, item level,
   professions, talents and role, and their alts outside the community. `/cf` or the minimap button.
