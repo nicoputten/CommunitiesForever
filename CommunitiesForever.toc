@@ -4,6 +4,7 @@
 ## Author: Vestras
 ## Version: @project-version@
 ## X-Curse-Project-ID: 1752013
+## X-Wago-ID: b6XyqbKp
 ## SavedVariables: CommunitiesForeverDB
 ## OptionalDeps: QuestieDB
 

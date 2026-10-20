@@ -36,7 +36,7 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
 Gitflow: `feature/cf-XX-<slug>` off `develop`, PRs into `develop`. `main` receives releases.
 
 ## Releases
-- A tag `v*` on `main` releases to CurseForge (`.github/workflows/release.yml`). Pushing a tag is public: only on Nico's explicit go-ahead per tag.
+- A tag `v*` on `main` releases to CurseForge and Wago Addons (`.github/workflows/release.yml`; a manual run re-releases an existing tag, e.g. to Wago only). Pushing a tag is public: only on Nico's explicit go-ahead per tag.
 - **The changelog must reflect THAT release.** Every user-facing change goes under `## Unreleased` in `CHANGELOG.md` in its own PR. When preparing a release, rename that heading to `## <tag> (<date>)`. The section lists only what changed since the previous release that reached users, not the full history. CurseForge shows only that section; the workflow stops if it is missing.
 - A tag CurseForge rejected cannot be uploaded again: the next attempt gets a new tag (e.g. `-beta2`), and its section takes over the rejected release's notes, since those never reached users.
 

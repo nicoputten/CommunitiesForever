@@ -1,12 +1,23 @@
 name: release
 
 # CF-02: pushing a tag "v*" tests the addon and uploads it to CurseForge (Forever, project 1752013 from the
-# TOC). Untagged pushes produce no release. Release type from the tag: "v1.2.0" = release,
-# "v1.2.0-beta1" = beta, "v1.2.0-alpha1" = alpha.
+# TOC) and Wago Addons (project WAGO_ID, also "## X-Wago-ID" in the TOC). Untagged pushes produce no
+# release. Release type from the tag: "v1.2.0" = release, "v1.2.0-beta1" = beta, "v1.2.0-alpha1" = alpha.
+#   Manual run (Actions tab, or gh workflow run release.yml -f tag=v1.2.0 -f wago_only=true): releases an
+#   existing tag again, e.g. to Wago only for a tag that is already on CurseForge.
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.2.0-beta2)"
+        required: true
+      wago_only:
+        description: "Upload to Wago Addons only (skip CurseForge)"
+        type: boolean
+        default: true
 
 jobs:
   release:
@@ -14,16 +25,28 @@ jobs:
     env:
       # Author API token from https://authors.curseforge.com/#/settings/api-tokens (repo secret).
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      # API token from https://addons.wago.io/account/apikeys (repo secret).
+      WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+      # Wago Addons project; must match "## X-Wago-ID" in the TOC (Release_spec). Passed to the packager so a
+      # manual run of an older tag (without the TOC line) still uploads there.
+      WAGO_ID: b6XyqbKp
+      TAG: ${{ inputs.tag || github.ref_name }}
+      SKIP_CURSEFORGE: ${{ inputs.wago_only && '-L' || '' }}
     steps:
-      - name: Require the CurseForge token
+      - name: Require the upload tokens
         run: |
-          if [ -z "$CF_API_TOKEN" ]; then
-            echo "The CF_API_TOKEN repository secret is missing: nothing would be uploaded." >&2
+          if [ -z "$WAGO_API_TOKEN" ]; then
+            echo "The WAGO_API_TOKEN repository secret is missing: nothing would be uploaded to Wago." >&2
+            exit 1
+          fi
+          if [ -z "$SKIP_CURSEFORGE" ] && [ -z "$CF_API_TOKEN" ]; then
+            echo "The CF_API_TOKEN repository secret is missing: nothing would be uploaded to CurseForge." >&2
             exit 1
           fi
 
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0 # the packager reads the tag and history
 
       # Never release a build that fails the tests (Release_spec also checks the released files).
@@ -48,16 +71,18 @@ jobs:
       - name: Test
         run: busted
 
-      # CurseForge shows the notes of THIS release only: the tag's "## <tag>" section of CHANGELOG.md
+      # CurseForge and Wago show the notes of THIS release only: the tag's "## <tag>" section of CHANGELOG.md
       # (.pkgmeta manual-changelog). Stops here, before any upload, when the section is missing or empty.
       - name: Release notes for this tag
-        run: lua tools/release-notes.lua "$GITHUB_REF_NAME" > RELEASE_NOTES.md && cat RELEASE_NOTES.md
+        run: lua tools/release-notes.lua "$TAG" > RELEASE_NOTES.md && cat RELEASE_NOTES.md
 
       # The packager fetches the .pkgmeta externals itself: drop the copies fetched for the tests.
       - name: Remove test libraries
         run: rm -rf Libs
 
-      # Packages per .pkgmeta (externals, ignore list, CHANGELOG.md) and uploads to CurseForge.
-      # Interface 16001 is detected as the Forever game type by the packager.
+      # Packages per .pkgmeta (externals, ignore list, RELEASE_NOTES.md) and uploads to CurseForge (unless
+      # skipped) and Wago. Interface 16001 is detected as the Forever game type by the packager.
       - name: Package and upload
         uses: BigWigsMods/packager@v2
+        with:
+          args: -a ${{ env.WAGO_ID }} ${{ env.SKIP_CURSEFORGE }}
