@@ -1,9 +1,12 @@
 # Changelog
 
 Hand-written (the packager's automatic changelog from commit messages is off). Each release gets its own
-`## <tag>` section listing only what changed since the previous release; CurseForge shows just that section
-(`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before tagging;
-the release stops if the tag has no section.
+`## <tag>` section listing only what changed since the previous release; CurseForge and Wago show just that
+section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
+tagging; the release stops if the tag has no section.
+
+## Unreleased
+- Also on **Wago Addons**, so WowUp can install and update it.
 
 ## v0.2.0-beta2 (2026-10-20)
 First release (beta: World of Warcraft: Forever is still in beta; please report problems). v0.2.0-beta1 was
