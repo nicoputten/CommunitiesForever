@@ -379,6 +379,7 @@ function MainFrame.render()
   MainFrame.updateTabs()
 
   local empty = ns.Format.emptyState(view, {
+    passive = ns.CommunitySelection.passive(),
     selected = ns.CommunitySelection.selected() ~= nil,
     active = ns.CommunitySelection.active() ~= nil,
     communityName = ns.CommunitySelection.name(),
@@ -624,6 +625,7 @@ local function refreshMessages()
     ns.MemberTracker.UPDATED,
     ns.PresenceTracker.UPDATED,
     ns.CommunitySelection.CHANGED,
+    ns.CommunitySelection.PASSIVE_CHANGED,
     ns.Sync.PEOPLE_UPDATED,
     ns.Invites.CHANGED,
     ns.FeedTracker.CHANGED,

@@ -34,16 +34,29 @@ function Minimap.start(addon)
     end,
   })
   LibStub("LibDBIcon-1.0"):Register(ADDON_NAME, launcher, addon.db.global.settings.minimap)
+  -- Hidden while passive (no community), whatever the setting says; shown again once one appears.
+  -- Own AceEvent object: AceEvent keeps one handler per object and message.
+  LibStub("AceEvent-3.0"):Embed({}):RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, Minimap.apply)
+  Minimap.apply()
 end
 
 function Minimap.isShown()
   return not addonRef.db.global.settings.minimap.hide
 end
 
+-- Shows or hides the button per the setting and the passive state.
+function Minimap.apply()
+  local icon = LibStub("LibDBIcon-1.0")
+  if Minimap.isShown() and not ns.CommunitySelection.passive() then
+    icon:Show(ADDON_NAME)
+  else
+    icon:Hide(ADDON_NAME)
+  end
+end
+
 function Minimap.setShown(shown)
   addonRef.db.global.settings.minimap.hide = not shown or nil
-  local icon = LibStub("LibDBIcon-1.0")
-  if shown then icon:Show(ADDON_NAME) else icon:Hide(ADDON_NAME) end
+  Minimap.apply()
 end
 
 ns.Minimap = Minimap

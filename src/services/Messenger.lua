@@ -69,8 +69,9 @@ local function schedulePump()
 end
 
 -- Queues a message for one game account (number) or community member (character name). Returns the
--- number of chunks.
+-- number of chunks; nothing is sent while the addon is passive (no community, see Clubs.passive).
 function Messenger.send(gameAccountID, message)
+  if ns.CommunitySelection.passive() then return 0 end
   local msgId = nextMsgId()
   local size = type(gameAccountID) == "string" and ns.Protocol.COMMUNITY_CHUNK or nil
   local chunks = ns.Protocol.chunk(codec:encode(message), msgId, size)
@@ -130,6 +131,7 @@ end
 -- One part (or a MISS) from a sender: senderID is the game account ID or the character name, battleTag
 -- the sender key (see RECEIVED), guid the sending character (community only).
 local function receive(text, senderID, battleTag, guid)
+  if ns.CommunitySelection.passive() then return end
   local missId, missParts = ns.Protocol.parseMiss(text)
   if missId then
     onMiss(senderID, missId, missParts)

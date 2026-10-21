@@ -145,15 +145,9 @@ function STEP_BODIES.chat(body)
   if ns.CommunityChat.tab() then
     label(body, GOLD .. "This character has a " .. ns.CommunityChat.tabName() .. " chat tab.|r")
   else
-    local create = createWidget("Button")
-    create:SetText("Create a Community tab (recommended)")
-    create:SetFullWidth(true)
-    create:SetHeight(32)
-    create:SetCallback("OnClick", function()
-      ns.CommunityChat.createTab()
-      render()
-    end)
-    body:AddChild(create)
+    -- The Create button sits where Next is (see render), so clicking on through the wizard creates it.
+    label(body, GOLD .. "Create chat tab|r makes a " .. ns.CommunityChat.tabName()
+      .. " tab and goes on; Not now goes on without one.")
   end
   spacer(body)
   toggle(body, "keepGeneral")
@@ -222,7 +216,13 @@ function render()
   wizard:AddChild(row)
   local back = button(row, "Back", 0.33, function() go(-1) end)
   back:SetDisabled(index == 1)
-  if index < #steps then
+  if step.id == "chat" and not ns.CommunityChat.tab() then
+    button(row, "Not now", 0.33, function() go(1) end)
+    button(row, "Create chat tab", 0.33, function()
+      ns.CommunityChat.createTab()
+      go(1)
+    end)
+  elseif index < #steps then
     button(row, "Skip", 0.33, function() wizard:Hide() end)
     button(row, "Next", 0.33, function() go(1) end)
   else
@@ -301,6 +301,7 @@ end
 
 -- What the current character should see now (see Onboarding.plan).
 function Setup.plan()
+  if ns.CommunitySelection.passive() then return nil end -- no community yet: nothing to set up
   local guid = selfGuid()
   return ns.Onboarding.plan(settings(), {
     guid = guid,
@@ -322,6 +323,11 @@ end
 function Setup.start(addon)
   addonRef = addon
   C_Timer.NewTimer(Setup.LOGIN_DELAY, Setup.check)
+  -- Joined a community while playing: the setup opens right away (unless it is open already).
+  -- Own AceEvent object: AceEvent keeps one handler per object and message.
+  LibStub("AceEvent-3.0"):Embed({}):RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
+    if not passive and not Setup.isShown() then Setup.check() end
+  end)
 end
 
 ns.Setup = Setup

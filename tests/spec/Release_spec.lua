@@ -37,9 +37,15 @@ describe("release contents (CF-02)", function()
     end
   end)
 
+  it("uploads to the Wago project named in the TOC", function()
+    local tocId = read(helpers.ADDON_NAME .. ".toc"):match("## X%-Wago%-ID: (%w+)")
+    assert.is_truthy(tocId, "no X-Wago-ID in the TOC")
+    assert.are.equal(tocId, read(".github/workflows/release.yml"):match("WAGO_ID: (%w+)"))
+  end)
+
   it("uses the hand-written notes of the tagged release, not commit messages", function()
     assert.is_truthy(read(".pkgmeta"):find("manual%-changelog:%s+filename: RELEASE_NOTES%.md"))
     assert.is_truthy(read(".github/workflows/release.yml")
-      :find("lua tools/release-notes.lua \"$GITHUB_REF_NAME\" > RELEASE_NOTES.md", 1, true))
+      :find("lua tools/release-notes.lua \"$TAG\" > RELEASE_NOTES.md", 1, true))
   end)
 end)
