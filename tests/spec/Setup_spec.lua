@@ -58,8 +58,13 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
 
   local function click(widget, label) find(widget, "Button", label):Fire("OnClick") end
 
+  -- Clicks the button in the Next spot: Next, or "Create chat tab" on the chat step without a tab.
   local function forward(times)
-    for _ = 1, times or 1 do click(wizard(), "Next") end
+    for _ = 1, times or 1 do
+      local createTab
+      walk(wizard(), function(w) if w.type == "Button" and w.text == "Create chat tab" then createTab = w end end)
+      click(wizard(), createTab and "Create chat tab" or "Next")
+    end
   end
 
   after_each(function()
@@ -138,15 +143,30 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     assert.are.equal("Alice", addon.db.global.self.displayName)
   end)
 
-  it("creates the Community tab from the chat step", function()
+  it("creates the Community tab from the Next spot and goes on", function()
     load()
     wowapi.runTimers(state)
     forward(3)
     local windows = #state.chatWindows
-    click(wizard(), "Create a Community tab (recommended)")
+    click(wizard(), "Create chat tab")
     assert.are.equal(windows + 1, #state.chatWindows)
     assert.is_true(settings().chatTab[guid()])
+    assert.is_truthy(text(wizard()):find("Notifications and sharing", 1, true))
+    click(wizard(), "Back")
     assert.is_truthy(text(wizard()):find("This character has a", 1, true))
+    find(wizard(), "Button", "Next") -- with a tab the step has Skip and Next again
+    find(wizard(), "Button", "Skip")
+  end)
+
+  it("goes on without a tab with Not now (in place of Skip)", function()
+    load()
+    wowapi.runTimers(state)
+    forward(3)
+    local windows = #state.chatWindows
+    click(wizard(), "Not now")
+    assert.are.equal(windows, #state.chatWindows)
+    assert.is_true(ns.Setup.isShown())
+    assert.is_truthy(text(wizard()):find("Notifications and sharing", 1, true))
   end)
 
   it("starts every switch at the settings defaults and writes the settings", function()
@@ -193,13 +213,13 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     load()
     wowapi.runTimers(state)
     forward(3)
-    click(wizard(), "Create a Community tab (recommended)")
+    click(wizard(), "Create chat tab")
     local tab = state.chatWindows[#state.chatWindows]
     tab.closed = true -- closing a chat tab keeps its name
     ns.Setup.open()
     forward(3)
     local windows = #state.chatWindows
-    click(wizard(), "Create a Community tab (recommended)")
+    click(wizard(), "Create chat tab")
     assert.are.equal(windows + 1, #state.chatWindows)
   end)
 end)

@@ -34,6 +34,13 @@ character in no community.
 | Join a community (a friend's invite link, or create one in Blizzard's Communities window) | Within seconds: "Showing community ..." in chat, the setup wizard opens, the minimap button appears (unless switched off), and with `/cf sync debug` on, HELLO lines to friends online. | open |
 | A character of the same account that is in no community, after another character selected one | Not passive: the window shows how to join the selected community (as before). | open |
 
+### Setup: chat tab button in the Next spot
+| Step | Expected | Status |
+|---|---|---|
+| On a character without a Community chat tab: `/cf setup`, Next until "Community chat" | The buttons read Back, Not now, Create chat tab (where Next was). | open |
+| Click **Create chat tab** | A Community chat tab appears and the setup is on "Notifications and sharing". Back: the chat step says "This character has a Community chat tab" with Skip and Next. | open |
+| Close the new tab, `/cf setup` again to the chat step, click **Not now** | No tab is created; the setup goes on to "Notifications and sharing". | open |
+
 ### CF-02 part 2: release on tag
 | Step | Expected | Status |
 |---|---|---|
