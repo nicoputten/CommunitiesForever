@@ -8,12 +8,16 @@ local CommunitySelection = {}
 -- Internal message: (clubId or nil). Sent when the selection or its availability changes.
 CommunitySelection.CHANGED = "CF_COMMUNITY_CHANGED"
 
+-- Internal message: (passive). Sent when the addon turns passive or active (see Clubs.passive).
+CommunitySelection.PASSIVE_CHANGED = "CF_PASSIVE_CHANGED"
+
 CommunitySelection.AUTO_NOTICE = "Showing community %s. Change it with /cf settings."
 
 local addonRef
 local initialClubsLoaded = false
 local available = true
 local removedClubId -- selected club removed for this character this session (may still be listed)
+local passive = false
 
 local function settings()
   return addonRef.db.global.settings
@@ -25,8 +29,17 @@ local function findClub(clubId)
   end
 end
 
+local function refreshPassive()
+  local now = ns.Clubs.passive(settings().clubId, ns.Community.subscribedClubs(), ns.Community.characterType())
+  if now ~= passive then
+    passive = now
+    addonRef:SendMessage(CommunitySelection.PASSIVE_CHANGED, passive)
+  end
+end
+
 -- Recomputes availability for this character and remembers the name while it is visible.
 local function refreshAvailability()
+  refreshPassive()
   local clubId = settings().clubId
   local status = ns.Clubs.status(clubId, ns.Community.subscribedClubs(), ns.Community.characterType(),
     initialClubsLoaded)
@@ -78,6 +91,7 @@ function CommunitySelection.start(addon)
   initialClubsLoaded = false
   removedClubId = nil
   available = settings().clubId ~= nil
+  passive = ns.Clubs.passive(settings().clubId, ns.Community.subscribedClubs(), ns.Community.characterType())
   addon:RegisterMessage(ns.Community.CLUBS_CHANGED, function(_, event, clubId)
     if event == "INITIAL_CLUBS_LOADED" then
       initialClubsLoaded = true
@@ -100,6 +114,12 @@ end
 -- Selectable communities for this character as a sorted list of { clubId, name }.
 function CommunitySelection.list()
   return ns.Clubs.selectable(ns.Community.subscribedClubs(), ns.Community.characterType())
+end
+
+-- True while there is no community to work with (see Clubs.passive): no setup, sync, notices or minimap
+-- button until this character joins one.
+function CommunitySelection.passive()
+  return passive
 end
 
 -- The selected community (account-wide), even when this character cannot see it.

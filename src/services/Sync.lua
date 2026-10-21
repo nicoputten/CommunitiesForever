@@ -308,6 +308,10 @@ function Sync.start(addon)
     end
   end)
   events:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name) peerGone(name) end)
+  -- Nothing is sent while passive (no community); joining one catches up at once.
+  events:RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
+    if not passive then Sync.announce() end
+  end)
   ns.Events.register(events, "PLAYER_LOGOUT", function()
     for name in pairs(peers) do ns.Messenger.send(name, { t = "BYE" }) end
   end)

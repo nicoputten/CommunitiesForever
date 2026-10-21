@@ -301,6 +301,7 @@ end
 
 -- What the current character should see now (see Onboarding.plan).
 function Setup.plan()
+  if ns.CommunitySelection.passive() then return nil end -- no community yet: nothing to set up
   local guid = selfGuid()
   return ns.Onboarding.plan(settings(), {
     guid = guid,
@@ -322,6 +323,11 @@ end
 function Setup.start(addon)
   addonRef = addon
   C_Timer.NewTimer(Setup.LOGIN_DELAY, Setup.check)
+  -- Joined a community while playing: the setup opens right away (unless it is open already).
+  -- Own AceEvent object: AceEvent keeps one handler per object and message.
+  LibStub("AceEvent-3.0"):Embed({}):RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
+    if not passive and not Setup.isShown() then Setup.check() end
+  end)
 end
 
 ns.Setup = Setup

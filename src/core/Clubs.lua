@@ -38,5 +38,12 @@ function Clubs.status(storedId, clubs, characterType, loaded)
   return "unknown"
 end
 
+-- True when the addon has nothing to work with: no community chosen for the account and this character is
+-- in no character community either. The addon then stays passive (no setup, sync, notices or minimap
+-- button) until a community appears.
+function Clubs.passive(storedId, clubs, characterType)
+  return storedId == nil and #Clubs.selectable(clubs, characterType) == 0
+end
+
 ns.Clubs = Clubs
 return Clubs
