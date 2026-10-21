@@ -20,6 +20,7 @@ end
 
 local function notify(battleTag)
   if addonRef.db.global.settings.notifications == false then return end
+  if ns.CommunitySelection.passive() then return end
   local now = GetServerTime()
   local last = lastNotified[battleTag]
   if last and now - last < REPEAT_SECONDS then return end

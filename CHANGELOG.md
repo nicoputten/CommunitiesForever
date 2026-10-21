@@ -7,6 +7,9 @@ tagging; the release stops if the tag has no section.
 
 ## Unreleased
 - Also on **Wago Addons**, so WowUp can install and update it.
+- **No community, no noise:** without a community on your account the addon stays quiet (no setup, no
+  minimap button, no chat lines, no syncing). `/cf` explains how to join one; once you do, the setup starts
+  right away.
 - **Setup:** on the community chat step, "Create chat tab" sits where Next is, so clicking on through the
   setup creates the tab; "Not now" goes on without one.
 

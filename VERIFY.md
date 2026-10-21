@@ -21,6 +21,19 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### Passive without a community
+Needs a character on an account where no character ever selected a community (or a fresh WTF: rename
+`WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` first, rename it back afterwards), and that
+character in no community.
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, wait 10 s | No setup wizard, no minimap button, no CommunitiesForever chat lines (also not when a Battle.net friend with the addon logs in). | open |
+| `/cf` | The window says "You're not in a community yet." with how to join by invite link or code. | open |
+| `/cf sync debug`, wait for a friend with the addon to log in | No `[sync]` lines: nothing is sent or received. | open |
+| Join a community (a friend's invite link, or create one in Blizzard's Communities window) | Within seconds: "Showing community ..." in chat, the setup wizard opens, the minimap button appears (unless switched off), and with `/cf sync debug` on, HELLO lines to friends online. | open |
+| A character of the same account that is in no community, after another character selected one | Not passive: the window shows how to join the selected community (as before). | open |
+
 ### Setup: chat tab button in the Next spot
 | Step | Expected | Status |
 |---|---|---|
