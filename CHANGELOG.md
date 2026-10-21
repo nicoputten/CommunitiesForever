@@ -7,6 +7,8 @@ tagging; the release stops if the tag has no section.
 
 ## Unreleased
 - Also on **Wago Addons**, so WowUp can install and update it.
+- **Setup:** on the community chat step, "Create chat tab" sits where Next is, so clicking on through the
+  setup creates the tab; "Not now" goes on without one.
 
 ## v0.2.0-beta2 (2026-10-20)
 First release (beta: World of Warcraft: Forever is still in beta; please report problems). v0.2.0-beta1 was
