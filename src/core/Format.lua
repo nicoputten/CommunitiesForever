@@ -326,9 +326,21 @@ function Format.detail(view, path, now, showAllQuests)
 end
 
 -- Message for the whole window instead of tree and detail, or nil.
--- state = { selected = bool, active = bool, communityName = string|nil, characterName = string|nil }
--- active is false on a character that is not a member of the selected community.
+-- state = { passive = bool, selected = bool, active = bool, communityName = string|nil,
+--           characterName = string|nil }
+-- active is false on a character that is not a member of the selected community; passive: no community on
+-- the account and none on this character (see Clubs.passive).
+Format.PASSIVE_TEXT = "You're not in a community yet.\n\n"
+  .. "CommunitiesForever is for friends who play together without a guild: it works with an in-game "
+  .. "community you share. Once this character is in one, the addon sets itself up and shows your friends, "
+  .. "their characters, their activity and the dungeons you can run together.\n\n"
+  .. "Got an invite link from a friend? Click it in chat and choose Join. Got an invite code? Open Blizzard's "
+  .. "Communities window and join with the code. No community yet? Create one there and invite your friends."
+
 function Format.emptyState(view, state)
+  if state.passive then
+    return Format.PASSIVE_TEXT
+  end
   if not state.selected then
     return "Select a community in settings (/cf settings)."
   end

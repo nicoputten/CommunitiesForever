@@ -7,6 +7,9 @@ tagging; the release stops if the tag has no section.
 
 ## Unreleased
 - Also on **Wago Addons**, so WowUp can install and update it.
+- **No community, no noise:** without a community on your account the addon stays quiet (no setup, no
+  minimap button, no chat lines, no syncing). `/cf` explains how to join one; once you do, the setup starts
+  right away.
 
 ## v0.2.0-beta2 (2026-10-20)
 First release (beta: World of Warcraft: Forever is still in beta; please report problems). v0.2.0-beta1 was
