@@ -427,4 +427,26 @@ describe("Linker", function()
     Linker.build(data)
     assert.is_nil(data.self)
   end)
+
+  describe("usesAddon (CF-34)", function()
+    local RELAYED = "Relayed#5555"
+
+    it("marks people we have a record from, own or relayed, and yourself", function()
+      local view = Linker.build(input({
+        members = { G1 = member("Plain Member", 1), G2 = member("Addon User"), G3 = member("Relayed Char"),
+                    ["G-ME"] = member("My Char") },
+        presence = { G1 = { battleTag = OTHER, lastSeen = 1 } }, -- linked by Battle.net presence only
+        people = {
+          ["Ann#1234"] = { version = 5, chars = { G2 = char("Addon User", { guid = "G2" }) } },
+          [RELAYED] = { version = 7, via = "Ann#1234", chars = { G3 = char("Relayed Char", { guid = "G3" }) } },
+        },
+        friends = { [OTHER] = true, ["Ann#1234"] = true },
+        self = { battleTag = ME, chars = { ["G-ME"] = char("My Char", { guid = "G-ME" }) } },
+      }))
+      assert.is_false(person(view, OTHER).usesAddon)
+      assert.is_true(person(view, "Ann#1234").usesAddon)
+      assert.is_true(person(view, RELAYED).usesAddon)
+      assert.is_true(person(view, ME).usesAddon)
+    end)
+  end)
 end)

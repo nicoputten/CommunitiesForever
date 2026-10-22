@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Who runs the addon:** a small icon after people who run CommunitiesForever; the card of someone who
+  does not explains why their professions, talents and quests are missing.
 - **Keybinding:** "Open or close the window" in Blizzard's keybinding menu (unbound by default).
 - **Esc** closes the window and the setup.
 - **Minimap button:** its tooltip lists who is online, on which character and level.
