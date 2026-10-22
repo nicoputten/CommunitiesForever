@@ -3,6 +3,8 @@
 --   /fp start       clear the log, then run every check below and switch on feed logging
 --   /fp invite      chat links per friend online in Forever: test link, request invite, invite by name,
 --                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
+--   /fp menu        right-click menu test window (V57, CF-37): Blizzard context menu, whisper, copy box,
+--                   right-click on an AceGUI tree row
 --   /fp feed off    stop feed logging (V35)
 --   /fp clear       wipe the saved log
 -- Checks (by VERIFY.md number):
@@ -16,6 +18,7 @@
 --   V49      addon message in the community channel (does it arrive, also back at yourself?)
 --   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
 --   V52      community member presence (run after a member logged out: still online?)
+--   V57      which menu, whisper and invite functions exist (the clicks need /fp menu)
 --   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
 --   /fp comm channel         one addon message in the community channel (V49: run on two clients)
 --   /fp comm summary         what came back so far
@@ -346,6 +349,109 @@ local function Invite()
   log("click the test link, then each invite link once (leave the group between tries); /reload and send the log")
 end
 
+-- ===== V57: right-click menu (CF-37) =====
+local function MenuApis()
+  log("exists MenuUtil", MenuUtil ~= nil)
+  log("exists MenuUtil.CreateContextMenu", MenuUtil ~= nil and MenuUtil.CreateContextMenu ~= nil)
+  log("exists ChatFrameUtil.SendTell", ChatFrameUtil ~= nil and ChatFrameUtil.SendTell ~= nil)
+  log("exists ChatFrame_SendTell", ChatFrame_SendTell ~= nil)
+  log("exists ChatFrameUtil.OpenChat", ChatFrameUtil ~= nil and ChatFrameUtil.OpenChat ~= nil)
+  log("exists ChatFrame_OpenChat", ChatFrame_OpenChat ~= nil)
+  log("exists C_PartyInfo.InviteUnit", C_PartyInfo ~= nil and C_PartyInfo.InviteUnit ~= nil)
+  log("exists AceGUI-3.0", LibStub ~= nil and LibStub("AceGUI-3.0", true) ~= nil)
+  log("V57 clicks: /fp menu")
+end
+
+local menuWindow, copyBox
+
+-- The name in a box, selected, so Ctrl+C copies it (WoW has no clipboard API).
+local function ShowCopy(name)
+  if not copyBox then
+    copyBox = CreateFrame("EditBox", nil, UIParent, "InputBoxTemplate")
+    copyBox:SetSize(220, 24)
+    copyBox:SetPoint("CENTER", 0, -120)
+    copyBox:SetAutoFocus(false)
+    copyBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() self:Hide() end)
+    copyBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() self:Hide() end)
+  end
+  copyBox:SetText(name)
+  copyBox:Show()
+  copyBox:SetFocus()
+  copyBox:HighlightText()
+  log("V57 copy box shown with", name, "- press Ctrl+C, Esc, then paste in chat: does the name appear?")
+end
+
+local function Whisper(name)
+  if ChatFrameUtil and ChatFrameUtil.SendTell then
+    LogCall("V57 ChatFrameUtil.SendTell", ChatFrameUtil.SendTell, name)
+  elseif ChatFrame_SendTell then
+    LogCall("V57 ChatFrame_SendTell", ChatFrame_SendTell, name)
+  else
+    log("V57 no SendTell function")
+  end
+  log("V57 whisper: does the chat input open with /w " .. name .. " ?")
+end
+
+local function OpenMenu(owner, name)
+  if not (MenuUtil and MenuUtil.CreateContextMenu) then
+    log("V57 MenuUtil.CreateContextMenu missing: CF-37 needs its own popup")
+    return
+  end
+  local ok, err = pcall(MenuUtil.CreateContextMenu, owner, function(_, root)
+    root:CreateTitle(name)
+    root:CreateButton("Whisper", function() log("V57 menu click: Whisper") Whisper(name) end)
+    root:CreateButton("Copy name", function() log("V57 menu click: Copy name") ShowCopy(name) end)
+    root:CreateButton("Invite (logs only)", function() log("V57 menu click: Invite") end)
+  end)
+  log("V57 CreateContextMenu", ok and "opened" or ("error " .. S(err)))
+end
+
+-- A test window: a plain button, and (with CommunitiesForever's AceGUI) a tree row like the Friends list.
+local function MenuTest()
+  local name = GetUnitName("player", true)
+  if menuWindow then menuWindow:Show() return end
+  menuWindow = CreateFrame("Frame", nil, UIParent, "BasicFrameTemplateWithInset")
+  menuWindow:SetSize(260, 120)
+  menuWindow:SetPoint("CENTER", 0, 120)
+  local button = CreateFrame("Button", nil, menuWindow, "UIPanelButtonTemplate")
+  button:SetSize(200, 26)
+  button:SetPoint("TOP", 0, -36)
+  button:SetText("Right-click me")
+  button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  button:SetScript("OnClick", function(self, mouse)
+    log("V57 plain button click", mouse)
+    if mouse == "RightButton" then OpenMenu(self, name) end
+  end)
+  log("V57 test window open: right-click the button, try Whisper and Copy name")
+
+  local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
+  if not AceGUI then
+    log("V57 no AceGUI (load CommunitiesForever too) - tree row test skipped")
+    return
+  end
+  local frame = AceGUI:Create("Frame")
+  frame:SetTitle("FP tree row test")
+  frame:SetWidth(320)
+  frame:SetHeight(220)
+  frame:SetLayout("Fill")
+  local tree = AceGUI:Create("TreeGroup")
+  tree:SetTree({ { value = "p", text = "Person", children = { { value = "c", text = name } } } })
+  tree:SetStatusTable({ groups = { p = true } })
+  tree:RefreshTree()
+  frame:AddChild(tree)
+  local hooked = 0
+  for _, row in ipairs(tree.buttons or {}) do
+    if row.HookScript then
+      row:HookScript("OnMouseUp", function(self, mouse)
+        log("V57 tree row mouse up", mouse, "on", S(self.uniquevalue))
+        if mouse == "RightButton" then OpenMenu(self, name) end
+      end)
+      hooked = hooked + 1
+    end
+  end
+  log("V57 tree rows hooked", hooked, "- right-click the", name, "row: does a menu open?")
+end
+
 -- ===== Commands =====
 -- ===== V49-V52: community transport (CF-28) =====
 local COMM_PREFIX = "FProbe"
@@ -447,6 +553,7 @@ local function Start()
   Section("V52 COMMUNITY PRESENCE", CommunityPresence)
   Section("V49/V50 COMMUNITY TRANSPORT", CommunityTransport)
   Section("V35 FEED", FeedOn)
+  Section("V57 MENU APIS", MenuApis)
   log("start done: /reload, then send WTF\\Account\\<account>\\SavedVariables\\FriendProbe.lua")
 end
 
@@ -481,6 +588,8 @@ SlashCmdList.FRIENDPROBE = function(msg)
     end
   elseif cmd == "invite" then
     Invite()
+  elseif cmd == "menu" then
+    Section("V57 MENU", MenuTest)
   elseif cmd == "feed" and arg == "off" then
     FriendProbeDB.feed = nil
     log("feed logging off")
@@ -488,6 +597,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | comm whisper <name> | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | menu | comm whisper <name> | feed off | clear")
   end
 end
