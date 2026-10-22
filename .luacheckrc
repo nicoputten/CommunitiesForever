@@ -4,7 +4,7 @@ max_line_length = 120
 codes = true
 self = false -- Ace callbacks and methods often ignore self
 
-exclude_files = { "Libs/", ".lua/", "dist/" }
+exclude_files = { "Libs/", ".lua/", "dist/", "tests/fixtures/v*/" } -- fixtures: generated (capture.lua)
 
 -- Globals the addon itself owns (CLAUDE.md rule 5).
 local addonGlobals = {

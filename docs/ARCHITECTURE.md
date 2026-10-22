@@ -100,6 +100,24 @@ Internal event bus: AceEvent messages on the addon object (`SendMessage` / `Regi
 
 Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
 
+## Compatibility
+CLAUDE.md rule 8. Friends run different versions for days, and everyone keeps their SavedVariables across
+updates, so data from an earlier version must keep working. One pattern for both:
+
+| | Stored data (SavedVariables) | Messages (wire) |
+|---|---|---|
+| Version | `global.schemaVersion` (`Store.SCHEMA_VERSION`) | `pv` in every message (`Protocol.VERSION`) |
+| Upgrade | `Store.MIGRATIONS[n](global)`: schema n to n+1, run in order by `Store.init` at login | `Protocol.UPGRADES[n](message)`: pv n to n+1, run in order by `codec:decode` |
+| A step | renames or reshapes fields, derives what it can, leaves the rest empty (nil, 0, {}) | same, for one incoming message |
+| No step needed | a new optional field (readers handle nil) | a new optional field or message type: older clients ignore unknown fields and types |
+| From a newer version | left untouched (`Store.init` returns "newer"; downgrading is not supported) | dropped as "unsupported", with a one-time "newer version" notice |
+
+Guard rails: `Store_spec` and `Protocol_spec` check that a step exists for every version below the current
+one. Golden fixtures (`tests/fixtures/<release>/`, captured with `tests/fixtures/capture.lua` from invented
+players in `tests/fixtures/people.lua`) hold every message type and a SavedVariables file as that release
+wrote them; `Compat_spec` feeds them to the current code (messages delivered in parts as the game would, the
+saved file loaded at login) and fails when an older version's data no longer works.
+
 ## Libraries
 Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
 

@@ -23,10 +23,28 @@ function Store.defaults()
   }
 end
 
--- Stamps the schema version on a fresh database. Migrations hook in here later.
+--[[ Upgrade pattern (CLAUDE.md rule 8): Store.MIGRATIONS[n](global) brings saved data from schema n to
+n + 1, in place. A step renames or reshapes fields, derives what it can from the old data and leaves the
+rest empty (nil, 0, {}); the code reading the data handles empty values. Bump SCHEMA_VERSION with every
+step, never edit a released step, and give each step a spec with old data as it was saved (tests/fixtures). ]]
+Store.MIGRATIONS = {}
+
+-- Stamps the schema version on a fresh database and runs the migrations for older data. Data from a newer
+-- schema (the addon was downgraded) is left untouched: returns global, "newer".
 function Store.init(global)
-  if global.schemaVersion == nil then
+  local version = global.schemaVersion
+  if version == nil then
     global.schemaVersion = Store.SCHEMA_VERSION
+    return global
+  end
+  if type(version) ~= "number" or version > Store.SCHEMA_VERSION then
+    return global, "newer"
+  end
+  while version < Store.SCHEMA_VERSION do
+    local step = assert(Store.MIGRATIONS[version], "no migration from schema " .. version)
+    step(global)
+    version = version + 1
+    global.schemaVersion = version
   end
   return global
 end
