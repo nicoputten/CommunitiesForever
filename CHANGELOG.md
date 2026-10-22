@@ -9,6 +9,8 @@ tagging; the release stops if the tag has no section.
 - **Keybinding:** "Open or close the window" in Blizzard's keybinding menu (unbound by default).
 - **Esc** closes the window and the setup.
 - **Minimap button:** its tooltip lists who is online, on which character and level.
+- **Sync fix:** someone you only knew through a friend's relay now syncs with you directly once you are
+  both online in the community, so you no longer keep their older copy.
 
 ## v0.3.0-beta1 (2026-10-21)
 - Also on **Wago Addons**, so WowUp can install and update it.

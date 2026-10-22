@@ -88,6 +88,12 @@ The receiver compares: `ver` newer than stored → `REQ` for the sender's own re
 than stored → `REQ` for that record (relay). Over the community, a HELLO from an unknown member is also
 answered with your own HELLO, so both sides know each other.
 
+Over the community, a HELLO from a character that belongs to a person you know **without** an account ID
+(their record reached you through a relay, which carries none) teaches you that account ID
+(`Identity.bindAccountId`): the game names the sending character, and that character is theirs. A known
+account ID is never overwritten, and one that another person already has is never taken. Anything stored
+under that `aid:` key is then merged into the person (`Merge.absorb`), and their newer record is asked for.
+
 ### REQ: "send me this record"
 
 ```json

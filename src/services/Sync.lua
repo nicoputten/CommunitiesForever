@@ -160,6 +160,11 @@ local handlers = {}
 
 function handlers.HELLO(message, senderKey, target, guid)
   if type(message.ver) ~= "number" or type(message.bt) ~= "string" then return end
+  -- Community: their character, but we know them without an account ID (e.g. from a relay): learn it now,
+  -- and merge anything stored under that "aid:" key into them.
+  if guid and ns.Identity.bindAccountId(global().people, senderKey, message.bt) then
+    ns.Merge.absorb(global().people, senderKey, now())
+  end
   local key, isOwn = fromWire(message.bt)
   if isOwn then return end
   if guid then

@@ -133,10 +133,9 @@ describe("sharing end to end", function()
       assert.are.equal(20, adaAtCy.chars[A_GUID].level)
     end)
 
-    -- Found by this spec: Cy knows Ada only from Bob's relayed record, which has no account ID, so Ada's
-    -- community HELLO (under "aid:...") from her own character is rejected as someone else's key, and her
-    -- newer record is never asked for. Pending until the fix (see the PR).
-    pending("lets Ada's own newer record replace the relayed copy once they meet", function()
+    -- Cy knows Ada only from Bob's relayed record (no account ID): her community HELLO from her own
+    -- character teaches Cy her account ID (Identity.bindAccountId), so her newer record is asked for.
+    it("lets Ada's own newer record replace the relayed copy once they meet", function()
       people(true, true)
       world:login("A")
       world:login("B")

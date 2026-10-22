@@ -60,6 +60,22 @@ function Identity.fromWire(people, own, key)
   return key, false
 end
 
+--[[ A community HELLO from a character of a known person whose account ID we do not know yet (e.g. their
+record reached us through a relay, which carries no account ID): the game names the sending character, and
+that character is theirs, so the account ID in the HELLO is theirs. Sets people[senderKey].aid and returns
+true. Never overwrites a known account ID, never takes one another person already has, and only for a
+BattleTag-keyed person (senderKey from Identity.personOfGuid). ]]
+function Identity.bindAccountId(people, senderKey, wireKey)
+  local id = Identity.accountIdOf(wireKey)
+  local person = people and people[senderKey]
+  if not id or not person or person.aid ~= nil or Identity.isAidKey(senderKey) then return false end
+  for key, other in pairs(people) do
+    if key ~= senderKey and other.aid == id then return false end
+  end
+  person.aid = id
+  return true
+end
+
 -- The person key whose record lists this character GUID, or nil.
 function Identity.personOfGuid(people, guid)
   for key, person in pairs(people or {}) do
