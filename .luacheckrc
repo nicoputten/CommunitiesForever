@@ -11,6 +11,7 @@ local addonGlobals = {
   "CommunitiesForever",
   "CommunitiesForeverDB",
   "SlashCmdList",
+  "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE", -- CF-32 (Bindings.xml)
 }
 
 -- WoW API used by adapters, services and UI. Add entries as stories need them;

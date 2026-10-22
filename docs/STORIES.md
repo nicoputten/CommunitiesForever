@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-32, CF-33, CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
+Build order: CF-33, CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
 
 ## E10 Community transport
 
@@ -14,13 +14,6 @@ Build order: CF-32, CF-33, CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 
 ## E11 Ease of use
-
-### CF-32 Keybinding and Esc closes the window
-- Goal: open and close the window without typing `/cf`.
-- A keybinding "Toggle CommunitiesForever" under its own header in Blizzard's keybinding menu (`Bindings.xml`), unbound by default.
-- Decided: hard rule 5 in CLAUDE.md gets `BINDING_HEADER_*` / `BINDING_NAME_*` next to `SLASH_*` (Bindings.xml needs them as globals).
-- Esc closes the window (and the setup wizard) through the frame's own key handler: no named global frame for `UISpecialFrames`. Esc still opens the game menu when no CommunitiesForever window is open, and still works for other frames and the chat input.
-- Manual: bind a key, it toggles the window; Esc closes it; Esc with the window closed opens the game menu; typing in the chat input is not affected.
 
 ### CF-33 Minimap button tooltip: who is online
 - Goal: see at a glance who is online without opening the window.

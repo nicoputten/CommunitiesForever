@@ -539,6 +539,8 @@ local function createTree()
   content:AddChild(tree)
 end
 
+local escapeReady -- CF-32: Esc handler set up (not possible in combat: retried on the next show)
+
 local function create()
   frame = createWidget("Frame")
   frame:SetTitle(ADDON_NAME)
@@ -615,6 +617,7 @@ function MainFrame.toggle()
   else
     frame:Show()
   end
+  if not escapeReady then escapeReady = ns.Keys.closeOnEscape(frame.frame, function() frame:Hide() end) end
   MainFrame.render()
 end
 
@@ -638,6 +641,7 @@ end
 function MainFrame.start(addon)
   addonRef = addon
   frame, content, tree, view = nil, nil, nil, nil
+  escapeReady = false
   tabLinks = {}
   activeTab, expandedFeed = "friends", {}
   ns.DungeonsTab.reset()

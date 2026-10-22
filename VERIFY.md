@@ -17,9 +17,20 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V51 | Do addon whispers reach a character of the other faction? (CF-28) | Both characters need FriendProbe: `/fp comm whisper <the other character's name>`; the other log should show `addon message <- ... V51:whisper`. | open |
 | V52 | How stale does community presence get after a logout? (CF-28: online status for non-friends; CF-15 bug) | A few minutes after a member logged out, `/fp start`: under V52 COMMUNITY PRESENCE, does that member still show `Online`? | open |
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
+| V54 | Do `frame:EnableKeyboard`, `frame:SetPropagateKeyboardInput` and an `OnKeyDown` script work on an addon window outside combat, and does `Bindings.xml` with `header` and `category="ADDONS"` show the binding? (CF-32) | See the CF-32 steps: Esc closes the window without opening the game menu, walking keys still work with the window open, and the binding shows in Esc → Options → Keybindings. If anything errors, send the error text. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-32 Keybinding and Esc closes the window
+| Step | Expected | Status |
+|---|---|---|
+| Esc → Options → Keybindings | A "CommunitiesForever" section (under AddOns, or its own header; note where) with "Open or close the window", unbound. | open |
+| Bind a key, press it twice | The window opens, then closes. | open |
+| `/cf`, then walk with W/A/S/D and type in chat | Movement and chat work normally while the window is open. | open |
+| `/cf`, press Esc | The window closes and the game menu does **not** open. Esc again: the game menu opens. | open |
+| `/cf setup`, press Esc | The setup closes (counts as skipped, as with the X). | open |
+| In combat: `/cf`, press Esc | No error; the game menu opens and the window stays (Esc on the window is off in combat). After combat, close with `/cf`, open again: Esc closes it. | open |
 
 ### Passive without a community
 Needs a character on an account where no character ever selected a community (or a fresh WTF: rename

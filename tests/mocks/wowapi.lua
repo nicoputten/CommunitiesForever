@@ -120,6 +120,14 @@ local function fakeLibs(state)
   function AceGUI:Create(widgetType)
     local w = { type = widgetType, children = {}, callbacks = {}, shown = true, frame = {} }
     function w.frame.IsShown() return w.shown end
+    -- CF-32: keyboard input (frame.keyboard, frame.propagate, frame.scripts.OnKeyDown).
+    w.frame.scripts = {}
+    function w.frame:EnableKeyboard(on) self.keyboard = on end
+    function w.frame:SetPropagateKeyboardInput(on)
+      assert(not state.inCombat, "SetPropagateKeyboardInput in combat")
+      self.propagate = on
+    end
+    function w.frame:SetScript(name, fn) self.scripts[name] = fn end
     function w:SetCallback(name, fn) self.callbacks[name] = fn end
     function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
     function w:AddChild(child) self.children[#self.children + 1] = child end

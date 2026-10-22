@@ -16,7 +16,7 @@ describe("release contents (CF-02)", function()
 
   -- Files the packager ships besides Libs/ (third-party): the TOC, its source files and the root files.
   local function releasedFiles()
-    local files = { helpers.ADDON_NAME .. ".toc", "embeds.xml", "LICENSE", "CHANGELOG.md" }
+    local files = { helpers.ADDON_NAME .. ".toc", "embeds.xml", "Bindings.xml", "LICENSE", "CHANGELOG.md" }
     for _, path in ipairs(helpers.tocFiles()) do files[#files + 1] = path end
     return files
   end

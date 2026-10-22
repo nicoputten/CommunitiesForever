@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -316,3 +316,13 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): account ID creation and re-keying; chunking at the community message size; accept rules (sender in community and in the record); online status from presence plus HELLO/BYE.
 - Manual (2 accounts that are **not** Battle.net friends, same community): both see each other's characters grouped with professions and talents; a level-up line arrives; a group ask (CF-27) reaches the other one.
 - Built: part 1 (PR #30), part 2a (PR #32) and 2b (PR #33). The community transport whispers each member running the addon (255-byte parts, MISS and resend); the one-broadcast-per-community variant waits for V49 (see CF-31 in STORIES.md). Wire details: `docs/SYNC.md`.
+
+## E11 Ease of use
+
+### CF-32 Keybinding and Esc closes the window
+- Goal: open and close the window without typing `/cf`.
+- A keybinding "Toggle CommunitiesForever" under its own header in Blizzard's keybinding menu (`Bindings.xml`), unbound by default.
+- Decided: hard rule 5 in CLAUDE.md gets `BINDING_HEADER_*` / `BINDING_NAME_*` next to `SLASH_*` (Bindings.xml needs them as globals).
+- Esc closes the window (and the setup wizard) through the frame's own key handler: no named global frame for `UISpecialFrames`. Esc still opens the game menu when no CommunitiesForever window is open, and still works for other frames and the chat input.
+- Manual: bind a key, it toggles the window; Esc closes it; Esc with the window closed opens the game menu; typing in the chat input is not affected.
+- Built: `Bindings.xml` (`COMMUNITIESFOREVER_TOGGLE`, header plus `category="ADDONS"`, calls `CommunitiesForever:ToggleWindow()`); `src/adapters/Keys.lua` sets the window and the setup to take keyboard input, pass every key on except Esc, and pass keys on again right after closing. In combat nothing changes (set up on the next show). V54 checks the keyboard API and where the binding shows.

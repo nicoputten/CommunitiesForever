@@ -12,6 +12,7 @@ local DOT = "\194\183"
 
 local addonRef
 local wizard, prompt         -- AceGUI frames, created once and reused
+local wizardEscape           -- CF-32: Esc handler set up (not possible in combat: retried on the next open)
 local steps, index = {}, 1
 local leaveStep               -- saves what the current step holds (the name field) before moving on
 
@@ -253,6 +254,7 @@ function Setup.open(list)
   if not wizard then createWizard() end
   render()
   wizard:Show()
+  if not wizardEscape then wizardEscape = ns.Keys.closeOnEscape(wizard.frame, function() wizard:Hide() end) end
 end
 
 function Setup.isShown()
