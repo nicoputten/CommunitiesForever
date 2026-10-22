@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -326,3 +326,11 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Esc closes the window (and the setup wizard) through the frame's own key handler: no named global frame for `UISpecialFrames`. Esc still opens the game menu when no CommunitiesForever window is open, and still works for other frames and the chat input.
 - Manual: bind a key, it toggles the window; Esc closes it; Esc with the window closed opens the game menu; typing in the chat input is not affected.
 - Built: `Bindings.xml` (`COMMUNITIESFOREVER_TOGGLE`, header plus `category="ADDONS"`, calls `CommunitiesForever:ToggleWindow()`); `src/adapters/Keys.lua` sets the window and the setup to take keyboard input, pass every key on except Esc, and pass keys on again right after closing. In combat nothing changes (set up on the next show). V54 checks the keyboard API and where the binding shows.
+
+### CF-33 Minimap button tooltip: who is online
+- Goal: see at a glance who is online without opening the window.
+- Hovering the minimap button lists the people online now: display name, then their character with class color and level (e.g. `Bright  Vel Stormcaller 24`), Battle.net friends and community peers alike (`Sync.online()`), sorted by name. Nobody online: "Nobody online right now." At most 15 lines, then "+N more".
+- Below: "Left-click: open window", "Right-click: settings" (as today).
+- Unit tests (pure core): the lines from the online list (sorting, class/level missing, the cap).
+- Manual: with a friend online, the tooltip shows them on the right character; after they log out they disappear.
+- Built: `Format.onlineList` (pure: other people online from the view model, sorted, capped at 15 with `more`) and the tooltip in `src/ui/Minimap.lua` (`AddDoubleLine` when present, V55). The old "N friend(s) online in Forever" line is replaced.

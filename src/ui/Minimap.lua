@@ -7,10 +7,25 @@ local ICON = "Interface\\Icons\\INV_Misc_GroupNeedMore"
 
 local addonRef
 
-local function onlineCount()
-  local count = 0
-  for _ in pairs(ns.PresenceTracker.online()) do count = count + 1 end
-  return count
+local GREY = { 0.8, 0.8, 0.8 }
+
+-- CF-33: who is online now, one line each: display name left, their character (class color) and level right.
+local function addOnline(tooltip)
+  local list = ns.Format.onlineList(ns.ViewModel.build(addonRef))
+  if #list.entries == 0 then
+    tooltip:AddLine(ns.Format.NOBODY_ONLINE, unpack(GREY))
+    return
+  end
+  for _, e in ipairs(list.entries) do
+    local char = e.name and ns.MainFrame.colorName(e.name, e.classFile, e.classID) or ""
+    if e.level then char = char .. " " .. tostring(e.level) end
+    if tooltip.AddDoubleLine then
+      tooltip:AddDoubleLine(e.displayName, char, 1, 1, 1)
+    else
+      tooltip:AddLine(e.displayName .. "  " .. char, 1, 1, 1)
+    end
+  end
+  if list.more > 0 then tooltip:AddLine(string.format("+%d more", list.more), unpack(GREY)) end
 end
 
 function Minimap.start(addon)
@@ -28,9 +43,10 @@ function Minimap.start(addon)
     end,
     OnTooltipShow = function(tooltip)
       tooltip:AddLine(ADDON_NAME)
-      tooltip:AddLine(string.format("%d friend(s) online in Forever", onlineCount()), 1, 1, 1)
-      tooltip:AddLine("Left-click: open window", 0.8, 0.8, 0.8)
-      tooltip:AddLine("Right-click: settings", 0.8, 0.8, 0.8)
+      addOnline(tooltip)
+      tooltip:AddLine(" ")
+      tooltip:AddLine("Left-click: open window", unpack(GREY))
+      tooltip:AddLine("Right-click: settings", unpack(GREY))
     end,
   })
   LibStub("LibDBIcon-1.0"):Register(ADDON_NAME, launcher, addon.db.global.settings.minimap)

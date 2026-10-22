@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-33, CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
+Build order: CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
 
 ## E10 Community transport
 
@@ -14,13 +14,6 @@ Build order: CF-33, CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 
 ## E11 Ease of use
-
-### CF-33 Minimap button tooltip: who is online
-- Goal: see at a glance who is online without opening the window.
-- Hovering the minimap button lists the people online now: display name, then their character with class color and level (e.g. `Bright  Vel Stormcaller 24`), Battle.net friends and community peers alike (`Sync.online()`), sorted by name. Nobody online: "Nobody online right now." At most 15 lines, then "+N more".
-- Below: "Left-click: open window", "Right-click: settings" (as today).
-- Unit tests (pure core): the lines from the online list (sorting, class/level missing, the cap).
-- Manual: with a friend online, the tooltip shows them on the right character; after they log out they disappear.
 
 ### CF-34 "Uses the addon" mark
 - Goal: explain why some people show no professions, talents or quests: they don't run the addon.
