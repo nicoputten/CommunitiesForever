@@ -140,6 +140,12 @@ local function fakeLibs(state)
       self.propagate = on
     end
     function w.frame:SetScript(name, fn) self.scripts[name] = fn end
+    w.frame.hooks = {}
+    function w.frame:HookScript(name, fn)
+      self.hooks[name] = self.hooks[name] or {}
+      table.insert(self.hooks[name], fn)
+    end
+    function w.frame:SetFrameStrata(strata) self.strata = strata end
     function w:SetCallback(name, fn) self.callbacks[name] = fn end
     function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
     function w:AddChild(child) self.children[#self.children + 1] = child end
@@ -156,7 +162,12 @@ local function fakeLibs(state)
       self.buttons = {}
       for _, node in ipairs(self.tree or {}) do
         for level, n in ipairs({ node, unpack(node.children or {}) }) do
-          local button = { level = level == 1 and 1 or 2, text = {} }
+          local button = { level = level == 1 and 1 or 2, text = {}, hooks = {},
+                           uniquevalue = level == 1 and n.value or (node.value .. "" .. n.value) }
+          function button:HookScript(name, fn)
+            self.hooks[name] = self.hooks[name] or {}
+            table.insert(self.hooks[name], fn)
+          end
           function button:SetNormalFontObject(font) self.normalFont = font end
           function button:SetHighlightFontObject(font) self.highlightFont = font end
           button.node = n
@@ -242,6 +253,7 @@ function wowapi.install(opts)
     time = 500,            -- GetTime()
     inCombat = false,      -- InCombatLockdown()
     chatFilters = {},      -- chat message filters per event (ChatFrame_AddMessageEventFilter)
+    menus = {},            -- CF-37: opened context menus (MenuUtil.CreateContextMenu)
     bnSent = {},           -- BNSendGameData calls: { gameAccountID, prefix, text }
     whispers = {},         -- C_ChatInfo.SendAddonMessage calls (CF-28)
     prefixes = {},         -- registered addon message prefixes
@@ -334,6 +346,24 @@ function wowapi.install(opts)
       end,
     },
     InCombatLockdown = function() return state.inCombat end,
+    -- CF-37: Blizzard's context menu. Opened menus in state.menus: { owner, title, buttons = { { text, fn,
+    -- enabled } } }.
+    MenuUtil = {
+      CreateContextMenu = function(owner, generator)
+        local menu = { owner = owner, buttons = {} }
+        local root = {}
+        function root:CreateTitle(text) menu.title = text end
+        function root:CreateButton(text, fn)
+          local b = { text = text, fn = fn, enabled = true }
+          function b:SetEnabled(on) self.enabled = on end
+          table.insert(menu.buttons, b)
+          return b
+        end
+        generator(owner, root)
+        table.insert(state.menus, menu)
+        return menu
+      end,
+    },
     -- CF-28: chat filters (state.chatFilters[event] = { fn, ... }) and the system line for a failed whisper.
     ChatFrame_AddMessageEventFilter = function(event, fn)
       state.chatFilters[event] = state.chatFilters[event] or {}

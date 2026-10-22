@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-37 (after its probe), CF-31 (after V49).
+Build order: CF-31 (after V49).
 
 ## E10 Community transport
 
@@ -14,11 +14,4 @@ Build order: CF-37 (after its probe), CF-31 (after V49).
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 
 ## E11 Ease of use
-
-### CF-37 Right-click menu on a character or person
-- Goal: whisper, invite or copy a character's name without typing a first-and-last name.
-- Right-click a character (in the tree and on the person card) opens a Blizzard-style context menu: **Whisper** (opens the chat input with `/w <name> `), **Invite to group** (as CF-27's invite: by name, else Battle.net), **Copy name** (a small box with the name selected, so Ctrl+C copies it; WoW has no clipboard API). Your own characters: only Copy name.
-- Decided: Blizzard's menu (`MenuUtil`), probed first (new FriendProbe check, V-question in VERIFY.md): does `MenuUtil.CreateContextMenu` exist and work from an AceGUI tree row, and which call opens a whisper (`ChatFrameUtil.SendTell` / `ChatFrame_SendTell`). If the menu does not work, a small own popup with the same three buttons.
-- Manual: each menu item on a friend's character; Invite on an offline character is disabled.
-- Decided after V57 run 1: also on a **person** (group) row: Whisper and Invite go to the character they are on now; offline: both disabled with "Offline" in the title, Copy name copies the last character seen. Your own row: Copy name only. The menu is raised above the main window (it draws below AceGUI windows otherwise). The copy box closes after Ctrl+C and when it loses focus.
 

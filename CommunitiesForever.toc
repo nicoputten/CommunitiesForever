@@ -47,6 +47,7 @@ src\adapters\QuestieData.lua
 src\adapters\GroupFinder.lua
 src\adapters\ChatLinks.lua
 src\adapters\Party.lua
+src\adapters\ContextMenu.lua
 src\adapters\Transport.lua
 
 src\services\FeedTracker.lua

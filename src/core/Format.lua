@@ -390,6 +390,45 @@ function Format.onlineList(view, max)
   return { entries = entries, more = #all - #entries }
 end
 
+--[[ CF-37: the right-click menu for a tree path (a person or a character), or nil when there is none (your
+own rows, the Unlinked header). { title, items = { { label, action = "whisper"|"invite", name, battleTag,
+enabled } } }. A person's items act on the character they are on now; offline, or a character that is not
+online: the items are disabled and the title says Offline. ]]
+Format.MENU_WHISPER, Format.MENU_INVITE = "Whisper", "Invite to group"
+
+local function menuItems(name, battleTag, enabled)
+  return {
+    { label = Format.MENU_WHISPER, action = "whisper", name = name, battleTag = battleTag, enabled = enabled },
+    { label = Format.MENU_INVITE, action = "invite", name = name, battleTag = battleTag, enabled = enabled },
+  }
+end
+
+function Format.contextMenu(view, path)
+  if type(path) ~= "string" then return nil end
+  local group, guid = Format.splitPath(path)
+  local person = group ~= Format.UNLINKED and findPerson(view, group) or nil
+  if person and person.isSelf then return nil end
+  if not guid then
+    if not person then return nil end
+    local current = person.online and person.currentChar or nil
+    local name = current and current.name
+    if not name then
+      return { title = tostring(person.displayName) .. " - Offline", items = menuItems(nil, person.battleTag, false) }
+    end
+    return { title = string.format("%s (on %s)", tostring(person.displayName), name),
+             items = menuItems(name, person.battleTag, true) }
+  end
+  local rows = person and person.chars or view.unlinked or {}
+  for _, row in ipairs(rows) do
+    if row.guid == guid then
+      local online = row.online == true
+      return { title = tostring(row.name) .. (online and "" or " - Offline"),
+               items = menuItems(row.name, person and person.battleTag, online) }
+    end
+  end
+  return nil
+end
+
 -- Login notification (CF-15): "Alice is online on Alice Example (Mage 11)".
 -- character = { name, className, level }; className and level are left out when unknown.
 function Format.loginNotice(displayName, character)
