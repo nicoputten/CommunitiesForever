@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -359,3 +359,11 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): parsing (words, profession + rank, ranges) and matching per field; no match.
 - Manual: `tailoring 150`, `mage 20-30`, `healer`, a zone name, a partial name; clearing the box shows everyone.
 - Built: `src/core/Filter.lua` (parse and match, pure); the box sits in the window's tab row (the content area holds one widget), shown on the Friends tab only, with the count next to it; filtering expands the matches and puts the groups back when cleared; the card still shows the whole person. Decided while building: role words match from their start, so "mage" does not find damage dealers. Rule 8: nothing stored or sent changes.
+
+### CF-37 Right-click menu on a character or person
+- Goal: whisper, invite or copy a character's name without typing a first-and-last name.
+- Right-click a character (in the tree and on the person card) opens a Blizzard-style context menu: **Whisper** (opens the chat input with `/w <name> `), **Invite to group** (as CF-27's invite: by name, else Battle.net), **Copy name** (a small box with the name selected, so Ctrl+C copies it; WoW has no clipboard API). Your own characters: only Copy name.
+- Decided: Blizzard's menu (`MenuUtil`), probed first (new FriendProbe check, V-question in VERIFY.md): does `MenuUtil.CreateContextMenu` exist and work from an AceGUI tree row, and which call opens a whisper (`ChatFrameUtil.SendTell` / `ChatFrame_SendTell`). If the menu does not work, a small own popup with the same three buttons.
+- Manual: each menu item on a friend's character; Invite on an offline character is disabled.
+- Decided after V57 run 1: also on a **person** (group) row: Whisper and Invite go to the character they are on now; offline: both disabled with "Offline" in the title, Copy name copies the last character seen. Your own row: Copy name only. The menu is raised above the main window (it draws below AceGUI windows otherwise). The copy box closes after Ctrl+C and when it loses focus.
+- Decided after V57 run 3: no Copy name (the copy box was clumsy; addons cannot use the clipboard), so the menu has Whisper and Invite to group only, and your own rows have no menu. The main window is strata `DIALOG`, one below Blizzard's menu. Built: `Format.contextMenu` (pure), `src/adapters/ContextMenu.lua` (menu, `ChatFrameUtil.SendTell`), right-click on tree rows and on the card's character list; Invite uses CF-27's `Party.invite` (by name, else Battle.net). Rule 8: nothing stored or sent changes.

@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Right-click menu:** right-click a person or character in the Friends tab to whisper them or invite them
+  to your group (no more typing first and last names).
 - **Search:** a search box in the Friends tab: names, classes, roles, professions and zones, with
   `tailoring 150` for a minimum rank and `20-30` for a level range.
 - **Update notice:** one chat line per session when a friend runs a newer release of CommunitiesForever.

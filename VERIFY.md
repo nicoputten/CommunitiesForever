@@ -20,10 +20,20 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V54 | Do `frame:EnableKeyboard`, `frame:SetPropagateKeyboardInput` and an `OnKeyDown` script work on an addon window outside combat, and does `Bindings.xml` with `header` and `category="ADDONS"` show the binding? (CF-32) | See the CF-32 steps: Esc closes the window without opening the game menu, walking keys still work with the window open, and the binding shows in Esc → Options → Keybindings. If anything errors, send the error text. | open |
 | V55 | Does the minimap button tooltip (LibDBIcon's `GameTooltip`) have `AddDoubleLine`? (CF-33; without it the names fall back to one line each) | See the CF-33 steps: names left, characters right-aligned. | open |
 | V56 | Does the grey placeholder in the Friends search box work: `CreateFontString`, `HookScript` (`OnEditFocusGained/Lost`, `OnTextChanged`) and `HasFocus` on AceGUI's edit box? (CF-36) | See the CF-36 steps: the hint shows when the box is empty and not focused, and hides while typing. If the box shows no hint at all, the guard skipped it. | open |
-| V57 | Right-click menu for CF-37, run 3 (runs 1-2 in API-FINDINGS: menu, clicks, copy and tree-row right-clicks work; the menu draws below the AceGUI window even when raised) | Copy the new `tools/FriendProbe` (CommunitiesForever loaded too), `/reload`, `/fp menu`. Two windows: **FP strata default** (left) and **FP strata DIALOG** (right). In **both**, right-click the **Person** row and the row with your name: in which window is the menu **above** the window? (Expected: only in the DIALOG one.) Also **Whisper**: the log says whether the chat input opened. **Copy name**: Ctrl+C makes the box disappear. `/reload` and send the `V57` lines and a screenshot. | open |
+| V58 | Are disabled items greyed out in Blizzard's context menu (`element:SetEnabled(false)` on `root:CreateButton`)? (CF-37) | See the CF-37 steps: right-click an offline friend. If Whisper and Invite are not greyed out (or clicking them still does something), say so. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-37 Right-click menu
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, right-click an online friend's **person** row | A menu above the window: "<name> (on <character>)", Whisper, Invite to group. | open |
+| **Whisper** | The chat input opens as a whisper to that character. | open |
+| **Invite to group** (you not in a group) | They get an invite (see V48 for which invite works); if none works: "Could not invite ...". | open |
+| Right-click one of their **character** rows, and a character in their card | The same menu for that character. | open |
+| An offline friend, or their offline alt | Title "... - Offline", Whisper and Invite greyed out (V58). | open |
+| Your own rows | No menu. | open |
 
 ### CF-36 Smart filter in the Friends tab
 | Step | Expected | Status |

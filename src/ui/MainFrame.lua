@@ -146,6 +146,7 @@ local function characterList(parent, groupValue, characters)
     entry:SetCallback("OnClick", function()
       tree:SelectByPath(groupValue, c.guid)
     end)
+    MainFrame.rightClickMenu(entry.frame, groupValue .. "" .. c.guid) -- CF-37
   end
 end
 
@@ -533,6 +534,35 @@ function renderActivity(messageText)
   scroll:DoLayout()
 end
 
+-- CF-37: what a menu item does.
+local function onMenuItem(item)
+  if item.action == "whisper" then
+    if not ns.ContextMenu.whisper(item.name) then addonRef:Print("Cannot open a whisper here.") end
+  elseif item.action == "invite" then
+    local online = item.battleTag and ns.Sync.online()[item.battleTag]
+    if not ns.Party.invite(item.name, online and online.gameAccountID) then
+      addonRef:Print("Could not invite " .. tostring(item.name) .. ".")
+    end
+  end
+end
+
+-- CF-37: right-clicking `target` opens the menu for a tree path (a string, or a function returning it when
+-- the frame is reused for other rows). Hooked once per frame; OnMouseUp also sees right-clicks on frames
+-- that only take left clicks. HookScript is verified on tree rows (V57).
+function MainFrame.rightClickMenu(target, path)
+  if not target or not target.HookScript then return end
+  target.cfMenuPath = path
+  if target.cfMenuHooked then return end
+  target.cfMenuHooked = true
+  target:HookScript("OnMouseUp", function(self, mouse)
+    if mouse ~= "RightButton" or not view then return end
+    local p = self.cfMenuPath
+    if type(p) == "function" then p = p() end
+    local model = ns.Format.contextMenu(view, p)
+    if model then ns.ContextMenu.open(self, model, onMenuItem) end
+  end)
+end
+
 local function createTree()
   tree = createWidget("TreeGroup")
   -- No hover tooltip on rows: it repeated the row text on top of the detail card.
@@ -546,6 +576,8 @@ local function createTree()
     tree.RefreshTree = function(widget, ...)
       widget.cfRefreshTree(widget, ...)
       for _, button in ipairs(widget.buttons or {}) do
+        -- CF-37: right-click menu. AceGUI reuses row buttons, so the hook reads the row's path when clicked.
+        MainFrame.rightClickMenu(button, function() return button.uniquevalue end)
         if button.level and button.level > 1 then
           button:SetNormalFontObject(GameFontHighlight)
           button:SetHighlightFontObject(GameFontHighlight)
@@ -629,6 +661,9 @@ local escapeReady -- CF-32: Esc handler set up (not possible in combat: retried 
 local function create()
   frame = createWidget("Frame")
   frame:SetTitle(ADDON_NAME)
+  -- CF-37: one strata below AceGUI's FULLSCREEN_DIALOG, so Blizzard's right-click menu (FULLSCREEN_DIALOG)
+  -- opens above the window (V57).
+  if frame.frame.SetFrameStrata then frame.frame:SetFrameStrata("DIALOG") end
   frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
   frame:SetLayout("Flow") -- tab bar row, then the content filling the rest
   -- Keep the widget for reuse: closing only hides it. CF-36: the filter starts empty next time.
