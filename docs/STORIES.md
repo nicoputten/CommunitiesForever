@@ -3,45 +3,56 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-27 (after V47 and V48), CF-28 (after V49 to V52), CF-02 (part 2: tag workflow, needs the `CF_API_TOKEN` secret).
-
-## E0 Foundation
-
-### CF-02 Release pipeline
-- Pushing a git tag `v*` runs the BigWigs packager and uploads to CurseForge (Forever flavor) using the `CF_API_TOKEN` secret. CurseForge project ID in the TOC (`## X-Curse-Project-ID`).
-- Part 2 (built 2026-10-19, `.github/workflows/release.yml`): a tag `v*` runs lint and tests, then `BigWigsMods/packager@v2` with the `CF_API_TOKEN` secret (an **author** API token from https://authors.curseforge.com/#/settings/api-tokens, not a key from console.curseforge.com). The packager detects interface 16001 as the Forever game type. Release type from the tag: `v1.0.0` release, `v1.0.0-beta1` beta, `v1.0.0-alpha1` alpha. The workflow fails when the secret is missing, so a release never silently skips the upload. Gitflow: merge `develop` into `main`, then tag on `main`.
-- Untagged pushes produce no release.
-- Done in part 1 (PR #21, merged without the token): project ID 1752013 in the TOC, zip with forward-slash paths, campfire logo in `docs/logo/`, and the released files contain no personal info. Author `Vestras` (TOC and LICENSE), generic examples in `src` comments, hand-written `CHANGELOG.md` (`manual-changelog` in `.pkgmeta`) instead of a changelog built from commit messages. `tests/spec/Release_spec.lua` fails on banned names in the released files. The repo stays private; its history is unchanged.
-- Manual: install via the CurseForge app; publishing a new tag delivers an update.
-- The package contains only the addon: `.pkgmeta` ignores tests, tools, docs, `VERIFY.md`, `CLAUDE.md` and the CI config. Check: unzip the built package and list its files.
-
-## E9 Playing together
-
-### CF-27 "Who's up for it?" group ask
-- Goal: get a group together now for a dungeon, with one click, among friends who run the addon.
-- Ask: from a dungeon in the Dungeons tab (button **Ask who's up for it**) or `/cf ask <dungeon>`. Sent over the existing Battle.net addon channel to friends online in Forever who run the addon and have **any** character in the dungeon's level range (decided: also on an alt; the message says which of their characters fit).
-- Receiving: a sound and one chat line (decided: no popup): `Vestras asks: The Deadmines now? (17-26)`, `You could come on: <character> <level>`, with clickable `[Join] [Later] [No]` (an addon chat link; V47).
-- Answers come back to the asker and show live under the dungeon (`Ben: joining`, `Cid: later`, `Dee: no`), and as a chat line for Join.
-- Getting into the party: decided after the probe (V48), one of: the joiner's click requests an invite from the asker (`C_PartyInfo.RequestInviteFromUnit`, Blizzard's accept popup for the asker); or the asker gets an `[Invite Ben]` chat link whose click invites (`C_PartyInfo.InviteUnit` by name, or `BNInviteFriend` by game account). Fully automatic inviting is not expected to be allowed.
-- Guard rails: an ask expires after 10 minutes; at most one ask per 3 minutes; a setting "Receive group asks" (on; off: no chat line and no sound).
-- Unit tests (pure core): who is eligible (any character in range, online in Forever, runs the addon, not yourself); expiry and throttle; answer states per person.
-- Manual (2 clients): ask for a dungeon both have characters for; the friend hears a sound and sees the chat line; Join gets them into your party (per V48); Later and No show for the asker.
-- Built before V47/V48 (decided): the Join click asks the asker for an invite (`RequestInviteFromUnit`, when it exists) and the asker also gets an `[Invite]` link (`InviteUnit` by name, else `BNInviteFriend`); the probe decides which stays. Links are hooked through EventRegistry "SetItemRef" and a SetItemRef hook (a click reported by both counts once). The ask button sits under the suggested group in the Dungeons tab (only for dungeons that fit your characters) and shows the answers there for 10 minutes; `/cf ask <dungeon>` asks by name, `/cf ask` shows the state.
+Build order: CF-32, CF-33, CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
 
 ## E10 Community transport
 
-### CF-28 Sync with the community, no Battle.net friendship needed
-- Goal: everything that works between Battle.net friends (records with professions, talents, quests and activity; login notices; level-ups; group asks) also works between community members who run the addon but are not each other's Battle.net friends.
-- Decided: **both transports**. Battle.net stays for friends (bigger messages, cross-faction, reliable online status); the community transport reaches every member running the addon. A record arriving both ways is merged as today (newest version wins).
-- Decided: **random account ID** instead of the BattleTag for people who are not your friends. Each account creates a random ID once (`self.accountId`, saved) and sends it with its record; the BattleTag is only sent to Battle.net friends. Characters group under the account ID; for friends the BattleTag stays the link to Battle.net presence. Data model: `people` keyed by account ID (records from before CF-28 are re-keyed when their owner's next record arrives).
-- Transport (decided after V49/V50): addon messages (`C_ChatInfo.SendAddonMessage`, prefix registered as today): a broadcast in the community channel if addons may send there (V49), else a whisper to each online member running the addon (whispers verified). Messages are at most 255 bytes (V50: exact limit and throttle), so records go in small chunks through a rate-limited queue (larger records take longer, a small community stays fine).
-- **Part 2**: the community transport below, and reliable delivery for **both** transports (also Battle.net, decided 2026-10-19). Built in two steps: **2a** reliable delivery and `/cf sync debug` (on Battle.net now, transport-neutral), **2b** the community transport on top. 2b decided while building: the account ID is made once without a version bump (friends learn it with the next record change); a community record counts as the owner's own only when the sending character already belongs to that person (or the person is new), else it is relayed; community peers count as online on HELLO and offline after BYE or a "No player named ..." line (V53); login notices and group asks reach community peers too.
-- Reliable delivery (decided): every part carries `<msgId>:<part>:<total>:` (as today). When a message stays incomplete for a few seconds after its last part, the receiver sends `MISS <msgId> <parts>`; the sender keeps what it sent for about a minute and resends only those parts (twice at most). No acknowledgement per message and no extra HELLOs (decided against). The transfer shows only in a debug trace: `/cf sync debug` prints `record from <name>: part 7/20`, missing parts and resends (like `/cf activity debug`).
-- **Part 1 (PR #30): merge per character** (decided, for both transports and relay): each character is compared on its own `updatedAt` and the newer copy stays, so a relayed or late record never replaces a character with older data. The owner's own record is the truth for its characters (it may lower a level: that corrects a wrong one); a relayed copy never lowers a level. Relayed timestamps (characters, removals, activity entries) more than 5 minutes ahead of server time are ignored, so a broken or modified client cannot make a copy win forever. A character the owner's own record no longer lists is removed and remembered with the time; a relayed copy that is not newer than that cannot bring it back. The activity feed merges per day and character; "Share my activity" off travels as `feed = false`.
-- Unit tests for the merge (part 1, done): older character copy ignored inside a newer record; newer copy taken; a relay never lowers a level, the owner may; future timestamps ignored; a dropped character not revived by an older relay copy.
-- Discovery: on login and on joining the community, a HELLO goes out on the community transport; members running the addon answer, so each client knows who to send to. A BYE on logout (best effort).
-- Trust: on the community transport a message is only accepted from a character that is a member of the selected community (the sender name maps to a member). A record the sender claims as its own must contain the sending character, so nobody can pose as someone else; a record about someone else is a relayed record and follows the relay rules (CF-20: newer version, at most 5 minutes ahead, a character in the community) and the part 1 merge rules. Your own record is never accepted from anyone.
-- Online status: Battle.net decides for friends (CF-15 fix); for others the community presence, corrected by HELLO/BYE (V52: how stale the community presence gets after a logout).
-- Cross-faction: whispers most likely do not cross factions (V51); members of the other faction are then reached through Battle.net (friends) or relay only.
-- Unit tests (pure core): account ID creation and re-keying; chunking at the community message size; accept rules (sender in community and in the record); online status from presence plus HELLO/BYE.
-- Manual (2 accounts that are **not** Battle.net friends, same community): both see each other's characters grouped with professions and talents; a level-up line arrives; a group ask (CF-27) reaches the other one.
+### CF-31 One broadcast in the community channel
+- Goal: the community transport (CF-28 part 2b) sends one message to the community channel instead of a whisper to each member running the addon, so traffic no longer grows with the number of members.
+- Depends on V49: can addons send addon messages in the community channel, and do they arrive at the other members (run 1: the send is accepted, but no copy comes back to the sender)? If V49 says no, this story is dropped and the whispers stay.
+- Keeps everything from CF-28: 255-byte parts, MISS and resend, the accept rules (the sender maps to a community member; a record claimed as own must contain the sending character).
+- Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
+
+## E11 Ease of use
+
+### CF-32 Keybinding and Esc closes the window
+- Goal: open and close the window without typing `/cf`.
+- A keybinding "Toggle CommunitiesForever" under its own header in Blizzard's keybinding menu (`Bindings.xml`), unbound by default.
+- Decided: hard rule 5 in CLAUDE.md gets `BINDING_HEADER_*` / `BINDING_NAME_*` next to `SLASH_*` (Bindings.xml needs them as globals).
+- Esc closes the window (and the setup wizard) through the frame's own key handler: no named global frame for `UISpecialFrames`. Esc still opens the game menu when no CommunitiesForever window is open, and still works for other frames and the chat input.
+- Manual: bind a key, it toggles the window; Esc closes it; Esc with the window closed opens the game menu; typing in the chat input is not affected.
+
+### CF-33 Minimap button tooltip: who is online
+- Goal: see at a glance who is online without opening the window.
+- Hovering the minimap button lists the people online now: display name, then their character with class color and level (e.g. `Bright  Vel Stormcaller 24`), Battle.net friends and community peers alike (`Sync.online()`), sorted by name. Nobody online: "Nobody online right now." At most 15 lines, then "+N more".
+- Below: "Left-click: open window", "Right-click: settings" (as today).
+- Unit tests (pure core): the lines from the online list (sorting, class/level missing, the cap).
+- Manual: with a friend online, the tooltip shows them on the right character; after they log out they disappear.
+
+### CF-34 "Uses the addon" mark
+- Goal: explain why some people show no professions, talents or quests: they don't run the addon.
+- In the Friends tab tree, people running the addon (a record received from them, own or relayed) get a small icon after their name; people known only from the community list get none. The icon's tooltip: "Runs CommunitiesForever" / on the person card a line "Does not run CommunitiesForever: only what the community list shows (class, level, zone)."
+- Unit tests (pure core): which people count as running the addon (own record, relayed record, none).
+- Manual: a friend with the addon has the mark; a community member without it has none and the explaining line.
+
+### CF-35 Newer version notice
+- Goal: during the betas, everyone notices when an update is out.
+- Each HELLO carries the sender's addon version (new field; older clients ignore it). When someone runs a newer **release** version than yours, one chat line per session: "A newer version of CommunitiesForever is available (v0.3.1). Update with the CurseForge app or WowUp."
+- Decided: only release versions are compared (`v1.2.3`, `v1.2.3-betaN`, `-alphaN`; `v0.3.0-beta1` < `v0.3.0-beta2` < `v0.3.0` < `v0.3.1`). Dev builds (`0.1.N` from `build.ps1`, `@project-version@`) never trigger the line and never get it. A version more than one major ahead or unparsable is ignored.
+- `docs/SYNC.md` documents the field.
+- Unit tests (pure core): version parsing and order, dev builds ignored, once per session.
+- Manual: two clients on different release builds: the older one gets the line once; `/reload` shows it once more at most.
+
+### CF-36 Smart filter in the Friends tab
+- Goal: find "who has Tailoring 150?" or "which mages are 20-30?" without clicking through everyone (instead of a separate profession overview: same data).
+- A search box above the tree with a grey placeholder while empty and unfocused: `e.g. tailoring 150, mage 20-30` (AceGUI has no placeholder: an own grey text on the edit box, hidden while it has text or focus).
+- Decided: each word must match something of a character: name, owner's display name, class, role (tank/healer/dps), profession or zone. A number right after a profession is a minimum rank (`tailoring 150`); `20-30` is a level range; a single number is an exact level. Case-insensitive, also on part of a word (`tail`).
+- The tree shows only people with at least one matching character, those characters only, expanded; the count shows ("3 of 12"). Empty box: everything as today. The text stays while the window is open, cleared on close.
+- Unit tests (pure core): parsing (words, profession + rank, ranges) and matching per field; no match.
+- Manual: `tailoring 150`, `mage 20-30`, `healer`, a zone name, a partial name; clearing the box shows everyone.
+
+### CF-37 Right-click menu on a character
+- Goal: whisper, invite or copy a character's name without typing a first-and-last name.
+- Right-click a character (in the tree and on the person card) opens a Blizzard-style context menu: **Whisper** (opens the chat input with `/w <name> `), **Invite to group** (as CF-27's invite: by name, else Battle.net), **Copy name** (a small box with the name selected, so Ctrl+C copies it; WoW has no clipboard API). Your own characters: only Copy name.
+- Decided: Blizzard's menu (`MenuUtil`), probed first (new FriendProbe check, V-question in VERIFY.md): does `MenuUtil.CreateContextMenu` exist and work from an AceGUI tree row, and which call opens a whisper (`ChatFrameUtil.SendTell` / `ChatFrame_SendTell`). If the menu does not work, a small own popup with the same three buttons.
+- Manual: each menu item on a friend's character; Invite on an offline character is disabled.
