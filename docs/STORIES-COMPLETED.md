@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -334,3 +334,10 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): the lines from the online list (sorting, class/level missing, the cap).
 - Manual: with a friend online, the tooltip shows them on the right character; after they log out they disappear.
 - Built: `Format.onlineList` (pure: other people online from the view model, sorted, capped at 15 with `more`) and the tooltip in `src/ui/Minimap.lua` (`AddDoubleLine` when present, V55). The old "N friend(s) online in Forever" line is replaced.
+
+### CF-34 "Uses the addon" mark
+- Goal: explain why some people show no professions, talents or quests: they don't run the addon.
+- In the Friends tab tree, people running the addon (a record received from them, own or relayed) get a small icon after their name; people known only from the community list get none. The icon's tooltip: "Runs CommunitiesForever" / on the person card a line "Does not run CommunitiesForever: only what the community list shows (class, level, zone)."
+- Unit tests (pure core): which people count as running the addon (own record, relayed record, none).
+- Manual: a friend with the addon has the mark; a community member without it has none and the explaining line.
+- Built: `usesAddon` in the Linker (yourself, or a record with a version, own or relayed); the tree shows the minimap button's icon after the name (not on your own row) and the card a line (`Format.USES_ADDON` / `NO_ADDON`). Decided while building: the explanation is on the card, since AceGUI tree rows have no per-row tooltip. Rule 8: nothing stored or sent changes (derived from records that already exist).

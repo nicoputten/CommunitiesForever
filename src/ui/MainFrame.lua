@@ -9,6 +9,8 @@ local REFRESH_DEBOUNCE = 0.2
 local TREE_WIDTH = 210
 local ONLINE_ICON = "Interface\\COMMON\\Indicator-Green"
 local OFFLINE_ICON = "Interface\\COMMON\\Indicator-Gray"
+-- CF-34: the minimap button's icon, small, after people who run the addon.
+local ADDON_MARK = "|TInterface\\Icons\\INV_Misc_GroupNeedMore:12:12|t"
 local BAR_TEXTURE = "Interface\\Buttons\\WHITE8X8"
 local MIN_BAR_WIDTH = 120
 local DOT_SIZE = 14
@@ -196,6 +198,10 @@ function renderDetail.person(parent, detail, groupValue, path)
   if detail.source then
     label(parent, GREY .. detail.source .. "|r", GameFontHighlightSmall)
   end
+  if detail.addon then
+    label(parent, GREY .. (detail.addon == ns.Format.USES_ADDON and (ADDON_MARK .. " ") or "") .. detail.addon .. "|r",
+      GameFontHighlightSmall)
+  end
   spacer(parent)
   local status = detail.status
   if detail.current and detail.online then
@@ -367,7 +373,9 @@ local function aceTree(nodes)
     end
     result[#result + 1] = {
       value = node.value,
-      text = string.format("%s  %s%d|r", node.text, GREY, node.count or #node.children), -- character count
+      -- Character count; CF-34: the addon's icon after people running it (not on your own row).
+      text = string.format("%s%s  %s%d|r", node.text,
+        (node.usesAddon and not node.isSelf) and (" " .. ADDON_MARK) or "", GREY, node.count or #node.children),
       icon = not node.unlinked and (node.online and ONLINE_ICON or OFFLINE_ICON) or nil,
       children = children,
     }

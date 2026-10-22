@@ -23,6 +23,13 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-34 "Uses the addon" mark
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Friends tab, a friend who runs the addon | A small icon (the minimap button's) after their name in the list; on their card "Runs CommunitiesForever." with the icon. | open |
+| A community member or friend without the addon | No icon; their card says "Does not run CommunitiesForever: only what the community list shows (class, level, zone)." | open |
+| Your own row and card | No icon, no line. | open |
+
 ### CF-33 Minimap button tooltip: who is online
 | Step | Expected | Status |
 |---|---|---|

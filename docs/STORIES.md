@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
+Build order: CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
 
 ## E10 Community transport
 
@@ -14,12 +14,6 @@ Build order: CF-34, CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 
 ## E11 Ease of use
-
-### CF-34 "Uses the addon" mark
-- Goal: explain why some people show no professions, talents or quests: they don't run the addon.
-- In the Friends tab tree, people running the addon (a record received from them, own or relayed) get a small icon after their name; people known only from the community list get none. The icon's tooltip: "Runs CommunitiesForever" / on the person card a line "Does not run CommunitiesForever: only what the community list shows (class, level, zone)."
-- Unit tests (pure core): which people count as running the addon (own record, relayed record, none).
-- Manual: a friend with the addon has the mark; a community member without it has none and the explaining line.
 
 ### CF-35 Newer version notice
 - Goal: during the betas, everyone notices when an update is out.
