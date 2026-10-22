@@ -5,6 +5,10 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Keybinding:** "Open or close the window" in Blizzard's keybinding menu (unbound by default).
+- **Esc** closes the window and the setup.
+
 ## v0.3.0-beta1 (2026-10-21)
 - Also on **Wago Addons**, so WowUp can install and update it.
 - **No community, no noise:** without a community on your account the addon stays quiet (no setup, no

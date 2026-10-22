@@ -1,0 +1,6 @@
+<Bindings>
+	<!-- CF-32: shown under "CommunitiesForever" in Blizzard's keybinding menu (names: BINDING_* in src/Core.lua). -->
+	<Binding name="COMMUNITIESFOREVER_TOGGLE" header="COMMUNITIESFOREVER" category="ADDONS">
+		CommunitiesForever:ToggleWindow()
+	</Binding>
+</Bindings>
