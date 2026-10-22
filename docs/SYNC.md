@@ -83,6 +83,7 @@ people whose account ID is unknown are simply not mentioned there.
 | `bt` | Sender's key (BattleTag over Battle.net, `aid:` key over the community) |
 | `ver` | Version of the sender's own record |
 | `known` | `{ key = version }` of records the sender holds and may relay: people with a character in the sender's selected community |
+| `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
 
 The receiver compares: `ver` newer than stored → `REQ` for the sender's own record. A `known` entry newer
 than stored → `REQ` for that record (relay). Over the community, a HELLO from an unknown member is also

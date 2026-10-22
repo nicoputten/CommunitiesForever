@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
+Build order: CF-36, CF-37 (after its probe), CF-31 (after V49).
 
 ## E10 Community transport
 
@@ -14,14 +14,6 @@ Build order: CF-35, CF-36, CF-37 (after its probe), CF-31 (after V49).
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 
 ## E11 Ease of use
-
-### CF-35 Newer version notice
-- Goal: during the betas, everyone notices when an update is out.
-- Each HELLO carries the sender's addon version (new field; older clients ignore it). When someone runs a newer **release** version than yours, one chat line per session: "A newer version of CommunitiesForever is available (v0.3.1). Update with the CurseForge app or WowUp."
-- Decided: only release versions are compared (`v1.2.3`, `v1.2.3-betaN`, `-alphaN`; `v0.3.0-beta1` < `v0.3.0-beta2` < `v0.3.0` < `v0.3.1`). Dev builds (`0.1.N` from `build.ps1`, `@project-version@`) never trigger the line and never get it. A version more than one major ahead or unparsable is ignored.
-- `docs/SYNC.md` documents the field.
-- Unit tests (pure core): version parsing and order, dev builds ignored, once per session.
-- Manual: two clients on different release builds: the older one gets the line once; `/reload` shows it once more at most.
 
 ### CF-36 Smart filter in the Friends tab
 - Goal: find "who has Tailoring 150?" or "which mages are 20-30?" without clicking through everyone (instead of a separate profession overview: same data).

@@ -11,6 +11,7 @@
 embeds.xml
 
 src\core\Store.lua
+src\core\Version.lua
 src\core\Feed.lua
 src\core\Runs.lua
 src\core\Merge.lua
