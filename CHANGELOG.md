@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Search:** a search box in the Friends tab: names, classes, roles, professions and zones, with
+  `tailoring 150` for a minimum rank and `20-30` for a level range.
 - **Update notice:** one chat line per session when a friend runs a newer release of CommunitiesForever.
 - **Who runs the addon:** a small icon after people who run CommunitiesForever; the card of someone who
   does not explains why their professions, talents and quests are missing.

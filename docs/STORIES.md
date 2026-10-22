@@ -3,7 +3,7 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-36, CF-37 (after its probe), CF-31 (after V49).
+Build order: CF-37 (after its probe), CF-31 (after V49).
 
 ## E10 Community transport
 
@@ -14,14 +14,6 @@ Build order: CF-36, CF-37 (after its probe), CF-31 (after V49).
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 
 ## E11 Ease of use
-
-### CF-36 Smart filter in the Friends tab
-- Goal: find "who has Tailoring 150?" or "which mages are 20-30?" without clicking through everyone (instead of a separate profession overview: same data).
-- A search box above the tree with a grey placeholder while empty and unfocused: `e.g. tailoring 150, mage 20-30` (AceGUI has no placeholder: an own grey text on the edit box, hidden while it has text or focus).
-- Decided: each word must match something of a character: name, owner's display name, class, role (tank/healer/dps), profession or zone. A number right after a profession is a minimum rank (`tailoring 150`); `20-30` is a level range; a single number is an exact level. Case-insensitive, also on part of a word (`tail`).
-- The tree shows only people with at least one matching character, those characters only, expanded; the count shows ("3 of 12"). Empty box: everything as today. The text stays while the window is open, cleared on close.
-- Unit tests (pure core): parsing (words, profession + rank, ranges) and matching per field; no match.
-- Manual: `tailoring 150`, `mage 20-30`, `healer`, a zone name, a partial name; clearing the box shows everyone.
 
 ### CF-37 Right-click menu on a character
 - Goal: whisper, invite or copy a character's name without typing a first-and-last name.

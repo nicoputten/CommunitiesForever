@@ -31,6 +31,10 @@ local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTa
 local renderActivity -- CF-22, defined below
 local view -- last view model, used by the selection callback
 local showAllQuests = {} -- CF-19: tree path -> true when "Show all" is on (until /reload)
+-- CF-36: the smart filter of the Friends tab. Its text lasts while the window is open; savedGroups keeps the
+-- tree's expanded groups from before filtering (filtering expands everything) to put back when cleared.
+local filterText, filterBox, filterCount, savedGroups = "", nil, nil, nil
+local FILTER_HINT = "e.g. tailoring 150, mage 20-30"
 
 local function createWidget(widgetType)
   return LibStub("AceGUI-3.0"):Create(widgetType)
@@ -410,13 +414,25 @@ function MainFrame.render()
     return
   end
 
-  local nodes = ns.Format.tree(view)
-  tree:SetTree(aceTree(nodes))
-
-  -- Keep the selection while it still exists, else select the first person.
+  -- CF-36: the smart filter (tree and selection; the card still shows the whole person).
+  local terms = ns.Filter.parse(filterText)
+  local shownView, shown, total = ns.Filter.apply(view, terms)
+  local nodes = ns.Format.tree(shownView)
   local status = settings().tree
+  if #terms > 0 then
+    status.groups = status.groups or {}
+    for _, node in ipairs(nodes) do status.groups[node.value] = true end -- matches show expanded
+  end
+  if filterCount then filterCount:SetText(#terms > 0 and string.format("%s%d of %d|r", GREY, shown, total) or "") end
+  tree:SetTree(aceTree(nodes))
+  if #terms > 0 and #nodes == 0 then
+    showDetail(nil, string.format("No character matches \"%s\".", filterText))
+    return
+  end
+
+  -- Keep the selection while it still exists (and passes the filter), else select the first person.
   local selected = status.selected
-  if not selected or ns.Format.detail(view, selected, GetServerTime()).kind == "message" then
+  if not selected or ns.Format.detail(shownView, selected, GetServerTime()).kind == "message" then
     selected = nodes[1] and nodes[1].value
   end
   if selected then
@@ -549,6 +565,61 @@ local function createTree()
   content:AddChild(tree)
 end
 
+-- CF-36: a grey hint inside an empty edit box, gone while it has focus or text. AceGUI's EditBox has none.
+-- CreateFontString, HookScript, HasFocus and SetShown on the Blizzard edit box are guarded (V56).
+local function addPlaceholder(box, text)
+  local edit = box.editbox
+  if not (edit and edit.CreateFontString and edit.HookScript and edit.HasFocus) then return end
+  local hint = edit:CreateFontString(nil, "ARTWORK", "GameFontDisable")
+  hint:SetPoint("LEFT", edit, "LEFT", 2, 0)
+  hint:SetText(text)
+  local function update()
+    local show = (edit:GetText() or "") == "" and not edit:HasFocus()
+    if show then hint:Show() else hint:Hide() end
+  end
+  for _, script in ipairs({ "OnEditFocusGained", "OnEditFocusLost", "OnTextChanged" }) do
+    edit:HookScript(script, update)
+  end
+  update()
+end
+
+-- CF-36: the search box and its count ("3 of 12"), in the tab row; shown on the Friends tab only.
+function MainFrame.createFilter(parent)
+  filterBox = createWidget("EditBox")
+  filterBox:SetWidth(220)
+  filterBox:SetLabel("")
+  if filterBox.DisableButton then filterBox:DisableButton(true) end
+  filterBox:SetCallback("OnTextChanged", function(_, _, text) MainFrame.setFilter(text, true) end)
+  parent:AddChild(filterBox)
+  addPlaceholder(filterBox, FILTER_HINT)
+  filterCount = createWidget("Label")
+  filterCount:SetWidth(90)
+  filterCount:SetText("")
+  parent:AddChild(filterCount)
+end
+
+-- Sets the filter text and redraws. typed: it came from the box (no need to set its text).
+function MainFrame.setFilter(text, typed)
+  text = text or ""
+  if text == filterText then return end
+  local wasFiltering = filterText:match("%S") ~= nil
+  filterText = text
+  if filterBox and not typed then filterBox:SetText(text) end
+  local filtering = filterText:match("%S") ~= nil
+  local status = settings().tree
+  if filtering and not wasFiltering then
+    savedGroups = {}
+    for k, v in pairs(status.groups or {}) do savedGroups[k] = v end
+  elseif wasFiltering and not filtering and savedGroups then
+    status.groups, savedGroups = savedGroups, nil
+  end
+  if frame and activeTab == "friends" and frame.frame:IsShown() then MainFrame.render() end
+end
+
+function MainFrame.filterText()
+  return filterText
+end
+
 local escapeReady -- CF-32: Esc handler set up (not possible in combat: retried on the next show)
 
 local function create()
@@ -556,7 +627,8 @@ local function create()
   frame:SetTitle(ADDON_NAME)
   frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
   frame:SetLayout("Flow") -- tab bar row, then the content filling the rest
-  frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
+  -- Keep the widget for reuse: closing only hides it. CF-36: the filter starts empty next time.
+  frame:SetCallback("OnClose", function() MainFrame.setFilter("") end)
   -- No status bar: hide its background and text (the Close button is separate and stays).
   if frame.statustext and frame.statustext:GetParent() then
     frame.statustext:GetParent():Hide()
@@ -582,6 +654,7 @@ local function create()
     tabBar:AddChild(link)
     tabLinks[tab.value] = link
   end
+  MainFrame.createFilter(tabBar)
 
   content = createWidget("SimpleGroup")
   content:SetFullWidth(true)
@@ -599,6 +672,12 @@ function MainFrame.updateTabs()
     local text = tab.text
     if tab.value == "dungeons" and planned > 0 then text = string.format("%s (%d)", text, planned) end
     tabLinks[tab.value]:SetText((tab.value == activeTab and GOLD or GREY) .. text .. "|r")
+  end
+  -- CF-36: the search box belongs to the Friends tab.
+  for _, widget in ipairs({ filterBox, filterCount }) do
+    if widget and widget.frame and widget.frame.Show then
+      if activeTab == "friends" then widget.frame:Show() else widget.frame:Hide() end
+    end
   end
 end
 
@@ -651,6 +730,7 @@ end
 function MainFrame.start(addon)
   addonRef = addon
   frame, content, tree, view = nil, nil, nil, nil
+  filterText, filterBox, filterCount, savedGroups = "", nil, nil, nil
   escapeReady = false
   tabLinks = {}
   activeTab, expandedFeed = "friends", {}

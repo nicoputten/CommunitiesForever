@@ -19,9 +19,21 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
 | V54 | Do `frame:EnableKeyboard`, `frame:SetPropagateKeyboardInput` and an `OnKeyDown` script work on an addon window outside combat, and does `Bindings.xml` with `header` and `category="ADDONS"` show the binding? (CF-32) | See the CF-32 steps: Esc closes the window without opening the game menu, walking keys still work with the window open, and the binding shows in Esc → Options → Keybindings. If anything errors, send the error text. | open |
 | V55 | Does the minimap button tooltip (LibDBIcon's `GameTooltip`) have `AddDoubleLine`? (CF-33; without it the names fall back to one line each) | See the CF-33 steps: names left, characters right-aligned. | open |
+| V56 | Does the grey placeholder in the Friends search box work: `CreateFontString`, `HookScript` (`OnEditFocusGained/Lost`, `OnTextChanged`) and `HasFocus` on AceGUI's edit box? (CF-36) | See the CF-36 steps: the hint shows when the box is empty and not focused, and hides while typing. If the box shows no hint at all, the guard skipped it. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-36 Smart filter in the Friends tab
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Friends tab | Right of the tabs a search box with the grey hint "e.g. tailoring 150, mage 20-30" (V56). Not on the Activity and Dungeons tabs. | open |
+| Click in the box | The hint disappears; typing works (keys do not move the character). | open |
+| `tailoring 150` (or a profession someone has) | Only people with a character at that rank, only those characters, expanded; "N of M" next to the box. | open |
+| `mage 20-30`, `healer`, a zone name, part of a name | Each narrows the list as expected. | open |
+| A word nobody matches | "No character matches ..." in the card area. | open |
+| Clear the box | Everyone again, with groups expanded or collapsed as before. | open |
+| Close the window and open it again | The box is empty. | open |
 
 ### CF-35 Newer version notice
 Needs two clients on different **release** builds (from CurseForge or WowUp; a `build.ps1` dev build never shows the line).

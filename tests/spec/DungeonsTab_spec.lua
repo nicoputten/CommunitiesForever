@@ -86,8 +86,8 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_falsy(all:find("Planned", 1, true)) -- no calendar event
     find("EditBox", "The Deadmines") -- the title to copy: just the dungeon name
     local edits = 0
-    walk(window(), function(w) if w.type == "EditBox" then edits = edits + 1 end end)
-    assert.are.equal(1, edits) -- no group field (CF-24 feedback)
+    walk(dungeonTree(), function(w) if w.type == "EditBox" then edits = edits + 1 end end)
+    assert.are.equal(1, edits) -- no group field (CF-24 feedback); the Friends search box is not in this tab
   end)
 
   it("shows your other characters in range on one line under yours", function()

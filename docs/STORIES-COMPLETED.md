@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -350,3 +350,12 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): version parsing and order, dev builds ignored, once per session.
 - Manual: two clients on different release builds: the older one gets the line once; `/reload` shows it once more at most.
 - Built: `src/core/Version.lua` (release tags only, alpha < beta < release, more than one major ahead ignored); HELLO carries `av` (the TOC version, `addon.version`); `Sync` prints the line once per session after the sender passed the HELLO checks. Rule 8: `av` is a new optional field: older clients ignore it, a HELLO without it gives no line. Tests: `Version_spec`, `VersionNotice_spec` (end-to-end harness, also over the community).
+
+### CF-36 Smart filter in the Friends tab
+- Goal: find "who has Tailoring 150?" or "which mages are 20-30?" without clicking through everyone (instead of a separate profession overview: same data).
+- A search box above the tree with a grey placeholder while empty and unfocused: `e.g. tailoring 150, mage 20-30` (AceGUI has no placeholder: an own grey text on the edit box, hidden while it has text or focus).
+- Decided: each word must match something of a character: name, owner's display name, class, role (tank/healer/dps), profession or zone. A number right after a profession is a minimum rank (`tailoring 150`); `20-30` is a level range; a single number is an exact level. Case-insensitive, also on part of a word (`tail`).
+- The tree shows only people with at least one matching character, those characters only, expanded; the count shows ("3 of 12"). Empty box: everything as today. The text stays while the window is open, cleared on close.
+- Unit tests (pure core): parsing (words, profession + rank, ranges) and matching per field; no match.
+- Manual: `tailoring 150`, `mage 20-30`, `healer`, a zone name, a partial name; clearing the box shows everyone.
+- Built: `src/core/Filter.lua` (parse and match, pure); the box sits in the window's tab row (the content area holds one widget), shown on the Friends tab only, with the count next to it; filtering expands the matches and puts the groups back when cleared; the card still shows the whole person. Decided while building: role words match from their start, so "mage" does not find damage dealers. Rule 8: nothing stored or sent changes.
