@@ -44,4 +44,34 @@ describe("Identity (CF-28)", function()
     assert.are.equal("aid:dddddddddddd", Identity.personOfGuid(people, "G1"))
     assert.is_nil(Identity.personOfGuid(people, "G9"))
   end)
+
+  describe("bindAccountId (a HELLO from a known person's character)", function()
+    it("learns the account ID of a BattleTag person without one", function()
+      local people = { ["Ann#1"] = { chars = { G1 = {} } } }
+      assert.is_true(Identity.bindAccountId(people, "Ann#1", "aid:bbbbbbbbbbbb"))
+      assert.are.equal("bbbbbbbbbbbb", people["Ann#1"].aid)
+      assert.are.equal("Ann#1", (Identity.fromWire(people, OWN, "aid:bbbbbbbbbbbb")))
+    end)
+
+    it("never overwrites a known account ID", function()
+      local people = { ["Ann#1"] = { aid = "cccccccccccc" } }
+      assert.is_false(Identity.bindAccountId(people, "Ann#1", "aid:bbbbbbbbbbbb"))
+      assert.are.equal("cccccccccccc", people["Ann#1"].aid)
+    end)
+
+    it("never takes an account ID another person already has", function()
+      local people = { ["Ann#1"] = {}, ["Ben#2"] = { aid = "bbbbbbbbbbbb" } }
+      assert.is_false(Identity.bindAccountId(people, "Ann#1", "aid:bbbbbbbbbbbb"))
+      assert.is_nil(people["Ann#1"].aid)
+    end)
+
+    it("ignores unknown senders, aid-keyed people and keys that are no account ID", function()
+      local people = { ["Ann#1"] = {}, ["aid:dddddddddddd"] = {} }
+      assert.is_false(Identity.bindAccountId(people, "member:G9", "aid:bbbbbbbbbbbb"))
+      assert.is_false(Identity.bindAccountId(people, "aid:dddddddddddd", "aid:bbbbbbbbbbbb"))
+      assert.is_false(Identity.bindAccountId(people, "Ann#1", "Ann#1"))
+      assert.is_false(Identity.bindAccountId(people, "Ann#1", "aid:not-an-id"))
+      assert.is_nil(people["Ann#1"].aid)
+    end)
+  end)
 end)

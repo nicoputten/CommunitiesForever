@@ -80,6 +80,7 @@ Needs a second account in the community, running this build, that is **not** you
 | They log out | They show offline within seconds (BYE), also if the community list still says online. No "No player named ..." line (V53). | open |
 | They ask "who's up for it?" (CF-27) for a dungeon you fit | You get the chat line with [Join] [Later] [No]; your answer reaches them. | open |
 | Later you become Battle.net friends | They show once (no duplicate person): the community copy merges into the friend. | open |
+| (Needs a third account.) You know someone only through a friend's relay (`Updated ... via <friend>` on their card), then they come online in the community (not your Battle.net friend) | Within ~10 s their card no longer says `via`: their own record arrived over the community. | open |
 
 ### CF-28 part 2a: reliable delivery
 Needs a friend running this build online in Forever. A lost part cannot be forced in game; these steps check that nothing broke and that the trace shows the parts.
