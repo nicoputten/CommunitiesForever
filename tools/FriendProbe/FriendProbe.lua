@@ -364,21 +364,39 @@ end
 
 local menuWindow, copyBox
 
--- The name in a box, selected, so Ctrl+C copies it (WoW has no clipboard API).
+-- The name in a box, selected, so Ctrl+C copies it (WoW has no clipboard API; run 1: copying works).
+-- Run 2: the box closes by itself after Ctrl+C and when it loses focus (a click elsewhere).
 local function ShowCopy(name)
   if not copyBox then
     copyBox = CreateFrame("EditBox", nil, UIParent, "InputBoxTemplate")
     copyBox:SetSize(220, 24)
     copyBox:SetPoint("CENTER", 0, -120)
     copyBox:SetAutoFocus(false)
-    copyBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() self:Hide() end)
-    copyBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() self:Hide() end)
+    copyBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    copyBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    copyBox:SetScript("OnEditFocusLost", function(self)
+      log("V57 copy box lost focus: hidden")
+      self:Hide()
+    end)
+    copyBox:SetScript("OnKeyDown", function(self, key)
+      if key == "C" and IsControlKeyDown and IsControlKeyDown() then
+        log("V57 copy box saw Ctrl+C: hides now")
+        C_Timer.After(0, function() self:ClearFocus() end)
+      end
+    end)
   end
   copyBox:SetText(name)
   copyBox:Show()
   copyBox:SetFocus()
   copyBox:HighlightText()
-  log("V57 copy box shown with", name, "- press Ctrl+C, Esc, then paste in chat: does the name appear?")
+  log("V57 copy box shown with", name, "- press Ctrl+C: it should disappear; paste in chat to check")
+end
+
+-- The chat input that is open now, if any (functions guarded: which one exists is part of the answer).
+local function ActiveChatInput()
+  if ChatFrameUtil and ChatFrameUtil.GetActiveWindow then return ChatFrameUtil.GetActiveWindow(), "ChatFrameUtil" end
+  if ChatEdit_GetActiveWindow then return ChatEdit_GetActiveWindow(), "ChatEdit" end
+  return nil, "none"
 end
 
 local function Whisper(name)
@@ -389,24 +407,71 @@ local function Whisper(name)
   else
     log("V57 no SendTell function")
   end
-  log("V57 whisper: does the chat input open with /w " .. name .. " ?")
+  C_Timer.After(0.2, function()
+    local input, via = ActiveChatInput()
+    if not input then
+      log("V57 chat input after whisper: none open (via " .. via .. ")")
+      return
+    end
+    log("V57 chat input after whisper: shown", S(input:IsShown()), "chatType",
+      S(input.GetAttribute and input:GetAttribute("chatType")), "tellTarget",
+      S(input.GetAttribute and input:GetAttribute("tellTarget")), "text", S(input:GetText()), "via", via)
+  end)
 end
 
-local function OpenMenu(owner, name)
+-- Run 1: the menu draws below AceGUI windows. Raise it above them and log the strata.
+local function RaiseMenu(menu, above)
+  if type(menu) ~= "table" or not menu.GetFrameStrata then
+    log("V57 CreateContextMenu returned", type(menu), "- cannot raise it")
+    return
+  end
+  local before = menu:GetFrameStrata()
+  menu:SetFrameStrata("FULLSCREEN_DIALOG")
+  if above and above.GetFrameLevel and menu.SetFrameLevel then menu:SetFrameLevel(above:GetFrameLevel() + 50) end
+  log("V57 menu strata", S(before), "->", S(menu:GetFrameStrata()), "level", S(menu.GetFrameLevel and menu:GetFrameLevel()))
+end
+
+local treeFrame -- the AceGUI test window (its frame), so the menu can go above it
+
+local function OpenMenu(owner, name, title)
   if not (MenuUtil and MenuUtil.CreateContextMenu) then
     log("V57 MenuUtil.CreateContextMenu missing: CF-37 needs its own popup")
     return
   end
-  local ok, err = pcall(MenuUtil.CreateContextMenu, owner, function(_, root)
-    root:CreateTitle(name)
+  local ok, menu = pcall(MenuUtil.CreateContextMenu, owner, function(_, root)
+    root:CreateTitle(title or name)
     root:CreateButton("Whisper", function() log("V57 menu click: Whisper") Whisper(name) end)
     root:CreateButton("Copy name", function() log("V57 menu click: Copy name") ShowCopy(name) end)
     root:CreateButton("Invite (logs only)", function() log("V57 menu click: Invite") end)
   end)
-  log("V57 CreateContextMenu", ok and "opened" or ("error " .. S(err)))
+  if not ok then
+    log("V57 CreateContextMenu error", S(menu))
+    return
+  end
+  log("V57 CreateContextMenu opened")
+  RaiseMenu(menu, treeFrame)
 end
 
--- A test window: a plain button, and (with CommunitiesForever's AceGUI) a tree row like the Friends list.
+-- AceGUI makes the tree's row buttons when it lays the tree out (run 1: none existed yet), and reuses them:
+-- hook every row button once, now and after each refresh.
+local function HookTreeRows(tree, name)
+  local hooked = 0
+  for _, row in ipairs(tree.buttons or {}) do
+    if row.HookScript and not row.fpHooked then
+      row.fpHooked = true
+      row:HookScript("OnMouseUp", function(self, mouse)
+        log("V57 tree row mouse up", mouse, "on", S(self.uniquevalue), "level", S(self.level))
+        if mouse == "RightButton" then
+          OpenMenu(self, name, self.level == 1 and "Person: Bob (playing " .. name .. ")" or nil)
+        end
+      end)
+      hooked = hooked + 1
+    end
+  end
+  if hooked > 0 then log("V57 tree rows hooked", hooked) end
+end
+
+-- A test window: a plain button, and (with CommunitiesForever's AceGUI) a tree like the Friends list.
 local function MenuTest()
   local name = GetUnitName("player", true)
   if menuWindow then menuWindow:Show() return end
@@ -434,22 +499,21 @@ local function MenuTest()
   frame:SetWidth(320)
   frame:SetHeight(220)
   frame:SetLayout("Fill")
+  treeFrame = frame.frame
+  log("V57 AceGUI window strata", S(treeFrame:GetFrameStrata()), "level", S(treeFrame:GetFrameLevel()))
   local tree = AceGUI:Create("TreeGroup")
+  if tree.EnableButtonTooltips then tree:EnableButtonTooltips(false) end -- as in the Friends list
   tree:SetTree({ { value = "p", text = "Person", children = { { value = "c", text = name } } } })
   tree:SetStatusTable({ groups = { p = true } })
-  tree:RefreshTree()
   frame:AddChild(tree)
-  local hooked = 0
-  for _, row in ipairs(tree.buttons or {}) do
-    if row.HookScript then
-      row:HookScript("OnMouseUp", function(self, mouse)
-        log("V57 tree row mouse up", mouse, "on", S(self.uniquevalue))
-        if mouse == "RightButton" then OpenMenu(self, name) end
-      end)
-      hooked = hooked + 1
-    end
+  local refresh = tree.RefreshTree
+  tree.RefreshTree = function(self, ...)
+    refresh(self, ...)
+    HookTreeRows(self, name)
   end
-  log("V57 tree rows hooked", hooked, "- right-click the", name, "row: does a menu open?")
+  tree:RefreshTree()
+  C_Timer.After(0.2, function() HookTreeRows(tree, name) end)
+  log("V57 right-click the Person row and the", name, "row: does the menu open, above this window?")
 end
 
 -- ===== Commands =====
