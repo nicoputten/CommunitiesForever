@@ -2,7 +2,7 @@
 -- Verified (API-FINDINGS V57): MenuUtil.CreateContextMenu with root:CreateTitle / root:CreateButton opens
 -- from a button or an AceGUI tree row and its callbacks arrive; it draws at FULLSCREEN_DIALOG, so the main
 -- window sits one strata lower (DIALOG). ChatFrameUtil.SendTell(name) opens the chat input as a whisper.
--- Disabling a button (element:SetEnabled) is unverified (VERIFY.md V58).
+-- Disabling a button (element:SetEnabled(false)) greys it out (V58).
 local _, ns = ...
 
 local ContextMenu = {}
