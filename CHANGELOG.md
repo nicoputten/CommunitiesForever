@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Update notice:** one chat line per session when a friend runs a newer release of CommunitiesForever.
 - **Who runs the addon:** a small icon after people who run CommunitiesForever; the card of someone who
   does not explains why their professions, talents and quests are missing.
 - **Keybinding:** "Open or close the window" in Blizzard's keybinding menu (unbound by default).

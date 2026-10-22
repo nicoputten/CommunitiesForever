@@ -23,6 +23,15 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-35 Newer version notice
+Needs two clients on different **release** builds (from CurseForge or WowUp; a `build.ps1` dev build never shows the line).
+
+| Step | Expected | Status |
+|---|---|---|
+| The one on the older release logs in while the other is online | One chat line: "A newer version of CommunitiesForever is available (v...). Update with the CurseForge app or WowUp." | open |
+| Stay online, let the other level up or `/cf sync` | No second line this session; after `/reload` at most once more. | open |
+| The one on the newer release | Never gets the line. | open |
+
 ### CF-34 "Uses the addon" mark
 | Step | Expected | Status |
 |---|---|---|

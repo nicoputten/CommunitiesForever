@@ -21,6 +21,7 @@ local function GetVersion()
 end
 
 function addon:OnInitialize()
+  self.version = GetVersion() -- CF-35: sent in HELLO, compared with friends' versions
   self.db = LibStub("AceDB-3.0"):New("CommunitiesForeverDB", ns.Store.defaults(), true)
   ns.Store.init(self.db.global)
   ns.Settings.register()

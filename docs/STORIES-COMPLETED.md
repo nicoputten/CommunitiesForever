@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -341,3 +341,12 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): which people count as running the addon (own record, relayed record, none).
 - Manual: a friend with the addon has the mark; a community member without it has none and the explaining line.
 - Built: `usesAddon` in the Linker (yourself, or a record with a version, own or relayed); the tree shows the minimap button's icon after the name (not on your own row) and the card a line (`Format.USES_ADDON` / `NO_ADDON`). Decided while building: the explanation is on the card, since AceGUI tree rows have no per-row tooltip. Rule 8: nothing stored or sent changes (derived from records that already exist).
+
+### CF-35 Newer version notice
+- Goal: during the betas, everyone notices when an update is out.
+- Each HELLO carries the sender's addon version (new field; older clients ignore it). When someone runs a newer **release** version than yours, one chat line per session: "A newer version of CommunitiesForever is available (v0.3.1). Update with the CurseForge app or WowUp."
+- Decided: only release versions are compared (`v1.2.3`, `v1.2.3-betaN`, `-alphaN`; `v0.3.0-beta1` < `v0.3.0-beta2` < `v0.3.0` < `v0.3.1`). Dev builds (`0.1.N` from `build.ps1`, `@project-version@`) never trigger the line and never get it. A version more than one major ahead or unparsable is ignored.
+- `docs/SYNC.md` documents the field.
+- Unit tests (pure core): version parsing and order, dev builds ignored, once per session.
+- Manual: two clients on different release builds: the older one gets the line once; `/reload` shows it once more at most.
+- Built: `src/core/Version.lua` (release tags only, alpha < beta < release, more than one major ahead ignored); HELLO carries `av` (the TOC version, `addon.version`); `Sync` prints the line once per session after the sender passed the HELLO checks. Rule 8: `av` is a new optional field: older clients ignore it, a HELLO without it gives no line. Tests: `Version_spec`, `VersionNotice_spec` (end-to-end harness, also over the community).

@@ -26,6 +26,9 @@ Sync.PEER_ONLINE = "CF_PEER_ONLINE"
 Sync.PEERS_CHANGED = "CF_PEERS_CHANGED"
 
 Sync.NEWER_VERSION_NOTICE = "A friend uses a newer CommunitiesForever version. Update to keep syncing with them."
+-- CF-35: a newer release seen in a HELLO, once per session.
+Sync.NEWER_RELEASE_NOTICE = "A newer version of CommunitiesForever is available (%s). Update with the CurseForge "
+  .. "app or WowUp."
 
 local HELLO_DEBOUNCE = 5
 local DEDUPE_SECONDS = 60
@@ -33,6 +36,7 @@ local IN_GAME = { [1] = true, [4] = true, [5] = true } -- community presence Onl
 
 local addonRef, helloDebounced
 local lastHello, lastReq, noticeShown
+local releaseNoticeShown -- CF-35: once per session
 local peers = {}   -- CF-28: community peers met by HELLO: name -> { guid, key, at }
 local offline = {} -- CF-28: guid -> true after a BYE or a failed whisper (until the next HELLO)
 
@@ -84,7 +88,8 @@ local function sendHello(target, force)
   local signature = helloSignature(own().version, known)
   if not force and recentlySent(lastHello, target, signature) then return end
   remember(lastHello, target, signature)
-  ns.Messenger.send(target, { t = "HELLO", bt = key, ver = own().version, known = known })
+  -- av (CF-35): our addon version; older clients ignore the field (rule 8).
+  ns.Messenger.send(target, { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version })
 end
 
 -- CF-28: community members online now who are not reached over Battle.net: { [name] = guid }.
@@ -175,6 +180,11 @@ function handlers.HELLO(message, senderKey, target, guid)
     sendHello(target, false) -- so they know us too (the dedupe stops ping-pong)
   elseif message.bt ~= senderKey then
     return
+  end
+  -- CF-35: they run a newer release than we do (dev builds never count, Version.isNewer).
+  if not releaseNoticeShown and ns.Version.isNewer(addonRef.version, message.av) then
+    releaseNoticeShown = true
+    addonRef:Print(string.format(Sync.NEWER_RELEASE_NOTICE, message.av))
   end
   local person = global().people[key]
   -- The owner's record also replaces a relayed copy with a higher version.
@@ -287,6 +297,7 @@ end
 function Sync.start(addon)
   addonRef = addon
   lastHello, lastReq, noticeShown, waitingForMembers, peers, offline = {}, {}, false, {}, {}, {}
+  releaseNoticeShown = false
   helloDebounced = ns.Timer.debounce(HELLO_DEBOUNCE, function() broadcastHello(false) end)
   ensureAccountId()
 

@@ -17,7 +17,8 @@ function net.new()
 end
 
 -- People in the network: def = { key, name, guid, battleTag, classFile, classID, level, gameAccountID,
--- friends = { other keys } }. Declared first, so friend lists and the community know everyone.
+-- friends = { other keys }, version (optional: the addon version they run) }. Declared first, so friend
+-- lists and the community know everyone.
 function Net:person(def)
   self.people = self.people or {}
   self.people[def.key] = def
@@ -71,6 +72,7 @@ function Net:login(key)
   p.guid, p.name, p.battleTag, p.classFile, p.level = def.guid, def.name, def.battleTag, def.classFile or "MAGE",
     def.level
   state.clubs = { { clubId = net.CLUB, name = "Test Friends", clubType = 1 } }
+  if def.version then state.metadata.Version = def.version end -- the TOC version this client runs
   local client = { key = key, state = state, online = true, sentBn = 0, sentWhispers = 0 }
   self.clients[key] = client
   self:refreshWorld(key)
