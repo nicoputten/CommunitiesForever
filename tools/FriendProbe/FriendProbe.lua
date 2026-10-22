@@ -419,20 +419,6 @@ local function Whisper(name)
   end)
 end
 
--- Run 1: the menu draws below AceGUI windows. Raise it above them and log the strata.
-local function RaiseMenu(menu, above)
-  if type(menu) ~= "table" or not menu.GetFrameStrata then
-    log("V57 CreateContextMenu returned", type(menu), "- cannot raise it")
-    return
-  end
-  local before = menu:GetFrameStrata()
-  menu:SetFrameStrata("FULLSCREEN_DIALOG")
-  if above and above.GetFrameLevel and menu.SetFrameLevel then menu:SetFrameLevel(above:GetFrameLevel() + 50) end
-  log("V57 menu strata", S(before), "->", S(menu:GetFrameStrata()), "level", S(menu.GetFrameLevel and menu:GetFrameLevel()))
-end
-
-local treeFrame -- the AceGUI test window (its frame), so the menu can go above it
-
 local function OpenMenu(owner, name, title)
   if not (MenuUtil and MenuUtil.CreateContextMenu) then
     log("V57 MenuUtil.CreateContextMenu missing: CF-37 needs its own popup")
@@ -449,7 +435,17 @@ local function OpenMenu(owner, name, title)
     return
   end
   log("V57 CreateContextMenu opened")
-  RaiseMenu(menu, treeFrame)
+  -- Run 2: raising the menu (level 150 over the window's 100) changed nothing on screen. Run 3 compares a
+  -- window one strata lower instead; only log where the menu is, now and once it is shown.
+  local function where(when)
+    if type(menu) == "table" and menu.GetFrameStrata then
+      log("V57 menu", when, "strata", S(menu:GetFrameStrata()), "level", S(menu.GetFrameLevel and menu:GetFrameLevel()))
+    else
+      log("V57 CreateContextMenu returned", type(menu))
+    end
+  end
+  where("now")
+  C_Timer.After(0.1, function() where("shown") end)
 end
 
 -- AceGUI makes the tree's row buttons when it lays the tree out (run 1: none existed yet), and reuses them:
@@ -494,26 +490,34 @@ local function MenuTest()
     log("V57 no AceGUI (load CommunitiesForever too) - tree row test skipped")
     return
   end
-  local frame = AceGUI:Create("Frame")
-  frame:SetTitle("FP tree row test")
-  frame:SetWidth(320)
-  frame:SetHeight(220)
-  frame:SetLayout("Fill")
-  treeFrame = frame.frame
-  log("V57 AceGUI window strata", S(treeFrame:GetFrameStrata()), "level", S(treeFrame:GetFrameLevel()))
-  local tree = AceGUI:Create("TreeGroup")
-  if tree.EnableButtonTooltips then tree:EnableButtonTooltips(false) end -- as in the Friends list
-  tree:SetTree({ { value = "p", text = "Person", children = { { value = "c", text = name } } } })
-  tree:SetStatusTable({ groups = { p = true } })
-  frame:AddChild(tree)
-  local refresh = tree.RefreshTree
-  tree.RefreshTree = function(self, ...)
-    refresh(self, ...)
-    HookTreeRows(self, name)
+  -- Run 3: the same tree twice. Left at AceGUI's strata (FULLSCREEN_DIALOG: run 2 showed the menu below it),
+  -- right one strata lower (DIALOG), as CF-37 would set the main window.
+  local function TreeWindow(title, strata, x)
+    local frame = AceGUI:Create("Frame")
+    frame:SetTitle(title)
+    frame:SetWidth(300)
+    frame:SetHeight(200)
+    frame:SetLayout("Fill")
+    frame.frame:ClearAllPoints()
+    frame.frame:SetPoint("CENTER", UIParent, "CENTER", x, -60)
+    if strata then frame.frame:SetFrameStrata(strata) end
+    log("V57 window", title, "strata", S(frame.frame:GetFrameStrata()), "level", S(frame.frame:GetFrameLevel()))
+    local tree = AceGUI:Create("TreeGroup")
+    if tree.EnableButtonTooltips then tree:EnableButtonTooltips(false) end -- as in the Friends list
+    tree:SetTree({ { value = "p", text = "Person", children = { { value = "c", text = name } } } })
+    tree:SetStatusTable({ groups = { p = true } })
+    frame:AddChild(tree)
+    local refresh = tree.RefreshTree
+    tree.RefreshTree = function(self, ...)
+      refresh(self, ...)
+      HookTreeRows(self, name)
+    end
+    tree:RefreshTree()
+    C_Timer.After(0.2, function() HookTreeRows(tree, name) end)
   end
-  tree:RefreshTree()
-  C_Timer.After(0.2, function() HookTreeRows(tree, name) end)
-  log("V57 right-click the Person row and the", name, "row: does the menu open, above this window?")
+  TreeWindow("FP strata default", nil, -170)
+  TreeWindow("FP strata DIALOG", "DIALOG", 170)
+  log("V57 in BOTH windows right-click the Person row and the", name, "row: is the menu above the window?")
 end
 
 -- ===== Commands =====
