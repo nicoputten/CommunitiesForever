@@ -32,7 +32,7 @@ describe("smart filter in the Friends tab (CF-36)", function()
     end
   end
 
-  local function searchBox() return widget("EditBox", function(w) return w.width == 220 end) end
+  local function searchBox() return widget("EditBox", function(w) return w.width == 180 end) end
   local function tree() return widget("TreeGroup") end
 
   local function people()
@@ -50,7 +50,7 @@ describe("smart filter in the Friends tab (CF-36)", function()
     assert.are.same({ "Ada#1001", "Bob#2002", "Cy#3003" }, people())
     type_("rogue")
     assert.are.same({ "Bob#2002" }, people())
-    assert.is_truthy(widget("Label", function(w) return w.width == 90 end).text:find("1 of 3", 1, true))
+    assert.is_truthy(widget("Label", function(w) return w.width == 120 end).text:find("1 of 3", 1, true))
     type_("20-25")
     assert.are.same({ "Ada#1001", "Bob#2002" }, people())
     type_("priest 30")
@@ -62,7 +62,26 @@ describe("smart filter in the Friends tab (CF-36)", function()
     assert.are.same({}, people())
     type_("")
     assert.are.same({ "Ada#1001", "Bob#2002", "Cy#3003" }, people())
-    assert.are.equal("", widget("Label", function(w) return w.width == 90 end).text)
+    assert.are.equal("", widget("Label", function(w) return w.width == 120 end).text)
+  end)
+
+  it("sits above the tree in the Friends tab and keeps its text across tab switches", function()
+    assert.is_true(tree().fullHeight) -- the tree fills the tab below the search row
+    type_("rogue")
+    world:with("A", function()
+      ns.MainFrame.selectTab("activity")
+      ns.MainFrame.selectTab("friends")
+    end)
+    local boxes = 0
+    for _, w in ipairs(state.guiWidgets) do
+      if w.type == "EditBox" and w.width == 180 and w.text == "rogue" then boxes = boxes + 1 end
+    end
+    assert.is_true(boxes >= 1, "the new search box shows the text")
+    local trees = {}
+    for _, w in ipairs(state.guiWidgets) do if w.type == "TreeGroup" then trees[#trees + 1] = w end end
+    local nodes = trees[#trees].tree
+    assert.are.equal(1, #nodes)
+    assert.are.equal("Bob#2002", nodes[1].value)
   end)
 
   it("expands matches, then puts the groups back and clears on close", function()
