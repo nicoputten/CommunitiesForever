@@ -57,6 +57,8 @@ local function colorName(name, classFile, classID)
   return string.format("|cff%02x%02x%02x%s|r", hex(color.r), hex(color.g), hex(color.b), tostring(name))
 end
 
+MainFrame.colorName = colorName -- CF-33: also used by the minimap tooltip
+
 -- Dungeon entrance icon for shared dungeon quests, or a text badge when the atlas is missing.
 local dungeonIconText
 local function dungeonIcon()

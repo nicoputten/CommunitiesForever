@@ -355,6 +355,32 @@ function Format.emptyState(view, state)
   return nil
 end
 
+-- CF-33: who is online, for the minimap button tooltip. Other people only (not yourself), sorted by display
+-- name, at most `max` entries. Returns { entries = { { displayName, name, classFile, classID, level }, ... },
+-- more = N } with N the people left out.
+Format.ONLINE_MAX = 15
+Format.NOBODY_ONLINE = "Nobody online right now."
+
+function Format.onlineList(view, max)
+  max = max or Format.ONLINE_MAX
+  local all = {}
+  for _, person in ipairs(view.people or {}) do
+    if person.online and not person.isSelf then
+      local char = person.currentChar or {}
+      all[#all + 1] = { displayName = tostring(person.displayName), name = char.name, classFile = char.classFile,
+                        classID = char.classID, level = char.level }
+    end
+  end
+  table.sort(all, function(a, b)
+    local x, y = a.displayName:lower(), b.displayName:lower()
+    if x ~= y then return x < y end
+    return tostring(a.name) < tostring(b.name)
+  end)
+  local entries = {}
+  for i = 1, math.min(#all, max) do entries[i] = all[i] end
+  return { entries = entries, more = #all - #entries }
+end
+
 -- Login notification (CF-15): "Alice is online on Alice Example (Mage 11)".
 -- character = { name, className, level }; className and level are left out when unknown.
 function Format.loginNotice(displayName, character)

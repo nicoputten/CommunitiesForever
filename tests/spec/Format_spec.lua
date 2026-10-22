@@ -250,6 +250,40 @@ describe("Format", function()
     end)
   end)
 
+  describe("onlineList (CF-33)", function()
+    local function onlinePerson(name, online, char, isSelf)
+      return { displayName = name, online = online, isSelf = isSelf, currentChar = char }
+    end
+
+    it("lists other people online, sorted by display name, with their current character", function()
+      local view = { people = {
+        onlinePerson("cid", true, { name = "Cid Char", classFile = "MAGE", level = 20 }),
+        onlinePerson("Ann", true, { name = "Ann Char", classFile = "PRIEST", classID = 5, level = 24 }),
+        onlinePerson("Me", true, { name = "My Char" }, true),
+        onlinePerson("Ben", false, { name = "Ben Char" }),
+      } }
+      local list = Format.onlineList(view)
+      assert.are.same({
+        { displayName = "Ann", name = "Ann Char", classFile = "PRIEST", classID = 5, level = 24 },
+        { displayName = "cid", name = "Cid Char", classFile = "MAGE", level = 20 },
+      }, list.entries)
+      assert.are.equal(0, list.more)
+    end)
+
+    it("keeps people whose character is not known, and caps the list", function()
+      local people = { onlinePerson("Solo", true, nil) }
+      for i = 1, 17 do people[#people + 1] = onlinePerson(string.format("P%02d", i), true, { name = "C" .. i }) end
+      local list = Format.onlineList({ people = people })
+      assert.are.equal(Format.ONLINE_MAX, #list.entries)
+      assert.are.equal(18 - Format.ONLINE_MAX, list.more)
+      assert.is_nil(Format.onlineList({ people = { onlinePerson("Solo", true, nil) } }).entries[1].name)
+    end)
+
+    it("is empty with nobody online", function()
+      assert.are.same({ entries = {}, more = 0 }, Format.onlineList({ people = {} }))
+    end)
+  end)
+
   describe("empty state and hint", function()
     it("asks to select a community", function()
       assert.are.equal("Select a community in settings (/cf settings).",

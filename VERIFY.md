@@ -18,9 +18,17 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V52 | How stale does community presence get after a logout? (CF-28: online status for non-friends; CF-15 bug) | A few minutes after a member logged out, `/fp start`: under V52 COMMUNITY PRESENCE, does that member still show `Online`? | open |
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
 | V54 | Do `frame:EnableKeyboard`, `frame:SetPropagateKeyboardInput` and an `OnKeyDown` script work on an addon window outside combat, and does `Bindings.xml` with `header` and `category="ADDONS"` show the binding? (CF-32) | See the CF-32 steps: Esc closes the window without opening the game menu, walking keys still work with the window open, and the binding shows in Esc → Options → Keybindings. If anything errors, send the error text. | open |
+| V55 | Does the minimap button tooltip (LibDBIcon's `GameTooltip`) have `AddDoubleLine`? (CF-33; without it the names fall back to one line each) | See the CF-33 steps: names left, characters right-aligned. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-33 Minimap button tooltip: who is online
+| Step | Expected | Status |
+|---|---|---|
+| Nobody else online, hover the minimap button | "CommunitiesForever", then "Nobody online right now.", then Left-click / Right-click. | open |
+| A friend (or community member with the addon) online, hover | One line per person: display name left, their character in class color with level right (V55), sorted by name. | open |
+| The friend switches character or logs out, hover again | The line shows the new character / the person is gone. | open |
 
 ### CF-32 Keybinding and Esc closes the window
 | Step | Expected | Status |
