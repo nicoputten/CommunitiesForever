@@ -176,6 +176,79 @@ describe("sync over the community (CF-28 part 2b)", function()
     assert.is_true(ns.Sync.offline()[DEE_GUID])
   end)
 
+  -- Test 1: someone else's record relayed to a member who is not a Battle.net friend.
+  describe("relaying a third person's record to a community member", function()
+    local BRAM_TAG, BRAM_AID, BRAM_GUID = "Bram#4444", "bbbbbbbbbbbb", "Player-1-0000BBB1"
+
+    local function withBram(aid)
+      return function(global)
+        global.people[BRAM_TAG] = { version = 700, aid = aid, displayName = "Bram",
+          invite = { code = "abc123", clubId = CLUB, setAt = 600, setByName = "Bram" },
+          chars = { [BRAM_GUID] = { name = "Bram Example", classFile = "MAGE", level = 30, updatedAt = 700 } },
+          removed = { ["Player-1-0000BBB9"] = 650 },
+          feed = { [20000] = { [BRAM_GUID] = { name = "Bram Example", classFile = "MAGE", at = 690,
+                                                 quests = { Durotar = 2 } } } } }
+      end
+    end
+
+    it("sends it under the account ID, with nothing that shows a BattleTag", function()
+      load(withBram(BRAM_AID))
+      flush()
+      state.whispers = {}
+      fromDee({ t = "REQ", bt = DEE_AID, want = "aid:" .. BRAM_AID })
+      flush()
+      local records = ofType(whisperedTo(DEE), "RECORD")
+      assert.are.equal(1, #records)
+      assert.are.equal("aid:" .. BRAM_AID, records[1].bt)
+      assert.are.equal(700, records[1].version)
+      assert.is_not_nil(records[1].chars[BRAM_GUID])
+      assert.is_false(hasBattleTag(records[1]))
+    end)
+
+    it("sends nothing when the person has no account ID (only the BattleTag is known)", function()
+      load(withBram(nil))
+      flush()
+      state.whispers = {}
+      fromDee({ t = "REQ", bt = DEE_AID, want = BRAM_TAG })
+      flush()
+      assert.are.equal(0, #ofType(whisperedTo(DEE), "RECORD"))
+    end)
+
+    it("never lists BattleTag keys in a HELLO to a community member", function()
+      load(withBram(nil))
+      flush()
+      local hellos = ofType(whisperedTo(DEE), "HELLO")
+      assert.is_true(#hellos >= 1)
+      for _, hello in ipairs(hellos) do assert.is_false(hasBattleTag(hello)) end
+    end)
+  end)
+
+  -- Test 4: a member we never got a HELLO from goes offline on a failed whisper (found by name).
+  it("marks a member offline on a failed whisper without a known peer", function()
+    load()
+    flush()
+    assert.is_nil(ns.Sync.online()[DEE_AID])
+    addon:SendMessage(ns.Transport.WHISPER_FAILED, DEE)
+    assert.is_true(ns.Sync.offline()[DEE_GUID])
+  end)
+
+  it("hides the \"No player named\" line for a whisper of ours and reports it", function()
+    load()
+    flush()
+    ns.Transport.whisper(DEE, "CommForever", "x") -- a whisper of ours, just now
+    local filter = state.chatFilters.CHAT_MSG_SYSTEM[1]
+    local line = string.format(_G.ERR_CHAT_PLAYER_NOT_FOUND_S, DEE)
+    local failed = {}
+    addon:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name) failed[#failed + 1] = name end)
+    assert.is_true(filter(nil, "CHAT_MSG_SYSTEM", line))
+    assert.are.same({ DEE }, failed)
+    -- Someone we did not whisper, another system line, or an old whisper: shown as usual.
+    assert.is_false(filter(nil, "CHAT_MSG_SYSTEM", string.format(_G.ERR_CHAT_PLAYER_NOT_FOUND_S, "Other Example")))
+    assert.is_false(filter(nil, "CHAT_MSG_SYSTEM", "You are now away."))
+    state.time = state.time + 60
+    assert.is_false(filter(nil, "CHAT_MSG_SYSTEM", line))
+  end)
+
   it("merges a community copy into the BattleTag once a friend's record shows the account ID", function()
     load(function(global)
       global.people[DEE_AID] = { version = 900, aid = "dddddddddddd",
