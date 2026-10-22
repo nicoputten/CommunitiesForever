@@ -229,6 +229,7 @@ function wowapi.install(opts)
     serverTime = 1000,
     time = 500,            -- GetTime()
     inCombat = false,      -- InCombatLockdown()
+    chatFilters = {},      -- chat message filters per event (ChatFrame_AddMessageEventFilter)
     bnSent = {},           -- BNSendGameData calls: { gameAccountID, prefix, text }
     whispers = {},         -- C_ChatInfo.SendAddonMessage calls (CF-28)
     prefixes = {},         -- registered addon message prefixes
@@ -321,6 +322,12 @@ function wowapi.install(opts)
       end,
     },
     InCombatLockdown = function() return state.inCombat end,
+    -- CF-28: chat filters (state.chatFilters[event] = { fn, ... }) and the system line for a failed whisper.
+    ChatFrame_AddMessageEventFilter = function(event, fn)
+      state.chatFilters[event] = state.chatFilters[event] or {}
+      table.insert(state.chatFilters[event], fn)
+    end,
+    ERR_CHAT_PLAYER_NOT_FOUND_S = "No player named '%s' is currently playing.",
     GetTime = function() return state.time end,
     C_ClassTalents = {
       GetActiveConfigID = function() return state.talentNodes and 9038911 or nil end,
@@ -593,6 +600,25 @@ function wowapi.sentMessages(state, message)
     if entry[1] == message then found[#found + 1] = { unpack(entry, 2) } end
   end
   return found
+end
+
+-- Several clients in one spec (tests/net.lua): the globals of the current install and the addon, to put
+-- back later with activate(), so each client runs against its own mock.
+local ADDON_GLOBALS = { "CommunitiesForever", "CommunitiesForeverDB",
+                        "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE" }
+
+function wowapi.snapshot()
+  local globals = {}
+  for name in pairs(installed) do globals[name] = _G[name] end
+  for _, name in ipairs(ADDON_GLOBALS) do globals[name] = _G[name] end
+  return globals
+end
+
+function wowapi.activate(globals)
+  for name, value in pairs(globals) do
+    _G[name] = value
+    installed[name] = true
+  end
 end
 
 -- Removes everything install() set, plus the addon's own globals.
