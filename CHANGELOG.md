@@ -5,6 +5,20 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v0.4.0-beta1 (2026-10-23)
+- **Right-click menu:** right-click a person or character in the Friends tab to whisper them or invite them
+  to your group (no more typing first and last names).
+- **Search:** a search box in the Friends tab: names, classes, roles, professions and zones, with
+  `tailoring 150` for a minimum rank and `20-30` for a level range.
+- **Update notice:** one chat line per session when a friend runs a newer release of CommunitiesForever.
+- **Who runs the addon:** a small icon after people who run CommunitiesForever; the card of someone who
+  does not explains why their professions, talents and quests are missing.
+- **Keybinding:** "Open or close the window" in Blizzard's keybinding menu (unbound by default).
+- **Esc** closes the window and the setup.
+- **Minimap button:** its tooltip lists who is online, on which character and level.
+- **Sync fix:** someone you only knew through a friend's relay now syncs with you directly once you are
+  both online in the community, so you no longer keep their older copy.
+
 ## v0.3.0-beta1 (2026-10-21)
 - Also on **Wago Addons**, so WowUp can install and update it.
 - **No community, no noise:** without a community on your account the addon stays quiet (no setup, no

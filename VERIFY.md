@@ -11,15 +11,62 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V8 | Is `clubId` identical across clients? (design does not depend on it) | `/fp start` on a friend's client: compare the `club` lines under V8 COMMUNITIES. Your own two characters both show 23125681 for Doombringers (2026-10-18); a friend's account is still to check. | open |
 | V35b | Which events tell how a battleground ended? (CF-23; the dungeon part is verified, see API-FINDINGS) | `/cf activity debug` (stays on after `/reload`; `/fp start` also logs the same events), then queue and finish a battleground (stay until the end). Send the FriendProbe log and the `[activity]` lines. Check: `instance:` inside shows `<name>, pvp`; `PVP_MATCH_COMPLETE` passes the winner (0 Horde / 1 Alliance); `battleground ended:` says `won true` when your side won. Last line: `left ...: recorded`. | open |
 | V47 | Do clicks on an addon chat link reach the addon? (CF-27: the `[Join]` `[Later]` `[No]` links) | Copy the new `tools/FriendProbe`, `/fp invite`, click `[click me: link test]` in chat. Expected a line `V47 link clicked via EventRegistry test 0` (or `via SetItemRef hook`). | open |
-| V48 | Which way can an addon get a friend into your party from a click? (CF-27) | Same `/fp invite` with a friend online in Forever, you not in a group: click `[invite by name]` (does the friend get an invite? the name has a space), leave the group; `[invite via Battle.net]`, leave; then let the friend run `/fp invite` and click `[ask them for an invite]` on you (do you get a "wants to join" popup?). Send both logs: the `C_PartyInfo...` / `BNInviteFriend` lines and the `INVITE EVENT` lines (blocked actions show as `ADDON_ACTION_BLOCKED`). | open |
+| V48 | Which way can an addon get a friend into your party from a click? (CF-27; inviting by name works, see API-FINDINGS) | Same `/fp invite` with a friend online in Forever, you not in a group: click `[invite by name]` (does the friend get an invite? the name has a space), leave the group; `[invite via Battle.net]`, leave; then let the friend run `/fp invite` and click `[ask them for an invite]` on you (do you get a "wants to join" popup?). Send both logs: the `C_PartyInfo...` / `BNInviteFriend` lines and the `INVITE EVENT` lines (blocked actions show as `ADDON_ACTION_BLOCKED`). | open |
 | V49 | Can addons send addon messages in the community channel? (CF-28: one broadcast to every member instead of a whisper each) | Run 1: the send is accepted (`0`, channel index 6) but no copy comes back to the sender. Needs **two clients** in the community, both with the new FriendProbe: on one `/fp comm channel`; the other's log should show `addon message <- ... channel CHANNEL`. | open |
 | V50b | Do all 30 burst whispers arrive? (CF-28: send rate) | Copy the **current** `tools/FriendProbe` first (the 2026-10-19 run used an old copy that counts only in a delayed summary, and the `/reload` came after 9 s). `/fp start`, wait 15 s, then `/reload`: the log shows `received V50:burst 30 so far` (or a lower count). | open |
 | V51 | Do addon whispers reach a character of the other faction? (CF-28) | Both characters need FriendProbe: `/fp comm whisper <the other character's name>`; the other log should show `addon message <- ... V51:whisper`. | open |
 | V52 | How stale does community presence get after a logout? (CF-28: online status for non-friends; CF-15 bug) | A few minutes after a member logged out, `/fp start`: under V52 COMMUNITY PRESENCE, does that member still show `Online`? | open |
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
+| V54 | Do `frame:EnableKeyboard`, `frame:SetPropagateKeyboardInput` and an `OnKeyDown` script work on an addon window outside combat, and does `Bindings.xml` with `header` and `category="ADDONS"` show the binding? (CF-32) | See the CF-32 steps: Esc closes the window without opening the game menu, walking keys still work with the window open, and the binding shows in Esc → Options → Keybindings. If anything errors, send the error text. | open |
+| V55 | Does the minimap button tooltip (LibDBIcon's `GameTooltip`) have `AddDoubleLine`? (CF-33; without it the names fall back to one line each) | See the CF-33 steps: names left, characters right-aligned. | open |
+| V56 | Does the grey placeholder in the Friends search box work: `CreateFontString`, `HookScript` (`OnEditFocusGained/Lost`, `OnTextChanged`) and `HasFocus` on AceGUI's edit box? (CF-36) | See the CF-36 steps: the hint shows when the box is empty and not focused, and hides while typing. If the box shows no hint at all, the guard skipped it. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-36 Smart filter in the Friends tab
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Friends tab | Inside the tab, above the list: a search box (not touching the window border) with the grey hint "e.g. tailoring 150, mage 20-30" (V56), the count right of it with room to spare. Not on the Activity and Dungeons tabs. Switching tabs and back keeps the text. | open |
+| Click in the box | The hint disappears; typing works (keys do not move the character). | open |
+| `tailoring 150` (or a profession someone has) | Only people with a character at that rank, only those characters, expanded; "N of M" next to the box. | open |
+| `mage 20-30`, `healer`, a zone name, part of a name | Each narrows the list as expected. | open |
+| A word nobody matches | "No character matches ..." in the card area. | open |
+| Clear the box | Everyone again, with groups expanded or collapsed as before. | open |
+| Close the window and open it again | The box is empty. | open |
+
+### CF-35 Newer version notice
+Needs two clients on different **release** builds (from CurseForge or WowUp; a `build.ps1` dev build never shows the line).
+
+| Step | Expected | Status |
+|---|---|---|
+| The one on the older release logs in while the other is online | One chat line: "A newer version of CommunitiesForever is available (v...). Update with the CurseForge app or WowUp." | open |
+| Stay online, let the other level up or `/cf sync` | No second line this session; after `/reload` at most once more. | open |
+| The one on the newer release | Never gets the line. | open |
+
+### CF-34 "Uses the addon" mark
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Friends tab, a friend who runs the addon | A small icon (the minimap button's) after their name in the list; on their card "Runs CommunitiesForever." with the icon. | open |
+| A community member or friend without the addon | No icon; their card says "Does not run CommunitiesForever: only what the community list shows (class, level, zone)." | open |
+| Your own row and card | No icon, no line. | open |
+
+### CF-33 Minimap button tooltip: who is online
+| Step | Expected | Status |
+|---|---|---|
+| Nobody else online, hover the minimap button | "CommunitiesForever", then "Nobody online right now.", then Left-click / Right-click. | open |
+| A friend (or community member with the addon) online, hover | One line per person: display name left, their character in class color with level right (V55), sorted by name. | open |
+| The friend switches character or logs out, hover again | The line shows the new character / the person is gone. | open |
+
+### CF-32 Keybinding and Esc closes the window
+| Step | Expected | Status |
+|---|---|---|
+| Esc → Options → Keybindings | A "CommunitiesForever" section (under AddOns, or its own header; note where) with "Open or close the window", unbound. | open |
+| Bind a key, press it twice | The window opens, then closes. | open |
+| `/cf`, then walk with W/A/S/D and type in chat | Movement and chat work normally while the window is open. | open |
+| `/cf`, press Esc | The window closes and the game menu does **not** open. Esc again: the game menu opens. | open |
+| `/cf setup`, press Esc | The setup closes (counts as skipped, as with the X). | open |
+| In combat: `/cf`, press Esc | No error; the game menu opens and the window stays (Esc on the window is off in combat). After combat, close with `/cf`, open again: Esc closes it. | open |
 
 ### Passive without a community
 Needs a character on an account where no character ever selected a community (or a fresh WTF: rename
@@ -61,6 +108,7 @@ Needs a second account in the community, running this build, that is **not** you
 | They log out | They show offline within seconds (BYE), also if the community list still says online. No "No player named ..." line (V53). | open |
 | They ask "who's up for it?" (CF-27) for a dungeon you fit | You get the chat line with [Join] [Later] [No]; your answer reaches them. | open |
 | Later you become Battle.net friends | They show once (no duplicate person): the community copy merges into the friend. | open |
+| (Needs a third account.) You know someone only through a friend's relay (`Updated ... via <friend>` on their card), then they come online in the community (not your Battle.net friend) | Within ~10 s their card no longer says `via`: their own record arrived over the community. | open |
 
 ### CF-28 part 2a: reliable delivery
 Needs a friend running this build online in Forever. A lost part cannot be forced in game; these steps check that nothing broke and that the trace shows the parts.

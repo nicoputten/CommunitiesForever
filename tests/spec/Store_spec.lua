@@ -43,9 +43,36 @@ describe("Store", function()
       assert.are.equal(Store.SCHEMA_VERSION, global.schemaVersion)
     end)
 
-    it("keeps an existing schema version", function()
-      local global = Store.init({ schemaVersion = 0 })
-      assert.are.equal(0, global.schemaVersion)
+    it("keeps the current schema version", function()
+      local global = Store.init({ schemaVersion = Store.SCHEMA_VERSION })
+      assert.are.equal(Store.SCHEMA_VERSION, global.schemaVersion)
+    end)
+  end)
+
+  describe("migrations (rule 8)", function()
+    it("stamps fresh data with the current schema", function()
+      assert.are.equal(Store.SCHEMA_VERSION, Store.init({}).schemaVersion)
+    end)
+
+    it("runs every step from the stored schema up to the current one, in order", function()
+      Store.SCHEMA_VERSION = 3
+      Store.MIGRATIONS[1] = function(g) g.renamed = g.old; g.old = nil end
+      Store.MIGRATIONS[2] = function(g) g.count = g.renamed and #g.renamed or 0 end -- derived, else empty
+      local global = Store.init({ schemaVersion = 1, old = { "a", "b" } })
+      assert.are.same({ schemaVersion = 3, renamed = { "a", "b" }, count = 2 }, global)
+      assert.are.same({ schemaVersion = 3, count = 0 }, Store.init({ schemaVersion = 2 }))
+    end)
+
+    it("leaves data from a newer schema untouched", function()
+      local global, reason = Store.init({ schemaVersion = Store.SCHEMA_VERSION + 1, x = 1 })
+      assert.are.equal("newer", reason)
+      assert.are.same({ schemaVersion = Store.SCHEMA_VERSION + 1, x = 1 }, global)
+    end)
+
+    it("has a step for every schema below the current one", function()
+      for version = 1, Store.SCHEMA_VERSION - 1 do
+        assert.is_function(Store.MIGRATIONS[version], "no migration from schema " .. version)
+      end
     end)
   end)
 end)

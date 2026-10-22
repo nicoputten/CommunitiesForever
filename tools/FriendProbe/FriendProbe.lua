@@ -3,6 +3,8 @@
 --   /fp start       clear the log, then run every check below and switch on feed logging
 --   /fp invite      chat links per friend online in Forever: test link, request invite, invite by name,
 --                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
+--   /fp menu        right-click menu test window (V57, CF-37): Blizzard context menu, whisper, copy box,
+--                   right-click on an AceGUI tree row
 --   /fp feed off    stop feed logging (V35)
 --   /fp clear       wipe the saved log
 -- Checks (by VERIFY.md number):
@@ -16,6 +18,7 @@
 --   V49      addon message in the community channel (does it arrive, also back at yourself?)
 --   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
 --   V52      community member presence (run after a member logged out: still online?)
+--   V57      which menu, whisper and invite functions exist (the clicks need /fp menu)
 --   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
 --   /fp comm channel         one addon message in the community channel (V49: run on two clients)
 --   /fp comm summary         what came back so far
@@ -346,6 +349,177 @@ local function Invite()
   log("click the test link, then each invite link once (leave the group between tries); /reload and send the log")
 end
 
+-- ===== V57: right-click menu (CF-37) =====
+local function MenuApis()
+  log("exists MenuUtil", MenuUtil ~= nil)
+  log("exists MenuUtil.CreateContextMenu", MenuUtil ~= nil and MenuUtil.CreateContextMenu ~= nil)
+  log("exists ChatFrameUtil.SendTell", ChatFrameUtil ~= nil and ChatFrameUtil.SendTell ~= nil)
+  log("exists ChatFrame_SendTell", ChatFrame_SendTell ~= nil)
+  log("exists ChatFrameUtil.OpenChat", ChatFrameUtil ~= nil and ChatFrameUtil.OpenChat ~= nil)
+  log("exists ChatFrame_OpenChat", ChatFrame_OpenChat ~= nil)
+  log("exists C_PartyInfo.InviteUnit", C_PartyInfo ~= nil and C_PartyInfo.InviteUnit ~= nil)
+  log("exists AceGUI-3.0", LibStub ~= nil and LibStub("AceGUI-3.0", true) ~= nil)
+  log("V57 clicks: /fp menu")
+end
+
+local menuWindow, copyBox
+
+-- The name in a box, selected, so Ctrl+C copies it (WoW has no clipboard API; run 1: copying works).
+-- Run 2: the box closes by itself after Ctrl+C and when it loses focus (a click elsewhere).
+local function ShowCopy(name)
+  if not copyBox then
+    copyBox = CreateFrame("EditBox", nil, UIParent, "InputBoxTemplate")
+    copyBox:SetSize(220, 24)
+    copyBox:SetPoint("CENTER", 0, -120)
+    copyBox:SetAutoFocus(false)
+    copyBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    copyBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    copyBox:SetScript("OnEditFocusLost", function(self)
+      log("V57 copy box lost focus: hidden")
+      self:Hide()
+    end)
+    copyBox:SetScript("OnKeyDown", function(self, key)
+      if key == "C" and IsControlKeyDown and IsControlKeyDown() then
+        log("V57 copy box saw Ctrl+C: hides now")
+        C_Timer.After(0, function() self:ClearFocus() end)
+      end
+    end)
+  end
+  copyBox:SetText(name)
+  copyBox:Show()
+  copyBox:SetFocus()
+  copyBox:HighlightText()
+  log("V57 copy box shown with", name, "- press Ctrl+C: it should disappear; paste in chat to check")
+end
+
+-- The chat input that is open now, if any (functions guarded: which one exists is part of the answer).
+local function ActiveChatInput()
+  if ChatFrameUtil and ChatFrameUtil.GetActiveWindow then return ChatFrameUtil.GetActiveWindow(), "ChatFrameUtil" end
+  if ChatEdit_GetActiveWindow then return ChatEdit_GetActiveWindow(), "ChatEdit" end
+  return nil, "none"
+end
+
+local function Whisper(name)
+  if ChatFrameUtil and ChatFrameUtil.SendTell then
+    LogCall("V57 ChatFrameUtil.SendTell", ChatFrameUtil.SendTell, name)
+  elseif ChatFrame_SendTell then
+    LogCall("V57 ChatFrame_SendTell", ChatFrame_SendTell, name)
+  else
+    log("V57 no SendTell function")
+  end
+  C_Timer.After(0.2, function()
+    local input, via = ActiveChatInput()
+    if not input then
+      log("V57 chat input after whisper: none open (via " .. via .. ")")
+      return
+    end
+    log("V57 chat input after whisper: shown", S(input:IsShown()), "chatType",
+      S(input.GetAttribute and input:GetAttribute("chatType")), "tellTarget",
+      S(input.GetAttribute and input:GetAttribute("tellTarget")), "text", S(input:GetText()), "via", via)
+  end)
+end
+
+local function OpenMenu(owner, name, title)
+  if not (MenuUtil and MenuUtil.CreateContextMenu) then
+    log("V57 MenuUtil.CreateContextMenu missing: CF-37 needs its own popup")
+    return
+  end
+  local ok, menu = pcall(MenuUtil.CreateContextMenu, owner, function(_, root)
+    root:CreateTitle(title or name)
+    root:CreateButton("Whisper", function() log("V57 menu click: Whisper") Whisper(name) end)
+    root:CreateButton("Copy name", function() log("V57 menu click: Copy name") ShowCopy(name) end)
+    root:CreateButton("Invite (logs only)", function() log("V57 menu click: Invite") end)
+  end)
+  if not ok then
+    log("V57 CreateContextMenu error", S(menu))
+    return
+  end
+  log("V57 CreateContextMenu opened")
+  -- Run 2: raising the menu (level 150 over the window's 100) changed nothing on screen. Run 3 compares a
+  -- window one strata lower instead; only log where the menu is, now and once it is shown.
+  local function where(when)
+    if type(menu) == "table" and menu.GetFrameStrata then
+      log("V57 menu", when, "strata", S(menu:GetFrameStrata()), "level", S(menu.GetFrameLevel and menu:GetFrameLevel()))
+    else
+      log("V57 CreateContextMenu returned", type(menu))
+    end
+  end
+  where("now")
+  C_Timer.After(0.1, function() where("shown") end)
+end
+
+-- AceGUI makes the tree's row buttons when it lays the tree out (run 1: none existed yet), and reuses them:
+-- hook every row button once, now and after each refresh.
+local function HookTreeRows(tree, name)
+  local hooked = 0
+  for _, row in ipairs(tree.buttons or {}) do
+    if row.HookScript and not row.fpHooked then
+      row.fpHooked = true
+      row:HookScript("OnMouseUp", function(self, mouse)
+        log("V57 tree row mouse up", mouse, "on", S(self.uniquevalue), "level", S(self.level))
+        if mouse == "RightButton" then
+          OpenMenu(self, name, self.level == 1 and "Person: Bob (playing " .. name .. ")" or nil)
+        end
+      end)
+      hooked = hooked + 1
+    end
+  end
+  if hooked > 0 then log("V57 tree rows hooked", hooked) end
+end
+
+-- A test window: a plain button, and (with CommunitiesForever's AceGUI) a tree like the Friends list.
+local function MenuTest()
+  local name = GetUnitName("player", true)
+  if menuWindow then menuWindow:Show() return end
+  menuWindow = CreateFrame("Frame", nil, UIParent, "BasicFrameTemplateWithInset")
+  menuWindow:SetSize(260, 120)
+  menuWindow:SetPoint("CENTER", 0, 120)
+  local button = CreateFrame("Button", nil, menuWindow, "UIPanelButtonTemplate")
+  button:SetSize(200, 26)
+  button:SetPoint("TOP", 0, -36)
+  button:SetText("Right-click me")
+  button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  button:SetScript("OnClick", function(self, mouse)
+    log("V57 plain button click", mouse)
+    if mouse == "RightButton" then OpenMenu(self, name) end
+  end)
+  log("V57 test window open: right-click the button, try Whisper and Copy name")
+
+  local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
+  if not AceGUI then
+    log("V57 no AceGUI (load CommunitiesForever too) - tree row test skipped")
+    return
+  end
+  -- Run 3: the same tree twice. Left at AceGUI's strata (FULLSCREEN_DIALOG: run 2 showed the menu below it),
+  -- right one strata lower (DIALOG), as CF-37 would set the main window.
+  local function TreeWindow(title, strata, x)
+    local frame = AceGUI:Create("Frame")
+    frame:SetTitle(title)
+    frame:SetWidth(300)
+    frame:SetHeight(200)
+    frame:SetLayout("Fill")
+    frame.frame:ClearAllPoints()
+    frame.frame:SetPoint("CENTER", UIParent, "CENTER", x, -60)
+    if strata then frame.frame:SetFrameStrata(strata) end
+    log("V57 window", title, "strata", S(frame.frame:GetFrameStrata()), "level", S(frame.frame:GetFrameLevel()))
+    local tree = AceGUI:Create("TreeGroup")
+    if tree.EnableButtonTooltips then tree:EnableButtonTooltips(false) end -- as in the Friends list
+    tree:SetTree({ { value = "p", text = "Person", children = { { value = "c", text = name } } } })
+    tree:SetStatusTable({ groups = { p = true } })
+    frame:AddChild(tree)
+    local refresh = tree.RefreshTree
+    tree.RefreshTree = function(self, ...)
+      refresh(self, ...)
+      HookTreeRows(self, name)
+    end
+    tree:RefreshTree()
+    C_Timer.After(0.2, function() HookTreeRows(tree, name) end)
+  end
+  TreeWindow("FP strata default", nil, -170)
+  TreeWindow("FP strata DIALOG", "DIALOG", 170)
+  log("V57 in BOTH windows right-click the Person row and the", name, "row: is the menu above the window?")
+end
+
 -- ===== Commands =====
 -- ===== V49-V52: community transport (CF-28) =====
 local COMM_PREFIX = "FProbe"
@@ -447,6 +621,7 @@ local function Start()
   Section("V52 COMMUNITY PRESENCE", CommunityPresence)
   Section("V49/V50 COMMUNITY TRANSPORT", CommunityTransport)
   Section("V35 FEED", FeedOn)
+  Section("V57 MENU APIS", MenuApis)
   log("start done: /reload, then send WTF\\Account\\<account>\\SavedVariables\\FriendProbe.lua")
 end
 
@@ -481,6 +656,8 @@ SlashCmdList.FRIENDPROBE = function(msg)
     end
   elseif cmd == "invite" then
     Invite()
+  elseif cmd == "menu" then
+    Section("V57 MENU", MenuTest)
   elseif cmd == "feed" and arg == "off" then
     FriendProbeDB.feed = nil
     log("feed logging off")
@@ -488,6 +665,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | comm whisper <name> | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | menu | comm whisper <name> | feed off | clear")
   end
 end

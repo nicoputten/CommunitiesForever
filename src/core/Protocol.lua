@@ -19,8 +19,11 @@ Protocol.MAX_RESENDS = 2
 Protocol.MAX_MISS_PARTS = 40              -- part numbers per MISS, so it stays one short message
 local MISS_PREFIX = "!M:"
 
--- Supported protocol versions. A message with another pv is rejected.
-local SUPPORTED = { [1] = true }
+--[[ Upgrade pattern (CLAUDE.md rule 8): Protocol.UPGRADES[n](message) turns a message of pv n into pv n + 1,
+in place: renamed or reshaped fields, derived values where the old message has what it takes, nil
+otherwise (handlers accept missing fields). Within a pv only optional fields and message types are added,
+so most changes need no step. A message from a newer pv is "unsupported" (we cannot know its shape). ]]
+Protocol.UPGRADES = {}
 
 -- Chunk header: "<msgId>:<seq>:<total>:" then the payload slice. msgId is [%w]+.
 local HEADER_PATTERN = "^(%w+):(%d+):(%d+):"
@@ -29,6 +32,7 @@ local HEADER_PATTERN = "^(%w+):(%d+):(%d+):"
   codec = Protocol.codec(LibSerialize, LibDeflate)
   codec:encode(message) -> string safe for the addon channel; message.pv is set to Protocol.VERSION
   codec:decode(text)    -> message | nil, reason ("corrupt" | "unsupported"), pv
+  A message from an older pv comes out upgraded to Protocol.VERSION (see Protocol.UPGRADES).
 ]]
 function Protocol.codec(serializer, deflate)
   local codec = {}
@@ -46,11 +50,27 @@ function Protocol.codec(serializer, deflate)
     if not serialized then return nil, "corrupt" end
     local ok, message = serializer:Deserialize(serialized)
     if not ok or type(message) ~= "table" then return nil, "corrupt" end
-    if not SUPPORTED[message.pv] then return nil, "unsupported", message.pv end
-    return message
+    return Protocol.upgrade(message)
   end
 
   return codec
+end
+
+-- Brings a decoded message to Protocol.VERSION. Returns message, or nil, "unsupported", pv for a newer or
+-- unknown pv (or a missing upgrade step).
+function Protocol.upgrade(message)
+  local pv = message.pv
+  if type(pv) ~= "number" or pv < 1 or pv > Protocol.VERSION or pv % 1 ~= 0 then
+    return nil, "unsupported", pv
+  end
+  while pv < Protocol.VERSION do
+    local step = Protocol.UPGRADES[pv]
+    if not step then return nil, "unsupported", message.pv end
+    step(message)
+    pv = pv + 1
+  end
+  message.pv = pv
+  return message
 end
 
 -- Splits an encoded message into chunks of at most Protocol.MAX_CHUNK bytes.

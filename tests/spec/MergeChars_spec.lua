@@ -89,6 +89,16 @@ describe("per-character merge (CF-28)", function()
       assert.is_nil(people[OWNER].removed)
     end)
 
+    -- Test 2: a relayed copy newer than the removal brings the character back.
+    it("takes back a removed character from a relayed copy newer than the removal", function()
+      local people = {}
+      Merge.store(people, record(10, { G1 = char(20, 500), G2 = char(10, 500) }), 600, OWNER)
+      Merge.store(people, record(11, { G1 = char(20, 650) }), 700, OWNER) -- G2 removed at 700
+      Merge.store(people, record(12, { G1 = char(20, 650), G2 = char(11, 710) }), 800, RELAY)
+      assert.are.equal(11, people[OWNER].chars.G2.level)
+      assert.is_nil(people[OWNER].removed)
+    end)
+
     it("passes removals on when relaying", function()
       local relayer, other = {}, {}
       Merge.store(relayer, record(10, { G1 = char(20, 500), G2 = char(10, 500) }), 600, OWNER)
@@ -151,6 +161,20 @@ describe("per-character merge (CF-28)", function()
         OWNER)
       Merge.store(people, record(11, {}), 700, RELAY)
       assert.is_not_nil(people[OWNER].feed)
+    end)
+
+    -- Test 3: "stopped sharing" from a relayed record that is not newer must not wipe stored activity.
+    it("keeps the stored feed when an older relayed record says it is not shared", function()
+      local people = {}
+      Merge.store(people, record(10, {}, { feed = feed({ G1 = { name = "A", at = 500, quests = { X = 1 } } }) }), 600,
+        OWNER)
+      Merge.store(people, record(9, {}, { feed = false }), 700, RELAY)
+      assert.are.same({ X = 1 }, people[OWNER].feed[DAY].G1.quests)
+      assert.is_nil(people[OWNER].feedOff)
+      -- A newer relayed record that says so does drop it.
+      Merge.store(people, record(11, {}, { feed = false }), 800, RELAY)
+      assert.is_nil(people[OWNER].feed)
+      assert.is_true(people[OWNER].feedOff)
     end)
 
     it("ignores relayed activity entries timestamped in the future", function()

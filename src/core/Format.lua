@@ -133,7 +133,8 @@ function Format.tree(view)
                                   sharedDungeon = not person.isSelf and ns.Quests.sharesDungeon(c.quests, own) }
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
-                          isSelf = person.isSelf, count = #children, children = children }
+                          isSelf = person.isSelf, usesAddon = person.usesAddon, count = #children,
+                          children = children }
   end
   if #view.unlinked > 0 then
     local children = {}
@@ -145,6 +146,10 @@ function Format.tree(view)
   end
   return nodes
 end
+
+-- CF-34: the line on a person's card saying whether they run the addon.
+Format.USES_ADDON = "Runs CommunitiesForever."
+Format.NO_ADDON = "Does not run CommunitiesForever: only what the community list shows (class, level, zone)."
 
 local function findPerson(view, value)
   for _, person in ipairs(view.people) do
@@ -251,7 +256,9 @@ end
 
 --[[ Detail model for the selected tree path, or a message when nothing (valid) is selected:
   { kind = "message", text }
-  { kind = "person", title, battleTag, online, status, current, source,   -- source: "Updated 3 h ago via Alice"
+  { kind = "person", title, battleTag, online, status, current,
+    source,                            -- "Updated 3 h ago via Alice"
+    addon,                             -- CF-34: Format.USES_ADDON / NO_ADDON; nil on your own card
     characters = { { guid, name, classFile, classID, level, seen } },
     sharedQuests }                     -- CF-19: see personSharedQuests; nil on your own card
   { kind = "unlinked", characters = ... }                        -- same character entries
@@ -319,6 +326,8 @@ function Format.detail(view, path, now, showAllQuests)
       tostring(person.viaName)) or ("Via " .. tostring(person.viaName))
   end
   return { kind = "person", title = personTitle(person), battleTag = person.battleTag, online = person.online,
+           -- CF-34: who runs the addon; nil on your own card.
+           addon = not person.isSelf and (person.usesAddon and Format.USES_ADDON or Format.NO_ADDON) or nil,
            status = status, current = person.currentChar, characters = characters, source = source,
            -- CF-19: all quests the friend shares with you, over all their characters (not on your own card).
            sharedQuests = not person.isSelf and Format.personSharedQuests(rows, ownRows(view), showAllQuests)
@@ -351,6 +360,71 @@ function Format.emptyState(view, state)
   end
   if #view.people == 0 and #view.unlinked == 0 then
     return "Nobody in this community yet."
+  end
+  return nil
+end
+
+-- CF-33: who is online, for the minimap button tooltip. Other people only (not yourself), sorted by display
+-- name, at most `max` entries. Returns { entries = { { displayName, name, classFile, classID, level }, ... },
+-- more = N } with N the people left out.
+Format.ONLINE_MAX = 15
+Format.NOBODY_ONLINE = "Nobody online right now."
+
+function Format.onlineList(view, max)
+  max = max or Format.ONLINE_MAX
+  local all = {}
+  for _, person in ipairs(view.people or {}) do
+    if person.online and not person.isSelf then
+      local char = person.currentChar or {}
+      all[#all + 1] = { displayName = tostring(person.displayName), name = char.name, classFile = char.classFile,
+                        classID = char.classID, level = char.level }
+    end
+  end
+  table.sort(all, function(a, b)
+    local x, y = a.displayName:lower(), b.displayName:lower()
+    if x ~= y then return x < y end
+    return tostring(a.name) < tostring(b.name)
+  end)
+  local entries = {}
+  for i = 1, math.min(#all, max) do entries[i] = all[i] end
+  return { entries = entries, more = #all - #entries }
+end
+
+--[[ CF-37: the right-click menu for a tree path (a person or a character), or nil when there is none (your
+own rows, the Unlinked header). { title, items = { { label, action = "whisper"|"invite", name, battleTag,
+enabled } } }. A person's items act on the character they are on now; offline, or a character that is not
+online: the items are disabled and the title says Offline. ]]
+Format.MENU_WHISPER, Format.MENU_INVITE = "Whisper", "Invite to group"
+
+local function menuItems(name, battleTag, enabled)
+  return {
+    { label = Format.MENU_WHISPER, action = "whisper", name = name, battleTag = battleTag, enabled = enabled },
+    { label = Format.MENU_INVITE, action = "invite", name = name, battleTag = battleTag, enabled = enabled },
+  }
+end
+
+function Format.contextMenu(view, path)
+  if type(path) ~= "string" then return nil end
+  local group, guid = Format.splitPath(path)
+  local person = group ~= Format.UNLINKED and findPerson(view, group) or nil
+  if person and person.isSelf then return nil end
+  if not guid then
+    if not person then return nil end
+    local current = person.online and person.currentChar or nil
+    local name = current and current.name
+    if not name then
+      return { title = tostring(person.displayName) .. " - Offline", items = menuItems(nil, person.battleTag, false) }
+    end
+    return { title = string.format("%s (on %s)", tostring(person.displayName), name),
+             items = menuItems(name, person.battleTag, true) }
+  end
+  local rows = person and person.chars or view.unlinked or {}
+  for _, row in ipairs(rows) do
+    if row.guid == guid then
+      local online = row.online == true
+      return { title = tostring(row.name) .. (online and "" or " - Offline"),
+               items = menuItems(row.name, person and person.battleTag, online) }
+    end
   end
   return nil
 end

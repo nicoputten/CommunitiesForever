@@ -279,11 +279,38 @@ describe("MainFrame", function()
       assert.are.equal("CommunitiesForever", state.openedDialog)
     end)
 
-    it("shows the online friend count in the tooltip", function()
-      load("23125681")
+    -- CF-33: who is online, display name left, character and level right.
+    local function tooltip()
       local lines = {}
-      state.ldbObjects.CommunitiesForever.OnTooltipShow({ AddLine = function(_, text) lines[#lines + 1] = text end })
-      assert.are.equal("1 friend(s) online in Forever", lines[2])
+      local tip = {
+        AddLine = function(_, text) lines[#lines + 1] = { text } end,
+        AddDoubleLine = function(_, left, right) lines[#lines + 1] = { left, right } end,
+      }
+      state.ldbObjects.CommunitiesForever.OnTooltipShow(tip)
+      return lines
+    end
+
+    it("lists who is online in the tooltip", function()
+      load("23125681")
+      local list = ns.Format.onlineList(ns.ViewModel.build(addon))
+      assert.is_true(#list.entries > 0, "the mock has a friend online")
+      local lines = tooltip()
+      local first = list.entries[1]
+      assert.are.equal(first.displayName, lines[2][1])
+      assert.is_truthy(lines[2][2]:find(first.name, 1, true))
+      assert.is_truthy(lines[2][2]:find(" " .. first.level .. "$"))
+      assert.are.equal("Left-click: open window", lines[#lines - 1][1])
+    end)
+
+    it("says nobody is online when nobody is", function()
+      state = wowapi.install()
+      state.friends = {}
+      ns = helpers.loadAddon()
+      addon = state.addon
+      addon:OnInitialize()
+      addon.db.global.settings.clubId = "23125681"
+      addon:OnEnable()
+      assert.are.equal(ns.Format.NOBODY_ONLINE, tooltip()[2][1])
     end)
 
     it("can be hidden and shown from settings", function()

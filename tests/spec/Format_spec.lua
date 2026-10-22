@@ -181,6 +181,17 @@ describe("Format", function()
         d.characters[2])
     end)
 
+    it("says on the card whether they run the addon (CF-34), not on your own", function()
+      view.people[1] = person({ usesAddon = true })
+      assert.are.equal(Format.USES_ADDON, Format.detail(view, "Sjaakovich#2232", NOW).addon)
+      view.people[1] = person({ usesAddon = false })
+      assert.are.equal(Format.NO_ADDON, Format.detail(view, "Sjaakovich#2232", NOW).addon)
+      local mine = Format.detail(view, view.people[2].battleTag, NOW)
+      assert.is_nil(mine.addon)
+      local nodes = Format.tree(view)
+      assert.is_false(nodes[1].usesAddon)
+    end)
+
     it("describes an offline person and one on a character outside the community", function()
       view.people[1] = person({ online = false, currentChar = false })
       assert.are.equal("Offline - last seen on Grom, 2 h ago", Format.detail(view, "Sjaakovich#2232", NOW).status)
@@ -247,6 +258,40 @@ describe("Format", function()
     it("falls back to the message for paths that no longer exist", function()
       assert.are.equal("message", Format.detail(view, "Gone#1", NOW).kind)
       assert.are.equal("message", Format.detail(view, Format.path("Sjaakovich#2232", "G9"), NOW).kind)
+    end)
+  end)
+
+  describe("onlineList (CF-33)", function()
+    local function onlinePerson(name, online, char, isSelf)
+      return { displayName = name, online = online, isSelf = isSelf, currentChar = char }
+    end
+
+    it("lists other people online, sorted by display name, with their current character", function()
+      local view = { people = {
+        onlinePerson("cid", true, { name = "Cid Char", classFile = "MAGE", level = 20 }),
+        onlinePerson("Ann", true, { name = "Ann Char", classFile = "PRIEST", classID = 5, level = 24 }),
+        onlinePerson("Me", true, { name = "My Char" }, true),
+        onlinePerson("Ben", false, { name = "Ben Char" }),
+      } }
+      local list = Format.onlineList(view)
+      assert.are.same({
+        { displayName = "Ann", name = "Ann Char", classFile = "PRIEST", classID = 5, level = 24 },
+        { displayName = "cid", name = "Cid Char", classFile = "MAGE", level = 20 },
+      }, list.entries)
+      assert.are.equal(0, list.more)
+    end)
+
+    it("keeps people whose character is not known, and caps the list", function()
+      local people = { onlinePerson("Solo", true, nil) }
+      for i = 1, 17 do people[#people + 1] = onlinePerson(string.format("P%02d", i), true, { name = "C" .. i }) end
+      local list = Format.onlineList({ people = people })
+      assert.are.equal(Format.ONLINE_MAX, #list.entries)
+      assert.are.equal(18 - Format.ONLINE_MAX, list.more)
+      assert.is_nil(Format.onlineList({ people = { onlinePerson("Solo", true, nil) } }).entries[1].name)
+    end)
+
+    it("is empty with nobody online", function()
+      assert.are.same({ entries = {}, more = 0 }, Format.onlineList({ people = {} }))
     end)
   end)
 

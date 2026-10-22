@@ -122,7 +122,7 @@ input = {
   selfGuid  = current character GUID,
 }
 returns {
-  people   = { { battleTag, displayName, isSelf, online, currentChar, chars = { row, ... },
+  people   = { { battleTag, displayName, isSelf, online, usesAddon, currentChar, chars = { row, ... },
                  via, viaName, updatedAt }, ... },   -- via: relayed record (CF-20)
   unlinked = { row, ... },
 }
@@ -239,6 +239,9 @@ function Linker.build(raw)
       displayName = displayName,
       isSelf = isSelf,
       online = isSelf or input.online[bt] ~= nil,
+      -- CF-34: runs the addon: we have a record from them (their own or relayed). Without one we only know
+      -- what the community list and Battle.net presence show.
+      usesAddon = isSelf or (record and record.version ~= nil) or false,
       currentChar = current,
       chars = rows,
       via = via,

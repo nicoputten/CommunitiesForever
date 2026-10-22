@@ -94,8 +94,20 @@ local function fakeLibs(state)
   end
 
   local AceDB = {}
+  -- Like AceDB: missing keys come from the defaults (state.savedVariables = a saved file's content).
+  local function withDefaults(saved, defaults)
+    for k, v in pairs(defaults) do
+      if saved[k] == nil then
+        saved[k] = deepCopy(v)
+      elseif type(v) == "table" and type(saved[k]) == "table" then
+        withDefaults(saved[k], v)
+      end
+    end
+    return saved
+  end
   function AceDB:New(svName, defaults)
-    local db = { global = deepCopy(defaults.global) }
+    local saved = state.savedVariables and deepCopy(state.savedVariables.global)
+    local db = { global = saved and withDefaults(saved, defaults.global) or deepCopy(defaults.global) }
     state.db = db
     state.svName = svName
     return db
@@ -120,6 +132,20 @@ local function fakeLibs(state)
   function AceGUI:Create(widgetType)
     local w = { type = widgetType, children = {}, callbacks = {}, shown = true, frame = {} }
     function w.frame.IsShown() return w.shown end
+    -- CF-32: keyboard input (frame.keyboard, frame.propagate, frame.scripts.OnKeyDown).
+    w.frame.scripts = {}
+    function w.frame:EnableKeyboard(on) self.keyboard = on end
+    function w.frame:SetPropagateKeyboardInput(on)
+      assert(not state.inCombat, "SetPropagateKeyboardInput in combat")
+      self.propagate = on
+    end
+    function w.frame:SetScript(name, fn) self.scripts[name] = fn end
+    w.frame.hooks = {}
+    function w.frame:HookScript(name, fn)
+      self.hooks[name] = self.hooks[name] or {}
+      table.insert(self.hooks[name], fn)
+    end
+    function w.frame:SetFrameStrata(strata) self.strata = strata end
     function w:SetCallback(name, fn) self.callbacks[name] = fn end
     function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
     function w:AddChild(child) self.children[#self.children + 1] = child end
@@ -136,7 +162,12 @@ local function fakeLibs(state)
       self.buttons = {}
       for _, node in ipairs(self.tree or {}) do
         for level, n in ipairs({ node, unpack(node.children or {}) }) do
-          local button = { level = level == 1 and 1 or 2, text = {} }
+          local button = { level = level == 1 and 1 or 2, text = {}, hooks = {},
+                           uniquevalue = level == 1 and n.value or (node.value .. "" .. n.value) }
+          function button:HookScript(name, fn)
+            self.hooks[name] = self.hooks[name] or {}
+            table.insert(self.hooks[name], fn)
+          end
           function button:SetNormalFontObject(font) self.normalFont = font end
           function button:SetHighlightFontObject(font) self.highlightFont = font end
           button.node = n
@@ -221,6 +252,8 @@ function wowapi.install(opts)
     serverTime = 1000,
     time = 500,            -- GetTime()
     inCombat = false,      -- InCombatLockdown()
+    chatFilters = {},      -- chat message filters per event (ChatFrame_AddMessageEventFilter)
+    menus = {},            -- CF-37: opened context menus (MenuUtil.CreateContextMenu)
     bnSent = {},           -- BNSendGameData calls: { gameAccountID, prefix, text }
     whispers = {},         -- C_ChatInfo.SendAddonMessage calls (CF-28)
     prefixes = {},         -- registered addon message prefixes
@@ -313,6 +346,30 @@ function wowapi.install(opts)
       end,
     },
     InCombatLockdown = function() return state.inCombat end,
+    -- CF-37: Blizzard's context menu. Opened menus in state.menus: { owner, title, buttons = { { text, fn,
+    -- enabled } } }.
+    MenuUtil = {
+      CreateContextMenu = function(owner, generator)
+        local menu = { owner = owner, buttons = {} }
+        local root = {}
+        function root:CreateTitle(text) menu.title = text end
+        function root:CreateButton(text, fn)
+          local b = { text = text, fn = fn, enabled = true }
+          function b:SetEnabled(on) self.enabled = on end
+          table.insert(menu.buttons, b)
+          return b
+        end
+        generator(owner, root)
+        table.insert(state.menus, menu)
+        return menu
+      end,
+    },
+    -- CF-28: chat filters (state.chatFilters[event] = { fn, ... }) and the system line for a failed whisper.
+    ChatFrame_AddMessageEventFilter = function(event, fn)
+      state.chatFilters[event] = state.chatFilters[event] or {}
+      table.insert(state.chatFilters[event], fn)
+    end,
+    ERR_CHAT_PLAYER_NOT_FOUND_S = "No player named '%s' is currently playing.",
     GetTime = function() return state.time end,
     C_ClassTalents = {
       GetActiveConfigID = function() return state.talentNodes and 9038911 or nil end,
@@ -585,6 +642,25 @@ function wowapi.sentMessages(state, message)
     if entry[1] == message then found[#found + 1] = { unpack(entry, 2) } end
   end
   return found
+end
+
+-- Several clients in one spec (tests/net.lua): the globals of the current install and the addon, to put
+-- back later with activate(), so each client runs against its own mock.
+local ADDON_GLOBALS = { "CommunitiesForever", "CommunitiesForeverDB",
+                        "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE" }
+
+function wowapi.snapshot()
+  local globals = {}
+  for name in pairs(installed) do globals[name] = _G[name] end
+  for _, name in ipairs(ADDON_GLOBALS) do globals[name] = _G[name] end
+  return globals
+end
+
+function wowapi.activate(globals)
+  for name, value in pairs(globals) do
+    _G[name] = value
+    installed[name] = true
+  end
 end
 
 -- Removes everything install() set, plus the addon's own globals.

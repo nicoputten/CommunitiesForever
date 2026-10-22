@@ -9,6 +9,8 @@ local REFRESH_DEBOUNCE = 0.2
 local TREE_WIDTH = 210
 local ONLINE_ICON = "Interface\\COMMON\\Indicator-Green"
 local OFFLINE_ICON = "Interface\\COMMON\\Indicator-Gray"
+-- CF-34: the minimap button's icon, small, after people who run the addon.
+local ADDON_MARK = "|TInterface\\Icons\\INV_Misc_GroupNeedMore:12:12|t"
 local BAR_TEXTURE = "Interface\\Buttons\\WHITE8X8"
 local MIN_BAR_WIDTH = 120
 local DOT_SIZE = 14
@@ -29,6 +31,11 @@ local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTa
 local renderActivity -- CF-22, defined below
 local view -- last view model, used by the selection callback
 local showAllQuests = {} -- CF-19: tree path -> true when "Show all" is on (until /reload)
+-- CF-36: the smart filter of the Friends tab. Its text lasts while the window is open; savedGroups keeps the
+-- tree's expanded groups from before filtering (filtering expands everything) to put back when cleared.
+local filterText, filterBox, filterCount, savedGroups = "", nil, nil, nil
+local FILTER_HINT = "e.g. tailoring 150, mage 20-30"
+local FILTER_WIDTH, COUNT_WIDTH = 180, 120
 
 local function createWidget(widgetType)
   return LibStub("AceGUI-3.0"):Create(widgetType)
@@ -56,6 +63,8 @@ local function colorName(name, classFile, classID)
   local function hex(value) return math.floor(value * 255 + 0.5) end
   return string.format("|cff%02x%02x%02x%s|r", hex(color.r), hex(color.g), hex(color.b), tostring(name))
 end
+
+MainFrame.colorName = colorName -- CF-33: also used by the minimap tooltip
 
 -- Dungeon entrance icon for shared dungeon quests, or a text badge when the atlas is missing.
 local dungeonIconText
@@ -137,6 +146,7 @@ local function characterList(parent, groupValue, characters)
     entry:SetCallback("OnClick", function()
       tree:SelectByPath(groupValue, c.guid)
     end)
+    MainFrame.rightClickMenu(entry.frame, groupValue .. "" .. c.guid) -- CF-37
   end
 end
 
@@ -193,6 +203,10 @@ function renderDetail.person(parent, detail, groupValue, path)
   end
   if detail.source then
     label(parent, GREY .. detail.source .. "|r", GameFontHighlightSmall)
+  end
+  if detail.addon then
+    label(parent, GREY .. (detail.addon == ns.Format.USES_ADDON and (ADDON_MARK .. " ") or "") .. detail.addon .. "|r",
+      GameFontHighlightSmall)
   end
   spacer(parent)
   local status = detail.status
@@ -365,7 +379,9 @@ local function aceTree(nodes)
     end
     result[#result + 1] = {
       value = node.value,
-      text = string.format("%s  %s%d|r", node.text, GREY, node.count or #node.children), -- character count
+      -- Character count; CF-34: the addon's icon after people running it (not on your own row).
+      text = string.format("%s%s  %s%d|r", node.text,
+        (node.usesAddon and not node.isSelf) and (" " .. ADDON_MARK) or "", GREY, node.count or #node.children),
       icon = not node.unlinked and (node.online and ONLINE_ICON or OFFLINE_ICON) or nil,
       children = children,
     }
@@ -400,13 +416,25 @@ function MainFrame.render()
     return
   end
 
-  local nodes = ns.Format.tree(view)
-  tree:SetTree(aceTree(nodes))
-
-  -- Keep the selection while it still exists, else select the first person.
+  -- CF-36: the smart filter (tree and selection; the card still shows the whole person).
+  local terms = ns.Filter.parse(filterText)
+  local shownView, shown, total = ns.Filter.apply(view, terms)
+  local nodes = ns.Format.tree(shownView)
   local status = settings().tree
+  if #terms > 0 then
+    status.groups = status.groups or {}
+    for _, node in ipairs(nodes) do status.groups[node.value] = true end -- matches show expanded
+  end
+  if filterCount then filterCount:SetText(#terms > 0 and string.format("%s%d of %d|r", GREY, shown, total) or "") end
+  tree:SetTree(aceTree(nodes))
+  if #terms > 0 and #nodes == 0 then
+    showDetail(nil, string.format("No character matches \"%s\".", filterText))
+    return
+  end
+
+  -- Keep the selection while it still exists (and passes the filter), else select the first person.
   local selected = status.selected
-  if not selected or ns.Format.detail(view, selected, GetServerTime()).kind == "message" then
+  if not selected or ns.Format.detail(shownView, selected, GetServerTime()).kind == "message" then
     selected = nodes[1] and nodes[1].value
   end
   if selected then
@@ -506,6 +534,35 @@ function renderActivity(messageText)
   scroll:DoLayout()
 end
 
+-- CF-37: what a menu item does.
+local function onMenuItem(item)
+  if item.action == "whisper" then
+    if not ns.ContextMenu.whisper(item.name) then addonRef:Print("Cannot open a whisper here.") end
+  elseif item.action == "invite" then
+    local online = item.battleTag and ns.Sync.online()[item.battleTag]
+    if not ns.Party.invite(item.name, online and online.gameAccountID) then
+      addonRef:Print("Could not invite " .. tostring(item.name) .. ".")
+    end
+  end
+end
+
+-- CF-37: right-clicking `target` opens the menu for a tree path (a string, or a function returning it when
+-- the frame is reused for other rows). Hooked once per frame; OnMouseUp also sees right-clicks on frames
+-- that only take left clicks. HookScript is verified on tree rows (V57).
+function MainFrame.rightClickMenu(target, path)
+  if not target or not target.HookScript then return end
+  target.cfMenuPath = path
+  if target.cfMenuHooked then return end
+  target.cfMenuHooked = true
+  target:HookScript("OnMouseUp", function(self, mouse)
+    if mouse ~= "RightButton" or not view then return end
+    local p = self.cfMenuPath
+    if type(p) == "function" then p = p() end
+    local model = ns.Format.contextMenu(view, p)
+    if model then ns.ContextMenu.open(self, model, onMenuItem) end
+  end)
+end
+
 local function createTree()
   tree = createWidget("TreeGroup")
   -- No hover tooltip on rows: it repeated the row text on top of the detail card.
@@ -519,6 +576,8 @@ local function createTree()
     tree.RefreshTree = function(widget, ...)
       widget.cfRefreshTree(widget, ...)
       for _, button in ipairs(widget.buttons or {}) do
+        -- CF-37: right-click menu. AceGUI reuses row buttons, so the hook reads the row's path when clicked.
+        MainFrame.rightClickMenu(button, function() return button.uniquevalue end)
         if button.level and button.level > 1 then
           button:SetNormalFontObject(GameFontHighlight)
           button:SetHighlightFontObject(GameFontHighlight)
@@ -536,15 +595,79 @@ local function createTree()
   tree:SetCallback("OnTreeResize", function()
     if view then MainFrame.render() end
   end)
+  tree:SetFullWidth(true)
+  tree:SetFullHeight(true) -- Flow: the tree reaches the bottom below the search row
   content:AddChild(tree)
 end
+
+-- CF-36: a grey hint inside an empty edit box, gone while it has focus or text. AceGUI's EditBox has none.
+-- CreateFontString, HookScript, HasFocus and SetShown on the Blizzard edit box are guarded (V56).
+local function addPlaceholder(box, text)
+  local edit = box.editbox
+  if not (edit and edit.CreateFontString and edit.HookScript and edit.HasFocus) then return end
+  local hint = edit:CreateFontString(nil, "ARTWORK", "GameFontDisable")
+  hint:SetPoint("LEFT", edit, "LEFT", 2, 0)
+  hint:SetText(text)
+  local function update()
+    local show = (edit:GetText() or "") == "" and not edit:HasFocus()
+    if show then hint:Show() else hint:Hide() end
+  end
+  for _, script in ipairs({ "OnEditFocusGained", "OnEditFocusLost", "OnTextChanged" }) do
+    edit:HookScript(script, update)
+  end
+  update()
+end
+
+-- CF-36: the search box and its count ("3 of 12"), in the tab row; shown on the Friends tab only.
+function MainFrame.createFilter(parent)
+  filterBox = createWidget("EditBox")
+  filterBox:SetWidth(FILTER_WIDTH)
+  filterBox:SetLabel("")
+  if filterBox.DisableButton then filterBox:DisableButton(true) end
+  filterBox:SetCallback("OnTextChanged", function(_, _, text) MainFrame.setFilter(text, true) end)
+  parent:AddChild(filterBox)
+  filterBox:SetText(filterText) -- the tab is rebuilt on every switch; the text stays while the window is open
+  addPlaceholder(filterBox, FILTER_HINT)
+  filterCount = createWidget("Label")
+  filterCount:SetWidth(COUNT_WIDTH)
+  filterCount:SetText("")
+  parent:AddChild(filterCount)
+end
+
+-- Sets the filter text and redraws. typed: it came from the box (no need to set its text).
+function MainFrame.setFilter(text, typed)
+  text = text or ""
+  if text == filterText then return end
+  local wasFiltering = filterText:match("%S") ~= nil
+  filterText = text
+  if filterBox and not typed then filterBox:SetText(text) end
+  local filtering = filterText:match("%S") ~= nil
+  local status = settings().tree
+  if filtering and not wasFiltering then
+    savedGroups = {}
+    for k, v in pairs(status.groups or {}) do savedGroups[k] = v end
+  elseif wasFiltering and not filtering and savedGroups then
+    status.groups, savedGroups = savedGroups, nil
+  end
+  if frame and activeTab == "friends" and frame.frame:IsShown() then MainFrame.render() end
+end
+
+function MainFrame.filterText()
+  return filterText
+end
+
+local escapeReady -- CF-32: Esc handler set up (not possible in combat: retried on the next show)
 
 local function create()
   frame = createWidget("Frame")
   frame:SetTitle(ADDON_NAME)
+  -- CF-37: one strata below AceGUI's FULLSCREEN_DIALOG, so Blizzard's right-click menu (FULLSCREEN_DIALOG)
+  -- opens above the window (V57).
+  if frame.frame.SetFrameStrata then frame.frame:SetFrameStrata("DIALOG") end
   frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
   frame:SetLayout("Flow") -- tab bar row, then the content filling the rest
-  frame:SetCallback("OnClose", function() end) -- keep the widget for reuse: closing only hides it
+  -- Keep the widget for reuse: closing only hides it. CF-36: the filter starts empty next time.
+  frame:SetCallback("OnClose", function() MainFrame.setFilter("") end)
   -- No status bar: hide its background and text (the Close button is separate and stays).
   if frame.statustext and frame.statustext:GetParent() then
     frame.statustext:GetParent():Hide()
@@ -595,8 +718,15 @@ function MainFrame.selectTab(value)
   if not frame then return end
   activeTab = value
   MainFrame.updateTabs()
+  filterBox, filterCount = nil, nil -- released with the tab (AceGUI reuses widgets: never touch them after)
   content:ReleaseChildren()
-  if value == "friends" then createTree() end
+  -- CF-36: the Friends tab is the search row above the tree (Flow, the tree fills the rest); the others
+  -- fill the content with one widget.
+  content:SetLayout(value == "friends" and "Flow" or "Fill")
+  if value == "friends" then
+    MainFrame.createFilter(content)
+    createTree()
+  end
   if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
   if view then MainFrame.render() end
 end
@@ -615,6 +745,7 @@ function MainFrame.toggle()
   else
     frame:Show()
   end
+  if not escapeReady then escapeReady = ns.Keys.closeOnEscape(frame.frame, function() frame:Hide() end) end
   MainFrame.render()
 end
 
@@ -638,6 +769,8 @@ end
 function MainFrame.start(addon)
   addonRef = addon
   frame, content, tree, view = nil, nil, nil, nil
+  filterText, filterBox, filterCount, savedGroups = "", nil, nil, nil
+  escapeReady = false
   tabLinks = {}
   activeTab, expandedFeed = "friends", {}
   ns.DungeonsTab.reset()

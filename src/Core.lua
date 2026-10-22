@@ -4,6 +4,15 @@ local ADDON_NAME, ns = ...
 local addon = LibStub("AceAddon-3.0"):NewAddon(ns, ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
 CommunitiesForever = addon
 
+-- CF-32: names for Bindings.xml in Blizzard's keybinding menu (rule 5 allows BINDING_* globals).
+BINDING_HEADER_COMMUNITIESFOREVER = ADDON_NAME
+BINDING_NAME_COMMUNITIESFOREVER_TOGGLE = "Open or close the window"
+
+-- Called by the key binding (Bindings.xml).
+function addon:ToggleWindow()
+  ns.MainFrame.toggle()
+end
+
 local function GetVersion()
   if C_AddOns and C_AddOns.GetAddOnMetadata then
     return C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "unknown"
@@ -12,6 +21,7 @@ local function GetVersion()
 end
 
 function addon:OnInitialize()
+  self.version = GetVersion() -- CF-35: sent in HELLO, compared with friends' versions
   self.db = LibStub("AceDB-3.0"):New("CommunitiesForeverDB", ns.Store.defaults(), true)
   ns.Store.init(self.db.global)
   ns.Settings.register()

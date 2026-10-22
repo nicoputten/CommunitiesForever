@@ -4,13 +4,14 @@ max_line_length = 120
 codes = true
 self = false -- Ace callbacks and methods often ignore self
 
-exclude_files = { "Libs/", ".lua/", "dist/" }
+exclude_files = { "Libs/", ".lua/", "dist/", "tests/fixtures/v*/" } -- fixtures: generated (capture.lua)
 
 -- Globals the addon itself owns (CLAUDE.md rule 5).
 local addonGlobals = {
   "CommunitiesForever",
   "CommunitiesForeverDB",
   "SlashCmdList",
+  "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE", -- CF-32 (Bindings.xml)
 }
 
 -- WoW API used by adapters, services and UI. Add entries as stories need them;
@@ -36,6 +37,7 @@ stds.wow = {
     "ToggleCalendar", -- CF-24
     "EventRegistry", "SetItemRef", "hooksecurefunc", "C_PartyInfo", "BNInviteFriend", -- CF-27
     "ChatFrameUtil", "ChatFrame_AddMessageEventFilter", "ERR_CHAT_PLAYER_NOT_FOUND_S", -- CF-28
+    "MenuUtil", "ChatFrame_SendTell", -- CF-37
     "LibQuestieDB", "QuestDB", -- CF-24: the optional QuestieDB addon (read only)
     "GetInstanceInfo", "GetNumGroupMembers", "IsInRaid", "GetBattlefieldWinner", "GetBattlefieldArenaFaction", "GetRealZoneText", -- CF-23
     -- Battle.net

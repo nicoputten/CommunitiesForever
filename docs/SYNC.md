@@ -83,10 +83,17 @@ people whose account ID is unknown are simply not mentioned there.
 | `bt` | Sender's key (BattleTag over Battle.net, `aid:` key over the community) |
 | `ver` | Version of the sender's own record |
 | `known` | `{ key = version }` of records the sender holds and may relay: people with a character in the sender's selected community |
+| `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
 
 The receiver compares: `ver` newer than stored → `REQ` for the sender's own record. A `known` entry newer
 than stored → `REQ` for that record (relay). Over the community, a HELLO from an unknown member is also
 answered with your own HELLO, so both sides know each other.
+
+Over the community, a HELLO from a character that belongs to a person you know **without** an account ID
+(their record reached you through a relay, which carries none) teaches you that account ID
+(`Identity.bindAccountId`): the game names the sending character, and that character is theirs. A known
+account ID is never overwritten, and one that another person already has is never taken. Anything stored
+under that `aid:` key is then merged into the person (`Merge.absorb`), and their newer record is asked for.
 
 ### REQ: "send me this record"
 
