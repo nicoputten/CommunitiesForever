@@ -175,4 +175,39 @@ describe("Protocol", function()
       assert.are.equal("payload:with:colons", r:add(1, "m:1:1:payload:with:colons", 0))
     end)
   end)
+
+  describe("upgrades (rule 8)", function()
+    it("passes current messages through", function()
+      assert.are.same({ t = "HELLO", pv = Protocol.VERSION }, Protocol.upgrade({ t = "HELLO", pv = Protocol.VERSION }))
+    end)
+
+    it("brings a message from an older pv to the current one, step by step", function()
+      Protocol.VERSION = 3
+      Protocol.UPGRADES[1] = function(m) m.ver = m.version; m.version = nil end
+      Protocol.UPGRADES[2] = function(m) m.known = m.known or {} end -- missing: empty
+      assert.are.same({ t = "HELLO", ver = 7, known = {}, pv = 3 },
+        Protocol.upgrade({ t = "HELLO", version = 7, pv = 1 }))
+      -- decode runs it too: an encoded pv-1 message (encode stamps the current pv, so stamp 1 after it)
+      local encode = Protocol.VERSION
+      Protocol.VERSION = 1
+      local old = codec:encode({ t = "HELLO", version = 8 })
+      Protocol.VERSION = encode
+      assert.are.same({ t = "HELLO", ver = 8, known = {}, pv = 3 }, codec:decode(old))
+    end)
+
+    it("does not read a newer pv, a missing step or a broken pv", function()
+      assert.are.same({ nil, "unsupported", Protocol.VERSION + 1 },
+        { Protocol.upgrade({ t = "HELLO", pv = Protocol.VERSION + 1 }) })
+      Protocol.VERSION = 2
+      assert.are.same({ nil, "unsupported", 1 }, { Protocol.upgrade({ t = "HELLO", pv = 1 }) })
+      assert.is_nil((Protocol.upgrade({ t = "HELLO", pv = "1" })))
+      assert.is_nil((Protocol.upgrade({ t = "HELLO", pv = 0.5 })))
+    end)
+
+    it("has a step for every pv below the current one", function()
+      for pv = 1, Protocol.VERSION - 1 do
+        assert.is_function(Protocol.UPGRADES[pv], "no upgrade from pv " .. pv)
+      end
+    end)
+  end)
 end)

@@ -94,8 +94,20 @@ local function fakeLibs(state)
   end
 
   local AceDB = {}
+  -- Like AceDB: missing keys come from the defaults (state.savedVariables = a saved file's content).
+  local function withDefaults(saved, defaults)
+    for k, v in pairs(defaults) do
+      if saved[k] == nil then
+        saved[k] = deepCopy(v)
+      elseif type(v) == "table" and type(saved[k]) == "table" then
+        withDefaults(saved[k], v)
+      end
+    end
+    return saved
+  end
   function AceDB:New(svName, defaults)
-    local db = { global = deepCopy(defaults.global) }
+    local saved = state.savedVariables and deepCopy(state.savedVariables.global)
+    local db = { global = saved and withDefaults(saved, defaults.global) or deepCopy(defaults.global) }
     state.db = db
     state.svName = svName
     return db
