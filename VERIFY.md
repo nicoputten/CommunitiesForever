@@ -28,7 +28,7 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ### CF-36 Smart filter in the Friends tab
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Friends tab | Right of the tabs a search box with the grey hint "e.g. tailoring 150, mage 20-30" (V56). Not on the Activity and Dungeons tabs. | open |
+| `/cf`, Friends tab | Inside the tab, above the list: a search box (not touching the window border) with the grey hint "e.g. tailoring 150, mage 20-30" (V56), the count right of it with room to spare. Not on the Activity and Dungeons tabs. Switching tabs and back keeps the text. | open |
 | Click in the box | The hint disappears; typing works (keys do not move the character). | open |
 | `tailoring 150` (or a profession someone has) | Only people with a character at that rank, only those characters, expanded; "N of M" next to the box. | open |
 | `mage 20-30`, `healer`, a zone name, part of a name | Each narrows the list as expected. | open |

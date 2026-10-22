@@ -35,6 +35,7 @@ local showAllQuests = {} -- CF-19: tree path -> true when "Show all" is on (unti
 -- tree's expanded groups from before filtering (filtering expands everything) to put back when cleared.
 local filterText, filterBox, filterCount, savedGroups = "", nil, nil, nil
 local FILTER_HINT = "e.g. tailoring 150, mage 20-30"
+local FILTER_WIDTH, COUNT_WIDTH = 180, 120
 
 local function createWidget(widgetType)
   return LibStub("AceGUI-3.0"):Create(widgetType)
@@ -562,6 +563,8 @@ local function createTree()
   tree:SetCallback("OnTreeResize", function()
     if view then MainFrame.render() end
   end)
+  tree:SetFullWidth(true)
+  tree:SetFullHeight(true) -- Flow: the tree reaches the bottom below the search row
   content:AddChild(tree)
 end
 
@@ -586,14 +589,15 @@ end
 -- CF-36: the search box and its count ("3 of 12"), in the tab row; shown on the Friends tab only.
 function MainFrame.createFilter(parent)
   filterBox = createWidget("EditBox")
-  filterBox:SetWidth(220)
+  filterBox:SetWidth(FILTER_WIDTH)
   filterBox:SetLabel("")
   if filterBox.DisableButton then filterBox:DisableButton(true) end
   filterBox:SetCallback("OnTextChanged", function(_, _, text) MainFrame.setFilter(text, true) end)
   parent:AddChild(filterBox)
+  filterBox:SetText(filterText) -- the tab is rebuilt on every switch; the text stays while the window is open
   addPlaceholder(filterBox, FILTER_HINT)
   filterCount = createWidget("Label")
-  filterCount:SetWidth(90)
+  filterCount:SetWidth(COUNT_WIDTH)
   filterCount:SetText("")
   parent:AddChild(filterCount)
 end
@@ -654,7 +658,6 @@ local function create()
     tabBar:AddChild(link)
     tabLinks[tab.value] = link
   end
-  MainFrame.createFilter(tabBar)
 
   content = createWidget("SimpleGroup")
   content:SetFullWidth(true)
@@ -673,12 +676,6 @@ function MainFrame.updateTabs()
     if tab.value == "dungeons" and planned > 0 then text = string.format("%s (%d)", text, planned) end
     tabLinks[tab.value]:SetText((tab.value == activeTab and GOLD or GREY) .. text .. "|r")
   end
-  -- CF-36: the search box belongs to the Friends tab.
-  for _, widget in ipairs({ filterBox, filterCount }) do
-    if widget and widget.frame and widget.frame.Show then
-      if activeTab == "friends" then widget.frame:Show() else widget.frame:Hide() end
-    end
-  end
 end
 
 -- Shows a tab ("friends", "activity" or "dungeons").
@@ -686,8 +683,15 @@ function MainFrame.selectTab(value)
   if not frame then return end
   activeTab = value
   MainFrame.updateTabs()
+  filterBox, filterCount = nil, nil -- released with the tab (AceGUI reuses widgets: never touch them after)
   content:ReleaseChildren()
-  if value == "friends" then createTree() end
+  -- CF-36: the Friends tab is the search row above the tree (Flow, the tree fills the rest); the others
+  -- fill the content with one widget.
+  content:SetLayout(value == "friends" and "Flow" or "Fill")
+  if value == "friends" then
+    MainFrame.createFilter(content)
+    createTree()
+  end
   if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
   if view then MainFrame.render() end
 end
