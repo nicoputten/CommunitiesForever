@@ -509,6 +509,17 @@ function wowapi.install(opts)
     return "Community:" .. clubId .. ":" .. streamId
   end
   globals.GetChannelName = function(name) return state.chatChannels[name] or 0 end
+  -- CF-31: joining custom channels works only with state.channelsEnabled (tests/net.lua sets it), so other
+  -- specs keep the whisper path. A joined channel gets the next free index and lands in the first window.
+  state.nextChannelIndex = 7
+  globals.JoinTemporaryChannel = function(name)
+    if not state.channelsEnabled or state.chatChannels[name] then return end
+    state.chatChannels[name] = state.nextChannelIndex
+    state.nextChannelIndex = state.nextChannelIndex + 1
+    table.insert(state.chatWindows[1].channels, name)
+    return 1, name
+  end
+  globals.LeaveChannelByName = function(name) state.chatChannels[name] = nil end
   globals.ChangeChatColor = function(chatType, r, g, b) state.chatColors[chatType] = { r = r, g = g, b = b } end
   -- Like Mainline: name, fontSize, r, g, b, alpha, shown, locked, docked. A window with closed = true is
   -- what closing a chat tab leaves: the name stays, shown and docked are off (CF-26 feedback).

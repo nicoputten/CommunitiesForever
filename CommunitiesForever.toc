@@ -48,6 +48,7 @@ src\adapters\GroupFinder.lua
 src\adapters\ChatLinks.lua
 src\adapters\Party.lua
 src\adapters\ContextMenu.lua
+src\adapters\Channels.lua
 src\adapters\Transport.lua
 
 src\services\FeedTracker.lua
@@ -55,6 +56,7 @@ src\services\ActivityTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua
+src\services\SyncChannel.lua
 src\services\MemberTracker.lua
 src\services\PresenceTracker.lua
 src\services\Debug.lua

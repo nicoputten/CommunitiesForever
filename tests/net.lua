@@ -12,8 +12,10 @@ net.REALM = "Classic Beta PvP"
 local Net = {}
 Net.__index = Net
 
-function net.new()
-  return setmetatable({ clients = {}, time = 500, serverTime = 1000 }, Net)
+-- opts.channel (CF-31): clients can join custom chat channels (the hidden sync channel).
+function net.new(opts)
+  return setmetatable({ clients = {}, time = 500, serverTime = 1000, channel = opts and opts.channel or false },
+    Net)
 end
 
 -- People in the network: def = { key, name, guid, battleTag, classFile, classID, level, gameAccountID,
@@ -73,6 +75,7 @@ function Net:login(key)
     def.level
   state.clubs = { { clubId = net.CLUB, name = "Test Friends", clubType = 1 } }
   if def.version then state.metadata.Version = def.version end -- the TOC version this client runs
+  state.channelsEnabled = self.channel and not def.noChannel -- noChannel: an older client without CF-31
   local client = { key = key, state = state, online = true, sentBn = 0, sentWhispers = 0 }
   self.clients[key] = client
   self:refreshWorld(key)
@@ -143,7 +146,22 @@ function Net:deliver()
       end
       for i = c.sentWhispers + 1, #whispers do
         local w = whispers[i]
-        local to = byName(self, w[4])
+        if w[3] == "CHANNEL" then
+          -- CF-31: to everyone on the same channel, the sender too (as the game does).
+          local channelName
+          for n, index in pairs(c.state.chatChannels) do
+            if index == w[4] then channelName = n end
+          end
+          for otherKey, other in pairs(self.clients) do
+            local index = channelName and other.online and other.state.chatChannels[channelName]
+            if index then
+              self:with(otherKey, function(r) wowapi.fireEvent(r.state, "CHAT_MSG_ADDON", w[1], w[2], "CHANNEL",
+                from.name .. "-ClassicBetaPvP", channelName, 0, index, index .. ". " .. channelName) end)
+              moved = moved + 1
+            end
+          end
+        end
+        local to = w[3] == "WHISPER" and byName(self, w[4])
         if to and self:isOnline(to) then
           self:with(to, function(r) wowapi.fireEvent(r.state, "CHAT_MSG_ADDON", w[1], w[2], "WHISPER",
             from.name .. "-ClassicBetaPvP") end)
@@ -177,9 +195,9 @@ function Net:sentBy(key)
     if encoded then out[#out + 1] = { channel = "bn", to = s[1], message = codec:decode(encoded) } end
   end
   for _, w in ipairs(c.state.whispers) do
-    local encoded = r:add("w:" .. w[4], w[2], 0)
-    if encoded then out[#out + 1] = { channel = "whisper", to = w[4], message = codec:decode(encoded),
-                                      raw = w[2] } end
+    local encoded = r:add("w:" .. tostring(w[4]), w[2], 0)
+    local kind = w[3] == "CHANNEL" and "channel" or "whisper"
+    if encoded then out[#out + 1] = { channel = kind, to = w[4], message = codec:decode(encoded), raw = w[2] } end
   end
   return out
 end

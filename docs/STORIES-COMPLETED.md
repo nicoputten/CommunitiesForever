@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -367,3 +367,10 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Manual: each menu item on a friend's character; Invite on an offline character is disabled.
 - Decided after V57 run 1: also on a **person** (group) row: Whisper and Invite go to the character they are on now; offline: both disabled with "Offline" in the title, Copy name copies the last character seen. Your own row: Copy name only. The menu is raised above the main window (it draws below AceGUI windows otherwise). The copy box closes after Ctrl+C and when it loses focus.
 - Decided after V57 run 3: no Copy name (the copy box was clumsy; addons cannot use the clipboard), so the menu has Whisper and Invite to group only, and your own rows have no menu. The main window is strata `DIALOG`, one below Blizzard's menu. Built: `Format.contextMenu` (pure), `src/adapters/ContextMenu.lua` (menu, `ChatFrameUtil.SendTell`), right-click on tree rows and on the card's character list; Invite uses CF-27's `Party.invite` (by name, else Battle.net). Rule 8: nothing stored or sent changes.
+
+### CF-31 One broadcast on a hidden community channel
+- Goal: the community transport (CF-28 part 2b) sends one message to the community channel instead of a whisper to each member running the addon, so traffic no longer grows with the number of members.
+- Depends on V49: can addons send addon messages in the community channel, and do they arrive at the other members (run 1: the send is accepted, but no copy comes back to the sender)? If V49 says no, this story is dropped and the whispers stay.
+- Keeps everything from CF-28: 255-byte parts, MISS and resend, the accept rules (the sender maps to a community member; a record claimed as own must contain the sending character).
+- Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
+- Decided (2026-10-23): not the community channel (V49 unclear: the send was accepted but did not come back), but a hidden custom chat channel named `cf` + a hash of the community name, built with an automatic fallback to whispers instead of probing first. V49 dropped. Only HELLO and BYE go on the channel (single part); REQ, RECORD, MISS, ASK and PING stay whispers. HELLO carries `ch` (rule 8: optional); members without it, or a failed join, keep getting whispers; someone new is always answered by whisper. Built: `Chat.syncChannel`, `src/adapters/Channels.lua`, `src/services/SyncChannel.lua`, `Messenger.sendChannel`. Found while building: `ChatFrames.windows` only looked at the first channel of a window (`{ f and f() }` keeps one value). Tests: `SyncChannel_spec` (harness with channels), `Chat_spec`. VERIFY V59.

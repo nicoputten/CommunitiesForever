@@ -47,7 +47,9 @@ function ChatFrames.windows(channel)
     local name = GetChatWindowInfo and GetChatWindowInfo(i)
     if name and name ~= "" and not closed(GetChatWindowInfo(i)) then
       local has = false
-      for _, c in ipairs({ GetChatWindowChannels and GetChatWindowChannels(i) }) do
+      -- Every return value (name, index, name, index, ...): `{ f and f(i) }` would keep only the first.
+      local channels = GetChatWindowChannels and { GetChatWindowChannels(i) } or {}
+      for _, c in ipairs(channels) do
         if c == channel then has = true end
       end
       windows[#windows + 1] = { index = i, name = name, hasChannel = has }
