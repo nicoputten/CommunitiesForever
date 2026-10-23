@@ -51,8 +51,12 @@ function Get-Git([hashtable]$ext, [string]$dest) {
   $gitArgs = @('-c', 'advice.detachedHead=false', 'clone', '--quiet', '--depth', '1')
   if ($ext.Tag) { $gitArgs += @('--branch', $ext.Tag) }
   $gitArgs += @($ext.Url, $dest)
-  & git @gitArgs
+  # git writes warnings to stderr (e.g. "tag ... is not a commit" for annotated tags); Windows PowerShell
+  # would turn those into errors inside Invoke-WithRetry. Only the exit code decides.
+  $ErrorActionPreference = 'Continue'
+  & git @gitArgs 2>&1 | ForEach-Object { Write-Host "       $_" }
   if ($LASTEXITCODE -ne 0) { throw "git clone failed for $($ext.Url)" }
+  $ErrorActionPreference = 'Stop'
   Remove-Item -Recurse -Force (Join-Path $dest '.git')
   Remove-Ignored $dest
 }
@@ -87,6 +91,22 @@ function Get-Svn([string]$url, [string]$dest) {
   }
 }
 
+# Up to 3 attempts per external: wowace.com and GitHub sometimes fail a request (CI saw both). A failed
+# attempt's partial download is removed before the next one.
+function Invoke-WithRetry([scriptblock]$fetch, [string]$dest, [string]$what) {
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try {
+      & $fetch
+      return
+    } catch {
+      if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+      if ($attempt -eq 3) { throw }
+      Write-Host "retry  $what (attempt $attempt failed: $($_.Exception.Message))"
+      Start-Sleep -Seconds (10 * $attempt)
+    }
+  }
+}
+
 function Test-Embeds([string]$embedsPath) {
   $missing = @()
   $base = Split-Path -Parent $embedsPath
@@ -109,10 +129,10 @@ foreach ($ext in Read-Externals (Join-Path $root '.pkgmeta')) {
 
   Write-Host "fetch  $($ext.Path) <- $($ext.Url)$(if ($ext.Tag) { " @ $($ext.Tag)" })"
   if ($ext.Url -match '^https://github\.com/') {
-    Get-Git $ext $dest
+    Invoke-WithRetry { Get-Git $ext $dest } $dest $ext.Path
   } elseif ($ext.Url -match '^https://repos\.(wowace|curseforge)\.com/') {
     if ($ext.Tag) { throw "SVN externals are not pinned by tag here; put the tag in the URL ($($ext.Path))" }
-    Get-Svn $ext.Url $dest
+    Invoke-WithRetry { Get-Svn $ext.Url $dest } $dest $ext.Path
   } else {
     throw "Unsupported external URL: $($ext.Url)"
   }
