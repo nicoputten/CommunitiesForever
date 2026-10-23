@@ -37,6 +37,21 @@ sent, what the receiver checks, and how much traffic that causes. Written from t
 | Part size | 3500 bytes | 255 bytes (longer is cut silently, V50) |
 | Rejected | senders that are not friends online in Forever | senders that are not members of the selected community |
 
+**Hidden community channel (CF-31):** every client in the community joins a hidden chat channel named
+`cf` + a hash of the community name (`Chat.syncChannel`), takes it out of every chat window and hides its
+join lines. Only **HELLO** and **BYE** go there, as one `SendAddonMessage(..., "CHANNEL", index)` that every
+member on the channel receives (and only when the message fits one 255-byte part: a lost part of a
+broadcast could not be asked again). Everything aimed at one peer (REQ, RECORD, MISS, ASK, ANSWER, PING)
+stays a whisper. Receiving works like a whisper: the sender name must be a community member; your own
+broadcast coming back is dropped.
+
+| Fallback | What happens |
+|---|---|
+| A member said `ch` = our channel in their HELLO | they get our HELLOs on the channel only |
+| A member without `ch` (older client, or their join failed) | they are whispered as before |
+| Someone new says HELLO | always answered by whisper (they may have joined after our last HELLO) |
+| We could not join, or a HELLO needs more than one part | everyone is whispered as before |
+
 **Encoding of one message:** Lua table → `LibSerialize:Serialize` → `LibDeflate:CompressDeflate` →
 `LibDeflate:EncodeForWoWAddonChannel`. Every message carries `pv = 1` (protocol version). A message with
 another `pv` is dropped and shown once as "a friend uses a newer version". The examples below are written
@@ -83,6 +98,7 @@ people whose account ID is unknown are simply not mentioned there.
 | `bt` | Sender's key (BattleTag over Battle.net, `aid:` key over the community) |
 | `ver` | Version of the sender's own record |
 | `known` | `{ key = version }` of records the sender holds and may relay: people with a character in the sender's selected community |
+| `ch` | Optional, community only (CF-31): the hidden channel the sender listens on. Members that sent it get later HELLOs on the channel instead of a whisper each. Older clients send none and ignore it (rule 8) |
 | `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
 
 The receiver compares: `ver` newer than stored → `REQ` for the sender's own record. A `known` entry newer
@@ -270,7 +286,7 @@ The numbers in this table are estimates from the field sizes, not measurements.
   cost of one small message per peer.
 - **`known` grows with the community:** every HELLO lists every relayable person. Fine for a group of
   friends; for a large community it would need limiting.
-- **Community broadcast:** today each community peer gets its own whisper. If V49 shows that addon
-  messages work in the community channel, one broadcast could replace them.
+- **Community broadcast (CF-31):** HELLO and BYE go out once on the hidden channel; REQ and RECORD are
+  still one whisper per peer that asks (a broadcast would not save anything there).
 - **BYE is best effort:** if it does not go out, the community presence (which can lag, V52) decides
   until the next HELLO.

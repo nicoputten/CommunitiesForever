@@ -38,6 +38,7 @@ stds.wow = {
     "EventRegistry", "SetItemRef", "hooksecurefunc", "C_PartyInfo", "BNInviteFriend", -- CF-27
     "ChatFrameUtil", "ChatFrame_AddMessageEventFilter", "ERR_CHAT_PLAYER_NOT_FOUND_S", -- CF-28
     "MenuUtil", "ChatFrame_SendTell", -- CF-37
+    "JoinTemporaryChannel", "JoinChannelByName", "LeaveChannelByName", -- CF-31
     "LibQuestieDB", "QuestDB", -- CF-24: the optional QuestieDB addon (read only)
     "GetInstanceInfo", "GetNumGroupMembers", "IsInRaid", "GetBattlefieldWinner", "GetBattlefieldArenaFaction", "GetRealZoneText", -- CF-23
     -- Battle.net

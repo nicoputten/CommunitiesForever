@@ -80,16 +80,45 @@ local function ownWireKey(target)
   return own().battleTag
 end
 
-local function sendHello(target, force)
-  local key = ownWireKey(target)
-  if not key then return end -- nothing to identify us by yet
+-- The HELLO for a target. Over the community it says which hidden channel we listen on (ch, CF-31).
+local function helloFor(community)
+  local key = community and own().accountId and ns.Identity.aidKey(own().accountId) or (not community and
+    own().battleTag) or nil
+  if not key then return nil end -- nothing to identify us by yet
   local known = knownVersions()
-  if isCommunity(target) then known = ns.Identity.knownForCommunity(global().people, own(), known) end
-  local signature = helloSignature(own().version, known)
+  if community then known = ns.Identity.knownForCommunity(global().people, own(), known) end
+  -- av (CF-35): our addon version; ch (CF-31): our channel. Older clients ignore both (rule 8). The channel
+  -- is part of the signature: once it is ready, a new HELLO tells everyone (the 60 s dedupe would not).
+  local ch = community and ns.SyncChannel.index() and ns.SyncChannel.name() or nil
+  return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch },
+         helloSignature(own().version, known) .. ";" .. tostring(ch)
+end
+
+local function sendHello(target, force)
+  local message, signature = helloFor(isCommunity(target))
+  if not message then return end
   if not force and recentlySent(lastHello, target, signature) then return end
   remember(lastHello, target, signature)
-  -- av (CF-35): our addon version; older clients ignore the field (rule 8).
-  ns.Messenger.send(target, { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version })
+  ns.Messenger.send(target, message)
+end
+
+-- CF-31: the HELLO once on the hidden channel. Returns true when members on the channel have it (sent now,
+-- or the same one less than 60 s ago); false when it cannot go there, so everyone is whispered.
+local CHANNEL_KEY = "#channel"
+local function channelHello(force)
+  if not ns.SyncChannel.index() then return false end
+  local message, signature = helloFor(true)
+  if not message then return false end
+  if not force and recentlySent(lastHello, CHANNEL_KEY, signature) then return true end
+  if ns.Messenger.sendChannel(message) == 0 then return false end
+  remember(lastHello, CHANNEL_KEY, signature)
+  return true
+end
+
+-- A community member whose last HELLO said they listen on our channel.
+local function onChannel(name)
+  local peer = peers[name]
+  return peer ~= nil and peer.channel == true
 end
 
 -- CF-28: community members online now who are not reached over Battle.net: { [name] = guid }.
@@ -112,8 +141,10 @@ local function broadcastHello(force)
   for gameAccountID in pairs(ns.PresenceTracker.gameAccounts()) do
     sendHello(gameAccountID, force)
   end
+  -- CF-31: one HELLO on the hidden channel; a whisper only to members not known to listen there.
+  local covered = channelHello(force)
   for name in pairs(communityTargets()) do
-    sendHello(name, force)
+    if not (covered and onChannel(name)) then sendHello(name, force) end
   end
 end
 
@@ -176,8 +207,13 @@ function handlers.HELLO(message, senderKey, target, guid)
     -- Community: an "aid:" key, and not a key of someone else than the sending character's owner.
     if not ns.Identity.isAidKey(message.bt) then return end
     if senderKey:sub(1, 7) ~= "member:" and senderKey ~= key then return end
+    local isNew = peers[target] == nil
     peerSeen(target, guid, key)
-    sendHello(target, false) -- so they know us too (the dedupe stops ping-pong)
+    -- CF-31: they listen on our channel (same name), so later HELLOs reach them there.
+    peers[target].channel = message.ch ~= nil and message.ch == ns.SyncChannel.name()
+    -- So they know us too (the dedupe stops ping-pong): always someone new to us (they may have joined
+    -- after our last HELLO); later only members not on our channel, the others get our HELLOs there.
+    if isNew or not (onChannel(target) and ns.SyncChannel.index()) then sendHello(target, false) end
   elseif message.bt ~= senderKey then
     return
   end
@@ -329,7 +365,11 @@ function Sync.start(addon)
     if not passive then Sync.announce() end
   end)
   ns.Events.register(events, "PLAYER_LOGOUT", function()
-    for name in pairs(peers) do ns.Messenger.send(name, { t = "BYE" }) end
+    -- CF-31: one BYE on the channel; whispers to members not listening there.
+    local covered = ns.Messenger.sendChannel({ t = "BYE" }) > 0
+    for name in pairs(peers) do
+      if not (covered and onChannel(name)) then ns.Messenger.send(name, { t = "BYE" }) end
+    end
   end)
 
   broadcastHello(false)

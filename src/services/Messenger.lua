@@ -32,7 +32,11 @@ local function trace(text, ...)
   if Messenger.debugOn() then addonRef:Print("|cffa0a0a0[sync]|r " .. string.format(text, ...)) end
 end
 
+-- CF-31: outbox target for the hidden community channel (a table, so it never equals a name or account).
+local CHANNEL = {}
+
 local function who(target)
+  if target == CHANNEL then return "the community channel" end
   if type(target) == "string" then return target end
   return tostring(ns.PresenceTracker.battleTagFor(target) or target)
 end
@@ -50,7 +54,9 @@ local function pump()
   end
   local target, chunk = outbox:pop(ns.Transport.now())
   if target then
-    if type(target) == "string" then
+    if target == CHANNEL then
+      ns.Channels.send(ns.Protocol.PREFIX, chunk, ns.SyncChannel.index())
+    elseif type(target) == "string" then
       ns.Transport.whisper(target, ns.Protocol.PREFIX, chunk) -- CF-28: a community member
     else
       ns.Transport.send(target, ns.Protocol.PREFIX, chunk)
@@ -82,6 +88,20 @@ function Messenger.send(gameAccountID, message)
   trace("to %s: %s %s in %d part(s)", who(gameAccountID), tostring(message.t), msgId, #chunks)
   schedulePump()
   return #chunks
+end
+
+-- CF-31: one message on the hidden community channel, to every member running the addon at once. Only
+-- single-part messages (HELLO, BYE): a lost part could not be asked again from a broadcast. Returns 1 when
+-- queued, 0 when it cannot go there (no channel yet, passive, or too big): the caller whispers instead.
+function Messenger.sendChannel(message)
+  if ns.CommunitySelection.passive() or not ns.SyncChannel.index() then return 0 end
+  local msgId = nextMsgId()
+  local chunks = ns.Protocol.chunk(codec:encode(message), msgId, ns.Protocol.COMMUNITY_CHUNK)
+  if #chunks ~= 1 then return 0 end
+  outbox:push(CHANNEL, chunks[1])
+  trace("to %s: %s %s", who(CHANNEL), tostring(message.t), msgId)
+  schedulePump()
+  return 1
 end
 
 -- Asks the senders of incomplete messages for their missing parts; runs while messages are incomplete.
@@ -179,6 +199,7 @@ local function receiveWhisper(text, name)
     stats.dropped = stats.dropped + 1
     return
   end
+  if guid == ns.SelfInfo.read().guid then return end -- CF-31: our own broadcast, back from the channel
   local key = ns.Identity.personOfGuid(addonRef.db.global.people, guid) or ("member:" .. guid)
   receive(text, name, key, guid)
 end
@@ -205,6 +226,10 @@ function Messenger.start(addon)
   ns.Transport.watch(addon, ns.Protocol.PREFIX)
   addon:RegisterMessage(ns.Transport.RECEIVED, function(_, text, senderID) receiveBattleNet(text, senderID) end)
   addon:RegisterMessage(ns.Transport.WHISPER_RECEIVED, function(_, text, name) receiveWhisper(text, name) end)
+  -- CF-31: the hidden channel carries the same parts as whispers; only from members, as for whispers.
+  addon:RegisterMessage(ns.Transport.CHANNEL_RECEIVED, function(_, text, name, target, localID, channelName)
+    if ns.SyncChannel.isOurs(target, localID, channelName) then receiveWhisper(text, name) end
+  end)
   addon:RegisterMessage(ns.Transport.COMBAT_ENDED, function() schedulePump() end)
 end
 

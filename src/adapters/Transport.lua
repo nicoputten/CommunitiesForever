@@ -10,6 +10,9 @@ Transport.RECEIVED = "CF_TRANSPORT_RECEIVED"     -- (text, senderGameAccountID) 
 Transport.COMBAT_ENDED = "CF_TRANSPORT_COMBAT_ENDED"
 Transport.WHISPER_RECEIVED = "CF_TRANSPORT_WHISPER_RECEIVED" -- (text, senderName) for our prefix (CF-28)
 Transport.WHISPER_FAILED = "CF_TRANSPORT_WHISPER_FAILED"     -- (name): "no player named ..." after a whisper
+-- CF-31: (text, senderName, target, localID, channelName) for our prefix on a chat channel; which of the
+-- last three name the channel is unverified (V59), so all are passed on.
+Transport.CHANNEL_RECEIVED = "CF_TRANSPORT_CHANNEL_RECEIVED"
 
 -- Bytes per addon whisper: longer text is cut silently (verified, V50).
 Transport.WHISPER_MAX = 255
@@ -63,9 +66,13 @@ function Transport.watch(addon, prefix)
   end)
   -- CF-28: community whispers. CHAT_MSG_ADDON(prefix, text, channel, sender) is verified (V50).
   local events = LibStub("AceEvent-3.0"):Embed({})
-  ns.Events.register(events, "CHAT_MSG_ADDON", function(_, messagePrefix, text, channel, sender)
-    if messagePrefix == prefix and channel == "WHISPER" then
+  ns.Events.register(events, "CHAT_MSG_ADDON", function(_, messagePrefix, text, channel, sender, target, _,
+                                                       localID, channelName)
+    if messagePrefix ~= prefix then return end
+    if channel == "WHISPER" then
       addon:SendMessage(Transport.WHISPER_RECEIVED, text, Transport.shortName(sender))
+    elseif channel == "CHANNEL" then
+      addon:SendMessage(Transport.CHANNEL_RECEIVED, text, Transport.shortName(sender), target, localID, channelName)
     end
   end)
   -- Whispering someone who just went offline makes the game print "No player named ... is currently
