@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -415,3 +415,12 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): the slots (missing role, your slot, open), alternatives, quest counts and colour, the planned list.
 - Manual: compare with `dungeons.html`; asking, the calendar button and planned runs still work.
 - Decided (2026-10-27): the list follows the character you are on (`Dungeons.overview` and `suggest` with its GUID; your other characters are "Alternatives for you"); zones per dungeon hardcoded in English (`Dungeons.ZONES`; none for the Group Finder's new dungeons); "Also in range" kept, compact. No "outdoor" ranges (no data). The list no longer shows the dungeon atlas icon (V32). Selection stays in `settings.dungeonTree.selected` (rule 8).
+
+### CF-43 Settings and setup in the new look
+- Goal: the settings window and the first-run setup as in `settings-setup.html`.
+- Settings (own window, 640 × ~500): Display name, Community (dropdown, character communities only), Sharing (Share my activity; Receive group asks: "a chat line when a friend looks for a group"), Notifications (When friends log in, Announce friends' level-ups, Play a sound), Community chat (colour swatch and Reset, Flash the chat tab, Create a community chat tab), Interface (Minimap button, **Open on login**, **Ambient effects**: title shimmer and level-up glow). No "paste an invite link to join" (blocked, V26). Footer "Also under Options › AddOns · v<version>"; registered there with `Settings.RegisterCanvasLayoutCategory` (unverified, VERIFY.md), replacing the AceConfig dialog.
+- New settings `openOnLogin` (off) and `ambientEffects` (on): new keys with defaults, no migration (rule 8).
+- Setup (600 × 460): progress bars and "Step n of 6", Welcome (three tiles: Friends, Activity, Dungeons), Community, Name, Community chat (optional, as CF-30: Create chat tab in the Next spot, Not now), Sharing and notifications, Done. Skip setup / Next.
+- Unit tests: every setting writes the same value as before (one source of truth, CF-26); the new settings' defaults; the steps.
+- Manual: compare with `settings-setup.html`; every setting works; the setup on a fresh account.
+- Decided (2026-10-27): Options › AddOns gets a launcher page (a line and "Open settings"), not a second copy of the controls; the settings window also keeps roles per character (CF-18), the invite link to share (CF-21) and "Keep community messages in General too"; "Play a sound" is the existing chat sound, under Community chat; the ambient animations are built now (`Kit.shine`, AnimationGroup, V64). Built: `Kit.dialog`, `Kit.input`, `Kit.select` (Blizzard's menu), `Kit.swatch`, `Kit.shine`; `adapters/Panels.lua` (colour picker V65, Options page V66). Option names follow the design ("When friends log in", "Minimap button", "Chat color", "Reset", "Create a community chat tab"). AceGUI and AceConfig are no longer called (their libraries stay embedded for now).

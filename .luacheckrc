@@ -46,6 +46,7 @@ stds.wow = {
     -- UI
     "CreateFrame", "UIParent", "GameTooltip", "TooltipDataProcessor", "C_CreatureInfo",
     "CreateColor", "GetLocale", "C_ClassColor", "CLASS_ICON_TCOORDS", -- CF-39 kit
+    "ColorPickerFrame", -- CF-43
     "issecretvalue",
     "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",

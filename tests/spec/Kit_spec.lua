@@ -109,7 +109,7 @@ describe("kit and window shell (CF-39)", function()
       load()
       ns.MainFrame.toggle()
       ns.MainFrame.window().settingsButton:RunScript("OnClick")
-      assert.are.equal("CommunitiesForever", state.openedDialog)
+      assert.is_true(ns.SettingsWindow.isShown()) -- CF-43
     end)
   end)
 

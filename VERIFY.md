@@ -22,9 +22,31 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V61 | Do the kit's drawing calls work on Forever (CF-39)? `FontString:SetFont` with the bundled `.ttf` files, `Texture:SetGradient` with `CreateColor`, `CreateMaskTexture` + `AddMaskTexture`, `SetResizeBounds`, `C_ClassColor.GetClassColor`, the round class icons (`UI-Classes-Circles` with `CLASS_ICON_TCOORDS`), and the TGA textures in `media/textures`. | See the CF-39 steps: if text shows in the game's own font, a texture is a green square or missing, or the title bar has no glow, send a screenshot and any Lua error. | open |
 | V62 | Do the Friends tab's native calls work (CF-40)? An `EditBox` with `SetTextInsets`, `SetAutoFocus`, `HasFocus`, `ClearFocus` and the focus and text scripts; a `ScrollFrame` with `SetScrollChild`, `SetVerticalScroll`, `EnableMouseWheel` and `OnMouseWheel`; `Texture:SetRotation` for the fold arrow. (Replaces V56: the AceGUI search box is gone.) | See the CF-40 steps: typing in the search box, scrolling a long list and the card with the mouse wheel, the arrow pointing right on a folded person. If anything errors, send the error text. | open |
 | V63 | Does `date("%H:%M", t)` give the local clock time of a server timestamp (CF-41: the time on Activity entries)? | See the CF-41 steps: the time right of each entry matches when it happened. Without `date` the time stays empty. | open |
+| V64 | Do the ambient effects work (CF-43)? `frame:CreateAnimationGroup` with a `Translation` animation (`SetOffset`, `SetDuration`, `SetStartDelay`, `SetLooping("REPEAT")`), `SetClipsChildren` and `Texture:SetBlendMode("ADD")`. | See the CF-43 steps: a soft light streak slides across the window title every few seconds and across LEVEL UP chips; off with Ambient effects. If nothing moves, send any Lua error. | open |
+| V65 | Does `ColorPickerFrame:SetupColorPickerAndShow` (with `swatchFunc`, `cancelFunc`) and `ColorPickerFrame:GetColorRGB` open and report the colour (CF-43: chat colour)? | See the CF-43 steps: clicking the colour square opens Blizzard's colour picker; the community chat changes colour while picking; Cancel puts the old one back. | open |
+| V66 | Do `Settings.RegisterCanvasLayoutCategory(frame, name)` and `Settings.RegisterAddOnCategory(category)` add the page under Options › AddOns (CF-43)? | Esc → Options → AddOns: a "CommunitiesForever" entry with the line and an "Open settings" button that opens the settings window. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-43 Settings and setup in the new look
+Compare with `docs/design/revamp-2026-10/settings-setup.html`.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf settings` (or the gear) | A 640 × 500 window in the new look titled "Settings": Display name and Community (a dropdown) on top, then Sharing, Notifications, Community chat, Interface in two columns, the invite link (only when you may set it), then "Roles of your characters". Footer "Also under Options » AddOns" and "v<version>". Scrolls when it is longer than the window. Esc closes it. | open |
+| Each switch | Changes the same thing as before (e.g. When friends log in off: no login line; Minimap button off: the button goes). | open |
+| Display name: type, Enter | Saved (friends see it after the next sync). | open |
+| Community dropdown | Blizzard's menu with your character communities; picking one switches the window to it. | open |
+| Chat colour square | Opens the colour picker (V65); Reset puts the default purple back. | open |
+| Create a community chat tab | Makes the tab as before. | open |
+| A role dropdown | Auto (from talents), Tank, Healer, DPS; the Dungeons tab uses the role. | open |
+| Open on login on, `/reload` | The window opens a few seconds after loading (not when the setup opens, not without a community). | open |
+| Ambient effects | On: a slow light streak across the window title and across LEVEL UP chips in Activity (V64). Off: none. | open |
+| Esc → Options → AddOns → CommunitiesForever | The line and "Open settings", which opens the window (V66). | open |
+| `/cf setup` | A 600 × 460 window: progress bars and "Step 1 of 6 · Welcome → Community → ...", "Who is who in your community", three tiles (Friends, Activity, Dungeons). Skip setup (left of Next) and Back. | open |
+| Through the steps | Community: the dropdown; Your name: the field (saved on Next); Community chat: Not now and Create chat tab in the Next spot; Sharing and notifications: four switches; Done: Finish. Each switch matches the settings window. | open |
+| Another character after the setup | The Community tab prompt in the new look: one gold button; closing is no. | open |
 
 ### CF-42 Dungeons tab in the new look
 Compare with `docs/design/revamp-2026-10/dungeons.html`. Best on a character in range of a dungeon, with a friend in range too.

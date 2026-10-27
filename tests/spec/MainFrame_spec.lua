@@ -230,7 +230,7 @@ describe("MainFrame", function()
       launcher.OnClick(nil, "LeftButton")
       assert.is_true(ns.MainFrame.isShown())
       launcher.OnClick(nil, "RightButton")
-      assert.are.equal("CommunitiesForever", state.openedDialog)
+      assert.is_true(ns.SettingsWindow.isShown()) -- CF-43
     end)
 
     -- CF-33: who is online, display name left, character and level right.
@@ -269,7 +269,7 @@ describe("MainFrame", function()
 
     it("can be hidden and shown from settings", function()
       load("23125681")
-      local option = state.options.args.minimap
+      local option = ns.Settings.options().args.minimap
       assert.is_true(option.get())
       option.set({}, false)
       assert.is_true(addon.db.global.settings.minimap.hide)
