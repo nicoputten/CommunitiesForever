@@ -65,7 +65,7 @@ describe("Merge", function()
   describe("accept relayed records (CF-20)", function()
     local ANNA = "Anna#3333" -- relays Sjaak's record
     local function relay(overrides)
-      local r = { ownBattleTag = "Vestras#2858", now = 2000, members = { ["Player-1-G"] = {} } }
+      local r = { ownBattleTag = "Vestras#1000", now = 2000, members = { ["Player-1-G"] = {} } }
       for k, v in pairs(overrides or {}) do r[k] = v end
       return r
     end
@@ -80,7 +80,7 @@ describe("Merge", function()
     end)
 
     it("rejects a relayed copy of our own record", function()
-      assert.are.same({ false, "own" }, { Merge.accept(nil, record({ bt = "Vestras#2858" }), ANNA, relay()) })
+      assert.are.same({ false, "own" }, { Merge.accept(nil, record({ bt = "Vestras#1000" }), ANNA, relay()) })
     end)
 
     it("rejects a relayed record that is not newer, also over the owner's record", function()
@@ -206,10 +206,10 @@ describe("Merge", function()
 
   describe("outgoing record", function()
     it("contains all own characters (always shared, CF-17)", function()
-      local own = { battleTag = "Vestras#2858", displayName = "Nico", version = 7000,
+      local own = { battleTag = "Vestras#1000", displayName = "Nico", version = 7000,
                     chars = { A = { name = "Ves" }, C = { name = "Alt outside" } } }
       assert.are.same({
-        t = "RECORD", bt = "Vestras#2858", displayName = "Nico", version = 7000,
+        t = "RECORD", bt = "Vestras#1000", displayName = "Nico", version = 7000,
         chars = { A = { name = "Ves" }, C = { name = "Alt outside" } },
       }, Merge.outgoingRecord(own))
     end)

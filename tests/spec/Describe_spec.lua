@@ -10,7 +10,7 @@ describe("Describe", function()
   describe("selfRecord", function()
     it("prints header, characters sorted by name, professions sorted by skillLine", function()
       local record = {
-        battleTag = "Vestras#2858",
+        battleTag = "Vestras#1000",
         version = 5000,
         chars = {
           ["Player-1-B"] = { name = "Zed Alt", classFile = "MAGE", level = 5, raceID = 5, faction = "Horde",
@@ -24,7 +24,7 @@ describe("Describe", function()
         },
       }
       assert.are.same({
-        "BattleTag Vestras#2858, version 5000, 2 character(s)",
+        "BattleTag Vestras#1000, version 5000, 2 character(s)",
         "Ves Doombringer: PALADIN level 11, ilvl 1, race 6, Horde, Classic Beta PvP, updated 10s ago (4990)",
         "  First Aid 1/75 [129], Mining 64/150 [186]",
         "Zed Alt: MAGE level 5, ilvl nil, race 5, Horde, R, updated 1000s ago (4000)",

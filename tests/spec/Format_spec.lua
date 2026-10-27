@@ -23,7 +23,7 @@ describe("Format", function()
   end
 
   local function me()
-    local p = person({ battleTag = "Vestras#2858", displayName = "Vestras", isSelf = true,
+    local p = person({ battleTag = "Vestras#1000", displayName = "Vestras", isSelf = true,
                        chars = { charRow({ guid = "G-ME", name = "Ves" }) } })
     p.currentChar = p.chars[1]
     return p
@@ -185,7 +185,7 @@ describe("Format", function()
       view.people[1].chars[2].lastZone = "The Barrens"
       grom = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen in The Barrens 2 h ago", grom.subtitle)
-      local ves = Format.detail(view, Format.path("Vestras#2858", "G-ME"), NOW)
+      local ves = Format.detail(view, Format.path("Vestras#1000", "G-ME"), NOW)
       assert.are.equal("your character \194\183 online in Orgrimmar", ves.subtitle)
       view.people[1].chars[1].outside = true
       local garraka = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
@@ -314,10 +314,10 @@ describe("Format", function()
       mine.chars[2] = charRow({ guid = "G-ALT", name = "Alt", online = false, lastZone = "Durotar",
                                 lastPlayed = NOW - 60 })
       view.people[2] = mine
-      local d = Format.detail(view, Format.path("Vestras#2858", "G-ALT"), NOW)
+      local d = Format.detail(view, Format.path("Vestras#1000", "G-ALT"), NOW)
       assert.are.equal("Offline - last played in Durotar", d.status)
       assert.are.same({ label = "Last played", value = "1 min ago" }, d.stats[3])
-      assert.is_true(Format.detail(view, "Vestras#2858", NOW).characters[2].own)
+      assert.is_true(Format.detail(view, "Vestras#1000", NOW).characters[2].own)
     end)
 
     it("says just Offline when nothing is known", function()

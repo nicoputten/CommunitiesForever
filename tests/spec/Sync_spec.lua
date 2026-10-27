@@ -5,7 +5,7 @@ describe("Sync", function()
   local state, ns, addon, codec
 
   local CLUB = "23125681"
-  local ME, SJAAK, SJAAK_GA = "Vestras#2858", "Sjaakovich#2232", 5
+  local ME, SJAAK, SJAAK_GA = "Vestras#1000", "Sjaakovich#2232", 5
   local VES = "Player-4619-01627852"
   local SJAAK_ALT = "Player-4619-0000ALT1"
 
