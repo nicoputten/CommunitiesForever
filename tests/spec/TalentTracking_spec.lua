@@ -113,7 +113,7 @@ describe("talents and role in the window (CF-18)", function()
     load()
     roleOption().set({}, "tank")
     ns.MainFrame.toggle()
-    ns.FriendsTab.select("Vestras#2858\001" .. VES) -- CF-40: the native card
+    ns.FriendsTab.select("Vestras#1000\001" .. VES) -- CF-40: the native card
     local all = "\n" .. table.concat(ns.FriendsTab.cardTexts(), "\n") .. "\n"
     assert.is_truthy(all:find("\nTank\n", 1, true)) -- the role tile
     assert.is_truthy(all:find("\nset by player\n", 1, true))
