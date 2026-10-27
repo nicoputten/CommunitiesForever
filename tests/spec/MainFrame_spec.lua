@@ -24,7 +24,7 @@ describe("MainFrame", function()
     return list
   end
 
-  local function frame() return widgets("Frame")[1] end
+  local function frame() return ns.MainFrame.window() end -- CF-39: the kit window
   local function tree() return widgets("TreeGroup")[1] end
 
   -- Texts of all labels in the detail pane (recursing into groups).
@@ -56,12 +56,13 @@ describe("MainFrame", function()
     load("23125681")
     state.slash.cf("")
     assert.is_true(ns.MainFrame.isShown())
-    assert.are.equal("CommunitiesForever", frame().title)
+    assert.are.equal("Forever Friends", frame().titleText.text) -- CF-39: the community in the title
+    local window = frame()
     state.slash.cf("")
     assert.is_false(ns.MainFrame.isShown())
     state.slash.cf("")
     assert.is_true(ns.MainFrame.isShown())
-    assert.are.equal(1, #widgets("Frame"))
+    assert.are.equal(window, frame()) -- reused
   end)
 
   it("stores window and tree state in settings", function()
@@ -84,7 +85,7 @@ describe("MainFrame", function()
     assert.matches("^|TInterface\\COMMON\\Indicator%-Green:14:14|t ", nodes[1].children[1].text) -- playing it
     assert.are.equal("Vestras (you)  |cffa0a0a01|r", nodes[2].text)
     assert.is_nil(nodes[2].children[1].text:find("(you)", 1, true)) -- no marker on characters
-    assert.is_true(frame().statusbg.hidden) -- no status bar
+    assert.is_truthy(frame().footerText.text:find("/cf to open", 1, true)) -- CF-39: footer, no status bar
   end)
 
   it("shows character rows in the tree with the regular font size", function()

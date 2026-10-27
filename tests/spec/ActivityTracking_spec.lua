@@ -178,7 +178,7 @@ describe("dungeon, raid and battleground runs (CF-23)", function()
       end
     end
     for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" then walk(w) end
+      if w.cfMainRoot then walk(w) end -- CF-39: the tab content
     end
     local all = table.concat(texts, "\n")
     assert.is_truthy(all:find("|cffa0a0a0together|r", 1, true))

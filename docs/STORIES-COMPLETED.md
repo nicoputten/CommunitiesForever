@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -374,3 +374,17 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Keeps everything from CF-28: 255-byte parts, MISS and resend, the accept rules (the sender maps to a community member; a record claimed as own must contain the sending character).
 - Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
 - Decided (2026-10-23): not the community channel (V49 unclear: the send was accepted but did not come back), but a hidden custom chat channel named `cf` + a hash of the community name, built with an automatic fallback to whispers instead of probing first. V49 dropped. Only HELLO and BYE go on the channel (single part); REQ, RECORD, MISS, ASK and PING stay whispers. HELLO carries `ch` (rule 8: optional); members without it, or a failed join, keep getting whispers; someone new is always answered by whisper. Built: `Chat.syncChannel`, `src/adapters/Channels.lua`, `src/services/SyncChannel.lua`, `Messenger.sendChannel`. Found while building: `ChatFrames.windows` only looked at the first channel of a window (`{ f and f() }` keeps one value). Tests: `SyncChannel_spec` (harness with channels), `Chat_spec`. VERIFY V59.
+
+## E13 Revamp (new look)
+
+### CF-39 Kit and window shell
+- Goal: the new window around the existing tabs, and the building blocks the screen stories use.
+- Decided: native frames and our own small kit (`src/ui/kit/`), no AceGUI for the main window. Ace3 stays for the plumbing. Fonts Marcellus SC, Marcellus and Inter bundled (SIL OFL, `media/fonts/`; added to ARCHITECTURE "Libraries", rule 7), the game font as fallback for non-Latin clients.
+- Kit (values from `widget-kit.html` and the mockups): Window (96% opaque navy panel, 1 px gold border, corner diamonds, soft shadow), title bar (shield emblem, community name in Marcellus SC, "CommunitiesForever", "● N online", settings and close buttons), Tabs (Marcellus SC, gold underline when active, count badge as in "Dungeons (1)"), footer line, Button (normal, hover, pressed, disabled; primary and ghost), Checkbox (with a second line of help text), ListRow (28 px, hover and selected states), SkillBar (fill, cap shading, tier ticks), ClassPortrait (the real class icon in a round mask with a class-colour ring; 20, 32 and 52 px; online dot), Toast. Colour tokens and sizes in one place (`src/ui/kit/Theme.lua`).
+- Window: 880 × 600 at UI scale 1, resizable down to 700 × 480, moved by dragging the title; size and position saved as today; strata `DIALOG` (CF-37); Esc and the keybinding as in CF-32; opens on the last tab.
+- Textures to make (`media/`, TGA, power-of-two, tinted in code): border nine-slice, corner diamond, button states, checkbox, shine streak, shadow nine-slice, shield emblem, portrait ring.
+- Until each screen story lands, the existing tab content (AceGUI) sits inside the new shell's content area.
+- Unverified on Forever (VERIFY.md, checked at launch): `CreateMaskTexture`, `Texture:SetGradient` with `CreateColor`, `FontString:SetFont` with a bundled font, `C_ClassColor.GetClassColor`, the class icon atlas, `ScrollBox` with a `DataProvider`, `SetResizeBounds`.
+- Unit tests: theme tokens (every colour defined once); the window's saved size and position; tabs and badge; the mock grows the frame API the kit uses.
+- Manual: the window looks like the mockups (border, title, tabs, footer), moves, resizes within its bounds, Esc closes it, the old tabs still work inside it.
+- Built: `src/ui/kit/` (Theme: colours, text roles, sizes; Widgets: Button, IconButton, Checkbox, ListRow, SkillBar, Portrait, Toast; Window: window shell and Tabs), fonts in `media/fonts` (Marcellus SC, Marcellus, Inter Regular/Medium/SemiBold, static files from the Inter 4.1 release), textures drawn by `tools/make-textures.py`. Decided while building: windows saved before the revamp are reset once to 880 × 600 (Nico), the gear opens the current settings until CF-43, the shadow is one soft texture instead of a nine-slice. The mock gained a recording native-frame API (`CreateFrame`, textures, font strings). VERIFY V61.

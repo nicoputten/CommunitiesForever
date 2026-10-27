@@ -167,7 +167,7 @@ describe("Who's up for it? (CF-27)", function()
         end
       end
       for _, w in ipairs(state.guiWidgets) do
-        if w.type == "Frame" and w.title == "CommunitiesForever" then walk(w) end
+        if w.cfMainRoot then walk(w) end -- CF-39: the tab content
       end
       return found
     end

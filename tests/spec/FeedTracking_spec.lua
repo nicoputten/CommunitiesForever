@@ -36,10 +36,10 @@ describe("activity feed (CF-22)", function()
 
   local DOT = " \194\183 "
 
-  -- The main window frame (tab bar and content).
+  -- The main window's tab content (CF-39: an AceGUI root container in the kit window).
   local function tabs()
     for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" then return w end
+      if w.cfMainRoot then return w end
     end
   end
 
@@ -136,8 +136,7 @@ describe("activity feed (CF-22)", function()
     ns.MainFrame.toggle()
     ns.MainFrame.selectTab("activity")
     local text = activityText()
-    assert.is_truthy(text:find("|cffffd100Activity|r", 1, true)) -- active tab in gold
-    assert.is_truthy(text:find("|cffa0a0a0Friends|r", 1, true))
+    assert.are.equal("activity", ns.MainFrame.tabs().active) -- CF-39: the kit tabs mark the active one
     assert.is_truthy(text:find("Today", 1, true))
     assert.is_truthy(text:find("|cffffd100Friend|r |cffa0a0a0on|r |cff40c7ebFriend Char|r "
       .. "|cffa0a0a0and 1 more character|r", 1, true))
