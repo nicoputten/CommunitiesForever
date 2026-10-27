@@ -5,9 +5,9 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
-- **New look, part 1:** the window has a new frame: dark panel with a gold border, the community name and
-  who is online in the title, new tabs and a footer. The tabs inside get their new look in the next updates.
+## v0.5.0-beta1 (2026-10-27)
+- **New look, part 1: the window.** A new frame: dark panel with a gold border, the community name and who
+  is online in the title, new tabs and a footer. Every tab, the settings and the setup now share this look.
 - **New look, part 2: the Friends tab.** Class portraits, foldable people, the number of quests you share
   with each character, and a new character card: level, item level and role at a glance, profession and
   talent bars, quests you share grouped by zone, and Whisper and Invite buttons. The footer shows when you
