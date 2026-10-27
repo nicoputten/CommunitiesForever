@@ -71,6 +71,8 @@ describe("Pending (CF-47)", function()
     Pending.add(list, { id = id(3), kind = "answer", at = NOW + 120, run = "r-103", answer = "cant" })
     Pending.add(list, { id = id(4), kind = "ask", at = NOW + 180, dungeon = "dm", guid = "Player-1-0000AAAA",
       name = "Ada Lovewell", role = "tank", note = Pending.note("Quick run for the Defias quests") })
+    Pending.add(list, { id = Pending.newId("k3f9c0a7e21b", NOW + 190, 5), kind = "ping", at = NOW + 190,
+      run = "r-102", battleTag = "Bo#2002", guid = "Player-1-0000BBBB", name = "Bo Example" })
     Pending.prune(list, NOW + 200)
     assert.are.same(sample, list)
   end)

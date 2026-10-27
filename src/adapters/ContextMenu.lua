@@ -34,5 +34,14 @@ function ContextMenu.whisper(name)
   return false
 end
 
+-- CF-48: opens the chat input as a whisper to `name` with `text` filled in, to edit before sending.
+-- ChatFrameUtil.OpenChat / ChatFrame_OpenChat are unverified on Forever (VERIFY.md V72); without them the
+-- whisper opens empty. Returns true when the chat input opened.
+function ContextMenu.whisperText(name, text)
+  local open = (ChatFrameUtil and ChatFrameUtil.OpenChat) or ChatFrame_OpenChat
+  if open and pcall(open, "/w " .. tostring(name) .. " " .. tostring(text)) then return true end
+  return ContextMenu.whisper(name)
+end
+
 ns.ContextMenu = ContextMenu
 return ContextMenu

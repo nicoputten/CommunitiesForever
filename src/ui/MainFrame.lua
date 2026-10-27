@@ -214,6 +214,13 @@ function MainFrame.selectTab(value)
   if view then MainFrame.render() end
 end
 
+-- CF-48: opens the window on a planned run in the Dungeons tab (the reminder's Open).
+function MainFrame.showRun(runId)
+  if not MainFrame.isShown() then MainFrame.toggle() end
+  ns.DungeonsTab.selectQuietly("run:" .. tostring(runId))
+  MainFrame.selectTab("dungeons")
+end
+
 -- CF-39: the kit window and its tabs (nil before the first open), for the specs and later stories.
 function MainFrame.window() return frame end
 function MainFrame.tabs() return tabs end

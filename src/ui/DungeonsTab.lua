@@ -549,7 +549,9 @@ local function renderRun(run, me, candidates)
 
   local half = math.floor((width - 22) / 2)
   local top = y + 12
-  -- Left: at start time (the reminder and Invite all come with CF-48).
+  -- Left: at start time. CF-48: from 5 minutes before the start, Invite all opens the start panel; everyone
+  -- else can request an invite.
+  local started = now() >= run.startsAt - 300
   local left = section(parent, PAD, top, half, "At " .. clock(run.startsAt))
   local isOrganiser = ns.PlannedRuns.isOrganiser(run, me)
   local mine = ns.PlannedRuns.yourAnswer(run, me)
@@ -564,9 +566,16 @@ local function renderRun(run, me, candidates)
   left = left + 40
   if isOrganiser then
     local b = Kit.take(pools.primary, parent)
-    b:SetLabel("Invite all" .. DOT .. "from " .. clock(run.startsAt))
-    b:SetEnabled(false)
-    b:SetScript("OnClick", nil)
+    b:SetLabel(started and "Invite all" or ("Invite all" .. DOT .. "from " .. clock(run.startsAt)))
+    b:SetEnabled(started)
+    b:SetScript("OnClick", function() ns.StartPanel.open(run.id) end)
+    b:SetPoint("TOPLEFT", PAD, -left)
+    left = left + 36
+  elseif started and mine and mine.answer ~= "cant" then
+    local b = Kit.take(pools.buttons, parent)
+    b:SetLabel("Request invite")
+    b:SetEnabled(true)
+    b:SetScript("OnClick", function() ns.StartPanel.open(run.id) end)
     b:SetPoint("TOPLEFT", PAD, -left)
     left = left + 36
   end
@@ -723,6 +732,11 @@ function DungeonsTab.hide() if root then root:Hide() end end
 function DungeonsTab.select(value)
   status().selected = value
   helpers.render()
+end
+
+-- CF-48: selects a row without drawing (the window draws when it opens on the tab).
+function DungeonsTab.selectQuietly(value)
+  if helpers then status().selected = value end
 end
 
 -- Fills the tab from the view model. messageText: the window's empty state (no community etc.).

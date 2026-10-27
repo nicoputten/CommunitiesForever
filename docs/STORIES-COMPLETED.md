@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -435,6 +435,8 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 
 ## E14 Planned runs
 
+Decided with Nico, 2026-10-27. Two kinds of group: **Ask now** lives in the game (CF-27) and is answered within minutes; a **planned run** is owned by the website, posted and answered in Discord, and ends in an invite in the game at start time. The game never talks to the internet: it learns about runs at login or `/reload` from `Data\Runs.lua` (written by the uploader, UP-12) or from a friend's addon over sync, and what the player does reaches the site after the game saves (`/reload` or logout) and the uploader uploads (web WEB-43). The in-game calendar is out of the flow. Times are UTC in data and shown in the player's local time. Boards: `docs/design/runs-2026-10/` (`runs-flow.html` shows the whole flow). Web stories: E7 in the web repo; bot: BOT-04.
+
 ### CF-45 Runs file and checks
 - Ship an empty `Data\Runs.lua` (`CF_RUNS = nil`) listed in the TOC, in a release **before** the uploader writes it: a file that isn't there when the game starts only loads after a restart. Release it soon.
 - `src/adapters/RunsFile.lua` reads `CF_RUNS` defensively (missing, empty, wrong types, oversized): treated as untrusted like received sync data (strip `|` escapes, caps on counts and string lengths); `src/core` gets a pure validator, unit tested.
@@ -461,3 +463,11 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - The labels everywhere: "reaches Discord after /reload", "answered on Discord", "Runs updated at … · /reload for newer".
 - Tests: the pending queue (ids, cleared when confirmed), what goes in the saved file (the web's WEB-43 reads it: share a fixture), the expiry of a queued ask.
 - Built (2026-10-27): `core/Pending.lua` and `global.pending` (schema 2, `Store.MIGRATIONS[1]`), ids `<accountId>-<time>-<n>`; one pending answer per run (the newest); asks older than 10 minutes and anything older than 14 days are pruned at login and logout; items leave when the runs data lists their id in `received` (new optional `CF_RUNS` field). Shared sample for the web: `tests/fixtures/pending.lua`. `RUNANSWER` goes to the organiser at once; ASK carries an optional `note`. Ask now replaces the direct "Ask who's up for it" button; the dungeon card got Plan a run, a run Answer / Change answer. Reload: `Panels.reload` (`C_UI.Reload`, else `ReloadUI`; V68), with "Type /reload" as the fallback. Local time to UTC: `time()` (V71). Days are chosen as buttons, the dungeon and character as dropdowns.
+
+### CF-48 Reminder, start time and chat lines
+- Board `run-start.html`. **Reminder toast** at the site's reminder time (default 30 min, in `CF_RUNS`) for friends who answered I'm in or Maybe and are online with the addon: under the minimap, 20 s, soft chime (off in settings), Open, no answer buttons. **Starting now** toast with Request invite.
+- **Start-time panel**, opening by itself at start time (or from the Dungeons tab). Organiser: each friend's state from Battle.net presence and sync (ready, on another character, offline, maybe, can't, answered on Discord, already grouped) with Invite, Whisper (an editable Battle.net whisper), Invite <other character> instead, Ping on Discord (queued, after `/reload`); Invite everyone ready, Ping everyone missing. Everyone else: the organiser's state and Request invite (sends the organiser a request in game; when the organiser is offline, suggests whispering the next person).
+- **Chat lines** in the addon's style with clickable links (`|H` links, V47): reminder, someone answered (in game or on Discord), starting now, on another character, ping queued, runs updated. Each type can be turned off in settings.
+- Done marking needs nothing new: the run log (CF-23) already records the dungeon, time and community members in the group; the site matches it (WEB-43).
+- Tests: the reminder timer from UTC times, the friend states, the invite list (skips grouped friends), chat line settings.
+- Built (2026-10-27): `core/RunStart.lua` (due reminders and starts between checks, states ready / other / offline / grouped / cant, invite and ping lists), `services/RunAlerts.lua` (a 15 s check only while runs exist; chat lines with addon links, each kind off in settings: `settings.runLines`), `ui/RunToasts.lua` (under `MinimapCluster`, 20 s, `runToasts`, chime `runSound` with the chat sound), `ui/StartPanel.lua` (opens by itself for the organiser at start; from the run: Invite all from 5 minutes before, Request invite for the others). Whisper opens the chat input with the text filled in (`ChatFrameUtil.OpenChat`, V72); Discord pings are pending `ping` items. The "someone answered" lines come from `RUNANSWER` and from newer runs data (answers that changed on runs you organise).

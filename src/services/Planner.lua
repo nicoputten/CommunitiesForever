@@ -11,6 +11,10 @@ local Planner = {}
 
 -- Internal message: the runs changed (the window refreshes).
 Planner.UPDATED = "CF_PLANNER_UPDATED"
+-- CF-48: (run, answer) a new or changed answer to a run you organise (answer.source: game, discord, site).
+Planner.ANSWERED = "CF_PLANNER_ANSWERED"
+-- CF-48: (updatedAt) newer runs arrived from a friend's addon.
+Planner.RECEIVED = "CF_PLANNER_RECEIVED"
 
 local addonRef
 local current     -- checked runs data, see PlannedRuns.validate
@@ -26,9 +30,32 @@ local function pending()
   return global().pending
 end
 
+local function personKey(a) return a.guid or a.battleTag or a.name end
+
+-- CF-48: answers in data that are new or changed against before, for runs you organise.
+local function announceAnswers(before, data)
+  if not addonRef then return end
+  local old = {}
+  for _, r in ipairs(before and before.runs or {}) do
+    old[r.id] = {}
+    for _, a in ipairs(r.answers or {}) do old[r.id][tostring(personKey(a))] = a.answer end
+  end
+  local me = Planner.me()
+  for _, r in ipairs(data.runs or {}) do
+    if old[r.id] and ns.PlannedRuns.isOrganiser(r, me) then
+      for _, a in ipairs(r.answers or {}) do
+        if old[r.id][tostring(personKey(a))] ~= a.answer and not ns.PlannedRuns.yourAnswer({ answers = { a } }, me) then
+          addonRef:SendMessage(Planner.ANSWERED, r, a)
+        end
+      end
+    end
+  end
+end
+
 -- Keeps data when newer than what we have. Returns true when it was taken.
 local function take(data)
   if not ns.PlannedRuns.isNewer(current, data, now()) then return false end
+  announceAnswers(current, data)
   current = data
   global().plannedRuns = ns.PlannedRuns.wire(data)
   ns.Pending.confirm(pending(), data.received) -- CF-47: what the site has is no longer pending
@@ -64,6 +91,7 @@ function Planner.receive(raw)
   local ok, data = pcall(ns.PlannedRuns.validate, raw)
   if not (ok and data) or not take(data) then return false end
   addonRef:SendMessage(Planner.UPDATED)
+  addonRef:SendMessage(Planner.RECEIVED, data.updatedAt)
   return true
 end
 
@@ -158,9 +186,10 @@ function Planner.askOnDiscord(dungeonId, char, note)
                  note = ns.Pending.note(note) })
 end
 
--- CF-48: a Discord ping for a friend missing at start time.
-function Planner.ping(run, battleTag)
-  return queue({ kind = "ping", run = run.id, battleTag = battleTag })
+-- CF-48: a Discord ping for a friend missing at start time (who: their BattleTag, else their character).
+function Planner.ping(run, answer)
+  return queue({ kind = "ping", run = run.id, battleTag = answer.battleTag, guid = answer.guid,
+                 name = answer.name })
 end
 
 -- True while an item (or your answer to a run) waits for the next /reload or upload.
@@ -197,6 +226,7 @@ function Planner.answerReceived(message, senderKey)
   list[#list + 1] = a
   heard[run.id] = list
   addonRef:SendMessage(Planner.UPDATED)
+  addonRef:SendMessage(Planner.ANSWERED, run, a)
   return true
 end
 

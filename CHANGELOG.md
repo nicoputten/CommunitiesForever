@@ -15,6 +15,11 @@ tagging; the release stops if the tag has no section.
   and a time on your clock. Answer a run with I'm in, Maybe or Can't and the character you bring; the
   organiser's addon gets it at once. What has to reach the website waits for your next /reload ("reaches
   Discord after /reload"), and a prompt offers to reload right away.
+- **Run reminders and the start of a run.** A note under the minimap (with a soft chime) before a run you're
+  in, and "Starting now" with Request invite at its start. The organiser gets a start panel showing who is
+  ready, on another character or offline, with Invite, Whisper, Invite everyone ready and Discord pings for
+  whoever is missing. Chat lines for reminders, answers, starts and more; each kind can be turned off in
+  the settings.
 - Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
   "community member".
 
