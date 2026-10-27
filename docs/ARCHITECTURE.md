@@ -49,6 +49,7 @@ CommunitiesForever/
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
                              newer wins, community wire without BattleTags, slots, your answer, times (CF-46)
+      Pending.lua            what has to reach the website: plans, answers, asks, pings; ids, expiry, confirm (CF-47)
       Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
@@ -94,6 +95,7 @@ CommunitiesForever/
       Setup.lua              onboarding wizard and Community tab prompt (CF-26; kit dialogs since CF-43)
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
+      RunDialogs.lua         Ask now, Plan a run, Answer and the reload prompt, one kit dialog (CF-47)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
@@ -143,7 +145,7 @@ UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), d
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
-  schemaVersion = 1,
+  schemaVersion = 2,                                 -- 2: CF-47 pending
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
@@ -172,6 +174,8 @@ global = {
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
   plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
                                                      -- "Planned runs file"; checked again when loaded
+  pending   = { Item },                              -- CF-47: plans, answers, asks to post, pings (core/Pending.lua;
+                                                     -- sample tests/fixtures/pending.lua, read by the site)
 }
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
@@ -215,6 +219,7 @@ CF_RUNS = {
   v = 1,                          -- format; a newer one is ignored ("update the addon"); missing = 1
   updatedAt = 1793120000,         -- when the site produced the list ("Runs updated at 17:34")
   reminderMinutes = 30,           -- site setting (WEB-39): the in-game reminder before a run (CF-48)
+  received = { "k3f9c0a7e21b-1793120000-1", ... }, -- CF-47: ids of game items (global.pending) the site has, at most 200
   runs = {                        -- upcoming runs, at most 50
     {
       id = "r-102",               -- the site's run id (letters, digits, _ - : .)
@@ -257,7 +262,8 @@ Messages:
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
 - `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22), `false` when it is off (CF-28: so relays pass "stopped sharing" on); `removed` only in relayed copies (dropped characters with the time they were dropped).
 - `RUNS {runs}` and `RUNREQ {}` (CF-46): planned runs (the shape of `CF_RUNS`). HELLO carries `ru`, the updatedAt of the sender's runs (0: none); a peer with older runs gets `RUNS`, a peer with newer ones gets `RUNREQ`. The receiver checks them with `PlannedRuns.validate` and keeps them only when newer (at most 5 minutes ahead of server time). Over the community BattleTags are left out. Never sent while `Instance.messagingRestricted()` (an encounter, a keystone, a PvP match): tried again 30 s later. Older clients send no `ru` and get nothing; they ignore `ru` and the new types.
-- `ASK {id, dungeon = {id, name, min, max}, from, char, at}` (CF-27): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
+- `RUNANSWER {run, answer, guid, name, role}` (CF-47): your answer to a run, sent at once to its organiser when they are online (Battle.net by BattleTag, community by the organiser's character). The organiser shows it (in memory) until the site's runs have it; it is also a pending item that reaches the site after `/reload`. Ignored unless the receiver organises that run.
+- `ASK {id, dungeon = {id, name, min, max}, from, char, at, note}` (CF-27; `note` optional, CF-47): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
 - `ANSWER {id, answer = "join"|"later"|"no", from, char}` (CF-27): back to the asker; `char` is the answerer's current character (for the invite). Clients without CF-27 ignore both (unknown `t`).
 
 Accept rule (Merge.lua):

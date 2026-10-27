@@ -119,10 +119,10 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nDPS \194\183 you \194\183 online\n", 1, true))
     assert.is_truthy(all:find("\nnobody in range\n", 1, true))
     assert.is_truthy(all:find("\nopen\n", 1, true))
-    assert.is_truthy(all:find("\nPlan runs on the website.", 1, true)) -- CF-46: no calendar event title
+    assert.is_truthy(ns.DungeonsTab.buttons()["Plan a run"]) -- CF-46: no calendar event title; CF-47: the dialog
     assert.is_nil(ns.DungeonsTab.buttons()["Open calendar"])
-    assert.is_truthy(ns.DungeonsTab.buttons()["Ask who's up for it"])
-    assert.is_truthy(all:find("\nSends a chat line to friends with the addon\n", 1, true))
+    assert.is_truthy(ns.DungeonsTab.buttons()["Ask now"]) -- CF-47: opens the dialog
+    assert.is_truthy(all:find("\nWhispers online friends who fit; can post on Discord too\n", 1, true))
     -- The footer: sync state and when group asks wait.
     assert.are.equal("Group asks wait until combat ends", ns.MainFrame.window().footerRightText.text)
   end)

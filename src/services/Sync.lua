@@ -9,6 +9,7 @@
 --   BYE   {}                (CF-28, community) on logout, best effort: the sender is offline.
 --   RUNS  {runs}            (CF-46) planned runs, to a peer whose HELLO showed an older ru (runs updatedAt).
 --   RUNREQ {}               (CF-46) asks a peer whose HELLO showed a newer ru for its runs.
+--   RUNANSWER {run, answer, guid, name, role}  (CF-47) your answer to a run, to its organiser when online.
 -- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua): BattleTags only
 -- travel over Battle.net.
 local _, ns = ...
@@ -359,6 +360,11 @@ function handlers.RUNREQ(_, _, target)
   sendRuns(target)
 end
 
+-- CF-47: a friend answered a run you organise, in game.
+function handlers.RUNANSWER(message, senderKey)
+  ns.Planner.answerReceived(message, senderKey)
+end
+
 local function retryWaiting()
   if next(ns.MemberTracker.members()) == nil then return end
   local waiting = waitingForMembers
@@ -419,6 +425,23 @@ function Sync.start(addon)
   end)
 
   broadcastHello(false)
+end
+
+-- CF-47: your answer (a Pending item) to the run's organiser, when they are online (Battle.net friend by
+-- BattleTag, or a community peer on the organiser's character). Returns true when sent.
+function Sync.sendRunAnswer(run, item)
+  local organiser = run.organiser
+  if not organiser or ns.Instance.messagingRestricted() then return false end
+  for key, presence in pairs(Sync.online()) do
+    local target = presence.gameAccountID or presence.target
+    if target and ((organiser.battleTag and key == organiser.battleTag)
+        or (organiser.guid and presence.guid == organiser.guid)) then
+      ns.Messenger.send(target, { t = "RUNANSWER", run = run.id, answer = item.answer, guid = item.guid,
+                                  name = item.name, role = item.role })
+      return true
+    end
+  end
+  return false
 end
 
 -- The own record changed outside SelfTracker (e.g. invite link, CF-21): HELLO after the debounce.

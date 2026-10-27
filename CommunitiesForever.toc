@@ -19,6 +19,7 @@ src\core\Filter.lua
 src\core\Feed.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
+src\core\Pending.lua
 src\core\Merge.lua
 src\core\Snapshot.lua
 src\core\Describe.lua
@@ -81,6 +82,7 @@ src\ui\kit\Window.lua
 src\ui\Settings.lua
 src\ui\SettingsWindow.lua
 src\ui\DungeonsTab.lua
+src\ui\RunDialogs.lua
 src\ui\FriendsTab.lua
 src\ui\ActivityTab.lua
 src\ui\MainFrame.lua

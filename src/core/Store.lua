@@ -3,7 +3,7 @@ local _, ns = ...
 
 local Store = {}
 
-Store.SCHEMA_VERSION = 1
+Store.SCHEMA_VERSION = 2
 
 -- AceDB defaults table. schemaVersion is deliberately not a default: AceDB
 -- strips values equal to their default on logout, so a defaulted version
@@ -21,6 +21,7 @@ function Store.defaults()
       presence = {},
       locations = {},
       runs = {},          -- CF-23: run in progress per own character (not synced)
+      pending = {},       -- CF-47: plans, answers, asks and pings waiting to reach the website
     },
   }
 end
@@ -30,6 +31,11 @@ n + 1, in place. A step renames or reshapes fields, derives what it can from the
 rest empty (nil, 0, {}); the code reading the data handles empty values. Bump SCHEMA_VERSION with every
 step, never edit a released step, and give each step a spec with old data as it was saved (tests/fixtures). ]]
 Store.MIGRATIONS = {}
+
+-- 1 -> 2 (CF-47): the pending list for the website. Nothing to derive: earlier versions had no such items.
+Store.MIGRATIONS[1] = function(global)
+  if type(global.pending) ~= "table" then global.pending = {} end
+end
 
 -- Stamps the schema version on a fresh database and runs the migrations for older data. Data from a newer
 -- schema (the addon was downgraded) is left untouched: returns global, "newer".

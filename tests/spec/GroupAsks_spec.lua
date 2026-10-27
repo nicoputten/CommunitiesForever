@@ -164,7 +164,8 @@ describe("Who's up for it? (CF-27)", function()
       return false
     end
     ns.DungeonsTab.select("dm")
-    ns.DungeonsTab.buttons()["Ask who's up for it"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick") -- CF-47: the Ask now dialog
+    ns.RunDialogs.buttons()["Ask now"]:RunScript("OnClick")
     assert.are.equal(1, #sent)
     deliver({ t = "ANSWER", id = sent[1].message.id, answer = "later" })
     for _ = 1, 10 do wowapi.runTimers(state) end

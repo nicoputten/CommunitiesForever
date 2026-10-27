@@ -10,6 +10,11 @@ tagging; the release stops if the tag has no section.
   CommunitiesForever uploader) or shared by a friend's addon are listed on top: when, who organises, who's in,
   your answer and which of your characters fits. A run shows its five slots, who answered on Discord, who is
   close in level and the link to edit it on the website. The in-game calendar is no longer used.
+- **Ask now, Plan a run and answering runs in game.** Ask now shows who gets whispered and who doesn't (and
+  why), takes a note and can post the ask on Discord too. Plan a run picks the dungeon, your character, a day
+  and a time on your clock. Answer a run with I'm in, Maybe or Can't and the character you bring; the
+  organiser's addon gets it at once. What has to reach the website waits for your next /reload ("reaches
+  Discord after /reload"), and a prompt offers to reload right away.
 - Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
   "community member".
 

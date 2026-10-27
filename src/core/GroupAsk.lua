@@ -75,9 +75,10 @@ function GroupAsk.expired(ask, now)
 end
 
 -- The ASK message for a dungeon. id: unique per asker and ask.
-function GroupAsk.message(id, dungeon, from, char, now)
+-- note (CF-47, optional): what the asker typed; older clients ignore it.
+function GroupAsk.message(id, dungeon, from, char, now, note)
   return { t = "ASK", id = id, dungeon = { id = dungeon.id, name = dungeon.name, min = dungeon.min, max = dungeon.max },
-           from = from, char = char, at = now }
+           from = from, char = char, at = now, note = note }
 end
 
 -- A received ASK with only the expected fields, cleaned, or nil.
@@ -87,7 +88,8 @@ function GroupAsk.cleanAsk(message)
   local id, name, min, max = cleanText(message.id), cleanText(d.name), cleanLevel(d.min), cleanLevel(d.max)
   if not (id and name and min and max and min <= max) then return nil end
   return { id = id, dungeon = { id = cleanText(d.id), name = name, min = min, max = max },
-           from = cleanText(message.from), char = cleanText(message.char) }
+           from = cleanText(message.from), char = cleanText(message.char),
+           note = type(message.note) == "string" and message.note:gsub("[|%c]", ""):sub(1, 120) or nil }
 end
 
 -- A received ANSWER, cleaned, or nil.
