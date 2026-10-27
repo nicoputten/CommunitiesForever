@@ -20,6 +20,7 @@ src\core\Feed.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
+src\core\RunStart.lua
 src\core\Merge.lua
 src\core\Snapshot.lua
 src\core\Describe.lua
@@ -75,6 +76,7 @@ src\services\Invites.lua
 src\services\Notify.lua
 src\services\Planner.lua
 src\services\GroupAsks.lua
+src\services\RunAlerts.lua
 
 src\ui\kit\Theme.lua
 src\ui\kit\Widgets.lua
@@ -83,6 +85,8 @@ src\ui\Settings.lua
 src\ui\SettingsWindow.lua
 src\ui\DungeonsTab.lua
 src\ui\RunDialogs.lua
+src\ui\RunToasts.lua
+src\ui\StartPanel.lua
 src\ui\FriendsTab.lua
 src\ui\ActivityTab.lua
 src\ui\MainFrame.lua

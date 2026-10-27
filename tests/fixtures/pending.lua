@@ -9,4 +9,6 @@ return {
   { id = "k3f9c0a7e21b-1793120120-3", kind = "answer", at = 1793120120, run = "r-103", answer = "cant" },
   { id = "k3f9c0a7e21b-1793120180-4", kind = "ask", at = 1793120180, dungeon = "dm",
     guid = "Player-1-0000AAAA", name = "Ada Lovewell", role = "tank", note = "Quick run for the Defias quests" },
+  { id = "k3f9c0a7e21b-1793120190-5", kind = "ping", at = 1793120190, run = "r-102", battleTag = "Bo#2002",
+    guid = "Player-1-0000BBBB", name = "Bo Example" }, -- CF-48
 }

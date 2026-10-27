@@ -18,7 +18,7 @@ Pending.KINDS = { plan = true, answer = true, ask = true, ping = true }
   plan   { id, kind = "plan", at, dungeon, startsAt, guid, name, role, note }      -- you lead as guid/name
   answer { id, kind = "answer", at, run, answer = "in"|"maybe"|"cant", guid, name, role }
   ask    { id, kind = "ask", at, dungeon, guid, name, role, note }                 -- "Also post on Discord"
-  ping   { id, kind = "ping", at, run, battleTag }                                 -- CF-48
+  ping   { id, kind = "ping", at, run, battleTag, guid, name }                     -- CF-48: who to ping
 at and startsAt: UTC seconds. guid/name: the character; role: tank | heal | dps. ]]
 
 -- A unique id: the account ID (CF-28), the time and a counter ("k3f9c0a7e21b-1793120000-1").

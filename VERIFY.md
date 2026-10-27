@@ -33,8 +33,24 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 
 | V71 | Does `time({ year, month, day, hour, min })` exist and give the UTC seconds of a local date and time? (CF-47: Plan a run turns your PC-clock time into UTC) | `/run print(time({ year = 2026, month = 11, day = 6, hour = 20, min = 30 }), GetServerTime())`: a number close to the server time (differing by the days and hours to that date). `nil` or an error: Plan a run says it can't convert the time. | open |
 
+| V72 | Does `ChatFrameUtil.OpenChat("/w <name> <text>")` (or `ChatFrame_OpenChat`) open the chat input with the whisper and text filled in? (CF-48: Whisper on the start panel) | On the CF-48 start panel, click Whisper on a friend who is on another character. Expected: the chat input opens as a whisper to that character with "You're on … Switch to …?" filled in, not sent yet. If it opens empty (or not at all), say which. | open |
+
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-48 Reminder, start time and chat lines
+Compare with `docs/design/runs-2026-10/run-start.html`. Use the CF-46 test file with runs a few minutes ahead (e.g. `startsAt = $($t + 35 * 60)` with `reminderMinutes = 30`), and a friend with this build online for the invite steps (V69, V48).
+
+| Step | Expected | Status |
+|---|---|---|
+| A run you're in, at its reminder time | A note under the minimap: "IN 30 MINUTES", the dungeon and time, "You're in as … <organiser> invites at start. N in.", Open and Close; it goes after 20 s. A soft chime. A chat line "… starts in 30 min (20:30). You're in as …. [Open]"; Open shows the run in the Dungeons tab. | open |
+| Settings → Planned runs / Run chat lines | Run reminders off: no note. Reminder chime off: no sound. Each chat line kind off: that line is gone. | open |
+| A run you organise, at start time | The start panel opens by itself: "<dungeon> · starting now", "you organise · N in · N maybe", each friend with name, role, answer and state (ready · online on this character / online, but on <char> (level) / offline / already grouped / can't · answered on Discord). | open |
+| Invite, Invite everyone ready (N) | Each ready "I'm in" friend gets an invite (V69: several in a row); friends already in your group are skipped. | open |
+| A friend on another character | A chat line "… is online on <char>, signed up as <char>. [Whisper] [Invite <char>]"; Whisper opens the whisper with the text filled in (V72); Invite <char> instead invites that character. | open |
+| Ping on Discord, Ping everyone missing | "ping queued · after /reload" on the row; a chat line "Discord ping for … queued. It reaches Discord after /reload. [Reload now]"; Reload now on the panel. After the upload the site posts the ping (WEB-43). | open |
+| A run someone else organises, at start time | A note "STARTING NOW", "Waiting for <organiser>'s invite", Request invite (V48: `RequestInviteFromUnit`); a chat line with [Request invite]. The run card has Request invite from 5 minutes before the start. With the organiser offline, the panel says whom to whisper instead. | open |
+| A friend answers your run in game, or on Discord (a newer Runs.lua) | "<friend> is in for <dungeon> (answered in game)." / "(answered on Discord)." Runs from a friend's addon: "Runs updated at <time>. Type /reload for newer." | open |
 
 ### CF-47 Ask now, plan a run, sign up
 Compare with `docs/design/runs-2026-10/run-dialogs.html`. The answer steps need the CF-46 test file (with a run someone else organises) and ideally that friend online with this build.
