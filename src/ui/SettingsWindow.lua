@@ -16,11 +16,7 @@ local controls = {}    -- option key -> control (checkbox, input, select)
 local refreshers = {}  -- functions that show the current values
 local rolePool, roleRows
 
--- The option with this key (top level or in the Community chat group).
-local function option(key)
-  local args = ns.Settings.options().args
-  return args[key] or args.chat.args[key]
-end
+local function option(key) return ns.Settings.option(key) end
 
 local function label(parent, x, y, text, role, colorName)
   local fs = Theme.text(parent, role or "label", colorName or "faint")

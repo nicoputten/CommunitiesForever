@@ -33,12 +33,27 @@ Theme.COLORS = {
   track = hex("161E2B"),            -- empty part of bars
   hover = hex("FFFFFF", 0.04),      -- row hover
   selected = hex("D4AF6A", 0.13),   -- selected row
+  white = hex("FFFFFF"),            -- faint overlays with an alpha: tiles 0.03, separators and pills 0.05
+  tick = hex("070C15", 0.9),        -- tick lines on skill bars
+  missing = hex("E08A4A", 0.5),     -- outline of a missing role slot
+  dungeonTag = hex("8DB0FF"),       -- the DUNGEON tag on shared quests
 }
 
-function Theme.color(name)
+-- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).
+function Theme.color(name, alpha)
   local c = Theme.COLORS[name]
   assert(c, "unknown colour " .. tostring(name))
-  return c[1], c[2], c[3], c[4]
+  return c[1], c[2], c[3], alpha or c[4]
+end
+
+-- "|cffrrggbb": the escape that colours the text after it (end it with "|r").
+function Theme.rgbCode(r, g, b)
+  local function byte(v) return math.floor((v or 0) * 255 + 0.5) end
+  return string.format("|cff%02x%02x%02x", byte(r), byte(g), byte(b))
+end
+
+function Theme.code(name)
+  return Theme.rgbCode(Theme.color(name))
 end
 
 -- Fonts: bundled Marcellus SC, Marcellus and Inter (SIL OFL), the game font as fallback.

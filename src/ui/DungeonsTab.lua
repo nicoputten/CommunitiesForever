@@ -32,15 +32,10 @@ local function status()
   return s.dungeonTree
 end
 
-local function hex(r, g, b)
-  local function byte(v) return math.floor((v or 0) * 255 + 0.5) end
-  return string.format("|cff%02x%02x%02x", byte(r), byte(g), byte(b))
-end
-
-local function colored(text, colorName) return hex(Theme.color(colorName)) .. tostring(text) .. "|r" end
+local function colored(text, colorName) return Theme.code(colorName) .. tostring(text) .. "|r" end
 
 local function classColored(c, text)
-  return hex(Kit.classColor(c.classFile)) .. tostring(text or c.name) .. "|r"
+  return Theme.rgbCode(Kit.classColor(c.classFile)) .. tostring(text or c.name) .. "|r"
 end
 
 local function plural(n, word) return n .. " " .. word .. (n == 1 and "" or "s") end
@@ -97,7 +92,7 @@ local function listRow(parent)
   r:SetHeight(ROW)
   r.planBg = r:CreateTexture(nil, "BACKGROUND", nil, -1)
   r.planBg:SetAllPoints()
-  r.planBg:SetColorTexture(0.498, 0.851, 0.604, 0.06)
+  r.planBg:SetColorTexture(Theme.color("online", 0.06))
   r.name = Theme.text(r, "group", "goldLight")
   r.name:SetPoint("TOPLEFT", 12, -7)
   r.right = Theme.text(r, "tiny", "muted")
@@ -114,7 +109,7 @@ local function slotFrame(parent)
   s:SetHeight(SLOT_HEIGHT)
   local bg = s:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints()
-  bg:SetColorTexture(1, 1, 1, 0.03)
+  bg:SetColorTexture(Theme.color("white", 0.03))
   s.edges = Kit.edges(s, "divider")
   s.portrait = Kit.portrait(s, 26)
   s.portrait:SetPoint("TOP", 0, -9)
@@ -144,7 +139,7 @@ local function questRow(parent)
   sep:SetPoint("BOTTOMLEFT")
   sep:SetPoint("BOTTOMRIGHT")
   sep:SetHeight(1)
-  sep:SetColorTexture(1, 1, 1, 0.05)
+  sep:SetColorTexture(Theme.color("white", 0.05))
   return q
 end
 
@@ -153,22 +148,10 @@ local function primary(parent) return Kit.button(parent, "", nil, "primary") end
 
 -- ===== Drawing =====
 
-local function placeText(poolName, parent, x, y, width, text, colorName)
-  local holder = Kit.take(pools[poolName], parent)
-  holder:SetPoint("TOPLEFT", x, -y)
-  holder.text:SetWidth(width or 0)
-  holder.text:SetText(text or "")
-  holder.text:SetTextColor(Theme.color(colorName or "text"))
-  return holder
-end
+local placeText = Kit.placeText
 
-local function section(parent, x, y, width, text, extra, extraColor)
-  local h = placeText("section", parent, x, y, width, text, "goldLight")
-  if extra then
-    local w = h.text.GetStringWidth and h.text:GetStringWidth() or 100
-    placeText("small", parent, x + w + 10, y + 3, width - w - 10, extra, extraColor or "muted")
-  end
-  return y + 24
+local function section(parent, x, y, width, text, note, noteColor)
+  return Kit.section(pools.section, pools.small, parent, x, y, width, text, note, noteColor)
 end
 
 local function renderList(planned, overview, me)
@@ -181,7 +164,7 @@ local function renderList(planned, overview, me)
   local selected = status().selected
 
   local function label(text)
-    placeText("listText", parent, 12, y + 8, width - 24, text:upper(), "faint")
+    placeText(pools.listText, parent, 12, y + 8, width - 24, text:upper(), "faint")
     y = y + 26
   end
   local function row(value, name, right, rightColor, meta, dim, plannedRow)
@@ -228,7 +211,7 @@ local function renderList(planned, overview, me)
       row(entry.dungeon.id, entry.dungeon.name, range(entry.dungeon), "muted", meta)
     end
   end
-  local note = placeText("listText", parent, 12, y + 10, width - 24, NOTE, "faint")
+  local note = placeText(pools.listText, parent, 12, y + 10, width - 24, NOTE, "faint")
   note.text:SetTextColor(Theme.color("faint"))
   y = y + 46
   parent:SetHeight(y)
@@ -263,7 +246,7 @@ local function slots(parent, entry, group, y, width)
       s.name:SetText(ROLE_NAMES[slot.role])
       s.info:SetText(slot.missing and "nobody in range" or "open")
       s.info:SetTextColor(Theme.color(slot.missing and "warning" or "faint"))
-      if slot.missing then edge = { 0.878, 0.541, 0.290, 0.5 } end
+      if slot.missing then edge = { Theme.color("missing") } end
     end
     for _, e in ipairs(s.edges) do e:SetColorTexture(edge[1], edge[2], edge[3], edge[4] or 1) end
   end
@@ -280,13 +263,13 @@ local function askBlock(parent, entry, y, width)
     if #s.later > 0 then parts[#parts + 1] = "later: " .. table.concat(s.later, ", ") end
     if #s.no > 0 then parts[#parts + 1] = colored("not now: " .. table.concat(s.no, ", "), "muted") end
     if #s.waiting > 0 then parts[#parts + 1] = colored("waiting: " .. table.concat(s.waiting, ", "), "muted") end
-    placeText("small", parent, PAD, y + 4, width, "Asked who's up for it \194\183 " .. table.concat(parts,
+    placeText(pools.small, parent, PAD, y + 4, width, "Asked who's up for it \194\183 " .. table.concat(parts,
       " \194\183 "), "text")
     return y + 26
   end
   local ok, wait = ns.GroupAsks.canAsk()
   if not ok then
-    placeText("small", parent, PAD, y + 4, width, string.format("You can ask again in %d min.",
+    placeText(pools.small, parent, PAD, y + 4, width, string.format("You can ask again in %d min.",
       math.ceil(wait / 60)), "muted")
     return y + 26
   end
@@ -295,7 +278,7 @@ local function askBlock(parent, entry, y, width)
   b:SetEnabled(true)
   b:SetScript("OnClick", function() ns.GroupAsks.ask(entry.dungeon) end)
   b:SetPoint("TOPLEFT", PAD, -y)
-  placeText("tiny", parent, PAD + (b:GetWidth() or 140) + 10, y + 7, width, ASK_NOTE, "faint")
+  placeText(pools.tiny, parent, PAD + (b:GetWidth() or 140) + 10, y + 7, width, ASK_NOTE, "faint")
   return y + 36
 end
 
@@ -303,10 +286,10 @@ local function questColumn(parent, info, x, y, width)
   local hint = "Install QuestieDB (it comes with Questie) to see every quest for this dungeon."
   if #info.quests == 0 then
     y = section(parent, x, y, width, "Quests")
-    placeText("small", parent, x, y, width, "No quests known for this dungeon yet.", "muted")
+    placeText(pools.small, parent, x, y, width, "No quests known for this dungeon yet.", "muted")
     y = y + 18
     if not info.complete then
-      placeText("tiny", parent, x, y, width, hint, "faint")
+      placeText(pools.tiny, parent, x, y, width, hint, "faint")
       y = y + 30
     end
     return y
@@ -338,11 +321,11 @@ local function questColumn(parent, info, x, y, width)
     end
   end
   if done > 0 then
-    placeText("tiny", parent, x, y + 4, width, plural(done, "quest") .. " already done on this character.", "faint")
+    placeText(pools.tiny, parent, x, y + 4, width, plural(done, "quest") .. " already done on this character.", "faint")
     y = y + 20
   end
   if not info.complete then
-    placeText("tiny", parent, x, y + 4, width, "Only quests in someone's quest log. " .. hint, "faint")
+    placeText(pools.tiny, parent, x, y + 4, width, "Only quests in someone's quest log. " .. hint, "faint")
     y = y + 34
   end
   return y
@@ -350,7 +333,7 @@ end
 
 local function planColumn(parent, dungeon, x, y, width)
   y = section(parent, x, y, width, "Plan a run")
-  placeText("small", parent, x, y, width, "Create a community event in the calendar with this title "
+  placeText(pools.small, parent, x, y, width, "Create a community event in the calendar with this title "
     .. "(click, Ctrl+C).", "textDim")
   y = y + 36
   titleBox:ClearAllPoints()
@@ -378,18 +361,18 @@ local function renderDetail(entry, me, messageText)
   local width = math.max(420, (detail:GetWidth() or 0) - 6) - 2 * PAD
   local y = PAD - 4
   if not entry then
-    placeText("small", parent, PAD, y, width, messageText or "", "textDim")
+    placeText(pools.small, parent, PAD, y, width, messageText or "", "textDim")
     parent:SetHeight(y + 60)
     detail:Update()
     return
   end
 
   local dungeon = entry.dungeon
-  local title = placeText("name", parent, PAD, y, width, dungeon.name, "heading")
+  local title = placeText(pools.name, parent, PAD, y, width, dungeon.name, "heading")
   local sub = "levels " .. range(dungeon)
   if ns.Dungeons.ZONES[dungeon.id] then sub = sub .. " \194\183 " .. ns.Dungeons.ZONES[dungeon.id] end
   local tw = title.text.GetStringWidth and title.text:GetStringWidth() or 200
-  placeText("small", parent, PAD + tw + 12, y + 10, width - tw - 12, sub, "muted")
+  placeText(pools.small, parent, PAD + tw + 12, y + 10, width - tw - 12, sub, "muted")
   y = y + 40
 
   -- Planned runs of this dungeon (the next ones in the calendar).
@@ -397,14 +380,14 @@ local function renderDetail(entry, me, messageText)
     local parts = { ns.Dungeons.eventTime(e.startTime), e.title }
     parts[#parts + 1] = signUpText(e)
     parts[#parts + 1] = ns.Dungeons.signUp(e.inviteStatus)
-    placeText("small", parent, PAD, y, width, table.concat(parts, " \194\183 "), "onlineText")
+    placeText(pools.small, parent, PAD, y, width, table.concat(parts, " \194\183 "), "onlineText")
     y = y + 18
   end
   y = y + 4
 
   y = section(parent, PAD, y, width, "Suggested group")
   if not entry.fits then
-    placeText("small", parent, PAD, y, width, string.format("%s is not in range.", tostring(me.name)), "muted")
+    placeText(pools.small, parent, PAD, y, width, string.format("%s is not in range.", tostring(me.name)), "muted")
     y = y + 20
   end
   local group = ns.Dungeons.suggest(entry)
@@ -413,7 +396,7 @@ local function renderDetail(entry, me, messageText)
   if #alternatives > 0 then
     local names = {}
     for i, c in ipairs(alternatives) do names[i] = classColored(c, c.name .. " " .. c.level) end
-    placeText("tiny", parent, PAD, y, width, "Alternatives for you: " .. table.concat(names, ", "), "muted")
+    placeText(pools.tiny, parent, PAD, y, width, "Alternatives for you: " .. table.concat(names, ", "), "muted")
     y = y + 20
   end
   if entry.fits then y = askBlock(parent, entry, y + 2, width) end
@@ -425,7 +408,7 @@ local function renderDetail(entry, me, messageText)
       if c.role and ROLE_NAMES[c.role] then parts[#parts + 1] = ROLE_NAMES[c.role] end
       parts[#parts + 1] = c.displayName or "community member"
       if c.online then parts[#parts + 1] = "online" end
-      placeText("small", parent, PAD, y, width, table.concat(parts, " \194\183 "), "textDim")
+      placeText(pools.small, parent, PAD, y, width, table.concat(parts, " \194\183 "), "textDim")
       y = y + 18
     end
   end

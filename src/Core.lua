@@ -69,109 +69,122 @@ local function CommunityAvailable(self)
   return true
 end
 
-function addon:OnSlashCommand(input)
-  local command, argument = self:GetArgs(input, 2)
-  command = command and command:lower()
+local function printLines(self, lines)
+  for _, line in ipairs(lines) do self:Print(line) end
+end
 
-  if command == nil then
-    ns.MainFrame.toggle()
-  elseif command == "version" then
-    self:Print("Version " .. GetVersion())
-  elseif command == "self" then
-    for _, line in ipairs(ns.Describe.selfRecord(self.db.global.self, GetServerTime())) do
-      self:Print(line)
+-- /cf ask: ask friends who's up for a dungeon (CF-27), or how your ask stands.
+local function askCommand(self, _, input)
+  local name = input:match("^%s*%S+%s+(.-)%s*$") -- the rest of the line: names have spaces
+  local dungeon = name and name ~= "" and ns.Dungeons.dungeonOf(name)
+  if dungeon then
+    ns.GroupAsks.ask(dungeon)
+  elseif name and name ~= "" then
+    self:Print("No dungeon called " .. name .. ". Example: /cf ask Deadmines")
+  else
+    local ask = ns.GroupAsks.current()
+    if not ask then
+      self:Print("No open ask. /cf ask <dungeon> asks friends who's up for it.")
+      return
     end
-  elseif command == "members" then
-    if not CommunityAvailable(self) then return end
-    local lines = ns.Describe.members(ns.MemberTracker.members(), ns.CommunitySelection.name(),
-      ns.MemberTracker.changedAt(), GetServerTime())
-    for _, line in ipairs(lines) do
-      self:Print(line)
-    end
-  elseif command == "people" then
-    if not CommunityAvailable(self) then return end
-    for _, line in ipairs(ns.Describe.view(ns.ViewModel.build(self), GetServerTime())) do
-      self:Print(line)
-    end
-  elseif command == "friends" then
-    local lines = ns.Describe.friends(ns.PresenceTracker.friends(), ns.PresenceTracker.online(),
-      self.db.global.presence, GetServerTime())
-    for _, line in ipairs(lines) do
-      self:Print(line)
-    end
-  elseif command == "ping" then
-    if argument == "stats" then
+    local s = ns.GroupAsk.summary(ask)
+    self:Print(string.format("%s: joining %s; later %s; no %s; waiting %s.", ask.dungeon.name,
+      table.concat(s.join, ", "), table.concat(s.later, ", "), table.concat(s.no, ", "),
+      table.concat(s.waiting, ", ")))
+  end
+end
+
+local function activityCommand(self, argument)
+  if argument == "debug" then
+    ns.ActivityTracker.setDebug(not ns.ActivityTracker.debugOn())
+    self:Print(ns.ActivityTracker.debugOn()
+      and "Activity debug on: instance events and run decisions are printed (stays on after /reload)."
+      or "Activity debug off.")
+    return
+  end
+  local run = ns.ActivityTracker.current()
+  self:Print(run and string.format("In %s (%s) for %d min, %d bosses killed.", tostring(run.name),
+    tostring(run.kind), math.floor((GetServerTime() - (run.startedAt or 0)) / 60), run.bossCount or 0)
+    or "Not in a dungeon, raid or battleground.")
+end
+
+local function debugCommand(self, _, _, command) -- hidden: not in the help
+  ns.Debug.set(command == "debugon")
+  self:Print(command == "debugon" and "Debug on: fake friend in the window (not saved, not synced)."
+    or "Debug off.")
+  if ns.MainFrame.isShown() then ns.MainFrame.render() end
+end
+
+--[[ The /cf commands, in help order. name: the first word (lower case; "" for /cf alone); help: its lines in
+/cf help (none: hidden); run(self, argument, input, command): argument is the second word, input the
+whole line. ]]
+local COMMANDS = {
+  { name = "", help = { "/cf - open or close the window" }, run = function() ns.MainFrame.toggle() end },
+  { name = "version", help = { "/cf version - show the addon version" },
+    run = function(self) self:Print("Version " .. GetVersion()) end },
+  { name = "self", help = { "/cf self - show your stored characters" },
+    run = function(self) printLines(self, ns.Describe.selfRecord(self.db.global.self, GetServerTime())) end },
+  { name = "members", help = { "/cf members - show members of the selected community" },
+    run = function(self)
+      if not CommunityAvailable(self) then return end
+      printLines(self, ns.Describe.members(ns.MemberTracker.members(), ns.CommunitySelection.name(),
+        ns.MemberTracker.changedAt(), GetServerTime()))
+    end },
+  { name = "friends", help = { "/cf friends - show Battle.net friends in Forever" },
+    run = function(self)
+      printLines(self, ns.Describe.friends(ns.PresenceTracker.friends(), ns.PresenceTracker.online(),
+        self.db.global.presence, GetServerTime()))
+    end },
+  { name = "people", help = { "/cf people - show who owns which community character" },
+    run = function(self)
+      if not CommunityAvailable(self) then return end
+      printLines(self, ns.Describe.view(ns.ViewModel.build(self), GetServerTime()))
+    end },
+  { name = "sync", help = { "/cf sync - announce your characters to friends now",
+                            "/cf sync debug - print message parts, missing parts and resends (on/off)" },
+    run = function(self, argument)
+      if argument == "debug" then -- CF-28: trace parts, missing parts and resends
+        ns.Messenger.setDebug(not ns.Messenger.debugOn())
+        self:Print(ns.Messenger.debugOn() and "Sync debug on: message parts, missing parts and resends are printed."
+          or "Sync debug off.")
+        return
+      end
+      ns.Sync.announce()
+      self:Print("Sync: announced your record to friends online in Forever.")
+    end },
+  { name = "ping", help = { "/cf ping [bytes] - test messages with friends who run the addon; /cf ping stats" },
+    run = function(self, argument)
+      if argument ~= "stats" then
+        ns.Ping.send(tonumber(argument))
+        return
+      end
       local s = ns.Messenger.stats()
       self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed.",
         s.sent, s.received, s.dropped, s.queued, s.resent, s.missed))
-    else
-      ns.Ping.send(tonumber(argument))
-    end
-  elseif command == "sync" then
-    if argument == "debug" then
-      -- CF-28: trace parts, missing parts and resends.
-      ns.Messenger.setDebug(not ns.Messenger.debugOn())
-      self:Print(ns.Messenger.debugOn() and "Sync debug on: message parts, missing parts and resends are printed."
-        or "Sync debug off.")
-      return
-    end
-    ns.Sync.announce()
-    self:Print("Sync: announced your record to friends online in Forever.")
-  elseif command == "settings" then
-    ns.Settings.open()
-  elseif command == "ask" then
-    -- CF-27: /cf ask <dungeon> (the rest of the line: names have spaces), or the state of your ask.
-    local name = input:match("^%s*%S+%s+(.-)%s*$")
-    local dungeon = name and name ~= "" and ns.Dungeons.dungeonOf(name)
-    if dungeon then
-      ns.GroupAsks.ask(dungeon)
-    elseif name and name ~= "" then
-      self:Print("No dungeon called " .. name .. ". Example: /cf ask Deadmines")
-    else
-      local ask = ns.GroupAsks.current()
-      if not ask then
-        self:Print("No open ask. /cf ask <dungeon> asks friends who's up for it.")
-      else
-        local s = ns.GroupAsk.summary(ask)
-        self:Print(string.format("%s: joining %s; later %s; no %s; waiting %s.", ask.dungeon.name,
-          table.concat(s.join, ", "), table.concat(s.later, ", "), table.concat(s.no, ", "),
-          table.concat(s.waiting, ", ")))
-      end
-    end
-  elseif command == "setup" then
-    ns.Setup.open()
-  elseif command == "activity" then
-    if argument == "debug" then
-      ns.ActivityTracker.setDebug(not ns.ActivityTracker.debugOn())
-      self:Print(ns.ActivityTracker.debugOn()
-        and "Activity debug on: instance events and run decisions are printed (stays on after /reload)."
-        or "Activity debug off.")
-    else
-      local run = ns.ActivityTracker.current()
-      self:Print(run and string.format("In %s (%s) for %d min, %d bosses killed.", tostring(run.name),
-        tostring(run.kind), math.floor((GetServerTime() - (run.startedAt or 0)) / 60), run.bossCount or 0)
-        or "Not in a dungeon, raid or battleground.")
-    end
-  elseif command == "debugon" or command == "debugoff" then -- hidden: not in the help
-    ns.Debug.set(command == "debugon")
-    self:Print(command == "debugon" and "Debug on: fake friend in the window (not saved, not synced)."
-      or "Debug off.")
-    if ns.MainFrame.isShown() then ns.MainFrame.render() end
-  else
-    self:Print("Commands:")
-    self:Print("  /cf - open or close the window")
-    self:Print("  /cf version - show the addon version")
-    self:Print("  /cf self - show your stored characters")
-    self:Print("  /cf members - show members of the selected community")
-    self:Print("  /cf friends - show Battle.net friends in Forever")
-    self:Print("  /cf people - show who owns which community character")
-    self:Print("  /cf sync - announce your characters to friends now")
-    self:Print("  /cf sync debug - print message parts, missing parts and resends (on/off)")
-    self:Print("  /cf ping [bytes] - test messages with friends who run the addon; /cf ping stats")
-    self:Print("  /cf activity - show the dungeon, raid or battleground run in progress")
-    self:Print("  /cf activity debug - print instance events for the activity feed (on/off)")
-    self:Print("  /cf settings - open the settings")
-    self:Print("  /cf setup - run the setup again")
-    self:Print("  /cf ask <dungeon> - ask friends who's up for a dungeon now")
+    end },
+  { name = "activity", help = { "/cf activity - show the dungeon, raid or battleground run in progress",
+                                "/cf activity debug - print instance events for the activity feed (on/off)" },
+    run = activityCommand },
+  { name = "settings", help = { "/cf settings - open the settings" }, run = function() ns.Settings.open() end },
+  { name = "setup", help = { "/cf setup - run the setup again" }, run = function() ns.Setup.open() end },
+  { name = "ask", help = { "/cf ask <dungeon> - ask friends who's up for a dungeon now" }, run = askCommand },
+  { name = "debugon", run = debugCommand },
+  { name = "debugoff", run = debugCommand },
+}
+
+local commandsByName = {}
+for _, c in ipairs(COMMANDS) do commandsByName[c.name] = c end
+
+local function printHelp(self)
+  self:Print("Commands:")
+  for _, c in ipairs(COMMANDS) do
+    for _, line in ipairs(c.help or {}) do self:Print("  " .. line) end
   end
+end
+
+function addon:OnSlashCommand(input)
+  local command, argument = self:GetArgs(input, 2)
+  command = command and command:lower() or ""
+  local entry = commandsByName[command]
+  if entry then entry.run(self, argument, input or "", command) else printHelp(self) end
 end
