@@ -20,7 +20,7 @@ Onboarding.STEPS = {
 -- What the wizard switches start at (the same as Store.defaults: the wizard only presents settings).
 Onboarding.DEFAULTS = {
   chatKeepGeneral = true, chatAlert = true, chatSound = false,
-  notifications = true, levelUps = true, shareActivity = true, minimap = true,
+  notifications = true, levelUps = true, levelUpToast = true, shareActivity = true, minimap = true,
 }
 
 local function copy(step)
