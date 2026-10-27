@@ -1,6 +1,7 @@
--- MainFrame: the main window. AceGUI Frame with a TreeGroup: people (expandable to their
--- characters) on the left, a detail card on the right. Renders Format models of the view model.
--- Refreshes on change messages while shown; no polling.
+-- MainFrame: the main window. CF-39: the revamp's window shell (src/ui/kit) with tabs, title and footer;
+-- each tab's content is still AceGUI (a TreeGroup: people expandable to their characters on the left, a
+-- detail card on the right) inside one AceGUI root container, until its own story redoes it (CF-40 to
+-- CF-42). Renders Format models of the view model. Refreshes on change messages while shown; no polling.
 local ADDON_NAME, ns = ...
 
 local MainFrame = {}
@@ -20,12 +21,11 @@ local ONLINE_DOT = string.format("|T%s:%d:%d|t ", ONLINE_ICON, DOT_SIZE, DOT_SIZ
 local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
 local GOLD = "|cffffd100"
 local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
-               { value = "dungeons", text = "Dungeons", width = 140 } } -- CF-24: room for "Dungeons (1)"
-local TAB_WIDTH = 90
-local TAB_INDENT = 12 -- px, lines the tabs up with the text inside the content box
+               { value = "dungeons", text = "Dungeons" } } -- CF-24: a badge counts planned runs
+local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 
 local addonRef, events, frame, content, tree, refreshDebounced
-local tabLinks = {} -- CF-22: tab value -> its text link
+local tabs -- CF-39: the kit's tab row
 local activeTab = "friends" -- CF-22: "friends", "activity" or "dungeons" (CF-24)
 local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTag -> true), until /reload
 local renderActivity -- CF-22, defined below
@@ -146,7 +146,7 @@ local function characterList(parent, groupValue, characters)
     entry:SetCallback("OnClick", function()
       tree:SelectByPath(groupValue, c.guid)
     end)
-    MainFrame.rightClickMenu(entry.frame, groupValue .. "" .. c.guid) -- CF-37
+    MainFrame.rightClickMenu(entry.frame, groupValue .. "\001" .. c.guid) -- CF-37
   end
 end
 
@@ -649,7 +649,7 @@ function MainFrame.setFilter(text, typed)
   elseif wasFiltering and not filtering and savedGroups then
     status.groups, savedGroups = savedGroups, nil
   end
-  if frame and activeTab == "friends" and frame.frame:IsShown() then MainFrame.render() end
+  if frame and activeTab == "friends" and frame:IsShown() then MainFrame.render() end
 end
 
 function MainFrame.filterText()
@@ -658,59 +658,45 @@ end
 
 local escapeReady -- CF-32: Esc handler set up (not possible in combat: retried on the next show)
 
+-- CF-39: the window title shows the community; the status text who is online.
+local function updateTitle()
+  if not frame then return end
+  frame.titleText:SetText(ns.CommunitySelection.name() or ADDON_NAME)
+  local online = view and #ns.Format.onlineList(view, 1000).entries or 0
+  frame.statusText:SetText(online > 0 and string.format("\226\151\143 %d online", online) or "")
+end
+
 local function create()
-  frame = createWidget("Frame")
-  frame:SetTitle(ADDON_NAME)
-  -- CF-37: one strata below AceGUI's FULLSCREEN_DIALOG, so Blizzard's right-click menu (FULLSCREEN_DIALOG)
-  -- opens above the window (V57).
-  if frame.frame.SetFrameStrata then frame.frame:SetFrameStrata("DIALOG") end
-  frame:SetStatusTable(settings().window) -- AceGUI saves position and size here
-  frame:SetLayout("Flow") -- tab bar row, then the content filling the rest
-  -- Keep the widget for reuse: closing only hides it. CF-36: the filter starts empty next time.
-  frame:SetCallback("OnClose", function() MainFrame.setFilter("") end)
-  -- No status bar: hide its background and text (the Close button is separate and stays).
-  if frame.statustext and frame.statustext:GetParent() then
-    frame.statustext:GetParent():Hide()
-  end
+  frame = ns.Kit.window({
+    title = ns.CommunitySelection.name() or ADDON_NAME,
+    subtitle = ADDON_NAME,
+    status = settings().window, -- same keys as before (rule 8); reset once to the design size
+    -- Closing only hides it. CF-36: the filter starts empty next time.
+    onClose = function() MainFrame.setFilter("") end,
+    onSettings = function() ns.Settings.open() end,
+    onResize = function() if content then content:DoLayout() end end,
+  })
+  frame.footerText:SetText(FOOTER_HINT)
+  tabs = ns.Kit.tabs(frame.tabBar, TABS, function(value) MainFrame.selectTab(value) end)
 
-  -- CF-22: tabs as plain text (active one gold, others grey), no tab frame, so the content keeps a
-  -- single box. Switching releases the content and builds the other one.
-  local tabBar = createWidget("SimpleGroup")
-  tabBar:SetFullWidth(true)
-  tabBar:SetLayout("Flow")
-  frame:AddChild(tabBar)
-  -- Indent the tabs to the text inside the content box below.
-  local indent = createWidget("Label")
-  indent:SetText("")
-  indent:SetWidth(TAB_INDENT)
-  tabBar:AddChild(indent)
-  for _, tab in ipairs(TABS) do
-    local link = createWidget("InteractiveLabel")
-    link:SetFontObject(GameFontNormalLarge)
-    link:SetWidth(tab.width or TAB_WIDTH)
-    if link.SetHighlight then link:SetHighlight("Interface\\QuestFrame\\UI-QuestTitleHighlight") end
-    link:SetCallback("OnClick", function() MainFrame.selectTab(tab.value) end)
-    tabBar:AddChild(link)
-    tabLinks[tab.value] = link
-  end
-
+  -- Until each tab has its new look, its AceGUI content lives in one root container in the new window.
   content = createWidget("SimpleGroup")
-  content:SetFullWidth(true)
-  content:SetFullHeight(true)
+  content.cfMainRoot = true -- specs find the tab content by this
+  content.frame:SetParent(frame.content)
+  content.frame:ClearAllPoints()
+  content.frame:SetAllPoints(frame.content)
+  content.frame:Show()
   content:SetLayout("Fill")
-  frame:AddChild(content)
   MainFrame.selectTab(activeTab)
 end
 
--- Tab texts: the active one gold. CF-24: "Dungeons (N)" with N runs planned in the next days.
+-- The active tab in pale gold with an underline. CF-24: the Dungeons badge counts runs planned in the next
+-- days.
 function MainFrame.updateTabs()
   if not frame then return end
-  local planned = #ns.Planner.planned()
-  for _, tab in ipairs(TABS) do
-    local text = tab.text
-    if tab.value == "dungeons" and planned > 0 then text = string.format("%s (%d)", text, planned) end
-    tabLinks[tab.value]:SetText((tab.value == activeTab and GOLD or GREY) .. text .. "|r")
-  end
+  tabs.select(activeTab)
+  tabs.setBadge("dungeons", #ns.Planner.planned())
+  updateTitle()
 end
 
 -- Shows a tab ("friends", "activity" or "dungeons").
@@ -731,8 +717,12 @@ function MainFrame.selectTab(value)
   if view then MainFrame.render() end
 end
 
+-- CF-39: the kit window and its tabs (nil before the first open), for the specs and later stories.
+function MainFrame.window() return frame end
+function MainFrame.tabs() return tabs end
+
 function MainFrame.isShown()
-  return frame ~= nil and frame.frame:IsShown()
+  return frame ~= nil and frame:IsShown()
 end
 
 function MainFrame.toggle()
@@ -745,7 +735,7 @@ function MainFrame.toggle()
   else
     frame:Show()
   end
-  if not escapeReady then escapeReady = ns.Keys.closeOnEscape(frame.frame, function() frame:Hide() end) end
+  if not escapeReady then escapeReady = ns.Keys.closeOnEscape(frame, function() frame:Hide() end) end
   MainFrame.render()
 end
 
@@ -771,7 +761,7 @@ function MainFrame.start(addon)
   frame, content, tree, view = nil, nil, nil, nil
   filterText, filterBox, filterCount, savedGroups = "", nil, nil, nil
   escapeReady = false
-  tabLinks = {}
+  tabs = nil
   activeTab, expandedFeed = "friends", {}
   ns.DungeonsTab.reset()
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()

@@ -45,6 +45,7 @@ stds.wow = {
     "BNGetInfo", "BNGetNumFriends", "BNSendGameData", "BNET_CLIENT_WOW",
     -- UI
     "CreateFrame", "UIParent", "GameTooltip", "TooltipDataProcessor", "C_CreatureInfo",
+    "CreateColor", "GetLocale", "C_ClassColor", "CLASS_ICON_TCOORDS", -- CF-39 kit
     "issecretvalue",
     "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",

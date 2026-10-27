@@ -3,22 +3,11 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-39 (kit and window shell), then CF-40 to CF-44 (one per screen, any order).
+Build order: CF-40 to CF-44 (one per screen, any order).
 
 ## E13 Revamp (new look)
 
 Design: `docs/design/revamp-2026-10/` (README: decisions and where the mockups differ). Each screen story replaces one tab whole: old and new never mix inside one tab. Nothing stored or sent changes unless a story says so (rule 8). Visual checks happen in game after launch (VERIFY.md).
-
-### CF-39 Kit and window shell
-- Goal: the new window around the existing tabs, and the building blocks the screen stories use.
-- Decided: native frames and our own small kit (`src/ui/kit/`), no AceGUI for the main window. Ace3 stays for the plumbing. Fonts Marcellus SC, Marcellus and Inter bundled (SIL OFL, `media/fonts/`; added to ARCHITECTURE "Libraries", rule 7), the game font as fallback for non-Latin clients.
-- Kit (values from `widget-kit.html` and the mockups): Window (96% opaque navy panel, 1 px gold border, corner diamonds, soft shadow), title bar (shield emblem, community name in Marcellus SC, "CommunitiesForever", "● N online", settings and close buttons), Tabs (Marcellus SC, gold underline when active, count badge as in "Dungeons (1)"), footer line, Button (normal, hover, pressed, disabled; primary and ghost), Checkbox (with a second line of help text), ListRow (28 px, hover and selected states), SkillBar (fill, cap shading, tier ticks), ClassPortrait (the real class icon in a round mask with a class-colour ring; 20, 32 and 52 px; online dot), Toast. Colour tokens and sizes in one place (`src/ui/kit/Theme.lua`).
-- Window: 880 × 600 at UI scale 1, resizable down to 700 × 480, moved by dragging the title; size and position saved as today; strata `DIALOG` (CF-37); Esc and the keybinding as in CF-32; opens on the last tab.
-- Textures to make (`media/`, TGA, power-of-two, tinted in code): border nine-slice, corner diamond, button states, checkbox, shine streak, shadow nine-slice, shield emblem, portrait ring.
-- Until each screen story lands, the existing tab content (AceGUI) sits inside the new shell's content area.
-- Unverified on Forever (VERIFY.md, checked at launch): `CreateMaskTexture`, `Texture:SetGradient` with `CreateColor`, `FontString:SetFont` with a bundled font, `C_ClassColor.GetClassColor`, the class icon atlas, `ScrollBox` with a `DataProvider`, `SetResizeBounds`.
-- Unit tests: theme tokens (every colour defined once); the window's saved size and position; tabs and badge; the mock grows the frame API the kit uses.
-- Manual: the window looks like the mockups (border, title, tabs, footer), moves, resizes within its bounds, Esc closes it, the old tabs still work inside it.
 
 ### CF-40 Friends tab in the new look
 - Goal: the Friends tab as in `friends.html`.

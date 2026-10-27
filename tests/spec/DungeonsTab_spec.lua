@@ -32,7 +32,7 @@ describe("Dungeons tab (CF-24)", function()
 
   local function window()
     for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" and w.title == "CommunitiesForever" then return w end
+      if w.cfMainRoot then return w end -- CF-39: the tab content's root in the kit window
     end
   end
 
@@ -120,7 +120,7 @@ describe("Dungeons tab (CF-24)", function()
     for _, node in ipairs(dungeonTree().tree) do values[#values + 1] = node.value end
     assert.are.same({ "header:planned", "planned:1", "header:range", "dm", "wc" }, values)
     assert.is_truthy(dungeonTree().tree[2].text:find("Tue 20:00 \194\183 3", 1, true))
-    assert.is_truthy(text():find("|cffffd100Dungeons (1)|r", 1, true))
+    assert.are.equal(1, ns.MainFrame.tabs().buttons.dungeons.badgeCount) -- CF-39: the badge on the tab
     dungeonTree():SelectByValue("planned:1")
     assert.is_truthy(text():find("Tue 20 Oct, 20:00 \194\183 Deadmines run \194\183 3 signed up \194\183 +1 tentative"
       .. " \194\183 you signed up", 1, true))

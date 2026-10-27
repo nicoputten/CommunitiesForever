@@ -69,6 +69,9 @@ src\services\Notify.lua
 src\services\Planner.lua
 src\services\GroupAsks.lua
 
+src\ui\kit\Theme.lua
+src\ui\kit\Widgets.lua
+src\ui\kit\Window.lua
 src\ui\Settings.lua
 src\ui\DungeonsTab.lua
 src\ui\MainFrame.lua

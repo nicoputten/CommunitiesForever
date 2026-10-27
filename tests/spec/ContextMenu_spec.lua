@@ -118,9 +118,7 @@ describe("right-click menu (CF-37)", function()
     end
 
     it("puts the window one strata below Blizzard's menus", function()
-      for _, w in ipairs(state.guiWidgets) do
-        if w.type == "Frame" and w.title == "CommunitiesForever" then assert.are.equal("DIALOG", w.frame.strata) end
-      end
+      assert.are.equal("DIALOG", ns.MainFrame.window():GetFrameStrata())
     end)
 
     it("opens on a person row and whispers or invites the character they are on", function()
