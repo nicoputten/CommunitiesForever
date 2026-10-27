@@ -74,6 +74,7 @@ src\ui\kit\Widgets.lua
 src\ui\kit\Window.lua
 src\ui\Settings.lua
 src\ui\DungeonsTab.lua
+src\ui\FriendsTab.lua
 src\ui\MainFrame.lua
 src\ui\Minimap.lua
 src\ui\Tooltip.lua

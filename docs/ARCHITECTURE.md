@@ -78,8 +78,8 @@ CommunitiesForever/
       Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
       Notify.lua             login notifications in chat (30 s per person, settings.notifications)
     ui/
-      MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right); tabs
-                             Friends, Activity (CF-22) and Dungeons (CF-24)
+      MainFrame.lua          the window (kit shell, CF-39) and its tabs Friends, Activity (CF-22), Dungeons (CF-24)
+      FriendsTab.lua         Friends tab on native kit frames (CF-40): search, people and characters, card
       DungeonsTab.lua        Dungeons tab: dungeon list, suggested group, calendar events, copy fields (CF-24)
       Setup.lua              onboarding wizard and Community tab prompt (CF-26)
       Settings.lua           AceConfig options (Blizzard panel + /cf settings)
@@ -125,7 +125,7 @@ Fonts (E13 revamp, decided 2026-10-27): **Marcellus SC**, **Marcellus** and **In
 
 Optional, not embedded (CF-24): the **QuestieDB** addon (comes with Questie; `## OptionalDeps: QuestieDB`). When it is installed with contract 3 or later, the Dungeons tab reads every dungeon's quests from its public API (`LibQuestieDB`, `QuestDB`) at runtime; nothing of its data ships with this addon (it has no license). Without it, dungeon quests come from the community's quest logs.
 
-UI choice: AceConfig for settings (also registered in the Blizzard settings panel) until CF-43. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). Each tab's content is still AceGUI (a `TreeGroup`: people expandable to their characters on the left, a detail card on the right, decided in CF-12) inside one AceGUI root container, until its revamp story (CF-40 to CF-42). Profession bars are inline textures. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
+UI choice: AceConfig for settings (also registered in the Blizzard settings panel) until CF-43. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). The Friends tab (CF-40, `src/ui/FriendsTab.lua`) is native too: a list of people with their characters on the left (folding per person), the card of the selected person or character on the right, both scrolled by `Kit.scrollArea` (plain ScrollFrame, our own thin thumb; no ScrollBox); frames come from pools and are reused on each render. The Activity and Dungeons tabs are still AceGUI inside one AceGUI root container (hidden while Friends shows), until CF-41 and CF-42. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
 
 ## Data model
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
@@ -133,7 +133,8 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 global = {
   schemaVersion = 1,
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
-                notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
+                notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
+                                                     -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
                 shareActivity = true,                -- CF-22: send the activity feed to friends
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)

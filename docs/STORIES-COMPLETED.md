@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -388,3 +388,12 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests: theme tokens (every colour defined once); the window's saved size and position; tabs and badge; the mock grows the frame API the kit uses.
 - Manual: the window looks like the mockups (border, title, tabs, footer), moves, resizes within its bounds, Esc closes it, the old tabs still work inside it.
 - Built: `src/ui/kit/` (Theme: colours, text roles, sizes; Widgets: Button, IconButton, Checkbox, ListRow, SkillBar, Portrait, Toast; Window: window shell and Tabs), fonts in `media/fonts` (Marcellus SC, Marcellus, Inter Regular/Medium/SemiBold, static files from the Inter 4.1 release), textures drawn by `tools/make-textures.py`. Decided while building: windows saved before the revamp are reset once to 880 × 600 (Nico), the gear opens the current settings until CF-43, the shadow is one soft texture instead of a nine-slice. The mock gained a recording native-frame API (`CreateFrame`, textures, font strings). VERIFY V61.
+
+### CF-40 Friends tab in the new look
+- Goal: the Friends tab as in `friends.html`.
+- List (left, 270 px): the search box (CF-36, placeholder kept), per person a group header (online dot, name, "(you)", character count, collapsible), character rows (20 px portrait with online dot, name in class colour, level right, the shared-quest icon with a count). Selected row: gold left bar. Long lists scroll. Right-click menu as CF-37.
+- Detail (right): header (52 px portrait, name in Marcellus 24 in class colour, "Class · played by <person> · <status>": online in <zone> or offline, last seen in <zone> <ago>), **Whisper** and **Invite** buttons (the CF-37 actions; disabled when offline or for your own characters). Tiles: Level (with a bar to 60), Item level, Role ("from talents" or "set by player"). Professions as skill bars (rank / max, cap shading, ticks at the tier steps; secondary professions muted). Talents per tree with "a / b / c". Quests you share, grouped by area, dungeons first with a Dungeon tag, "Show all N →". A person's card (group header selected): as today, in the new style.
+- Footer: "Synced with <person> <ago>" (the newest record received), "N characters from M friends", "/cf to open · drag the title to move".
+- Unit tests (pure core): the header status line, the tiles, skill bar fractions and tier ticks, the footer texts.
+- Manual: compare with `friends.html`; search, collapse, right-click, Whisper and Invite still work.
+- Decided (2026-10-27): the arrow folds a person, clicking the name opens the person card; our own simple scrolling (`Kit.scrollArea`: plain ScrollFrame, mouse wheel, a thin gold thumb), not ScrollBox. Selection and folded people stay in `settings.tree` (the AceGUI tree's keys: `selected`, `groups` with false = folded; no migration, rule 8). The character card's Whisper and Invite are the CF-37 menu items. The list row shows the number of shared quests (the dungeon icon of CF-19 is gone from the list; areas on the card carry the DUNGEON tag).

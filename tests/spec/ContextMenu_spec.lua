@@ -96,19 +96,9 @@ describe("right-click menu (CF-37)", function()
       world:shutdown()
     end)
 
-    local function treeButton(path)
-      for _, w in ipairs(state.guiWidgets) do
-        if w.type == "TreeGroup" then
-          for _, b in ipairs(w.buttons or {}) do
-            if b.uniquevalue == path then return b end
-          end
-        end
-      end
-    end
-
-    local function rightClick(frame)
-      for _, fn in ipairs(frame.hooks.OnMouseUp or {}) do fn(frame, "RightButton") end
-    end
+    local function tab() return helpers.friendsTab(ns) end
+    local function treeButton(path) return tab().row(path) end -- CF-40: a row of the native list
+    local function rightClick(frame) tab().rightClick(frame) end
 
     local function click(menu, text)
       for _, b in ipairs(menu.buttons) do
@@ -139,21 +129,28 @@ describe("right-click menu (CF-37)", function()
       rightClick(treeButton("Ada#1001\001Player-1-0000A001"))
       assert.are.equal(before, #state.menus)
       -- the person card lists Bob's characters: right-click one there
-      world:with("A", function()
-        for _, w in ipairs(state.guiWidgets) do
-          if w.type == "TreeGroup" then w:SelectByValue("Bob#2002") end -- Bob's card
-        end
-      end)
-      local entry
-      for _, w in ipairs(state.guiWidgets) do
-        local hooked = w.type == "InteractiveLabel" and w.frame.hooks.OnMouseUp
-        if hooked and w.text and w.text:find("Bob Example", 1, true) then
-          entry = w
-        end
-      end
+      world:with("A", function() ns.FriendsTab.select("Bob#2002") end) -- Bob's card
+      local entry = tab().cardLines()[1]
       assert.is_not_nil(entry, "card entry for Bob Example")
-      rightClick(entry.frame)
+      assert.are.equal("Bob Example", entry.name:GetText())
+      rightClick(entry)
       assert.are.equal("Bob Example", state.menus[#state.menus].title)
+    end)
+
+    -- CF-40: the character card has the menu's actions as buttons.
+    it("whispers and invites from the character card's buttons, off on your own characters", function()
+      world:with("A", function() ns.FriendsTab.select("Bob#2002\001Player-1-0000B001") end)
+      local buttons = ns.FriendsTab.cardButtons()
+      assert.is_true(buttons.Whisper.enabled)
+      tab().click(buttons.Whisper)
+      assert.are.same({ "Bob Example" }, tells)
+      tab().click(buttons.Invite)
+      assert.are.same({ "Bob Example" }, invites)
+
+      world:with("A", function() ns.FriendsTab.select("Ada#1001\001Player-1-0000A001") end)
+      buttons = ns.FriendsTab.cardButtons()
+      assert.is_false(buttons.Whisper.enabled)
+      assert.is_false(buttons.Invite.enabled)
     end)
 
     it("says so when an invite cannot be sent", function()

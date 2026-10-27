@@ -133,6 +133,17 @@ def main():
         return (0.0, 0.0, 0.0, max(0.0, min(1.0, edge / 16)) ** 2 * 0.6)
     write_tga("shadow.tga", 64, 64, shadow)
 
+    # Fold arrow (pointing down; turned in code for folded groups).
+    write_tga("arrow.tga", 16, 16,
+              lambda x, y: rgb(WHITE) + (1.0,) if inside_polygon(x, y, [(3, 5), (13, 5), (8, 11)]) else empty())
+
+    # Quest scroll icon for the shared-quest count (CF-40): a page outline with three lines.
+    def quest(x, y):
+        page = (4 <= x <= 12 and 2 <= y <= 14) and not (5.4 <= x <= 10.6 and 3.4 <= y <= 12.6)
+        lines = 5.8 <= x <= 10.2 and any(abs(y - ly) <= 0.55 for ly in (5.5, 8, 10.5))
+        return rgb(WHITE) + (1.0,) if page or lines else empty()
+    write_tga("quest.tga", 16, 16, quest)
+
     print("textures written to", OUT)
 
 

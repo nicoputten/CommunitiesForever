@@ -247,6 +247,7 @@ function Linker.build(raw)
       via = via,
       viaName = via and viaDisplayName(via, input),
       updatedAt = updatedAt,
+      receivedAt = record and record.receivedAt or nil, -- CF-40: when their record last arrived (the footer)
       feed = isSelf and self.feed or (record and record.feed) or nil, -- CF-22 activity feed
     }
   end

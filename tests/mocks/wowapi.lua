@@ -255,7 +255,9 @@ local function fakeLibs(state)
     function w.frame:SetParent(parent) self.parent = parent end
     function w.frame:ClearAllPoints() self.points = nil end
     function w.frame:SetAllPoints(other) self.points = { "ALL", other } end
-    function w.frame:Show() end
+    -- CF-40: hidden while the native Friends tab is shown.
+    function w.frame:Show() self.hidden = nil end
+    function w.frame:Hide() self.hidden = true end
     function w:SetCallback(name, fn) self.callbacks[name] = fn end
     function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
     function w:AddChild(child) self.children[#self.children + 1] = child end

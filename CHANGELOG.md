@@ -8,6 +8,10 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **New look, part 1:** the window has a new frame: dark panel with a gold border, the community name and
   who is online in the title, new tabs and a footer. The tabs inside get their new look in the next updates.
+- **New look, part 2: the Friends tab.** Class portraits, foldable people, the number of quests you share
+  with each character, and a new character card: level, item level and role at a glance, profession and
+  talent bars, quests you share grouped by zone, and Whisper and Invite buttons. The footer shows when you
+  last synced. Long lists scroll.
 - **Less sync traffic in the community:** the "I changed" message goes out once on a hidden channel to
   everyone running the addon, instead of a whisper to each member. Older versions keep getting whispers.
 - Fix: a community chat window with other channels before the community channel is recognized again.
