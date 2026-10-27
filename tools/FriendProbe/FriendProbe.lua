@@ -5,6 +5,8 @@
 --                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
 --   /fp menu        right-click menu test window (V57, CF-37): Blizzard context menu, whisper, copy box,
 --                   right-click on an AceGUI tree row
+--   /fp recipes     profession recipes (V60, CF-38): open a profession window, the probe logs what the API
+--                   gives; /fp recipes link puts your profession link in the chat input to send a friend
 --   /fp feed off    stop feed logging (V35)
 --   /fp clear       wipe the saved log
 -- Checks (by VERIFY.md number):
@@ -283,6 +285,11 @@ inviteFrame:SetScript("OnEvent", function(_, event, ...)
 end)
 
 local function OnLink(source, link)
+  -- V60: a profession link ("trade:..."); a TRADE_SKILL_SHOW after it means Blizzard opened the view.
+  if S(link):match("^trade:") then
+    log("V60 profession link clicked via", source, S(link))
+    return
+  end
   local action, index = S(link):match("^addon:FriendProbe:(%a+):(%d+)")
   if not action then return end
   log("V47 link clicked via", source, action, index)
@@ -520,6 +527,105 @@ local function MenuTest()
   log("V57 in BOTH windows right-click the Person row and the", name, "row: is the menu above the window?")
 end
 
+-- ===== V60: profession recipes (CF-38) =====
+local recipeFrame, lastTradeLink
+
+local function Has(path, fn)
+  log("exists " .. path, fn ~= nil)
+  return fn
+end
+
+-- What the profession API gives while a profession window is open (yours or a linked one).
+local function LogProfession(event)
+  local T = C_TradeSkillUI
+  if not T then log("V60 no C_TradeSkillUI") return end
+  log("V60 event", event)
+  if T.IsTradeSkillLinked then LogCall("V60 IsTradeSkillLinked", T.IsTradeSkillLinked) end
+  if T.GetBaseProfessionInfo then
+    local info = T.GetBaseProfessionInfo()
+    if type(info) == "table" then DumpTable("V60 base profession", info) else log("V60 base profession", info) end
+  end
+  if T.GetChildProfessionInfo then
+    local info = T.GetChildProfessionInfo()
+    if type(info) == "table" then DumpTable("V60 child profession", info) else log("V60 child profession", info) end
+  end
+  local ids = T.GetAllRecipeIDs and T.GetAllRecipeIDs()
+  if type(ids) ~= "table" then log("V60 GetAllRecipeIDs", S(ids)) return end
+  local learned, shown = 0, 0
+  for _, id in ipairs(ids) do
+    local info = T.GetRecipeInfo and T.GetRecipeInfo(id)
+    if info and info.learned then learned = learned + 1 end
+    if info and shown < 5 then
+      shown = shown + 1
+      log("V60 recipe", id, S(info.name), "learned", S(info.learned), "craftable", S(info.craftable),
+        "type", S(info.recipeType))
+      if T.GetRecipeItemLink then LogCall("V60   GetRecipeItemLink", T.GetRecipeItemLink, id) end
+      if T.GetRecipeOutputItemData then
+        local ok, data = pcall(T.GetRecipeOutputItemData, id)
+        if ok and type(data) == "table" then DumpTable("V60   output", data) else log("V60   output", S(data)) end
+      end
+      if T.GetRecipeSchematic then
+        local ok, schematic = pcall(T.GetRecipeSchematic, id, false)
+        if ok and type(schematic) == "table" then
+          log("V60   schematic outputItemID", S(schematic.outputItemID), "name", S(schematic.name))
+        end
+      end
+    end
+  end
+  log("V60 recipes", #ids, "learned", learned)
+  if T.GetTradeSkillListLink then
+    local ok, link = pcall(T.GetTradeSkillListLink)
+    log("V60 GetTradeSkillListLink", ok and S(link) or ("error " .. S(link)))
+    if ok and link then lastTradeLink = link end
+  end
+end
+
+local function Recipes(arg)
+  if arg == "link" then
+    if not lastTradeLink then
+      log("V60 no profession link yet: open your profession window first (with /fp recipes on)")
+      return
+    end
+    local insert = (ChatFrameUtil and ChatFrameUtil.InsertLink) or ChatEdit_InsertLink
+    local open = (ChatFrameUtil and ChatFrameUtil.OpenChat) or ChatFrame_OpenChat
+    if open then pcall(open, "") end
+    if insert then
+      pcall(insert, lastTradeLink)
+      log("V60 link put in the chat input: send it to a friend (whisper); they click it")
+    else
+      log("V60 no InsertLink: the link is", lastTradeLink)
+    end
+    return
+  end
+  log("== V60 RECIPES ==")
+  Has("C_TradeSkillUI", C_TradeSkillUI)
+  if C_TradeSkillUI then
+    for _, name in ipairs({ "GetAllRecipeIDs", "GetRecipeInfo", "GetRecipeItemLink", "GetRecipeOutputItemData",
+                            "GetRecipeSchematic", "GetBaseProfessionInfo", "GetChildProfessionInfo",
+                            "GetTradeSkillListLink", "IsTradeSkillLinked", "OpenTradeSkill" }) do
+      Has("C_TradeSkillUI." .. name, C_TradeSkillUI[name])
+    end
+  end
+  HookLinks()
+  if not recipeFrame then
+    recipeFrame = CreateFrame("Frame")
+    for _, event in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_DATA_SOURCE_CHANGED",
+                             "TRADE_SKILL_CLOSE", "NEW_RECIPE_LEARNED" }) do
+      local ok = pcall(recipeFrame.RegisterEvent, recipeFrame, event)
+      log("V60 register", event, ok)
+    end
+    local busy
+    recipeFrame:SetScript("OnEvent", function(_, event)
+      if event == "TRADE_SKILL_CLOSE" then log("V60 event", event) return end
+      if busy then return end -- LIST_UPDATE fires in bursts: log once per second
+      busy = true
+      C_Timer.After(1, function() busy = false end)
+      LogProfession(event)
+    end)
+  end
+  log("V60 now open a profession window (e.g. Tailoring), then /fp recipes link, send it to a friend")
+end
+
 -- ===== Commands =====
 -- ===== V49-V52: community transport (CF-28) =====
 local COMM_PREFIX = "FProbe"
@@ -656,6 +762,8 @@ SlashCmdList.FRIENDPROBE = function(msg)
     end
   elseif cmd == "invite" then
     Invite()
+  elseif cmd == "recipes" then
+    Recipes(arg)
   elseif cmd == "menu" then
     Section("V57 MENU", MenuTest)
   elseif cmd == "feed" and arg == "off" then
@@ -665,6 +773,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | menu | comm whisper <name> | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | menu | recipes [link] | comm whisper <name> | feed off | clear")
   end
 end
