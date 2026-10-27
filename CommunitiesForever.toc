@@ -46,7 +46,6 @@ src\adapters\Community.lua
 src\adapters\ChatFrames.lua
 src\adapters\Presence.lua
 src\adapters\Instance.lua
-src\adapters\Calendar.lua
 src\adapters\QuestieData.lua
 src\adapters\GroupFinder.lua
 src\adapters\ChatLinks.lua

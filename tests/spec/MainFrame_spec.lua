@@ -210,7 +210,7 @@ describe("MainFrame", function()
     ns.MainFrame.toggle()
     local friends = ns.FriendsTab.searchBox():GetParent():GetParent()
     local activity = ns.ActivityTab.chips().all:GetParent():GetParent()
-    local dungeons = ns.DungeonsTab.titleBox():GetParent():GetParent():GetParent()
+    local dungeons = ns.DungeonsTab.linkBox():GetParent():GetParent():GetParent()
     local function shown() return { friends.shown, activity.shown, dungeons.shown } end
     assert.are.same({ true, false, false }, shown())
     ns.MainFrame.selectTab("activity")

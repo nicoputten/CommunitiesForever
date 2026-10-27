@@ -99,6 +99,7 @@ people whose account ID is unknown are simply not mentioned there.
 | `ver` | Version of the sender's own record |
 | `known` | `{ key = version }` of records the sender holds and may relay: people with a character in the sender's selected community |
 | `ch` | Optional, community only (CF-31): the hidden channel the sender listens on. Members that sent it get later HELLOs on the channel instead of a whisper each. Older clients send none and ignore it (rule 8) |
+| `ru` | Optional (CF-46): updatedAt of the sender's planned runs, 0 when it has none. Older clients send none (and get no runs) and ignore it (rule 8) |
 | `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
 
 The receiver compares: `ver` newer than stored → `REQ` for the sender's own record. A `known` entry newer
@@ -184,6 +185,24 @@ community (`C_Club`) and Battle.net presence.
 Sent on logout to community peers (best effort: the game may close before it goes out). The receiver shows
 the sender's character offline until its next HELLO.
 
+### RUNS and RUNREQ (CF-46, planned runs)
+
+```json
+{ "t": "RUNREQ", "pv": 1 }
+{ "t": "RUNS", "pv": 1,
+  "runs": { "v": 1, "updatedAt": 1793120000, "reminderMinutes": 30,
+            "runs": [ { "id": "r-102", "dungeon": "smlib", "startsAt": 1793210400, "state": "open", "source": "site",
+                        "organiser": { "battleTag": "Ada#1001", "name": "Ada Lovewell" },
+                        "answers": [ { "battleTag": "Ada#1001", "name": "Ada Lovewell", "answer": "in", "role": "tank" } ] } ] } }
+```
+
+`runs` has the shape of `CF_RUNS` (ARCHITECTURE "Planned runs file"). A HELLO whose `ru` is older than ours
+gets `RUNS`; newer gets `RUNREQ`, answered with `RUNS`. Each at most once per target and updatedAt per 60 s.
+The receiver checks the runs like the file (`PlannedRuns.validate`) and keeps them when their `updatedAt` is
+newer than its own and at most 5 minutes ahead of server time; then it sends a HELLO with the new `ru`. Over
+the community every `battleTag` is left out. Not sent during an encounter, a keystone or a PvP match
+(`Instance.messagingRestricted`, V70): tried again 30 s later.
+
 ### ASK and ANSWER (CF-27, "Who's up for it?")
 
 ```json
@@ -213,6 +232,8 @@ Sent only to peers with a character in range; `answer` is `join`, `later` or `no
 | A record from someone else was accepted | HELLO, 5 s debounced | Everyone (now you can relay it) |
 | A HELLO shows a newer version | REQ | That peer only |
 | A REQ arrives | RECORD | That peer only |
+| A HELLO shows older or newer planned runs (`ru`, CF-46) | RUNS or RUNREQ | That peer only |
+| Newer planned runs were accepted | HELLO, 5 s debounced | Everyone |
 | A message stays incomplete for 3 s | MISS | Its sender only |
 | Logout | BYE | Community peers |
 | `/cf sync` | HELLO (forced) | Everyone online |

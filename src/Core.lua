@@ -42,14 +42,13 @@ function addon:OnEnable()
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)
   ns.Minimap.start(self)
+  ns.Planner.start(self) -- CF-46: planned runs (Data\Runs.lua, stored, sync); before Sync's first HELLO
   ns.Messenger.start(self)
   ns.Ping.start(self)
   ns.Sync.start(self)
   ns.Invites.start(self)
   ns.Tooltip.start(self)
   ns.Notify.start(self)
-  ns.Calendar.watch(self) -- CF-24: calendar events for the Dungeons tab
-  ns.Planner.start(self)  -- CF-24: planned runs and their sign-ups
   ns.ChatLinks.watch(self) -- CF-27: clickable chat links
   ns.GroupAsks.start(self) -- CF-27: "Who's up for it?"
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters

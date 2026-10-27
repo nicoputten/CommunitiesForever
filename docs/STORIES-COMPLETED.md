@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -445,3 +445,11 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
   - V47 and V48 (CF-27) are still open and decide Request invite.
 - Compat (rule 8): no stored data or messages change.
 - Built (2026-10-27): the file format (`CF_RUNS = { v, updatedAt, reminderMinutes, runs }`, field names in `docs/ARCHITECTURE.md` "Planned runs file") is defined here, since WEB-44 names no fields; the web (WEB-44) and the uploader (UP-12) follow it. Dungeons are named by the ids of `core/Dungeons.lua`. Built: `Data/Runs.lua` (empty), `core/PlannedRuns.lua`, `adapters/RunsFile.lua` (reads once per load, clears the global); the checks are V67, V68, V69 (`/fp reloadfile`, `/fp reload`, `/fp inviteall`).
+
+### CF-46 Dungeons tab with runs
+- Board `dungeons-runs.html`. A **Runs** segment next to the dungeons in range (with the count in the tab title), each run with dungeon, local time, organiser, "3 in · 1 maybe", your answer, and what you could fill ("Grom Ashfeller fits tank"). "Runs updated at 17:34 · /reload for newer" from `CF_RUNS.updatedAt`, never pretending to be live.
+- A run's detail: the five slots from the roles the addon knows (CF-18), who answered where ("answered on Discord"), who is close in level, the reminder line, Invite all from start time (CF-48), "Edit or cancel on the website" with the link to copy.
+- Dungeons in range show their planned runs ("1 run"). The calendar parts of CF-24 (event matching, Planner's `OpenEvent` queue, Open calendar) are removed.
+- Runs are shared over sync to friends' addons (a new message type within `pv`; rule 8: older clients ignore it), the newer `updatedAt` wins, never sent during encounters, keystones or PvP matches.
+- Tests: the runs list from a sample `CF_RUNS`, slot filling, newer wins over sync, an old client ignoring the new message.
+- Built (2026-10-27): runs come from `Data\Runs.lua`, from friends (`RUNS`/`RUNREQ`, HELLO `ru`) and from `global.plannedRuns` (stored, so a friend without the uploader keeps them after `/reload`; a new optional key, no migration). Slots: "I'm in" answers by role (the site's, else the role the addon knows), then "maybe" dimmed; a tank or healer slot is missing when nobody in range plays it. A run gets an optional `source` (site, discord, game). The organiser sees a disabled "Invite all · from <time>" (CF-48 enables it); Ask now and Plan a run buttons come with CF-47 (the CF-27 ask stays meanwhile). Restricted sending: `Instance.messagingRestricted` (`C_ChatInfo.InChatMessagingLockdown`, `IsEncounterInProgress`, battlegrounds; V70). Removed: `adapters/Calendar.lua`, the calendar parts of `Planner` and `Dungeons`.

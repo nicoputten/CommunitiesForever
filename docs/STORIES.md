@@ -3,18 +3,11 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-46, CF-47, CF-48 once the web and uploader stories they need are in (web E7, uploader UP-12). CF-38 (recipes) waits for the V60 check at launch (its story is in PR #63).
+Build order: CF-47, CF-48 once the web and uploader stories they need are in (web E7, uploader UP-12). CF-38 (recipes) waits for the V60 check at launch (its story is in PR #63).
 
 ## E14 Planned runs
 
 Decided with Nico, 2026-10-27. Two kinds of group: **Ask now** lives in the game (CF-27) and is answered within minutes; a **planned run** is owned by the website, posted and answered in Discord, and ends in an invite in the game at start time. The game never talks to the internet: it learns about runs at login or `/reload` from `Data\Runs.lua` (written by the uploader, UP-12) or from a friend's addon over sync, and what the player does reaches the site after the game saves (`/reload` or logout) and the uploader uploads (web WEB-43). The in-game calendar is out of the flow. Times are UTC in data and shown in the player's local time. Boards: `docs/design/runs-2026-10/` (`runs-flow.html` shows the whole flow). Web stories: E7 in the web repo; bot: BOT-04.
-
-### CF-46 Dungeons tab with runs
-- Board `dungeons-runs.html`. A **Runs** segment next to the dungeons in range (with the count in the tab title), each run with dungeon, local time, organiser, "3 in · 1 maybe", your answer, and what you could fill ("Grom Ashfeller fits tank"). "Runs updated at 17:34 · /reload for newer" from `CF_RUNS.updatedAt`, never pretending to be live.
-- A run's detail: the five slots from the roles the addon knows (CF-18), who answered where ("answered on Discord"), who is close in level, the reminder line, Invite all from start time (CF-48), "Edit or cancel on the website" with the link to copy.
-- Dungeons in range show their planned runs ("1 run"). The calendar parts of CF-24 (event matching, Planner's `OpenEvent` queue, Open calendar) are removed.
-- Runs are shared over sync to friends' addons (a new message type within `pv`; rule 8: older clients ignore it), the newer `updatedAt` wins, never sent during encounters, keystones or PvP matches.
-- Tests: the runs list from a sample `CF_RUNS`, slot filling, newer wins over sync, an old client ignoring the new message.
 
 ### CF-47 Ask now, plan a run, sign up
 - Board `run-dialogs.html`. **Ask now** (CF-27's ask in the new dialog): dungeon, you go as, who gets whispered and who not (and why), note, **Also post on Discord** (needs a `/reload`; "posted about 15 s later"). **Plan a run**: dungeon, lead as, day (today and the next 6 days), time on the PC clock ("friends see their own time"), note. **Sign up in game** to a run: I'm in / Maybe / Can't, Pick my character (fits / too high / too low), sent to the organiser's addon over sync at once when both are online.

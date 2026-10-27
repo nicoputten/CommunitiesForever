@@ -90,7 +90,7 @@ local function answer(raw)
 end
 
 -- Reads up to max entries of an array; stops at the first hole, never walks an oversized table.
-local function list(raw, max, clean)
+local function readList(raw, max, clean)
   local out = {}
   if type(raw) ~= "table" then return out, 0 end
   local dropped = 0
@@ -104,7 +104,7 @@ local function list(raw, max, clean)
   return out, dropped
 end
 
-local function run(raw)
+local function cleanRun(raw)
   if type(raw) ~= "table" then return nil end
   local r = {
     id = token(raw.id, PlannedRuns.MAX_ID),
@@ -113,13 +113,14 @@ local function run(raw)
   }
   if not (r.id and r.dungeon and r.startsAt) then return nil end
   r.state = oneOf(PlannedRuns.STATES, raw.state)
+  r.source = oneOf(PlannedRuns.SOURCES, raw.source) -- CF-46: where it was planned
   r.note = text(raw.note, PlannedRuns.MAX_NOTE)
   r.url = url(raw.url)
   r.organiser = person(raw.organiser)
   if r.organiser and type(raw.organiser) == "table" then
     r.organiser.utcOffset = number(raw.organiser.utcOffset, -PlannedRuns.MAX_UTC_OFFSET, PlannedRuns.MAX_UTC_OFFSET)
   end
-  r.answers = list(raw.answers, PlannedRuns.MAX_ANSWERS, answer)
+  r.answers = readList(raw.answers, PlannedRuns.MAX_ANSWERS, answer)
   return r
 end
 
@@ -137,7 +138,7 @@ function PlannedRuns.validate(raw)
   local updatedAt = time(raw.updatedAt)
   if not updatedAt then return nil, "no updatedAt" end
 
-  local runs, dropped = list(raw.runs, PlannedRuns.MAX_RUNS, run)
+  local runs, dropped = readList(raw.runs, PlannedRuns.MAX_RUNS, cleanRun)
   local seen, unique = {}, {}
   for _, r in ipairs(runs) do
     if seen[r.id] then
@@ -158,6 +159,233 @@ function PlannedRuns.validate(raw)
     runs = unique,
     dropped = dropped,
   }
+end
+
+-- ===== Sharing (CF-46) =====
+
+PlannedRuns.MAX_FUTURE_SECONDS = 300 -- an updatedAt further ahead of server time is broken data
+
+-- True when incoming (checked) replaces current: a newer updatedAt, not too far in the future.
+function PlannedRuns.isNewer(current, incoming, now)
+  if not (incoming and incoming.updatedAt) then return false end
+  if now and incoming.updatedAt > now + PlannedRuns.MAX_FUTURE_SECONDS then return false end
+  return incoming.updatedAt > (current and current.updatedAt or 0)
+end
+
+-- What is stored and sent: the checked data without the dropped count. forCommunity: without BattleTags
+-- (they only travel over Battle.net, ARCHITECTURE "Sync protocol").
+function PlannedRuns.wire(data, forCommunity)
+  if not data then return nil end
+  local function who(p)
+    if not p then return nil end
+    local copy = {}
+    for k, v in pairs(p) do copy[k] = v end
+    if forCommunity then copy.battleTag = nil end
+    return copy
+  end
+  local runs = {}
+  for i, r in ipairs(data.runs or {}) do
+    local copy = {}
+    for k, v in pairs(r) do copy[k] = v end
+    copy.organiser = who(r.organiser)
+    copy.answers = {}
+    for j, a in ipairs(r.answers or {}) do copy.answers[j] = who(a) end
+    runs[i] = copy
+  end
+  return { v = data.v, updatedAt = data.updatedAt, reminderMinutes = data.reminderMinutes, runs = runs }
+end
+
+-- ===== The Dungeons tab (CF-46) =====
+
+PlannedRuns.KEEP_STARTED = 2 * 3600 -- a started run stays listed this long after its start
+PlannedRuns.CLOSE_LEVELS = 5        -- "Close": characters at most this many levels outside the range
+
+-- Runs to show, soonest first: not cancelled, not started more than KEEP_STARTED ago.
+function PlannedRuns.upcoming(data, now)
+  local list = {}
+  for _, r in ipairs(data and data.runs or {}) do
+    if r.state ~= "cancelled" and r.startsAt >= now - PlannedRuns.KEEP_STARTED then list[#list + 1] = r end
+  end
+  return list
+end
+
+-- "I'm in" and "maybe" answers.
+function PlannedRuns.counts(run)
+  local yes, maybe = 0, 0
+  for _, a in ipairs(run.answers or {}) do
+    if a.answer == "in" then yes = yes + 1 elseif a.answer == "maybe" then maybe = maybe + 1 end
+  end
+  return yes, maybe
+end
+
+--[[ me = { battleTag, guids = { [guid] = true } }: you, by your BattleTag or one of your characters. ]]
+local function isMe(p, me)
+  if not (p and me) then return false end
+  if p.guid and me.guids and me.guids[p.guid] then return true end
+  return p.battleTag ~= nil and p.battleTag == me.battleTag
+end
+
+function PlannedRuns.isOrganiser(run, me) return isMe(run.organiser, me) end
+
+-- Your answer to a run, or nil.
+function PlannedRuns.yourAnswer(run, me)
+  for _, a in ipairs(run.answers or {}) do
+    if isMe(a, me) then return a end
+  end
+  return nil
+end
+
+local function samePerson(a, b)
+  if not (a and b) then return false end
+  if a.guid and a.guid == b.guid then return true end
+  return a.battleTag ~= nil and a.battleTag == b.battleTag
+end
+
+local function inRange(dungeon, level)
+  return dungeon ~= nil and type(level) == "number" and level >= dungeon.min and level <= dungeon.max
+end
+
+--[[ The five slots of a run: tank, healer, three damage.
+  candidates: Dungeons.candidates (what the addon knows of each character: level, class, role, online);
+  dungeon: its level range (nil when unknown).
+  { { role, answer = answer | nil, char = candidate | nil, maybe = true | nil, missing = true | nil } }
+"I'm in" answers fill the slot of their role (the site's role, else the role the addon knows, else damage),
+then free damage slots, then any; "maybe" answers fill what is left. An empty tank or healer slot is missing
+when nobody in range who hasn't said no plays that role, else open. ]]
+function PlannedRuns.slots(run, candidates, dungeon)
+  local byGuid = {}
+  for _, c in ipairs(candidates or {}) do
+    if c.guid then byGuid[c.guid] = c end
+  end
+  local slots = { { role = "tank" }, { role = "heal" }, { role = "dps" }, { role = "dps" }, { role = "dps" } }
+  local function place(a, maybe)
+    local c = a.guid and byGuid[a.guid]
+    local role = a.role or (c and c.role) or "dps"
+    -- Own role's slot first, then damage, then any free one.
+    local order = role == "tank" and { 1, 3, 4, 5, 2 } or role == "heal" and { 2, 3, 4, 5, 1 }
+      or { 3, 4, 5, 1, 2 }
+    for _, i in ipairs(order) do
+      if not slots[i].answer then
+        slots[i].answer, slots[i].char, slots[i].maybe = a, c, maybe or nil
+        return
+      end
+    end
+  end
+  for _, kind in ipairs({ "in", "maybe" }) do
+    for _, a in ipairs(run.answers or {}) do
+      if a.answer == kind then place(a, kind == "maybe") end
+    end
+  end
+  local declined = {}
+  for _, a in ipairs(run.answers or {}) do
+    if a.answer == "cant" then declined[#declined + 1] = a end
+  end
+  for i = 1, 2 do
+    local slot = slots[i]
+    if not slot.answer then
+      slot.missing = true
+      for _, c in ipairs(candidates or {}) do
+        local no = false
+        for _, a in ipairs(declined) do
+          if samePerson(a, { guid = c.guid }) then no = true end
+        end
+        if c.role == slot.role and inRange(dungeon, c.level) and not no then slot.missing = nil end
+      end
+    end
+  end
+  return slots
+end
+
+--[[ One of your characters in range for a free tank, healer or damage slot ("Grom Ashfeller fits tank"),
+when you haven't answered: candidate, role; or nil. The character you are on first. ]]
+function PlannedRuns.youFit(run, candidates, dungeon, me, selfGuid)
+  if PlannedRuns.yourAnswer(run, me) or PlannedRuns.isOrganiser(run, me) then return nil end
+  local free = {}
+  for _, slot in ipairs(PlannedRuns.slots(run, candidates, dungeon)) do
+    if not slot.answer then free[slot.role] = true end
+  end
+  local best
+  for _, c in ipairs(candidates or {}) do
+    if c.own and inRange(dungeon, c.level) and free[c.role or "dps"] then
+      if not best or c.guid == selfGuid then best = c end
+    end
+  end
+  if best then return best, best.role or "dps" end
+  return nil
+end
+
+--[[ Characters just outside the dungeon's range, not answered yet: { { char, short = n } | { char, over = n } },
+your own first, then the smallest gap. ]]
+function PlannedRuns.close(run, candidates, dungeon)
+  local answered, list = {}, {}
+  for _, a in ipairs(run.answers or {}) do
+    if a.guid then answered[a.guid] = true end
+  end
+  if not dungeon then return list end
+  for _, c in ipairs(candidates or {}) do
+    if not answered[c.guid] and type(c.level) == "number" then
+      if c.level < dungeon.min and dungeon.min - c.level <= PlannedRuns.CLOSE_LEVELS then
+        list[#list + 1] = { char = c, short = dungeon.min - c.level }
+      elseif c.level > dungeon.max and c.level - dungeon.max <= PlannedRuns.CLOSE_LEVELS then
+        list[#list + 1] = { char = c, over = c.level - dungeon.max }
+      end
+    end
+  end
+  table.sort(list, function(a, b)
+    if (a.char.own == true) ~= (b.char.own == true) then return a.char.own == true end
+    local ga, gb = a.short or a.over, b.short or b.over
+    if ga ~= gb then return ga < gb end
+    return tostring(a.char.name) < tostring(b.char.name)
+  end)
+  return list
+end
+
+-- ===== Times (local time; dateFn: the game's date, os.date in tests) =====
+
+local WEEKDAYS = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
+local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+
+-- Days between two local dates { year, month, day } (civil calendar, no os.time needed).
+local function days(d)
+  local y, m = d.year, d.month
+  y = m <= 2 and y - 1 or y
+  local era = math.floor(y / 400)
+  local yoe = y - era * 400
+  local doy = math.floor((153 * (m > 2 and m - 3 or m + 9) + 2) / 5) + d.day - 1
+  return era * 146097 + yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy
+end
+
+-- "Today 20:30", "Tomorrow 19:00", "Thu 21:00" (this week), "Thu 5 Nov 21:00".
+function PlannedRuns.whenText(at, now, dateFn)
+  local t, n = dateFn("*t", at), dateFn("*t", now)
+  local clock = string.format("%02d:%02d", t.hour, t.min)
+  local diff = days(t) - days(n)
+  if diff == 0 then return "Today " .. clock end
+  if diff == 1 then return "Tomorrow " .. clock end
+  if diff > 1 and diff < 7 then return WEEKDAYS[t.wday] .. " " .. clock end
+  return string.format("%s %d %s %s", WEEKDAYS[t.wday], t.day, MONTHS[t.month], clock)
+end
+
+-- "20:30" local time.
+function PlannedRuns.clock(at, dateFn)
+  local t = dateFn("*t", at)
+  return string.format("%02d:%02d", t.hour, t.min)
+end
+
+-- "in 2 h 40 min", "in 25 min", "in 3 days", "started 10 min ago".
+function PlannedRuns.untilText(at, now)
+  local seconds = at - now
+  if seconds < 0 then
+    return string.format("started %d min ago", math.floor(-seconds / 60))
+  end
+  local minutes = math.ceil(seconds / 60)
+  if minutes < 60 then return string.format("in %d min", minutes) end
+  if minutes < 24 * 60 then
+    local h, m = math.floor(minutes / 60), minutes % 60
+    return m > 0 and string.format("in %d h %d min", h, m) or string.format("in %d h", h)
+  end
+  local d = math.floor(minutes / (24 * 60))
+  return string.format("in %d day%s", d, d == 1 and "" or "s")
 end
 
 ns.PlannedRuns = PlannedRuns

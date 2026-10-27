@@ -183,3 +183,134 @@ describe("RunsFile (CF-45)", function()
     assert.are.same({ nil, "unreadable" }, { load().read() })
   end)
 end)
+
+-- CF-46: sharing and the Dungeons tab.
+describe("PlannedRuns views (CF-46)", function()
+  local PlannedRuns
+  local NOW = 1793120000
+  local DM = { id = "dm", min = 17, max = 26 }
+  local ME = { battleTag = "Me#1000", guids = { ["G-ME"] = true, ["G-ALT"] = true } }
+
+  local function cand(guid, name, level, extra)
+    local c = { guid = guid, name = name, level = level, key = guid }
+    for k, v in pairs(extra or {}) do c[k] = v end
+    return c
+  end
+  local CANDIDATES = {
+    cand("G-ME", "Me Example", 20, { own = true, role = "dps" }),
+    cand("G-ALT", "Alt Example", 22, { own = true, role = "tank" }),
+    cand("G-LOW", "Low Example", 13, { own = true }),
+    cand("G-BEN", "Ben Example", 19, { role = "heal", displayName = "Ben" }),
+    cand("G-CY", "Cy Example", 30, { role = "tank", displayName = "Cy" }),
+  }
+
+  before_each(function()
+    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", {})
+  end)
+
+  it("takes newer runs only, not far in the future", function()
+    local current = { updatedAt = NOW - 60 }
+    assert.is_true(PlannedRuns.isNewer(current, { updatedAt = NOW }, NOW))
+    assert.is_false(PlannedRuns.isNewer(current, { updatedAt = NOW - 60 }, NOW))
+    assert.is_false(PlannedRuns.isNewer(current, { updatedAt = NOW + 301 }, NOW))
+    assert.is_true(PlannedRuns.isNewer(nil, { updatedAt = 1 }, NOW))
+    assert.is_false(PlannedRuns.isNewer(current, nil, NOW))
+  end)
+
+  it("drops BattleTags for the community wire and the dropped count always", function()
+    local data = PlannedRuns.validate({ updatedAt = NOW, runs = { { id = "r1", dungeon = "dm", startsAt = NOW,
+      organiser = { battleTag = "Ada#1001", name = "Ada Lovewell" },
+      answers = { { battleTag = "Ada#1001", guid = "G-ADA", answer = "in" } } } } })
+    local bnet, community = PlannedRuns.wire(data), PlannedRuns.wire(data, true)
+    assert.is_nil(bnet.dropped)
+    assert.are.equal("Ada#1001", bnet.runs[1].organiser.battleTag)
+    assert.is_nil(community.runs[1].organiser.battleTag)
+    assert.are.same({ guid = "G-ADA", answer = "in" }, community.runs[1].answers[1])
+    assert.are.equal("Ada#1001", data.runs[1].organiser.battleTag) -- the original is untouched
+    assert.is_nil(PlannedRuns.wire(nil))
+  end)
+
+  it("lists upcoming runs: not cancelled, started at most 2 hours ago", function()
+    local data = { runs = { { id = "a", startsAt = NOW - 7201 }, { id = "b", startsAt = NOW - 7200 },
+                            { id = "c", startsAt = NOW + 60, state = "cancelled" },
+                            { id = "d", startsAt = NOW + 60 } } }
+    local ids = {}
+    for _, r in ipairs(PlannedRuns.upcoming(data, NOW)) do ids[#ids + 1] = r.id end
+    assert.are.same({ "b", "d" }, ids)
+    assert.are.same({}, PlannedRuns.upcoming(nil, NOW))
+  end)
+
+  it("finds your answer and whether you organise, by character or BattleTag", function()
+    local run = { organiser = { battleTag = "Me#1000" },
+                  answers = { { guid = "G-BEN", answer = "in" }, { guid = "G-ALT", answer = "maybe" } } }
+    assert.is_true(PlannedRuns.isOrganiser(run, ME))
+    assert.are.equal("maybe", PlannedRuns.yourAnswer(run, ME).answer)
+    assert.are.same({ 1, 1 }, { PlannedRuns.counts(run) })
+    assert.is_nil(PlannedRuns.yourAnswer({ answers = { { guid = "G-BEN", answer = "in" } } }, ME))
+  end)
+
+  it("fills the slots: in by role, then maybe; tank or healer missing when nobody in range plays it", function()
+    local run = { answers = {
+      { guid = "G-BEN", answer = "in" },                     -- healer by the role the addon knows
+      { name = "Dee Example", answer = "in", role = "tank" }, -- from the site, unknown to the addon
+      { guid = "G-ME", answer = "maybe" },
+      { name = "Eve", answer = "cant", role = "dps" },
+    } }
+    local slots = PlannedRuns.slots(run, CANDIDATES, DM)
+    assert.are.equal("Dee Example", slots[1].answer.name)
+    assert.is_nil(slots[1].char)
+    assert.are.equal("Ben Example", slots[2].char.name)
+    assert.are.equal("G-ME", slots[3].answer.guid)
+    assert.is_true(slots[3].maybe)
+    assert.is_nil(slots[4].answer)
+    -- Nobody answered tank or healer: Alt Example tanks in range (open), nobody heals but Ben, who said no.
+    slots = PlannedRuns.slots({ answers = { { guid = "G-BEN", answer = "cant" } } }, CANDIDATES, DM)
+    assert.is_nil(slots[1].missing)
+    assert.is_true(slots[2].missing)
+  end)
+
+  it("puts extra tanks in damage slots", function()
+    local run = { answers = { { name = "T1", answer = "in", role = "tank" },
+                              { name = "T2", answer = "in", role = "tank" } } }
+    local slots = PlannedRuns.slots(run, {}, DM)
+    assert.are.same({ "T1", "T2" }, { slots[1].answer.name, slots[3].answer.name })
+  end)
+
+  it("says which of your characters fits a free slot, the one you are on first", function()
+    local run = { answers = { { name = "T", answer = "in", role = "tank" } } }
+    local c, role = PlannedRuns.youFit(run, CANDIDATES, DM, ME, "G-ME")
+    assert.are.same({ "Me Example", "dps" }, { c.name, role })
+    c, role = PlannedRuns.youFit({ answers = {} }, CANDIDATES, DM, ME, "G-ALT")
+    assert.are.same({ "Alt Example", "tank" }, { c.name, role })
+    assert.is_nil(PlannedRuns.youFit({ answers = { { guid = "G-ME", answer = "cant" } } }, CANDIDATES, DM, ME, "G-ME"))
+    assert.is_nil(PlannedRuns.youFit({ organiser = { battleTag = "Me#1000" }, answers = {} }, CANDIDATES, DM, ME))
+  end)
+
+  it("lists characters close to the range, your own first", function()
+    local close = PlannedRuns.close({ answers = {} }, CANDIDATES, DM)
+    assert.are.same({ "Low Example", "Cy Example" }, { close[1].char.name, close[2].char.name })
+    assert.are.same({ 4, 4 }, { close[1].short, close[2].over })
+    assert.are.same({}, PlannedRuns.close({ answers = {} }, CANDIDATES, nil))
+  end)
+
+  it("words times in local time and how long until the start", function()
+    local function fakeDate(_, t)
+      local day = math.floor(t / 86400)
+      local s = t % 86400
+      return { year = 2026, month = 10, day = 20 + day - 20000, hour = math.floor(s / 3600),
+               min = math.floor(s % 3600 / 60),
+               wday = (day % 7) + 1 }
+    end
+    local now = 20000 * 86400 + 12 * 3600
+    assert.are.equal("Today 20:30", PlannedRuns.whenText(now + 8 * 3600 + 1800, now, fakeDate))
+    assert.are.equal("Tomorrow 09:00", PlannedRuns.whenText(now + 21 * 3600, now, fakeDate))
+    assert.is_truthy(PlannedRuns.whenText(now + 3 * 86400, now, fakeDate):match("^%a%a%a 12:00$"))
+    assert.is_truthy(PlannedRuns.whenText(now + 9 * 86400, now, fakeDate):match("^%a%a%a 29 Oct 12:00$"))
+    assert.are.equal("20:30", PlannedRuns.clock(now + 8 * 3600 + 1800, fakeDate))
+    assert.are.equal("in 2 h 40 min", PlannedRuns.untilText(NOW + 9600, NOW))
+    assert.are.equal("in 2 h", PlannedRuns.untilText(NOW + 7200, NOW))
+    assert.are.equal("in 25 min", PlannedRuns.untilText(NOW + 1500, NOW))
+    assert.are.equal("in 1 day", PlannedRuns.untilText(NOW + 86400, NOW))
+    assert.are.equal("started 10 min ago", PlannedRuns.untilText(NOW - 600, NOW))
+  end)
+end)
