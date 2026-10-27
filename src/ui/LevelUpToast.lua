@@ -12,16 +12,11 @@ local toast
 local waiting = {}
 local shown = {} -- for the specs: the texts shown, in order
 
-local function hex(r, g, b)
-  local function byte(v) return math.floor((v or 0) * 255 + 0.5) end
-  return string.format("|cff%02x%02x%02x", byte(r), byte(g), byte(b))
-end
-
 -- "<person>'s <character> reached level N": the person in gold, the character in class colour.
 function LevelUpToast.text(item)
   local Theme, Kit = ns.Theme, ns.Kit
-  return string.format("%s%s|r's %s%s|r reached level %s", hex(Theme.color("goldLight")), tostring(item.displayName),
-    hex(Kit.classColor(item.classFile)), tostring(item.name), tostring(item.level))
+  return string.format("%s%s|r's %s%s|r reached level %s", Theme.code("goldLight"), tostring(item.displayName),
+    Theme.rgbCode(Kit.classColor(item.classFile)), tostring(item.name), tostring(item.level))
 end
 
 local showNext

@@ -132,7 +132,6 @@ function Format.tree(view)
       if not person.isSelf then _, shared = ns.Quests.shared(c.quests, own) end
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
                                   level = c.level, online = c.online, outside = c.outside or false,
-                                  sharedDungeon = not person.isSelf and ns.Quests.sharesDungeon(c.quests, own),
                                   shared = shared } -- CF-40: quests shared with you (friends' characters only)
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
@@ -313,34 +312,19 @@ local function characterTiles(row, talents)
 end
 
 local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
-  local where
-  if row.online then
-    where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
-  elseif row.lastZone then
-    where = string.format("Offline - last %s in %s", own and "played" or "seen", row.lastZone)
-  else
-    where = "Offline"
-  end
+  local talents = Format.talentSummary(row)
   return {
     kind = "character",
     guid = row.guid,
     name = row.name,
     classFile = row.classFile,
     classID = row.classID,
-    owner = owner,
-    status = where,
     outside = row.outside or false,
     online = row.online,
-    stats = {
-      { label = "Level", value = tostring(row.level or "?") },
-      { label = "Item level", value = row.ilvl and tostring(row.ilvl) or "-" },
-      { label = own and "Last played" or "Last seen", value = Format.seen(row, now) },
-    },
     professions = Format.professionGroups(row.professions),
-    talents = Format.talentSummary(row),
-    -- CF-40: the revamped card.
-    subtitle = characterSubtitle(row, owner, own, now),
-    tiles = characterTiles(row, Format.talentSummary(row)),
+    talents = talents,
+    subtitle = characterSubtitle(row, owner, own, now), -- CF-40
+    tiles = characterTiles(row, talents),
     talentBars = Format.talentBars(row),
     -- CF-19: only on a friend's characters (nil on your own and on Unlinked characters).
     sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith, showAllQuests) or nil,
@@ -355,9 +339,11 @@ end
     characters = { { guid, name, classFile, classID, level, seen } },
     sharedQuests }                     -- CF-19: see personSharedQuests; nil on your own card
   { kind = "unlinked", characters = ... }                        -- same character entries
-  { kind = "character", guid, name, classFile, classID, owner, status, online, stats,
+  { kind = "character", guid, name, classFile, classID, outside, online,
     professions = { { title, list } },   -- see professionGroups
-    talents, sharedQuests }              -- talentSummary; sharedQuests (CF-19) only on a friend's character
+    talents,                             -- talentSummary
+    subtitle, tiles, talentBars,         -- CF-40: the line under the name, Level/Item level/Role, tree bars
+    sharedQuests }                       -- CF-19: only on a friend's character
 showAllQuests: list every shared quest instead of the first MAX_QUEST_LINES.
 ]]
 function Format.detail(view, path, now, showAllQuests)

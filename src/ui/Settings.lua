@@ -81,6 +81,12 @@ function Settings.chatGroup()
   }
 end
 
+-- The option with this key: top level or in the Community chat group (the settings window and the setup).
+function Settings.option(key)
+  local args = Settings.options().args
+  return args[key] or args.chat.args[key]
+end
+
 -- Options table. Data comes from services only.
 function Settings.options()
   local options = {

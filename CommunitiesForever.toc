@@ -52,6 +52,7 @@ src\adapters\ContextMenu.lua
 src\adapters\Channels.lua
 src\adapters\Transport.lua
 src\adapters\Panels.lua
+src\adapters\Classes.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua

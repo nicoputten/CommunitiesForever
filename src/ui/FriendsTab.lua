@@ -26,15 +26,7 @@ local pool, take, release, textFactory = Kit.pool, Kit.take, Kit.release, Kit.te
 
 local listPools, cardPools
 
-local function placeText(p, parent, x, y, width, text, colorName, rgb)
-  local holder = take(p, parent)
-  holder:SetPoint("TOPLEFT", x, -y)
-  holder.text:SetWidth(width)
-  holder.text:SetText(text or "")
-  if rgb then holder.text:SetTextColor(rgb[1], rgb[2], rgb[3], 1)
-  else holder.text:SetTextColor(Theme.color(colorName or "text")) end
-  return holder
-end
+local placeText = Kit.placeText
 
 -- ===== Helpers =====
 
@@ -178,7 +170,7 @@ local function tileFactory(parent)
   t:SetHeight(60)
   local bg = t:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints()
-  bg:SetColorTexture(1, 1, 1, 0.03)
+  bg:SetColorTexture(Theme.color("white", 0.03))
   t.edges = Kit.edges(t, "divider")
   t.label = Theme.text(t, "label", "faint")
   t.label:SetPoint("TOPLEFT", 12, -8)
@@ -208,10 +200,8 @@ local function cardWidth()
   return math.max(300, (detail:GetWidth() or 0) - 2 * PAD - 6)
 end
 
-local function section(parent, x, y, width, text, extra)
-  placeText(cardPools.section, parent, x, y, width, text, "goldLight")
-  if extra then placeText(cardPools.small, parent, x + 160, y + 3, width - 160, extra, "muted") end
-  return y + LINE.section
+local function section(parent, x, y, width, text, note)
+  return Kit.section(cardPools.section, cardPools.small, parent, x, y, width, text, note)
 end
 
 -- Professions and talents side by side (the design's 1.25 : 1 columns).
@@ -273,7 +263,7 @@ local function sharedQuests(parent, shared, y, width, path)
   for _, area in ipairs(shared.areas) do
     local title = placeText(cardPools.group, parent, PAD, y + 2, width, tostring(area.area), "goldLight")
     if area.dungeon then
-      local tag = placeText(cardPools.tiny, parent, PAD, y + 4, 80, "DUNGEON", nil, { 0.553, 0.690, 1 })
+      local tag = placeText(cardPools.tiny, parent, PAD, y + 4, 80, "DUNGEON", "dungeonTag")
       local w = title.text.GetStringWidth and title.text:GetStringWidth() or 120
       tag:ClearAllPoints()
       tag:SetPoint("TOPLEFT", PAD + w + 8, -(y + 5))
@@ -281,16 +271,17 @@ local function sharedQuests(parent, shared, y, width, path)
     y = y + LINE.group + 2
     for _, quest in ipairs(area.quests) do
       local who
+      local faint = Theme.code("faint")
       if quest.theirChars then
         local theirs, mine = {}, {}
         for _, c in ipairs(quest.theirChars) do theirs[#theirs + 1] = tostring(c.name) end
         for _, c in ipairs(quest.ownChars or {}) do mine[#mine + 1] = tostring(c.name) end
-        who = string.format("|cff7e8898 \194\183 them|r %s |cff7e8898\194\183 you|r %s", table.concat(theirs, ", "),
+        who = string.format("%s \194\183 them|r %s %s\194\183 you|r %s", faint, table.concat(theirs, ", "), faint,
           table.concat(mine, ", "))
       else
         local mine = {}
         for _, c in ipairs(quest.ownChars or {}) do mine[#mine + 1] = tostring(c.name) end
-        who = string.format("|cff7e8898 \194\183 you on|r %s", table.concat(mine, ", "))
+        who = string.format("%s \194\183 you on|r %s", faint, table.concat(mine, ", "))
       end
       placeText(cardPools.small, parent, PAD + 12, y, width - 12, tostring(quest.title) .. who, "textDim")
       y = y + LINE.small + 2
@@ -317,7 +308,7 @@ local function characterHeader(parent, d, y, width, path)
   p:SetPoint("TOPLEFT", PAD, -y)
   p:SetClass(file)
   p:SetOnline(d.online)
-  placeText(cardPools.name, parent, PAD + 66, y + 2, width - 66 - 170, d.name, nil, rgb)
+  placeText(cardPools.name, parent, PAD + 66, y + 2, width - 66 - 170, d.name, rgb)
   local cls = className(d.classFile, d.classID)
   placeText(cardPools.small, parent, PAD + 66, y + 32, width - 66, (cls and (cls .. " \194\183 ") or "") .. d.subtitle,
     "textDim")

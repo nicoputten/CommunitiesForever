@@ -28,23 +28,10 @@ local function settings()
   return addonRef.db.global.settings
 end
 
--- C_CreatureInfo.GetClassInfo is verified (V21): classFile and className from a classID.
-local function classInfo(classFile, classID)
-  if classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
-    local info = C_CreatureInfo.GetClassInfo(classID)
-    if info then return classFile or info.classFile, info.className end
-  end
-  return classFile, nil
-end
-
 local function colorName(name, classFile, classID)
-  classFile = classInfo(classFile, classID)
-  local color = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-  if not color then
-    return tostring(name)
-  end
-  local function hex(value) return math.floor(value * 255 + 0.5) end
-  return string.format("|cff%02x%02x%02x%s|r", hex(color.r), hex(color.g), hex(color.b), tostring(name))
+  classFile = ns.Classes.info(classFile, classID)
+  if not classFile then return tostring(name) end
+  return ns.Theme.rgbCode(ns.Kit.classColor(classFile)) .. tostring(name) .. "|r"
 end
 
 MainFrame.colorName = colorName -- CF-33: also used by the minimap tooltip
@@ -134,7 +121,7 @@ local function joinInfo()
   return {
     title = string.format("How to join %s with %s", community, tostring(view.selfName or "this character")),
     lines = {
-      string.format("%s1. Click \"Post invite link in chat\" below.%s", posted and "|cff7fd99a" or "",
+      string.format("%s1. Click \"Post invite link in chat\" below.%s", posted and ns.Theme.code("online") or "",
         posted and "|r" or ""),
       string.format("2. In your chat window, click the gold [Join %s] link.%s", community,
         posted and "  <- do this now" or ""),
@@ -150,7 +137,7 @@ end
 -- CF-40: what the Friends tab needs from here.
 local function friendsHelpers()
   return {
-    settings = settings, classInfo = classInfo, rightClickMenu = MainFrame.rightClickMenu, menuItem = onMenuItem,
+    settings = settings, classInfo = ns.Classes.info, rightClickMenu = MainFrame.rightClickMenu, menuItem = onMenuItem,
     filterText = MainFrame.filterText, setFilter = MainFrame.setFilter, render = MainFrame.render,
     showAllQuests = showAllQuests, joinInfo = joinInfo, filterHint = FILTER_HINT,
   }

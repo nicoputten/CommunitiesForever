@@ -62,6 +62,8 @@ CommunitiesForever/
       Calendar.lua           C_Calendar event list (this month and next), ToggleCalendar (CF-24, guarded)
       Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
+      Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
+      Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
