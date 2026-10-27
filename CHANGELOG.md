@@ -6,6 +6,10 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Planned runs in the Dungeons tab.** Runs planned on the website (brought into the game by the
+  CommunitiesForever uploader) or shared by a friend's addon are listed on top: when, who organises, who's in,
+  your answer and which of your characters fits. A run shows its five slots, who answered on Discord, who is
+  close in level and the link to edit it on the website. The in-game calendar is no longer used.
 - Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
   "community member".
 

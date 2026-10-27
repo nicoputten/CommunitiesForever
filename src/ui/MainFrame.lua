@@ -195,12 +195,11 @@ local function create()
   MainFrame.selectTab(activeTab)
 end
 
--- The active tab in pale gold with an underline. CF-24: the Dungeons badge counts runs planned in the next
--- days.
+-- The active tab in pale gold with an underline. CF-46: the Dungeons badge counts the planned runs.
 function MainFrame.updateTabs()
   if not frame then return end
   tabs.select(activeTab)
-  tabs.setBadge("dungeons", #ns.Planner.planned())
+  tabs.setBadge("dungeons", #ns.Planner.upcoming())
   updateTitle()
 end
 
@@ -254,7 +253,7 @@ local function refreshMessages()
     ns.Sync.PEOPLE_UPDATED,
     ns.Invites.CHANGED,
     ns.FeedTracker.CHANGED,
-    ns.Planner.UPDATED, -- CF-24: calendar events and sign-ups for the Dungeons tab
+    ns.Planner.UPDATED, -- CF-46: planned runs from a friend
     ns.GroupAsks.CHANGED, -- CF-27: your ask and its answers
     ns.Sync.PEERS_CHANGED, -- CF-28: community members coming online or leaving
   }

@@ -1,12 +1,11 @@
 -- Dungeons: the dungeon planner (CF-24). Pure Lua, no WoW globals.
--- Which Vanilla dungeons fit your characters, who else is in range, a suggested group, and the
--- community calendar events that mention a dungeon.
+-- Which Vanilla dungeons fit your characters, who else is in range and a suggested group. (CF-46: the
+-- calendar event matching was removed; planned runs come from the website, core/PlannedRuns.lua.)
 local _, ns = ...
 
 local Dungeons = {}
 
 Dungeons.GROUP_SIZE = 5
-Dungeons.PLANNED_DAYS = 3 -- a calendar run this close counts as planned (tab counter, Planned list)
 
 --[[ Vanilla dungeons with their usual level ranges. areas: quest log headers (CF-19) of the dungeon's
 quests; Scarlet Monastery and Dire Maul share one header over their wings. areaIds: AreaTable IDs, the
@@ -120,9 +119,6 @@ function Dungeons.applyGroupFinder(activities)
   return list
 end
 
-local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
-local WEEKDAYS = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
-
 local function byId()
   local map = {}
   for _, d in ipairs(Dungeons.LIST) do map[d.id] = d end
@@ -187,7 +183,7 @@ end
 first (then lowest level). Without selfGuid any of your characters counts.
   { { dungeon, fits, selfGuid, people = n, quests = n distinct quest IDs, candidates = { candidate + questIDs } } }
 Candidates are sorted best first (see better). include: optional { [dungeonId] = true } listed even when
-it does not fit (planned runs, fits = false). ]]
+it does not fit (a planned run's dungeon, fits = false). ]]
 function Dungeons.overview(candidates, selfGuid, include)
   local result = {}
   for _, dungeon in ipairs(Dungeons.LIST) do
@@ -319,25 +315,8 @@ function Dungeons.outside(entry, group)
   return alternatives, others
 end
 
--- The title to give the calendar event: the dungeon name, which is what events are matched on.
-function Dungeons.eventTitle(dungeon)
-  return dungeon.name
-end
-
--- Minutes since 1970-01-01 of a CalendarTime { year, month, monthDay, hour, minute }: exact across
--- months, so "within 3 days" works at a month end.
-local function minutes(t)
-  local y, m, d = t.year or 1970, t.month or 1, t.monthDay or 1
-  y = m <= 2 and y - 1 or y
-  local era = math.floor(y / 400)
-  local yoe = y - era * 400
-  local doy = math.floor((153 * (m > 2 and m - 3 or m + 9) + 2) / 5) + d - 1
-  local days = era * 146097 + yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy - 719468
-  return (days * 24 + (t.hour or 0)) * 60 + (t.minute or 0)
-end
-
--- The dungeon an event title names, or nil. By name, "The" optional ("Deadmines run"); the longest
--- matching name wins, so a wing beats a shorter name it contains.
+-- The dungeon a text names, or nil (/cf ask Deadmines). By name, "The" optional ("Deadmines run"); the
+-- longest matching name wins, so a wing beats a shorter name it contains.
 function Dungeons.dungeonOf(title)
   if type(title) ~= "string" then return nil end
   local lower, best = title:lower(), nil
@@ -349,68 +328,6 @@ function Dungeons.dungeonOf(title)
     end
   end
   return best
-end
-
-local function upcoming(e, now)
-  return type(e.title) == "string" and e.calendarType ~= "HOLIDAY" and type(e.startTime) == "table"
-    and (not now or minutes(e.startTime) >= minutes(now))
-end
-
-local function soonest(a, b) return minutes(a.startTime) < minutes(b.startTime) end
-
---[[ Upcoming calendar events whose title names the dungeon, soonest first. Holidays and events that
-started before `now` are left out. events: { { title, calendarType, startTime, inviteStatus, ... } }
-(C_Calendar.GetDayEvent, V33/V42); now: CalendarTime. ]]
-function Dungeons.events(events, dungeon, now)
-  local result = {}
-  for _, e in ipairs(events or {}) do
-    local named = upcoming(e, now) and Dungeons.dungeonOf(e.title)
-    if named and named.id == dungeon.id then result[#result + 1] = e end
-  end
-  table.sort(result, soonest)
-  return result
-end
-
--- Runs planned within PLANNED_DAYS: { { dungeon, event } }, soonest first.
-function Dungeons.planned(events, now)
-  local result, limit = {}, now and (minutes(now) + Dungeons.PLANNED_DAYS * 24 * 60)
-  for _, e in ipairs(events or {}) do
-    local dungeon = upcoming(e, now) and Dungeons.dungeonOf(e.title)
-    if dungeon and (not limit or minutes(e.startTime) <= limit) then
-      result[#result + 1] = { dungeon = dungeon, event = e }
-    end
-  end
-  table.sort(result, function(a, b) return soonest(a.event, b.event) end)
-  return result
-end
-
--- Sign-ups of an event from its invite statuses (Enum.CalendarStatus on Mainline, V43): signed up,
--- accepted and confirmed count; tentative separately.
-local SIGNED = { [1] = true, [3] = true, [6] = true }
-function Dungeons.signUps(statuses)
-  local signed, tentative = 0, 0
-  for _, status in ipairs(statuses or {}) do
-    if SIGNED[status] then signed = signed + 1 elseif status == 8 then tentative = tentative + 1 end
-  end
-  return signed, tentative
-end
-
--- "Sat 20:00", short for the dungeon list.
-function Dungeons.shortTime(t)
-  return string.format("%s %02d:%02d", WEEKDAYS[t.weekday] or "?", t.hour or 0, t.minute or 0)
-end
-
--- "Sat 25 Oct, 20:00".
-function Dungeons.eventTime(t)
-  return string.format("%s %d %s, %02d:%02d", WEEKDAYS[t.weekday] or "?", t.monthDay or 0,
-    MONTHS[t.month] or "?", t.hour or 0, t.minute or 0)
-end
-
--- Your sign-up for an event from its inviteStatus (Enum.CalendarStatus on Mainline), or nil.
-local STATUS = { [1] = "you're available", [3] = "you confirmed", [6] = "you signed up", [8] = "you're tentative",
-                 [2] = "you declined", [0] = "you're invited" }
-function Dungeons.signUp(inviteStatus)
-  return STATUS[inviteStatus]
 end
 
 -- ===== Dungeon quests (CF-24 feedback: "4/6", which quests you have and which you can still pick up) =====

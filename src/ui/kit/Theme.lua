@@ -37,6 +37,8 @@ Theme.COLORS = {
   tick = hex("070C15", 0.9),        -- tick lines on skill bars
   missing = hex("E08A4A", 0.5),     -- outline of a missing role slot
   dungeonTag = hex("8DB0FF"),       -- the DUNGEON tag on shared quests
+  soon = hex("F6C29C"),             -- CF-46: a run starting within 12 hours
+  discord = hex("B9BEFA"),          -- CF-46: "answered on Discord"
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).

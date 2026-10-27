@@ -29,9 +29,25 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V67 | Is a Lua file in the addon folder that changed on disk re-read on `/reload`, and does a file the TOC lists but that was missing at game start load on `/reload` or only after a restart? (CF-45: the uploader rewrites `Data\Runs.lua` while the game runs) | Copy the new `tools/FriendProbe`, start the game, `/fp reloadfile`: `V67 ReloadProbe.lua mark A \| ReloadProbeLate.lua not loaded`. With the game still running, in PowerShell (your game folder in the first line): `$fp = "<game folder>\Interface\AddOns\FriendProbe"`, then `Set-Content "$fp\ReloadProbe.lua" 'FriendProbeReloadMark = "B"'` and `Set-Content "$fp\ReloadProbeLate.lua" 'FriendProbeLateMark = "late"'`. In game `/reload`, `/fp reloadfile`: is the mark `B` (changed file re-read), and is the late file `late` or `not loaded`? Then exit the game, start it again, `/fp reloadfile` once more. Afterwards `Remove-Item "$fp\ReloadProbeLate.lua"`. | open |
 | V68 | May an addon call `C_UI.Reload()` or `ReloadUI()` from a button click? (CF-47: "Reload now to post on Discord") | `/fp reload`, click `C_UI.Reload()`: the UI reloads and the log shows `V68 reloaded by C_UI.Reload`. Then `/fp reload` again and click `ReloadUI()`. If nothing reloads, the log shows `did not reload within 2 s` and any `ADDON_ACTION_BLOCKED` line; `/reload` by hand and send the log. | open |
 | V69 | Can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), the first invite making a party? (CF-48: Invite everyone ready) | With at least two friends online in Forever and you not in a group: `/fp inviteall`, click `Invite all N`. Do all friends get an invite (also the second, while the first hasn't accepted yet)? Let them accept, wait 10 s (`V69 after 10 s: in group N`), `/reload` and send the log (the `V69 C_PartyInfo.InviteUnit` lines and `INVITE EVENT` lines). | open |
+| V70 | Do `C_ChatInfo.InChatMessagingLockdown()` and `IsEncounterInProgress()` exist, and are they true during a boss fight? (CF-46: runs are never sent during encounters, keystones or PvP matches) | Inside a dungeon, during a boss fight: `/run print(C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown(), IsEncounterInProgress and IsEncounterInProgress())`, and once more outside the fight. Expected `true true` in the fight, `false false` outside (`nil` means the function is missing: then only battlegrounds count). | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-46 Dungeons tab with runs
+Compare with `docs/design/runs-2026-10/dungeons-runs.html`. Until the uploader writes runs (UP-12), make a test file by hand. In PowerShell, with your game folder and a character name of yours in the first two lines (a run in 2 hours and one tomorrow, you organise the first):
+`$addon = "<game folder>\Interface\AddOns\CommunitiesForever"`, `$me = "<your character name>"`, `$t = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()`, then
+`Set-Content "$addon\Data\Runs.lua" "CF_RUNS = { updatedAt = $t, reminderMinutes = 30, runs = { { id = 'r1', dungeon = 'dm', startsAt = $($t + 7200), source = 'site', note = 'Bring water', url = 'https://example.com/runs/r1', organiser = { name = '$me', battleTag = '<your BattleTag>' }, answers = { { battleTag = '<your BattleTag>', name = '$me', answer = 'in', role = 'dps' }, { name = 'Ada Example', answer = 'maybe', source = 'discord' } } }, { id = 'r2', dungeon = 'wc', startsAt = $($t + 26 * 3600), source = 'discord', organiser = { name = 'Ada Example' }, answers = { { name = 'Ada Example', answer = 'in', role = 'tank' } } } } }"`.
+Afterwards put the empty file back: `Set-Content "$addon\Data\Runs.lua" "CF_RUNS = nil"`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Write the test file, `/reload` (V67), `/cf`, Dungeons tab | The tab badge says 2. Left "RUNS": The Deadmines with "Today <time>" in a warm colour and "you organise    1 in · 1 maybe"; Wailing Caverns "Tomorrow <time>", "Ada Example" and "<character> fits damage" in green (when you are in range). Below them "Runs updated at <time> · /reload for newer", then the dungeons in range; The Deadmines with "1 run". | open |
+| Click The Deadmines run | Name large, "Today <time> · in 1 h 59 min", "17–26 · planned on the website", the note in quotes. "Group" with five slots: Tank "nobody in range" (or open), Healer, your character outlined gold with "organiser", Ada Example dimmed with "maybe". "At <time>": "You'll get a reminder at <time − 30 min>. At start, Invite all invites everyone who's in and online." and a greyed "Invite all · from <time>". "Edit or cancel": the link in a box (click, Ctrl+C copies; typing does not change it). | open |
+| Click the Wailing Caverns run | "planned on Discord", "Organised by Ada Example · 1 in", Ada Example as tank with "organiser"; no Invite all. | open |
+| A friend with this build online, you have the test file, they don't | Within a few seconds their Dungeons tab shows the same runs (`/cf sync debug` shows `RUNS`). After their `/reload` the runs are still there (stored). | open |
+| Put the empty file back, `/reload` | The runs stay (stored from before) until a newer list arrives; "No runs planned" only when none are upcoming. | open |
+| Inside a battleground with a friend logging in | No `RUNS` while you are in the match (`/cf sync debug`); it goes out within 30 s after you leave. | open |
 
 ### CF-45 Runs file and checks
 Nothing shows yet: the Dungeons tab reads the runs from CF-46 on. This checks that the empty file ships and loads.
@@ -75,12 +91,12 @@ Compare with `docs/design/revamp-2026-10/dungeons.html`. Best on a character in 
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Dungeons tab | Left column: "PLANNED" (when a run is in the calendar within 3 days; name, "Mon 20:00" in green, "N going · you", a faint green tint), then "IN RANGE FOR <character> (<level>)": per dungeon the name in gold, the range "17–24" right, "N friends" and "x / y quests" (green when you have all); the note about typical ranges at the bottom. | open |
+| `/cf`, Dungeons tab | Left column: "RUNS" (CF-46), then "IN RANGE FOR <character> (<level>)": per dungeon the name in gold, the range "17–24" right, "N friends" and "x / y quests" (green when you have all); the note about typical ranges at the bottom. | open |
 | Log on an alt in another level range, open the tab | The list follows that character; your first character shows under "Alternatives for you" where it fits. | open |
-| Click a dungeon | Gold bar on the row. Card: the name large, "levels 17–26 · Westfall"; planned runs of it in green; "Suggested group" as five slots: Tank, Healer, three DPS with portrait, "<name> <level>" in class colour, "role · person"; your slot outlined gold; a missing tank or healer in orange "nobody in range"; free slots "+ open". | open |
+| Click a dungeon | Gold bar on the row. Card: the name large, "levels 17–26 · Westfall"; "Suggested group" as five slots: Tank, Healer, three DPS with portrait, "<name> <level>" in class colour, "role · person"; your slot outlined gold; a missing tank or healer in orange "nobody in range"; free slots "+ open". | open |
 | Ask who's up for it | The gold button with "Sends a chat line to friends with the addon"; clicking asks (CF-27) and the line turns into "Asked who's up for it · ..." with the answers. | open |
 | Also in range | Others in range not in the group, one line each. | open |
-| Quests and Plan a run | Left "Quests" with "x / y in your log", a green check on quests in your log, who else has them; right the event title in a dark box (click: selected, Ctrl+C copies; typing does not change it) and "Open calendar". | open |
+| Quests | Left "Quests" with "x / y in your log", a green check on quests in your log, who else has them. | open |
 | Footer | Left "Synced with <name> <time>", right "Group asks wait until combat ends". | open |
 | Long card or list, small window | Both scroll with the mouse wheel (V62). | open |
 

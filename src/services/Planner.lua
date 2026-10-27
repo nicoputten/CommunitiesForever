@@ -1,101 +1,68 @@
--- Planner: calendar events for the dungeon planner (CF-24). Reads the event list at login and when it
--- changes, and the sign-ups of runs planned within Dungeons.PLANNED_DAYS: those need each event opened
--- (C_Calendar.OpenEvent, one at a time, V43), so they are fetched in a queue.
+-- Planner: planned runs for the Dungeons tab (CF-46; CF-24's calendar events were replaced). The runs come
+-- from Data\Runs.lua (written by the uploader, read at login and /reload) and from friends' addons over
+-- sync (Sync.lua: RUNS); the newer updatedAt wins. The newest list is kept in global.plannedRuns, so a
+-- friend without the uploader still sees runs after a /reload.
 local _, ns = ...
 
 local Planner = {}
 
--- Internal message: the events or sign-up counts changed (the window refreshes).
+-- Internal message: the runs changed (the window refreshes).
 Planner.UPDATED = "CF_PLANNER_UPDATED"
 
-Planner.OPEN_TIMEOUT = 5 -- seconds to wait for CALENDAR_OPEN_EVENT before giving up on an event
-
 local addonRef
-local events = {}
-local signUps = {} -- event key -> { signed, tentative }, or false when it could not be read
-local queue, opening = {}, nil
+local current -- checked runs data, see PlannedRuns.validate
 
-local function key(e)
-  return tostring(e.title) .. "@" .. ns.Dungeons.eventTime(e.startTime)
-end
+local function global() return addonRef.db.global end
 
-local openNext
+local function now() return GetServerTime() end
 
-local function finishOpening(result)
-  if not opening then return end
-  signUps[key(opening)] = result
-  opening = nil
-  addonRef:SendMessage(Planner.UPDATED)
-  openNext()
-end
-
-function openNext()
-  if opening or #queue == 0 then return end
-  opening = table.remove(queue, 1)
-  if not ns.Calendar.openEvent(opening.offset, opening.day, opening.index) then
-    queue = {}
-    finishOpening(false)
-    return
-  end
-  local waiting = opening
-  C_Timer.NewTimer(Planner.OPEN_TIMEOUT, function()
-    if opening == waiting then finishOpening(false) end
-  end)
-end
-
-local function refresh()
-  events = ns.Calendar.events()
-  local queued = {}
-  for _, e in ipairs(queue) do queued[key(e)] = true end
-  if opening then queued[key(opening)] = true end
-  for _, p in ipairs(ns.Dungeons.planned(events, ns.Calendar.now())) do
-    local k = key(p.event)
-    if signUps[k] == nil and not queued[k] then
-      queue[#queue + 1] = p.event
-      queued[k] = true
-    end
-  end
-  addonRef:SendMessage(Planner.UPDATED)
-  openNext()
+-- Keeps data when newer than what we have. Returns true when it was taken.
+local function take(data)
+  if not ns.PlannedRuns.isNewer(current, data, now()) then return false end
+  current = data
+  global().plannedRuns = ns.PlannedRuns.wire(data)
+  return true
 end
 
 function Planner.start(addon)
   addonRef = addon
-  events, signUps, queue, opening = {}, {}, {}, nil
-  addon:RegisterMessage(ns.Calendar.UPDATED, refresh)
-  addon:RegisterMessage(ns.Calendar.EVENT_OPENED, function()
-    if not opening then return end
-    local statuses = ns.Calendar.invites()
-    ns.Calendar.closeEvent()
-    finishOpening({ ns.Dungeons.signUps(statuses) })
-  end)
+  current = nil
   -- The dungeon list from the game's Group Finder (names and level ranges, Forever's new dungeons).
   ns.Dungeons.applyGroupFinder(ns.GroupFinder.dungeons())
-  ns.Calendar.request()
+  -- Stored runs are checked again: SavedVariables are a file too.
+  local ok, stored = pcall(ns.PlannedRuns.validate, global().plannedRuns)
+  if ok and stored then current = stored end
+  take(ns.RunsFile.read())
 end
 
--- Asks for the event list again (the Dungeons tab does when it opens).
-function Planner.request()
-  ns.Calendar.request()
+-- The checked runs data, or nil.
+function Planner.data() return current end
+
+-- updatedAt of the runs we have (0: none), for HELLO (Sync.lua).
+function Planner.updatedAt() return current and current.updatedAt or 0 end
+
+-- Runs to show now, soonest first.
+function Planner.upcoming() return ns.PlannedRuns.upcoming(current, now()) end
+
+-- Runs to send: forCommunity drops BattleTags. nil when we have none.
+function Planner.outgoing(forCommunity) return ns.PlannedRuns.wire(current, forCommunity) end
+
+-- Runs a friend sent (untrusted). Returns true when they replaced ours.
+function Planner.receive(raw)
+  local ok, data = pcall(ns.PlannedRuns.validate, raw)
+  if not (ok and data) or not take(data) then return false end
+  addonRef:SendMessage(Planner.UPDATED)
+  return true
 end
 
-function Planner.events() return events end
-
--- Runs planned within PLANNED_DAYS: { { dungeon, event, signed, tentative } } (counts nil when unknown).
-function Planner.planned()
-  local result = ns.Dungeons.planned(events, ns.Calendar.now())
-  for _, p in ipairs(result) do
-    local counts = signUps[key(p.event)]
-    if counts then p.signed, p.tentative = counts[1], counts[2] end
-  end
-  return result
-end
-
--- Sign-ups of an event when known: signed, tentative.
-function Planner.signUpsOf(event)
-  local counts = signUps[key(event)]
-  if counts then return counts[1], counts[2] end
-  return nil
+-- Your BattleTag and characters, to find your answers ({ battleTag, guids }).
+function Planner.me()
+  local own = global().self
+  local guids = {}
+  for guid in pairs(own.chars or {}) do guids[guid] = true end
+  local selfGuid = ns.SelfInfo.read().guid
+  if selfGuid then guids[selfGuid] = true end
+  return { battleTag = own.battleTag, guids = guids }
 end
 
 ns.Planner = Planner

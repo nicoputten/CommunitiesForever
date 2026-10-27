@@ -4,17 +4,23 @@ local wowapi = require("mocks.wowapi")
 describe("Dungeons tab (CF-24)", function()
   local state, ns, addon
   local CLUB = "23125681"
+  local NOW = 1793120000
+  local VES, GARRAKA = "Player-4619-01627852", "Player-4619-01789956"
 
-  local function load(level)
+  -- runs: CF_RUNS as Data\Runs.lua would set it (CF-46); stored: global.plannedRuns from an earlier session.
+  local function load(level, runs, stored)
     state = wowapi.install()
+    state.serverTime = NOW
     state.player.level = level or 20
     for _, m in ipairs(state.clubMembers[CLUB]) do m.level = level or 20 end
     for _, f in ipairs(state.friends) do
       for _, g in ipairs(f.gameAccounts) do g.characterLevel = level or 20 end
     end
     ns = helpers.loadAddon()
+    _G.CF_RUNS = runs
     addon = state.addon
     addon:OnInitialize()
+    addon.db.global.plannedRuns = stored
     addon.db.global.settings.clubId = CLUB
     -- No setup wizard or Community tab prompt in the way (CF-26).
     addon.db.global.settings.onboarded = true
@@ -63,7 +69,34 @@ describe("Dungeons tab (CF-24)", function()
 
   after_each(function()
     wowapi.uninstall()
+    _G.CF_RUNS = nil
   end)
+
+  -- CF-46: a run of the Deadmines in 2 h 40 min that Ves organises; Garraka (Sjaak) is in, someone on Discord
+  -- maybe; and one of Wailing Caverns tomorrow by someone else.
+  local function sampleRuns(updatedAt)
+    return {
+      updatedAt = updatedAt or NOW - 600,
+      reminderMinutes = 30,
+      runs = {
+        { id = "r1", dungeon = "dm", startsAt = NOW + 9600, state = "open", source = "site",
+          note = "Bring water", url = "https://example.com/runs/r1",
+          organiser = { battleTag = "Vestras#1000", guid = VES, name = "Ves Doombringer" },
+          answers = {
+            { guid = VES, name = "Ves Doombringer", answer = "in", role = "dps", source = "site" },
+            { guid = GARRAKA, name = "Garraka Doombringer", answer = "in", role = "heal", source = "game" },
+            { battleTag = "Ada#1001", name = "Ada Lovewell", answer = "maybe", source = "discord" },
+          } },
+        { id = "r2", dungeon = "wc", startsAt = NOW + 26 * 3600, source = "discord",
+          organiser = { battleTag = "Ada#1001", name = "Ada Lovewell" },
+          answers = { { battleTag = "Ada#1001", name = "Ada Lovewell", answer = "in", role = "tank",
+                        source = "discord" },
+                      { battleTag = "Bo#2002", name = "Bo Example", answer = "in", source = "discord" } } },
+      },
+    }
+  end
+
+  local function whenText(at) return ns.PlannedRuns.whenText(at, NOW, os.date) end
 
   it("lists the dungeons in range of the character you are on and suggests a group for the first", function()
     load(20)
@@ -77,7 +110,8 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\n1 friend\n", 1, true))
     assert.is_truthy(all:find("\nSuggested group\n", 1, true))
     assert.is_falsy(all:find("Also in range", 1, true)) -- nobody else
-    assert.is_truthy(all:find("\nRanges are typical levels; the list follows the character you're on.\n", 1, true))
+    assert.is_truthy(all:find("Ranges are typical levels; the list follows the character you're on.\n", 1, true))
+    assert.is_truthy(all:find("\nRUNS\nNo runs planned. Plan one on the website.\n", 1, true)) -- CF-46
     assert.is_true(row("dm").selected)
     -- Five slots: you in one of them, outlined gold; nobody tanks or heals.
     local slots = ns.DungeonsTab.slots()
@@ -85,7 +119,8 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nDPS \194\183 you \194\183 online\n", 1, true))
     assert.is_truthy(all:find("\nnobody in range\n", 1, true))
     assert.is_truthy(all:find("\nopen\n", 1, true))
-    assert.are.equal("The Deadmines", ns.DungeonsTab.titleBox():GetText()) -- the title to copy
+    assert.is_truthy(all:find("\nPlan runs on the website.", 1, true)) -- CF-46: no calendar event title
+    assert.is_nil(ns.DungeonsTab.buttons()["Open calendar"])
     assert.is_truthy(ns.DungeonsTab.buttons()["Ask who's up for it"])
     assert.is_truthy(all:find("\nSends a chat line to friends with the addon\n", 1, true))
     -- The footer: sync state and when group asks wait.
@@ -104,45 +139,77 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_falsy(text():find("Also in range", 1, true))
   end)
 
-  it("puts runs planned in the next 3 days on top, with sign-ups, and counts them on the tab", function()
-    load(20)
+  it("lists runs from the runs file on top, with who organises and the answers, and counts them (CF-46)", function()
+    load(20, sampleRuns())
     open()
-    state.calendarEvents[0] = {
-      [20] = { { title = "Deadmines run", calendarType = "COMMUNITY_EVENT", inviteStatus = 6,
-                 startTime = { year = 2026, month = 10, monthDay = 20, weekday = 3, hour = 20, minute = 0 } } },
-      [24] = { { title = "Wailing Caverns", calendarType = "COMMUNITY_EVENT",
-                 startTime = { year = 2026, month = 10, monthDay = 24, weekday = 7, hour = 19, minute = 0 } } },
-    }
-    state.calendarInvites["0:20:1"] = { 6, 6, 3, 8, 2 }
-    wowapi.fireEvent(state, "CALENDAR_UPDATE_EVENT_LIST")
-    assert.are.same({ { 0, 20, 1 } }, state.calendarOpenedEvents) -- only the planned run is opened
-    wowapi.fireEvent(state, "CALENDAR_OPEN_EVENT", "COMMUNITY_EVENT")
-    settle()
-    assert.are.same({ "planned:1", "dm", "wc" }, values())
-    assert.are.equal("Tue 20:00", row("planned:1").right:GetText())
-    assert.are.equal("3 going \194\183 you", row("planned:1").meta:GetText())
-    assert.are.equal(1, ns.MainFrame.tabs().buttons.dungeons.badgeCount) -- CF-39: the badge on the tab
-    select("planned:1")
-    assert.is_truthy(text():find("Tue 20 Oct, 20:00 \194\183 Deadmines run \194\183 3 signed up \194\183 +1 tentative"
-      .. " \194\183 you signed up", 1, true))
-    select("wc") -- 6 days ahead: in the detail, not planned in the list
-    assert.is_truthy(text():find("Sat 24 Oct, 19:00 \194\183 Wailing Caverns", 1, true))
+    assert.are.same({ "run:r1", "run:r2", "dm", "wc" }, values())
+    assert.are.equal(2, ns.MainFrame.tabs().buttons.dungeons.badgeCount)
+    local r1, r2 = row("run:r1"), row("run:r2")
+    assert.are.equal("The Deadmines", r1.name:GetText())
+    assert.are.equal(whenText(NOW + 9600), r1.right:GetText())
+    assert.are.same({ ns.Theme.color("soon") }, r1.right.textColor) -- within 12 hours
+    assert.is_truthy(r1.meta:GetText():find("^you organise    2 in \194\183 1 maybe$"))
+    assert.is_truthy(r2.meta:GetText():find("^Ada    ", 1, false))
+    -- The Wailing Caverns run has free damage slots: Ves fits.
+    assert.is_truthy(r2.meta:GetText():find("Ves Doombringer fits damage", 1, true))
+    local all = text()
+    assert.is_truthy(all:find("\nRuns updated at " .. os.date("%H:%M", NOW - 600) .. " \194\183 /reload for newer\n",
+      1, true) or all:find("\nRuns updated at " .. whenText(NOW - 600) .. " \194\183 /reload for newer\n", 1, true))
+    assert.is_truthy(row("dm").meta:GetText():find("1 run", 1, true)) -- the dungeon shows its run
   end)
 
-  it("lists a planned run for a dungeon out of range, greyed", function()
-    load(20)
+  it("shows a run: slots from the answers, the note, the link to copy (CF-46)", function()
+    load(20, sampleRuns())
     open()
-    state.calendarEvents[0] = { [19] = { { title = "Stratholme", calendarType = "COMMUNITY_EVENT",
-      startTime = { year = 2026, month = 10, monthDay = 19, weekday = 2, hour = 20, minute = 0 } } } }
-    wowapi.fireEvent(state, "CALENDAR_UPDATE_EVENT_LIST")
-    settle() -- no CALENDAR_OPEN_EVENT: the sign-ups time out
-    local planned = row("planned:1")
-    assert.are.equal("Stratholme", planned.name:GetText())
-    assert.are.same({ ns.Theme.color("muted") }, planned.name.textColor)
-    assert.are.equal("Mon 20:00", planned.right:GetText())
-    select("planned:1")
-    assert.is_truthy(text():find("\nVes Doombringer is not in range.\n", 1, true))
-    assert.is_nil(ns.DungeonsTab.buttons()["Ask who's up for it"]) -- only for dungeons in range
+    local all = text()
+    assert.is_truthy(all:find("\nThe Deadmines\n", 1, true))
+    assert.is_truthy(all:find(whenText(NOW + 9600) .. " \194\183 in 2 h 40 min", 1, true))
+    assert.is_truthy(all:find("17" .. DASH .. "26 \194\183 planned on the website", 1, true))
+    assert.is_truthy(all:find("\226\128\156Bring water\226\128\157", 1, true))
+    -- Tank: nobody plays one in range; healer Garraka; Ves and the maybe from Discord in damage slots.
+    assert.is_truthy(all:find("\nTank\nnobody in range\n", 1, true))
+    assert.is_truthy(all:find("\nHealer \194\183 Sjaakovich\nonline\n", 1, true))
+    assert.is_truthy(all:find("\nDPS \194\183 you\norganiser\n", 1, true))
+    assert.is_truthy(all:find("\nAda Lovewell\nDPS \194\183 Ada\nmaybe\n", 1, true))
+    assert.are.equal(0.75, ns.DungeonsTab.slots()[4].alpha)
+    assert.is_truthy(all:find("You'll get a reminder at " .. os.date("%H:%M", NOW + 9600 - 1800) .. ".", 1, true))
+    local invite = ns.DungeonsTab.buttons()["Invite all \194\183 from " .. os.date("%H:%M", NOW + 9600)]
+    assert.is_false(invite.enabled) -- CF-48 builds it
+    assert.are.equal("https://example.com/runs/r1", ns.DungeonsTab.linkBox():GetText())
+    select("run:r2")
+    all = text()
+    assert.is_truthy(all:find("planned on Discord", 1, true))
+    assert.is_truthy(all:find("\nanswered on Discord\n", 1, true))
+    assert.is_truthy(all:find("Organised by Ada \194\183 2 in", 1, true))
+    assert.is_nil(ns.DungeonsTab.buttons()["Invite all \194\183 from " .. os.date("%H:%M", NOW + 26 * 3600)])
+  end)
+
+  it("keeps the link to copy when typed over", function()
+    load(20, sampleRuns())
+    open()
+    local box = ns.DungeonsTab.linkBox()
+    box.text = "oops" -- typed: the game changes the text without SetText
+    box:RunScript("OnTextChanged", true)
+    assert.are.equal("https://example.com/runs/r1", box:GetText())
+  end)
+
+  it("shows your answer and the stored runs after a reload without a newer file (CF-46)", function()
+    local runs = sampleRuns(NOW - 60)
+    runs.runs[2].answers[3] = { guid = VES, answer = "maybe" }
+    load(20, sampleRuns(NOW - 3600), runs) -- stored is newer than the file
+    open()
+    assert.is_truthy(row("run:r2").meta:GetText():find("you: maybe", 1, true))
+    assert.are.equal(NOW - 60, addon.db.global.plannedRuns.updatedAt)
+  end)
+
+  it("hides cancelled runs and runs that started long ago (CF-46)", function()
+    local runs = sampleRuns()
+    runs.runs[1].state = "cancelled"
+    runs.runs[2].startsAt = NOW - 3 * 3600
+    load(20, runs)
+    open()
+    assert.are.same({ "dm", "wc" }, values())
+    assert.are.equal(0, ns.MainFrame.tabs().buttons.dungeons.badgeCount or 0)
   end)
 
   it("lists the Group Finder's dungeons, also Forever's new ones (V46)", function()
@@ -228,26 +295,6 @@ describe("Dungeons tab (CF-24)", function()
       open()
       assert.is_truthy(text():find("Install QuestieDB (it comes with Questie)", 1, true))
     end)
-  end)
-
-  it("opens Blizzard's calendar, or says how when it can't", function()
-    load(20)
-    open()
-    ns.DungeonsTab.buttons()["Open calendar"]:RunScript("OnClick")
-    assert.is_true(state.calendarToggled)
-    _G.ToggleCalendar = nil
-    state.printed = {}
-    ns.DungeonsTab.buttons()["Open calendar"]:RunScript("OnClick")
-    assert.is_truthy(state.printed[1]:find("date button next to the minimap", 1, true))
-  end)
-
-  it("keeps the title to copy when typed over", function()
-    load(20)
-    open()
-    local box = ns.DungeonsTab.titleBox()
-    box.text = "oops" -- typed: the game changes the text without SetText
-    box:RunScript("OnTextChanged", true)
-    assert.are.equal("The Deadmines", box:GetText())
   end)
 
   it("remembers the selected dungeon", function()

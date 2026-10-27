@@ -393,6 +393,108 @@ describe("Sync", function()
     end)
   end)
 
+  -- CF-46: planned runs travel between addons; the newer updatedAt wins.
+  describe("planned runs (CF-46)", function()
+    local NOW = 1793120000
+
+    local function runs(updatedAt)
+      return { updatedAt = updatedAt, reminderMinutes = 30,
+               runs = { { id = "r1", dungeon = "dm", startsAt = NOW + 3600,
+                          organiser = { battleTag = "Ada#1001", name = "Ada Lovewell" },
+                          answers = { { battleTag = "Ada#1001", name = "Ada Lovewell", answer = "in" } } } } }
+    end
+
+    -- file: CF_RUNS as Data\Runs.lua sets it.
+    local function loadRuns(file)
+      load(function(s)
+        s.serverTime = NOW
+        local install = helpers.loadAddon
+        helpers.loadAddon = function()
+          local loaded = install()
+          _G.CF_RUNS = file
+          return loaded
+        end
+        s.restoreLoad = function() helpers.loadAddon = install end
+      end)
+      state.restoreLoad()
+    end
+
+    local function hello(ru)
+      return { t = "HELLO", bt = SJAAK, ver = 0, ru = ru }
+    end
+
+    after_each(function() _G.CF_RUNS = nil end)
+
+    it("says in HELLO how new its runs are (0: none)", function()
+      loadRuns(nil)
+      assert.are.equal(0, ofType(outgoing(), "HELLO")[1].ru)
+      wowapi.uninstall()
+      loadRuns(runs(NOW - 60))
+      assert.are.equal(NOW - 60, ofType(outgoing(), "HELLO")[1].ru)
+    end)
+
+    it("sends its runs to a friend with older ones, BattleTags included over Battle.net", function()
+      loadRuns(runs(NOW - 60))
+      outgoing()
+      fromSjaak(hello(NOW - 600))
+      local sent = ofType(outgoing(), "RUNS")
+      assert.are.equal(1, #sent)
+      assert.are.equal(NOW - 60, sent[1].runs.updatedAt)
+      assert.are.equal("Ada#1001", sent[1].runs.runs[1].organiser.battleTag)
+      fromSjaak(hello(NOW - 600)) -- the same again within a minute: not resent
+      assert.are.equal(0, #ofType(outgoing(), "RUNS"))
+    end)
+
+    it("asks a friend with newer runs, and takes them", function()
+      loadRuns(runs(NOW - 600))
+      outgoing()
+      fromSjaak(hello(NOW - 60))
+      assert.are.equal(1, #ofType(outgoing(), "RUNREQ"))
+      fromSjaak({ t = "RUNS", runs = runs(NOW - 60) })
+      assert.are.equal(NOW - 60, ns.Planner.updatedAt())
+      assert.are.equal(NOW - 60, addon.db.global.plannedRuns.updatedAt) -- kept for the next session
+      -- And tells the others (HELLO with the new ru).
+      local hellos = ofType(outgoing(), "HELLO")
+      assert.are.equal(NOW - 60, hellos[#hellos].ru)
+    end)
+
+    it("answers RUNREQ with its runs", function()
+      loadRuns(runs(NOW - 60))
+      outgoing()
+      fromSjaak({ t = "RUNREQ" })
+      assert.are.equal(1, #ofType(outgoing(), "RUNS"))
+    end)
+
+    it("ignores older, broken and far-future runs", function()
+      loadRuns(runs(NOW - 60))
+      fromSjaak({ t = "RUNS", runs = runs(NOW - 600) })
+      fromSjaak({ t = "RUNS", runs = "nope" })
+      fromSjaak({ t = "RUNS", runs = runs(NOW + 3600) })
+      assert.are.equal(NOW - 60, ns.Planner.updatedAt())
+    end)
+
+    it("sends nothing about runs to an older client (HELLO without ru)", function()
+      loadRuns(runs(NOW - 60))
+      outgoing()
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 0 })
+      local sent = outgoing()
+      assert.are.equal(0, #ofType(sent, "RUNS"))
+      assert.are.equal(0, #ofType(sent, "RUNREQ"))
+    end)
+
+    it("holds runs back during a PvP match and sends them after", function()
+      loadRuns(runs(NOW - 60))
+      outgoing()
+      state.instance = { name = "Warsong Gulch", type = "pvp", instanceID = 489 }
+      fromSjaak(hello(0))
+      assert.are.equal(0, #ofType(outgoing(), "RUNS"))
+      state.instance = { name = "Kalimdor", type = "none", instanceID = 1 }
+      state.time = state.time + 30
+      wowapi.runTimers(state)
+      assert.are.equal(1, #ofType(outgoing(), "RUNS"))
+    end)
+  end)
+
   describe("level-up announcements (CF-16)", function()
     -- Sjaak's alt is a community member, so it is visible and linked through his record.
     local function loadWithAlt()
