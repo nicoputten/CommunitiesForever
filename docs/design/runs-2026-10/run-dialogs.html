@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Addon run dialogs</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F0A}
+a{color:#D4AF6A}a:hover{color:#F0D08E}
+.win{position:absolute;background:rgba(9,15,27,.96);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 0 0 1px #02050A,inset 0 1px 0 rgba(240,208,142,.18),0 24px 60px rgba(0,0,0,.7);display:flex;flex-direction:column;font-family:Inter,sans-serif;color:#E6E1D6}
+.orn{position:absolute;width:8px;height:8px;background:#D4AF6A;transform:rotate(45deg);box-shadow:0 0 0 2px #02050A}
+.title{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;background:linear-gradient(180deg,rgba(212,175,106,.10),rgba(212,175,106,0));border-bottom:1px solid rgba(212,175,106,.25)}
+.x{width:26px;height:26px;border-radius:6px;border:1px solid rgba(212,175,106,.35);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tabs{height:36px;flex:none;display:flex;gap:4px;padding:0 12px;border-bottom:1px solid rgba(212,175,106,.18)}
+.tab{display:flex;align-items:center;gap:6px;padding:0 14px;font:15px 'Marcellus SC',serif;letter-spacing:.05em;color:#8E98A8}
+.tab.on{color:#F3DFAE;box-shadow:inset 0 -2px 0 #D4AF6A;background:linear-gradient(0deg,rgba(212,175,106,.12),rgba(212,175,106,0))}
+.badge{min-width:16px;height:16px;border-radius:8px;background:#D4AF6A;color:#0B0F14;font:600 10px/16px Inter,sans-serif;text-align:center;padding:0 3px;box-sizing:border-box}
+.lh{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898;padding:12px 12px 4px}
+.dr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:6px 12px;font-size:13px}
+.dr .n{font:14px 'Marcellus',serif;color:#F0D08E}
+.dr .m{grid-column:1/-1;font-size:11px;color:#8E98A8;display:flex;gap:10px}
+.dr.sel{background:rgba(212,175,106,.13);box-shadow:inset 3px 0 0 #D4AF6A}
+.sec{font:15px 'Marcellus SC',serif;letter-spacing:.07em;color:#F0D08E;margin:0}
+.slot{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:8px;border:1px solid rgba(212,175,106,.2);background:rgba(255,255,255,.03);font-size:11px;color:#AEB6C3;text-align:center}
+.slot.empty{border-style:dashed;color:#7E8898}
+.slot.miss{border-color:rgba(224,138,74,.5);color:#F0A774;border-style:dashed}
+.disc{width:26px;height:26px;border-radius:50%;font:600 9px/26px Inter,sans-serif;text-align:center;color:#0B0F14}
+.mr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.btn{min-height:30px;padding:0 14px;border-radius:6px;border:1px solid rgba(212,175,106,.5);background:linear-gradient(180deg,rgba(212,175,106,.25),rgba(212,175,106,.08));color:#F3DFAE;font:600 12px Inter,sans-serif;cursor:pointer}
+.btn.pri{background:linear-gradient(180deg,#E2C07A,#C59B52);color:#0B0F14;border-color:#F0D08E}
+
+.pane{background:rgba(9,15,27,.97);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 0 0 1px #02050A,inset 0 1px 0 rgba(240,208,142,.18),0 24px 60px rgba(0,0,0,.7);font-family:Inter,sans-serif;color:#E6E1D6;position:relative}
+.cap{position:absolute;font:13px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E;background:rgba(5,9,16,.85);padding:4px 10px;border-radius:6px;border:1px solid rgba(212,175,106,.3)}
+.cb{width:16px;height:16px;border-radius:3px;border:1px solid #D4AF6A;background:#070D17;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.cb.on{background:linear-gradient(180deg,#E2C07A,#C59B52)}
+.inp{height:30px;padding:0 10px;border-radius:6px;background:#070D17;border:1px solid rgba(212,175,106,.35);font-size:12px;line-height:30px;color:#E6E1D6;box-sizing:border-box}
+.seg{display:flex;border:1px solid rgba(212,175,106,.4);border-radius:6px;overflow:hidden}
+.seg span{padding:0 12px;height:28px;line-height:28px;font-size:12px;color:#AEB6C3;border-right:1px solid rgba(212,175,106,.25)}
+.seg span:last-child{border-right:0}
+.seg .on{background:rgba(212,175,106,.22);color:#F3DFAE;font-weight:600}
+.age{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#AEB6C3;padding:3px 8px;border-radius:999px;background:rgba(127,178,229,.1);border:1px solid rgba(127,178,229,.3)}
+.q{font-size:11px;color:#F0A774;display:inline-flex;align-items:center;gap:5px}
+.st{font-size:11px;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.s-on{background:rgba(127,217,154,.14);color:#9BE3B0}
+.s-off{background:rgba(174,182,195,.1);color:#8E98A8}
+.s-may{background:rgba(212,175,106,.16);color:#F0D08E}
+.s-dc{background:rgba(140,149,245,.16);color:#B9BEFA}
+.s-grp{background:rgba(63,199,235,.14);color:#8FE3F7}
+.fr{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.chat{font:13px/1.55 'Inter',sans-serif;text-shadow:0 1px 1px #000}
+.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.drc{color:#FF9A45}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 980px; overflow: hidden; background: radial-gradient(ellipse at 60% 70%, #2B3322 0%, #1A2116 40%, #0B0F0A 85%); font-family: Inter, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)"></div>
+  <div style="position: absolute; left: 40px; top: 28px; right: 40px; display: flex; align-items: baseline; gap: 16px"><h1 style="margin: 0; font: 30px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Ask now, plan a run, sign up</h1><span style="font-size: 13px; color: #AEB6C3">Dialogs open from the Dungeons tab. Anything that has to reach the site asks for a /reload.</span></div>
+  <span class="cap" style="left: 40px; top: 96px">1 · Ask now</span>
+  <section class="win" style="left: 40px; top: 130px; width: 420px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title" style="height: 40px"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 16px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE; flex: 1">Ask now</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px"><div style="display: flex; gap: 10px; align-items: baseline"><span style="font: 20px 'Marcellus', serif; color: #F3EBDA">The Deadmines</span><span style="font-size: 11px; color: #8E98A8">17–26 · now</span></div>
+      <div style="font-size: 12px; color: #AEB6C3">You go as <span class="wa">Grom Ashfeller</span> 24 · tank</div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div class="lh" style="padding: 4px 0">Whispered now · online and fit</div>
+        <div class="fr"><span class="disc" style="background: #F48CBA">KD</span><span><span class="pa">Kel Dawnhammer</span> 18 · Mira</span><span style="color: #8E98A8">tank</span><span class="st s-on">online</span></div>
+        <div style="font-size: 11px; color: #7E8898; padding-top: 4px">Not asked: Ruk Bloodhoof 27 (above 26), Zul Kazrek 15 (below 17), Bob is offline</div>
+      </div>
+      <div class="inp" style="color: #8E98A8">Note (optional): quick run for the Defias quests</div>
+      <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 12px; color: #E6E1D6; padding: 10px; border-radius: 6px; background: rgba(140,149,245,0.08); border: 1px solid rgba(140,149,245,0.3)"><span class="cb on"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#0B0F14" stroke-width="2"><path d="M1.5 5l2.5 2.5 4.5-5"></path></svg></span><span><b style="font-weight: 600">Also post on Discord</b><br><span style="color: #AEB6C3">For friends who aren't playing. Needs a /reload to send; posted about 15 s later.</span></span></label>
+      <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn">Cancel</button><button class="btn pri">Ask now</button></div></div>
+  </section>
+  <span class="cap" style="left: 500px; top: 96px">2 · after Ask now or Plan run</span>
+  <section class="win" style="left: 500px; top: 130px; width: 420px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title" style="height: 40px"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 16px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE; flex: 1">Post on Discord?</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px"><div style="display: flex; gap: 12px; align-items: flex-start">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#F0D08E" stroke-width="1.6" aria-hidden="true"><path d="M27 17a10 10 0 11-3-7.1"></path><path d="M27 6v6h-6"></path></svg>
+        <div style="font-size: 13px; color: #E6E1D6; line-height: 1.5"><b style="font: 17px 'Marcellus', serif; font-weight: 400; color: #F3EBDA">Reload now to post on Discord</b><br><span style="color: #AEB6C3">The game only saves when you reload or log out. Your uploader then sends it; it's on Discord about 15 seconds later. Friends in game already got the whisper.</span></div>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn">Later</button><button class="btn pri">Reload now</button></div>
+      <div style="font-size: 11px; color: #7E8898; line-height: 1.5">Later: waits for your next reload or logout. If that's more than 10 min away the ask has expired and isn't posted.</div></div>
+  </section>
+  <span class="cap" style="left: 960px; top: 96px">3 · Plan a run</span>
+  <section class="win" style="left: 960px; top: 130px; width: 440px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title" style="height: 40px"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 16px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE; flex: 1">Plan a run</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px"><div style="display: flex; flex-direction: column; gap: 6px"><span class="lh" style="padding: 0">Dungeon</span><div class="inp" style="display: flex; justify-content: space-between"><span>Scarlet Monastery: Armory · 32–42</span><span style="color: #D4AF6A">▾</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span class="lh" style="padding: 0">Lead as</span><div class="inp" style="display: flex; justify-content: space-between"><span><span class="wl">Ves Doombringer</span> 39 · damage</span><span style="color: #D4AF6A">▾</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span class="lh" style="padding: 0">Day</span><div class="seg"><span>Today</span><span>Wed</span><span class="on">Thu</span><span>Fri</span><span>Sat</span><span>Sun</span><span>Mon</span></div></div>
+      <div style="display: flex; gap: 12px; align-items: flex-end"><div style="display: flex; flex-direction: column; gap: 6px"><span class="lh" style="padding: 0">Time</span><div class="inp" style="width: 90px; font: 16px Marcellus, serif; color: #F3EBDA">20:30</div></div><span style="font-size: 11px; color: #8E98A8; padding-bottom: 7px">your PC clock · friends see their own time</span></div>
+      <div class="inp" style="color: #8E98A8">Note (optional)</div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn">Cancel</button><button class="btn pri">Plan run</button></div>
+      <div style="font-size: 11px; color: #F0A774; line-height: 1.5">Reaches the site and Discord after /reload. You'll be asked next.</div></div>
+  </section>
+  <span class="cap" style="left: 500px; top: 446px">4 · sign up in game</span>
+  <section class="win" style="left: 500px; top: 480px; width: 420px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title" style="height: 40px"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 16px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE; flex: 1">Answer</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px"><div style="display: flex; gap: 10px; align-items: baseline"><span style="font: 18px 'Marcellus', serif; color: #F3EBDA">Razorfen Kraul</span><span style="font-size: 11px; color: #AEB6C3">Thu 21:00 · 20:00 for Bob</span></div>
+      <div class="seg" style="align-self: flex-start"><span class="on">I'm in</span><span>Maybe</span><span>Can't</span></div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span class="lh" style="padding: 0">Pick my character</span>
+        <div style="border: 1px solid rgba(212,175,106,0.35); border-radius: 6px; overflow: hidden">
+          <div style="display: flex; justify-content: space-between; padding: 7px 10px; background: rgba(212,175,106,0.14); font-size: 12px"><span><span class="wa">Grom Ashfeller</span> 24 · tank</span><span style="color: #9BE3B0">fits</span></div>
+          <div style="display: flex; justify-content: space-between; padding: 7px 10px; font-size: 12px; color: #6E7888"><span>Ves Doombringer 39</span><span>too high</span></div>
+          <div style="display: flex; justify-content: space-between; padding: 7px 10px; font-size: 12px; color: #6E7888"><span>Sela Moonbrook 12</span><span>too low</span></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center"><span class="q"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#F0A774" stroke-width="1.4" aria-hidden="true"><path d="M10 6a4 4 0 11-1.2-2.8"></path><path d="M10 1.5V4H7.5"></path></svg>reaches Discord after /reload</span><span style="flex: 1"></span><button class="btn pri">Save answer</button></div>
+      <div style="font-size: 11px; color: #7E8898; line-height: 1.5">Bob's addon gets it right away over addon sync when you're both online.</div></div>
+  </section>
+  <span class="cap" style="left: 960px; top: 556px">5 · the same run row, after answering</span>
+  <section class="pane" style="position: absolute; left: 960px; top: 590px; width: 440px; padding: 8px 0">
+    <div class="dr sel"><span class="n">Razorfen Kraul</span><span style="font-size: 12px; color: #AEB6C3">Thu 21:00</span><span class="m"><span>you: I'm in as Grom Ashfeller</span><span class="q">reaches Discord after /reload</span></span></div>
+    <div class="dr"><span class="n">Scarlet Monastery: Armory</span><span style="font-size: 12px; color: #F6C29C">Today 20:30</span><span class="m"><span>Lia Thornwhisper</span><span style="color: #B9BEFA">answered on Discord</span></span></div>
+    <div class="dr"><span class="n">The Deadmines</span><span style="font-size: 12px; color: #9BE3B0">now · 7 min left</span><span class="m"><span>Ask now · 2 in game</span><span class="q">posting to Discord after /reload</span></span></div>
+  </section>
+  <div style="position: absolute; left: 40px; top: 810px; width: 880px; font-size: 12px; color: #AEB6C3; line-height: 1.6; padding: 12px 16px; border-radius: 10px; background: rgba(5,9,16,0.8); border: 1px solid rgba(212,175,106,0.25)"><b style="color: #F3EBDA">Labels used everywhere in game:</b> <span class="q">reaches Discord after /reload</span> for things waiting to be uploaded · <span class="st s-dc">answered on Discord</span> for answers that came from Discord via the uploader or a friend's addon · <span class="age">Runs updated at 21:04 · /reload for newer</span> for the age of the list.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
