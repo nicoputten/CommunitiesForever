@@ -133,7 +133,7 @@ local function defaultPlayer()
     faction = { "Horde", "Horde" },
     realm = "Classic Beta PvP",
     itemLevel = { 1.5625, 1.5625, 1.5625 },
-    battleTag = "Vestras#2858",
+    battleTag = "Vestras#1000",
     -- GetProfessions() slots (prof1, prof2, archaeology, fishing, cooking) -> profession index
     professionSlots = { [1] = 10, [5] = 12 },
     -- GetProfessionInfo(index) returns

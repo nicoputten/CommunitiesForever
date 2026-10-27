@@ -3,7 +3,7 @@ local helpers = require("helpers")
 describe("Linker", function()
   local Linker
 
-  local ME, SJAAK, OTHER = "Vestras#2858", "Sjaakovich#2232", "Other#4444"
+  local ME, SJAAK, OTHER = "Vestras#1000", "Sjaakovich#2232", "Other#4444"
 
   local function member(name, presence, extra)
     local m = { name = name, classID = 8, level = 11, zone = "Durotar", presence = presence or 3, raceID = 2 }
