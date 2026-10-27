@@ -4,6 +4,7 @@ Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order: CF-45 (soon, in a small release), then CF-46, CF-47, CF-48 once the web and uploader stories they need are in (web E7, uploader UP-12). CF-38 (recipes) waits for the V60 check at launch (its story is in PR #63).
+
 ## E14 Planned runs
 
 Decided with Nico, 2026-10-27. Two kinds of group: **Ask now** lives in the game (CF-27) and is answered within minutes; a **planned run** is owned by the website, posted and answered in Discord, and ends in an invite in the game at start time. The game never talks to the internet: it learns about runs at login or `/reload` from `Data\Runs.lua` (written by the uploader, UP-12) or from a friend's addon over sync, and what the player does reaches the site after the game saves (`/reload` or logout) and the uploader uploads (web WEB-43). The in-game calendar is out of the flow. Times are UTC in data and shown in the player's local time. Boards: `docs/design/runs-2026-10/` (`runs-flow.html` shows the whole flow). Web stories: E7 in the web repo; bot: BOT-04.
