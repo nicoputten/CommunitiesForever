@@ -121,6 +121,8 @@ saved file loaded at login) and fails when an older version's data no longer wor
 ## Libraries
 Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
 
+Fonts (E13 revamp, decided 2026-10-27): **Marcellus SC**, **Marcellus** and **Inter**, bundled in `media/fonts/` (SIL Open Font License, which allows bundling; the license files ship with them). The game font is the fallback for non-Latin clients.
+
 Optional, not embedded (CF-24): the **QuestieDB** addon (comes with Questie; `## OptionalDeps: QuestieDB`). When it is installed with contract 3 or later, the Dungeons tab reads every dungeon's quests from its public API (`LibQuestieDB`, `QuestDB`) at runtime; nothing of its data ships with this addon (it has no license). Without it, dungeon quests come from the community's quest logs.
 
 UI choice: AceConfig for settings (also registered in the Blizzard settings panel). Main window: AceGUI `Frame` (move, resize, saved position and size via its status table) with a `TreeGroup`: people expandable to their characters on the left, a detail card on the right (decided in CF-12, draft B, replacing the earlier custom frame + ScrollBox plan: no unverified templates). Profession bars are inline textures. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
