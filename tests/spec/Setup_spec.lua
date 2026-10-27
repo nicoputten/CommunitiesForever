@@ -17,53 +17,16 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
   local function settings() return addon.db.global.settings end
   local function guid() return state.player.guid end
 
-  local function frameTitled(title)
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" and w.title == title then return w end
-    end
-  end
-
-  local function wizard() return frameTitled("CommunitiesForever setup") end
-
-  local function prompt()
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" and w.title == "CommunitiesForever" and w ~= nil then
-        for _, child in ipairs(w.children) do
-          if child.text == "Create a Community tab on this character too?" then return w end
-        end
-      end
-    end
-  end
-
-  local function walk(widget, visit)
-    for _, child in ipairs(widget.children) do
-      visit(child)
-      walk(child, visit)
-    end
-  end
-
-  local function text(widget)
-    local out = {}
-    walk(widget, function(w) if w.text then out[#out + 1] = w.text end end)
-    return table.concat(out, "\n")
-  end
-
-  local function find(widget, widgetType, label)
-    local found
-    walk(widget, function(w)
-      if not found and w.type == widgetType and (w.text == label or w.label == label) then found = w end
-    end)
-    return assert(found, "no " .. widgetType .. " " .. label)
-  end
-
-  local function click(widget, label) find(widget, "Button", label):Fire("OnClick") end
+  -- CF-43: the native wizard and prompt.
+  local function wizard() return ns.Setup.wizard() end
+  local function text() return table.concat(ns.Setup.texts(), "\n") end
+  local function button(label) return assert(ns.Setup.buttons()[label], "no button " .. label) end
+  local function click(label) button(label):RunScript("OnClick") end
 
   -- Clicks the button in the Next spot: Next, or "Create chat tab" on the chat step without a tab.
   local function forward(times)
     for _ = 1, times or 1 do
-      local createTab
-      walk(wizard(), function(w) if w.type == "Button" and w.text == "Create chat tab" then createTab = w end end)
-      click(wizard(), createTab and "Create chat tab" or "Next")
+      click(ns.Setup.buttons()["Create chat tab"] and "Create chat tab" or "Next")
     end
   end
 
@@ -76,10 +39,13 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     assert.is_nil(wizard())
     wowapi.runTimers(state)
     assert.is_true(ns.Setup.isShown())
-    local all = text(wizard())
+    local all = text()
     assert.is_truthy(all:find("Step 1 of 6", 1, true))
     assert.is_truthy(all:find("Welcome", 1, true))
-    assert.is_true(find(wizard(), "Button", "Back").disabled)
+    assert.is_truthy(all:find("Who is who in your community", 1, true))
+    assert.is_truthy(all:find("Dungeons", 1, true)) -- the three tiles
+    assert.is_false(button("Back").enabled)
+    assert.is_truthy(ns.Setup.buttons()["Skip setup"])
   end)
 
   it("walks through all steps to Finish and does not open again", function()
@@ -87,36 +53,46 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     wowapi.runTimers(state)
     for _, title in ipairs({ "Community", "Your name", "Community chat", "Notifications and sharing", "Done" }) do
       forward()
-      assert.is_truthy(text(wizard()):find(title, 1, true))
+      assert.are.equal(title, wizard().titleText:GetText())
     end
-    assert.is_truthy(text(wizard()):find("/cf setup", 1, true))
-    click(wizard(), "Finish")
+    assert.is_truthy(text():find("/cf setup", 1, true))
+    click("Finish")
     assert.is_false(ns.Setup.isShown())
     assert.is_true(settings().onboarded)
     assert.are.equal(ns.Onboarding.VERSION, settings().onboardedVersion)
     assert.is_nil(ns.Setup.plan()) -- the character it ran on gets no prompt
   end)
 
-  it("counts Skip and closing as done, and reopens with /cf setup", function()
+  it("counts Skip setup and closing as done, and reopens with /cf setup", function()
     load()
     wowapi.runTimers(state)
-    click(wizard(), "Skip")
+    click("Skip setup")
     assert.is_false(ns.Setup.isShown())
     assert.is_true(settings().onboarded)
     addon:OnSlashCommand("setup")
     assert.is_true(ns.Setup.isShown())
     forward()
-    click(wizard(), "Back")
-    assert.is_truthy(text(wizard()):find("Step 1 of 6", 1, true))
+    click("Back")
+    assert.is_truthy(text():find("Step 1 of 6", 1, true))
   end)
 
   it("shows the community to pick, and how to join without one", function()
     load()
     wowapi.runTimers(state)
     forward()
-    local dropdown = find(wizard(), "Dropdown", "Community")
-    assert.are.equal("23125681", dropdown.value)
-    dropdown:Fire("OnValueChanged", "777")
+    local select = ns.Setup.communitySelect()
+    assert.is_true(select.shown)
+    assert.are.equal("23125681", select.value)
+    assert.are.equal("Forever Friends", select.text:GetText())
+    -- Picking from the menu (ContextMenu) writes the setting.
+    _G.MenuUtil = { CreateContextMenu = function(_, build)
+      local root = { CreateTitle = function() end, CreateButton = function(_, label, fn)
+        if label == "Other Friends" then fn() end
+      end }
+      build(nil, root)
+    end }
+    select:RunScript("OnClick")
+    _G.MenuUtil = nil
     assert.are.equal("777", settings().clubId)
 
     wowapi.uninstall()
@@ -124,21 +100,22 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     state.clubs = {}
     addon:OnSlashCommand("setup")
     forward()
-    assert.is_truthy(text(wizard()):find("ask a friend in it for the invite link", 1, true))
+    assert.is_truthy(text():find("ask a friend in it for the invite link", 1, true))
+    assert.is_false(ns.Setup.communitySelect().shown)
   end)
 
   it("saves the display name when leaving the step, only when it changed", function()
     load()
     wowapi.runTimers(state)
     forward(2)
-    local edit = find(wizard(), "EditBox", "Display name")
-    assert.are.equal(state.player.battleTag:match("^[^#]+"), edit.text) -- prefilled with the BattleTag name part
+    local edit = ns.Setup.nameField()
+    assert.are.equal(state.player.battleTag:match("^[^#]+"), edit:GetText()) -- prefilled with the BattleTag name part
     local version = addon.db.global.self.version
     forward()
     assert.is_nil(addon.db.global.self.displayName)
     assert.are.equal(version, addon.db.global.self.version)
-    click(wizard(), "Back")
-    find(wizard(), "EditBox", "Display name"):SetText("Alice")
+    click("Back")
+    ns.Setup.nameField():SetText("Alice")
     forward()
     assert.are.equal("Alice", addon.db.global.self.displayName)
   end)
@@ -148,25 +125,26 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     wowapi.runTimers(state)
     forward(3)
     local windows = #state.chatWindows
-    click(wizard(), "Create chat tab")
+    click("Create chat tab")
     assert.are.equal(windows + 1, #state.chatWindows)
     assert.is_true(settings().chatTab[guid()])
-    assert.is_truthy(text(wizard()):find("Notifications and sharing", 1, true))
-    click(wizard(), "Back")
-    assert.is_truthy(text(wizard()):find("This character has a", 1, true))
-    find(wizard(), "Button", "Next") -- with a tab the step has Skip and Next again
-    find(wizard(), "Button", "Skip")
+    assert.are.equal("Notifications and sharing", wizard().titleText:GetText())
+    click("Back")
+    assert.is_truthy(text():find("This character has a", 1, true))
+    button("Next") -- with a tab the step has Skip setup and Next again
+    button("Skip setup")
   end)
 
-  it("goes on without a tab with Not now (in place of Skip)", function()
+  it("goes on without a tab with Not now (in place of Skip setup)", function()
     load()
     wowapi.runTimers(state)
     forward(3)
     local windows = #state.chatWindows
-    click(wizard(), "Not now")
+    assert.is_nil(ns.Setup.buttons()["Skip setup"])
+    click("Not now")
     assert.are.equal(windows, #state.chatWindows)
     assert.is_true(ns.Setup.isShown())
-    assert.is_truthy(text(wizard()):find("Notifications and sharing", 1, true))
+    assert.are.equal("Notifications and sharing", wizard().titleText:GetText())
   end)
 
   it("starts every switch at the settings defaults and writes the settings", function()
@@ -175,15 +153,15 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     forward(3)
     local chat = { keepGeneral = "chatKeepGeneral", alert = "chatAlert", sound = "chatSound" }
     for key, default in pairs(chat) do
-      local box = find(wizard(), "CheckBox", ns.Settings.options().args.chat.args[key].name)
-      assert.are.equal(ns.Onboarding.DEFAULTS[default], box.value, key)
+      local box = ns.Setup.checkbox(ns.Settings.options().args.chat.args[key].name)
+      assert.are.equal(ns.Onboarding.DEFAULTS[default], box:GetChecked(), key)
     end
     forward()
     for _, key in ipairs({ "notifications", "levelUps", "shareActivity", "minimap" }) do
-      local box = find(wizard(), "CheckBox", ns.Settings.options().args[key].name)
-      assert.are.equal(ns.Onboarding.DEFAULTS[key], box.value, key)
+      local box = ns.Setup.checkbox(ns.Settings.options().args[key].name)
+      assert.are.equal(ns.Onboarding.DEFAULTS[key], box:GetChecked(), key)
     end
-    find(wizard(), "CheckBox", "Login notifications"):Fire("OnValueChanged", false)
+    ns.Setup.checkbox("When friends log in"):RunScript("OnClick")
     assert.is_false(settings().notifications)
   end)
 
@@ -194,16 +172,14 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     wowapi.runTimers(state)
     assert.is_nil(wizard())
     assert.is_true(ns.Setup.promptShown())
-    local buttons = 0
-    walk(prompt(), function(w) if w.type == "Button" then buttons = buttons + 1 end end)
-    assert.are.equal(1, buttons)
-    prompt():Hide() -- the X
+    assert.are.equal("Create a Community tab on this character too?", ns.Setup.prompt().texts[1]:GetText())
+    ns.Setup.prompt():Hide() -- the X
     assert.is_false(ns.Setup.promptShown())
     assert.is_nil(ns.Setup.plan()) -- not asked again
 
     settings().chatTabPrompt = nil
     ns.Setup.check()
-    click(prompt(), "Yes, create a Community tab")
+    ns.Setup.prompt().create:RunScript("OnClick")
     assert.is_false(ns.Setup.promptShown())
     assert.is_true(settings().chatTab[guid()])
     assert.is_nil(ns.Setup.plan())
@@ -213,13 +189,30 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     load()
     wowapi.runTimers(state)
     forward(3)
-    click(wizard(), "Create chat tab")
+    click("Create chat tab")
     local tab = state.chatWindows[#state.chatWindows]
     tab.closed = true -- closing a chat tab keeps its name
     ns.Setup.open()
     forward(3)
     local windows = #state.chatWindows
-    click(wizard(), "Create chat tab")
+    click("Create chat tab")
     assert.are.equal(windows + 1, #state.chatWindows)
+  end)
+
+  -- CF-43: Open on login.
+  it("opens the main window after login when Open on login is on, not with the setup", function()
+    load(function(global)
+      global.settings.onboarded, global.settings.onboardedVersion = true, 1
+      global.settings.chatTabPrompt = { [state.player.guid] = true }
+      global.settings.openOnLogin = true
+    end)
+    wowapi.runTimers(state)
+    assert.is_true(ns.MainFrame.isShown())
+
+    wowapi.uninstall()
+    load(function(global) global.settings.openOnLogin = true end) -- first login: the setup instead
+    wowapi.runTimers(state)
+    assert.is_true(ns.Setup.isShown())
+    assert.is_false(ns.MainFrame.isShown())
   end)
 end)

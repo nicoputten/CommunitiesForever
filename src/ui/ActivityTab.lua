@@ -90,7 +90,7 @@ local function filterChip(parent, def)
   return c
 end
 
--- The LEVEL UP chip: gold with dark text (static; the shine comes with Ambient effects, CF-43).
+-- The LEVEL UP chip: gold with dark text, and a slow shine while Ambient effects are on (CF-43).
 local function levelChip(parent)
   local c = CreateFrame("Frame", nil, parent)
   c:SetHeight(18)
@@ -98,6 +98,7 @@ local function levelChip(parent)
   bg:SetAllPoints()
   c.text = Theme.text(c, "chip", "outline")
   c.text:SetPoint("CENTER")
+  c.shine = Kit.shine(c, c, 2.1)
   return c
 end
 
@@ -180,6 +181,7 @@ local function flow(parent, pieces, x0, y0, width)
       frame.text:SetText(item.text)
       w = textWidth(frame.text) + 14
       frame:SetWidth(w)
+      if frame.shine then frame.shine:Refresh() end
     else
       frame = Kit.take(pools.small, parent)
       frame.text:SetWidth(0)

@@ -232,6 +232,12 @@ end
 function MainFrame.window() return frame end
 function MainFrame.tabs() return tabs end
 
+-- CF-43: Ambient effects changed: the title shimmer and the LEVEL UP shine follow.
+function MainFrame.refreshAmbient()
+  if frame and frame.shimmer then frame.shimmer:Refresh() end
+  if MainFrame.isShown() then MainFrame.render() end
+end
+
 function MainFrame.isShown()
   return frame ~= nil and frame:IsShown()
 end
@@ -275,6 +281,7 @@ function MainFrame.start(addon)
   tabs = nil
   activeTab = "friends"
   ns.DungeonsTab.reset()
+  ns.Kit.ambient = function() return settings().ambientEffects ~= false end -- CF-43
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end
   end)

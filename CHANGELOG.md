@@ -19,6 +19,9 @@ tagging; the release stops if the tag has no section.
   in range and your quests per dungeon. The suggested group shows as five slots (tank, healer, three damage)
   and says when nobody in range can tank or heal; your other characters show as alternatives, and the card
   says where the dungeon is.
+- **New look, part 5: settings and setup.** The settings have their own window (also under Options › AddOns),
+  and the first-run setup is redone in the same style. New: **Open on login** opens the window after you
+  log in, and **Ambient effects** adds a slow shimmer to the window title and level-up chips (on by default).
 - **Less sync traffic in the community:** the "I changed" message goes out once on a hidden channel to
   everyone running the addon, instead of a whisper to each member. Older versions keep getting whispers.
 - Fix: a community chat window with other channels before the community channel is recognized again.

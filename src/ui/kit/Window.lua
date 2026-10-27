@@ -108,6 +108,8 @@ function Kit.window(opts)
   f.statusText = Theme.text(title, "small", "onlineText")
   f.statusText:SetPoint("RIGHT", f.settingsButton, "LEFT", -10, 0)
   f.titleBar = title
+  -- CF-43: a slow shimmer across the title (Ambient effects).
+  f.shimmer = Kit.shine(title, f.titleText, 9)
 
   -- Tab row.
   local tabBar = CreateFrame("Frame", nil, f)
@@ -156,6 +158,22 @@ function Kit.window(opts)
 
   f:SetScript("OnSizeChanged", function() if opts.onResize then opts.onResize(f) end end)
   f:SetScript("OnHide", function() if opts.onClose then opts.onClose() end end)
+  return f
+end
+
+--[[ CF-43: a fixed-size dialog in the same look (settings, setup): the window without tabs, settings button,
+resize grip or saved size. opts = { title, width, height, onClose() }. Content fills title bar to footer. ]]
+function Kit.dialog(opts)
+  local f = Kit.window({ title = opts.title, status = {}, onClose = opts.onClose })
+  f:SetSize(opts.width, opts.height)
+  f:SetResizable(false)
+  f.grip:Hide()
+  f.settingsButton:Hide()
+  f.tabBar:Hide()
+  f.tabBar:SetHeight(1)
+  f.content:ClearAllPoints()
+  f.content:SetPoint("TOPLEFT", f.titleBar, "BOTTOMLEFT")
+  f.content:SetPoint("BOTTOMRIGHT", f.footer, "TOPRIGHT")
   return f
 end
 

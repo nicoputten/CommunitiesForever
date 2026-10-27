@@ -71,11 +71,7 @@ describe("keybinding and Esc (CF-32)", function()
   it("closes the setup on Esc", function()
     load()
     addon:OnSlashCommand("setup")
-    local wizard
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" and w.title == "CommunitiesForever setup" then wizard = w end
-    end
-    press(wizard, "ESCAPE")
+    press({ frame = ns.Setup.wizard() }, "ESCAPE") -- CF-43: a kit dialog
     assert.is_false(ns.Setup.isShown())
   end)
 end)

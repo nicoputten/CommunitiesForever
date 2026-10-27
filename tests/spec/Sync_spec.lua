@@ -196,7 +196,7 @@ describe("Sync", function()
 
     it("has no share setting any more", function()
       load()
-      assert.is_nil(state.options.args.shareAlts)
+      assert.is_nil(ns.Settings.options().args.shareAlts)
     end)
   end)
 
@@ -437,7 +437,7 @@ describe("Sync", function()
 
     it("can be switched off in settings", function()
       loadWithAlt()
-      state.options.args.levelUps.set({}, false)
+      ns.Settings.options().args.levelUps.set({}, false)
       levelTo(31, 5000)
       assert.are.same({}, state.printed)
     end)

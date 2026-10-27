@@ -337,6 +337,134 @@ function Kit.scrollArea(parent)
   return area
 end
 
+-- ===== Controls (CF-43: settings and setup) =====
+
+-- A text field in the input look. opts = { width, maxLetters, onCommit(text) }: commits on Enter and when
+-- it loses focus. field:SetValue(text) shows a value without committing it.
+function Kit.input(parent, opts)
+  opts = opts or {}
+  local e = CreateFrame("EditBox", nil, parent)
+  e:SetHeight(28)
+  if opts.width then e:SetWidth(opts.width) end
+  e:SetAutoFocus(false)
+  e:SetTextInsets(10, 10, 0, 0)
+  if opts.maxLetters then e:SetMaxLetters(opts.maxLetters) end
+  Theme.font(e, "body")
+  e:SetTextColor(Theme.color("text"))
+  local bg = Theme.fill(e, "input", "BACKGROUND")
+  bg:SetAllPoints()
+  e.edges = Kit.edges(e, "border")
+  local function commit(self)
+    if self.committed ~= self:GetText() then
+      self.committed = self:GetText()
+      if opts.onCommit then opts.onCommit(self.committed or "") end
+    end
+  end
+  e:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+  e:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+  e:SetScript("OnEditFocusLost", commit)
+  function e:SetValue(text)
+    self.committed = text or ""
+    self:SetText(self.committed)
+  end
+  e.Commit = commit
+  return e
+end
+
+--[[ A dropdown in the input look: shows the chosen value's text and an arrow; clicking opens Blizzard's menu
+(ns.ContextMenu, verified V57) with the choices. sel:SetChoices(title, list, value) with
+list = { { value, text } }; onChange(value). ]]
+function Kit.select(parent, onChange)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetHeight(28)
+  local bg = Theme.fill(b, "input", "BACKGROUND")
+  bg:SetAllPoints()
+  b.edges = Kit.edges(b, "border")
+  b.text = Theme.text(b, "body", "text")
+  b.text:SetPoint("LEFT", 10, 0)
+  b.text:SetPoint("RIGHT", -24, 0)
+  b.text:SetJustifyH("LEFT")
+  local arrow = b:CreateTexture(nil, "ARTWORK")
+  arrow:SetSize(10, 10)
+  arrow:SetPoint("RIGHT", -10, 0)
+  arrow:SetTexture(Theme.TEXTURES.arrow)
+  arrow:SetVertexColor(Theme.color("gold"))
+  local hover = b:CreateTexture(nil, "HIGHLIGHT")
+  hover:SetAllPoints()
+  hover:SetColorTexture(Theme.color("hover"))
+  function b:SetChoices(title, list, value)
+    self.title, self.list, self.value = title, list or {}, value
+    local shown = ""
+    for _, c in ipairs(self.list) do
+      if c.value == value then shown = c.text end
+    end
+    self.text:SetText(shown)
+  end
+  b:SetScript("OnClick", function(self)
+    local items = {}
+    for i, c in ipairs(self.list or {}) do items[i] = { label = c.text, enabled = true, value = c.value } end
+    ns.ContextMenu.open(self, { title = self.title, items = items }, function(item)
+      self:SetChoices(self.title, self.list, item.value)
+      if onChange then onChange(item.value) end
+    end)
+  end)
+  return b
+end
+
+-- A colour swatch: a square in the colour; clicking calls onClick.
+function Kit.swatch(parent, onClick)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetSize(18, 18)
+  b.edges = Kit.edges(b, "outline")
+  b.fill = b:CreateTexture(nil, "ARTWORK")
+  b.fill:SetPoint("TOPLEFT", 1, -1)
+  b.fill:SetPoint("BOTTOMRIGHT", -1, 1)
+  function b:SetColor(r, g, bl)
+    self.color = { r, g, bl }
+    self.fill:SetColorTexture(r, g, bl, 1)
+  end
+  b:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
+  return b
+end
+
+--[[ Ambient effects (CF-43): a bright streak that slides across `region` every `period` seconds, on a
+frame that clips it. Kit.ambient() says whether effects are on (set by the addon from the settings); the
+streak plays only then. AnimationGroup is unverified on Forever (VERIFY.md V64): without it nothing moves.
+Returns the shine object with :Refresh() (follows Kit.ambient) or nil. ]]
+Kit.ambient = function() return true end
+
+function Kit.shine(frame, region, period)
+  if not (frame.CreateAnimationGroup and frame.CreateTexture) then return nil end
+  if frame.SetClipsChildren then frame:SetClipsChildren(true) end
+  local streak = frame:CreateTexture(nil, "OVERLAY", nil, 6)
+  streak:SetTexture(Theme.TEXTURES.shine)
+  streak:SetBlendMode("ADD")
+  streak:SetSize(48, 18)
+  streak:SetPoint("CENTER", region or frame, "LEFT", -30, 0)
+  streak:Hide()
+  local group = frame:CreateAnimationGroup()
+  if not group then return nil end
+  local move = group:CreateAnimation("Translation")
+  if not move then return nil end
+  group:SetLooping("REPEAT")
+  move:SetDuration(1.4)
+  move:SetStartDelay(period or 6)
+  local shine = { streak = streak, group = group, move = move, region = region or frame }
+  function shine:Refresh()
+    local width = (self.region.GetWidth and self.region:GetWidth() or 0) + 60
+    self.move:SetOffset(width, 0)
+    if Kit.ambient() then
+      self.streak:Show()
+      if not self.group:IsPlaying() then self.group:Play() end
+    else
+      self.group:Stop()
+      self.streak:Hide()
+    end
+  end
+  shine:Refresh()
+  return shine
+end
+
 --[[ Pools (CF-40, shared by the tabs since CF-41): frames are reused on every render, since WoW frames cannot
 be destroyed. Kit.take gives the next free item (made by factory(parent) when needed), shown and without
 anchors; Kit.release hides all items of a pool. ]]
