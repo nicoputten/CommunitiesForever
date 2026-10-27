@@ -31,8 +31,25 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V69 | Can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), the first invite making a party? (CF-48: Invite everyone ready) | With at least two friends online in Forever and you not in a group: `/fp inviteall`, click `Invite all N`. Do all friends get an invite (also the second, while the first hasn't accepted yet)? Let them accept, wait 10 s (`V69 after 10 s: in group N`), `/reload` and send the log (the `V69 C_PartyInfo.InviteUnit` lines and `INVITE EVENT` lines). | open |
 | V70 | Do `C_ChatInfo.InChatMessagingLockdown()` and `IsEncounterInProgress()` exist, and are they true during a boss fight? (CF-46: runs are never sent during encounters, keystones or PvP matches) | Inside a dungeon, during a boss fight: `/run print(C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown(), IsEncounterInProgress and IsEncounterInProgress())`, and once more outside the fight. Expected `true true` in the fight, `false false` outside (`nil` means the function is missing: then only battlegrounds count). | open |
 
+| V71 | Does `time({ year, month, day, hour, min })` exist and give the UTC seconds of a local date and time? (CF-47: Plan a run turns your PC-clock time into UTC) | `/run print(time({ year = 2026, month = 11, day = 6, hour = 20, min = 30 }), GetServerTime())`: a number close to the server time (differing by the days and hours to that date). `nil` or an error: Plan a run says it can't convert the time. | open |
+
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-47 Ask now, plan a run, sign up
+Compare with `docs/design/runs-2026-10/run-dialogs.html`. The answer steps need the CF-46 test file (with a run someone else organises) and ideally that friend online with this build.
+
+| Step | Expected | Status |
+|---|---|---|
+| Dungeons tab, a dungeon in range, "Ask now" | A dialog "Ask now": the dungeon with its range and "now", "You go as <character> <level> · <role>", "WHISPERED NOW · ONLINE AND FIT" with the friends who get it, "Not asked: …" with why (above/below the range, offline), a note field, "Also post on Discord" with its help line, Cancel and Ask now. | open |
+| Type a note, tick Also post on Discord, Ask now | Friends get the ask with your note in quotes (CF-27 chat line). Then "Post on Discord?" with "Reload now to post on Discord", the text about saving, Later and Reload now. | open |
+| Reload now (V68) | The UI reloads. Without the API: the line "Type /reload to post it now." | open |
+| "Plan a run" on a dungeon | Dungeon and Lead as dropdowns, the days Today and the next six (the picked one highlighted), Time "20:00" with "your PC clock · friends see their own time", a note, Cancel and Plan run. "Reaches the site and Discord after /reload." | open |
+| Pick tomorrow, 21:30, Plan run (V71) | The reload prompt; the run shows in the Runs list at once with "reaches Discord after /reload". A time like "soon": "Type the time as 20:30."; today 00:00: "That time has passed." | open |
+| A run someone else organises, "Answer" | "Answer": the dungeon, "Thu 21:00 · 20:00 for <organiser>" (their time, when the site sent their offset), I'm in / Maybe / Can't, "PICK MY CHARACTER" with your characters and fits / too high / too low, "reaches Discord after /reload", Save answer. Can't hides the characters. | open |
+| Maybe, a character, Save answer | The row says "you: maybe as <character>  reaches Discord after /reload". With the organiser online with this build: their Dungeons tab shows you in the run within seconds (`/cf sync debug`: `RUNANSWER`). | open |
+| `/reload`, then let the uploader upload (after UP-12 and WEB-43) | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` list with your plan, ask and answer. After the site has them and the next Runs.lua lists them under `received`, the "reaches Discord" labels go. | open |
+| Ask now with Discord, Later, wait 11 minutes, log out | The ask is gone from `pending` in the saved file (not posted). | open |
 
 ### CF-46 Dungeons tab with runs
 Compare with `docs/design/runs-2026-10/dungeons-runs.html`. Until the uploader writes runs (UP-12), make a test file by hand. In PowerShell, with your game folder and a character name of yours in the first two lines (a run in 2 hours and one tomorrow, you organise the first):

@@ -16,14 +16,15 @@ local SLOT_GAP = 8
 local SOON = 12 * 3600 -- runs starting within this many seconds get the warm colour
 local ROLE_NAMES = { tank = "Tank", heal = "Healer", dps = "DPS" }
 local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
-local ANSWER_WORDS = { ["in"] = "you're in", maybe = "you: maybe", cant = "you: can't" }
+local ANSWER_WORDS = { ["in"] = "you: I'm in", maybe = "you: maybe", cant = "you: can't" }
+local PENDING = "reaches Discord after /reload" -- CF-47: waiting for the next save and upload
 local SOURCE_WORDS = { site = "planned on the website", discord = "planned on Discord", game = "planned in game" }
 local DOT = " \194\183 "
 local NOTE = "Runs come from the website through your uploader, or from a friend's addon. Ranges are typical "
   .. "levels; the list follows the character you're on."
-local ASK_NOTE = "Sends a chat line to friends with the addon"
-local PLAN_TEXT = "Plan runs on the website. They show here after your uploader fetched them and you /reload, "
-  .. "or when a friend's addon has them."
+local ASK_NOTE = "Whispers online friends who fit; can post on Discord too"
+local PLAN_TEXT = "Pick a day and time; friends see their own time. Reaches the site and Discord after /reload. "
+  .. "Runs planned on the website show here after your uploader fetched them and you /reload."
 
 local root, list, detail
 local helpers -- from MainFrame: settings(), render(), print(text)
@@ -102,9 +103,14 @@ end
 
 -- The second part of a run row: your answer, a character of yours that fits, or the counts.
 local function runStatus(run, candidates, me)
+  if run.pending then return colored(PENDING, "faint") end -- CF-47: your plan, not on the site yet
   local mine = ns.PlannedRuns.yourAnswer(run, me)
   if mine and not ns.PlannedRuns.isOrganiser(run, me) then
-    return colored(ANSWER_WORDS[mine.answer], mine.answer == "cant" and "muted" or "goldLight")
+    local text = ANSWER_WORDS[mine.answer]
+    if mine.answer ~= "cant" and mine.name then text = text .. " as " .. mine.name end
+    text = colored(text, mine.answer == "cant" and "muted" or "goldLight")
+    if mine.pending then text = text .. "  " .. colored(PENDING, "faint") end
+    return text
   end
   local fit, role = ns.PlannedRuns.youFit(run, candidates, dungeonOf(run), me, ns.SelfInfo.read().guid)
   if fit then return colored(fit.name .. " fits " .. ROLE_WORDS[role], "onlineText") end
@@ -405,9 +411,9 @@ local function askBlock(parent, entry, y, width)
     return y + 26
   end
   local b = Kit.take(pools.primary, parent)
-  b:SetLabel("Ask who's up for it")
+  b:SetLabel("Ask now")
   b:SetEnabled(true)
-  b:SetScript("OnClick", function() ns.GroupAsks.ask(entry.dungeon) end)
+  b:SetScript("OnClick", function() ns.RunDialogs.askNow(entry.dungeon) end) -- CF-47
   b:SetPoint("TOPLEFT", PAD, -y)
   placeText(pools.tiny, parent, PAD + (b:GetWidth() or 140) + 10, y + 7, width, ASK_NOTE, "faint")
   return y + 36
@@ -462,10 +468,16 @@ local function questColumn(parent, info, x, y, width)
   return y
 end
 
-local function planColumn(parent, x, y, width)
+local function planColumn(parent, dungeon, x, y, width)
   y = section(parent, x, y, width, "Plan a run")
   placeText(pools.small, parent, x, y, width, PLAN_TEXT, "textDim")
-  return y + 54
+  y = y + 54
+  local b = Kit.take(pools.buttons, parent) -- CF-47
+  b:SetLabel("Plan a run")
+  b:SetEnabled(true)
+  b:SetScript("OnClick", function() ns.RunDialogs.plan(dungeon) end)
+  b:SetPoint("TOPLEFT", x, -y)
+  return y + 36
 end
 
 local function clearDetail()
@@ -504,6 +516,20 @@ local function renderRun(run, me, candidates)
   if organiser and organiser ~= "you" then
     placeText(pools.tiny, parent, PAD, y, width, "Organised by " .. organiser .. DOT .. countsText(run), "muted")
     y = y + 20
+  end
+  -- CF-47: your answer (or plan) until the site has it; answering in game.
+  local mineNow = ns.PlannedRuns.yourAnswer(run, me)
+  if run.pending or (mineNow and mineNow.pending) then
+    placeText(pools.tiny, parent, PAD, y, width, PENDING, "faint")
+    y = y + 20
+  end
+  if not run.pending and not ns.PlannedRuns.isOrganiser(run, me) then
+    local b = Kit.take(pools.primary, parent)
+    b:SetLabel(mineNow and "Change answer" or "Answer")
+    b:SetEnabled(true)
+    b:SetScript("OnClick", function() ns.RunDialogs.answer(run) end)
+    b:SetPoint("TOPLEFT", PAD, -y)
+    y = y + 38
   end
 
   y = section(parent, PAD, y + 4, width, "Group", countsText(run))
@@ -623,7 +649,7 @@ local function renderDetail(entry, me, messageText, runs, candidates)
   local half = math.floor((width - 22) / 2)
   local top = y + 12
   local left = questColumn(parent, questInfo(entry), PAD, top, half)
-  local right = planColumn(parent, PAD + half + 22, top, half)
+  local right = planColumn(parent, dungeon, PAD + half + 22, top, half)
   parent:SetHeight(math.max(left, right) + PAD)
   detail:Update()
 end

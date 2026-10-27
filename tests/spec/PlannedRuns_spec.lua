@@ -314,3 +314,59 @@ describe("PlannedRuns views (CF-46)", function()
     assert.are.equal("started 10 min ago", PlannedRuns.untilText(NOW - 600, NOW))
   end)
 end)
+
+-- CF-47: what the site received, and the dialog helpers.
+describe("PlannedRuns for the dialogs (CF-47)", function()
+  local PlannedRuns
+  local NOW = 1793120000
+
+  before_each(function()
+    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", {})
+  end)
+
+  it("keeps the ids the site received, capped, and sends them on", function()
+    local raw = { updatedAt = NOW, received = { "k1-1-1", "bad id", 42 } }
+    for i = 1, 300 do raw.received[#raw.received + 1] = "k-" .. i end
+    local data = PlannedRuns.validate(raw)
+    assert.are.equal("k1-1-1", data.received[1])
+    assert.are.equal("k-1", data.received[2]) -- broken ids are left out
+    assert.are.equal(PlannedRuns.MAX_RECEIVED - 2, #data.received)
+    assert.are.same(data.received, PlannedRuns.wire(data).received)
+    assert.are.same({}, PlannedRuns.validate({ updatedAt = NOW }).received)
+  end)
+
+  it("reads a typed time", function()
+    assert.are.same({ 20, 30 }, { PlannedRuns.parseClock("20:30") })
+    assert.are.same({ 8, 5 }, { PlannedRuns.parseClock(" 8:05 ") })
+    assert.are.same({ 20, 30 }, { PlannedRuns.parseClock("2030") })
+    assert.are.same({ 20, 30 }, { PlannedRuns.parseClock("20.30") })
+    assert.is_nil(PlannedRuns.parseClock("24:00"))
+    assert.is_nil(PlannedRuns.parseClock("20:60"))
+    assert.is_nil(PlannedRuns.parseClock("soon"))
+    assert.is_nil(PlannedRuns.parseClock(nil))
+  end)
+
+  it("offers today and the next six days by the calendar, across a month end", function()
+    -- os.date with a fixed "now": 2026-10-27 (a Tuesday) in local time.
+    local function fakeDate(fmt, t)
+      assert.are.equal("*t", fmt)
+      assert.are.equal(NOW, t)
+      return { year = 2026, month = 10, day = 27, hour = 23, min = 50, wday = 3 }
+    end
+    local days = PlannedRuns.dayChoices(NOW, fakeDate)
+    local labels, dates = {}, {}
+    for i, d in ipairs(days) do
+      labels[i] = d.label
+      dates[i] = string.format("%d-%02d-%02d", d.year, d.month, d.day)
+    end
+    assert.are.same({ "Today", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon" }, labels)
+    assert.are.same({ "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01",
+                      "2026-11-02" }, dates)
+  end)
+
+  it("gives the organiser's clock time from their offset", function()
+    local at = 1793210400 -- 2026-11-02 19:20 UTC
+    assert.are.equal(os.date("!%H:%M", at + 3600), PlannedRuns.theirClock(at, 3600, os.date))
+    assert.is_nil(PlannedRuns.theirClock(at, nil, os.date))
+  end)
+end)

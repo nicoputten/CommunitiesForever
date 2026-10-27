@@ -203,6 +203,18 @@ newer than its own and at most 5 minutes ahead of server time; then it sends a H
 the community every `battleTag` is left out. Not sent during an encounter, a keystone or a PvP match
 (`Instance.messagingRestricted`, V70): tried again 30 s later.
 
+### RUNANSWER (CF-47, an answer to a run)
+
+```json
+{ "t": "RUNANSWER", "pv": 1, "run": "r-102", "answer": "maybe", "guid": "Player-1-0000AAAA", "name": "Ada Lovewell",
+  "role": "heal" }
+```
+
+Sent once, right after you answer a run in game, to the run's organiser when they are online (a Battle.net
+friend by BattleTag, or a community peer on the organiser's character). The organiser keeps it in memory and
+shows it until the site's runs have it. Cleaned like the runs file; ignored unless the receiver organises the
+run. The answer also waits in `global.pending` and reaches the site after `/reload`.
+
 ### ASK and ANSWER (CF-27, "Who's up for it?")
 
 ```json
@@ -212,7 +224,7 @@ the community every `battleTag` is left out. Not sent during an encounter, a key
 { "t": "ANSWER", "pv": 1, "id": "17300004201", "answer": "join", "from": "Ben", "char": "Ben Example" }
 ```
 
-Sent only to peers with a character in range; `answer` is `join`, `later` or `no`.
+Sent only to peers with a character in range; `answer` is `join`, `later` or `no`. ASK may carry `note` (CF-47, what the asker typed in Ask now); older clients ignore it.
 
 ### PING and PONG (`/cf ping`, testing)
 

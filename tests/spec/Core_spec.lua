@@ -24,7 +24,7 @@ describe("Core", function()
   it("creates the database with a schema version", function()
     load()
     assert.are.equal("CommunitiesForeverDB", state.svName)
-    assert.are.equal(1, ns.db.global.schemaVersion)
+    assert.are.equal(ns.Store.SCHEMA_VERSION, ns.db.global.schemaVersion)
   end)
 
   describe("/cf", function()

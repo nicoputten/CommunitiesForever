@@ -17,6 +17,7 @@ PlannedRuns.MAX_URL = 200
 PlannedRuns.MAX_REMINDER = 1440  -- minutes
 PlannedRuns.MAX_TIME = 4102444800 -- 2100-01-01 UTC: any later timestamp is broken data
 PlannedRuns.MAX_UTC_OFFSET = 14 * 3600
+PlannedRuns.MAX_RECEIVED = 200   -- CF-47: ids of game items the site has (Pending.confirm)
 
 PlannedRuns.STATES = { open = true, full = true, started = true, cancelled = true }
 PlannedRuns.ANSWERS = { ["in"] = true, maybe = true, cant = true }
@@ -152,11 +153,16 @@ function PlannedRuns.validate(raw)
     if a.startsAt ~= b.startsAt then return a.startsAt < b.startsAt end
     return a.id < b.id
   end)
+  -- CF-47: ids of the plans, answers, asks and pings from the game that the site has.
+  local received = readList(raw.received, PlannedRuns.MAX_RECEIVED, function(id)
+    return token(id, PlannedRuns.MAX_ID)
+  end)
   return {
     v = v,
     updatedAt = updatedAt,
     reminderMinutes = number(raw.reminderMinutes, 0, PlannedRuns.MAX_REMINDER),
     runs = unique,
+    received = received,
     dropped = dropped,
   }
 end
@@ -192,7 +198,10 @@ function PlannedRuns.wire(data, forCommunity)
     for j, a in ipairs(r.answers or {}) do copy.answers[j] = who(a) end
     runs[i] = copy
   end
-  return { v = data.v, updatedAt = data.updatedAt, reminderMinutes = data.reminderMinutes, runs = runs }
+  local received = {}
+  for i, id in ipairs(data.received or {}) do received[i] = id end
+  return { v = data.v, updatedAt = data.updatedAt, reminderMinutes = data.reminderMinutes, runs = runs,
+           received = received }
 end
 
 -- ===== The Dungeons tab (CF-46) =====
@@ -370,6 +379,49 @@ end
 function PlannedRuns.clock(at, dateFn)
   local t = dateFn("*t", at)
   return string.format("%02d:%02d", t.hour, t.min)
+end
+
+-- CF-47: the organiser's clock time of a start ("20:00 for Bob"): utcOffset seconds east of UTC, or nil.
+function PlannedRuns.theirClock(at, utcOffset, dateFn)
+  if type(utcOffset) ~= "number" then return nil end
+  local t = dateFn("!*t", at + utcOffset)
+  return string.format("%02d:%02d", t.hour, t.min)
+end
+
+-- The civil date of a day number from days() (inverse).
+local function civil(n)
+  local era = math.floor(n / 146097)
+  local doe = n - era * 146097
+  local yoe = math.floor((doe - math.floor(doe / 1460) + math.floor(doe / 36524) - math.floor(doe / 146096)) / 365)
+  local doy = doe - (365 * yoe + math.floor(yoe / 4) - math.floor(yoe / 100))
+  local mp = math.floor((5 * doy + 2) / 153)
+  local day = doy - math.floor((153 * mp + 2) / 5) + 1
+  local month = mp < 10 and mp + 3 or mp - 9
+  return { year = yoe + era * 400 + (month <= 2 and 1 or 0), month = month, day = day }
+end
+
+-- CF-47: Plan a run's days: today and the next 6 by the local calendar (no daylight saving surprises),
+-- { { label = "Today" | "Wed", year, month, day } }.
+function PlannedRuns.dayChoices(now, dateFn)
+  local today = dateFn("*t", now)
+  local first = days({ year = today.year, month = today.month, day = today.day })
+  local list = {}
+  for i = 0, 6 do
+    local d = civil(first + i)
+    -- days() counts from 0000-03-01, a Wednesday (index 4 in WEEKDAYS).
+    d.label = i == 0 and "Today" or WEEKDAYS[(first + i + 3) % 7 + 1]
+    list[#list + 1] = d
+  end
+  return list
+end
+
+-- CF-47: "20:30", "8:05" or "2030" typed as a time: hour, minute; or nil.
+function PlannedRuns.parseClock(typed)
+  if type(typed) ~= "string" then return nil end
+  local h, m = typed:match("^%s*(%d%d?)[:%.]?(%d%d)%s*$")
+  h, m = tonumber(h), tonumber(m)
+  if not h or h > 23 or m > 59 then return nil end
+  return h, m
 end
 
 -- "in 2 h 40 min", "in 25 min", "in 3 days", "started 10 min ago".
