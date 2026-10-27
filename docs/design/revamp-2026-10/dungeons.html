@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Addon Dungeons tab</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F0A}
+a{color:#D4AF6A}a:hover{color:#F0D08E}
+.win{position:absolute;background:rgba(9,15,27,.96);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 0 0 1px #02050A,inset 0 1px 0 rgba(240,208,142,.18),0 24px 60px rgba(0,0,0,.7);display:flex;flex-direction:column;font-family:Inter,sans-serif;color:#E6E1D6}
+.orn{position:absolute;width:8px;height:8px;background:#D4AF6A;transform:rotate(45deg);box-shadow:0 0 0 2px #02050A}
+.title{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;background:linear-gradient(180deg,rgba(212,175,106,.10),rgba(212,175,106,0));border-bottom:1px solid rgba(212,175,106,.25)}
+.x{width:26px;height:26px;border-radius:6px;border:1px solid rgba(212,175,106,.35);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tabs{height:36px;flex:none;display:flex;gap:4px;padding:0 12px;border-bottom:1px solid rgba(212,175,106,.18)}
+.tab{display:flex;align-items:center;gap:6px;padding:0 14px;font:15px 'Marcellus SC',serif;letter-spacing:.05em;color:#8E98A8}
+.tab.on{color:#F3DFAE;box-shadow:inset 0 -2px 0 #D4AF6A;background:linear-gradient(0deg,rgba(212,175,106,.12),rgba(212,175,106,0))}
+.badge{min-width:16px;height:16px;border-radius:8px;background:#D4AF6A;color:#0B0F14;font:600 10px/16px Inter,sans-serif;text-align:center;padding:0 3px;box-sizing:border-box}
+.lh{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898;padding:12px 12px 4px}
+.dr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:6px 12px;font-size:13px}
+.dr .n{font:14px 'Marcellus',serif;color:#F0D08E}
+.dr .m{grid-column:1/-1;font-size:11px;color:#8E98A8;display:flex;gap:10px}
+.dr.sel{background:rgba(212,175,106,.13);box-shadow:inset 3px 0 0 #D4AF6A}
+.sec{font:15px 'Marcellus SC',serif;letter-spacing:.07em;color:#F0D08E;margin:0}
+.slot{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:8px;border:1px solid rgba(212,175,106,.2);background:rgba(255,255,255,.03);font-size:11px;color:#AEB6C3;text-align:center}
+.slot.empty{border-style:dashed;color:#7E8898}
+.slot.miss{border-color:rgba(224,138,74,.5);color:#F0A774;border-style:dashed}
+.disc{width:26px;height:26px;border-radius:50%;font:600 9px/26px Inter,sans-serif;text-align:center;color:#0B0F14}
+.mr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.btn{min-height:30px;padding:0 14px;border-radius:6px;border:1px solid rgba(212,175,106,.5);background:linear-gradient(180deg,rgba(212,175,106,.25),rgba(212,175,106,.08));color:#F3DFAE;font:600 12px Inter,sans-serif;cursor:pointer}
+.btn.pri{background:linear-gradient(180deg,#E2C07A,#C59B52);color:#0B0F14;border-color:#F0D08E}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 820px; overflow: hidden; background: radial-gradient(ellipse at 60% 70%, #2B3322 0%, #1A2116 40%, #0B0F0A 85%); font-family: Inter, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)"></div>
+
+  <section class="win" aria-label="CommunitiesForever" style="left: 280px; top: 110px; width: 880px; height: 600px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title">
+      <svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg>
+      <span style="font: 18px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE">Ashen Pact</span>
+      <span style="font-size: 11px; color: #7E8898">CommunitiesForever</span>
+      <span style="flex: 1"></span><span style="font-size: 12px; color: #9BE3B0">● 2 online</span>
+      <button class="x" aria-label="Settings" style="margin-left: 8px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#D4AF6A" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"></circle><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"></path></svg></button>
+      <button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button>
+    </div>
+    <nav class="tabs" aria-label="Sections"><span class="tab">Friends</span><span class="tab">Activity</span><span class="tab on">Dungeons <span class="badge">1</span></span></nav>
+
+    <div style="flex: 1; display: flex; min-height: 0">
+      <div style="width: 270px; flex: none; background: rgba(5,9,16,0.6); border-right: 1px solid rgba(212,175,106,0.18)">
+        <div class="lh">Planned</div>
+        <div class="dr" style="background: rgba(127,217,154,0.06)"><span class="n">Wailing Caverns</span><span style="font-size: 12px; color: #9BE3B0">Mon 20:00</span><span class="m"><span>1 going · you</span></span></div>
+        <div class="lh">In range for Thalia (23)</div>
+        <div class="dr"><span class="n">Wailing Caverns</span><span style="font-size: 11px; color: #8E98A8">17–24</span><span class="m"><span>2 friends</span><span style="color: #F0D08E">2 / 9 quests</span></span></div>
+        <div class="dr"><span class="n">The Deadmines</span><span style="font-size: 11px; color: #8E98A8">17–26</span><span class="m"><span>2 friends</span></span></div>
+        <div class="dr sel"><span class="n">Shadowfang Keep</span><span style="font-size: 11px; color: #8E98A8">20–30</span><span class="m"><span>2 friends</span><span style="color: #9BE3B0">3 / 3 quests</span></span></div>
+        <div class="dr"><span class="n">Blackfathom Deeps</span><span style="font-size: 11px; color: #8E98A8">22–32</span><span class="m"><span>2 friends</span><span style="color: #F0D08E">1 / 8 quests</span></span></div>
+        <div class="dr"><span class="n">Ruins of Lordaeron</span><span style="font-size: 11px; color: #8E98A8">outdoor</span><span class="m"><span>1 friend</span></span></div>
+        <div style="padding: 10px 12px; font-size: 11px; color: #6E7888">Ranges are typical levels; the list follows the character you're on.</div>
+      </div>
+
+      <div style="flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+        <div style="display: flex; align-items: baseline; gap: 12px">
+          <span style="font: 26px 'Marcellus', serif; color: #F3EBDA">Shadowfang Keep</span>
+          <span style="font-size: 12px; color: #8E98A8">levels 20–30 · Silverpine Forest</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h3 class="sec">Suggested group</h3>
+          <div style="display: flex; gap: 8px">
+            <div class="slot"><span class="disc" style="background: #F48CBA">OB</span><b style="font-weight: 500; color: #F48CBA">Orin 24</b>Tank · Ironpaw</div>
+            <div class="slot miss"><span class="disc" style="background: transparent; border: 1.5px dashed #F0A774; color: #F0A774; line-height: 23px">?</span><b style="font-weight: 500">Healer</b>nobody in range</div>
+            <div class="slot" style="border-color: #D4AF6A; box-shadow: inset 0 0 12px rgba(212,175,106,0.15)"><span class="disc" style="background: #F48CBA">TE</span><b style="font-weight: 500; color: #F48CBA">Thalia 23</b>DPS · you · online</div>
+            <div class="slot"><span class="disc" style="background: #0070DD; color: #FFFFFF">DR</span><b style="font-weight: 500; color: #4DA3FF">Durza 27</b>DPS · Ironpaw</div>
+            <div class="slot empty"><span class="disc" style="background: transparent; border: 1.5px dashed #4A5466; color: #7E8898; line-height: 23px">+</span><b style="font-weight: 500">DPS</b>open</div>
+          </div>
+          <div style="font-size: 11px; color: #8E98A8">Alternatives for you: <span style="color: #C69B6D">Korrak 26</span>, <span style="color: #AAD372">Wren Hollow 20</span></div>
+          <div style="display: flex; gap: 8px; align-items: center"><button class="btn pri">Ask who's up for it</button><span style="font-size: 11px; color: #7E8898">Sends a popup to friends with the addon</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px">
+          <div>
+            <h3 class="sec">Quests <span style="font: 12px Inter, sans-serif; color: #9BE3B0; letter-spacing: 0">3 / 3 in your log</span></h3>
+            <div class="mr"><span style="color: #7FD99A">✓</span><span>Deathstalkers in Shadowfang</span><span style="color: #8E98A8">Orin too</span></div>
+            <div class="mr"><span style="color: #7FD99A">✓</span><span>The Book of Ur</span><span style="color: #8E98A8">Orin too</span></div>
+            <div class="mr" style="border-bottom: 0"><span style="color: #7FD99A">✓</span><span>Arugal Must Die</span><span style="color: #8E98A8">Orin too</span></div>
+          </div>
+          <div>
+            <h3 class="sec">Plan a run</h3>
+            <div style="font-size: 12px; color: #AEB6C3; margin: 6px 0 8px; line-height: 1.5">Opens the in-game calendar with a community event; the title is pre-filled to copy.</div>
+            <div style="display: flex; gap: 8px"><div style="flex: 1; height: 30px; padding: 0 10px; border-radius: 6px; background: #070D17; border: 1px solid rgba(212,175,106,0.35); font-size: 12px; line-height: 30px; color: #E6E1D6">Shadowfang Keep · Ashen Pact</div><button class="btn">Open calendar</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer style="height: 28px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-top: 1px solid rgba(212,175,106,0.18); font-size: 11px; color: #7E8898">
+      <span>Synced with Ironpaw 2 min ago</span><span style="flex: 1"></span><span>Group asks pause during encounters, keystones and PvP matches</span>
+    </footer>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
