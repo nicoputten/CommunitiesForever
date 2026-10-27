@@ -5,6 +5,10 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
+  "community member".
+
 ## v0.5.0-beta1 (2026-10-27)
 - **New look, part 1: the window.** A new frame: dark panel with a gold border, the community name and who
   is online in the title, new tabs and a footer. Every tab, the settings and the setup now share this look.
