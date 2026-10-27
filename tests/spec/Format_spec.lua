@@ -213,6 +213,7 @@ describe("Format", function()
       assert.are.equal("Synced with Sjaak 2 min ago \194\183 2 characters from 1 friend",
         Format.friendsFooter(view, NOW))
       assert.are.equal("Not synced yet \194\183 0 characters from 0 friends", Format.friendsFooter({}, NOW))
+      assert.are.equal("Synced with Sjaak 2 min ago", Format.syncedText(view, NOW)) -- CF-42: the Dungeons footer
     end)
 
     it("counts quests shared with you on friends' characters in the list", function()

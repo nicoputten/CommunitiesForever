@@ -63,6 +63,17 @@ Dungeons.STATIC = {
     areas = { "Stratholme" } },
 }
 
+-- CF-42: where each dungeon's entrance is, for the card's header (English, rule 6). Dungeons only the Group
+-- Finder knows (Forever's new ones) have none.
+Dungeons.ZONES = {
+  rfc = "Orgrimmar", wc = "The Barrens", dm = "Westfall", sfk = "Silverpine Forest", bfd = "Ashenvale",
+  stocks = "Stormwind City", gnomer = "Dun Morogh", rfk = "The Barrens", smgy = "Tirisfal Glades",
+  smlib = "Tirisfal Glades", smarm = "Tirisfal Glades", smcath = "Tirisfal Glades", rfd = "The Barrens",
+  ulda = "Badlands", zf = "Tanaris", mara = "Desolace", st = "Swamp of Sorrows", brd = "Blackrock Mountain",
+  lbrs = "Blackrock Mountain", ubrs = "Blackrock Mountain", dme = "Feralas", scholo = "Western Plaguelands",
+  strat = "Eastern Plaguelands",
+}
+
 -- The dungeons in use: STATIC, updated from the Group Finder when it is available (applyGroupFinder).
 Dungeons.LIST = Dungeons.STATIC
 
@@ -172,10 +183,11 @@ local function better(dungeon, selfGuid)
   end
 end
 
---[[ Dungeons that fit at least one of your characters, most people in range first (then lowest level):
-  { { dungeon, fits, people = n, quests = n distinct quest IDs, candidates = { candidate + questIDs } } }
+--[[ Dungeons that fit the character you are on (selfGuid; CF-42: the list follows it), most people in range
+first (then lowest level). Without selfGuid any of your characters counts.
+  { { dungeon, fits, selfGuid, people = n, quests = n distinct quest IDs, candidates = { candidate + questIDs } } }
 Candidates are sorted best first (see better). include: optional { [dungeonId] = true } listed even when
-none of your characters fits (planned runs, fits = false). ]]
+it does not fit (planned runs, fits = false). ]]
 function Dungeons.overview(candidates, selfGuid, include)
   local result = {}
   for _, dungeon in ipairs(Dungeons.LIST) do
@@ -193,15 +205,15 @@ function Dungeons.overview(candidates, selfGuid, include)
         end
         list[#list + 1] = entry
         people[c.key] = true
-        if c.own then mine = true end
+        if c.own and (not selfGuid or c.guid == selfGuid) then mine = true end
       end
     end
     if mine or (include and include[dungeon.id]) then
       table.sort(list, better(dungeon, selfGuid))
       local count = 0
       for _ in pairs(people) do count = count + 1 end
-      result[#result + 1] = { dungeon = dungeon, fits = mine, people = count, quests = questCount,
-                              candidates = list }
+      result[#result + 1] = { dungeon = dungeon, fits = mine, selfGuid = selfGuid, people = count,
+                              quests = questCount, candidates = list }
     end
   end
   table.sort(result, function(a, b)
@@ -213,8 +225,8 @@ function Dungeons.overview(candidates, selfGuid, include)
 end
 
 --[[ Suggested group for one overview entry: up to GROUP_SIZE characters, at most one per person.
-Your best character first (in overview order: quests, online, the one you are on); then a tank and a
-healer by role (CF-18) if someone has one; then the rest by quests for the dungeon, online, level.
+The character you are on first (CF-42; without entry.selfGuid your best one: quests, online); then a tank
+and a healer by role (CF-18) if someone has one; then the rest by quests for the dungeon, online, level.
 Returns { candidate, ... } with candidate.reason: "you", "tank", "healer" or nil. ]]
 function Dungeons.suggest(entry)
   local group, used = {}, {}
@@ -228,7 +240,7 @@ function Dungeons.suggest(entry)
       if not used[c.key] and filter(c) then return c end
     end
   end
-  local own = first(function(c) return c.own end)
+  local own = first(function(c) return c.own and (not entry.selfGuid or c.guid == entry.selfGuid) end)
   if own then take(own, "you") end
   local function hasRole(role)
     for _, c in ipairs(group) do if c.role == role then return true end end
@@ -264,6 +276,47 @@ function Dungeons.suggest(entry)
     take(c, nil)
   end
   return group
+end
+
+--[[ CF-42: the suggested group as five slots: tank, healer, three damage.
+  { { role = "tank"|"heal"|"dps", char = candidate or nil, own = true|nil, missing = true|nil } }
+A character goes to the slot of its role; the rest (damage, no role, a second tank or healer) fill the
+damage slots, then any free slot. An empty tank or healer slot is missing (nobody in range brings one), an
+empty damage slot is open. own: the character you are on (selfGuid). ]]
+function Dungeons.slots(group, selfGuid)
+  local slots = { { role = "tank" }, { role = "heal" }, { role = "dps" }, { role = "dps" }, { role = "dps" } }
+  local rest = {}
+  for _, c in ipairs(group or {}) do
+    if c.role == "tank" and not slots[1].char then slots[1].char = c
+    elseif c.role == "heal" and not slots[2].char then slots[2].char = c
+    else rest[#rest + 1] = c end
+  end
+  for _, order in ipairs({ { 3, 4, 5 }, { 1, 2 } }) do
+    for _, i in ipairs(order) do
+      if not slots[i].char and #rest > 0 then slots[i].char = table.remove(rest, 1) end
+    end
+  end
+  for _, slot in ipairs(slots) do
+    if slot.char then
+      slot.own = (selfGuid ~= nil and slot.char.guid == selfGuid) or nil
+    elseif slot.role ~= "dps" then
+      slot.missing = true
+    end
+  end
+  return slots
+end
+
+-- CF-42: your other characters in range, not in the group ("Alternatives for you"), and everyone else in
+-- range who is not in it ("Also in range"), in overview order.
+function Dungeons.outside(entry, group)
+  local inGroup, alternatives, others = {}, {}, {}
+  for _, c in ipairs(group or {}) do inGroup[c.guid] = true end
+  for _, c in ipairs(entry.candidates or {}) do
+    if not inGroup[c.guid] then
+      if c.own then alternatives[#alternatives + 1] = c else others[#others + 1] = c end
+    end
+  end
+  return alternatives, others
 end
 
 -- The title to give the calendar event: the dungeon name, which is what events are matched on.

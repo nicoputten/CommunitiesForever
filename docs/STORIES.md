@@ -3,19 +3,11 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-42 to CF-44 (one per screen, any order).
+Build order: CF-43, CF-44 (any order).
 
 ## E13 Revamp (new look)
 
 Design: `docs/design/revamp-2026-10/` (README: decisions and where the mockups differ). Each screen story replaces one tab whole: old and new never mix inside one tab. Nothing stored or sent changes unless a story says so (rule 8). Visual checks happen in game after launch (VERIFY.md).
-
-### CF-42 Dungeons tab in the new look
-- Goal: the Dungeons tab as in `dungeons.html`.
-- List (left): "Planned" (calendar runs within 3 days: name, day and time, who is going), then "In range for <character> (<level>)": per dungeon the level range ("outdoor" for outdoor ones), friends in range, and "x / y quests" (green when you have all). A note: "Ranges are typical levels; the list follows the character you're on."
-- Detail: name in Marcellus 26, "levels a–b · <zone>". Suggested group as five slots (tank, healer, three damage): portrait, "<character> <level>", role and person; a missing role stands out ("nobody in range", orange dashed); your slot outlined in gold; open slots "+ open". "Alternatives for you: <your other characters in range>". **Ask who's up for it** (CF-27) with "Sends a chat line to friends with the addon" (not a popup). Quests "x / y in your log" with a check per quest and who else has it. Plan a run: the title ready to copy and **Open calendar** (as CF-24).
-- Footer: "Synced with <person> <ago>" and "Group asks wait until combat ends".
-- Unit tests (pure core): the slots (missing role, your slot, open), alternatives, quest counts and colour, the planned list.
-- Manual: compare with `dungeons.html`; asking, the calendar button and planned runs still work.
 
 ### CF-43 Settings and setup in the new look
 - Goal: the settings window and the first-run setup as in `settings-setup.html`.

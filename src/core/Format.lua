@@ -150,21 +150,29 @@ function Format.tree(view)
   return nodes
 end
 
--- CF-40: the Friends tab footer: "Synced with <person> 2 min ago" (the newest record that arrived) and
--- "N characters from M friends" (everyone but you).
+-- CF-42: "Synced with <person> 2 min ago" (the newest record that arrived), or "Not synced yet".
+function Format.syncedText(view, now)
+  local newest, newestName
+  for _, person in ipairs(view.people or {}) do
+    if not person.isSelf and person.receivedAt and (not newest or person.receivedAt > newest) then
+      newest, newestName = person.receivedAt, person.displayName
+    end
+  end
+  return newest and string.format("Synced with %s %s", tostring(newestName), Format.ago(newest, now))
+    or "Not synced yet"
+end
+
+-- CF-40: the Friends tab footer: the sync state (syncedText) and "N characters from M friends" (everyone but
+-- you).
 function Format.friendsFooter(view, now)
-  local newest, newestName, chars, friends = nil, nil, 0, 0
+  local chars, friends = 0, 0
   for _, person in ipairs(view.people or {}) do
     if not person.isSelf then
       friends = friends + 1
       chars = chars + #person.chars
-      if person.receivedAt and (not newest or person.receivedAt > newest) then
-        newest, newestName = person.receivedAt, person.displayName
-      end
     end
   end
-  local synced = newest and string.format("Synced with %s %s", tostring(newestName), Format.ago(newest, now))
-    or "Not synced yet"
+  local synced = Format.syncedText(view, now)
   return string.format("%s \194\183 %d character%s from %d friend%s", synced, chars, chars == 1 and "" or "s",
     friends, friends == 1 and "" or "s")
 end

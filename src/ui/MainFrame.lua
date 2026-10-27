@@ -1,22 +1,19 @@
 -- MainFrame: the main window. CF-39: the revamp's window shell (src/ui/kit) with tabs, title and footer.
--- CF-40: the Friends tab is native kit frames (ui/FriendsTab.lua); the Activity and Dungeons tabs are still
--- AceGUI inside one AceGUI root container, until their own stories redo them (CF-41, CF-42). Renders Format
--- models of the view model. Refreshes on change messages while shown; no polling.
+-- Each tab is native kit frames in its own file: FriendsTab (CF-40), ActivityTab (CF-41), DungeonsTab
+-- (CF-42); only the active one is shown. Renders Format models of the view model. Refreshes on change
+-- messages while shown; no polling.
 local ADDON_NAME, ns = ...
 
 local MainFrame = {}
 
 local REFRESH_DEBOUNCE = 0.2
-local DOT_SIZE = 14
-local GREY = "|cffa0a0a0"
-
-local DUNGEON_ATLAS = "worldquest-icon-dungeon" -- picked in-game with /fp icons (CF-19, V32)
-local GOLD = "|cffffd100"
 local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
                { value = "dungeons", text = "Dungeons" } } -- CF-24: a badge counts planned runs
 local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 
-local addonRef, events, frame, content, refreshDebounced
+local GROUP_ASK_NOTE = "Group asks wait until combat ends" -- CF-42
+
+local addonRef, events, frame, refreshDebounced
 local tabs -- CF-39: the kit's tab row
 local activeTab = "friends" -- CF-22: "friends", "activity" or "dungeons" (CF-24)
 local view -- last view model, used by the selection callback
@@ -26,10 +23,6 @@ local updateFooter -- CF-41, defined below
 -- list's unfolded groups from before filtering (filtering unfolds everything) to put back when cleared.
 local filterText, savedGroups = "", nil
 local FILTER_HINT = "e.g. tailoring 150, mage 20-30"
-
-local function createWidget(widgetType)
-  return LibStub("AceGUI-3.0"):Create(widgetType)
-end
 
 local function settings()
   return addonRef.db.global.settings
@@ -55,42 +48,6 @@ local function colorName(name, classFile, classID)
 end
 
 MainFrame.colorName = colorName -- CF-33: also used by the minimap tooltip
-
--- Dungeon entrance icon for shared dungeon quests, or a text badge when the atlas is missing.
-local dungeonIconText
-local function dungeonIcon()
-  if not dungeonIconText then
-    local hasAtlas = C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(DUNGEON_ATLAS)
-    dungeonIconText = hasAtlas and string.format("|A:%s:%d:%d|a", DUNGEON_ATLAS, DOT_SIZE, DOT_SIZE)
-      or (GOLD .. "[D]|r")
-  end
-  return dungeonIconText
-end
-
-local function label(parent, text, fontObject, widgetType)
-  local widget = createWidget(widgetType or "Label")
-  widget:SetText(text)
-  widget:SetFullWidth(true)
-  if fontObject then widget:SetFontObject(fontObject) end
-  parent:AddChild(widget)
-  return widget
-end
-
-local function spacer(parent)
-  label(parent, " ")
-end
-
--- Section title: left-aligned gold text, no divider lines.
-local function heading(parent, text)
-  label(parent, text, GameFontNormalLarge)
-end
-
--- CF-24: the widget helpers the Dungeons tab (ui/DungeonsTab.lua) builds with.
-local function uiHelpers()
-  return { createWidget = createWidget, label = label, spacer = spacer, heading = heading,
-           colorName = colorName, dungeonIcon = dungeonIcon, settings = settings, GREY = GREY, GOLD = GOLD,
-           print = function(text) addonRef:Print(text) end }
-end
 
 function MainFrame.render()
   if not frame then return end
@@ -209,11 +166,17 @@ local function updateTitle()
   frame.statusText:SetText(online > 0 and string.format("\226\151\143 %d online", online) or "")
 end
 
--- The footer per tab: CF-40 the sync state, CF-41 who shares and how long the feed keeps.
+-- The footer per tab: CF-40 the sync state, CF-41 who shares and how long the feed keeps, CF-42 the sync
+-- state and when group asks wait.
 function updateFooter(empty)
   if activeTab == "activity" then
     frame.footerText:SetText(ns.ActivityTab.NOTE)
     frame.footerRightText:SetText(string.format("Keeps %d days", ns.Feed.KEEP_DAYS))
+    return
+  end
+  if activeTab == "dungeons" then
+    frame.footerText:SetText(empty and "" or ns.Format.syncedText(view, GetServerTime()))
+    frame.footerRightText:SetText(GROUP_ASK_NOTE)
     return
   end
   frame.footerText:SetText(activeTab == "friends" and not empty and ns.Format.friendsFooter(view, GetServerTime())
@@ -233,23 +196,15 @@ local function create()
     end,
     onSettings = function() ns.Settings.open() end,
     onResize = function()
-      if content then content:DoLayout() end
-      if activeTab == "friends" and refreshDebounced then refreshDebounced() end -- CF-40: the card follows
+      if refreshDebounced then refreshDebounced() end -- CF-40: the tab follows the new size
     end,
   })
   tabs = ns.Kit.tabs(frame.tabBar, TABS, function(value) MainFrame.selectTab(value) end)
 
-  -- CF-40: the Friends tab, native.
-  ns.FriendsTab.create(frame.content, friendsHelpers())
+  ns.FriendsTab.create(frame.content, friendsHelpers()) -- CF-40
   ns.ActivityTab.create(frame.content, { settings = settings, render = MainFrame.render }) -- CF-41
-  -- Until each other tab has its new look, its AceGUI content lives in one root container in the new window.
-  content = createWidget("SimpleGroup")
-  content.cfMainRoot = true -- specs find the tab content by this
-  content.frame:SetParent(frame.content)
-  content.frame:ClearAllPoints()
-  content.frame:SetAllPoints(frame.content)
-  content.frame:Show()
-  content:SetLayout("Fill")
+  ns.DungeonsTab.create(frame.content, { settings = settings, render = MainFrame.render, -- CF-42
+                                         print = function(text) addonRef:Print(text) end })
   MainFrame.selectTab(activeTab)
 end
 
@@ -267,12 +222,9 @@ function MainFrame.selectTab(value)
   if not frame then return end
   activeTab = value
   MainFrame.updateTabs()
-  content:ReleaseChildren()
-  -- CF-40, CF-41: the Friends and Activity tabs are their own frames; the AceGUI root holds the Dungeons tab.
   if value == "friends" then ns.FriendsTab.show() else ns.FriendsTab.hide() end
   if value == "activity" then ns.ActivityTab.show() else ns.ActivityTab.hide() end
-  if value == "dungeons" then content.frame:Show() else content.frame:Hide() end
-  if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
+  if value == "dungeons" then ns.DungeonsTab.show() else ns.DungeonsTab.hide() end
   if view then MainFrame.render() end
 end
 
@@ -317,7 +269,7 @@ end
 
 function MainFrame.start(addon)
   addonRef = addon
-  frame, content, view = nil, nil, nil
+  frame, view = nil, nil
   filterText, savedGroups = "", nil
   escapeReady = false
   tabs = nil

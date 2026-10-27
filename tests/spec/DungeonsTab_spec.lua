@@ -30,38 +30,28 @@ describe("Dungeons tab (CF-24)", function()
     end
   end
 
-  local function window()
-    for _, w in ipairs(state.guiWidgets) do
-      if w.cfMainRoot then return w end -- CF-39: the tab content's root in the kit window
-    end
-  end
-
-  local function walk(widget, visit)
-    for _, child in ipairs(widget.children) do
-      visit(child)
-      walk(child, visit)
-    end
-  end
-
+  -- CF-42: the native tab. Its texts without colour codes, one per line.
   local function text()
-    local out = {}
-    walk(window(), function(w) if w.text then out[#out + 1] = w.text end end)
-    return table.concat(out, "\n")
+    local list = {}
+    for i, t in ipairs(ns.DungeonsTab.texts()) do
+      list[i] = (t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+    end
+    return "\n" .. table.concat(list, "\n") .. "\n"
   end
 
-  local function find(widgetType, label)
-    local found
-    walk(window(), function(w)
-      if not found and w.type == widgetType and (w.text == label or w.label == label) then found = w end
-    end)
-    return assert(found, "no " .. widgetType .. " " .. label)
+  local function values()
+    local list = {}
+    for i, r in ipairs(ns.DungeonsTab.rows()) do list[i] = r.value end
+    return list
   end
 
-  local function dungeonTree()
-    local found
-    walk(window(), function(w) if w.type == "TreeGroup" then found = w end end)
-    return found
+  local function row(value)
+    for _, r in ipairs(ns.DungeonsTab.rows()) do
+      if r.value == value then return r.frame end
+    end
   end
+
+  local function select(value) row(value):RunScript("OnClick") end
 
   local function open()
     settle()
@@ -69,28 +59,40 @@ describe("Dungeons tab (CF-24)", function()
     ns.MainFrame.selectTab("dungeons")
   end
 
+  local DASH = "\226\128\147"
+
   after_each(function()
     wowapi.uninstall()
   end)
 
-  it("lists the dungeons that fit your characters and suggests a group for the first", function()
+  it("lists the dungeons in range of the character you are on and suggests a group for the first", function()
     load(20)
     open()
-    local values = {}
-    for _, node in ipairs(dungeonTree().tree) do values[#values + 1] = node.value end
-    assert.are.same({ "dm", "wc" }, values) -- both 2 people; then by level, then name
+    assert.are.same({ "dm", "wc" }, values()) -- both 2 people; then by level, then name
     local all = text()
-    assert.is_truthy(all:find("The Deadmines  |cffa0a0a0levels 17 to 26|r", 1, true))
-    assert.is_truthy(all:find("Suggested group", 1, true))
+    assert.is_truthy(all:find("\nIN RANGE FOR VES DOOMBRINGER (20)\n", 1, true))
+    assert.is_truthy(all:find("\nThe Deadmines\n", 1, true))
+    assert.is_truthy(all:find("\nlevels 17" .. DASH .. "26 \194\183 Westfall\n", 1, true)) -- CF-42: the zone
+    assert.is_truthy(all:find("\n17" .. DASH .. "24\n", 1, true)) -- the range in the list
+    assert.is_truthy(all:find("\n1 friend\n", 1, true))
+    assert.is_truthy(all:find("\nSuggested group\n", 1, true))
     assert.is_falsy(all:find("Also in range", 1, true)) -- nobody else
-    assert.is_falsy(all:find("Planned", 1, true)) -- no calendar event
-    find("EditBox", "The Deadmines") -- the title to copy: just the dungeon name
-    local edits = 0
-    walk(dungeonTree(), function(w) if w.type == "EditBox" then edits = edits + 1 end end)
-    assert.are.equal(1, edits) -- no group field (CF-24 feedback); the Friends search box is not in this tab
+    assert.is_truthy(all:find("\nRanges are typical levels; the list follows the character you're on.\n", 1, true))
+    assert.is_true(row("dm").selected)
+    -- Five slots: you in one of them, outlined gold; nobody tanks or heals.
+    local slots = ns.DungeonsTab.slots()
+    assert.are.equal(5, #slots)
+    assert.is_truthy(all:find("\nDPS \194\183 you \194\183 online\n", 1, true))
+    assert.is_truthy(all:find("\nnobody in range\n", 1, true))
+    assert.is_truthy(all:find("\nopen\n", 1, true))
+    assert.are.equal("The Deadmines", ns.DungeonsTab.titleBox():GetText()) -- the title to copy
+    assert.is_truthy(ns.DungeonsTab.buttons()["Ask who's up for it"])
+    assert.is_truthy(all:find("\nSends a chat line to friends with the addon\n", 1, true))
+    -- The footer: sync state and when group asks wait.
+    assert.are.equal("Group asks wait until combat ends", ns.MainFrame.window().footerRightText.text)
   end)
 
-  it("shows your other characters in range on one line under yours", function()
+  it("names your other characters in range as alternatives", function()
     load(20)
     addon.db.global.self.chars["Player-1-ALT"] = { guid = "Player-1-ALT", name = "Alt Example", level = 22,
                                                    classFile = "ROGUE" }
@@ -98,7 +100,7 @@ describe("Dungeons tab (CF-24)", function()
                                    level = 22, presence = 3, clubType = 1 }
     wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
     open()
-    assert.is_truthy(text():find("or Alt Example 22", 1, true))
+    assert.is_truthy(text():find("\nAlternatives for you: Alt Example 22\n", 1, true))
     assert.is_falsy(text():find("Also in range", 1, true))
   end)
 
@@ -116,28 +118,31 @@ describe("Dungeons tab (CF-24)", function()
     assert.are.same({ { 0, 20, 1 } }, state.calendarOpenedEvents) -- only the planned run is opened
     wowapi.fireEvent(state, "CALENDAR_OPEN_EVENT", "COMMUNITY_EVENT")
     settle()
-    local values = {}
-    for _, node in ipairs(dungeonTree().tree) do values[#values + 1] = node.value end
-    assert.are.same({ "header:planned", "planned:1", "header:range", "dm", "wc" }, values)
-    assert.is_truthy(dungeonTree().tree[2].text:find("Tue 20:00 \194\183 3", 1, true))
+    assert.are.same({ "planned:1", "dm", "wc" }, values())
+    assert.are.equal("Tue 20:00", row("planned:1").right:GetText())
+    assert.are.equal("3 going \194\183 you", row("planned:1").meta:GetText())
     assert.are.equal(1, ns.MainFrame.tabs().buttons.dungeons.badgeCount) -- CF-39: the badge on the tab
-    dungeonTree():SelectByValue("planned:1")
+    select("planned:1")
     assert.is_truthy(text():find("Tue 20 Oct, 20:00 \194\183 Deadmines run \194\183 3 signed up \194\183 +1 tentative"
       .. " \194\183 you signed up", 1, true))
-    dungeonTree():SelectByValue("wc") -- 6 days ahead: in the detail, not planned in the list
+    select("wc") -- 6 days ahead: in the detail, not planned in the list
     assert.is_truthy(text():find("Sat 24 Oct, 19:00 \194\183 Wailing Caverns", 1, true))
   end)
 
-  it("lists a planned run for a dungeon none of your characters fits, greyed", function()
+  it("lists a planned run for a dungeon out of range, greyed", function()
     load(20)
     open()
     state.calendarEvents[0] = { [19] = { { title = "Stratholme", calendarType = "COMMUNITY_EVENT",
       startTime = { year = 2026, month = 10, monthDay = 19, weekday = 2, hour = 20, minute = 0 } } } }
     wowapi.fireEvent(state, "CALENDAR_UPDATE_EVENT_LIST")
     settle() -- no CALENDAR_OPEN_EVENT: the sign-ups time out
-    assert.are.equal("|cffa0a0a0Stratholme|r  |cff40c040Mon 20:00|r", dungeonTree().tree[2].text)
-    dungeonTree():SelectByValue("planned:1")
-    assert.is_truthy(text():find("None of your characters is in range.", 1, true))
+    local planned = row("planned:1")
+    assert.are.equal("Stratholme", planned.name:GetText())
+    assert.are.same({ ns.Theme.color("muted") }, planned.name.textColor)
+    assert.are.equal("Mon 20:00", planned.right:GetText())
+    select("planned:1")
+    assert.is_truthy(text():find("\nVes Doombringer is not in range.\n", 1, true))
+    assert.is_nil(ns.DungeonsTab.buttons()["Ask who's up for it"]) -- only for dungeons in range
   end)
 
   it("lists the Group Finder's dungeons, also Forever's new ones (V46)", function()
@@ -147,15 +152,12 @@ describe("Dungeons tab (CF-24)", function()
     state.lfgActivities[858] = { fullName = "Wetlands", minLevelSuggestion = 18, maxLevelSuggestion = 34,
       maxNumPlayers = 0, difficultyID = 0 } -- a zone: left out
     open()
-    local texts = {}
-    for _, node in ipairs(dungeonTree().tree) do texts[node.value] = node.text end
-    assert.is_truthy(texts.lfg1981 and texts.lfg1981:find("^Excavation Site: Wetlands"))
-    for value, row in pairs(texts) do
-      assert.is_falsy(row:find("^Wetlands"), value)
-    end
-    assert.is_nil(texts.dm) -- only what the Group Finder offers
-    dungeonTree():SelectByValue("lfg1981")
-    assert.is_truthy(text():find("Excavation Site: Wetlands  |cffa0a0a0levels 26 to 33|r", 1, true))
+    local list = values()
+    assert.is_truthy(row("lfg1981"))
+    for _, value in ipairs(list) do assert.are_not.equal("dm", value) end -- only what the Group Finder offers
+    assert.is_falsy(text():find("\nWetlands\n", 1, true))
+    select("lfg1981")
+    assert.is_truthy(text():find("\nlevels 26" .. DASH .. "33\n", 1, true)) -- no zone known
     assert.is_truthy(text():find("No quests known for this dungeon yet.", 1, true))
   end)
 
@@ -188,21 +190,23 @@ describe("Dungeons tab (CF-24)", function()
       _G.LibQuestieDB, _G.QuestDB = nil, nil
     end)
 
-    it("shows the dungeon icon with have/total in the list and the quests in the detail", function()
+    it("shows have/total in the list and the quests with checks in the detail", function()
       load(20)
       installQuestieDB()
       state.questLog = { { isHeader = true, title = "The Deadmines" },
                          { questID = 203, title = "Collecting Memories" } }
       wowapi.fireEvent(state, "QUEST_LOG_UPDATE")
       open()
-      local dm
-      for _, node in ipairs(dungeonTree().tree) do if node.value == "dm" then dm = node end end
-      assert.is_truthy(dm.text:find("|A:worldquest-icon-dungeon:", 1, true))
-      assert.is_truthy(dm.text:find("|cffffd1001/2|r", 1, true)) -- 203 in your log, 201 to pick up
+      assert.is_truthy(row("dm").meta:GetText():find("1 / 2 quests", 1, true))
       local all = text()
-      assert.is_truthy(all:find("Quests  |cffa0a0a01/2|r", 1, true))
-      assert.is_truthy(all:find("|cff40c040Collecting Memories|r", 1, true))
-      assert.is_truthy(all:find("Red Silk Bandanas|cffa0a0a0 \194\183 level 17|r", 1, true))
+      assert.is_truthy(all:find("\n1 / 2 in your log\n", 1, true))
+      assert.is_truthy(all:find("\nCollecting Memories\n", 1, true))
+      assert.is_truthy(all:find("\nRed Silk Bandanas\n", 1, true) and all:find("\nlevel 17\n", 1, true))
+      local checks = 0
+      for _, q in ipairs(ns.DungeonsTab.questRows()) do
+        if q.check.shown then checks = checks + 1 end
+      end
+      assert.are.equal(1, checks) -- only the quest in your log
       assert.is_falsy(all:find("Underground Assault", 1, true)) -- Alliance
       assert.is_falsy(all:find("A Warrior's Task", 1, true))
       assert.is_falsy(all:find("Install QuestieDB", 1, true))
@@ -214,7 +218,7 @@ describe("Dungeons tab (CF-24)", function()
       _G.C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 201 end
       open()
       local all = text()
-      assert.is_truthy(all:find("Quests  |cffa0a0a00/1|r", 1, true))
+      assert.is_truthy(all:find("\n0 / 1 in your log\n", 1, true))
       assert.is_truthy(all:find("1 quest already done on this character.", 1, true))
     end)
 
@@ -229,26 +233,36 @@ describe("Dungeons tab (CF-24)", function()
   it("opens Blizzard's calendar, or says how when it can't", function()
     load(20)
     open()
-    find("Button", "Open calendar"):Fire("OnClick")
+    ns.DungeonsTab.buttons()["Open calendar"]:RunScript("OnClick")
     assert.is_true(state.calendarToggled)
     _G.ToggleCalendar = nil
     state.printed = {}
-    find("Button", "Open calendar"):Fire("OnClick")
+    ns.DungeonsTab.buttons()["Open calendar"]:RunScript("OnClick")
     assert.is_truthy(state.printed[1]:find("date button next to the minimap", 1, true))
+  end)
+
+  it("keeps the title to copy when typed over", function()
+    load(20)
+    open()
+    local box = ns.DungeonsTab.titleBox()
+    box.text = "oops" -- typed: the game changes the text without SetText
+    box:RunScript("OnTextChanged", true)
+    assert.are.equal("The Deadmines", box:GetText())
   end)
 
   it("remembers the selected dungeon", function()
     load(20)
     open()
-    dungeonTree():SelectByValue("wc")
+    select("wc")
     ns.MainFrame.selectTab("friends")
     ns.MainFrame.selectTab("dungeons")
-    assert.is_truthy(text():find("Wailing Caverns  |cffa0a0a0levels 17 to 24|r", 1, true))
+    assert.are.equal("wc", addon.db.global.settings.dungeonTree.selected)
+    assert.is_truthy(text():find("\nlevels 17" .. DASH .. "24 \194\183 The Barrens\n", 1, true))
   end)
 
-  it("explains when no character is in a dungeon's level range", function()
+  it("explains when the character you are on is in no dungeon's level range", function()
     load(11)
     open()
-    assert.is_truthy(text():find("None of your characters is in a dungeon's level range yet", 1, true))
+    assert.is_truthy(text():find("Ves Doombringer is not in a dungeon's level range yet", 1, true))
   end)
 end)

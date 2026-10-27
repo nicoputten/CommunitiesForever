@@ -15,6 +15,10 @@ tagging; the release stops if the tag has no section.
 - **New look, part 3: the Activity tab.** Filter chips (Level-ups, Dungeons, Together), a portrait per entry
   (two for friends who played together), level-ups as a gold chip, the zones you quested in, and the time of
   each entry. Older days show their date.
+- **New look, part 4: the Dungeons tab.** The list follows the character you're on, with level ranges, friends
+  in range and your quests per dungeon. The suggested group shows as five slots (tank, healer, three damage)
+  and says when nobody in range can tank or heal; your other characters show as alternatives, and the card
+  says where the dungeon is.
 - **Less sync traffic in the community:** the "I changed" message goes out once on a hidden channel to
   everyone running the addon, instead of a whisper to each member. Older versions keep getting whispers.
 - Fix: a community chat window with other channels before the community channel is recognized again.
