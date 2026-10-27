@@ -21,9 +21,24 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V59 | Does the hidden sync channel work (CF-31)? `JoinTemporaryChannel` (or `JoinChannelByName`), addon messages with `SendAddonMessage(prefix, text, "CHANNEL", index)`, and which `CHAT_MSG_ADDON` arguments name the channel. | See the CF-31 steps: `/cf sync debug` shows `to the community channel: HELLO ...` when it sends there. If HELLOs keep going as whispers to members on this build, send the `[sync]` lines and the output of `/dump GetChannelList()` (is a `cf...` channel in it?). Nothing breaks when it fails: the addon keeps whispering. | open |
 | V61 | Do the kit's drawing calls work on Forever (CF-39)? `FontString:SetFont` with the bundled `.ttf` files, `Texture:SetGradient` with `CreateColor`, `CreateMaskTexture` + `AddMaskTexture`, `SetResizeBounds`, `C_ClassColor.GetClassColor`, the round class icons (`UI-Classes-Circles` with `CLASS_ICON_TCOORDS`), and the TGA textures in `media/textures`. | See the CF-39 steps: if text shows in the game's own font, a texture is a green square or missing, or the title bar has no glow, send a screenshot and any Lua error. | open |
 | V62 | Do the Friends tab's native calls work (CF-40)? An `EditBox` with `SetTextInsets`, `SetAutoFocus`, `HasFocus`, `ClearFocus` and the focus and text scripts; a `ScrollFrame` with `SetScrollChild`, `SetVerticalScroll`, `EnableMouseWheel` and `OnMouseWheel`; `Texture:SetRotation` for the fold arrow. (Replaces V56: the AceGUI search box is gone.) | See the CF-40 steps: typing in the search box, scrolling a long list and the card with the mouse wheel, the arrow pointing right on a folded person. If anything errors, send the error text. | open |
+| V63 | Does `date("%H:%M", t)` give the local clock time of a server timestamp (CF-41: the time on Activity entries)? | See the CF-41 steps: the time right of each entry matches when it happened. Without `date` the time stays empty. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-41 Activity tab in the new look
+Compare with `docs/design/revamp-2026-10/activity.html`. Best with a friend who levelled, quested and ran a dungeon with you today.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Activity tab | Chips All, Level-ups, Dungeons, Together on top (All gold). Day headers "Today", "Yesterday", then e.g. "Monday 26 Oct" in the serif small caps, a thin gold line under each. | open |
+| An entry | A round class portrait, "<name> on <character>" (name gold, character in class colour), below it a gold LEVEL UP chip "22 → 24" (no animation yet), "questing in" with zone pills and "+N zones", "· N quests done", runs and profession ranks as text; the time right (V63). | open |
+| Played together | One entry "<you> and <friend> together" with two overlapping portraits and "ran <dungeon>". | open |
+| A friend with activity on two characters | "and 1 more character", "Show all (N)" opens the other character's pieces under "on <character>"; "Show less" folds it. | open |
+| Each chip | Level-ups: only entries with a level change (whole entries); Dungeons: entries with a dungeon, raid or battleground; Together: the together entries. No match: "Nothing of this kind in the last 7 days." | open |
+| Close and open the window | The chips start at All again. | open |
+| Footer | Left "Activity is shared only by friends who turned on "Share my activity".", right "Keeps 7 days". Friends tab: its own footer again. | open |
+| Many entries | The feed scrolls with the mouse wheel (V62). | open |
 
 ### CF-40 Friends tab in the new look
 Compare with `docs/design/revamp-2026-10/friends.html`. Needs a friend with the addon (for professions, talents and shared quests).

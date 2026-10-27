@@ -65,6 +65,7 @@ Theme.TEXT = {
   label = { "medium", 11, "GameFontHighlightSmall" },
   button = { "bold", 12, "GameFontHighlightSmall" },
   badge = { "bold", 10, "GameFontHighlightSmall" },
+  chip = { "bold", 11, "GameFontHighlightSmall" }, -- CF-41: the LEVEL UP chip
 }
 
 -- Clients whose letters the bundled fonts do not have use the game font throughout.
@@ -83,6 +84,11 @@ function Theme.font(fontString, role)
   end
   local fallback = _G[spec[3]]
   if fallback and fontString.SetFontObject then fontString:SetFontObject(fallback) end
+end
+
+-- CF-41: whether texts use the bundled fonts (they have characters the game font lacks, such as the arrow).
+function Theme.bundledFonts()
+  return not useGameFont()
 end
 
 -- A FontString in the role's font and colour.

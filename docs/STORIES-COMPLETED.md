@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -397,3 +397,12 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): the header status line, the tiles, skill bar fractions and tier ticks, the footer texts.
 - Manual: compare with `friends.html`; search, collapse, right-click, Whisper and Invite still work.
 - Decided (2026-10-27): the arrow folds a person, clicking the name opens the person card; our own simple scrolling (`Kit.scrollArea`: plain ScrollFrame, mouse wheel, a thin gold thumb), not ScrollBox. Selection and folded people stay in `settings.tree` (the AceGUI tree's keys: `selected`, `groups` with false = folded; no migration, rule 8). The character card's Whisper and Invite are the CF-37 menu items. The list row shows the number of shared quests (the dungeon icon of CF-19 is gone from the list; areas on the card carry the DUNGEON tag).
+
+### CF-41 Activity tab in the new look
+- Goal: the Activity tab as in `activity.html`.
+- Filter chips: All, Level-ups, Dungeons, Together (one active; remembered while the window is open).
+- Day headers (Today, Yesterday, then the date) in Marcellus SC. Per entry: a 32 px portrait (two overlapping for a together line), "<person> on <character>" or "<person> and <person> together", then a line with a **LEVEL UP** chip "22 → 24" (gold, with a slow shine unless Ambient effects is off), "questing in" with the top zones as pills and "+N zones", "· N quests done", runs ("ran <dungeon>"), profession ranks. The time on the right is the entry's last change that day (`at`, already stored; no run durations: not recorded).
+- Footer: "Activity is shared only by friends who turned on Share my activity" and "Keeps 7 days".
+- Unit tests (pure core): filtering per chip, the entry lines, "+N zones", the time.
+- Manual: compare with `activity.html`; Show all and the together lines still work.
+- Decided (2026-10-27): the Dungeons chip covers every run (dungeons, raids, battlegrounds); a chip keeps whole entries (a person's entry counts when any of their characters that day matches); older days read "Monday 26 Oct"; the LEVEL UP chip is static until CF-43 brings Ambient effects. The chip shows "from → to" (the milestone texts "reached 20" stay in `Feed.parts`); an entry shows all its pieces, "Show all (N)" opens the person's other characters. The time is the local clock of the entry's `at` (`date`, V63).

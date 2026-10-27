@@ -170,18 +170,8 @@ describe("dungeon, raid and battleground runs (CF-23)", function()
     enter(OUTSIDE)
     ns.MainFrame.toggle()
     ns.MainFrame.selectTab("activity")
-    local texts = {}
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.text then texts[#texts + 1] = child.text end
-        walk(child)
-      end
-    end
-    for _, w in ipairs(state.guiWidgets) do
-      if w.cfMainRoot then walk(w) end -- CF-39: the tab content
-    end
-    local all = table.concat(texts, "\n")
-    assert.is_truthy(all:find("|cffa0a0a0together|r", 1, true))
-    assert.is_truthy(all:find("   ran Deadmines", 1, true))
+    local all = helpers.activityTab(ns).text() -- CF-41: the native tab
+    assert.is_truthy(all:find(" together\n", 1, true))
+    assert.is_truthy(all:find("\nran Deadmines\n", 1, true))
   end)
 end)

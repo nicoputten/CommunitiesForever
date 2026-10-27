@@ -337,5 +337,41 @@ function Kit.scrollArea(parent)
   return area
 end
 
+--[[ Pools (CF-40, shared by the tabs since CF-41): frames are reused on every render, since WoW frames cannot
+be destroyed. Kit.take gives the next free item (made by factory(parent) when needed), shown and without
+anchors; Kit.release hides all items of a pool. ]]
+function Kit.pool(factory)
+  return { items = {}, used = 0, factory = factory }
+end
+
+function Kit.take(p, parent)
+  p.used = p.used + 1
+  local item = p.items[p.used]
+  if not item then
+    item = p.factory(parent)
+    p.items[p.used] = item
+  end
+  item:Show()
+  item:ClearAllPoints()
+  return item
+end
+
+function Kit.release(p)
+  for i = 1, #p.items do p.items[i]:Hide() end
+  p.used = 0
+end
+
+-- A factory for pooled texts: a tiny frame holding one FontString (holder.text) in a text role.
+function Kit.textHolder(role)
+  return function(parent)
+    local holder = CreateFrame("Frame", nil, parent)
+    holder:SetSize(1, 1)
+    holder.text = Theme.text(holder, role, "text")
+    holder.text:SetPoint("TOPLEFT")
+    holder.text:SetJustifyH("LEFT")
+    return holder
+  end
+end
+
 ns.Kit = Kit
 return Kit

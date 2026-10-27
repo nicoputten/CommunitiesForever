@@ -20,42 +20,11 @@ local helpers -- from MainFrame: settings(), classInfo(classFile, classID), righ
 local view, nodes
 local rows = {}  -- visible list rows: { kind = "group" | "char", path, frame }
 
--- ===== Pools =====
+-- ===== Pools (Kit.pool) =====
 
-local function pool(factory)
-  return { items = {}, used = 0, factory = factory }
-end
-
-local function take(p, parent)
-  p.used = p.used + 1
-  local item = p.items[p.used]
-  if not item then
-    item = p.factory(parent)
-    p.items[p.used] = item
-  end
-  item:Show()
-  item:ClearAllPoints()
-  return item
-end
-
-local function release(p)
-  for i = 1, #p.items do p.items[i]:Hide() end
-  p.used = 0
-end
+local pool, take, release, textFactory = Kit.pool, Kit.take, Kit.release, Kit.textHolder
 
 local listPools, cardPools
-
--- A FontString holder: a tiny frame per text, so texts can be pooled and hidden like frames.
-local function textFactory(role)
-  return function(parent)
-    local holder = CreateFrame("Frame", nil, parent)
-    holder:SetSize(1, 1)
-    holder.text = Theme.text(holder, role, "text")
-    holder.text:SetPoint("TOPLEFT")
-    holder.text:SetJustifyH("LEFT")
-    return holder
-  end
-end
 
 local function placeText(p, parent, x, y, width, text, colorName, rgb)
   local holder = take(p, parent)
