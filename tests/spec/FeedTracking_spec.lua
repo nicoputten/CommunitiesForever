@@ -34,38 +34,9 @@ describe("activity feed (CF-22)", function()
 
   local function mine() return addon.db.global.self.feed[TODAY][myGuid] end
 
-  local DOT = " \194\183 "
-
-  -- The main window frame (tab bar and content).
-  local function tabs()
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" then return w end
-    end
-  end
-
-  local function texts(widget, out)
-    out = out or {}
-    for _, child in ipairs(widget.children) do
-      if child.text then out[#out + 1] = child.text end
-      texts(child, out)
-    end
-    return out
-  end
-
-  local function activityText()
-    return table.concat(texts(tabs()), "\n")
-  end
-
-  local function click(pattern)
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.type == "InteractiveLabel" and child.text:find(pattern, 1, true) then return child end
-        local found = walk(child)
-        if found then return found end
-      end
-    end
-    assert(walk(tabs()), "no clickable line with " .. pattern):Fire("OnClick")
-  end
+  -- CF-41: the native Activity tab.
+  local function activityText() return helpers.activityTab(ns).text() end
+  local function click(prefix) helpers.activityTab(ns).click(prefix) end
 
   after_each(function()
     wowapi.uninstall()
@@ -122,7 +93,7 @@ describe("activity feed (CF-22)", function()
     assert.is_truthy(addon.db.global.self.feed) -- still kept for your own window
   end)
 
-  it("shows one line per person per day in the Activity tab, expandable", function()
+  it("shows one entry per person per day in the Activity tab, expandable (CF-41)", function()
     load()
     wowapi.fireEvent(state, "QUEST_TURNED_IN", 101, 500, 0)
     ns.Merge.store(addon.db.global.people, { t = "RECORD", bt = friendTag, displayName = "Friend", version = 5,
@@ -136,36 +107,57 @@ describe("activity feed (CF-22)", function()
     ns.MainFrame.toggle()
     ns.MainFrame.selectTab("activity")
     local text = activityText()
-    assert.is_truthy(text:find("|cffffd100Activity|r", 1, true)) -- active tab in gold
-    assert.is_truthy(text:find("|cffa0a0a0Friends|r", 1, true))
-    assert.is_truthy(text:find("Today", 1, true))
-    assert.is_truthy(text:find("|cffffd100Friend|r |cffa0a0a0on|r |cff40c7ebFriend Char|r "
-      .. "|cffa0a0a0and 1 more character|r", 1, true))
-    assert.is_truthy(text:find("   12 to 14" .. DOT .. "Mining reached Journeyman" .. DOT .. "learned Alchemy   "
-      .. "|cff6aa7ffShow all (2)|r", 1, true))
-    assert.is_truthy(text:find("questing in Westfall (1)", 1, true)) -- your own line
+    assert.are.equal("activity", ns.MainFrame.tabs().active) -- CF-39: the kit tabs mark the active one
+    assert.is_truthy(text:find("\nToday\n", 1, true))
+    assert.is_truthy(text:find("\nFriend on Friend Char and 1 more character\n", 1, true))
+    assert.is_truthy(text:find("\n12 \226\134\146 14\n", 1, true)) -- the LEVEL UP chip
+    assert.is_truthy(text:find("\nMining reached Journeyman\n", 1, true))
+    assert.is_truthy(text:find("\nlearned Alchemy\n", 1, true))
+    assert.is_truthy(text:find("\nDurotar\n", 1, true) and text:find("\nBarrens\n", 1, true)) -- zone pills
+    assert.is_truthy(text:find("\n\194\183 6 quests done\n", 1, true))
+    assert.is_truthy(text:find("\n\194\183 1 quest done\n", 1, true)) -- your own entry
+    assert.is_truthy(text:find("\nShow all (1)\n", 1, true))
     assert.is_falsy(text:find("Friend Alt", 1, true))
 
-    click("Show all (2)")
+    click("Show all")
     text = activityText()
-    -- Expanded: one part per line, then the other character with its parts, then Show less.
-    assert.is_truthy(text:find("\n   12 to 14\n   Mining reached Journeyman\n   learned Alchemy\n"
-      .. "   questing in Durotar and Barrens (6)\n   |cffa0a0a0on|r ", 1, true))
-    assert.is_truthy(text:find("Friend Alt", 1, true) and text:find("\n      questing in Durotar (1)\n", 1, true))
-    assert.is_truthy(text:find("\n   |cff6aa7ffShow less|r", 1, true))
+    assert.is_truthy(text:find("\non Friend Alt\n", 1, true))
+    assert.is_truthy(text:find("\nShow less\n", 1, true))
     click("Show less")
     assert.is_falsy(activityText():find("Friend Alt", 1, true))
 
+    -- The footer: who shares, how long it keeps.
+    local window = ns.MainFrame.window()
+    assert.is_truthy(window.footerText.text:find("Share my activity", 1, true))
+    assert.are.equal("Keeps 7 days", window.footerRightText.text)
+
     ns.MainFrame.selectTab("friends")
-    assert.is_falsy(activityText():find("questing in", 1, true))
+    assert.is_truthy(window.footerRightText.text:find("/cf to open", 1, true))
   end)
 
-  it("turns off the tree's hover tooltips", function()
+  it("filters with the chips, whole entries, and starts at All after closing (CF-41)", function()
     load()
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", 101, 500, 0) -- your own entry: questing only
+    ns.Merge.store(addon.db.global.people, { t = "RECORD", bt = friendTag, displayName = "Friend", version = 5,
+      chars = { [friendGuid] = { guid = friendGuid, name = "Friend Char", classFile = "MAGE", level = 11 } },
+      feed = { [TODAY] = { [friendGuid] = { name = "Friend Char", classFile = "MAGE", at = 900, levelFrom = 12,
+                                            levelTo = 14, quests = { Durotar = 4 } } } } }, 1000, friendTag)
     ns.MainFrame.toggle()
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "TreeGroup" then assert.is_false(w.buttonTooltips) end
-    end
+    ns.MainFrame.selectTab("activity")
+    local chips = ns.ActivityTab.chips()
+    assert.is_true(chips.all.active)
+    chips.levels:RunScript("OnClick")
+    assert.is_true(chips.levels.active)
+    local text = activityText()
+    assert.is_truthy(text:find("\nFriend on Friend Char\n", 1, true))
+    assert.is_truthy(text:find("\nDurotar\n", 1, true)) -- the whole entry, questing too
+    assert.is_falsy(text:find("1 quest done", 1, true)) -- your entry has no level-up
+    chips.together:RunScript("OnClick")
+    assert.is_truthy(activityText():find("Nothing of this kind in the last 7 days.", 1, true))
+
+    ns.MainFrame.toggle() -- close
+    ns.MainFrame.toggle()
+    assert.are.equal("all", ns.ActivityTab.filter())
   end)
 
   it("gives the hidden debug friend a sample feed", function()
@@ -174,13 +166,14 @@ describe("activity feed (CF-22)", function()
     ns.MainFrame.selectTab("activity")
     addon:OnSlashCommand("debugon")
     local text = activityText()
-    assert.is_truthy(text:find("   27 to 30" .. DOT .. "Engineering reached Expert" .. DOT .. "learned Mining   "
-      .. "|cff6aa7ffShow all (4)|r", 1, true)) -- the alt adds a raid, battlegrounds and quests (CF-23)
-    -- CF-23: the dungeon runs with your current character show as one shared line.
-    assert.is_truthy(text:find(" and Debug Friend|r |cffa0a0a0together|r", 1, true))
-    assert.is_truthy(text:find("   ran Blackfathom Deeps \195\1512", 1, true))
-    assert.is_truthy(text:find("Yesterday", 1, true))
-    assert.is_truthy(text:find("reached 20", 1, true))
+    assert.is_truthy(text:find("\n27 \226\134\146 30\n", 1, true))
+    assert.is_truthy(text:find("\nEngineering reached Expert\n", 1, true))
+    assert.is_truthy(text:find("\nShow all (", 1, true)) -- the alt adds a raid, battlegrounds and quests (CF-23)
+    -- CF-23: the dungeon runs with your current character show as one shared entry.
+    assert.is_truthy(text:find(" and Debug Friend together\n", 1, true))
+    assert.is_truthy(text:find("\nran Blackfathom Deeps \195\1512\n", 1, true))
+    assert.is_truthy(text:find("\nYesterday\n", 1, true))
+    assert.is_truthy(text:find("\n19 \226\134\146 21\n", 1, true))
     assert.is_nil(addon.db.global.people[ns.Debug.BATTLE_TAG]) -- view only
   end)
 

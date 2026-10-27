@@ -112,11 +112,49 @@ describe("Dungeons (CF-24)", function()
       assert.is_nil(group[3].reason)
     end)
 
-    it("picks your character with quests for the dungeon over the one you are on", function()
+    it("takes the character you are on, your others are alternatives (CF-42)", function()
       local v = view()
       v.people[1].chars[2] = row("G-ALT", "Amy Example", 21, { quests = { [101] = DM_QUEST } })
       local dm = entryFor(Dungeons.overview(Dungeons.candidates(v), "G-ME"), "dm")
+      local group = Dungeons.suggest(dm)
+      assert.are.equal("Ann Example", group[1].name)
+      local alternatives, others = Dungeons.outside(dm, group)
+      assert.are.same({ "Amy Example" }, names(alternatives))
+      assert.are.same({ "Bob Example" }, names(others)) -- Ben's tank alt: Ben brings his healer
+      -- Without the character you are on, your best one (quests first).
+      dm = entryFor(Dungeons.overview(Dungeons.candidates(v)), "dm")
       assert.are.equal("Amy Example", Dungeons.suggest(dm)[1].name)
+    end)
+
+    it("lists only dungeons for the character you are on (CF-42)", function()
+      local overview = Dungeons.overview(Dungeons.candidates(view()), "G-ALT") -- Amy, 45
+      assert.is_nil(entryFor(overview, "dm"))
+      assert.is_true(entryFor(overview, "zf").fits)
+      assert.are.equal("Tanaris", Dungeons.ZONES.zf)
+    end)
+
+    it("lays the group out as tank, healer and three damage slots (CF-42)", function()
+      local dm = entryFor(Dungeons.overview(Dungeons.candidates(view()), "G-ME"), "dm")
+      local slots = Dungeons.slots(Dungeons.suggest(dm), "G-ME")
+      assert.are.same({ "tank", "heal", "dps", "dps", "dps" },
+        { slots[1].role, slots[2].role, slots[3].role, slots[4].role, slots[5].role })
+      assert.are.equal("Cid Example", slots[1].char.name)
+      assert.are.equal("Ben Example", slots[2].char.name)
+      assert.are.equal("Ann Example", slots[3].char.name)
+      assert.is_true(slots[3].own)
+      assert.are.equal("Dee Example", slots[4].char.name)
+      assert.is_nil(slots[5].char) -- open
+      assert.is_nil(slots[5].missing)
+
+      -- Nobody heals: the healer slot is missing; extra characters fill free slots.
+      local noHeal = Dungeons.slots({ { guid = "A", role = "tank" }, { guid = "B" }, { guid = "C" }, { guid = "D" },
+                                      { guid = "E" } }, "B")
+      assert.are.same({ "B", "C", "D" }, { noHeal[3].char.guid, noHeal[4].char.guid, noHeal[5].char.guid })
+      assert.are.equal("E", noHeal[2].char.guid) -- 4 damage for 3 damage slots: the fourth fills the healer slot
+      assert.is_nil(noHeal[2].missing)
+      local fewer = Dungeons.slots({ { guid = "A", role = "tank" } }, "X")
+      assert.is_true(fewer[2].missing)
+      assert.is_nil(fewer[1].own)
     end)
 
     it("stops at five", function()

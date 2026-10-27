@@ -91,7 +91,7 @@ describe("Notify (CF-15)", function()
 
   it("can be switched off in settings", function()
     load()
-    local option = state.options.args.notifications
+    local option = ns.Settings.options().args.notifications
     assert.is_true(option.get())
     option.set({}, false)
     sjaakOnline()

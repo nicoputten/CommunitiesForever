@@ -11,6 +11,7 @@
 embeds.xml
 
 src\core\Store.lua
+src\core\Queue.lua
 src\core\Version.lua
 src\core\Filter.lua
 src\core\Feed.lua
@@ -48,13 +49,16 @@ src\adapters\GroupFinder.lua
 src\adapters\ChatLinks.lua
 src\adapters\Party.lua
 src\adapters\ContextMenu.lua
+src\adapters\Channels.lua
 src\adapters\Transport.lua
+src\adapters\Panels.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua
+src\services\SyncChannel.lua
 src\services\MemberTracker.lua
 src\services\PresenceTracker.lua
 src\services\Debug.lua
@@ -67,11 +71,18 @@ src\services\Notify.lua
 src\services\Planner.lua
 src\services\GroupAsks.lua
 
+src\ui\kit\Theme.lua
+src\ui\kit\Widgets.lua
+src\ui\kit\Window.lua
 src\ui\Settings.lua
+src\ui\SettingsWindow.lua
 src\ui\DungeonsTab.lua
+src\ui\FriendsTab.lua
+src\ui\ActivityTab.lua
 src\ui\MainFrame.lua
 src\ui\Minimap.lua
 src\ui\Tooltip.lua
 src\ui\Setup.lua
+src\ui\LevelUpToast.lua
 
 src\Core.lua

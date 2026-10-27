@@ -16,10 +16,12 @@ jobs:
 
       - uses: leafo/gh-actions-luarocks@v6
 
+      # Up to 3 attempts: a LuaRocks mirror hiccup should not fail the build.
       - name: Install busted and luacheck
         run: |
-          luarocks install busted
-          luarocks install luacheck
+          retry() { for i in 1 2 3; do "$@" && return 0; echo "attempt $i failed: $*"; sleep 15; done; return 1; }
+          retry luarocks install busted
+          retry luarocks install luacheck
 
       - name: Fetch libraries (LibSerialize, LibDeflate are used by specs)
         shell: pwsh

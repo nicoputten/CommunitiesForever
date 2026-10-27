@@ -15,10 +15,9 @@ describe("keybinding and Esc (CF-32)", function()
     addon:OnEnable()
   end
 
+  -- CF-39: the kit window, wrapped like an AceGUI widget ({ frame }) so press() fits both.
   local function windowFrame()
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" and w.title == "CommunitiesForever" then return w end
-    end
+    return { frame = ns.MainFrame.window() }
   end
 
   local function press(widget, key)
@@ -72,11 +71,7 @@ describe("keybinding and Esc (CF-32)", function()
   it("closes the setup on Esc", function()
     load()
     addon:OnSlashCommand("setup")
-    local wizard
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "Frame" and w.title == "CommunitiesForever setup" then wizard = w end
-    end
-    press(wizard, "ESCAPE")
+    press({ frame = ns.Setup.wizard() }, "ESCAPE") -- CF-43: a kit dialog
     assert.is_false(ns.Setup.isShown())
   end)
 end)

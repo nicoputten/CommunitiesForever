@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Addon feasibility and widget kit</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#070C15}
+.h2{margin:0;font:22px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E}
+.note{font-size:13px;color:#8E98A8;line-height:1.55}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7E8898;padding:8px 10px;border-bottom:1px solid rgba(212,175,106,.3)}
+td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top;color:#C9CFD9;line-height:1.45}
+td:first-child{color:#E6E1D6;white-space:nowrap}
+code{font:12px ui-monospace,Consolas,Menlo,monospace;color:#F3DFAE}
+.y,.p,.n{display:inline-block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.y{background:rgba(127,217,154,.14);color:#9BE3B0}
+.p{background:rgba(212,175,106,.16);color:#F0D08E}
+.n{background:rgba(224,138,74,.18);color:#F0A774}
+.box{padding:18px 20px;border-radius:12px;background:rgba(12,18,30,.8);border:1px solid rgba(212,175,106,.2);display:flex;flex-direction:column;gap:10px}
+.box h3{margin:0;font:16px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E}
+.li{font-size:13px;color:#C9CFD9;line-height:1.5;display:flex;gap:8px}
+.li:before{content:"";width:6px;height:6px;margin-top:7px;transform:rotate(45deg);background:#D4AF6A;flex:none}
+.tx{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#8E98A8;text-align:center}
+.tx span:first-child{width:56px;height:56px;border-radius:6px;background:#0B1220;border:1px dashed rgba(212,175,106,.35);display:flex;align-items:center;justify-content:center}
+</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 56px 64px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, system-ui, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 32px">
+
+  <div>
+    <h1 style="margin: 0; font: 40px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Can WoW: Forever draw this?</h1>
+    <div class="note" style="margin-top: 6px; max-width: 980px">Forever runs the modern Mainline client and API (the Midnight 12.x rules), not the old Classic Era one. That means the full modern widget set is there: masks, gradients, animation groups, ScrollBox lists, custom fonts. The Midnight restrictions are about combat data and messages during encounters; none of them stop a friends/activity window. Verify each item against the live Forever build before building.</div>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 12px">
+    <h2 class="h2">Design element → how to build it in WoW</h2>
+    <table>
+      <thead><tr><th>Element</th><th>WoW building block</th><th>Status</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Dark navy panel</td><td><code>Texture:SetColorTexture(0.035, 0.059, 0.106, 0.96)</code></td><td><span class="y">Yes</span></td><td>Same token as the site's surface</td></tr>
+        <tr><td>Frosted glass blur</td><td>—</td><td><span class="n">No</span></td><td>WoW can't blur the world behind a frame. Use a 96% opaque panel instead (what the mock-ups show)</td></tr>
+        <tr><td>Gold 1 px border, corner diamonds</td><td>4 edge textures + 4 corner textures, or <code>NineSlice</code> with our own layout</td><td><span class="y">Yes</span></td><td>Diamonds are a tiny TGA</td></tr>
+        <tr><td>Rounded corners (6–10 px)</td><td>Pre-drawn corner pieces in a nine-slice</td><td><span class="p">Approx.</span></td><td>No border-radius; corners come from textures, so keep radii small and fixed</td></tr>
+        <tr><td>Gradients (title glow, level bars)</td><td><code>Texture:SetGradient("VERTICAL", CreateColor(…), CreateColor(…))</code></td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Soft drop shadow</td><td>Pre-rendered blurred shadow nine-slice behind the window</td><td><span class="p">Approx.</span></td><td></td></tr>
+        <tr><td>Marcellus SC + Inter</td><td>Bundle the <code>.ttf</code> files, <code>CreateFont</code> / <code>FontString:SetFont(path, size)</code></td><td><span class="y">Yes</span></td><td>Both fonts are SIL OFL, so they may be bundled. Fall back to the game font for Cyrillic/Asian locales</td></tr>
+        <tr><td>Round class portraits</td><td>Class icon atlas + <code>CreateMaskTexture</code> with a circle mask, class-colour ring</td><td><span class="y">Yes</span></td><td>In game, use real class icons instead of the initials in the mock-ups</td></tr>
+        <tr><td>Class colours</td><td><code>C_ClassColor.GetClassColor(classFile)</code></td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Skill bars with cap shading and ticks</td><td><code>StatusBar</code> (native interpolation in 12.x) + 2 overlay textures</td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Tabs with gold underline</td><td>Own tab buttons (Mixin) or a restyled <code>PanelTabButtonTemplate</code></td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Long lists, collapsible friend groups</td><td><code>ScrollBox</code> + <code>DataProvider</code>; tree view for groups</td><td><span class="y">Yes</span></td><td>Recycles rows, smooth scrolling</td></tr>
+        <tr><td>Hover, pressed, focus states</td><td><code>OnEnter</code>/<code>OnLeave</code>, highlight textures, <code>GameTooltip</code></td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>LEVEL UP shine, toast fade, glow</td><td><code>AnimationGroup</code> (Alpha, Translation, Scale) on a gradient streak inside <code>SetClipsChildren(true)</code></td><td><span class="y">Yes</span></td><td>Respect an "Ambient effects" setting</td></tr>
+        <tr><td>Community dropdown</td><td>New menu system (<code>WowStyle1DropdownTemplate</code>, <code>MenuUtil</code>)</td><td><span class="y">Yes</span></td><td>Old <code>UIDropDownMenu</code> is deprecated</td></tr>
+        <tr><td>Move, resize, Esc closes</td><td><code>SetMovable</code>, <code>RegisterForDrag</code>, <code>SetResizable</code>, <code>UISpecialFrames</code></td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Settings in Options › AddOns</td><td><code>Settings.RegisterCanvasLayoutCategory</code> with our styled frame</td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Minimap / compartment button</td><td>LibDBIcon or <code>AddonCompartmentFrame</code></td><td><span class="y">Yes</span></td><td></td></tr>
+        <tr><td>Plan a run in the calendar</td><td>Open the calendar; pre-fill a title to copy</td><td><span class="p">Partial</span></td><td>Creating community events from an addon may be protected; check before promising one-click events</td></tr>
+        <tr><td>Sync, group asks</td><td><code>C_ChatInfo.SendAddonMessage</code> (AceComm on top)</td><td><span class="p">Rules</span></td><td>Midnight blocks addon messages during encounters, keystone runs and PvP matches: queue and send later. No secret values in SavedVariables</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+    <section class="box">
+      <h3>Framework advice</h3>
+      <div class="li"><span><b style="color: #F3EBDA; font-weight: 600">Keep Ace3 for the plumbing:</b> AceAddon, AceDB (profiles), AceComm, AceConsole. They have nothing to do with the look.</span></div>
+      <div class="li"><span><b style="color: #F3EBDA; font-weight: 600">Drop AceGUI for the window.</b> Its widgets carry Blizzard's default skin; restyling means overriding every widget. Native frames + Mixins + ScrollBox give full control and are what Blizzard itself uses now.</span></div>
+      <div class="li"><span>Build a small own kit (“DoomKit”): Window, Tab, ListRow, SkillBar, Button, Checkbox, Toast, ClassPortrait.</span></div>
+      <div class="li"><span>Settings: native Settings API with our canvas, not AceConfig dialogs.</span></div>
+    </section>
+    <section class="box">
+      <h3>Sizes in game</h3>
+      <div class="li"><span>Main window 880 × 600 at UI scale 1, resizable down to 700 × 480.</span></div>
+      <div class="li"><span>Text never below 11 px; body 13, names 14–24 (Marcellus), headers 14–18 (Marcellus SC).</span></div>
+      <div class="li"><span>Rows 28 px, buttons 26–30 px, portraits 20 / 32 / 52 px.</span></div>
+      <div class="li"><span>Same colour tokens as the site and the uploader, so all three feel like one product.</span></div>
+    </section>
+    <section class="box">
+      <h3>Textures to make</h3>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+        <div class="tx"><span><svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#D4AF6A"><rect x="3" y="3" width="28" height="28" rx="3"></rect></svg></span>Border 9-slice</div>
+        <div class="tx"><span><svg width="16" height="16" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" fill="#D4AF6A" transform="rotate(45 8 8)"></rect></svg></span>Corner diamond</div>
+        <div class="tx"><span><svg width="40" height="20" viewBox="0 0 40 20"><rect x="1" y="1" width="38" height="18" rx="4" fill="#C59B52" stroke="#F0D08E"></rect></svg></span>Button 4 states</div>
+        <div class="tx"><span><svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="4" fill="#D4AF6A"></rect><path d="M5 9l3 3 5-6" stroke="#0B0F14" stroke-width="2" fill="none"></path></svg></span>Checkbox</div>
+        <div class="tx"><span><svg width="44" height="10" viewBox="0 0 44 10"><rect width="44" height="10" fill="url(#none)"></rect><rect x="12" width="20" height="10" fill="#FFF7DD" opacity=".7"></rect></svg></span>Shine streak</div>
+        <div class="tx"><span><svg width="34" height="34" viewBox="0 0 34 34"><rect x="5" y="5" width="24" height="24" rx="4" fill="#000" opacity=".5"></rect></svg></span>Shadow 9-slice</div>
+        <div class="tx"><span><svg width="26" height="26" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>Shield emblem</div>
+        <div class="tx"><span><svg width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="none" stroke="#F48CBA" stroke-width="2"></circle></svg></span>Portrait ring</div>
+      </div>
+      <div style="font-size: 12px; color: #7E8898">TGA or BLP, power-of-two sizes; colours tinted in code with <code>SetVertexColor</code> where possible.</div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -113,23 +113,13 @@ describe("talents and role in the window (CF-18)", function()
     load()
     roleOption().set({}, "tank")
     ns.MainFrame.toggle()
-    local tree
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "TreeGroup" then tree = w end
-    end
-    tree:SelectByPath("Vestras#2858", VES)
-    local texts = {}
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.text then texts[#texts + 1] = child.text end
-        walk(child)
-      end
-    end
-    walk(tree)
-    local all = table.concat(texts, "\n")
-    assert.is_truthy(all:find("Role: Tank  |cffa0a0a0(set by player)|r", 1, true))
-    assert.is_truthy(all:find("|cffffd100Arms|r  17 / 0 / 0", 1, true)) -- classic notation, main tree gold
-    assert.is_truthy(all:find("Arms \194\183 Fury \194\183 Protection", 1, true))
-    assert.is_falsy(all:find("WHITE8X8", 1, true) and all:find("Arms|r  |cffa0a0a0", 1, true)) -- no talent bars
+    ns.FriendsTab.select("Vestras#2858\001" .. VES) -- CF-40: the native card
+    local all = "\n" .. table.concat(ns.FriendsTab.cardTexts(), "\n") .. "\n"
+    assert.is_truthy(all:find("\nTank\n", 1, true)) -- the role tile
+    assert.is_truthy(all:find("\nset by player\n", 1, true))
+    assert.is_truthy(all:find("\n17 / 0 / 0\n", 1, true)) -- classic notation next to the Talents header
+    -- One bar per tree, in order (CF-40).
+    local Arms, Fury = all:find("\nArms\n", 1, true), all:find("\nFury\n", 1, true)
+    assert.is_truthy(Arms and Fury and Arms < Fury and all:find("\nProtection\n", 1, true))
   end)
 end)

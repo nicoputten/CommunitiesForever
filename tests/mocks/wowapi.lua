@@ -17,6 +17,111 @@ local function deepCopy(value)
   return copy
 end
 
+-- CF-39: native frames, textures and font strings for the kit. A recording region: SetX(value) stores
+-- value in region.x (several values as a list), GetX returns it; Show/Hide, scripts, points, children and
+-- the Create* methods work for real; any other capitalised method is a no-op. Created frames go to
+-- state.frames. Lower-case fields are plain data, so `region.text == nil` still means "not set".
+local regionMethods = {}
+
+local function newRegion(state, kind, parent)
+  local r = setmetatable({ kind = kind, parent = parent, shown = true, scripts = {}, hooks = {}, points = {},
+                           children = {}, regions = {}, width = 0, height = 0 }, {
+    __index = function(_, key)
+      if regionMethods[key] then return regionMethods[key] end
+      if type(key) ~= "string" or not key:match("^%u") then return nil end
+      local field = key:match("^Set(.+)$")
+      if field then
+        field = field:sub(1, 1):lower() .. field:sub(2)
+        return function(self, ...)
+          if select("#", ...) > 1 then self[field] = { ... } else self[field] = (...) end
+        end
+      end
+      field = key:match("^Get(.+)$")
+      if field then
+        field = field:sub(1, 1):lower() .. field:sub(2)
+        return function(self) return self[field] end
+      end
+      return function() end
+    end,
+  })
+  r.state = state
+  if parent and parent.children then table.insert(parent.children, r) end
+  if kind ~= "Texture" and kind ~= "FontString" and kind ~= "MaskTexture" then
+    state.frames = state.frames or {}
+    table.insert(state.frames, r)
+  end
+  return r
+end
+
+function regionMethods.Show(self) self.shown = true end
+function regionMethods.Hide(self)
+  local was = self.shown
+  self.shown = false
+  if was then regionMethods.RunScript(self, "OnHide") end
+end
+function regionMethods.IsShown(self) return self.shown end
+function regionMethods.IsVisible(self)
+  local r = self
+  while r do
+    if not r.shown then return false end
+    r = r.parent
+  end
+  return true
+end
+function regionMethods.SetShown(self, on) if on then self:Show() else self:Hide() end end
+function regionMethods.SetScript(self, name, fn) self.scripts[name] = fn end
+function regionMethods.GetScript(self, name) return self.scripts[name] end
+function regionMethods.HookScript(self, name, fn)
+  self.hooks[name] = self.hooks[name] or {}
+  table.insert(self.hooks[name], fn)
+end
+-- Runs a script and its hooks, as the game does on that event.
+function regionMethods.RunScript(self, name, ...)
+  if self.scripts[name] then self.scripts[name](self, ...) end
+  for _, fn in ipairs(self.hooks[name] or {}) do fn(self, ...) end
+end
+function regionMethods.SetPoint(self, ...) table.insert(self.points, { ... }) end
+function regionMethods.ClearAllPoints(self) self.points = {} end
+function regionMethods.SetAllPoints(self, other) self.points = { { "ALL", other } } end
+function regionMethods.SetSize(self, w, h) self.width, self.height = w, h end
+function regionMethods.SetWidth(self, w) self.width = w end
+function regionMethods.SetHeight(self, h) self.height = h end
+function regionMethods.GetWidth(self) return self.width end
+function regionMethods.GetHeight(self) return self.height end
+function regionMethods.GetTop(self) return self.top end
+function regionMethods.GetLeft(self) return self.left end
+function regionMethods.GetParent(self) return self.parent end
+function regionMethods.SetParent(self, parent) self.parent = parent end
+function regionMethods.SetText(self, text) self.text = text end
+function regionMethods.GetText(self) return self.text end
+function regionMethods.GetStringWidth(self) return #(tostring(self.text or "")) * 7 end
+function regionMethods.SetFont(self, path, size) self.font = { path, size }; return not self.state.fontsFail end
+function regionMethods.SetFrameStrata(self, strata) self.strata = strata end
+function regionMethods.GetFrameStrata(self) return self.strata or "MEDIUM" end
+function regionMethods.GetFrameLevel(self) return self.frameLevel or 1 end
+function regionMethods.SetEnabled(self, on) self.enabledState = on end
+function regionMethods.StartMoving(self) self.moving = true end
+function regionMethods.StartSizing(self, point) self.sizing = point end
+function regionMethods.StopMovingOrSizing(self) self.moving, self.sizing = nil, nil end
+-- CF-32: keyboard input (the window's Esc handler).
+function regionMethods.EnableKeyboard(self, on) self.keyboard = on end
+function regionMethods.SetPropagateKeyboardInput(self, on)
+  assert(not self.state.inCombat, "SetPropagateKeyboardInput in combat")
+  self.propagate = on
+end
+local function regionFactory(kind)
+  return function(self, _, layer)
+    local r = newRegion(self.state, kind, nil)
+    r.parent, r.layer = self, layer
+    table.insert(self.regions, r)
+    return r
+  end
+end
+regionMethods.CreateTexture = regionFactory("Texture")
+regionMethods.CreateFontString = regionFactory("FontString")
+regionMethods.CreateMaskTexture = regionFactory("MaskTexture")
+function regionMethods.AddMaskTexture(self, mask) self.mask = mask end
+
 -- Default player, values taken from the FriendProbe run (API-FINDINGS.md).
 local function defaultPlayer()
   return {
@@ -146,6 +251,13 @@ local function fakeLibs(state)
       table.insert(self.hooks[name], fn)
     end
     function w.frame:SetFrameStrata(strata) self.strata = strata end
+    -- CF-39: the main window's AceGUI root container hangs in the kit window.
+    function w.frame:SetParent(parent) self.parent = parent end
+    function w.frame:ClearAllPoints() self.points = nil end
+    function w.frame:SetAllPoints(other) self.points = { "ALL", other } end
+    -- CF-40: hidden while the native Friends tab is shown.
+    function w.frame:Show() self.hidden = nil end
+    function w.frame:Hide() self.hidden = true end
     function w:SetCallback(name, fn) self.callbacks[name] = fn end
     function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
     function w:AddChild(child) self.children[#self.children + 1] = child end
@@ -445,8 +557,8 @@ function wowapi.install(opts)
     },
     C_CreatureInfo = {
       GetClassInfo = function(classID)
-        local files = { [2] = "PALADIN", [8] = "MAGE" }
-        local names = { [2] = "Paladin", [8] = "Mage" }
+        local files = { [2] = "PALADIN", [4] = "ROGUE", [8] = "MAGE" }
+        local names = { [2] = "Paladin", [4] = "Rogue", [8] = "Mage" }
         return files[classID] and { classFile = files[classID], className = names[classID] }
       end,
     },
@@ -509,6 +621,17 @@ function wowapi.install(opts)
     return "Community:" .. clubId .. ":" .. streamId
   end
   globals.GetChannelName = function(name) return state.chatChannels[name] or 0 end
+  -- CF-31: joining custom channels works only with state.channelsEnabled (tests/net.lua sets it), so other
+  -- specs keep the whisper path. A joined channel gets the next free index and lands in the first window.
+  state.nextChannelIndex = 7
+  globals.JoinTemporaryChannel = function(name)
+    if not state.channelsEnabled or state.chatChannels[name] then return end
+    state.chatChannels[name] = state.nextChannelIndex
+    state.nextChannelIndex = state.nextChannelIndex + 1
+    table.insert(state.chatWindows[1].channels, name)
+    return 1, name
+  end
+  globals.LeaveChannelByName = function(name) state.chatChannels[name] = nil end
   globals.ChangeChatColor = function(chatType, r, g, b) state.chatColors[chatType] = { r = r, g = g, b = b } end
   -- Like Mainline: name, fontSize, r, g, b, alpha, shown, locked, docked. A window with closed = true is
   -- what closing a chat tab leaves: the name stays, shown and docked are off (CF-26 feedback).
@@ -595,6 +718,14 @@ function wowapi.install(opts)
     state.group, state.inRaid = guids, inRaid
     groupUnits()
   end
+
+  -- CF-39: native frames for the kit (see newRegion).
+  globals.UIParent = newRegion(state, "Frame", nil)
+  globals.CreateFrame = function(frameType, _, parent) return newRegion(state, frameType, parent) end
+  globals.CreateColor = function(r, g, b, a) return { r = r, g = g, b = b, a = a } end
+  globals.GetLocale = function() return state.locale or "enUS" end
+  globals.CLASS_ICON_TCOORDS = { MAGE = { 0.25, 0.49, 0, 0.25 }, ROGUE = { 0.49, 0.74, 0, 0.25 },
+                                 PALADIN = { 0, 0.25, 0.5, 0.75 }, PRIEST = { 0.49, 0.74, 0.25, 0.5 } }
 
   for name, value in pairs(globals) do
     if not missing[name] then set(name, value) end

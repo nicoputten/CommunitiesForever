@@ -141,7 +141,7 @@ describe("Format", function()
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
       assert.are.equal(2, nodes[1].count)
       assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
-                        outside = false, sharedDungeon = false },
+                        outside = false, sharedDungeon = false, shared = 0 },
         nodes[1].children[1])
       assert.are.equal("Vestras (you)", nodes[2].text)
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
@@ -155,6 +155,75 @@ describe("Format", function()
     it("uses a special value for own characters without a BattleTag", function()
       local nodes = Format.tree({ people = { person({ battleTag = false, isSelf = true }) }, unlinked = {} })
       assert.are.equal(Format.SELF, nodes[1].value)
+    end)
+  end)
+
+  -- CF-40: the revamped Friends tab.
+  describe("friends tab models (CF-40)", function()
+    it("draws professions on the vanilla scale with training steps, secondary ones muted", function()
+      assert.are.same({ fill = 60 / 300, cap = 150 / 300, ticks = { 0.25, 0.5, 0.75 }, muted = false },
+        Format.skillBar({ rank = 60, max = 150 }))
+      local cooking = Format.skillBar({ rank = 400, max = nil }, true)
+      assert.are.same({ 1, 0, true }, { cooking.fill, cooking.cap, cooking.muted }) -- clamped, nil max
+    end)
+
+    it("draws talent trees as bars out of 31, the fullest tree marked", function()
+      assert.is_nil(Format.talentBars({}))
+      assert.is_nil(Format.talentBars({ talents = {} }))
+      local bars = Format.talentBars({ talents = { { name = "Arms", points = 31 }, { name = "Fury", points = 5 },
+                                                   { name = "Protection" } } })
+      assert.are.same({ name = "Arms", points = 31, fraction = 1, main = true }, bars[1])
+      assert.are.same({ name = "Fury", points = 5, fraction = 5 / 31, main = false }, bars[2])
+      assert.are.same({ name = "Protection", points = 0, fraction = 0, main = false }, bars[3])
+      assert.is_false(Format.talentBars({ talents = { { name = "Arms", points = 0 } } })[1].main)
+    end)
+
+    it("says under the name who plays it and where it is", function()
+      local view = { people = { person(), me() }, unlinked = unlinked }
+      local grom = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      assert.are.equal("played by Sjaak \194\183 offline, last seen 2 h ago", grom.subtitle)
+      view.people[1].chars[2].lastZone = "The Barrens"
+      grom = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      assert.are.equal("played by Sjaak \194\183 offline, last seen in The Barrens 2 h ago", grom.subtitle)
+      local ves = Format.detail(view, Format.path("Vestras#2858", "G-ME"), NOW)
+      assert.are.equal("your character \194\183 online in Orgrimmar", ves.subtitle)
+      view.people[1].chars[1].outside = true
+      local garraka = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
+      assert.are.equal("played by Sjaak \194\183 online in Orgrimmar \194\183 not in community", garraka.subtitle)
+    end)
+
+    it("has level, item level and role tiles, with where the role comes from", function()
+      local view = { people = { person(), me() }, unlinked = unlinked }
+      view.people[1].chars[2].talents = { { name = "Arms", points = 20 }, { name = "Fury", points = 0 },
+                                          { name = "Protection", points = 0 } }
+      view.people[1].chars[2].role = "tank"
+      view.people[1].chars[2].roleOverride = "tank"
+      local d = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      assert.are.same({ label = "Item level", value = "-" }, d.tiles[2])
+      assert.are.equal("Role", d.tiles[3].label)
+      assert.is_string(d.tiles[3].note)
+      assert.are.equal(3, #d.talentBars)
+      assert.is_nil(Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).talentBars)
+    end)
+
+    it("sums up the sync state for the footer", function()
+      local view = { people = { person(), me() }, unlinked = unlinked }
+      assert.are.equal("Not synced yet \194\183 2 characters from 1 friend", Format.friendsFooter(view, NOW))
+      view.people[1].receivedAt = NOW - 120
+      assert.are.equal("Synced with Sjaak 2 min ago \194\183 2 characters from 1 friend",
+        Format.friendsFooter(view, NOW))
+      assert.are.equal("Not synced yet \194\183 0 characters from 0 friends", Format.friendsFooter({}, NOW))
+      assert.are.equal("Synced with Sjaak 2 min ago", Format.syncedText(view, NOW)) -- CF-42: the Dungeons footer
+    end)
+
+    it("counts quests shared with you on friends' characters in the list", function()
+      local friend = person()
+      friend.chars[1].quests = { [1] = { title = "One", area = "Durotar" }, [2] = { title = "Two", area = "Durotar" } }
+      local mine = me()
+      mine.chars[1].quests = { [1] = { title = "One", area = "Durotar" } }
+      local nodes = Format.tree({ people = { friend, mine }, unlinked = {} })
+      assert.are.equal(1, nodes[1].children[1].shared)
+      assert.is_nil(nodes[2].children[1].shared) -- your own
     end)
   end)
 
@@ -208,6 +277,9 @@ describe("Format", function()
                   { label = "Last seen", value = "Now" } },
         professions = Format.professionGroups(charRow().professions),
         sharedQuests = { total = 0, more = 0, areas = {}, expandable = false, showAll = false }, -- CF-19
+        subtitle = "played by Sjaak \194\183 online in Orgrimmar", -- CF-40
+        tiles = { { label = "Level", value = "11", fraction = 11 / 60 }, { label = "Item level", value = "20" },
+                  { label = "Role", value = "-" } },
       }, d)
     end)
 

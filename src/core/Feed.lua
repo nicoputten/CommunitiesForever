@@ -36,11 +36,27 @@ function Feed.dayNumber(year, month, day)
   return era * 146097 + doe - 719468
 end
 
--- "Today", "Yesterday", or the weekday name for older days.
+-- Calendar date of a day number: year, month, day (civil from days, the inverse of dayNumber).
+function Feed.date(dayNumber)
+  local z = dayNumber + 719468
+  local era = math.floor(z / 146097)
+  local doe = z - era * 146097
+  local yoe = math.floor((doe - math.floor(doe / 1460) + math.floor(doe / 36524) - math.floor(doe / 146096)) / 365)
+  local doy = doe - (365 * yoe + math.floor(yoe / 4) - math.floor(yoe / 100))
+  local mp = math.floor((5 * doy + 2) / 153)
+  local d = doy - math.floor((153 * mp + 2) / 5) + 1
+  local m = mp < 10 and mp + 3 or mp - 9
+  return yoe + era * 400 + (m <= 2 and 1 or 0), m, d
+end
+
+local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+
+-- "Today", "Yesterday", or the weekday and date for older days ("Monday 26 Oct", CF-41).
 function Feed.dayLabel(day, today)
   if day == today then return "Today" end
   if day == today - 1 then return "Yesterday" end
-  return WEEKDAYS[(day + 4) % 7 + 1] -- day 0 (1970-01-01) was a Thursday
+  local _, month, monthDay = Feed.date(day)
+  return string.format("%s %d %s", WEEKDAYS[(day + 4) % 7 + 1], monthDay, MONTHS[month]) -- day 0 was a Thursday
 end
 
 --[[ Events from the difference between the stored and the new snapshot of the current character:
@@ -237,8 +253,8 @@ function Feed.merge(stored, incoming, maxAt)
   return result
 end
 
--- "questing in Westfall (9)", "... in Westfall and Redridge (12)", "... in Westfall, Redridge +2 zones (15)".
-local function questingText(quests)
+-- Zones with quests done, most first (then by name), and the total.
+local function questZones(quests)
   local zones, total = {}, 0
   for zone, count in pairs(quests) do
     if count > 0 then
@@ -246,11 +262,15 @@ local function questingText(quests)
       total = total + count
     end
   end
-  if total == 0 then return nil end
   table.sort(zones, function(a, b)
     if a.count ~= b.count then return a.count > b.count end
     return a.zone < b.zone
   end)
+  return zones, total
+end
+
+-- "questing in Westfall (9)", "... in Westfall and Redridge (12)", "... in Westfall, Redridge +2 zones (15)".
+local function questingText(zones, total)
   local where
   if #zones == 1 then
     where = zones[1].zone
@@ -366,13 +386,19 @@ local function runParts(agg)
   return parts
 end
 
---[[ Parts of one character's day, in order of importance: raids, dungeons and battlegrounds (CF-23),
-milestone or level range, profession ranks, learned professions, questing. Milestone: the highest of
-MILESTONES reached that day replaces the range ("reached 40", "reached 60!").
+--[[ Pieces of one character's day, in order of importance: raids, dungeons and battlegrounds (CF-23),
+milestone or level range, profession ranks, learned professions, questing. Each has the text Feed.parts
+shows; CF-41 draws some of them its own way:
+  { kind = "run", text } | { kind = "level", from, to, text } | { kind = "rank", text } |
+  { kind = "learned", text } | { kind = "questing", zones = { name, ... }, moreZones, quests, text }
+zones: the ZONE_PILLS zones with the most quests; moreZones: how many other zones; quests: the total.
+Milestone: the highest of MILESTONES reached that day replaces the range text ("reached 40", "reached 60!").
 ctx (optional, see participants): runs together with another person are left out here; they show on a
 shared line (Feed.days). Without ctx every run is the character's own and companions are left out. ]]
-function Feed.parts(entry, ctx)
-  local parts = {}
+Feed.ZONE_PILLS = 2
+
+function Feed.pieces(entry, ctx)
+  local pieces = {}
   if entry.runs then
     ctx = ctx or { owner = "" }
     local agg = {}
@@ -380,28 +406,42 @@ function Feed.parts(entry, ctx)
       local tags, names = participants(run, ctx)
       if #tags == 1 then aggregate(agg, run, names) end
     end
-    for _, part in ipairs(runParts(agg)) do parts[#parts + 1] = part end
+    for _, text in ipairs(runParts(agg)) do pieces[#pieces + 1] = { kind = "run", text = text } end
   end
   if entry.levelTo and entry.levelFrom and entry.levelTo > entry.levelFrom then
     local milestone
     for _, m in ipairs(Feed.MILESTONES) do
       if entry.levelFrom < m and entry.levelTo >= m then milestone = m end
     end
-    if milestone then
-      parts[#parts + 1] = milestone == 60 and "reached 60!" or ("reached " .. milestone)
-    else
-      parts[#parts + 1] = string.format("%d to %d", entry.levelFrom, entry.levelTo) -- the WoW font has no arrow
-    end
+    local text = string.format("%d to %d", entry.levelFrom, entry.levelTo) -- the WoW font has no arrow
+    if milestone then text = milestone == 60 and "reached 60!" or ("reached " .. milestone) end
+    pieces[#pieces + 1] = { kind = "level", from = entry.levelFrom, to = entry.levelTo, text = text }
   end
   for _, name in ipairs(sortedKeys(entry.ranks)) do
-    parts[#parts + 1] = string.format("%s reached %s", name, entry.ranks[name])
+    pieces[#pieces + 1] = { kind = "rank", text = string.format("%s reached %s", name, entry.ranks[name]) }
   end
   for _, name in ipairs(sortedKeys(entry.learned)) do
-    parts[#parts + 1] = "learned " .. name
+    pieces[#pieces + 1] = { kind = "learned", text = "learned " .. name }
   end
-  local questing = entry.quests and questingText(entry.quests)
-  if questing then parts[#parts + 1] = questing end
-  return parts
+  local zones, total = questZones(entry.quests or {})
+  if total > 0 then
+    local names = {}
+    for i = 1, math.min(Feed.ZONE_PILLS, #zones) do names[i] = zones[i].zone end
+    pieces[#pieces + 1] = { kind = "questing", zones = names, moreZones = #zones - #names, quests = total,
+                            text = questingText(zones, total) }
+  end
+  return pieces
+end
+
+local function texts(pieces)
+  local list = {}
+  for i, piece in ipairs(pieces) do list[i] = piece.text end
+  return list
+end
+
+-- The pieces' texts: "ran Deadmines", "5 to 8", "Mining reached Expert", "questing in Westfall (9)".
+function Feed.parts(entry, ctx)
+  return texts(Feed.pieces(entry, ctx))
 end
 
 local function firstParts(parts)
@@ -424,12 +464,17 @@ local function collectShared(groups, entry, ctx)
       local key = table.concat(tags, "\001")
       local group = groups[key]
       if not group then
-        group = { tags = tags, byOwner = {}, at = 0 }
+        group = { tags = tags, byOwner = {}, chars = {}, at = 0 }
         groups[key] = group
       end
       group.byOwner[ctx.owner] = group.byOwner[ctx.owner] or {}
       aggregate(group.byOwner[ctx.owner], run, companions)
       group.at = math.max(group.at, entry.at or 0)
+      -- CF-41: the character each person was on (the latest), for the portraits.
+      local char = group.chars[ctx.owner]
+      if not char or (entry.at or 0) > char.at then
+        group.chars[ctx.owner] = { name = entry.name, classFile = entry.classFile, at = entry.at or 0 }
+      end
     end
   end
 end
@@ -444,20 +489,28 @@ local function sharedLine(key, group, byTag)
     if (a.isSelf or false) ~= (b.isSelf or false) then return a.isSelf or false end
     return tostring(a.displayName) < tostring(b.displayName)
   end)
-  local displayNames = {}
-  for i, person in ipairs(who) do displayNames[i] = tostring(person.displayName) end
+  local displayNames, chars = {}, {}
+  for i, person in ipairs(who) do
+    displayNames[i] = tostring(person.displayName)
+    local char = group.chars[person.battleTag]
+    if char then chars[#chars + 1] = { name = char.name, classFile = char.classFile } end
+  end
   local parts = runParts(merged)
   local shown = firstParts(parts)
-  return { shared = true, key = key, title = joinNames(displayNames), battleTags = group.tags, at = group.at,
-           parts = parts, shown = shown, more = #parts - #shown, extraChars = 0, others = {} }
+  local pieces = {}
+  for i, text in ipairs(parts) do pieces[i] = { kind = "run", text = text } end
+  return { shared = true, key = key, title = joinNames(displayNames), names = displayNames, battleTags = group.tags,
+           at = group.at, chars = chars, parts = parts, pieces = pieces, shown = shown, more = #parts - #shown,
+           extraChars = 0, others = {}, hasRuns = true }
 end
 
 --[[ Lines for the Activity tab, newest day first:
   { { day, label, lines = { line, ... } } }
-A person's line: { displayName, isSelf, battleTag, at, char = { name, classFile }, parts, shown, more,
-                   extraChars, others = { { char, parts } } }
-A shared line (CF-23: two or more people in the same runs): { shared = true, key, title, battleTags, at,
-                   parts, shown, more, extraChars = 0, others = {} }. Those runs are left out of the
+A person's line: { displayName, isSelf, battleTag, at, char = { name, classFile }, parts, pieces, shown, more,
+                   extraChars, others = { { char, parts, pieces } }, hasLevel, hasRuns }
+A shared line (CF-23: two or more people in the same runs): { shared = true, key, title, names, battleTags,
+                   at, chars = { { name, classFile } }, parts, pieces, shown, more, extraChars = 0, others = {},
+                   hasRuns = true }. Those runs are left out of the
                    people's own lines.
 people: Linker people (each with displayName, isSelf, battleTag, feed, chars = { { guid } }).
 members: optional { [guid] = name } of the selected community: companions who are members but not linked
@@ -489,10 +542,10 @@ function Feed.days(people, today, members)
         local list = {}
         for guid, entry in pairs(chars) do
           if person.battleTag then collectShared(sharedByDay[day], entry, ctx) end
-          local parts = Feed.parts(entry, ctx)
-          if #parts > 0 then
+          local pieces = Feed.pieces(entry, ctx)
+          if #pieces > 0 then
             list[#list + 1] = { guid = guid, char = { name = entry.name, classFile = entry.classFile },
-                                parts = parts, at = entry.at or 0 }
+                                parts = texts(pieces), pieces = pieces, at = entry.at or 0 }
           end
         end
         if #list > 0 then
@@ -501,17 +554,19 @@ function Feed.days(people, today, members)
             if a.at ~= b.at then return a.at > b.at end
             return a.guid < b.guid
           end)
-          local main, latest, others = list[1], 0, {}
+          local main, latest, others, has = list[1], 0, {}, {}
           for i, c in ipairs(list) do
             latest = math.max(latest, c.at)
-            if i > 1 then others[#others + 1] = { char = c.char, parts = c.parts } end
+            if i > 1 then others[#others + 1] = { char = c.char, parts = c.parts, pieces = c.pieces } end
+            for _, piece in ipairs(c.pieces) do has[piece.kind] = true end
           end
           local shown = firstParts(main.parts)
           byDay[day] = byDay[day] or {}
           table.insert(byDay[day], {
             displayName = person.displayName, isSelf = person.isSelf or false, battleTag = person.battleTag,
-            at = latest, char = main.char, parts = main.parts, shown = shown,
+            at = latest, char = main.char, parts = main.parts, pieces = main.pieces, shown = shown,
             more = #main.parts - #shown, extraChars = #others, others = others,
+            hasLevel = has.level or false, hasRuns = has.run or false, -- CF-41: the filter chips
           })
         end
       end
@@ -535,6 +590,37 @@ function Feed.days(people, today, members)
   end
   table.sort(days, function(a, b) return a.day > b.day end)
   return days
+end
+
+-- CF-41: the Activity tab's filter chips. Each keeps whole lines: Level-ups the lines with a level change
+-- (on any of the person's characters that day), Runs the lines with a dungeon, raid or battleground, Together
+-- the lines of people who played together.
+Feed.FILTERS = {
+  { value = "all", text = "All" },
+  { value = "levels", text = "Level-ups" },
+  { value = "runs", text = "Dungeons" },
+  { value = "together", text = "Together" },
+}
+
+local MATCHES = {
+  levels = function(line) return line.hasLevel == true end,
+  runs = function(line) return line.hasRuns == true end,
+  together = function(line) return line.shared == true end,
+}
+
+-- Days (Feed.days) with only the lines the filter keeps; days without lines are left out.
+function Feed.filter(days, filter)
+  local match = MATCHES[filter]
+  if not match then return days end
+  local result = {}
+  for _, day in ipairs(days) do
+    local lines = {}
+    for _, line in ipairs(day.lines) do
+      if match(line) then lines[#lines + 1] = line end
+    end
+    if #lines > 0 then result[#result + 1] = { day = day.day, label = day.label, lines = lines } end
+  end
+  return result
 end
 
 ns.Feed = Feed

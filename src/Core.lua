@@ -35,6 +35,7 @@ function addon:OnEnable()
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
   ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab
+  ns.SyncChannel.start(self) -- CF-31: the hidden channel HELLO and BYE are broadcast on
   ns.MemberTracker.start(self)
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
   ns.Presence.watch(self)

@@ -42,15 +42,28 @@ end
 -- Level-ups older than this are not announced: relayed records (CF-20) can arrive hours later.
 local LEVEL_UP_MAX_AGE = 15 * 60
 
--- CF-16: "Alice's Alice Example reached level 12" for characters of linked people.
+-- CF-16: "Alice's Alice Example reached level 12" for characters of linked people, in chat
+-- (settings.levelUps) and, CF-44, as the announcement at the top of the screen (settings.levelUpToast).
 local function announceLevelUp(battleTag, up)
-  if addonRef.db.global.settings.levelUps == false then return end
+  local s = addonRef.db.global.settings
+  local chat, toast = s.levelUps ~= false, s.levelUpToast ~= false
+  if not chat and not toast then return end
   if not up.updatedAt or GetServerTime() - up.updatedAt > LEVEL_UP_MAX_AGE then return end
   local person = linkedPerson(battleTag)
   if not person then return end
   for _, row in ipairs(person.chars) do
     if row.guid == up.guid then
-      addonRef:Print(ns.Format.levelUpNotice(person.displayName, row.name or up.name, up.level))
+      local name = row.name or up.name
+      if chat then addonRef:Print(ns.Format.levelUpNotice(person.displayName, name, up.level)) end
+      if toast then
+        local classFile = row.classFile
+        if not classFile and row.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then -- verified V21
+          local info = C_CreatureInfo.GetClassInfo(row.classID)
+          classFile = info and info.classFile
+        end
+        ns.LevelUpToast.announce({ displayName = person.displayName, name = name, classFile = classFile,
+                                   level = up.level })
+      end
       return
     end
   end
@@ -58,6 +71,7 @@ end
 
 function Notify.start(addon)
   addonRef = addon
+  ns.LevelUpToast.reset()
   lastNotified = {}
   local events = LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag) notify(battleTag) end)

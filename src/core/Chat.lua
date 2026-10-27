@@ -58,5 +58,18 @@ function Chat.findTab(windows, tabName)
   return nil
 end
 
+--[[ CF-31: the hidden chat channel addons of one community broadcast on: "cf" and a hash of the
+community name (case and surrounding spaces ignored), the same for every member. The name itself never
+shows in it. Another community with the same name gets the same channel; their messages are ignored like
+any message from outside your community. nil without a name. ]]
+function Chat.syncChannel(communityName)
+  if type(communityName) ~= "string" then return nil end
+  local name = communityName:lower():gsub("^%s+", ""):gsub("%s+$", "")
+  if name == "" then return nil end
+  local h = 5381 -- djb2, kept in 32 bits
+  for i = 1, #name do h = (h * 33 + name:byte(i)) % 4294967296 end
+  return string.format("cf%08x", h)
+end
+
 ns.Chat = Chat
 return Chat

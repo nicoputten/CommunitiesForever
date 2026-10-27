@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -367,3 +367,68 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Manual: each menu item on a friend's character; Invite on an offline character is disabled.
 - Decided after V57 run 1: also on a **person** (group) row: Whisper and Invite go to the character they are on now; offline: both disabled with "Offline" in the title, Copy name copies the last character seen. Your own row: Copy name only. The menu is raised above the main window (it draws below AceGUI windows otherwise). The copy box closes after Ctrl+C and when it loses focus.
 - Decided after V57 run 3: no Copy name (the copy box was clumsy; addons cannot use the clipboard), so the menu has Whisper and Invite to group only, and your own rows have no menu. The main window is strata `DIALOG`, one below Blizzard's menu. Built: `Format.contextMenu` (pure), `src/adapters/ContextMenu.lua` (menu, `ChatFrameUtil.SendTell`), right-click on tree rows and on the card's character list; Invite uses CF-27's `Party.invite` (by name, else Battle.net). Rule 8: nothing stored or sent changes.
+
+### CF-31 One broadcast on a hidden community channel
+- Goal: the community transport (CF-28 part 2b) sends one message to the community channel instead of a whisper to each member running the addon, so traffic no longer grows with the number of members.
+- Depends on V49: can addons send addon messages in the community channel, and do they arrive at the other members (run 1: the send is accepted, but no copy comes back to the sender)? If V49 says no, this story is dropped and the whispers stay.
+- Keeps everything from CF-28: 255-byte parts, MISS and resend, the accept rules (the sender maps to a community member; a record claimed as own must contain the sending character).
+- Manual (2 clients in the community, not Battle.net friends): records, level-ups and group asks arrive; `/cf sync debug` shows one channel send instead of a whisper per member.
+- Decided (2026-10-23): not the community channel (V49 unclear: the send was accepted but did not come back), but a hidden custom chat channel named `cf` + a hash of the community name, built with an automatic fallback to whispers instead of probing first. V49 dropped. Only HELLO and BYE go on the channel (single part); REQ, RECORD, MISS, ASK and PING stay whispers. HELLO carries `ch` (rule 8: optional); members without it, or a failed join, keep getting whispers; someone new is always answered by whisper. Built: `Chat.syncChannel`, `src/adapters/Channels.lua`, `src/services/SyncChannel.lua`, `Messenger.sendChannel`. Found while building: `ChatFrames.windows` only looked at the first channel of a window (`{ f and f() }` keeps one value). Tests: `SyncChannel_spec` (harness with channels), `Chat_spec`. VERIFY V59.
+
+## E13 Revamp (new look)
+
+### CF-39 Kit and window shell
+- Goal: the new window around the existing tabs, and the building blocks the screen stories use.
+- Decided: native frames and our own small kit (`src/ui/kit/`), no AceGUI for the main window. Ace3 stays for the plumbing. Fonts Marcellus SC, Marcellus and Inter bundled (SIL OFL, `media/fonts/`; added to ARCHITECTURE "Libraries", rule 7), the game font as fallback for non-Latin clients.
+- Kit (values from `widget-kit.html` and the mockups): Window (96% opaque navy panel, 1 px gold border, corner diamonds, soft shadow), title bar (shield emblem, community name in Marcellus SC, "CommunitiesForever", "● N online", settings and close buttons), Tabs (Marcellus SC, gold underline when active, count badge as in "Dungeons (1)"), footer line, Button (normal, hover, pressed, disabled; primary and ghost), Checkbox (with a second line of help text), ListRow (28 px, hover and selected states), SkillBar (fill, cap shading, tier ticks), ClassPortrait (the real class icon in a round mask with a class-colour ring; 20, 32 and 52 px; online dot), Toast. Colour tokens and sizes in one place (`src/ui/kit/Theme.lua`).
+- Window: 880 × 600 at UI scale 1, resizable down to 700 × 480, moved by dragging the title; size and position saved as today; strata `DIALOG` (CF-37); Esc and the keybinding as in CF-32; opens on the last tab.
+- Textures to make (`media/`, TGA, power-of-two, tinted in code): border nine-slice, corner diamond, button states, checkbox, shine streak, shadow nine-slice, shield emblem, portrait ring.
+- Until each screen story lands, the existing tab content (AceGUI) sits inside the new shell's content area.
+- Unverified on Forever (VERIFY.md, checked at launch): `CreateMaskTexture`, `Texture:SetGradient` with `CreateColor`, `FontString:SetFont` with a bundled font, `C_ClassColor.GetClassColor`, the class icon atlas, `ScrollBox` with a `DataProvider`, `SetResizeBounds`.
+- Unit tests: theme tokens (every colour defined once); the window's saved size and position; tabs and badge; the mock grows the frame API the kit uses.
+- Manual: the window looks like the mockups (border, title, tabs, footer), moves, resizes within its bounds, Esc closes it, the old tabs still work inside it.
+- Built: `src/ui/kit/` (Theme: colours, text roles, sizes; Widgets: Button, IconButton, Checkbox, ListRow, SkillBar, Portrait, Toast; Window: window shell and Tabs), fonts in `media/fonts` (Marcellus SC, Marcellus, Inter Regular/Medium/SemiBold, static files from the Inter 4.1 release), textures drawn by `tools/make-textures.py`. Decided while building: windows saved before the revamp are reset once to 880 × 600 (Nico), the gear opens the current settings until CF-43, the shadow is one soft texture instead of a nine-slice. The mock gained a recording native-frame API (`CreateFrame`, textures, font strings). VERIFY V61.
+
+### CF-40 Friends tab in the new look
+- Goal: the Friends tab as in `friends.html`.
+- List (left, 270 px): the search box (CF-36, placeholder kept), per person a group header (online dot, name, "(you)", character count, collapsible), character rows (20 px portrait with online dot, name in class colour, level right, the shared-quest icon with a count). Selected row: gold left bar. Long lists scroll. Right-click menu as CF-37.
+- Detail (right): header (52 px portrait, name in Marcellus 24 in class colour, "Class · played by <person> · <status>": online in <zone> or offline, last seen in <zone> <ago>), **Whisper** and **Invite** buttons (the CF-37 actions; disabled when offline or for your own characters). Tiles: Level (with a bar to 60), Item level, Role ("from talents" or "set by player"). Professions as skill bars (rank / max, cap shading, ticks at the tier steps; secondary professions muted). Talents per tree with "a / b / c". Quests you share, grouped by area, dungeons first with a Dungeon tag, "Show all N →". A person's card (group header selected): as today, in the new style.
+- Footer: "Synced with <person> <ago>" (the newest record received), "N characters from M friends", "/cf to open · drag the title to move".
+- Unit tests (pure core): the header status line, the tiles, skill bar fractions and tier ticks, the footer texts.
+- Manual: compare with `friends.html`; search, collapse, right-click, Whisper and Invite still work.
+- Decided (2026-10-27): the arrow folds a person, clicking the name opens the person card; our own simple scrolling (`Kit.scrollArea`: plain ScrollFrame, mouse wheel, a thin gold thumb), not ScrollBox. Selection and folded people stay in `settings.tree` (the AceGUI tree's keys: `selected`, `groups` with false = folded; no migration, rule 8). The character card's Whisper and Invite are the CF-37 menu items. The list row shows the number of shared quests (the dungeon icon of CF-19 is gone from the list; areas on the card carry the DUNGEON tag).
+
+### CF-41 Activity tab in the new look
+- Goal: the Activity tab as in `activity.html`.
+- Filter chips: All, Level-ups, Dungeons, Together (one active; remembered while the window is open).
+- Day headers (Today, Yesterday, then the date) in Marcellus SC. Per entry: a 32 px portrait (two overlapping for a together line), "<person> on <character>" or "<person> and <person> together", then a line with a **LEVEL UP** chip "22 → 24" (gold, with a slow shine unless Ambient effects is off), "questing in" with the top zones as pills and "+N zones", "· N quests done", runs ("ran <dungeon>"), profession ranks. The time on the right is the entry's last change that day (`at`, already stored; no run durations: not recorded).
+- Footer: "Activity is shared only by friends who turned on Share my activity" and "Keeps 7 days".
+- Unit tests (pure core): filtering per chip, the entry lines, "+N zones", the time.
+- Manual: compare with `activity.html`; Show all and the together lines still work.
+- Decided (2026-10-27): the Dungeons chip covers every run (dungeons, raids, battlegrounds); a chip keeps whole entries (a person's entry counts when any of their characters that day matches); older days read "Monday 26 Oct"; the LEVEL UP chip is static until CF-43 brings Ambient effects. The chip shows "from → to" (the milestone texts "reached 20" stay in `Feed.parts`); an entry shows all its pieces, "Show all (N)" opens the person's other characters. The time is the local clock of the entry's `at` (`date`, V63).
+
+### CF-42 Dungeons tab in the new look
+- Goal: the Dungeons tab as in `dungeons.html`.
+- List (left): "Planned" (calendar runs within 3 days: name, day and time, who is going), then "In range for <character> (<level>)": per dungeon the level range ("outdoor" for outdoor ones), friends in range, and "x / y quests" (green when you have all). A note: "Ranges are typical levels; the list follows the character you're on."
+- Detail: name in Marcellus 26, "levels a–b · <zone>". Suggested group as five slots (tank, healer, three damage): portrait, "<character> <level>", role and person; a missing role stands out ("nobody in range", orange dashed); your slot outlined in gold; open slots "+ open". "Alternatives for you: <your other characters in range>". **Ask who's up for it** (CF-27) with "Sends a chat line to friends with the addon" (not a popup). Quests "x / y in your log" with a check per quest and who else has it. Plan a run: the title ready to copy and **Open calendar** (as CF-24).
+- Footer: "Synced with <person> <ago>" and "Group asks wait until combat ends".
+- Unit tests (pure core): the slots (missing role, your slot, open), alternatives, quest counts and colour, the planned list.
+- Manual: compare with `dungeons.html`; asking, the calendar button and planned runs still work.
+- Decided (2026-10-27): the list follows the character you are on (`Dungeons.overview` and `suggest` with its GUID; your other characters are "Alternatives for you"); zones per dungeon hardcoded in English (`Dungeons.ZONES`; none for the Group Finder's new dungeons); "Also in range" kept, compact. No "outdoor" ranges (no data). The list no longer shows the dungeon atlas icon (V32). Selection stays in `settings.dungeonTree.selected` (rule 8).
+
+### CF-43 Settings and setup in the new look
+- Goal: the settings window and the first-run setup as in `settings-setup.html`.
+- Settings (own window, 640 × ~500): Display name, Community (dropdown, character communities only), Sharing (Share my activity; Receive group asks: "a chat line when a friend looks for a group"), Notifications (When friends log in, Announce friends' level-ups, Play a sound), Community chat (colour swatch and Reset, Flash the chat tab, Create a community chat tab), Interface (Minimap button, **Open on login**, **Ambient effects**: title shimmer and level-up glow). No "paste an invite link to join" (blocked, V26). Footer "Also under Options › AddOns · v<version>"; registered there with `Settings.RegisterCanvasLayoutCategory` (unverified, VERIFY.md), replacing the AceConfig dialog.
+- New settings `openOnLogin` (off) and `ambientEffects` (on): new keys with defaults, no migration (rule 8).
+- Setup (600 × 460): progress bars and "Step n of 6", Welcome (three tiles: Friends, Activity, Dungeons), Community, Name, Community chat (optional, as CF-30: Create chat tab in the Next spot, Not now), Sharing and notifications, Done. Skip setup / Next.
+- Unit tests: every setting writes the same value as before (one source of truth, CF-26); the new settings' defaults; the steps.
+- Manual: compare with `settings-setup.html`; every setting works; the setup on a fresh account.
+- Decided (2026-10-27): Options › AddOns gets a launcher page (a line and "Open settings"), not a second copy of the controls; the settings window also keeps roles per character (CF-18), the invite link to share (CF-21) and "Keep community messages in General too"; "Play a sound" is the existing chat sound, under Community chat; the ambient animations are built now (`Kit.shine`, AnimationGroup, V64). Built: `Kit.dialog`, `Kit.input`, `Kit.select` (Blizzard's menu), `Kit.swatch`, `Kit.shine`; `adapters/Panels.lua` (colour picker V65, Options page V66). Option names follow the design ("When friends log in", "Minimap button", "Chat color", "Reset", "Create a community chat tab"). AceGUI and AceConfig are no longer called (their libraries stay embedded for now).
+
+### CF-44 Level-up announcement
+- Goal: a short announcement at the top of the screen when a friend's character levels up (`activity.html`, above the window).
+- A pill at the top centre: 28 px portrait, "<person>'s <character> reached level N", the LEVEL UP chip (shine unless Ambient effects is off); fades out after 6 s; several in a row stack or queue. The chat line (CF-16) stays.
+- Setting "Level-up announcement" (Notifications); its default is decided when building.
+- Unit tests: when it shows (same rules as the CF-16 line: linked people, not older than 15 minutes), the text, the queue.
+- Manual: a friend levels up: the pill shows and fades; off in settings: nothing.
+- Decided (2026-10-27): the setting is on by default (also in the setup's notifications step); several level-ups queue, one pill at a time, at most 5 waiting (the oldest dropped). Same rules as the chat line (linked people, not older than 15 minutes); each switch works without the other. Built: `core/Queue.lua`, `ui/LevelUpToast.lua`, `Kit.toast` with a chip, fade (AnimationGroup Alpha, V64) and `onDone`.
