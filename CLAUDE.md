@@ -29,6 +29,7 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
    - Messages: only add optional fields and new message types within a `pv`; never change an existing field's meaning or type. A breaking change bumps `Protocol.VERSION` with a step in `Protocol.UPGRADES` that brings the old message to the new shape.
    - Code reading stored or received data handles missing fields (nil) everywhere.
    - Released steps and captured fixtures are never edited. `tests/spec/Compat_spec.lua` must keep passing on the fixtures of every earlier release.
+9. **Nothing private, ever.** Treat everything committed as public forever, history included: code, docs, fixtures, screenshots, commit messages, PR texts. Even while a repo is private, so it can go public any time. Never commit secrets (tokens, keys, passwords, `.env` files, webhook URLs), real BattleTags, Discord IDs or usernames, real SavedVariables, names of real people beyond what Nico agreed to, IP addresses, NAS details or local paths with user names. Tests and docs use made-up values (`Name#1234`, `Ada#1001`). When in doubt, ask Nico before committing. If something private lands anyway, stop and tell Nico; rewriting history is his call. (`tests/spec/Release_spec.lua` also guards the released files.)
 
 ## Commands
 - One-time toolchain: `tools\setup-lua.ps1` (project-local Lua 5.1 in `.lua\`, gitignored). Put `.lua\bin` on PATH first: `$env:PATH = "$PWD\.lua\bin;$env:PATH"`

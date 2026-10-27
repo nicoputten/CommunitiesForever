@@ -13,7 +13,7 @@ Source: FriendProbe run on Forever beta, build `1.60.1 70450 (Oct 15 2026)`, TOC
 | `GetRealmName()` / `GetNormalizedRealmName()` | `"Classic Beta PvP"` / `"ClassicBetaPvP"` |
 | `UnitGUID("player")` | `"Player-4619-01627852"` |
 | `UnitClassBase("player")` | `"PALADIN"` |
-| `BNGetInfo()` | 2nd return is BattleTag `"Vestras#2858"`; 1st (presenceID) is nil |
+| `BNGetInfo()` | 2nd return is the account's BattleTag (`"Name#1234"`); 1st (presenceID) is nil |
 | `GetNumSkillLines`, `GetSkillLineInfo` | do NOT exist |
 
 ## Professions
