@@ -103,6 +103,8 @@ Theme.TEXTURES = {
   check = MEDIA .. "textures\\check.tga",
   shine = MEDIA .. "textures\\shine.tga",
   shadow = MEDIA .. "textures\\shadow.tga",
+  arrow = MEDIA .. "textures\\arrow.tga", -- CF-40: fold arrow
+  quest = MEDIA .. "textures\\quest.tga", -- CF-40: shared-quest count
 }
 
 -- Sizes (px at UI scale 1) from the design.

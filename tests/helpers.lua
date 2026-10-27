@@ -31,6 +31,42 @@ function helpers.loadAddon()
   return ns
 end
 
+-- CF-40: the native Friends tab (src/ui/FriendsTab.lua) as the specs see it.
+function helpers.friendsTab(ns)
+  local tab = {}
+  function tab.rows() return ns.FriendsTab.rows() end
+  -- Paths of the visible list rows of one kind ("group" or "char"), in order.
+  function tab.paths(kind)
+    local list = {}
+    for _, r in ipairs(tab.rows()) do
+      if not kind or r.kind == kind then list[#list + 1] = r.path end
+    end
+    return list
+  end
+  function tab.row(path)
+    for _, r in ipairs(tab.rows()) do
+      if r.path == path then return r.frame end
+    end
+  end
+  function tab.texts() return ns.FriendsTab.cardTexts() end
+  function tab.cardLines() return ns.FriendsTab.cardLines() end
+  function tab.has(text)
+    for _, t in ipairs(tab.texts()) do
+      if t:find(text, 1, true) then return true end
+    end
+    return false
+  end
+  function tab.click(frame) frame:RunScript("OnClick", "LeftButton") end
+  function tab.rightClick(frame) frame:RunScript("OnMouseUp", "RightButton") end
+  -- Types into the search box, as the player does.
+  function tab.type(text)
+    local box = ns.FriendsTab.searchBox()
+    box:SetText(text)
+    box:RunScript("OnTextChanged", true)
+  end
+  return tab
+end
+
 -- Pure-Lua libraries from Libs/ (fetched by tools/fetch-libs.ps1). Without LibStub they
 -- return themselves. Cached, so a spec gets the same instance as the addon would.
 local libs = {}

@@ -287,5 +287,55 @@ function Kit.toast(parent)
   return t
 end
 
+--[[ Scroll area (CF-40): a ScrollFrame with a child frame for the content, scrolled by the mouse wheel, and a
+thin gold thumb on the right while the content is taller than the area. Plain ScrollFrame API, no templates
+(decided over ScrollBox, which is unverified). area.child is where content goes; call area:Update() after
+changing the child's height. ]]
+Kit.SCROLL_STEP = 40
+
+function Kit.scrollArea(parent)
+  local area = CreateFrame("ScrollFrame", nil, parent)
+  local child = CreateFrame("Frame", nil, area)
+  child:SetSize(1, 1)
+  area:SetScrollChild(child)
+  area.child = child
+  local thumb = Theme.fill(area, "gold", "OVERLAY")
+  thumb:SetWidth(3)
+  thumb:SetAlpha(0.6)
+  area.thumb = thumb
+  area.offset = 0
+
+  local function range(self)
+    return math.max(0, (self.child:GetHeight() or 0) - (self:GetHeight() or 0))
+  end
+
+  function area:SetOffset(offset)
+    self.offset = math.max(0, math.min(range(self), offset or 0))
+    self:SetVerticalScroll(self.offset)
+    self:Update()
+  end
+
+  -- Child width follows the area; the thumb shows the visible part.
+  function area:Update()
+    local height, total = self:GetHeight() or 0, self.child:GetHeight() or 0
+    self.child:SetWidth(math.max(1, (self:GetWidth() or 0) - 6))
+    if total <= height or height <= 0 then
+      self.thumb:Hide()
+      return
+    end
+    self.thumb:Show()
+    local size = math.max(20, height * height / total)
+    local top = (height - size) * (self.offset / math.max(1, total - height))
+    self.thumb:ClearAllPoints()
+    self.thumb:SetPoint("TOPRIGHT", -1, -top)
+    self.thumb:SetHeight(size)
+  end
+
+  area:EnableMouseWheel(true)
+  area:SetScript("OnMouseWheel", function(self, delta) self:SetOffset(self.offset - delta * Kit.SCROLL_STEP) end)
+  area:SetScript("OnSizeChanged", function(self) self:Update() end)
+  return area
+end
+
 ns.Kit = Kit
 return Kit

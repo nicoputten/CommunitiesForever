@@ -3,19 +3,11 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-40 to CF-44 (one per screen, any order).
+Build order: CF-41 to CF-44 (one per screen, any order).
 
 ## E13 Revamp (new look)
 
 Design: `docs/design/revamp-2026-10/` (README: decisions and where the mockups differ). Each screen story replaces one tab whole: old and new never mix inside one tab. Nothing stored or sent changes unless a story says so (rule 8). Visual checks happen in game after launch (VERIFY.md).
-
-### CF-40 Friends tab in the new look
-- Goal: the Friends tab as in `friends.html`.
-- List (left, 270 px): the search box (CF-36, placeholder kept), per person a group header (online dot, name, "(you)", character count, collapsible), character rows (20 px portrait with online dot, name in class colour, level right, the shared-quest icon with a count). Selected row: gold left bar. Long lists scroll (`ScrollBox`). Right-click menu as CF-37.
-- Detail (right): header (52 px portrait, name in Marcellus 24 in class colour, "Class · played by <person> · <status>": online in <zone> or offline, last seen in <zone> <ago>), **Whisper** and **Invite** buttons (the CF-37 actions; disabled when offline or for your own characters). Tiles: Level (with a bar to 60), Item level, Role ("from talents" or "set by player"). Professions as skill bars (rank / max, cap shading, ticks at the tier steps; secondary professions muted). Talents per tree with "a / b / c". Quests you share, grouped by area, dungeons first with a Dungeon tag, "Show all N →". A person's card (group header selected): as today, in the new style.
-- Footer: "Synced with <person> <ago>" (the newest record received), "N characters from M friends", "/cf to open · drag the title to move".
-- Unit tests (pure core): the header status line, the tiles, skill bar fractions and tier ticks, the footer texts.
-- Manual: compare with `friends.html`; search, collapse, right-click, Whisper and Invite still work.
 
 ### CF-41 Activity tab in the new look
 - Goal: the Activity tab as in `activity.html`.

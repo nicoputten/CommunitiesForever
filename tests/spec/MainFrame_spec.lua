@@ -16,37 +16,10 @@ describe("MainFrame", function()
     addon:OnEnable()
   end
 
-  local function widgets(widgetType)
-    local list = {}
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == widgetType then list[#list + 1] = w end
-    end
-    return list
-  end
-
   local function frame() return ns.MainFrame.window() end -- CF-39: the kit window
-  local function tree() return widgets("TreeGroup")[1] end
-
-  -- Texts of all labels in the detail pane (recursing into groups).
-  local function detailTexts()
-    local texts = {}
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.text then texts[#texts + 1] = child.text end
-        if child.title then texts[#texts + 1] = "[" .. child.title .. "]" end
-        walk(child)
-      end
-    end
-    walk(tree())
-    return texts
-  end
-
-  local function hasText(pattern)
-    for _, text in ipairs(detailTexts()) do
-      if text:find(pattern, 1, true) then return true end
-    end
-    return false
-  end
+  local function tab() return helpers.friendsTab(ns) end -- CF-40: the native Friends tab
+  local function hasText(text) return tab().has(text) end
+  local function select(path) ns.FriendsTab.select(path) end
 
   after_each(function()
     wowapi.uninstall()
@@ -65,148 +38,114 @@ describe("MainFrame", function()
     assert.are.equal(window, frame()) -- reused
   end)
 
-  it("stores window and tree state in settings", function()
+  it("stores window and list state in settings", function()
     load("23125681")
     ns.MainFrame.toggle()
     assert.are.equal(addon.db.global.settings.window, frame().status)
-    assert.are.equal(addon.db.global.settings.tree, tree().status)
-    assert.is_true(tree().treeResizable)
+    assert.are.equal(SJAAK, addon.db.global.settings.tree.selected) -- the AceGUI tree's keys (rule 8)
   end)
 
-  it("builds the tree: people with online icon and class-colored characters", function()
+  it("lists people with their online dot and count, and class-colored characters (CF-40)", function()
     load("23125681")
     ns.MainFrame.toggle()
-    local nodes = tree().tree
-    assert.are.equal(SJAAK, nodes[1].value)
-    assert.are.equal("Sjaakovich  |cffa0a0a01|r", nodes[1].text) -- with character count
-    assert.are.equal("Interface\\COMMON\\Indicator-Green", nodes[1].icon)
-    assert.are.equal(GARRAKA, nodes[1].children[1].value)
-    assert.matches("|cff40c7ebGarraka Doombringer|r", nodes[1].children[1].text, 1, true)
-    assert.matches("^|TInterface\\COMMON\\Indicator%-Green:14:14|t ", nodes[1].children[1].text) -- playing it
-    assert.are.equal("Vestras (you)  |cffa0a0a01|r", nodes[2].text)
-    assert.is_nil(nodes[2].children[1].text:find("(you)", 1, true)) -- no marker on characters
-    assert.is_truthy(frame().footerText.text:find("/cf to open", 1, true)) -- CF-39: footer, no status bar
+    assert.are.same({ SJAAK, "Vestras#2858" }, tab().paths("group"))
+    local sjaak = tab().row(SJAAK)
+    assert.are.equal("Sjaakovich", sjaak.name:GetText())
+    assert.are.equal("1", sjaak.count:GetText())
+    assert.are.same({ ns.Theme.color("online") }, sjaak.dot.vertexColor)
+    local garraka = tab().row(SJAAK .. "\001" .. GARRAKA)
+    assert.are.equal("Garraka Doombringer", garraka.name:GetText())
+    local r, g, b = ns.Kit.classColor("MAGE")
+    assert.are.same({ r, g, b, 1 }, garraka.name.textColor)
+    assert.is_true(garraka.portrait.online) -- playing it
+    assert.are.equal("Vestras (you)", tab().row("Vestras#2858").name:GetText())
+    assert.is_false(tab().row("Vestras#2858").mark.shown) -- no addon mark on your own row
+    -- CF-40: the footer: sync state left, the hint right.
+    assert.is_truthy(frame().footerText.text:find("1 character from 1 friend", 1, true))
+    assert.is_truthy(frame().footerRightText.text:find("/cf to open", 1, true))
   end)
 
-  it("shows character rows in the tree with the regular font size", function()
-    load("23125681")
-    ns.MainFrame.toggle()
-    local childFonts, groupFonts = 0, 0
-    for _, button in ipairs(tree().buttons) do
-      if button.level > 1 then
-        assert.are.equal(_G.GameFontHighlight, button.normalFont) -- kept on hover and click
-        assert.are.equal(_G.GameFontHighlight, button.highlightFont)
-        childFonts = childFonts + 1
-      elseif button.normalFont == nil then
-        groupFonts = groupFonts + 1 -- group rows keep AceGUI's own font
-      end
-    end
-    assert.are.equal(2, childFonts)
-    assert.are.equal(2, groupFonts)
-  end)
-
-  it("aligns the Professions and Talents columns at the top", function()
-    load("23125681")
-    ns.MainFrame.toggle()
-    tree():SelectByPath("Vestras#2858", "Player-4619-01627852")
-    local aligned = 0
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "SimpleGroup" and w.relativeWidth == 0.5 then
-        assert.are.equal(0, w.alignoffset)
-        aligned = aligned + 1
-      end
-    end
-    assert.is_true(aligned >= 2)
-  end)
-
-  it("shortens long character names in the tree but keeps the level", function()
+  it("shortens long character names in the list but keeps the level", function()
     load("23125681")
     state.clubMembers["23125681"][2].name = "Garrakathorian Doombringerson"
     wowapi.fireEvent(state, "CLUB_MEMBER_UPDATED", "23125681", 2)
     wowapi.runTimers(state)
     ns.MainFrame.toggle()
-    local text = tree().tree[1].children[1].text
-    assert.matches("Garrakathorian Do...|r  |cffa0a0a011|r", text, 1, true) -- 20 chars at 210 px
-
-    addon.db.global.settings.tree.treewidth = 400 -- wider tree: the full name fits
-    tree():Fire("OnTreeResize", 400)
-    assert.matches("Garrakathorian Doombringerson|r", tree().tree[1].children[1].text, 1, true)
+    local row = tab().row(SJAAK .. "\001" .. GARRAKA)
+    assert.are.equal(ns.Format.truncate("Garrakathorian Doombringerson", 24), row.name:GetText())
+    assert.are.equal("11", row.level:GetText())
   end)
 
-  it("shows alts outside the community dimmed and tagged (CF-17)", function()
+  it("shows alts outside the community tagged (CF-17)", function()
     load("23125681")
     addon.db.global.self.chars["Player-4619-0000OLD1"] = { guid = "Player-4619-0000OLD1", name = "Old Alt",
                                                            classFile = "MAGE", level = 7, updatedAt = 900 }
     ns.MainFrame.toggle()
-    local mine
-    for _, node in ipairs(tree().tree) do
-      if node.value == "Vestras#2858" then mine = node end
-    end
-    local last = mine.children[#mine.children]
-    assert.matches("|cff40c7ebOld Alt|r", last.text, 1, true) -- class-colored like any character
-
-    tree():SelectByPath("Vestras#2858", "Player-4619-0000OLD1")
-    assert.is_true(hasText("Not in community"))
-    tree():SelectByValue("Vestras#2858")
+    assert.is_not_nil(tab().row("Vestras#2858\001Player-4619-0000OLD1"))
+    select("Vestras#2858\001Player-4619-0000OLD1")
+    assert.is_true(hasText("not in community"))
+    select("Vestras#2858")
     assert.is_true(hasText("not in community"))
   end)
 
-  it("expands new people once, then leaves expansion to the user", function()
+  it("unfolds new people, folds with the arrow and remembers it", function()
     load("23125681")
     ns.MainFrame.toggle()
     local groups = addon.db.global.settings.tree.groups
-    assert.is_true(groups[SJAAK])
-    groups[SJAAK] = false -- user collapsed it
-    ns.MainFrame.render()
+    assert.is_nil(groups[SJAAK]) -- new: unfolded
+    assert.is_not_nil(tab().row(SJAAK .. "\001" .. GARRAKA))
+    tab().click(tab().row(SJAAK).arrow)
     assert.is_false(groups[SJAAK])
+    assert.is_nil(tab().row(SJAAK .. "\001" .. GARRAKA))
+    ns.MainFrame.render()
+    assert.is_nil(tab().row(SJAAK .. "\001" .. GARRAKA))
+    tab().click(tab().row(SJAAK).arrow)
+    assert.is_true(groups[SJAAK])
+    assert.is_not_nil(tab().row(SJAAK .. "\001" .. GARRAKA))
   end)
 
-  it("selects the first person and shows the person card", function()
+  it("selects the first person and shows the person card; clicking a name opens it", function()
     load("23125681")
     ns.MainFrame.toggle()
     assert.are.equal(SJAAK, addon.db.global.settings.tree.selected)
     assert.is_true(hasText("Sjaakovich"))
-    assert.is_true(hasText("Online on |cff40c7ebGarraka Doombringer|r"))
+    assert.is_true(hasText("Online on Garraka Doombringer"))
     assert.is_true(hasText("Characters"))
+    tab().click(tab().row("Vestras#2858"))
+    assert.are.equal("Vestras#2858", addon.db.global.settings.tree.selected)
+    assert.is_true(tab().row("Vestras#2858").selectedBg.shown)
   end)
 
-  it("shows the character card with class, owner, stats and professions", function()
+  it("shows the character card with subtitle, tiles, skill bars and talents (CF-40)", function()
     load("23125681")
     ns.MainFrame.toggle()
-    tree():SelectByPath("Vestras#2858", "Player-4619-01627852")
-    assert.is_true(hasText("|cfff58cbaVes Doombringer|r"))
-    assert.is_true(hasText("Paladin  -  Vestras  -  Online in Durotar"))
-    assert.is_true(hasText("|cffa0a0a0Level|r"))
-    assert.is_true(hasText("|cffa0a0a0Item level|r"))
-    assert.is_true(hasText("|cffa0a0a0Last played|r")) -- own character
+    tab().click(tab().row("Vestras#2858\001Player-4619-01627852"))
+    assert.is_true(tab().row("Vestras#2858\001Player-4619-01627852").selected)
+    assert.is_true(hasText("Ves Doombringer"))
+    assert.is_true(hasText("Paladin \194\183 your character \194\183 online in Durotar"))
+    assert.is_true(hasText("LEVEL"))
+    assert.is_true(hasText("ITEM LEVEL"))
+    assert.is_true(hasText("ROLE"))
     assert.is_true(hasText("Talents"))
     assert.is_true(hasText("No talent data yet."))
-    assert.is_true(hasText("Mining  |cffa0a0a064 / 150|r"))
-    assert.is_true(hasText("|cffa0a0a0Primary|r"))
-    assert.is_true(hasText("|cffa0a0a0Secondary|r")) -- Cooking
-    assert.is_true(hasText("Interface\\Buttons\\WHITE8X8")) -- progress bar
+    assert.is_true(hasText("Mining"))
+    assert.is_true(hasText("64 / 150"))
+    assert.is_true(hasText("Cooking"))
+    assert.is_false(hasText("Quests you share")) -- own character
   end)
 
   it("opens a character from the person card list", function()
     load("23125681")
     ns.MainFrame.toggle()
-    local entry
-    local function find(widget)
-      for _, child in ipairs(widget.children) do
-        if child.type == "InteractiveLabel" then entry = entry or child end
-        find(child)
-      end
-    end
-    find(tree())
-    entry:Fire("OnClick")
+    tab().click(tab().cardLines()[1])
     assert.are.equal(SJAAK .. "\001" .. GARRAKA, addon.db.global.settings.tree.selected)
-    assert.is_true(hasText("|cffa0a0a0Level|r"))
+    assert.is_true(hasText("LEVEL"))
   end)
 
   it("keeps the selection across refreshes and falls back when it disappears", function()
     load("23125681")
     ns.MainFrame.toggle()
-    tree():SelectByPath(SJAAK, GARRAKA)
+    select(SJAAK .. "\001" .. GARRAKA)
     ns.MainFrame.render()
     assert.are.equal(SJAAK .. "\001" .. GARRAKA, addon.db.global.settings.tree.selected)
 
@@ -222,17 +161,18 @@ describe("MainFrame", function()
     state.clubs = { { clubId = "777", name = "Other Friends", clubType = 1 } } -- this alt is not a member
     wowapi.fireEvent(state, "CLUB_UPDATED", "777")
     ns.MainFrame.toggle()
-    assert.are.same({}, tree().tree)
+    assert.are.same({}, tab().rows())
     assert.matches("^Your account has characters in Forever Friends, but Ves Doombringer isn't a member",
-      detailTexts()[1])
+      tab().texts()[1])
     assert.are.equal("23125681", addon.db.global.settings.clubId)
   end)
 
   it("shows the empty state without a community", function()
     load(nil)
     ns.MainFrame.toggle()
-    assert.are.same({}, tree().tree)
-    assert.are.same({ "Select a community in settings (/cf settings)." }, detailTexts())
+    assert.are.same({}, tab().rows())
+    assert.are.same({ "Select a community in settings (/cf settings)." }, tab().texts())
+    assert.are.equal("", frame().footerText.text)
   end)
 
   it("hints when no friend is linked yet", function()
@@ -251,11 +191,7 @@ describe("MainFrame", function()
     wowapi.fireEvent(state, "BN_FRIEND_ACCOUNT_OFFLINE")
     wowapi.runTimers(state) -- presence refresh, then window refresh
     wowapi.runTimers(state)
-    local sjaak
-    for _, node in ipairs(tree().tree) do
-      if node.value == SJAAK then sjaak = node end
-    end
-    assert.are.equal("Interface\\COMMON\\Indicator-Gray", sjaak.icon)
+    assert.are.same({ ns.Theme.color("faint") }, tab().row(SJAAK).dot.vertexColor)
   end)
 
   it("does not render while hidden", function()
@@ -263,10 +199,24 @@ describe("MainFrame", function()
     wowapi.runTimers(state) -- the login timers (CF-26 setup wizard) first
     ns.MainFrame.toggle()
     ns.MainFrame.toggle()
-    local before = #state.guiWidgets
+    local before = #tab().rows()
     ns.CommunitySelection.select(nil)
     wowapi.runTimers(state)
-    assert.are.equal(before, #state.guiWidgets)
+    assert.are.equal(before, #tab().rows())
+  end)
+
+  it("shows only the active tab: the Friends frames or the AceGUI root (CF-40)", function()
+    load("23125681")
+    ns.MainFrame.toggle()
+    local root
+    for _, w in ipairs(state.guiWidgets) do if w.cfMainRoot then root = w end end
+    assert.is_true(root.frame.hidden)
+    ns.MainFrame.selectTab("activity")
+    assert.is_nil(root.frame.hidden)
+    assert.is_false(ns.FriendsTab.searchBox():GetParent():GetParent().shown)
+    ns.MainFrame.selectTab("friends")
+    assert.is_true(root.frame.hidden)
+    assert.is_true(ns.FriendsTab.searchBox():GetParent():GetParent().shown)
   end)
 
   describe("minimap button", function()

@@ -33,19 +33,7 @@ describe("Invites (CF-21)", function()
     settle()
   end
 
-  local function texts()
-    local list = {}
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.text then list[#list + 1] = child.text end
-        walk(child)
-      end
-    end
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "TreeGroup" then walk(w) end
-    end
-    return list
-  end
+  local function texts() return ns.FriendsTab.cardTexts() end -- CF-40: the native card
 
   after_each(function()
     wowapi.uninstall()
@@ -94,9 +82,8 @@ describe("Invites (CF-21)", function()
     end
 
     local function postButton()
-      for i = #state.guiWidgets, 1, -1 do
-        local w = state.guiWidgets[i]
-        if w.type == "Button" and w.text and w.text:find("^Post ") then return w end
+      for label, b in pairs(ns.FriendsTab.cardButtons()) do
+        if label:find("^Post ") then return b end
       end
     end
 
@@ -115,7 +102,7 @@ describe("Invites (CF-21)", function()
       assert.is_true(hasText("2. In your chat window, click the gold [Join Forever Friends] link."))
       assert.is_true(hasText("3. In Blizzard's window that opens, click Join."))
       assert.is_true(hasText("ask Sjaak for a new one"))
-      assert.are.equal("Post invite link in chat", postButton().text)
+      assert.are.equal("Post invite link in chat", postButton().label:GetText())
     end)
 
     it("shows no steps without an invite for the community", function()
@@ -128,14 +115,14 @@ describe("Invites (CF-21)", function()
 
     it("posts a clickable invite link in chat and points at it", function()
       withFriendInvite()
-      postButton():Fire("OnClick")
+      postButton():RunScript("OnClick")
       assert.are.same({
         "Click the link below to join Forever Friends, then click Join in Blizzard's window:",
         "|cffffd100|HclubTicket:AbC123xyz|h[Join Forever Friends]|h|r",
       }, state.printed)
       settle()
       assert.is_true(hasText("<- do this now"))
-      assert.are.equal("Post the link again", postButton().text)
+      assert.are.equal("Post the link again", postButton().label:GetText())
       assert.are.same({}, state.redeemed) -- never joins by itself (blocked for addons, V26)
     end)
 
@@ -145,14 +132,14 @@ describe("Invites (CF-21)", function()
           return string.format("LINK(%s,%s,%s)", code, name, tostring(clubType))
         end
       end)
-      postButton():Fire("OnClick")
+      postButton():RunScript("OnClick")
       assert.are.equal("LINK(AbC123xyz,Forever Friends,1)", state.printed[2])
       _G.GetClubTicketLink = nil
     end)
 
     it("goes back to the community once the character has joined", function()
       withFriendInvite()
-      postButton():Fire("OnClick")
+      postButton():RunScript("OnClick")
       state.clubs = { { clubId = CLUB, name = "Forever Friends", clubType = 1 } }
       wowapi.fireEvent(state, "CLUB_ADDED", CLUB)
       settle()

@@ -18,12 +18,31 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
 | V54 | Do `frame:EnableKeyboard`, `frame:SetPropagateKeyboardInput` and an `OnKeyDown` script work on an addon window outside combat, and does `Bindings.xml` with `header` and `category="ADDONS"` show the binding? (CF-32) | See the CF-32 steps: Esc closes the window without opening the game menu, walking keys still work with the window open, and the binding shows in Esc → Options → Keybindings. If anything errors, send the error text. | open |
 | V55 | Does the minimap button tooltip (LibDBIcon's `GameTooltip`) have `AddDoubleLine`? (CF-33; without it the names fall back to one line each) | See the CF-33 steps: names left, characters right-aligned. | open |
-| V56 | Does the grey placeholder in the Friends search box work: `CreateFontString`, `HookScript` (`OnEditFocusGained/Lost`, `OnTextChanged`) and `HasFocus` on AceGUI's edit box? (CF-36) | See the CF-36 steps: the hint shows when the box is empty and not focused, and hides while typing. If the box shows no hint at all, the guard skipped it. | open |
 | V59 | Does the hidden sync channel work (CF-31)? `JoinTemporaryChannel` (or `JoinChannelByName`), addon messages with `SendAddonMessage(prefix, text, "CHANNEL", index)`, and which `CHAT_MSG_ADDON` arguments name the channel. | See the CF-31 steps: `/cf sync debug` shows `to the community channel: HELLO ...` when it sends there. If HELLOs keep going as whispers to members on this build, send the `[sync]` lines and the output of `/dump GetChannelList()` (is a `cf...` channel in it?). Nothing breaks when it fails: the addon keeps whispering. | open |
 | V61 | Do the kit's drawing calls work on Forever (CF-39)? `FontString:SetFont` with the bundled `.ttf` files, `Texture:SetGradient` with `CreateColor`, `CreateMaskTexture` + `AddMaskTexture`, `SetResizeBounds`, `C_ClassColor.GetClassColor`, the round class icons (`UI-Classes-Circles` with `CLASS_ICON_TCOORDS`), and the TGA textures in `media/textures`. | See the CF-39 steps: if text shows in the game's own font, a texture is a green square or missing, or the title bar has no glow, send a screenshot and any Lua error. | open |
+| V62 | Do the Friends tab's native calls work (CF-40)? An `EditBox` with `SetTextInsets`, `SetAutoFocus`, `HasFocus`, `ClearFocus` and the focus and text scripts; a `ScrollFrame` with `SetScrollChild`, `SetVerticalScroll`, `EnableMouseWheel` and `OnMouseWheel`; `Texture:SetRotation` for the fold arrow. (Replaces V56: the AceGUI search box is gone.) | See the CF-40 steps: typing in the search box, scrolling a long list and the card with the mouse wheel, the arrow pointing right on a folded person. If anything errors, send the error text. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-40 Friends tab in the new look
+Compare with `docs/design/revamp-2026-10/friends.html`. Needs a friend with the addon (for professions, talents and shared quests).
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Friends tab | Left a darker column (270 px) with the search box and its grey hint; per person a header (arrow, online dot green or grey, name, the addon icon for friends who run it, character count right); under it the characters: round class portrait with a green dot on the one being played, name in class colour, level right. | open |
+| A friend's character that shares quests with you | A small page icon with the number of shared quests before the level. | open |
+| Click a person's arrow; `/reload` | The person folds (arrow points right) and stays folded after the reload. Click again: unfolds. | open |
+| Click a person's name | Their card: name, BattleTag, the addon line, status, "Characters" (click one to open it, right-click for the menu), "Quests you share" with "them" and "you". The header gets a soft gold highlight. | open |
+| Click a friend's character | Gold bar on the row. Card: 52 px portrait, name large in class colour, "Class · played by <name> · online in <zone>" (or "offline, last seen in <zone> <time>"), Whisper and Invite buttons right. | open |
+| The tiles | LEVEL with a bar in class colour (full at 60), ITEM LEVEL, ROLE with "from talents" or "set by player". | open |
+| Professions and Talents | Professions as gold bars with darker shading up to the current maximum and lines at 75/150/225 (secondary ones grey); "Talents" with "a / b / c" next to it and one bar per tree, the fullest tree in pale gold. | open |
+| Quests you share | Grouped by zone, dungeons first with a blue DUNGEON tag; more than five: "Show all N →", then "Show fewer". | open |
+| Whisper, Invite on an online friend's character | Opens a whisper to that character / invites them. On an offline character and your own: both buttons dimmed and doing nothing. | open |
+| Right-click a person or character in the list (CF-37) | The menu opens above the window, as before. | open |
+| Many people, or a small window | The list and the card scroll with the mouse wheel; a thin gold bar on the right shows where you are (V62). | open |
+| Footer | Left "Synced with <name> <time> · N characters from M friends", right "/cf to open · drag the title to move". | open |
+| Activity, Dungeons, back to Friends | The other tabs look as before; Friends comes back with the same selection and search text. | open |
 
 ### CF-39 Kit and window shell
 Compare with `docs/design/revamp-2026-10/friends.html` (the window around the content).
@@ -51,7 +70,7 @@ Needs two characters in the community on this build, **not** Battle.net friends 
 ### CF-36 Smart filter in the Friends tab
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Friends tab | Inside the tab, above the list: a search box (not touching the window border) with the grey hint "e.g. tailoring 150, mage 20-30" (V56), the count right of it with room to spare. Not on the Activity and Dungeons tabs. Switching tabs and back keeps the text. | open |
+| `/cf`, Friends tab | Inside the tab, above the list: a search box (not touching the window border) with the grey hint "e.g. tailoring 150, mage 20-30" (V62), the count ("N of M") under it on the right. Not on the Activity and Dungeons tabs. Switching tabs and back keeps the text. | open |
 | Click in the box | The hint disappears; typing works (keys do not move the character). | open |
 | `tailoring 150` (or a profession someone has) | Only people with a character at that rank, only those characters, expanded; "N of M" next to the box. | open |
 | `mage 20-30`, `healer`, a zone name, part of a name | Each narrows the list as expected. | open |
