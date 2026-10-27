@@ -1,4 +1,8 @@
--- Settings: AceConfig options, shown in the Blizzard settings panel and via /cf settings.
+-- Settings: the options (one source of truth: every control in the settings window and the setup reads and
+-- writes through these get/set functions, CF-26). CF-43: drawn by the addon's own settings window
+-- (ui/SettingsWindow.lua), no longer by AceConfigDialog; Options › AddOns has a page that opens it. The table
+-- keeps AceConfig's shape (type, name, desc, get, set, values) so it stays easy to read; `help` is the short
+-- line under a switch.
 local ADDON_NAME, ns = ...
 
 local Settings = {}
@@ -43,12 +47,12 @@ function Settings.chatGroup()
       info = { type = "description", order = 0, fontSize = "medium",
                name = "Make the community chat easy to spot in your chat windows." },
       color = {
-        type = "color", order = 1, name = "Community chat color",
+        type = "color", order = 1, name = "Chat color",
         get = function() local c = ns.Chat.color(s()) return c.r, c.g, c.b end,
         set = function(_, r, g, b) ns.CommunityChat.setColor({ r = r, g = g, b = b }) end,
       },
       resetColor = {
-        type = "execute", order = 2, name = "Default purple",
+        type = "execute", order = 2, name = "Reset",
         func = function() ns.CommunityChat.setColor(nil) end,
       },
       alert = {
@@ -63,7 +67,7 @@ function Settings.chatGroup()
         set = function(_, value) s().chatSound = value end,
       },
       createTab = {
-        type = "execute", order = 5, width = "double", name = "Create a Community tab",
+        type = "execute", order = 5, width = "double", name = "Create a community chat tab",
         desc = "Opens a chat tab that shows only the community chat. Chat tabs are saved per character.",
         func = function() ns.CommunityChat.createTab() end,
       },
@@ -139,7 +143,7 @@ function Settings.options()
         type = "toggle",
         order = 4,
         width = "full",
-        name = "Login notifications",
+        name = "When friends log in", -- CF-43: the design's words
         desc = "A chat line when a friend in the community comes online in Forever or switches character.",
         get = function() return ns.db.global.settings.notifications ~= false end,
         set = function(_, value) ns.db.global.settings.notifications = value end,
@@ -154,6 +158,16 @@ function Settings.options()
         get = function() return ns.db.global.settings.levelUps ~= false end,
         set = function(_, value) ns.db.global.settings.levelUps = value end,
       },
+      -- CF-44: the announcement at the top of the screen.
+      levelUpToast = {
+        type = "toggle",
+        order = 5.1,
+        width = "full",
+        name = "Level-up announcement",
+        help = "A note at the top of the screen when a friend levels up",
+        get = function() return ns.db.global.settings.levelUpToast ~= false end,
+        set = function(_, value) ns.db.global.settings.levelUpToast = value end,
+      },
       shareActivity = {
         type = "toggle",
         order = 5.5,
@@ -161,6 +175,7 @@ function Settings.options()
         name = "Share my activity",
         desc = "Friends see what you did in their Activity tab (levels, quests, professions). "
           .. "Off: only you see your activity.",
+        help = "Levels, zones and dungeons you ran",
         get = function() return ns.FeedTracker.shared() end,
         set = function(_, value) ns.FeedTracker.setShared(value) end,
       },
@@ -171,6 +186,7 @@ function Settings.options()
         name = "Receive group asks",
         desc = "A chat line with a sound when a friend asks who's up for a dungeon you have a character for "
           .. "(with Join, Later and No to click).",
+        help = "A chat line when a friend looks for a group",
         get = function() return ns.db.global.settings.groupAsks ~= false end,
         set = function(_, value) ns.db.global.settings.groupAsks = value end,
       },
@@ -178,9 +194,31 @@ function Settings.options()
         type = "toggle",
         order = 3,
         width = "full",
-        name = "Show minimap button",
+        name = "Minimap button",
         get = function() return ns.Minimap.isShown() end,
         set = function(_, value) ns.Minimap.setShown(value) end,
+      },
+      -- CF-43: open the window a few seconds after logging in (not while the addon is passive).
+      openOnLogin = {
+        type = "toggle",
+        order = 3.1,
+        width = "full",
+        name = "Open on login",
+        get = function() return ns.db.global.settings.openOnLogin == true end,
+        set = function(_, value) ns.db.global.settings.openOnLogin = value end,
+      },
+      -- CF-43: the title shimmer and the LEVEL UP shine.
+      ambientEffects = {
+        type = "toggle",
+        order = 3.2,
+        width = "full",
+        name = "Ambient effects",
+        help = "Title shimmer and level-up glow",
+        get = function() return ns.db.global.settings.ambientEffects ~= false end,
+        set = function(_, value)
+          ns.db.global.settings.ambientEffects = value
+          ns.MainFrame.refreshAmbient()
+        end,
       },
     },
   }
@@ -189,13 +227,20 @@ function Settings.options()
   return options
 end
 
+-- CF-43: the page under Options › AddOns: a line and a button that opens the settings window.
 function Settings.register()
-  LibStub("AceConfig-3.0"):RegisterOptionsTable(Settings.APP_NAME, Settings.options)
-  LibStub("AceConfigDialog-3.0"):AddToBlizOptions(Settings.APP_NAME, ADDON_NAME)
+  local page = CreateFrame("Frame")
+  local text = ns.Theme.text(page, "body", "text")
+  text:SetPoint("TOPLEFT", 16, -16)
+  text:SetText(ADDON_NAME .. " has its own settings window (also /cf settings).")
+  local open = ns.Kit.button(page, "Open settings", function() Settings.open() end, "primary")
+  open:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, -12)
+  Settings.page = page
+  Settings.registered = ns.Panels.registerOptions(page, ADDON_NAME)
 end
 
 function Settings.open()
-  LibStub("AceConfigDialog-3.0"):Open(Settings.APP_NAME)
+  ns.SettingsWindow.open()
 end
 
 ns.Settings = Settings

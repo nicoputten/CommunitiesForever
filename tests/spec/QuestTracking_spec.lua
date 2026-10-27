@@ -49,44 +49,23 @@ describe("shared quests in the window (CF-19)", function()
     } }
   end
 
-  local function treeWidget()
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "TreeGroup" then return w end
-    end
-  end
+  -- CF-40: the native Friends tab.
+  local function select(...) ns.FriendsTab.select(table.concat({ ... }, "\001")) end
 
-  local function detailText()
-    local texts = {}
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.text then texts[#texts + 1] = child.text end
-        walk(child)
-      end
-    end
-    walk(treeWidget())
-    return table.concat(texts, "\n")
-  end
+  local function detailText() return table.concat(ns.FriendsTab.cardTexts(), "\n") end
 
-  local function treeChild(groupValue, guid)
-    for _, node in ipairs(treeWidget().tree) do
-      if node.value == groupValue then
-        for _, c in ipairs(node.children) do
-          if c.value == guid then return c end
-        end
-      end
-    end
-  end
+  -- The list row of a character (its quest count: questCount, shown or not).
+  local function treeChild(groupValue, guid) return helpers.friendsTab(ns).row(groupValue .. "\001" .. guid) end
+
+  local function sharedCount(row) return row.questCount.shown and row.questCount:GetText() or nil end
 
   local function clickLabel(text)
-    local found
-    local function walk(widget)
-      for _, child in ipairs(widget.children) do
-        if child.type == "InteractiveLabel" and child.text == text then found = child end
-        walk(child)
+    for _, link in ipairs(state.frames) do
+      if link.shown and link.text and link.text.GetText and link.text:GetText() == text then
+        return link:RunScript("OnClick")
       end
     end
-    walk(treeWidget())
-    assert(found, "no label " .. text):Fire("OnClick")
+    error("no link " .. text)
   end
 
   after_each(function()
@@ -132,16 +111,17 @@ describe("shared quests in the window (CF-19)", function()
       [9999] = { title = "Not mine", area = "Durotar", dungeon = false },
     })
     ns.MainFrame.toggle()
-    treeWidget():SelectByPath(friendTag, friendGuid)
+    select(friendTag, friendGuid)
     local text = detailText()
-    assert.is_truthy(text:find("Shared quests (2)", 1, true))
+    assert.is_truthy(text:find("Quests you share", 1, true))
+    assert.is_truthy(text:find("2 \194\183 grouped by where they are", 1, true))
     local dungeonAt = text:find("Blackfathom Deeps", 1, true)
-    local zoneAt = text:find("Durotar|r", 1, true)
+    local zoneAt = text:find("\nDurotar\n", 1, true)
     assert.is_truthy(dungeonAt and zoneAt and dungeonAt < zoneAt)
-    assert.is_truthy(text:find("|A:worldquest-icon-dungeon:14:14|a", 1, true))
+    assert.is_truthy(text:find("DUNGEON", 1, true))
     assert.is_truthy(text:find("Quest One", 1, true))
     assert.is_falsy(text:find("Not mine", 1, true))
-    assert.is_truthy(treeChild(friendTag, friendGuid).text:find("|A:worldquest-icon-dungeon:14:14|a", 1, true))
+    assert.are.equal("2", sharedCount(treeChild(friendTag, friendGuid))) -- CF-40: the count in the list
   end)
 
   it("shows at most five quests, then Show all / Show fewer", function()
@@ -155,12 +135,12 @@ describe("shared quests in the window (CF-19)", function()
     settle()
     friendQuests(quests)
     ns.MainFrame.toggle()
-    treeWidget():SelectByPath(friendTag, friendGuid)
+    select(friendTag, friendGuid)
     local text = detailText()
-    assert.is_truthy(text:find("Shared quests (7)", 1, true))
+    assert.is_truthy(text:find("7 \194\183 grouped", 1, true))
     assert.is_falsy(text:find("Shared 6", 1, true))
 
-    clickLabel("Show all 7")
+    clickLabel("Show all 7 \226\134\146")
     text = detailText()
     assert.is_truthy(text:find("Shared 6", 1, true))
     assert.is_truthy(text:find("Shared 7", 1, true))
@@ -179,15 +159,15 @@ describe("shared quests in the window (CF-19)", function()
                                            [1002] = { title = "Quest Two", area = "Durotar", dungeon = false } } },
     } }
     ns.MainFrame.toggle()
-    treeWidget():SelectByValue(friendTag)
+    select(friendTag)
     local text = detailText()
-    assert.is_truthy(text:find("Shared quests (2)", 1, true))
+    assert.is_truthy(text:find("2 \194\183 grouped", 1, true))
     -- Quest One: both of their characters (the community member shows under its community name).
-    assert.is_truthy(text:find("Them|r Friend Alt, |cff40c7eb" .. state.clubMembers["23125681"][2].name, 1, true))
-    assert.is_truthy(text:find("Them|r Friend Alt   ", 1, true)) -- Quest Two: only the alt
+    assert.is_truthy(text:find("them|r Friend Alt, " .. state.clubMembers["23125681"][2].name, 1, true))
+    assert.is_truthy(text:find("them|r Friend Alt |", 1, true)) -- Quest Two: only the alt
 
-    treeWidget():SelectByValue(myTag)
-    assert.is_falsy(detailText():find("Shared quests", 1, true))
+    select(myTag)
+    assert.is_falsy(detailText():find("Quests you share", 1, true))
   end)
 
   it("ignores an empty quest log, except right after a turn-in or abandon", function()
@@ -210,12 +190,12 @@ describe("shared quests in the window (CF-19)", function()
     load()
     friendQuests({ [9999] = { title = "Not mine", area = "Durotar", dungeon = false } })
     ns.MainFrame.toggle()
-    treeWidget():SelectByPath(friendTag, friendGuid)
+    select(friendTag, friendGuid)
     assert.is_truthy(detailText():find("No shared quests.", 1, true))
-    assert.is_falsy(treeChild(friendTag, friendGuid).text:find("worldquest-icon-dungeon", 1, true))
+    assert.is_nil(sharedCount(treeChild(friendTag, friendGuid)))
 
-    treeWidget():SelectByPath(myTag, myGuid)
-    assert.is_falsy(detailText():find("Shared quests", 1, true))
+    select(myTag, myGuid)
+    assert.is_falsy(detailText():find("Quests you share", 1, true))
   end)
 
   it("adds a fake friend with hidden /cf debugon, in the window only", function()
@@ -223,22 +203,21 @@ describe("shared quests in the window (CF-19)", function()
     local people = addon.db.global.people
     ns.MainFrame.toggle()
     addon:OnSlashCommand("debugon")
-    treeWidget():SelectByPath(ns.Debug.BATTLE_TAG, ns.Debug.GUID)
+    select(ns.Debug.BATTLE_TAG, ns.Debug.GUID)
     local text = detailText()
     assert.is_truthy(text:find("Debug Character", 1, true))
-    assert.is_truthy(text:find("Shared quests (4)", 1, true)) -- 3 copied from your log + the fake dungeon quest
+    assert.is_truthy(text:find("4 \194\183 grouped", 1, true)) -- 3 copied from your log + the fake dungeon quest
     assert.is_truthy(text:find("Debug: Into the Deeps", 1, true))
-    local debugRow = treeChild(ns.Debug.BATTLE_TAG, ns.Debug.GUID)
-    assert.is_truthy(debugRow.text:find("|A:worldquest-icon-dungeon:14:14|a", 1, true))
+    assert.are.equal("4", sharedCount(treeChild(ns.Debug.BATTLE_TAG, ns.Debug.GUID)))
     assert.is_truthy(text:find("Engineering", 1, true))
-    assert.is_truthy(text:find("10 / 0 / 11", 1, true))
+    assert.is_truthy(text:find("10 / 0 / 11", 1, true)) -- the talents header
 
     -- A second friend character sharing some of the same quests.
-    treeWidget():SelectByPath(ns.Debug.BATTLE_TAG, ns.Debug.ALT_GUID)
+    select(ns.Debug.BATTLE_TAG, ns.Debug.ALT_GUID)
     text = detailText()
     assert.is_truthy(text:find("Debug Alt", 1, true))
-    assert.is_truthy(text:find("Shared quests (3)", 1, true)) -- 2 copied + the fake dungeon quest
-    assert.is_truthy(text:find("Role: Tank", 1, true))
+    assert.is_truthy(text:find("3 \194\183 grouped", 1, true)) -- 2 copied + the fake dungeon quest
+    assert.is_truthy(text:find("\nTank\n", 1, true)) -- the role tile
 
     -- Nothing stored or synced.
     assert.are.equal(people, addon.db.global.people)
@@ -248,14 +227,5 @@ describe("shared quests in the window (CF-19)", function()
 
     addon:OnSlashCommand("debugoff")
     assert.is_nil(treeChild(ns.Debug.BATTLE_TAG, ns.Debug.GUID))
-  end)
-
-  it("falls back to a text badge without the dungeon atlas", function()
-    load()
-    state.atlases = {}
-    friendQuests({ [2001] = { title = "Dungeon Quest", area = "Blackfathom Deeps", dungeon = true } })
-    ns.MainFrame.toggle()
-    treeWidget():SelectByPath(friendTag, friendGuid)
-    assert.is_truthy(detailText():find("[D]", 1, true))
   end)
 end)

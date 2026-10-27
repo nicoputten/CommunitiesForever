@@ -19,7 +19,66 @@ describe("Feed (CF-22)", function()
       assert.are.equal(Feed.dayNumber(2026, 3, 1) - 1, Feed.dayNumber(2026, 2, 28))
       assert.are.equal("Today", Feed.dayLabel(TODAY, TODAY))
       assert.are.equal("Yesterday", Feed.dayLabel(TODAY - 1, TODAY))
-      assert.are.equal("Friday", Feed.dayLabel(TODAY - 2, TODAY))
+      assert.are.equal("Friday 16 Oct", Feed.dayLabel(TODAY - 2, TODAY)) -- CF-41: weekday and date
+      assert.are.equal("Monday 12 Oct", Feed.dayLabel(TODAY - 6, TODAY))
+    end)
+
+    it("turns day numbers back into dates (CF-41)", function()
+      assert.are.same({ 1970, 1, 1 }, { Feed.date(0) })
+      assert.are.same({ 2026, 10, 18 }, { Feed.date(TODAY) })
+      assert.are.same({ 2024, 2, 29 }, { Feed.date(Feed.dayNumber(2024, 2, 29)) })
+      assert.are.same({ 2027, 1, 1 }, { Feed.date(Feed.dayNumber(2026, 12, 31) + 1) })
+    end)
+  end)
+
+  -- CF-41: the pieces the revamped Activity tab draws.
+  describe("pieces and filters", function()
+    local function entryOf(events)
+      local feed = {}
+      for _, event in ipairs(events) do Feed.add(feed, TODAY, ALICE, event, 100) end
+      return feed[TODAY][ALICE.guid]
+    end
+
+    it("gives the level change, ranks and questing with the top zones", function()
+      local pieces = Feed.pieces(entryOf({
+        { kind = "level", from = 12, to = 14 }, { kind = "rank", name = "Mining", rank = "Journeyman" },
+        { kind = "quest", zone = "Durotar" }, { kind = "quest", zone = "Durotar" },
+        { kind = "quest", zone = "Barrens" },
+        { kind = "quest", zone = "Mulgore" }, { kind = "quest", zone = "Ashenvale" },
+      }))
+      assert.are.same({ kind = "level", from = 12, to = 14, text = "12 to 14" }, pieces[1])
+      assert.are.same({ kind = "rank", text = "Mining reached Journeyman" }, pieces[2])
+      assert.are.same({ "Durotar", "Ashenvale" }, pieces[3].zones) -- most quests, then by name
+      assert.are.same({ 2, 5 }, { pieces[3].moreZones, pieces[3].quests })
+      assert.are.equal("questing in Durotar, Ashenvale +2 zones (5)", pieces[3].text)
+      assert.are.equal("reached 20", Feed.pieces(entryOf({ { kind = "level", from = 19, to = 21 } }))[1].text)
+    end)
+
+    local function day(lines) return { { day = TODAY, label = "Today", lines = lines } } end
+
+    it("keeps whole lines per chip and drops empty days", function()
+      local leveled = { hasLevel = true, hasRuns = false }
+      local ran = { hasLevel = false, hasRuns = true }
+      local together = { shared = true, hasRuns = true }
+      local days = day({ leveled, ran, together })
+      assert.are.equal(days, Feed.filter(days, "all"))
+      assert.are.same({ leveled }, Feed.filter(days, "levels")[1].lines)
+      assert.are.same({ ran, together }, Feed.filter(days, "runs")[1].lines)
+      assert.are.same({ together }, Feed.filter(days, "together")[1].lines)
+      assert.are.same({}, Feed.filter(day({ ran }), "levels"))
+    end)
+
+    it("marks a person's line by any of their characters that day", function()
+      local feed = {}
+      Feed.add(feed, TODAY, ALICE, { kind = "quest", zone = "Durotar" }, 100)
+      Feed.add(feed, TODAY, ALICE, { kind = "quest", zone = "Durotar" }, 100)
+      Feed.add(feed, TODAY, ALT, { kind = "level", from = 3, to = 4 }, 90)
+      local line = Feed.days({ { battleTag = "A#1", displayName = "Alice", feed = feed, chars = {} } }, TODAY)[1]
+        .lines[1]
+      assert.are.equal("Alice Example", line.char.name) -- the main character has no level-up
+      assert.is_true(line.hasLevel)
+      assert.is_false(line.hasRuns)
+      assert.are.equal("level", line.others[1].pieces[1].kind)
     end)
   end)
 

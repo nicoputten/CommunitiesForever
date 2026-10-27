@@ -6,6 +6,24 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **New look, part 1:** the window has a new frame: dark panel with a gold border, the community name and
+  who is online in the title, new tabs and a footer. The tabs inside get their new look in the next updates.
+- **New look, part 2: the Friends tab.** Class portraits, foldable people, the number of quests you share
+  with each character, and a new character card: level, item level and role at a glance, profession and
+  talent bars, quests you share grouped by zone, and Whisper and Invite buttons. The footer shows when you
+  last synced. Long lists scroll.
+- **New look, part 3: the Activity tab.** Filter chips (Level-ups, Dungeons, Together), a portrait per entry
+  (two for friends who played together), level-ups as a gold chip, the zones you quested in, and the time of
+  each entry. Older days show their date.
+- **New look, part 4: the Dungeons tab.** The list follows the character you're on, with level ranges, friends
+  in range and your quests per dungeon. The suggested group shows as five slots (tank, healer, three damage)
+  and says when nobody in range can tank or heal; your other characters show as alternatives, and the card
+  says where the dungeon is.
+- **New look, part 5: settings and setup.** The settings have their own window (also under Options › AddOns),
+  and the first-run setup is redone in the same style. New: **Open on login** opens the window after you
+  log in, and **Ambient effects** adds a slow shimmer to the window title and level-up chips (on by default).
+- **Level-up announcement:** when a friend's character levels up, a short note shows at the top of the screen
+  for a few seconds (next to the chat line). Switch it off under Notifications in the settings.
 - **Less sync traffic in the community:** the "I changed" message goes out once on a hidden channel to
   everyone running the addon, instead of a whisper to each member. Older versions keep getting whispers.
 - Fix: a community chat window with other channels before the community channel is recognized again.

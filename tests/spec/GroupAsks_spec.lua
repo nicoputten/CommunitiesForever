@@ -156,29 +156,19 @@ describe("Who's up for it? (CF-27)", function()
     load()
     ns.MainFrame.toggle()
     ns.MainFrame.selectTab("dungeons")
-    local function find(widgetType, text)
-      local found
-      local function walk(w)
-        for _, child in ipairs(w.children) do
-          if not found and child.type == widgetType and child.text and child.text:find(text, 1, true) then
-            found = child
-          end
-          walk(child)
-        end
+    -- CF-42: the native tab.
+    local function hasText(needle)
+      for _, t in ipairs(ns.DungeonsTab.texts()) do
+        if t:find(needle, 1, true) then return true end
       end
-      for _, w in ipairs(state.guiWidgets) do
-        if w.type == "Frame" and w.title == "CommunitiesForever" then walk(w) end
-      end
-      return found
+      return false
     end
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "TreeGroup" then w:SelectByValue("dm") end
-    end
-    find("Button", "Ask who's up for it"):Fire("OnClick")
+    ns.DungeonsTab.select("dm")
+    ns.DungeonsTab.buttons()["Ask who's up for it"]:RunScript("OnClick")
     assert.are.equal(1, #sent)
     deliver({ t = "ANSWER", id = sent[1].message.id, answer = "later" })
     for _ = 1, 10 do wowapi.runTimers(state) end
-    assert.is_truthy(find("Label", "Asked who's up for it"))
-    assert.is_truthy(find("Label", "later: Ben"))
+    assert.is_true(hasText("Asked who's up for it"))
+    assert.is_true(hasText("later: Ben"))
   end)
 end)

@@ -150,14 +150,36 @@ describe("CommunitySelection", function()
   end)
 
   describe("settings options", function()
-    it("registers in the Blizzard settings panel", function()
+    -- CF-43: a page under Options › AddOns that opens the settings window (the API is unverified, V66).
+    it("registers a page in Blizzard's settings that opens the settings window", function()
+      state = wowapi.install()
+      local registered = {}
+      _G.Settings = {
+        RegisterCanvasLayoutCategory = function(frame, name) return { frame = frame, name = name } end,
+        RegisterAddOnCategory = function(category) registered[#registered + 1] = category end,
+      }
+      ns = helpers.loadAddon()
+      state.addon:OnInitialize()
+      _G.Settings = nil
+      state.addon:OnEnable()
+      assert.are.equal("CommunitiesForever", registered[1].name)
+      assert.is_true(ns.Settings.registered)
+      local button
+      for _, f in ipairs(state.frames) do
+        if f.label and f.label.text == "Open settings" then button = f end
+      end
+      button:RunScript("OnClick")
+      assert.is_true(ns.SettingsWindow.isShown())
+    end)
+
+    it("works without Blizzard's settings API", function()
       load(nil)
-      assert.are.same({ "CommunitiesForever", "CommunitiesForever" }, state.blizOptions)
+      assert.is_false(ns.Settings.registered)
     end)
 
     it("offers character communities and writes the selection", function()
       load(nil)
-      local option = state.options.args.community
+      local option = ns.Settings.options().args.community
       assert.are.same({ ["23125681"] = "Forever Friends", ["777"] = "Other Friends" }, option.values())
       assert.are.same({ "23125681", "777" }, option.sorting())
       option.set({}, "23125681")
@@ -167,7 +189,7 @@ describe("CommunitySelection", function()
     it("opens with /cf settings", function()
       load(nil)
       state.slash.cf("settings")
-      assert.are.equal("CommunitiesForever", state.openedDialog)
+      assert.is_true(ns.SettingsWindow.isShown()) -- CF-43: the own settings window
     end)
   end)
 end)

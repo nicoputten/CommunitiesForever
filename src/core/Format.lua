@@ -128,9 +128,12 @@ function Format.tree(view)
   for _, person in ipairs(view.people) do
     local children = {}
     for _, c in ipairs(person.chars) do
+      local _, shared = nil, nil
+      if not person.isSelf then _, shared = ns.Quests.shared(c.quests, own) end
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
                                   level = c.level, online = c.online, outside = c.outside or false,
-                                  sharedDungeon = not person.isSelf and ns.Quests.sharesDungeon(c.quests, own) }
+                                  sharedDungeon = not person.isSelf and ns.Quests.sharesDungeon(c.quests, own),
+                                  shared = shared } -- CF-40: quests shared with you (friends' characters only)
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
                           isSelf = person.isSelf, usesAddon = person.usesAddon, count = #children,
@@ -145,6 +148,33 @@ function Format.tree(view)
     nodes[#nodes + 1] = { value = Format.UNLINKED, text = "Unlinked", unlinked = true, children = children }
   end
   return nodes
+end
+
+-- CF-42: "Synced with <person> 2 min ago" (the newest record that arrived), or "Not synced yet".
+function Format.syncedText(view, now)
+  local newest, newestName
+  for _, person in ipairs(view.people or {}) do
+    if not person.isSelf and person.receivedAt and (not newest or person.receivedAt > newest) then
+      newest, newestName = person.receivedAt, person.displayName
+    end
+  end
+  return newest and string.format("Synced with %s %s", tostring(newestName), Format.ago(newest, now))
+    or "Not synced yet"
+end
+
+-- CF-40: the Friends tab footer: the sync state (syncedText) and "N characters from M friends" (everyone but
+-- you).
+function Format.friendsFooter(view, now)
+  local chars, friends = 0, 0
+  for _, person in ipairs(view.people or {}) do
+    if not person.isSelf then
+      friends = friends + 1
+      chars = chars + #person.chars
+    end
+  end
+  local synced = Format.syncedText(view, now)
+  return string.format("%s \194\183 %d character%s from %d friend%s", synced, chars, chars == 1 and "" or "s",
+    friends, friends == 1 and "" or "s")
 end
 
 -- CF-34: the line on a person's card saying whether they run the addon.
@@ -223,6 +253,65 @@ function Format.personSharedQuests(rows, own, showAll)
   return limitQuests(all, total, showAll)
 end
 
+-- CF-40: profession bars on the vanilla scale (300): fill = rank, shading up to the current maximum, lines at
+-- the training steps 75, 150 and 225; secondary professions are drawn muted.
+Format.SKILL_SCALE = 300
+Format.SKILL_TICKS = { 0.25, 0.5, 0.75 }
+
+function Format.skillBar(profession, secondary)
+  local scale = Format.SKILL_SCALE
+  local function part(x) return math.max(0, math.min(1, (x or 0) / scale)) end
+  return { fill = part(profession.rank), cap = part(profession.max), ticks = Format.SKILL_TICKS,
+           muted = secondary and true or false }
+end
+
+-- CF-40: talent trees as bars: points out of 31 (a full tree in vanilla), the tree with the most points marked.
+Format.TREE_POINTS = 31
+
+function Format.talentBars(row)
+  if type(row.talents) ~= "table" or #row.talents == 0 then return nil end
+  local best = 0
+  for _, tree in ipairs(row.talents) do best = math.max(best, tree.points or 0) end
+  local bars = {}
+  for i, tree in ipairs(row.talents) do
+    local points = tree.points or 0
+    bars[i] = { name = tostring(tree.name), points = points,
+                fraction = math.min(1, points / Format.TREE_POINTS), main = points > 0 and points == best }
+  end
+  return bars
+end
+
+-- CF-40: the line under a character's name: "played by <owner>" (or "your character") and where they are:
+-- "online in <zone>", "offline, last seen in <zone> 2 h ago".
+local function characterSubtitle(row, owner, own, now)
+  local parts = { own and "your character" or ("played by " .. tostring(owner)) }
+  if row.online then
+    parts[#parts + 1] = row.zone and row.zone ~= "" and ("online in " .. row.zone) or "online"
+  else
+    local text = "offline"
+    local seen = lastSeen(row)
+    if row.lastZone then text = text .. ", last " .. (own and "played" or "seen") .. " in " .. row.lastZone end
+    if seen then text = text .. (row.lastZone and " " or ", last seen ") .. Format.ago(seen, now) end
+    parts[#parts + 1] = text
+  end
+  if row.outside then parts[#parts + 1] = "not in community" end
+  return table.concat(parts, " \194\183 ")
+end
+
+-- CF-40: the three tiles: level (with a bar to 60), item level, role (and where it comes from).
+Format.MAX_LEVEL = 60
+
+local function characterTiles(row, talents)
+  local role = talents and talents.role
+  return {
+    { label = "Level", value = tostring(row.level or "?"),
+      fraction = row.level and math.min(1, row.level / Format.MAX_LEVEL) or nil },
+    { label = "Item level", value = row.ilvl and tostring(row.ilvl) or "-" },
+    { label = "Role", value = role or "-",
+      note = role and (talents.roleSource == "player" and "set by player" or "from talents") or nil },
+  }
+end
+
 local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
   local where
   if row.online then
@@ -249,6 +338,10 @@ local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
     },
     professions = Format.professionGroups(row.professions),
     talents = Format.talentSummary(row),
+    -- CF-40: the revamped card.
+    subtitle = characterSubtitle(row, owner, own, now),
+    tiles = characterTiles(row, Format.talentSummary(row)),
+    talentBars = Format.talentBars(row),
     -- CF-19: only on a friend's characters (nil on your own and on Unlinked characters).
     sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith, showAllQuests) or nil,
   }

@@ -39,6 +39,7 @@ CommunitiesForever/
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
+      Queue.lua              first-in, first-out list with a limit (CF-44: level-up announcements)
       GroupAsk.lua           "who's up for it?": recipients, throttle, expiry, cleaning, answer summary (CF-27)
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion, calendar matching (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
@@ -76,13 +77,18 @@ CommunitiesForever/
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
       Ping.lua               /cf ping test messages (PING/PONG)
       Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
-      Notify.lua             login notifications in chat (30 s per person, settings.notifications)
+      Notify.lua             login notifications in chat (30 s per person, settings.notifications); level-ups
+                             as a chat line (CF-16) and the announcement at the top of the screen (CF-44)
     ui/
-      MainFrame.lua          AceGUI Frame + TreeGroup (people/characters left, detail card right); tabs
-                             Friends, Activity (CF-22) and Dungeons (CF-24)
-      DungeonsTab.lua        Dungeons tab: dungeon list, suggested group, calendar events, copy fields (CF-24)
-      Setup.lua              onboarding wizard and Community tab prompt (CF-26)
-      Settings.lua           AceConfig options (Blizzard panel + /cf settings)
+      MainFrame.lua          the window (kit shell, CF-39) and its tabs Friends, Activity (CF-22), Dungeons (CF-24)
+      FriendsTab.lua         Friends tab on native kit frames (CF-40): search, people and characters, card
+      ActivityTab.lua        Activity tab on native kit frames (CF-41): filter chips, entries per day
+      DungeonsTab.lua        Dungeons tab on native kit frames (CF-42; planner CF-24): planned runs and dungeons in
+                             range of the character you are on, group slots, quests, the event title to copy
+      Setup.lua              onboarding wizard and Community tab prompt (CF-26; kit dialogs since CF-43)
+      Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
+      SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
+      LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
@@ -121,9 +127,11 @@ saved file loaded at login) and fails when an older version's data no longer wor
 ## Libraries
 Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
 
+Fonts (E13 revamp, decided 2026-10-27): **Marcellus SC**, **Marcellus** and **Inter**, bundled in `media/fonts/` (SIL Open Font License, which allows bundling; the license files ship with them). The game font is the fallback for non-Latin clients.
+
 Optional, not embedded (CF-24): the **QuestieDB** addon (comes with Questie; `## OptionalDeps: QuestieDB`). When it is installed with contract 3 or later, the Dungeons tab reads every dungeon's quests from its public API (`LibQuestieDB`, `QuestDB`) at runtime; nothing of its data ships with this addon (it has no license). Without it, dungeon quests come from the community's quest logs.
 
-UI choice: AceConfig for settings (also registered in the Blizzard settings panel). Main window: AceGUI `Frame` (move, resize, saved position and size via its status table) with a `TreeGroup`: people expandable to their characters on the left, a detail card on the right (decided in CF-12, draft B, replacing the earlier custom frame + ScrollBox plan: no unverified templates). Profession bars are inline textures. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
+UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), drawn from `Settings.options()`, whose get/set functions are the one place a setting is read and written (the setup uses them too); Options › AddOns has a page with a button that opens it (`Settings.RegisterCanvasLayoutCategory`, unverified). The setup wizard and the Community tab prompt are kit dialogs too (`Kit.dialog`). AceGUI and AceConfig are no longer used by the addon's code (still embedded). Ambient effects (`Kit.shine`: the title shimmer and the LEVEL UP shine) follow `settings.ambientEffects` through `Kit.ambient`. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). The Friends tab (CF-40, `src/ui/FriendsTab.lua`) is native too: a list of people with their characters on the left (folding per person), the card of the selected person or character on the right, both scrolled by `Kit.scrollArea` (plain ScrollFrame, our own thin thumb; no ScrollBox); frames come from pools and are reused on each render. The Activity tab (CF-41, `src/ui/ActivityTab.lua`) draws `Feed.days` filtered by `Feed.filter` (chips All, Level-ups, Dungeons, Together; whole entries) from `Feed.pieces` (a level change as the LEVEL UP chip, questing as zone pills). Pools (`Kit.pool`, `Kit.take`, `Kit.release`, `Kit.textHolder`) are shared by the tabs. The Dungeons tab (CF-42, `src/ui/DungeonsTab.lua`) lists planned runs and the dungeons in range of the character you are on (`Dungeons.overview` with its GUID), and shows the suggested group as five slots (`Dungeons.slots`: tank, healer, three damage; missing and open slots), your alternatives and the others in range (`Dungeons.outside`), the quests and the event title to copy (a native EditBox that keeps its text). The window has no AceGUI any more. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
 
 ## Data model
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
@@ -131,7 +139,8 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 global = {
   schemaVersion = 1,
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
-                notifications = true, minimap = {}, window = {}, tree = {},  -- window, tree: AceGUI status
+                notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
+                                                     -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
                 shareActivity = true,                -- CF-22: send the activity feed to friends
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
@@ -141,7 +150,10 @@ global = {
                 onboarded, onboardedVersion,         -- CF-26: setup wizard done (Skip and close count)
                 chatTabPrompt = { [guid] = true },   -- CF-26: no Community tab prompt on these characters
                 groupAsks = true,                    -- CF-27: receive "who's up for it?" asks
-                dungeonTree = {} },                  -- CF-24: Dungeons tab selection and list width
+                dungeonTree = {},                    -- CF-24: Dungeons tab selection and list width
+                openOnLogin = false,                 -- CF-43: open the window after login
+                ambientEffects = true,               -- CF-43: title shimmer and LEVEL UP shine
+                levelUpToast = true },               -- CF-44: the level-up announcement
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days

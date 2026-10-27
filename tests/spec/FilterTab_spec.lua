@@ -1,8 +1,9 @@
 local net = require("net")
+local helpers = require("helpers")
 
 -- CF-36: the search box in the Friends tab, on a real window with synced people (end-to-end harness).
 describe("smart filter in the Friends tab (CF-36)", function()
-  local world, ns, state
+  local world, ns
 
   before_each(function()
     world = net.new()
@@ -17,7 +18,7 @@ describe("smart filter in the Friends tab (CF-36)", function()
     world:login("C")
     world:settle()
     world:with("A", function(c)
-      ns, state = c.ns, c.state
+      ns = c.ns
       ns.MainFrame.toggle()
     end)
   end)
@@ -26,31 +27,23 @@ describe("smart filter in the Friends tab (CF-36)", function()
     world:shutdown()
   end)
 
-  local function widget(widgetType, check)
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == widgetType and (not check or check(w)) then return w end
-    end
-  end
-
-  local function searchBox() return widget("EditBox", function(w) return w.width == 180 end) end
-  local function tree() return widget("TreeGroup") end
+  local function tab() return helpers.friendsTab(ns) end
 
   local function people()
-    local list = {}
-    for _, node in ipairs(tree().tree or {}) do list[#list + 1] = node.value end
+    local list = tab().paths("group")
     table.sort(list)
     return list
   end
 
   local function type_(text)
-    world:with("A", function() searchBox():Fire("OnTextChanged", text) end)
+    world:with("A", function() tab().type(text) end)
   end
 
   it("shows only people with a matching character, and how many of all", function()
     assert.are.same({ "Ada#1001", "Bob#2002", "Cy#3003" }, people())
     type_("rogue")
     assert.are.same({ "Bob#2002" }, people())
-    assert.is_truthy(widget("Label", function(w) return w.width == 120 end).text:find("1 of 3", 1, true))
+    assert.are.equal("1 of 3", ns.FriendsTab.countText())
     type_("20-25")
     assert.are.same({ "Ada#1001", "Bob#2002" }, people())
     type_("priest 30")
@@ -62,36 +55,35 @@ describe("smart filter in the Friends tab (CF-36)", function()
     assert.are.same({}, people())
     type_("")
     assert.are.same({ "Ada#1001", "Bob#2002", "Cy#3003" }, people())
-    assert.are.equal("", widget("Label", function(w) return w.width == 120 end).text)
+    assert.are.equal("", ns.FriendsTab.countText())
+    assert.is_false(tab().has("No character matches"))
   end)
 
-  it("sits above the tree in the Friends tab and keeps its text across tab switches", function()
-    assert.is_true(tree().fullHeight) -- the tree fills the tab below the search row
+  it("says so on the card when nothing matches", function()
+    type_("paladin")
+    assert.is_true(tab().has('No character matches "paladin".'))
+  end)
+
+  it("sits above the list in the Friends tab and keeps its text across tab switches", function()
     type_("rogue")
     world:with("A", function()
       ns.MainFrame.selectTab("activity")
+      assert.is_false(ns.FriendsTab.searchBox():GetParent():GetParent().shown) -- the tab is hidden
       ns.MainFrame.selectTab("friends")
     end)
-    local boxes = 0
-    for _, w in ipairs(state.guiWidgets) do
-      if w.type == "EditBox" and w.width == 180 and w.text == "rogue" then boxes = boxes + 1 end
-    end
-    assert.is_true(boxes >= 1, "the new search box shows the text")
-    local trees = {}
-    for _, w in ipairs(state.guiWidgets) do if w.type == "TreeGroup" then trees[#trees + 1] = w end end
-    local nodes = trees[#trees].tree
-    assert.are.equal(1, #nodes)
-    assert.are.equal("Bob#2002", nodes[1].value)
+    assert.are.equal("rogue", ns.FriendsTab.searchBox():GetText())
+    assert.are.same({ "Bob#2002" }, people())
   end)
 
-  it("expands matches, then puts the groups back and clears on close", function()
+  it("unfolds matches, then puts the groups back and clears on close", function()
     local status = world.clients.A.addon.db.global.settings.tree
-    status.groups["Bob#2002"] = false -- collapsed by the player
+    status.groups["Bob#2002"] = false -- folded by the player
     type_("rogue")
     assert.is_true(status.groups["Bob#2002"])
     world:with("A", function() ns.MainFrame.toggle() end) -- close
     assert.are.equal("", ns.MainFrame.filterText())
     assert.is_false(status.groups["Bob#2002"])
-    assert.are.equal("", searchBox().text)
+    world:with("A", function() ns.MainFrame.toggle() end) -- open again
+    assert.are.equal("", ns.FriendsTab.searchBox():GetText())
   end)
 end)
