@@ -292,7 +292,7 @@ describe("Format", function()
       assert.are.equal("unlinked", Format.detail(view, Format.UNLINKED, NOW).kind)
       local d = Format.detail(view, Format.path(Format.UNLINKED, "U1"), NOW)
       assert.are.equal("Stranger", d.name)
-      assert.are.equal("played by Unlinked \194\183 offline", d.subtitle)
+      assert.are.equal("community member \194\183 offline", d.subtitle)
     end)
 
     it("shows the last seen zone, character and time for an offline person", function()

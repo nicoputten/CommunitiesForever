@@ -283,7 +283,8 @@ end
 -- CF-40: the line under a character's name: "played by <owner>" (or "your character") and where they are:
 -- "online in <zone>", "offline, last seen in <zone> 2 h ago".
 local function characterSubtitle(row, owner, own, now)
-  local parts = { own and "your character" or ("played by " .. tostring(owner)) }
+  -- owner nil: an Unlinked character (a community member not linked to a friend).
+  local parts = { own and "your character" or (owner and ("played by " .. tostring(owner)) or "community member") }
   if row.online then
     parts[#parts + 1] = row.zone and row.zone ~= "" and ("online in " .. row.zone) or "online"
   else
@@ -365,7 +366,7 @@ function Format.detail(view, path, now, showAllQuests)
     for _, row in ipairs(rows) do
       if row.guid == guid then
         local friend = person and not person.isSelf
-        return characterDetail(row, person and person.displayName or "Unlinked", now, person and person.isSelf,
+        return characterDetail(row, person and person.displayName, now, person and person.isSelf,
                                friend and ownRows(view) or nil, showAllQuests)
       end
     end
