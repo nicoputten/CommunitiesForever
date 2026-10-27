@@ -26,6 +26,20 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-42 Dungeons tab in the new look
+Compare with `docs/design/revamp-2026-10/dungeons.html`. Best on a character in range of a dungeon, with a friend in range too.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Dungeons tab | Left column: "PLANNED" (when a run is in the calendar within 3 days; name, "Mon 20:00" in green, "N going · you", a faint green tint), then "IN RANGE FOR <character> (<level>)": per dungeon the name in gold, the range "17–24" right, "N friends" and "x / y quests" (green when you have all); the note about typical ranges at the bottom. | open |
+| Log on an alt in another level range, open the tab | The list follows that character; your first character shows under "Alternatives for you" where it fits. | open |
+| Click a dungeon | Gold bar on the row. Card: the name large, "levels 17–26 · Westfall"; planned runs of it in green; "Suggested group" as five slots: Tank, Healer, three DPS with portrait, "<name> <level>" in class colour, "role · person"; your slot outlined gold; a missing tank or healer in orange "nobody in range"; free slots "+ open". | open |
+| Ask who's up for it | The gold button with "Sends a chat line to friends with the addon"; clicking asks (CF-27) and the line turns into "Asked who's up for it · ..." with the answers. | open |
+| Also in range | Others in range not in the group, one line each. | open |
+| Quests and Plan a run | Left "Quests" with "x / y in your log", a green check on quests in your log, who else has them; right the event title in a dark box (click: selected, Ctrl+C copies; typing does not change it) and "Open calendar". | open |
+| Footer | Left "Synced with <name> <time>", right "Group asks wait until combat ends". | open |
+| Long card or list, small window | Both scroll with the mouse wheel (V62). | open |
+
 ### CF-41 Activity tab in the new look
 Compare with `docs/design/revamp-2026-10/activity.html`. Best with a friend who levelled, quested and ran a dungeon with you today.
 

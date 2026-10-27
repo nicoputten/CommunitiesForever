@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -406,3 +406,12 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests (pure core): filtering per chip, the entry lines, "+N zones", the time.
 - Manual: compare with `activity.html`; Show all and the together lines still work.
 - Decided (2026-10-27): the Dungeons chip covers every run (dungeons, raids, battlegrounds); a chip keeps whole entries (a person's entry counts when any of their characters that day matches); older days read "Monday 26 Oct"; the LEVEL UP chip is static until CF-43 brings Ambient effects. The chip shows "from → to" (the milestone texts "reached 20" stay in `Feed.parts`); an entry shows all its pieces, "Show all (N)" opens the person's other characters. The time is the local clock of the entry's `at` (`date`, V63).
+
+### CF-42 Dungeons tab in the new look
+- Goal: the Dungeons tab as in `dungeons.html`.
+- List (left): "Planned" (calendar runs within 3 days: name, day and time, who is going), then "In range for <character> (<level>)": per dungeon the level range ("outdoor" for outdoor ones), friends in range, and "x / y quests" (green when you have all). A note: "Ranges are typical levels; the list follows the character you're on."
+- Detail: name in Marcellus 26, "levels a–b · <zone>". Suggested group as five slots (tank, healer, three damage): portrait, "<character> <level>", role and person; a missing role stands out ("nobody in range", orange dashed); your slot outlined in gold; open slots "+ open". "Alternatives for you: <your other characters in range>". **Ask who's up for it** (CF-27) with "Sends a chat line to friends with the addon" (not a popup). Quests "x / y in your log" with a check per quest and who else has it. Plan a run: the title ready to copy and **Open calendar** (as CF-24).
+- Footer: "Synced with <person> <ago>" and "Group asks wait until combat ends".
+- Unit tests (pure core): the slots (missing role, your slot, open), alternatives, quest counts and colour, the planned list.
+- Manual: compare with `dungeons.html`; asking, the calendar button and planned runs still work.
+- Decided (2026-10-27): the list follows the character you are on (`Dungeons.overview` and `suggest` with its GUID; your other characters are "Alternatives for you"); zones per dungeon hardcoded in English (`Dungeons.ZONES`; none for the Group Finder's new dungeons); "Also in range" kept, compact. No "outdoor" ranges (no data). The list no longer shows the dungeon atlas icon (V32). Selection stays in `settings.dungeonTree.selected` (rule 8).

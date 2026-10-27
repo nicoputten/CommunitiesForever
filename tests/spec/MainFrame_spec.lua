@@ -205,14 +205,13 @@ describe("MainFrame", function()
     assert.are.equal(before, #tab().rows())
   end)
 
-  it("shows only the active tab: Friends, Activity or the AceGUI root (CF-40, CF-41)", function()
+  it("shows only the active tab: Friends, Activity or Dungeons (CF-40 to CF-42)", function()
     load("23125681")
     ns.MainFrame.toggle()
-    local root
-    for _, w in ipairs(state.guiWidgets) do if w.cfMainRoot then root = w end end
     local friends = ns.FriendsTab.searchBox():GetParent():GetParent()
     local activity = ns.ActivityTab.chips().all:GetParent():GetParent()
-    local function shown() return { friends.shown, activity.shown, not root.frame.hidden } end
+    local dungeons = ns.DungeonsTab.titleBox():GetParent():GetParent():GetParent()
+    local function shown() return { friends.shown, activity.shown, dungeons.shown } end
     assert.are.same({ true, false, false }, shown())
     ns.MainFrame.selectTab("activity")
     assert.are.same({ false, true, false }, shown())
@@ -220,6 +219,7 @@ describe("MainFrame", function()
     assert.are.same({ false, false, true }, shown())
     ns.MainFrame.selectTab("friends")
     assert.are.same({ true, false, false }, shown())
+    assert.are.equal(0, #state.guiWidgets) -- no AceGUI in the window any more
   end)
 
   describe("minimap button", function()
