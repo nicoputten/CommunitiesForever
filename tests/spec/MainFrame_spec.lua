@@ -219,7 +219,6 @@ describe("MainFrame", function()
     assert.are.same({ false, false, true }, shown())
     ns.MainFrame.selectTab("friends")
     assert.are.same({ true, false, false }, shown())
-    assert.are.equal(0, #state.guiWidgets) -- no AceGUI in the window any more
   end)
 
   describe("minimap button", function()

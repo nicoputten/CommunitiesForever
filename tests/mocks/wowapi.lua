@@ -218,103 +218,6 @@ local function fakeLibs(state)
     return db
   end
 
-  local AceConfig = {}
-  function AceConfig:RegisterOptionsTable(appName, options)
-    state.optionsApp = appName
-    state.options = type(options) == "function" and options() or options
-  end
-
-  local AceConfigDialog = {}
-  function AceConfigDialog:AddToBlizOptions(appName, name)
-    state.blizOptions = { appName, name }
-  end
-  function AceConfigDialog:Open(appName)
-    state.openedDialog = appName
-  end
-
-  -- AceGUI: widgets record what was set on them; containers keep their children.
-  local AceGUI = {}
-  function AceGUI:Create(widgetType)
-    local w = { type = widgetType, children = {}, callbacks = {}, shown = true, frame = {} }
-    function w.frame.IsShown() return w.shown end
-    -- CF-32: keyboard input (frame.keyboard, frame.propagate, frame.scripts.OnKeyDown).
-    w.frame.scripts = {}
-    function w.frame:EnableKeyboard(on) self.keyboard = on end
-    function w.frame:SetPropagateKeyboardInput(on)
-      assert(not state.inCombat, "SetPropagateKeyboardInput in combat")
-      self.propagate = on
-    end
-    function w.frame:SetScript(name, fn) self.scripts[name] = fn end
-    w.frame.hooks = {}
-    function w.frame:HookScript(name, fn)
-      self.hooks[name] = self.hooks[name] or {}
-      table.insert(self.hooks[name], fn)
-    end
-    function w.frame:SetFrameStrata(strata) self.strata = strata end
-    -- CF-39: the main window's AceGUI root container hangs in the kit window.
-    function w.frame:SetParent(parent) self.parent = parent end
-    function w.frame:ClearAllPoints() self.points = nil end
-    function w.frame:SetAllPoints(other) self.points = { "ALL", other } end
-    -- CF-40: hidden while the native Friends tab is shown.
-    function w.frame:Show() self.hidden = nil end
-    function w.frame:Hide() self.hidden = true end
-    function w:SetCallback(name, fn) self.callbacks[name] = fn end
-    function w:Fire(name, ...) if self.callbacks[name] then self.callbacks[name](self, name, ...) end end
-    function w:AddChild(child) self.children[#self.children + 1] = child end
-    function w:ReleaseChildren() self.children = {} end
-    function w:Show() self.shown = true end
-    function w:Hide() self.shown = false; self:Fire("OnClose") end
-    function w:SetStatusTable(t) self.status = t end
-    function w:PauseLayout() self.paused = true end
-    function w:ResumeLayout() self.paused = false end
-    function w:DoLayout() self.layouts = (self.layouts or 0) + 1 end
-    function w:SetTree(t) self.tree = t; self:RefreshTree() end
-    -- Like TreeGroup: one button per visible row, level 1 = group, 2 = child.
-    function w:RefreshTree()
-      self.buttons = {}
-      for _, node in ipairs(self.tree or {}) do
-        for level, n in ipairs({ node, unpack(node.children or {}) }) do
-          local button = { level = level == 1 and 1 or 2, text = {}, hooks = {},
-                           uniquevalue = level == 1 and n.value or (node.value .. "" .. n.value) }
-          function button:HookScript(name, fn)
-            self.hooks[name] = self.hooks[name] or {}
-            table.insert(self.hooks[name], fn)
-          end
-          function button:SetNormalFontObject(font) self.normalFont = font end
-          function button:SetHighlightFontObject(font) self.highlightFont = font end
-          button.node = n
-          self.buttons[#self.buttons + 1] = button
-        end
-      end
-    end
-    function w:SetTreeWidth(width, resizable) self.treeWidth, self.treeResizable = width, resizable end
-    function w:SelectByValue(path)
-      self.status = self.status or {}
-      self.status.selected = path
-      self:Fire("OnGroupSelected", path)
-    end
-    function w:SelectByPath(...) self:SelectByValue(table.concat({ ... }, "\001")) end
-    function w:SetTabs(tabs) self.tabs = tabs end
-    function w:SelectTab(value) self.selectedTab = value; self:Fire("OnGroupSelected", value) end
-    function w:EnableButtonTooltips(enable) self.buttonTooltips = enable end
-    for _, setter in ipairs({ "Title", "StatusText", "Layout", "Text", "FullWidth", "FullHeight", "Highlight",
-                              "FontObject",
-                              "Color", "Width", "Height", "RelativeWidth",
-                              "Label", "Value", "Disabled", "MaxLetters" }) do
-      w["Set" .. setter] = function(widget, value) widget[setter:sub(1, 1):lower() .. setter:sub(2)] = value end
-    end
-    function w:SetList(list, order) self.list, self.order = list, order end
-    function w:DisableButton(disabled) self.buttonDisabled = disabled end
-    function w:GetText() return self.text end
-    function w:GetValue() return self.value end
-    if widgetType == "Frame" then
-      w.statusbg = { Hide = function(bg) bg.hidden = true end }
-      w.statustext = { GetParent = function() return w.statusbg end }
-    end
-    state.guiWidgets[#state.guiWidgets + 1] = w
-    return w
-  end
-
   local LDB = {}
   function LDB:NewDataObject(name, object)
     state.ldbObjects[name] = object
@@ -332,9 +235,6 @@ local function fakeLibs(state)
     ["AceAddon-3.0"] = AceAddon,
     ["AceDB-3.0"] = AceDB,
     ["AceEvent-3.0"] = AceEvent,
-    ["AceConfig-3.0"] = AceConfig,
-    ["AceConfigDialog-3.0"] = AceConfigDialog,
-    ["AceGUI-3.0"] = AceGUI,
     ["LibDataBroker-1.1"] = LDB,
     ["LibDBIcon-1.0"] = DBIcon,
     -- The real pure-Lua libraries (tests/helpers.lua loads them from Libs/).
@@ -355,7 +255,6 @@ function wowapi.install(opts)
     slash = {},
     events = {},
     eventHandlers = {},
-    guiWidgets = {},
     ldbObjects = {},
     messageHandlers = {},
     sent = {},

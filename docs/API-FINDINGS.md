@@ -94,7 +94,7 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | Addon BNet messages in instances and combat | Work inside a dungeon. In combat the addon holds its messages (`InCombatLockdown`) and sends them after `PLAYER_REGEN_ENABLED`; verified (V3, V24, CF-10). Sending during combat itself was not tested and is not needed. |
 | `InCombatLockdown`, `GetTime`, `PLAYER_REGEN_ENABLED` | Exist and work (V24) |
 | Community invite link in chat | A `clubTicket` link printed by an addon is clickable and opens Blizzard's join window; its Join button works (V27, CF-21). `GetClubTicketLink` is used when present, a hand-built `HclubTicket:<code>` link otherwise. |
-| `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16) |
+| `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16). No longer used: AceConfig was removed after CF-43. |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
 ## Not available / not useful

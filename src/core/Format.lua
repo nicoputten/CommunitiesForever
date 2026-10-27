@@ -22,7 +22,7 @@ end
 Format.UNLINKED = "~unlinked" -- BattleTags never start with "~"
 Format.SELF = "~self"
 
--- Separator AceGUI TreeGroup uses between path parts ("parent\001child").
+-- Separator between path parts (the AceGUI tree's, so stored selections keep working) ("parent\001child").
 local PATH_SEPARATOR = "\001"
 
 -- "just now", "5 min ago", "3 h ago", "2 d ago"; "never" without a timestamp.
@@ -109,7 +109,7 @@ local function personTitle(person)
   return person.isSelf and (person.displayName .. " (you)") or person.displayName
 end
 
---[[ Tree for AceGUI TreeGroup. Each node:
+--[[ The Friends list (CF-40): people and their characters. Each node:
   { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online } } }
 People first (Linker order), then an "Unlinked" group when there are unlinked characters.
 The UI turns name/classFile into colored text.
