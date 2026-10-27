@@ -26,8 +26,20 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V65 | Does `ColorPickerFrame:SetupColorPickerAndShow` (with `swatchFunc`, `cancelFunc`) and `ColorPickerFrame:GetColorRGB` open and report the colour (CF-43: chat colour)? | See the CF-43 steps: clicking the colour square opens Blizzard's colour picker; the community chat changes colour while picking; Cancel puts the old one back. | open |
 | V66 | Do `Settings.RegisterCanvasLayoutCategory(frame, name)` and `Settings.RegisterAddOnCategory(category)` add the page under Options › AddOns (CF-43)? | Esc → Options → AddOns: a "CommunitiesForever" entry with the line and an "Open settings" button that opens the settings window. | open |
 
+| V67 | Is a Lua file in the addon folder that changed on disk re-read on `/reload`, and does a file the TOC lists but that was missing at game start load on `/reload` or only after a restart? (CF-45: the uploader rewrites `Data\Runs.lua` while the game runs) | Copy the new `tools/FriendProbe`, start the game, `/fp reloadfile`: `V67 ReloadProbe.lua mark A \| ReloadProbeLate.lua not loaded`. With the game still running, in PowerShell (your game folder in the first line): `$fp = "<game folder>\Interface\AddOns\FriendProbe"`, then `Set-Content "$fp\ReloadProbe.lua" 'FriendProbeReloadMark = "B"'` and `Set-Content "$fp\ReloadProbeLate.lua" 'FriendProbeLateMark = "late"'`. In game `/reload`, `/fp reloadfile`: is the mark `B` (changed file re-read), and is the late file `late` or `not loaded`? Then exit the game, start it again, `/fp reloadfile` once more. Afterwards `Remove-Item "$fp\ReloadProbeLate.lua"`. | open |
+| V68 | May an addon call `C_UI.Reload()` or `ReloadUI()` from a button click? (CF-47: "Reload now to post on Discord") | `/fp reload`, click `C_UI.Reload()`: the UI reloads and the log shows `V68 reloaded by C_UI.Reload`. Then `/fp reload` again and click `ReloadUI()`. If nothing reloads, the log shows `did not reload within 2 s` and any `ADDON_ACTION_BLOCKED` line; `/reload` by hand and send the log. | open |
+| V69 | Can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), the first invite making a party? (CF-48: Invite everyone ready) | With at least two friends online in Forever and you not in a group: `/fp inviteall`, click `Invite all N`. Do all friends get an invite (also the second, while the first hasn't accepted yet)? Let them accept, wait 10 s (`V69 after 10 s: in group N`), `/reload` and send the log (the `V69 C_PartyInfo.InviteUnit` lines and `INVITE EVENT` lines). | open |
+
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-45 Runs file and checks
+Nothing shows yet: the Dungeons tab reads the runs from CF-46 on. This checks that the empty file ships and loads.
+
+| Step | Expected | Status |
+|---|---|---|
+| Install the release (CurseForge app or `tools\build.ps1 -AddOnsPath "<game folder>\Interface\AddOns"`) | `Interface\AddOns\CommunitiesForever\Data\Runs.lua` exists and contains `CF_RUNS = nil`. | open |
+| Log in, `/reload` | No Lua error; the addon works as before. | open |
 
 ### CF-44 Level-up announcement
 Needs a friend with the addon who levels up while you are online (or `/cf debugon` is not enough: the debug friend never levels).

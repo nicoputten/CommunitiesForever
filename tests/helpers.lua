@@ -9,12 +9,12 @@ function helpers.loadAddonFile(path, ns)
   return chunk(helpers.ADDON_NAME, ns)
 end
 
--- Addon source files listed in the TOC, in load order (libraries via embeds.xml excluded).
+-- Addon source and data files listed in the TOC, in load order (libraries via embeds.xml excluded).
 function helpers.tocFiles()
   local files = {}
   for line in io.lines(helpers.ADDON_NAME .. ".toc") do
     line = line:gsub("%s+$", "")
-    if line:match("^src[\\/].+%.lua$") then
+    if line:match("^src[\\/].+%.lua$") or line:match("^Data[\\/].+%.lua$") then
       files[#files + 1] = (line:gsub("\\", "/"))
     end
   end

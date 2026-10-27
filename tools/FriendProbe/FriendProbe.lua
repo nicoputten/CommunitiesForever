@@ -5,6 +5,9 @@
 --                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
 --   /fp menu        right-click menu test window (V57, CF-37): Blizzard context menu, whisper, copy box,
 --                   right-click on an AceGUI tree row
+--   /fp reloadfile  V67 (CF-45): which version of ReloadProbe.lua (and ReloadProbeLate.lua) the game loaded
+--   /fp reload      V68 (CF-45): buttons that call C_UI.Reload() and ReloadUI() from a click
+--   /fp inviteall   V69 (CF-45): one button that invites every friend online in Forever by name
 --   /fp feed off    stop feed logging (V35)
 --   /fp clear       wipe the saved log
 -- Checks (by VERIFY.md number):
@@ -319,6 +322,27 @@ local function Link(action, index, text)
   return string.format("|cff71d5ff|Haddon:FriendProbe:%s:%d|h[%s]|h|r", action, index, text)
 end
 
+-- Characters of Battle.net friends online in Forever: { name, gameAccountID, battleTag }.
+local function OnlineFriends()
+  local friends = {}
+  for i = 1, BNGetNumFriends() do
+    local acc = C_BattleNet.GetFriendAccountInfo(i)
+    for j = 1, acc and C_BattleNet.GetFriendNumGameAccounts(i) or 0 do
+      local ga = C_BattleNet.GetFriendGameAccountInfo(i, j)
+      if ga and ga.isOnline and ga.clientProgram == BNET_CLIENT_WOW and ga.wowProjectID == WOW_PROJECT_ID then
+        friends[#friends + 1] = { name = ga.characterName, gameAccountID = ga.gameAccountID, battleTag = acc.battleTag }
+      end
+    end
+  end
+  return friends
+end
+
+local function WatchInvites()
+  if inviteWatching then return end
+  inviteWatching = true
+  for _, event in ipairs(INVITE_EVENTS) do pcall(inviteFrame.RegisterEvent, inviteFrame, event) end
+end
+
 local function Invite()
   log("== V47/V48 INVITE ==")
   for _, name in ipairs({ "RequestInviteFromUnit", "InviteUnit", "ConfirmInviteUnit" }) do
@@ -326,27 +350,92 @@ local function Invite()
   end
   log("exists BNInviteFriend", BNInviteFriend ~= nil, "EventRegistry", EventRegistry ~= nil)
   HookLinks()
-  if not inviteWatching then
-    inviteWatching = true
-    for _, event in ipairs(INVITE_EVENTS) do pcall(inviteFrame.RegisterEvent, inviteFrame, event) end
-  end
+  WatchInvites()
   print("|cff33ff99FP|r V47 " .. Link("test", 0, "click me: link test"))
-  inviteTargets = {}
-  for i = 1, BNGetNumFriends() do
-    local acc = C_BattleNet.GetFriendAccountInfo(i)
-    for j = 1, acc and C_BattleNet.GetFriendNumGameAccounts(i) or 0 do
-      local ga = C_BattleNet.GetFriendGameAccountInfo(i, j)
-      if ga and ga.isOnline and ga.clientProgram == BNET_CLIENT_WOW and ga.wowProjectID == WOW_PROJECT_ID then
-        local n = #inviteTargets + 1
-        inviteTargets[n] = { name = ga.characterName, gameAccountID = ga.gameAccountID, battleTag = acc.battleTag }
-        log("friend", n, S(ga.characterName), "gameAccountID", S(ga.gameAccountID))
-        print("|cff33ff99FP|r V48 " .. S(ga.characterName) .. ": " .. Link("request", n, "ask them for an invite")
-          .. " " .. Link("name", n, "invite by name") .. " " .. Link("bnet", n, "invite via Battle.net"))
-      end
-    end
+  inviteTargets = OnlineFriends()
+  for n, t in ipairs(inviteTargets) do
+    log("friend", n, S(t.name), "gameAccountID", S(t.gameAccountID))
+    print("|cff33ff99FP|r V48 " .. S(t.name) .. ": " .. Link("request", n, "ask them for an invite")
+      .. " " .. Link("name", n, "invite by name") .. " " .. Link("bnet", n, "invite via Battle.net"))
   end
   if #inviteTargets == 0 then log("no friend online in Forever: the invite links need one") end
   log("click the test link, then each invite link once (leave the group between tries); /reload and send the log")
+end
+
+-- ===== V67-V69: planned runs (CF-45) =====
+-- A small window with buttons: each click is a hardware event, like the addon's own buttons will be.
+local function ButtonWindow(title, buttons)
+  local window = CreateFrame("Frame", nil, UIParent, "BasicFrameTemplateWithInset")
+  window:SetSize(280, 50 + 32 * #buttons)
+  window:SetPoint("CENTER", 0, 160)
+  window:SetFrameStrata("DIALOG")
+  local label = window:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  label:SetPoint("TOP", 0, -6)
+  label:SetText(title)
+  for i, b in ipairs(buttons) do
+    local button = CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
+    button:SetSize(240, 26)
+    button:SetPoint("TOP", 0, -36 - 32 * (i - 1))
+    button:SetText(b.text)
+    button:SetScript("OnClick", b.click)
+  end
+  return window
+end
+
+-- V67: is a changed Lua file in the addon folder re-read on /reload? ReloadProbe.lua ships with "A"; the
+-- VERIFY.md step changes it on disk while the game runs. ReloadProbeLate.lua is listed in the TOC but not
+-- shipped: the step creates it while the game runs (expected: it loads only after a game restart).
+local function ReloadFile()
+  log("V67 ReloadProbe.lua mark", S(FriendProbeReloadMark), "| ReloadProbeLate.lua",
+    FriendProbeLateMark and S(FriendProbeLateMark) or "not loaded")
+end
+
+-- V68: may an addon reload the UI from a button click? The click is remembered in FriendProbeDB; after
+-- the reload, ADDON_LOADED logs which call did it.
+local reloadWindow
+local function ReloadButtons()
+  log("== V68 RELOAD FROM A CLICK ==")
+  log("exists C_UI.Reload", C_UI ~= nil and C_UI.Reload ~= nil, "ReloadUI", ReloadUI ~= nil)
+  WatchInvites() -- also logs ADDON_ACTION_BLOCKED / ADDON_ACTION_FORBIDDEN
+  local function try(label, fn)
+    return function()
+      log("V68 click", label)
+      FriendProbeDB.reloadBy = label
+      LogCall("V68 " .. label, fn)
+      C_Timer.After(2, function()
+        FriendProbeDB.reloadBy = nil
+        log("V68", label, "did not reload within 2 s")
+      end)
+    end
+  end
+  if reloadWindow then reloadWindow:Show() return end
+  reloadWindow = ButtonWindow("V68: one click reloads", {
+    { text = "C_UI.Reload()", click = try("C_UI.Reload", C_UI and C_UI.Reload) },
+    { text = "ReloadUI()", click = try("ReloadUI", ReloadUI) },
+  })
+  log("V68 click a button: the UI should reload; after it, /fp reload again for the other one")
+end
+
+-- V69: one click invites several friends in a row by name (CF-48: Invite everyone ready).
+local inviteAllWindow
+local function InviteAll()
+  log("== V69 INVITE SEVERAL ==")
+  WatchInvites()
+  local friends = OnlineFriends()
+  for n, t in ipairs(friends) do log("friend", n, S(t.name)) end
+  log("in group", S(GetNumGroupMembers and GetNumGroupMembers()))
+  if #friends < 2 then log("V69 needs at least two friends online in Forever (now " .. #friends .. ")") end
+  if inviteAllWindow then inviteAllWindow:Hide() end
+  inviteAllWindow = ButtonWindow("V69: " .. #friends .. " friends online", {
+    { text = "Invite all " .. #friends, click = function()
+      log("V69 click: inviting", #friends)
+      for _, t in ipairs(friends) do
+        LogCall("V69 C_PartyInfo.InviteUnit " .. S(t.name), C_PartyInfo and C_PartyInfo.InviteUnit, t.name)
+      end
+      C_Timer.After(10, function() log("V69 after 10 s: in group", S(GetNumGroupMembers())) end)
+    end },
+  })
+  log("V69 click Invite all (you not in a group); friends accept; /reload and send the log")
 end
 
 -- ===== V57: right-click menu (CF-37) =====
@@ -630,6 +719,10 @@ loader:RegisterEvent("ADDON_LOADED")
 loader:SetScript("OnEvent", function(_, _, name)
   if name ~= "FriendProbe" then return end
   FriendProbeDB = FriendProbeDB or {}
+  if FriendProbeDB.reloadBy then
+    log("V68 reloaded by", FriendProbeDB.reloadBy)
+    FriendProbeDB.reloadBy = nil
+  end
   if FriendProbeDB.feed then FeedRegister() end
   if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then C_ChatInfo.RegisterAddonMessagePrefix(COMM_PREFIX) end
 end)
@@ -656,6 +749,12 @@ SlashCmdList.FRIENDPROBE = function(msg)
     end
   elseif cmd == "invite" then
     Invite()
+  elseif cmd == "reloadfile" then
+    ReloadFile()
+  elseif cmd == "reload" then
+    ReloadButtons()
+  elseif cmd == "inviteall" then
+    InviteAll()
   elseif cmd == "menu" then
     Section("V57 MENU", MenuTest)
   elseif cmd == "feed" and arg == "off" then
@@ -665,6 +764,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | menu | comm whisper <name> | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | reloadfile | reload | inviteall | menu | comm whisper <name> | feed off | clear")
   end
 end

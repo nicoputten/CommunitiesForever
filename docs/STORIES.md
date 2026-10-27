@@ -3,21 +3,11 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-45 (soon, in a small release), then CF-46, CF-47, CF-48 once the web and uploader stories they need are in (web E7, uploader UP-12). CF-38 (recipes) waits for the V60 check at launch (its story is in PR #63).
+Build order: CF-46, CF-47, CF-48 once the web and uploader stories they need are in (web E7, uploader UP-12). CF-38 (recipes) waits for the V60 check at launch (its story is in PR #63).
 
 ## E14 Planned runs
 
 Decided with Nico, 2026-10-27. Two kinds of group: **Ask now** lives in the game (CF-27) and is answered within minutes; a **planned run** is owned by the website, posted and answered in Discord, and ends in an invite in the game at start time. The game never talks to the internet: it learns about runs at login or `/reload` from `Data\Runs.lua` (written by the uploader, UP-12) or from a friend's addon over sync, and what the player does reaches the site after the game saves (`/reload` or logout) and the uploader uploads (web WEB-43). The in-game calendar is out of the flow. Times are UTC in data and shown in the player's local time. Boards: `docs/design/runs-2026-10/` (`runs-flow.html` shows the whole flow). Web stories: E7 in the web repo; bot: BOT-04.
-
-### CF-45 Runs file and checks
-- Ship an empty `Data\Runs.lua` (`CF_RUNS = nil`) listed in the TOC, in a release **before** the uploader writes it: a file that isn't there when the game starts only loads after a restart. Release it soon.
-- `src/adapters/RunsFile.lua` reads `CF_RUNS` defensively (missing, empty, wrong types, oversized): treated as untrusted like received sync data (strip `|` escapes, caps on counts and string lengths); `src/core` gets a pure validator, unit tested.
-- VERIFY.md entries with FriendProbe steps (extend `tools/FriendProbe/`):
-  - V-a: is a Lua file in the addon folder that changed on disk re-read on `/reload` (not only at game start)?
-  - V-b: may an addon call `C_UI.Reload()` (or `ReloadUI()`) from a button click?
-  - V-c: can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), converting to a party?
-  - V47 and V48 (CF-27) are still open and decide Request invite.
-- Compat (rule 8): no stored data or messages change.
 
 ### CF-46 Dungeons tab with runs
 - Board `dungeons-runs.html`. A **Runs** segment next to the dungeons in range (with the count in the tab title), each run with dungeon, local time, organiser, "3 in · 1 maybe", your answer, and what you could fill ("Grom Ashfeller fits tank"). "Runs updated at 17:34 · /reload for newer" from `CF_RUNS.updatedAt`, never pretending to be live.

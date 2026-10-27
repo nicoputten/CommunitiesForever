@@ -37,6 +37,15 @@ describe("release contents (CF-02)", function()
     end
   end)
 
+  -- CF-45: a file the TOC lists but that is missing at game start loads only after a restart, so the empty
+  -- runs file ships before the uploader ever writes it.
+  it("ships the empty planned runs file", function()
+    assert.is_truthy(read(helpers.ADDON_NAME .. ".toc"):find("\nData\\Runs.lua\r?\n"))
+    assert.is_truthy(read("Data/Runs.lua"):find("\nCF_RUNS = nil\r?\n"))
+    assert.is_nil(read(".pkgmeta"):find("\n  %- Data"))
+    assert.is_truthy(read("tools/build.ps1"):find("'Data'", 1, true))
+  end)
+
   it("uploads to the Wago project named in the TOC", function()
     local tocId = read(helpers.ADDON_NAME .. ".toc"):match("## X%-Wago%-ID: (%w+)")
     assert.is_truthy(tocId, "no X-Wago-ID in the TOC")

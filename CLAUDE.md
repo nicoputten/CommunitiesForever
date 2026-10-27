@@ -21,7 +21,7 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
 2. `src/adapters/*` are thin WoW API wrappers with no business logic.
 3. **Never invent WoW APIs.** If an API is not listed as verified in `docs/API-FINDINGS.md`, guard it with an existence check (`if C_Foo and C_Foo.Bar then`) and add it to `VERIFY.md` with a manual test step.
 4. GUID is the character key. Never parse or split character names.
-5. Globals: only the addon table `CommunitiesForever`, SavedVariables `CommunitiesForeverDB`, what slash commands require (`SLASH_*`, `SlashCmdList`), and the key binding names `Bindings.xml` requires (`BINDING_HEADER_*`, `BINDING_NAME_*`).
+5. Globals: only the addon table `CommunitiesForever`, SavedVariables `CommunitiesForeverDB`, the planned runs data `CF_RUNS` (set by `Data\Runs.lua`, CF-45), what slash commands require (`SLASH_*`, `SlashCmdList`), and the key binding names `Bindings.xml` requires (`BINDING_HEADER_*`, `BINDING_NAME_*`).
 6. English strings, hardcoded. No localization system.
 7. No dependencies beyond those listed in `docs/ARCHITECTURE.md` without asking.
 8. **Backwards compatible data layer (upgrade pattern).** Every change to what the addon stores (SavedVariables) or sends (messages) must keep working with data from earlier versions, because friends update on different days. Ask "what does an older version send or have stored, and what does it do with ours?" at every such change, and say the answer in the PR. See `docs/ARCHITECTURE.md` "Compatibility":
