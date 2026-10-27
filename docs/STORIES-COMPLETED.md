@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -424,3 +424,11 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests: every setting writes the same value as before (one source of truth, CF-26); the new settings' defaults; the steps.
 - Manual: compare with `settings-setup.html`; every setting works; the setup on a fresh account.
 - Decided (2026-10-27): Options › AddOns gets a launcher page (a line and "Open settings"), not a second copy of the controls; the settings window also keeps roles per character (CF-18), the invite link to share (CF-21) and "Keep community messages in General too"; "Play a sound" is the existing chat sound, under Community chat; the ambient animations are built now (`Kit.shine`, AnimationGroup, V64). Built: `Kit.dialog`, `Kit.input`, `Kit.select` (Blizzard's menu), `Kit.swatch`, `Kit.shine`; `adapters/Panels.lua` (colour picker V65, Options page V66). Option names follow the design ("When friends log in", "Minimap button", "Chat color", "Reset", "Create a community chat tab"). AceGUI and AceConfig are no longer called (their libraries stay embedded for now).
+
+### CF-44 Level-up announcement
+- Goal: a short announcement at the top of the screen when a friend's character levels up (`activity.html`, above the window).
+- A pill at the top centre: 28 px portrait, "<person>'s <character> reached level N", the LEVEL UP chip (shine unless Ambient effects is off); fades out after 6 s; several in a row stack or queue. The chat line (CF-16) stays.
+- Setting "Level-up announcement" (Notifications); its default is decided when building.
+- Unit tests: when it shows (same rules as the CF-16 line: linked people, not older than 15 minutes), the text, the queue.
+- Manual: a friend levels up: the pill shows and fades; off in settings: nothing.
+- Decided (2026-10-27): the setting is on by default (also in the setup's notifications step); several level-ups queue, one pill at a time, at most 5 waiting (the oldest dropped). Same rules as the chat line (linked people, not older than 15 minutes); each switch works without the other. Built: `core/Queue.lua`, `ui/LevelUpToast.lua`, `Kit.toast` with a chip, fade (AnimationGroup Alpha, V64) and `onDone`.

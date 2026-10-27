@@ -39,6 +39,7 @@ CommunitiesForever/
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
+      Queue.lua              first-in, first-out list with a limit (CF-44: level-up announcements)
       GroupAsk.lua           "who's up for it?": recipients, throttle, expiry, cleaning, answer summary (CF-27)
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion, calendar matching (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
@@ -76,7 +77,8 @@ CommunitiesForever/
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
       Ping.lua               /cf ping test messages (PING/PONG)
       Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
-      Notify.lua             login notifications in chat (30 s per person, settings.notifications)
+      Notify.lua             login notifications in chat (30 s per person, settings.notifications); level-ups
+                             as a chat line (CF-16) and the announcement at the top of the screen (CF-44)
     ui/
       MainFrame.lua          the window (kit shell, CF-39) and its tabs Friends, Activity (CF-22), Dungeons (CF-24)
       FriendsTab.lua         Friends tab on native kit frames (CF-40): search, people and characters, card
@@ -86,6 +88,7 @@ CommunitiesForever/
       Setup.lua              onboarding wizard and Community tab prompt (CF-26; kit dialogs since CF-43)
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
+      LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
@@ -149,7 +152,8 @@ global = {
                 groupAsks = true,                    -- CF-27: receive "who's up for it?" asks
                 dungeonTree = {},                    -- CF-24: Dungeons tab selection and list width
                 openOnLogin = false,                 -- CF-43: open the window after login
-                ambientEffects = true },             -- CF-43: title shimmer and LEVEL UP shine
+                ambientEffects = true,               -- CF-43: title shimmer and LEVEL UP shine
+                levelUpToast = true },               -- CF-44: the level-up announcement
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days

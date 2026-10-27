@@ -169,6 +169,7 @@ function STEP_BODIES.notifications()
   toggle("shareActivity", "Friends see your levels, quests, professions and dungeons in Activity.")
   toggle("notifications", "A chat line when a friend comes online in Forever or switches character.")
   toggle("levelUps", "A chat line when a friend's character reaches a new level.")
+  toggle("levelUpToast", "A note at the top of the screen when a friend levels up.") -- CF-44
   toggle("minimap", "Opens the window; you can always use /cf.")
 end
 

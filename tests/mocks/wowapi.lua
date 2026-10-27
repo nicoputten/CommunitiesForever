@@ -557,8 +557,8 @@ function wowapi.install(opts)
     },
     C_CreatureInfo = {
       GetClassInfo = function(classID)
-        local files = { [2] = "PALADIN", [8] = "MAGE" }
-        local names = { [2] = "Paladin", [8] = "Mage" }
+        local files = { [2] = "PALADIN", [4] = "ROGUE", [8] = "MAGE" }
+        local names = { [2] = "Paladin", [4] = "Rogue", [8] = "Mage" }
         return files[classID] and { classFile = files[classID], className = names[classID] }
       end,
     },

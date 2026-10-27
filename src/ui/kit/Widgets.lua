@@ -257,8 +257,12 @@ end
 
 -- Toast: a pill at the top of the screen that fades out (the level-up announcement, CF-44).
 Kit.TOAST_SECONDS = 6
+Kit.TOAST_FADE = 0.6 -- the last part of it, fading out (when AnimationGroup works, V64)
 
-function Kit.toast(parent)
+--[[ opts = { chip = text } (optional): a gold chip after the text (LEVEL UP, with the ambient shine).
+toast:Announce(text, classFile) shows it for TOAST_SECONDS; then it hides and calls toast.onDone(). ]]
+function Kit.toast(parent, opts)
+  opts = opts or {}
   local t = CreateFrame("Frame", nil, parent or UIParent)
   t:SetHeight(48)
   t:SetFrameStrata("DIALOG")
@@ -269,19 +273,49 @@ function Kit.toast(parent)
   t.portrait:SetPoint("LEFT", 10, 0)
   t.text = Theme.text(t, "body", "text")
   t.text:SetPoint("LEFT", t.portrait, "RIGHT", 10, 0)
+  if opts.chip then
+    t.chip = CreateFrame("Frame", nil, t)
+    t.chip:SetHeight(18)
+    t.chip:SetPoint("LEFT", t.text, "RIGHT", 12, 0)
+    local chipBg = Theme.fill(t.chip, "goldPale", "BACKGROUND")
+    chipBg:SetAllPoints()
+    t.chip.text = Theme.text(t.chip, "chip", "outline")
+    t.chip.text:SetPoint("CENTER")
+    t.chip.text:SetText(opts.chip)
+    t.chip:SetWidth((t.chip.text.GetStringWidth and t.chip.text:GetStringWidth() or 60) + 14)
+    t.chip.shine = Kit.shine(t.chip, t.chip, 2.1)
+  end
+  -- The fade at the end (guarded: without AnimationGroup it just hides).
+  local fade = t.CreateAnimationGroup and t:CreateAnimationGroup()
+  local alpha = fade and fade:CreateAnimation("Alpha")
+  if alpha then
+    alpha:SetFromAlpha(1)
+    alpha:SetToAlpha(0)
+    alpha:SetDuration(Kit.TOAST_FADE)
+    alpha:SetStartDelay(Kit.TOAST_SECONDS - Kit.TOAST_FADE)
+    t.fade = fade
+  end
   t:Hide()
-  -- Shows text (and a class portrait) for Kit.TOAST_SECONDS, then hides.
   function t:Announce(text, classFile)
     self.text:SetText(text)
     self.portrait:SetClass(classFile)
-    local width = self.text.GetStringWidth and self.text:GetStringWidth() or 200
-    self:SetWidth(width + 70)
+    local width = (self.text.GetStringWidth and self.text:GetStringWidth() or 200) + 70
+    if self.chip then
+      width = width + self.chip:GetWidth() + 12
+      if self.chip.shine then self.chip.shine:Refresh() end
+    end
+    self:SetWidth(width)
     self:SetAlpha(1)
     self:Show()
+    if self.fade then
+      self.fade:Stop()
+      self.fade:Play()
+    end
     if self.timer then self.timer:Cancel() end
     self.timer = C_Timer.NewTimer(Kit.TOAST_SECONDS, function()
       self.timer = nil
       self:Hide()
+      if self.onDone then self.onDone() end
     end)
   end
   return t

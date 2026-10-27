@@ -87,6 +87,7 @@ local function build()
   ly = ly + toggle(body, "groupAsks", left, ly)
   ry = ry + toggle(body, "notifications", right, ry)
   ry = ry + toggle(body, "levelUps", right, ry)
+  ry = ry + toggle(body, "levelUpToast", right, ry) -- CF-44
   y = math.max(ly, ry) + 12
 
   -- Community chat | Interface.

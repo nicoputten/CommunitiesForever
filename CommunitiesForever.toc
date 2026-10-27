@@ -11,6 +11,7 @@
 embeds.xml
 
 src\core\Store.lua
+src\core\Queue.lua
 src\core\Version.lua
 src\core\Filter.lua
 src\core\Feed.lua
@@ -82,5 +83,6 @@ src\ui\MainFrame.lua
 src\ui\Minimap.lua
 src\ui\Tooltip.lua
 src\ui\Setup.lua
+src\ui\LevelUpToast.lua
 
 src\Core.lua

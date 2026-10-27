@@ -29,6 +29,16 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-44 Level-up announcement
+Needs a friend with the addon who levels up while you are online (or `/cf debugon` is not enough: the debug friend never levels).
+
+| Step | Expected | Status |
+|---|---|---|
+| A friend's character levels up | At the top centre of the screen a dark pill with a gold border: the character's round portrait, "<friend>'s <character> reached level N" (friend gold, character in class colour), and a gold LEVEL UP chip with a slow shine (V64). It fades out after 6 seconds. The chat line still comes. | open |
+| Two level-ups close together | The second pill shows right after the first one is gone. | open |
+| Settings → Notifications → Level-up announcement off | The chat line only, no pill. Announce friends' level-ups off and the announcement on: the pill only. | open |
+| Ambient effects off | The pill without the shine. | open |
+
 ### CF-43 Settings and setup in the new look
 Compare with `docs/design/revamp-2026-10/settings-setup.html`.
 

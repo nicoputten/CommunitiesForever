@@ -158,6 +158,16 @@ function Settings.options()
         get = function() return ns.db.global.settings.levelUps ~= false end,
         set = function(_, value) ns.db.global.settings.levelUps = value end,
       },
+      -- CF-44: the announcement at the top of the screen.
+      levelUpToast = {
+        type = "toggle",
+        order = 5.1,
+        width = "full",
+        name = "Level-up announcement",
+        help = "A note at the top of the screen when a friend levels up",
+        get = function() return ns.db.global.settings.levelUpToast ~= false end,
+        set = function(_, value) ns.db.global.settings.levelUpToast = value end,
+      },
       shareActivity = {
         type = "toggle",
         order = 5.5,
