@@ -22,6 +22,7 @@ CommunitiesForever/
   CommunitiesForever.toc     ## Interface: 16001
   .pkgmeta  embeds.xml  .luacheckrc  .busted  LICENSE (MIT)
   Libs/                      packager externals, gitignored
+  Data/Runs.lua              planned runs, written by the uploader (UP-12); ships empty (CF-45)
   src/
     Core.lua                 AceAddon init, wiring, internal event bus
     core/                    PURE Lua, unit tested
@@ -46,6 +47,7 @@ CommunitiesForever/
                              runs and shared lines for runs done together (CF-23)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
+      PlannedRuns.lua        checks the planned runs file (CF_RUNS): types, caps, escapes stripped (CF-45)
       Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
@@ -64,6 +66,7 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
+      RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
@@ -196,6 +199,48 @@ Char = {
 - Sender always includes all own characters (decided in CF-17 testing; no setting). The receiver decides what to show (core rule 1), so the record does not depend on the sender's community member list and can be sent from any character.
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
+
+## Planned runs file
+CF-45 (epic E14). The website owns planned runs; the uploader (UP-12) fetches the upcoming ones
+(`GET /api/uploader/v1/runs`, web WEB-44) and writes them into `Interface\AddOns\CommunitiesForever\Data\Runs.lua`.
+The TOC lists the file, so the game runs it at login and `/reload` (a file missing at game start loads only after
+a restart, V67, so the addon ships it empty: `CF_RUNS = nil`). The game never talks to the internet.
+
+The file is Lua data only, one global (CLAUDE.md rule 5), times in UTC seconds:
+```lua
+CF_RUNS = {
+  v = 1,                          -- format; a newer one is ignored ("update the addon"); missing = 1
+  updatedAt = 1793120000,         -- when the site produced the list ("Runs updated at 17:34")
+  reminderMinutes = 30,           -- site setting (WEB-39): the in-game reminder before a run (CF-48)
+  runs = {                        -- upcoming runs, at most 50
+    {
+      id = "r-102",               -- the site's run id (letters, digits, _ - : .)
+      dungeon = "smlib",          -- dungeon id of core/Dungeons.lua (rfc, wc, dm, ..., smlib, smarm, ...)
+      startsAt = 1793210400,
+      state = "open",             -- open | full | started | cancelled
+      note = "Bring water",       -- at most 200 characters
+      url = "https://...",        -- the run on the site, to copy ("Edit or cancel on the website"); https only
+      organiser = { battleTag = "Ada#1001", guid = "Player-...", name = "Ada Lovewell",
+                    utcOffset = 3600 },   -- seconds east of UTC at the start ("20:30 for Ada")
+      answers = {                 -- at most 40
+        { battleTag = "Ada#1001", guid = "Player-...", name = "Ada Lovewell",
+          answer = "in",          -- in | maybe | cant
+          role = "tank",          -- tank | heal | dps: the slot the character fills (the site assigns slots)
+          source = "discord",     -- site | discord | game
+          at = 1793100000 },
+      },
+    },
+  },
+}
+```
+- Untrusted like received sync data: `PlannedRuns.validate` keeps only the fields above with the right types,
+  removes `|` and control characters from text, caps counts (50 runs, 40 answers) and lengths (names 48, notes
+  200, ids 64, links 200) and never walks past a cap. A run without `id`, `dungeon` or `startsAt` is dropped,
+  as is a second run with the same id; a wrong optional field becomes nil. A person needs at least one of
+  `battleTag`, `guid`, `name`.
+- Compatibility: the uploader only adds optional fields within `v = 1` (older addons drop unknown fields); a
+  breaking change writes `v = 2`, which older addons ignore. The file is not SavedVariables: the addon never
+  writes it, and an addon update replaces it with the empty one until the uploader writes it again.
 
 ## Sync protocol
 Full wire reference (every message and field, when they are sent, sizes): `docs/SYNC.md`.

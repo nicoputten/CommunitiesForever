@@ -10,6 +10,7 @@ exclude_files = { "Libs/", ".lua/", "dist/", "tests/fixtures/v*/" } -- fixtures:
 local addonGlobals = {
   "CommunitiesForever",
   "CommunitiesForeverDB",
+  "CF_RUNS", -- CF-45: set by Data\Runs.lua (written by the uploader), cleared by adapters/RunsFile.lua
   "SlashCmdList",
   "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE", -- CF-32 (Bindings.xml)
 }

@@ -40,7 +40,7 @@ $stage = Join-Path $dist $addonName
 New-Item -ItemType Directory -Force $stage | Out-Null
 
 # Keep in sync with what .pkgmeta packages (everything tracked minus "ignore:").
-foreach ($item in @('embeds.xml', 'Bindings.xml', 'LICENSE', 'CHANGELOG.md', 'src', 'media', 'Libs')) {
+foreach ($item in @('embeds.xml', 'Bindings.xml', 'LICENSE', 'CHANGELOG.md', 'src', 'Data', 'media', 'Libs')) {
   Copy-Item -Recurse (Join-Path $root $item) $stage
 }
 

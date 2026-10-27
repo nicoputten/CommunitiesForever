@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -432,3 +432,16 @@ Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync),
 - Unit tests: when it shows (same rules as the CF-16 line: linked people, not older than 15 minutes), the text, the queue.
 - Manual: a friend levels up: the pill shows and fades; off in settings: nothing.
 - Decided (2026-10-27): the setting is on by default (also in the setup's notifications step); several level-ups queue, one pill at a time, at most 5 waiting (the oldest dropped). Same rules as the chat line (linked people, not older than 15 minutes); each switch works without the other. Built: `core/Queue.lua`, `ui/LevelUpToast.lua`, `Kit.toast` with a chip, fade (AnimationGroup Alpha, V64) and `onDone`.
+
+## E14 Planned runs
+
+### CF-45 Runs file and checks
+- Ship an empty `Data\Runs.lua` (`CF_RUNS = nil`) listed in the TOC, in a release **before** the uploader writes it: a file that isn't there when the game starts only loads after a restart. Release it soon.
+- `src/adapters/RunsFile.lua` reads `CF_RUNS` defensively (missing, empty, wrong types, oversized): treated as untrusted like received sync data (strip `|` escapes, caps on counts and string lengths); `src/core` gets a pure validator, unit tested.
+- VERIFY.md entries with FriendProbe steps (extend `tools/FriendProbe/`):
+  - V-a: is a Lua file in the addon folder that changed on disk re-read on `/reload` (not only at game start)?
+  - V-b: may an addon call `C_UI.Reload()` (or `ReloadUI()`) from a button click?
+  - V-c: can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), converting to a party?
+  - V47 and V48 (CF-27) are still open and decide Request invite.
+- Compat (rule 8): no stored data or messages change.
+- Built (2026-10-27): the file format (`CF_RUNS = { v, updatedAt, reminderMinutes, runs }`, field names in `docs/ARCHITECTURE.md` "Planned runs file") is defined here, since WEB-44 names no fields; the web (WEB-44) and the uploader (UP-12) follow it. Dungeons are named by the ids of `core/Dungeons.lua`. Built: `Data/Runs.lua` (empty), `core/PlannedRuns.lua`, `adapters/RunsFile.lua` (reads once per load, clears the global); the checks are V67, V68, V69 (`/fp reloadfile`, `/fp reload`, `/fp inviteall`).

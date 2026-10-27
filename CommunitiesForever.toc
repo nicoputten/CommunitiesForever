@@ -10,12 +10,15 @@
 
 embeds.xml
 
+Data\Runs.lua
+
 src\core\Store.lua
 src\core\Queue.lua
 src\core\Version.lua
 src\core\Filter.lua
 src\core\Feed.lua
 src\core\Runs.lua
+src\core\PlannedRuns.lua
 src\core\Merge.lua
 src\core\Snapshot.lua
 src\core\Describe.lua
@@ -48,6 +51,7 @@ src\adapters\QuestieData.lua
 src\adapters\GroupFinder.lua
 src\adapters\ChatLinks.lua
 src\adapters\Party.lua
+src\adapters\RunsFile.lua
 src\adapters\ContextMenu.lua
 src\adapters\Channels.lua
 src\adapters\Transport.lua
