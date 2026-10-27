@@ -67,6 +67,26 @@ function helpers.friendsTab(ns)
   return tab
 end
 
+-- CF-41: the native Activity tab (src/ui/ActivityTab.lua): its visible texts without colour codes, one per
+-- line, and clicking a "Show all" / "Show less" link by the start of its text.
+function helpers.activityTab(ns)
+  local tab = {}
+  function tab.text()
+    local list = {}
+    for i, text in ipairs(ns.ActivityTab.texts()) do
+      list[i] = (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+    end
+    return "\n" .. table.concat(list, "\n") .. "\n"
+  end
+  function tab.click(prefix)
+    for _, link in ipairs(ns.ActivityTab.links()) do
+      if link.text:GetText():sub(1, #prefix) == prefix then return link:RunScript("OnClick") end
+    end
+    error("no link " .. prefix)
+  end
+  return tab
+end
+
 -- Pure-Lua libraries from Libs/ (fetched by tools/fetch-libs.ps1). Without LibStub they
 -- return themselves. Cached, so a spec gets the same instance as the addon would.
 local libs = {}

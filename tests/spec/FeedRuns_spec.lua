@@ -78,6 +78,12 @@ describe("Feed runs (CF-23)", function()
       assert.are.equal("Ann and Ben", shared.title)
       assert.are.same({ "ran Deadmines " .. TIMES .. "2" }, shared.parts) -- the same runs, not 4
       assert.are.equal(300, shared.at)
+      -- CF-41: who and on which character, for the overlapping portraits (you first).
+      assert.are.same({ "Ann", "Ben" }, shared.names)
+      assert.are.same({ { name = ME.name, classFile = ME.classFile }, { name = FRIEND.name,
+                                                                        classFile = FRIEND.classFile } }, shared.chars)
+      assert.are.same({ { kind = "run", text = "ran Deadmines " .. TIMES .. "2" } }, shared.pieces)
+      assert.is_true(shared.hasRuns)
       assert.are.same({ "17 to 18" }, result[2].parts) -- own line without the runs
       -- Ben's line had only the runs, so it is gone.
     end)

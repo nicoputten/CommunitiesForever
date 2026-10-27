@@ -12,6 +12,9 @@ tagging; the release stops if the tag has no section.
   with each character, and a new character card: level, item level and role at a glance, profession and
   talent bars, quests you share grouped by zone, and Whisper and Invite buttons. The footer shows when you
   last synced. Long lists scroll.
+- **New look, part 3: the Activity tab.** Filter chips (Level-ups, Dungeons, Together), a portrait per entry
+  (two for friends who played together), level-ups as a gold chip, the zones you quested in, and the time of
+  each entry. Older days show their date.
 - **Less sync traffic in the community:** the "I changed" message goes out once on a hidden channel to
   everyone running the addon, instead of a whisper to each member. Older versions keep getting whispers.
 - Fix: a community chat window with other channels before the community channel is recognized again.

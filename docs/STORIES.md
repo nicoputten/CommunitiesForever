@@ -3,19 +3,11 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-41 to CF-44 (one per screen, any order).
+Build order: CF-42 to CF-44 (one per screen, any order).
 
 ## E13 Revamp (new look)
 
 Design: `docs/design/revamp-2026-10/` (README: decisions and where the mockups differ). Each screen story replaces one tab whole: old and new never mix inside one tab. Nothing stored or sent changes unless a story says so (rule 8). Visual checks happen in game after launch (VERIFY.md).
-
-### CF-41 Activity tab in the new look
-- Goal: the Activity tab as in `activity.html`.
-- Filter chips: All, Level-ups, Dungeons, Together (one active; remembered while the window is open).
-- Day headers (Today, Yesterday, then the date) in Marcellus SC. Per entry: a 32 px portrait (two overlapping for a together line), "<person> on <character>" or "<person> and <person> together", then a line with a **LEVEL UP** chip "22 → 24" (gold, with a slow shine unless Ambient effects is off), "questing in" with the top zones as pills and "+N zones", "· N quests done", runs ("ran <dungeon>"), profession ranks. The time on the right is the entry's last change that day (`at`, already stored; no run durations: not recorded).
-- Footer: "Activity is shared only by friends who turned on Share my activity" and "Keeps 7 days".
-- Unit tests (pure core): filtering per chip, the entry lines, "+N zones", the time.
-- Manual: compare with `activity.html`; Show all and the together lines still work.
 
 ### CF-42 Dungeons tab in the new look
 - Goal: the Dungeons tab as in `dungeons.html`.

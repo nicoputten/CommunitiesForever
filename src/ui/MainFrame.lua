@@ -19,10 +19,9 @@ local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 local addonRef, events, frame, content, refreshDebounced
 local tabs -- CF-39: the kit's tab row
 local activeTab = "friends" -- CF-22: "friends", "activity" or "dungeons" (CF-24)
-local expandedFeed = {}     -- CF-22: Activity lines shown in full (day:battleTag -> true), until /reload
-local renderActivity -- CF-22, defined below
 local view -- last view model, used by the selection callback
 local showAllQuests = {} -- CF-19: tree path -> true when "Show all" is on (until /reload)
+local updateFooter -- CF-41, defined below
 -- CF-36: the smart filter of the Friends tab. Its text lasts while the window is open; savedGroups keeps the
 -- list's unfolded groups from before filtering (filtering unfolds everything) to put back when cleared.
 local filterText, savedGroups = "", nil
@@ -105,10 +104,9 @@ function MainFrame.render()
     communityName = ns.CommunitySelection.name(),
     characterName = view.selfName,
   })
-  frame.footerText:SetText(activeTab == "friends" and not empty and ns.Format.friendsFooter(view, GetServerTime())
-    or "") -- CF-40
+  updateFooter(empty)
   if activeTab == "activity" then
-    renderActivity(empty)
+    ns.ActivityTab.render(view, empty)
     return
   end
   if activeTab == "dungeons" then
@@ -116,96 +114,6 @@ function MainFrame.render()
     return
   end
   ns.FriendsTab.render(view, empty)
-end
-
--- CF-22: the Activity tab, in one box (no nested frames). Per person and day two rows: who and on
--- which character, then what they did; "Show all (N)" in link blue opens the remaining parts and the
--- other characters ("Show less" folds them back).
-local LINK = "|cff6aa7ff"
-local DOT = " \194\183 "
-local HIGHLIGHT = "Interface\\QuestFrame\\UI-QuestTitleHighlight"
-
--- CF-23: community members by GUID, so companions without a linked person show by name.
-local function feedMembers()
-  local members = {}
-  for _, row in ipairs(view.unlinked or {}) do
-    if row.guid and row.name then members[row.guid] = row.name end
-  end
-  return members
-end
-
-function renderActivity(messageText)
-  content:ReleaseChildren()
-  local box = createWidget("InlineGroup")
-  box:SetLayout("Fill")
-  content:AddChild(box)
-  local scroll = createWidget("ScrollFrame")
-  scroll:SetLayout("List")
-  box:AddChild(scroll)
-  scroll:PauseLayout()
-
-  local days = messageText and {} or ns.Feed.days(view.people, ns.FeedTracker.today(), feedMembers())
-  if messageText then
-    label(scroll, messageText, GameFontHighlight)
-  elseif #days == 0 then
-    label(scroll, GREY .. "No activity yet. Levels, quests, professions, dungeons and battlegrounds of you and"
-      .. " your friends show up here.|r", GameFontHighlight)
-  end
-  for dayIndex, day in ipairs(days) do
-    if dayIndex > 1 then spacer(scroll) end
-    heading(scroll, day.label)
-    for _, line in ipairs(day.lines) do
-      local key = day.day .. ":" .. tostring(line.key or line.battleTag or "self")
-      local expanded = expandedFeed[key]
-      local who
-      if line.shared then
-        -- CF-23: runs done together, one line for everyone in them.
-        who = string.format("%s%s|r %stogether|r", GOLD, tostring(line.title), GREY)
-      else
-        who = string.format("%s%s|r %son|r %s", GOLD, tostring(line.displayName), GREY,
-          colorName(line.char.name, line.char.classFile))
-      end
-      if line.extraChars > 0 then
-        who = who .. string.format(" %sand %d more %s|r", GREY, line.extraChars,
-          line.extraChars == 1 and "character" or "characters")
-      end
-      label(scroll, who, GameFontHighlight)
-
-      local function toggle(text)
-        local row = label(scroll, text, GameFontHighlight, "InteractiveLabel")
-        if row.SetHighlight then row:SetHighlight(HIGHLIGHT) end
-        row:SetCallback("OnClick", function()
-          expandedFeed[key] = not expanded or nil
-          MainFrame.render()
-        end)
-      end
-      local expandable = line.more > 0 or line.extraChars > 0
-      if expanded then
-        -- Expanded: one part per line, the other characters below, then "Show less".
-        for _, part in ipairs(line.parts) do label(scroll, "   " .. part, GameFontHighlight) end
-        for _, other in ipairs(line.others) do
-          label(scroll, string.format("   %son|r %s", GREY, colorName(other.char.name, other.char.classFile)),
-            GameFontHighlight)
-          for _, part in ipairs(other.parts) do label(scroll, "      " .. part, GameFontHighlight) end
-        end
-        toggle("   " .. LINK .. "Show less|r")
-      elseif expandable then
-        local hidden = line.more
-        for _, other in ipairs(line.others) do hidden = hidden + #other.parts end
-        toggle(string.format("   %s   %sShow all (%d)|r", table.concat(line.shown, DOT), LINK, hidden))
-      else
-        label(scroll, "   " .. table.concat(line.shown, DOT), GameFontHighlight)
-      end
-    end
-  end
-  if not messageText and not ns.FeedTracker.shared() then
-    spacer(scroll)
-    label(scroll, GREY .. "You don't share your activity: friends don't see your lines (/cf settings).|r",
-      GameFontHighlightSmall)
-  end
-
-  scroll:ResumeLayout()
-  scroll:DoLayout()
 end
 
 -- CF-37: what a menu item does.
@@ -301,24 +209,39 @@ local function updateTitle()
   frame.statusText:SetText(online > 0 and string.format("\226\151\143 %d online", online) or "")
 end
 
+-- The footer per tab: CF-40 the sync state, CF-41 who shares and how long the feed keeps.
+function updateFooter(empty)
+  if activeTab == "activity" then
+    frame.footerText:SetText(ns.ActivityTab.NOTE)
+    frame.footerRightText:SetText(string.format("Keeps %d days", ns.Feed.KEEP_DAYS))
+    return
+  end
+  frame.footerText:SetText(activeTab == "friends" and not empty and ns.Format.friendsFooter(view, GetServerTime())
+    or "")
+  frame.footerRightText:SetText(FOOTER_HINT)
+end
+
 local function create()
   frame = ns.Kit.window({
     title = ns.CommunitySelection.name() or ADDON_NAME,
     subtitle = ADDON_NAME,
     status = settings().window, -- same keys as before (rule 8); reset once to the design size
-    -- Closing only hides it. CF-36: the filter starts empty next time.
-    onClose = function() MainFrame.setFilter("") end,
+    -- Closing only hides it. CF-36: the filter starts empty next time; CF-41: the chips at All.
+    onClose = function()
+      MainFrame.setFilter("")
+      ns.ActivityTab.reset()
+    end,
     onSettings = function() ns.Settings.open() end,
     onResize = function()
       if content then content:DoLayout() end
       if activeTab == "friends" and refreshDebounced then refreshDebounced() end -- CF-40: the card follows
     end,
   })
-  frame.footerRightText:SetText(FOOTER_HINT)
   tabs = ns.Kit.tabs(frame.tabBar, TABS, function(value) MainFrame.selectTab(value) end)
 
   -- CF-40: the Friends tab, native.
   ns.FriendsTab.create(frame.content, friendsHelpers())
+  ns.ActivityTab.create(frame.content, { settings = settings, render = MainFrame.render }) -- CF-41
   -- Until each other tab has its new look, its AceGUI content lives in one root container in the new window.
   content = createWidget("SimpleGroup")
   content.cfMainRoot = true -- specs find the tab content by this
@@ -345,14 +268,10 @@ function MainFrame.selectTab(value)
   activeTab = value
   MainFrame.updateTabs()
   content:ReleaseChildren()
-  -- CF-40: the Friends tab is its own frames; the AceGUI root holds the other tabs.
-  if value == "friends" then
-    content.frame:Hide()
-    ns.FriendsTab.show()
-  else
-    ns.FriendsTab.hide()
-    content.frame:Show()
-  end
+  -- CF-40, CF-41: the Friends and Activity tabs are their own frames; the AceGUI root holds the Dungeons tab.
+  if value == "friends" then ns.FriendsTab.show() else ns.FriendsTab.hide() end
+  if value == "activity" then ns.ActivityTab.show() else ns.ActivityTab.hide() end
+  if value == "dungeons" then content.frame:Show() else content.frame:Hide() end
   if value == "dungeons" then ns.DungeonsTab.create(content, uiHelpers()) end
   if view then MainFrame.render() end
 end
@@ -402,7 +321,7 @@ function MainFrame.start(addon)
   filterText, savedGroups = "", nil
   escapeReady = false
   tabs = nil
-  activeTab, expandedFeed = "friends", {}
+  activeTab = "friends"
   ns.DungeonsTab.reset()
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end
