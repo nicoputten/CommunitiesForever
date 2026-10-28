@@ -65,17 +65,5 @@ function FeedTracker.changedLater()
   bumpDebounced()
 end
 
--- "Share my activity" (settings): changes what friends get, so it bumps the version right away.
-function FeedTracker.setShared(on)
-  local settings = addonRef.db.global.settings
-  if (settings.shareActivity ~= false) == on then return end
-  settings.shareActivity = on
-  bump()
-end
-
-function FeedTracker.shared()
-  return addonRef.db.global.settings.shareActivity ~= false
-end
-
 ns.FeedTracker = FeedTracker
 return FeedTracker

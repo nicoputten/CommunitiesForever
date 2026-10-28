@@ -79,7 +79,6 @@ local function build()
 
   -- Sharing | Notifications.
   local ly, ry = section(body, left, y, "Sharing"), section(body, right, y, "Notifications")
-  ly = ly + toggle(body, "shareActivity", left, ly)
   ly = ly + toggle(body, "groupAsks", left, ly)
   ry = ry + toggle(body, "notifications", right, ry)
   ry = ry + toggle(body, "levelUps", right, ry)

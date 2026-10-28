@@ -166,7 +166,6 @@ global = {
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
-                shareActivity = true,                -- CF-22: send the activity feed to friends
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
                 chatAlert = true, chatSound = false, chatKeepGeneral = true,
                 chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
@@ -186,7 +185,7 @@ global = {
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char }, via, invite, feed,      -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
-                                removed = { [guid] = time }, feedOff,              -- CF-28: dropped characters; feed not shared
+                                removed = { [guid] = time },                       -- CF-28: dropped characters
                                 aid } },                                           -- CF-28: account ID (community key)
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
@@ -295,7 +294,7 @@ Full wire reference (every message and field, when they are sent, sizes): `docs/
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
-- `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22), `false` when it is off (CF-28: so relays pass "stopped sharing" on); `removed` only in relayed copies (dropped characters with the time they were dropped).
+- `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` always (CF-58: no sharing setting; a received `false` from a released client means nothing was sent and keeps the stored feed); `removed` only in relayed copies (dropped characters with the time they were dropped).
 - `RUNS {runs}` and `RUNREQ {}` (CF-46): planned runs (the shape of `CF_RUNS`). HELLO carries `ru`, the updatedAt of the sender's runs (0: none); a peer with older runs gets `RUNS`, a peer with newer ones gets `RUNREQ`. The receiver checks them with `PlannedRuns.validate` and keeps them only when newer (at most 5 minutes ahead of server time). Over the community BattleTags are left out. Never sent while `Instance.messagingRestricted()` (an encounter, a keystone, a PvP match): tried again 30 s later. Older clients send no `ru` and get nothing; they ignore `ru` and the new types.
 - `RUNANSWER {run, answer, guid, name, role}` (CF-47): your answer to a run, sent at once to its organiser when they are online (Battle.net by BattleTag, community by the organiser's character). The organiser shows it (in memory) until the site's runs have it; it is also a pending item that reaches the site after `/reload`. Ignored unless the receiver organises that run.
 - `ASK {id, dungeon = {id, name, min, max}, from, char, at, note}` (CF-27; `note` optional, CF-47): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).

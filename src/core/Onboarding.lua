@@ -13,14 +13,14 @@ Onboarding.STEPS = {
   { id = "community", title = "Community", since = 1 },
   { id = "name", title = "Your name", since = 1 },
   { id = "chat", title = "Community chat", since = 1 },
-  { id = "notifications", title = "Notifications and sharing", since = 1 },
+  { id = "notifications", title = "Notifications", since = 1 },
   { id = "done", title = "Done", since = 1 },
 }
 
 -- What the wizard switches start at (the same as Store.defaults: the wizard only presents settings).
 Onboarding.DEFAULTS = {
   chatKeepGeneral = true, chatAlert = true, chatSound = false,
-  notifications = true, levelUps = true, levelUpToast = true, shareActivity = true, minimap = true,
+  notifications = true, levelUps = true, levelUpToast = true, minimap = true,
 }
 
 local function copy(step)

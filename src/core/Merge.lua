@@ -55,12 +55,10 @@ local function cleanInvite(invite)
 end
 
 -- The RECORD message for the own record: all own characters (CF-17 feedback: always shared;
--- the receiver decides what to show, see core rule 1). CF-22: the activity feed only when
--- shareActivity is not false ("Share my activity" setting).
-function Merge.outgoingRecord(selfRecord, shareActivity)
-  -- false (not nil) when not shared, so relays pass "stopped sharing" on (CF-28).
+-- the receiver decides what to show, see core rule 1) and the activity feed. CF-58: there is no
+-- sharing setting; a friend who doesn't want to share uninstalls the addon. Never sends `feed = false`.
+function Merge.outgoingRecord(selfRecord)
   local feed = selfRecord.feed
-  if shareActivity == false then feed = false end
   local chars = {}
   for guid, char in pairs(selfRecord.chars or {}) do
     chars[guid] = char
@@ -194,14 +192,12 @@ function Merge.mergeChars(storedChars, storedRemoved, incoming, incomingRemoved,
 end
 
 --[[ The activity feed to store (CF-22, merged per day and character since CF-28). From the owner, the
-record's feed is the truth (none: drop it). Relayed: false = the owner stopped sharing (drop it when the
-record is newer); nil = unknown (keep what is stored); a feed merges with the stored one. ]]
-local function mergedFeed(stored, record, newer, direct, now)
+record's feed is the truth (none: drop it). Relayed: nil = unknown (keep what is stored); a feed merges with
+the stored one. CF-58: `false` (released clients with "Share my activity" off) means nothing was sent: the
+stored feed stays, from the owner too. ]]
+local function mergedFeed(stored, record, direct, now)
+  if record.feed == false then return stored and stored.feed end
   if direct then return ns.Feed.clean(record.feed) end
-  if record.feed == false then
-    if newer then return nil end
-    return stored and stored.feed
-  end
   -- Relayed activity entries more than MAX_FUTURE_SECONDS ahead are ignored (as for characters).
   return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed), now + Merge.MAX_FUTURE_SECONDS)
 end
@@ -229,14 +225,12 @@ function Merge.store(people, record, now, senderBattleTag)
     receivedAt = now,
     chars = chars,
     removed = next(removed) and removed or nil,
-    feedOff = (record.feed == false and newer) or (not direct and record.feed == nil and stored and stored.feedOff)
-      or nil,
     via = senderBattleTag ~= record.bt and senderBattleTag or nil,
     -- CF-28: the account ID (community key) of this person, once known.
     aid = (type(record.aid) == "string" and record.aid:match("^[0-9a-f]+$") and #record.aid <= 32 and record.aid)
       or (stored and stored.aid) or nil,
     invite = invite,
-    feed = mergedFeed(stored, record, newer, direct, now),
+    feed = mergedFeed(stored, record, direct, now),
   }
 end
 
@@ -290,10 +284,8 @@ end
 function Merge.relayRecord(people, battleTag)
   local person = people[battleTag]
   if not person then return nil end
-  local feed = person.feed
-  if feed == nil and person.feedOff then feed = false end -- "stopped sharing" passes on (CF-28)
   return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
-           chars = person.chars, removed = person.removed, invite = cleanInvite(person.invite), feed = feed }
+           chars = person.chars, removed = person.removed, invite = cleanInvite(person.invite), feed = person.feed }
 end
 
 ns.Merge = Merge

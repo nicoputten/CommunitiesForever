@@ -193,17 +193,6 @@ function Settings.options()
         get = function() return ns.db.global.settings.runSound ~= false end,
         set = function(_, value) ns.db.global.settings.runSound = value end,
       },
-      shareActivity = {
-        type = "toggle",
-        order = 5.5,
-        width = "full",
-        name = "Share my activity",
-        desc = "Friends see what you did in their Activity tab (levels, quests, professions). "
-          .. "Off: only you see your activity.",
-        help = "Levels, zones and dungeons you ran",
-        get = function() return ns.FeedTracker.shared() end,
-        set = function(_, value) ns.FeedTracker.setShared(value) end,
-      },
       groupAsks = {
         type = "toggle",
         order = 5.6,

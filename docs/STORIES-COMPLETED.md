@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -566,3 +566,14 @@ Split in two PRs (Nico, 2026-10-28): **CF-55a** the core (`src/core/Doomsday.lua
 - Sync size: a week at the cap (7 × 100 kills) encodes to about 6.3 KB, under 8 KB (a test): 2 Battle.net parts or ~28 community parts. The cap stays at 100.
 - Rule 8: a new optional feed field within `pv` 1; older clients drop it in `Feed.clean`, and since CF-52 their relayed copies can't wipe it.
 - Done: CF-55a (PR #97), CF-55b (PR #99): `Pvp.remember`/`recall`/`victim`/`killEntry`, `PvpInfo.enemy`/`rankNumbers`/`solo`, the tracker's honor-message kills and counter fallback, `Feed` `pvpKills` with cleaning. VERIFY.md "CF-55b".
+
+### CF-58 Drop "Share my activity"
+Decided with Nico (2026-10-28): there is no sharing toggle. A friend who doesn't want to share uninstalls the addon. This makes the feed, Doomsday's `goals` (CF-56) and their relaying simpler.
+- The setting **Share my activity** goes: from Settings (the Sharing group keeps "Receive group asks"), from onboarding step 5, from `Store` defaults and from `FeedTracker`. A stored `settings.shareActivity` is ignored (and may be cleared); no migration needed.
+- `Merge.outgoingRecord` always sends `feed` (and, after CF-56, `goals`). The addon never sends `false` for either.
+- **Receiving** (rule 8): released clients may still send or relay `feed = false`. It now means "nothing sent": the stored feed of that friend stays, as for a record without `feed`. The same holds for `goals = false`.
+- The Activity tab's footer loses "Activity is shared only by friends who turned on Share my activity".
+- `docs/SYNC.md` (RECORD fields, merge rule), `docs/ARCHITECTURE.md` (settings, RECORD) and `docs/DOOMSDAY.md` (if it mentions sharing) updated.
+- Tests (busted): `outgoingRecord` without the setting; a received `feed = false` keeps the stored feed; `Compat_spec` passes on earlier fixtures.
+- The site does the same on its side (web WEB-55): `false` from released clients means nothing sent.
+- Done (PR #100): `Merge.outgoingRecord` without the setting; a received `feed = false` keeps the stored feed, also from the owner, and is never relayed as `false` (`feedOff` is gone); the setting left Settings, the settings window, the setup ("Notifications") and `Store` defaults; the Activity tab footer reads "Friends with CommunitiesForever share their activity." A stored `settings.shareActivity` stays and is ignored. `docs/DOOMSDAY.md` never mentioned sharing.

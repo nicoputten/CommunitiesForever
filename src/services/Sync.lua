@@ -280,7 +280,7 @@ function handlers.REQ(message, _, target)
   if not wireOwn then return end
   if message.want == nil or message.want == wireOwn then
     -- All own characters are always shared (CF-17), so this works on any character.
-    local record = ns.Merge.outgoingRecord(own(), ns.FeedTracker.shared())
+    local record = ns.Merge.outgoingRecord(own())
     record.bt = wireOwn
     ns.Messenger.send(target, record)
   elseif type(message.want) == "string" then

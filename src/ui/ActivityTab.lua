@@ -12,7 +12,7 @@ local AVATAR = 44           -- the portrait column
 local ROW_GAP = 6           -- between the pieces of a line
 local ROW_HEIGHT = 20       -- one row of pieces
 local TIME_WIDTH = 48
-local NOTE = "Activity is shared only by friends who turned on \"Share my activity\"."
+local NOTE = "Friends with CommunitiesForever share their activity."
 
 local root, chipsBar, scroll, chips
 local helpers -- from MainFrame: settings(), render()
@@ -333,12 +333,6 @@ function ActivityTab.render(view, empty)
     for _, l in ipairs(day.lines) do
       y = y + entry(parent, day.day, l, y, width)
     end
-  end
-  if not empty and not ns.FeedTracker.shared() then
-    placeText(pools.small, parent, PAD, y + 14, width - 2 * PAD, "You don't share your activity: friends don't "
-      .. "see your lines "
-      .. "(/cf settings).", "faint", width - 2 * PAD)
-    y = y + 34
   end
   parent:SetHeight(y + 10)
   scroll:Update()
