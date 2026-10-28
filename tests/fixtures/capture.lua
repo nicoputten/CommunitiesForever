@@ -58,6 +58,14 @@ world:with("A", function(c)
   wowapi.fireEvent(c.state, "CHAT_MSG_SYSTEM", world.people.A.name .. " has defeated " .. world.people.B.name
     .. " in a duel")
   wowapi.fireEvent(c.state, "PLAYER_DEAD")
+  -- CF-53: an epic, a watch-list craft and money.
+  c.state.items[12784] = { quality = 4, slot = "INVTYPE_2HWEAPON" }
+  wowapi.fireEvent(c.state, "CHAT_MSG_LOOT", "You receive loot: |cffa335ee|Hitem:12784::::|h[Arcanite Reaper]|h|r.")
+  wowapi.fireEvent(c.state, "CHAT_MSG_LOOT", "You create: |cffffffff|Hitem:14342::::|h[Mooncloth]|h|r.")
+  c.state.money = 5000
+  wowapi.fireEvent(c.state, "PLAYER_MONEY")
+  c.state.money = 4200
+  wowapi.fireEvent(c.state, "PLAYER_MONEY")
 end)
 world:settle()
 world:with("A", function(c)

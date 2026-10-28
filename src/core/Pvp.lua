@@ -1,5 +1,6 @@
 -- Pvp: PvP, duel and death data of the own characters (CF-52). Pure Lua, no WoW globals.
 -- Per character `chars.*.pvp`; per feed day the events go through Feed.add ("kills", "death", "duel").
+-- Requires ns.GameText (game format strings).
 local _, ns = ...
 
 local Pvp = {}
@@ -68,58 +69,13 @@ function Pvp.deathCause(lastDamage, timers, now)
   return "other"
 end
 
--- Lua pattern of a game format string ("%1$s has defeated %2$s in a duel") and, per capture, the number
--- of the argument it holds. Plain "%s" and "%d" count in order. nil when the string has no arguments.
-function Pvp.pattern(format)
-  if type(format) ~= "string" then return nil end
-  local order, plain, pattern = {}, 0, ""
-  local i = 1
-  while i <= #format do
-    local index, kind, after = format:match("^%%(%d)%$([sd])()", i)
-    if not index then
-      kind, after = format:match("^%%([sd])()", i)
-    end
-    if not kind and format:sub(i, i + 1) == "%%" then
-      pattern = pattern .. "%%"
-      i = i + 2
-    elseif kind then
-      if index then
-        index = tonumber(index)
-      else
-        plain = plain + 1
-        index = plain
-      end
-      order[#order + 1] = index
-      pattern = pattern .. (kind == "d" and "(%d+)" or "(.+)")
-      i = after
-    else
-      local char = format:sub(i, i)
-      pattern = pattern .. (char:match("%W") and ("%" .. char) or char)
-      i = i + 1
-    end
-  end
-  if #order == 0 then return nil end
-  return "^" .. pattern .. "$", order
-end
-
--- The arguments of a message formatted with `format`, by argument number, or nil when it does not match.
-function Pvp.parse(message, format)
-  local pattern, order = Pvp.pattern(format)
-  if not pattern or type(message) ~= "string" then return nil end
-  local captures = { message:match(pattern) }
-  if #captures == 0 then return nil end
-  local args = {}
-  for i, index in ipairs(order) do args[index] = captures[i] end
-  return args
-end
-
 --[[ A finished duel of `me` (the own full name) from a system message: { won, vs } or nil.
 formats = { knockout = DUEL_WINNER_KNOCKOUT, retreat = DUEL_WINNER_RETREAT }. In both the first argument is
 the winner and the second the loser (VERIFY.md V80). Names are compared whole, never split (rule 4). ]]
 function Pvp.duel(message, formats, me)
   if type(me) ~= "string" or type(formats) ~= "table" then return nil end
   for _, key in ipairs({ "knockout", "retreat" }) do
-    local args = Pvp.parse(message, formats[key])
+    local args = ns.GameText.parse(message, formats[key])
     if args and args[1] and args[2] and args[1] ~= args[2] then
       if args[1] == me then return { won = true, vs = args[2] } end
       if args[2] == me then return { won = false, vs = args[1] } end

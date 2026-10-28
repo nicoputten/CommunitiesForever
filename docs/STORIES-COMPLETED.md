@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -510,3 +510,22 @@ Decided with Nico (2026-10-28): an ask with "Also post on Discord" reached the s
 - Decided with Nico (2026-10-28): the death cause is layered (combat log if an addon may register it, else the latest death recap, else a breath/exhaustion mirror timer, else `other`); every duel is recorded, against anyone (Doomsday and the site keep the ones against another friend); lifetime counters `deaths`, `duelsWon`, `duelsLost` in `chars.*.pvp` for the feats (the feed keeps only 7 days); counters ride the feed's 60 s bump, a new rank bumps right away.
 - Rule 8: optional fields only within `pv` 1, no migration. `Feed.merge` keeps the stored entry on an equal `at`, so a copy relayed by an older client (which drops the new feed fields) can't wipe them.
 - Done (PR #93): `src/core/Pvp.lua` (titles, death cause, format-string parsing, duel result, counters, cleaning), `src/adapters/PvpInfo.lua` (guarded, V79 to V81), `src/services/PvpTracker.lua`, the feed's `kills`, `deaths`, `duels`, `/cf self` PvP line. VERIFY.md "CF-52".
+
+### CF-53 Loot, mounts, gold and play sessions in the record
+- Per feed day and character:
+  - `loot = { rare = n, epic = { { id, name, slot, level }, ... } }`: rare (blue) and epic (purple) items received. Each epic carries its item id, its name as the loot link shows it, its equip slot as the game's `INVTYPE_*` token (nil for non-equippable items) and the character's level when it was looted, for the site's "first epic" feat. Candidate: `CHAT_MSG_LOOT` for your own loot, quality and equip slot from `C_Item.GetItemQualityByID` / `C_Item.GetItemInfo`.
+  - `notable = { [itemID] = n }`: items from a fixed watch list that you looted or created that day, for the profession feats. The watch list is a pure table in `src/core` (changing it needs an addon release); each entry says whether looting, creating or both count:
+    - created: Arcanite Reaper, Arcanite Bar (the first Arcanite transmute), Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings
+    - looted (including quest rewards): Speckled Tastyfish (joined the Stranglethorn Fishing Extravaganza), Arcanite Fishing Pole and Hook of the Master Angler (the Extravaganza prize, so the winner)
+
+    Item IDs are looked up from an item database when building, never guessed, and checked at launch with FriendProbe (`VERIFY.md`). Created items: candidate the `You create:` loot message (`LOOT_ITEM_CREATED_SELF` format string) on `CHAT_MSG_LOOT`, or `CHAT_MSG_TRADESKILLS`; verify which one fires on Forever.
+  - `gold = { gained, spent }` in copper: what came in and went out that day, from `PLAYER_MONEY` deltas. Never shown as an amount: the site only compares.
+  - `sessions = { { from, to } }`: login to logout times (server time), for night owl, early bird and the longest session.
+  - `groups = { [guid] = true }`: community characters you were in a group with that day, for "social butterfly" and "biggest group night".
+- Per character: `riding` (the riding skill rank, 0, 75 or 150), from the skill lines (as professions are read). This gives the mount feats.
+- Profession feats that need no new data (the site derives them from `professions` and the feed's `ranks`): the first fishing catch, the flavour titles on Cooking, First Aid and Fishing 300, and "Jack of all trades".
+- Caps and cleaning as in CF-52. Tests, docs and a fixture as in CF-52.
+- Decided with Nico (2026-10-28): sessions get a 5-minute heartbeat and a login within 5 minutes of the last `to` continues the session (so `/reload` doesn't split it); `rare`/`epic` count looted items and quest rewards, not crafted, traded or mailed ones; riding is read guarded in order: the race's riding skill line by ID (Vanilla has one per race, the shared spells 33388/33391 don't exist in Classic data), the shared riding spells, the Classic skill list.
+- Watch-list item IDs checked on Wowhead Classic (2026-10-28): Arcanite Reaper 12784, Arcanite Bar 12360, Mooncloth 14342, Devilsaur Gauntlets 15063, Devilsaur Leggings 15062, Speckled Tastyfish 19807, Arcanite Fishing Pole 19970, Hook of the Master Angler 19979.
+- Rule 8: optional fields only within `pv` 1 (`chars.*.riding`, the feed's `loot`, `notable`, `gold`, `sessions`, `groups`), no migration. A session's start and end don't bump the version on their own.
+- Done (PR #TBD): `src/core/GameText.lua` (format strings and item links, moved from `Pvp`), `src/core/Loot.lua`, `src/core/Play.lua`, `src/adapters/LootInfo.lua`, the riding read in `SelfInfo`, `Timer.every`, `src/services/PlayTracker.lua`. VERIFY.md "CF-53" and V82, V83.

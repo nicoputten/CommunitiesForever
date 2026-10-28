@@ -56,7 +56,7 @@ local function honor(text)
   local char = currentChar()
   if not char then return end
   if char.pvp and char.pvp.hk ~= nil then return refresh(true) end
-  if ns.Pvp.parse(text, ns.PvpInfo.formats().honor) then
+  if ns.GameText.parse(text, ns.PvpInfo.formats().honor) then
     ns.FeedTracker.record(char, { { kind = "kills", zone = ns.SelfInfo.zone(), count = 1 } })
   end
 end

@@ -632,6 +632,21 @@ function wowapi.install(opts)
   globals.COMBATLOG_HONORGAIN = "%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)"
   globals.CombatLogGetCurrentEventInfo = function() return unpack(state.combatEvent or {}) end
 
+  -- CF-53: loot and money. state.items[itemID] = { quality, slot } (C_Item); state.money = GetMoney() (nil:
+  -- missing). C_Timer.NewTicker is not mocked: the session heartbeat does not run in specs.
+  state.items = {}
+  globals.LOOT_ITEM_SELF = "You receive loot: %s."
+  globals.LOOT_ITEM_SELF_MULTIPLE = "You receive loot: %sx%d."
+  globals.LOOT_ITEM_PUSHED_SELF = "You receive item: %s."
+  globals.LOOT_ITEM_PUSHED_SELF_MULTIPLE = "You receive item: %sx%d."
+  globals.LOOT_ITEM_CREATED_SELF = "You create: %s."
+  globals.LOOT_ITEM_CREATED_SELF_MULTIPLE = "You create: %sx%d."
+  globals.C_Item = {
+    GetItemQualityByID = function(id) return state.items[id] and state.items[id].quality end,
+    GetItemInfoInstant = function(id) return id, "Armor", "Plate", state.items[id] and state.items[id].slot or "" end,
+  }
+  globals.GetMoney = function() return state.money end
+
   -- CF-39: native frames for the kit (see newRegion).
   globals.UIParent = newRegion(state, "Frame", nil)
   globals.CreateFrame = function(frameType, _, parent) return newRegion(state, frameType, parent) end
