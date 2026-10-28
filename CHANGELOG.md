@@ -6,13 +6,24 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
-- **Board, Ladder and Feats in the Doomsday tab.** The Board shows every friend's goals today: who finished what and when, who's crossed out and who has the crown. The Ladder ranks this week's PvE and PvP apart (all-time totals stay on the website), with your PvP rank, kills, duels and battlegrounds. Feats lists your characters' feats, newest first. The Activity tab shows "a spree of 5" (or 10) for kills in a row without dying.
-- **The Doomsday tab.** Today shows your dailies, the Skirmish and the Duel slot with progress, today's points, your kills, your streak and who took the crown; Week shows the weeklies, the Bounty and your points per character. Chat lines when you finish a goal, a kill is worth bonus points, someone takes the crown or a goal is swapped for you (setting "Doomsday in chat"). "First to finish today!" when you take the crown. A friend's character card shows their PvP rank with our title, or "PvP Virgin".
-- **Doomsday goals are tracked.** Every day 3 PvE dailies and a PvP Skirmish, every week 3 weeklies and a Bounty, the same for the whole group and resetting at 19:00 realm time. The addon marks a goal done as you play, over all your characters, and shares it with friends and the website. `/cf doomsday` shows today's and this week's goals, your streak and points (the Doomsday tab follows).
-- "Share my activity" is gone: everyone with the addon shares their activity with friends. If you'd rather not share, uninstall the addon.
-- Your characters' PvP now syncs to friends: lifetime honorable kills, PvP rank, this week's kills and honor, deaths (and what killed you: a fall, drowning, a player, a monster, …) and duels won and lost. `/cf self` shows the PvP line. It lays the ground for Doomsday.
-- Each honorable kill now syncs with its victim (name, level, class, race and rank as far as the game shows them), for Doomsday's kill points, the Hunt and the PvP ladder.
-- Also synced for Doomsday and the website's feats: blue and purple loot, notable crafts and catches (Arcanite Reaper, Mooncloth, the Fishing Extravaganza and more), how much gold came in and went out (never shown as an amount), play sessions, who from the community you grouped with, and your riding skill.
+- **Doomsday.** Every day three PvE dailies and a PvP Skirmish, every week three weeklies and a Bounty: the same
+  goals for the whole group, resetting at 19:00 realm time, and suggestions, never rules. Progress counts over all
+  your characters and is shared with friends and the website as you play.
+  - The new **Doomsday** tab: Today and Week with your progress, points (PvE and PvP, never added together), kills,
+    the Duel slot, your streak and who took the crown; the Board with every friend's goals today; the Ladder for
+    this week; your characters' Feats. All-time totals stay on the website.
+  - Chat lines when you finish a goal, a kill is worth bonus points, someone takes the crown or a goal is swapped
+    for you (setting "Doomsday in chat"), and "First to finish today!" when you take the crown.
+  - A friend's character card shows their PvP rank with our title ("Stone Guard, a.k.a. Mailbox Menace"), or
+    "PvP Virgin". The Activity tab shows "a spree of 5" (or 10) for kills in a row without dying.
+  - `/cf doomsday` prints today's and this week's goals, your streak and points.
+- **More of your play is shared with friends** (for Doomsday and the website's feats): PvP (honorable kills with
+  their victims, rank, this week's honor, deaths and what killed you, duels), blue and purple loot, notable crafts
+  and catches (Arcanite Reaper, Mooncloth, the Fishing Extravaganza and more), how much gold came in and went out
+  (never shown as an amount), play sessions, who from the community you grouped with, and your riding skill.
+  `/cf self` shows the PvP line.
+- **"Share my activity" is gone.** Everyone with the addon shares their activity with friends; if you'd rather not,
+  uninstall the addon.
 
 ## v0.7.0-beta1 (2026-10-28)
 - An Ask now that is also posted on Discord now reaches the site through any friend with the addon: everyone online carries it along with their next /reload or logout, and answers given in game show on the Discord post too. Only friends with a character in range are asked; the rest just carry it.

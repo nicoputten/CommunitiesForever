@@ -28,6 +28,7 @@ ignore:
   - .gitattributes
   - CLAUDE.md
   - VERIFY.md
+  - README.md
   # LibDeflate's docs hold README.md.html and readme.md.html: a case-only clash that CurseForge cannot
   # process ("General error processing file", v0.2.0-beta1). Only LibDeflate.lua/.toc/lib.xml are needed.
   - Libs/LibDeflate/docs
