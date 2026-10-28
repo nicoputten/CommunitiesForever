@@ -22,7 +22,8 @@ tagging; the release stops if the tag has no section.
   the settings.
 - **Runs v2: level fit and roles, as on the website.** Answering a run in game: every character of yours
   with how it fits ("fits", "+3 over", "carry · +12", "4 below"), then a role your class can play (Tank,
-  Healer, Damage). A character 6 or more levels below can only answer Maybe. Plan a run asks your role too.
+  Healer, Damage). Any character may answer I'm in, also one 6 or more levels below: it shows how far
+  below it is and "This will be tough." Plan a run asks your role too.
   A run's slots show each sign-up's role and fit, reserves are listed under them, and "Close" and "fits
   damage" use the same rule.
 - Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
