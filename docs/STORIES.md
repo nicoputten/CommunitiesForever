@@ -59,6 +59,7 @@ The site's WEB-58 needs CF-55's golden file.
 - Caps and cleaning as in CF-52. Tests, docs and a fixture as in CF-52.
 
 ### CF-54 FriendProbe: what Forever tells about a kill, and realm time
+Probe written (PR #TBD): `/fp pvp` and the V77/V78 and V79–V83 lines in `/fp start`. The story stays open until the launch run is in `API-FINDINGS.md` (`VERIFY.md` "CF-54").
 Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md` and decide which fields CF-55 fills and which goals `docs/DOOMSDAY.md` can draw.
 - `/fp pvp` switches kill logging on (it stays on after `/reload`; `/fp pvp off` stops it):
   - every `CHAT_MSG_COMBAT_HONOR_GAIN` with all its arguments, and whether the game's format string (`COMBAT_LOG_HONORGAIN` or the one that exists) gives the victim's name and rank
