@@ -73,6 +73,19 @@ local function civil(n)
   return yoe + era * 400 + (m <= 2 and 1 or 0), m, d
 end
 
+Doomsday.civil = civil
+
+-- Day number (days since 1970-01-01) of a calendar date (days from civil, Howard Hinnant's algorithm).
+function Doomsday.dayNumberOf(year, month, day)
+  local y = month <= 2 and year - 1 or year
+  local era = math.floor(y / 400)
+  local yoe = y - era * 400
+  local m = month <= 2 and month + 9 or month - 3
+  local doy = math.floor((153 * m + 2) / 5) + day - 1
+  local doe = yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy
+  return era * 146097 + doe - 719468
+end
+
 -- "Tue 28 Oct": the day's name (the realm date it starts on).
 function Doomsday.label(n)
   local _, month, day = civil(n)

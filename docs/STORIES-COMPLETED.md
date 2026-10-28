@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -577,3 +577,48 @@ Decided with Nico (2026-10-28): there is no sharing toggle. A friend who doesn't
 - Tests (busted): `outgoingRecord` without the setting; a received `feed = false` keeps the stored feed; `Compat_spec` passes on earlier fixtures.
 - The site does the same on its side (web WEB-55): `false` from released clients means nothing sent.
 - Done (PR #100): `Merge.outgoingRecord` without the setting; a received `feed = false` keeps the stored feed, also from the owner, and is never relayed as `false` (`feedOff` is gone); the setting left Settings, the settings window, the setup ("Notifications") and `Store` defaults; the Activity tab footer reads "Friends with CommunitiesForever share their activity." A stored `settings.shareActivity` stays and is ignored. `docs/DOOMSDAY.md` never mentioned sharing.
+
+### CF-56 Goals tracked and shared
+After CF-55.
+- A service (`src/services/DoomsdayTracker.lua`) keeps the facts per Doomsday day and week, summed over your own characters:
+  - quests per zone, levels, runs with bosses and companions
+  - profession ranks and learned professions, logins per character, item level
+  - kills, deaths and duels from CF-52/CF-55; groups, loot and sessions from CF-53
+  - "Since the first login today/this week" values (level, item level, profession ranks per character) are a base taken the first time a character is seen in that day or week.
+  
+  It marks a goal done with its time as soon as the facts reach the target (`Doomsday` decides).
+- New local trackers for the goals marked 56 in `DOOMSDAY.md`, not sent on their own (only "done" is shared), all guarded with `VERIFY.md` steps:
+  - **Fishing:** items looted from fishing. Candidates: `LOOT_READY`/`LOOT_OPENED` with `IsFishingLoot()`, `GetNumLootItems`.
+  - **Trades:** a completed trade and its partner. Candidates:
+    - `TRADE_SHOW` with `UnitGUID("NPC")` for the partner
+    - `TRADE_PLAYER_ITEM_CHANGED`/`GetTradePlayerItemLink` for what you give
+    - completion from `UI_INFO_MESSAGE` with `ERR_TRADE_COMPLETE`, matched through the game's own string
+  - **Crafted items:** from `CHAT_MSG_LOOT`, matched through the game's `LOOT_ITEM_CREATED_SELF` format string.
+  - **Discoveries:** from `UI_INFO_MESSAGE` or `CHAT_MSG_SYSTEM`, matched through `ERR_ZONE_EXPLORED`/`ERR_ZONE_EXPLORED_XP`.
+  
+  Each of these goals joins the pool (a `POOL_VERSION` bump) only once its API is verified.
+- Stored: `self.goals = { days = { [n] = { set, swapped = { [id] = originalId }, done = { [id] = at }, at } }, weeks = { [week] = { ... } }, streak = { n, last }, best }`. 14 days and 2 weeks are kept: the addon keeps no all-time totals (Nico: the site and the bot have them). New optional data, so no migration; code reading it handles nil.
+- RECORD gets the optional field `goals` (rule 8, within `pv` 1): the last 7 Doomsday days and the current and previous week (`set`, `swapped`, `done`, `at`), `streak`, `best`, `pool` (the pool version) and `reset` (the reset setting the addon used).
+  - It is always sent: there is no "Share my activity" (CF-58).
+  - A completion bumps the version through the feed's debounce (at most once per 60 s).
+- **Receiving:**
+  - Per day and per week, the newer `at` wins.
+  - Cleaned and capped: ids at most 24 characters, at most 5 per day and 4 per week (see below), 7 days and 2 weeks, numbers ≥ 0.
+  - Ids the client doesn't know (a newer pool) are kept, counted, and shown as "a goal from a newer version".
+- The reset setting from `Runs.lua` (`CF_RUNS.doomsday`) is passed on in HELLO as the optional `dd = { reset, changedAt }`. The newest `changedAt` wins and is stored (`settings.doomsdayReset`), so friends without the uploader get it too.
+- **Compatibility:** older clients ignore `goals` and `dd`, and drop them when relaying. A relayed record without `goals` is nil = unknown, so the stored one stays.
+- `/cf doomsday` prints today's and this week's goals with progress, the swaps, the streak and this week's points (`Describe`).
+- `docs/SYNC.md` (field table, caps, merge rule) and `docs/ARCHITECTURE.md` (data model) updated. A fixture with `goals` for the next release's capture. `Compat_spec` passes.
+- Tests (busted): progress per goal over two characters, the day rolling over at the reset, the week on Sunday, the merge of `goals`, the setting's newest-wins rule.
+- **Manual (`VERIFY.md`):**
+  - Finish 10 quests on two characters and see the daily done.
+  - The day rolls over at 19:00 realm time.
+  - Two accounts: A's completion shows on B within a minute.
+- Decided with Nico (2026-10-28):
+  - Facts are counted live per Doomsday day and week from the feed events and snapshots, and stored locally (`self.doomsday`, never sent). Progress starts on the day of the update.
+  - The day boundary is realm time for everyone (friends in the Netherlands, the UK and Thailand): `GetGameTime`, else the site's offset in `CF_RUNS.doomsday` (shape agreed with the web engine, web PR #108), else CET/CEST. Clock times shown are the player's own.
+  - Caps: 5 goal ids per day, 4 per week (as the site).
+  - `w.fullClear` uses a boss count per dungeon from the game's DungeonEncounter table (Classic Era); multi-wing dungeons and ones with optional or Season of Discovery bosses get counts after launch.
+- CF-58 folded in: `goals` is always sent; `false` or missing = nothing sent.
+- Rule 8: optional RECORD field `goals` and HELLO field `dd` within `pv` 1; older clients ignore and drop them. New optional stored data (`self.goals`, `self.doomsday`, `settings.doomsdayReset`, `people.*.goals`); no migration.
+- Done (PR #101): `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `src/adapters/GoalEvents.lua`, `SelfInfo.gameTime`, `RunsFile.doomsday`, `Merge` (outgoing, merge, relay of `goals`), HELLO `dd`, `/cf doomsday` (`Describe.doomsday`). VERIFY.md "CF-56", V84 to V86.

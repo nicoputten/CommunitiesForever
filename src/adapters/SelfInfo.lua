@@ -181,6 +181,15 @@ end
 function SelfInfo.guid() return UnitGUID("player") end
 SelfInfo.fullName = fullName
 
+-- CF-56: the realm clock (GetGameTime, unverified: VERIFY.md V78): hour, minute, or nil.
+function SelfInfo.gameTime()
+  if not GetGameTime then return nil end
+  local ok, hour, minute = pcall(GetGameTime)
+  if not ok or (issecretvalue and (issecretvalue(hour) or issecretvalue(minute))) then return nil end
+  if type(hour) ~= "number" or type(minute) ~= "number" then return nil end
+  return hour, minute
+end
+
 -- Today's realm date (CF-22: the activity feed groups by realm day): year, month, day.
 -- C_DateAndTime.GetCurrentCalendarTime is unverified on Forever (VERIFY.md V36); falls back to the
 -- local date of the server time.

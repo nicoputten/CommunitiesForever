@@ -99,6 +99,7 @@ people whose account ID is unknown are simply not mentioned there.
 | `ver` | Version of the sender's own record |
 | `known` | `{ key = version }` of records the sender holds and may relay: people with a character in the sender's selected community |
 | `ch` | Optional, community only (CF-31): the hidden channel the sender listens on. Members that sent it get later HELLOs on the channel instead of a whisper each. Older clients send none and ignore it (rule 8) |
+| `dd` | Optional (CF-56): the Doomsday reset setting the sender uses, `{ reset, changedAt, offset, offsetUntil, offsetAfter }` (docs/DOOMSDAY.md "Schedule"). The receiver keeps the newer `changedAt`. Older clients ignore it |
 | `ru` | Optional (CF-46): updatedAt of the sender's planned runs, 0 when it has none. Older clients send none (and get no runs) and ignore it (rule 8) |
 | `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
 
@@ -195,6 +196,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `feed.*.*.sessions` | CF-53: `{ from, to }` server times, at most 20, under the day the session started; `to` moves every 5 minutes and at logout, a login within 5 minutes continues the session |
 | `feed.*.*.groups` | CF-53: `{ [guid] = true }` characters of the selected community you were in a group with |
 | `feed.*.*.pvpKills` | CF-55b: one entry per honorable kill, at most 100 (`kills` keeps counting past it): `t`, `zone`, `name` (the victim's full name from the honor message; missing for a kill only the counter showed), `lvl` (-1 skull), `myLvl`, `class` and `race` tokens, `rank` (number), `solo`, `bg`. Victim fields come from the honor message or from what was seen of that player (target, mouseover, nameplate) in the 10 minutes before; each is missing when unknown. Received: tokens checked (`^%u+$`, `^%a+$`), levels -1 to 100, rank 0 to 14 |
+| `goals` | CF-56, optional: the sender's Doomsday goals. `days` (the last 7 Doomsday days) and `weeks` (this and last week), each `{ set, swapped = { [id] = originalId }, done = { [id] = time }, at }`; `streak`, `best`, `pool` (the pool version), `reset` (seconds after realm midnight). Always sent (CF-58); `false` from an older client or a missing field = nothing sent, the stored goals stay |
 | `feed.*.*.duels` | CF-52: `{ t, won, vs }`, at most 50, every duel of that character; `vs` = the opponent's full name as the game gives it (never split) |
 
 Not in a record: zone, online status and current level of community characters: those come live from the
@@ -305,6 +307,7 @@ The version bumps only when a synced field of the character you are on really ch
 | A quest accepted, abandoned or turned in (2 s debounce) | Logging in on the same character with nothing changed |
 | Display name, invite link | |
 | Activity feed changes: at most one bump per 60 s (questing does not sync per turn-in) | |
+| A Doomsday goal done (CF-56) with the feed's 60 s bump | |
 | A new PvP rank (CF-52) right away; kills, honor, deaths and duels with the feed's 60 s bump | |
 | Loot, gold and groups (CF-53) with the feed's 60 s bump; the riding skill like other snapshot fields | A session's start and end (CF-53: they travel with the next bump) |
 
@@ -332,6 +335,7 @@ The version bumps only when a synced field of the character you are on really ch
 - Activity feed: per day and character, the entry with the newer `at` stays; on an equal `at` the stored one
   (CF-52: a copy relayed by an older client lacks the newer fields).
 - `chars.*.pvp` (CF-52): only the expected fields, whole numbers ≥ 0, rank at most 14.
+- `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 5 per day and 4 per week, 7 days and 2 weeks, numbers ≥ 0. Ids of a newer pool are kept.
 - All received text is cleaned: color, link and texture codes removed; names, feed sizes and days capped.
 
 **Keys:** a Battle.net record that shows an `aid` merges an earlier `aid:` entry of the same account into

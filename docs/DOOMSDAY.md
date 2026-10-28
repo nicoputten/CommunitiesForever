@@ -21,9 +21,14 @@ Everything counts per friend (BattleTag): any of your characters counts, and pro
 ## Schedule
 - A **Doomsday day** runs from the reset time to the next one. The default reset is **19:00 realm time**, a group setting (Nico, 2026-10-28: "make it a changeable setting"). A day is named after the date on which it starts ("Doomsday · Tue 28 Oct" runs Tue 19:00 to Wed 19:00).
 - **Realm time** is the game's clock (`GetGameTime`, unverified: V78). The addon gets the realm's offset from UTC as the difference between `GetGameTime()` and `GetServerTime()`, rounded to 15 minutes, so daylight saving follows the realm. The site has the realm's IANA time zone as a setting (default `Europe/Paris` for EU realms).
+- **Everyone has the same day** (Nico, 2026-10-28: friends play from the Netherlands, the UK and Thailand). The day boundary is always realm time, never the PC's. Without `GetGameTime` the addon takes the offset the site sends (`offset`, `offsetUntil`, `offsetAfter` below), and without that CET/CEST (the EU summer-time dates). **Clock times shown** ("done 20:14", the reset) are each player's own PC time; "resets in 3 h 12 m" is the same for all.
 - **Day number:** `n = floor((serverTime + realmOffset - resetSeconds) / 86400)`, where `resetSeconds` is the reset time in seconds after midnight (19:00 = 68400). Day 0 started on Thursday 1970-01-01.
 - **Week:** a Doomsday week starts on **Sunday** at the reset time. `week = floor((n + 4) / 7)`: day 3 (Sunday 1970-01-04) starts week 1. Not tied to the game's weekly reset or its honor week.
-- **The setting:** the reset time lives on the site (the Discord page, admin: hours and minutes in realm time). It reaches the addon through `Data\Runs.lua` (`CF_RUNS.doomsday = { reset = 68400, changedAt = … }`, written by the uploader), and from there through sync to friends without the uploader: the newest `changedAt` wins. Without it, the addon uses 19:00. A change takes effect from the next reset, never in the middle of a day.
+- **The setting:** the reset time lives on the site (the Discord page, admin: hours and minutes in realm time). It reaches the addon through `Data\Runs.lua`, written by the uploader, and from there through HELLO (`dd`) to friends without the uploader: the newest `changedAt` wins. Without it, the addon uses 19:00. A change takes effect from the next reset, never in the middle of a day. Agreed with the site (web PR #108), every field optional:
+  - `CF_RUNS.doomsday = { reset, changedAt, offset, offsetUntil, offsetAfter }`
+  - `reset`: the reset in force, seconds after realm midnight. The site sends a new reset only from the reset it takes effect at, so the addon applies it as given.
+  - `changedAt`: when that reset took effect; 0 while it was never changed.
+  - `offset`: the realm zone's UTC offset now, in seconds east; `offsetUntil`: the server time of its next change; `offsetAfter`: the offset from then on. Both are left out when the zone has no change within 400 days.
 - Screens show the time left: "resets in 3 h 12 m".
 
 ## Goals
@@ -66,7 +71,7 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 - A goal that needs a field the probe found unreadable stays out. If a pool is then empty, the slot stays empty.
 - Ids are never reused or renamed. A retired goal keeps its id in the catalogue, marked retired.
 
-**Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
+**Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The facts behind it are counted live per Doomsday day and week and stay on the player's computer (CF-56, Nico 2026-10-28); progress starts on the day the update is installed. A day's set holds at most 5 ids (3 PvE dailies, the Skirmish, the Hunt as `hunt`), a week's 4 (3 PvE weeklies, the Bounty). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
 
 ## The algorithm, exactly (CF-55)
 Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
@@ -165,7 +170,7 @@ Data: **now** = the addon records it today. **52**, **53**, **56** = trackers fr
 | `w.dungeons3` | Run 3 dungeons | 3 finished party runs | now | no character in range of a dungeon → `w.quests50` |
 | `w.dungeonsDiff3` | Run 3 different dungeons | party runs in 3 different instances | now | as `w.dungeons3` |
 | `w.dungeonFriends2` | Run a dungeon with 2 friends | a party run with community characters of 2 other friends | now | as `w.dungeons3` |
-| `w.fullClear` | Clear every boss of a dungeon | one party run that killed every boss of that dungeon | now | as `w.dungeons3` |
+| `w.fullClear` | Clear every boss of a dungeon | one party run that killed every boss of that dungeon (the addon's boss count per dungeon, `Goals.BOSSES`, from the game's DungeonEncounter table; dungeons with wings or optional bosses get a count after launch and can't be cleared until then) | now | as `w.dungeons3` |
 | `w.skill25` | Earn 25 profession skill points | 25 points over all professions this week | now | no profession → `w.quests50` |
 | `w.cap` | Reach a profession cap | a profession reaches 75/75, 150/150, 225/225 or 300/300 (as the site's milestone) | now | no profession below 300 → `w.skill25`, then `w.quests50` |
 | `w.newProf` | Learn a new profession | a character learns a profession it didn't have | now | |
