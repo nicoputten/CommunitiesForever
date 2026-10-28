@@ -40,6 +40,7 @@ function addon:OnEnable()
   ns.MemberTracker.start(self)
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
   ns.PlayTracker.start(self) -- CF-53: after ActivityTracker (instance events) and MemberTracker (groups)
+  ns.DoomsdayTracker.start(self) -- CF-56: after the trackers whose feed events count; before Sync (HELLO dd)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)
@@ -163,6 +164,10 @@ local COMMANDS = {
       local s = ns.Messenger.stats()
       self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed.",
         s.sent, s.received, s.dropped, s.queued, s.resent, s.missed))
+    end },
+  { name = "doomsday", help = { "/cf doomsday - today's and this week's Doomsday goals, streak and points" },
+    run = function(self)
+      printLines(self, ns.Describe.doomsday(ns.DoomsdayTracker.state(), function(t) return date("%H:%M", t) end))
     end },
   { name = "activity", help = { "/cf activity - show the dungeon, raid or battleground run in progress",
                                 "/cf activity debug - print instance events for the activity feed (on/off)" },

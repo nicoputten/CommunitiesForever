@@ -97,8 +97,12 @@ local function helloFor(community)
   local ch = community and ns.SyncChannel.index() and ns.SyncChannel.name() or nil
   -- ru (CF-46): updatedAt of our planned runs (0: none); older clients ignore it.
   local ru = ns.Planner.updatedAt()
-  return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch, ru = ru },
-         helloSignature(own().version, known) .. ";" .. tostring(ch) .. ";" .. tostring(ru)
+  -- dd (CF-56): the Doomsday reset setting we use, so friends without the uploader get it; older clients ignore it.
+  local dd = ns.DoomsdayTracker.setting()
+  return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch, ru = ru,
+           dd = dd },
+         helloSignature(own().version, known) .. ";" .. tostring(ch) .. ";" .. tostring(ru) .. ";"
+           .. tostring(dd and dd.changedAt) .. ";" .. tostring(dd and dd.offsetUntil)
 end
 
 local function sendHello(target, force)
@@ -249,6 +253,8 @@ function handlers.HELLO(message, senderKey, target, guid)
     releaseNoticeShown = true
     addonRef:Print(string.format(Sync.NEWER_RELEASE_NOTICE, message.av))
   end
+  -- CF-56: the Doomsday reset setting, the newer changedAt wins.
+  if type(message.dd) == "table" then ns.DoomsdayTracker.receiveSetting(message.dd) end
   -- CF-46: planned runs, the newer updatedAt wins. A HELLO without ru is from a version without runs.
   if type(message.ru) == "number" then
     local ours = ns.Planner.updatedAt()
@@ -280,7 +286,7 @@ function handlers.REQ(message, _, target)
   if not wireOwn then return end
   if message.want == nil or message.want == wireOwn then
     -- All own characters are always shared (CF-17), so this works on any character.
-    local record = ns.Merge.outgoingRecord(own())
+    local record = ns.Merge.outgoingRecord(own(), ns.DoomsdayTracker.outgoing())
     record.bt = wireOwn
     ns.Messenger.send(target, record)
   elseif type(message.want) == "string" then

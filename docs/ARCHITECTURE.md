@@ -52,6 +52,8 @@ CommunitiesForever/
       GameText.lua           the game's own messages through its format strings, item links (CF-52, CF-53)
       Loot.lua               loot messages, rare and epic items, the watch list of notable items, gold (CF-53)
       Play.lua               play sessions in the feed: continue within 5 minutes, heartbeat end (CF-53)
+      Goals.lua              own Doomsday goals: realm offset fallbacks, the reset setting, facts per day and week,
+                             the situation for swaps, done marks, cleaning and merging received goals (CF-56)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
@@ -79,6 +81,7 @@ CommunitiesForever/
       PvpInfo.lua            PvP counters and rank, death statistic and recap, duel/honor format strings, PvP and
                              death events, combat log damage to the player when allowed (CF-52, guarded)
       LootInfo.lua           loot strings, item quality and slot (C_Item), money, loot and money events (CF-53, guarded)
+      GoalEvents.lua         fishing loot, trades, discoveries for goals that wait for data (CF-56, guarded)
       RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
@@ -87,6 +90,8 @@ CommunitiesForever/
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
       PvpTracker.lua         chars[guid].pvp, kills by zone, deaths with their cause, duels into the feed (CF-52)
       PlayTracker.lua        loot, notable items, gold, sessions and groups into the feed (CF-53)
+      DoomsdayTracker.lua    facts from feed events and snapshots, goals done, reset setting (file, HELLO), /cf doomsday
+                             (CF-56)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
@@ -182,11 +187,16 @@ global = {
                                                      -- otherChar, ping, updated)
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
-                feed = Feed },                       -- CF-22: activity feed, last 7 realm days
+                feed = Feed,                         -- CF-22: activity feed, last 7 realm days
+                goals = { days = { [n] = Goal }, weeks = { [w] = Goal }, streak = { n, last }, best },
+                                                     -- CF-56: own Doomsday goals, 14 days and 2 weeks, sent
+                doomsday = { days = { [n] = Facts }, weeks = { [w] = Facts }, chars = { [guid] = { death, level } } } },
+                                                     -- CF-56: the facts behind them (core/Goals.lua), local only
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char }, via, invite, feed,      -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
                                 removed = { [guid] = time },                       -- CF-28: dropped characters
-                                aid } },                                           -- CF-28: account ID (community key)
+                                aid,                                               -- CF-28: account ID (community key)
+                                goals } },                                         -- CF-56: their Doomsday goals
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only

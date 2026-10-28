@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday goals are tracked.** Every day 3 PvE dailies and a PvP Skirmish, every week 3 weeklies and a Bounty, the same for the whole group and resetting at 19:00 realm time. The addon marks a goal done as you play, over all your characters, and shares it with friends and the website. `/cf doomsday` shows today's and this week's goals, your streak and points (the Doomsday tab follows).
 - "Share my activity" is gone: everyone with the addon shares their activity with friends. If you'd rather not share, uninstall the addon.
 - Your characters' PvP now syncs to friends: lifetime honorable kills, PvP rank, this week's kills and honor, deaths (and what killed you: a fall, drowning, a player, a monster, …) and duels won and lost. `/cf self` shows the PvP line. It lays the ground for Doomsday.
 - Each honorable kill now syncs with its victim (name, level, class, race and rank as far as the game shows them), for Doomsday's kill points, the Hunt and the PvP ladder.

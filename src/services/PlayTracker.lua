@@ -20,6 +20,7 @@ local function loot(text)
   local item = ns.Loot.parse(text, ns.LootInfo.formats())
   local char = item and currentChar()
   if not char then return end
+  if item.source == "created" and ns.DoomsdayTracker then ns.DoomsdayTracker.observeCrafted(item.id) end -- CF-56
   local quality, slot = ns.LootInfo.item(item.id)
   local list = ns.Loot.events(item, quality, slot, char.level)
   if #list > 0 then ns.FeedTracker.record(char, list) end

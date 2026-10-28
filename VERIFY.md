@@ -45,6 +45,9 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V81 | Where can the cause of a death come from? (CF-52) Can an addon register `COMBAT_LOG_EVENT_UNFILTERED` (see also V75); do `MIRROR_TIMER_START`/`MIRROR_TIMER_STOP` fire with `BREATH` and `EXHAUSTION`; does `C_DeathRecap.GetRecapEvents()` without an id give the latest death's events (`event`, `environmentalType`, `sourceGUID`, `timestamp`)? | `/run print(C_DeathRecap and C_DeathRecap.GetRecapEvents)`. After a death: `/dump C_DeathRecap.GetRecapEvents()`. Then the CF-52 death steps: the `/cf self` deaths and the saved file's `deaths` causes. If the combat log is blocked, a Lua error may show once at login (send it). | open |
 | V82 | How can an addon read the riding skill? (CF-53) Vanilla has one per race (skill lines 148, 149, 150, 152, 533, 553, 554, 713). Does `C_TradeSkillUI.GetProfessionInfoBySkillLineID(<line>)` give `skillLevel` for it, do `C_SpellBook.IsSpellKnown`/`IsSpellKnown` know 33388/33391, or do `GetNumSkillLines`/`GetSkillLineInfo` exist? And does `C_Timer.NewTicker` exist (the session heartbeat)? | On a character with riding (level 40+): `/dump C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID(149)` (your race's line: Orc 149, Tauren 713, Troll 533, Undead 554, Human 148, Dwarf 152, Night Elf 150, Gnome 553), then `/run print(IsSpellKnown and IsSpellKnown(33388), GetNumSkillLines, C_Timer.NewTicker)`. After `/reload`, the saved file's `self.chars[<guid>].riding`: 75 (0 without riding, missing = unreadable). | open |
 | V83 | Do `CHAT_MSG_LOOT` and the strings `LOOT_ITEM_SELF`, `LOOT_ITEM_SELF_MULTIPLE`, `LOOT_ITEM_PUSHED_SELF`, `LOOT_ITEM_CREATED_SELF` (and their `_MULTIPLE`) match your own loot, quest rewards and crafted items? Do `C_Item.GetItemQualityByID`, `C_Item.GetItemInfoInstant`, `GetMoney` and `PLAYER_MONEY` work? Are the watch-list item IDs right on Forever? (CF-53) | `/run print(LOOT_ITEM_SELF, LOOT_ITEM_PUSHED_SELF, LOOT_ITEM_CREATED_SELF, GetMoney())`. Expected `You receive loot: %s.`, `You receive item: %s.`, `You create: %s.` and your copper. For the watch list: `/run for _, id in ipairs({12784,12360,14342,15063,15062,19807,19970,19979}) do print(id, C_Item.GetItemNameByID and C_Item.GetItemNameByID(id)) end`: Arcanite Reaper, Arcanite Bar, Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings, Speckled Tastyfish, Arcanite Fishing Pole, Hook of the Master Angler (a `nil` may just be uncached: run it twice). | open |
+| V84 | Do `LOOT_OPENED`, `IsFishingLoot()` and `GetNumLootItems()` work for fishing? (CF-56: `d.fish20`) | Fish once: `/run print(IsFishingLoot, GetNumLootItems)` shows two functions; after a catch, `/cf doomsday` with `/dump CommunitiesForeverDB.global.self.doomsday` after `/reload` shows `fish` up by the items looted. | open |
+| V85 | Do `TRADE_SHOW` with `UnitGUID("NPC")`, `TRADE_PLAYER_ITEM_CHANGED` with `GetTradePlayerItemLink(slot)` and `UI_INFO_MESSAGE` with `ERR_TRADE_COMPLETE` tell a completed trade, its partner and what you gave? (CF-56: `d.trade`, `w.craftTrade`) | Trade an item you crafted to a friend's community character; after `/reload` this week's facts have `trades = 1` and `craftTrade = 1`. A cancelled trade adds nothing. | open |
+| V86 | Do discoveries come as `UI_INFO_MESSAGE` or `CHAT_MSG_SYSTEM` matching `ERR_ZONE_EXPLORED` / `ERR_ZONE_EXPLORED_XP`? (CF-56: `w.discover5`) | `/run print(ERR_ZONE_EXPLORED, ERR_ZONE_EXPLORED_XP)`, then discover a new place: `discoveries` goes up by 1 in this week's facts. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
@@ -55,6 +58,19 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | `/cf settings` | Sharing has only "Receive group asks"; no "Share my activity". `/cf setup`: the step is called "Notifications" with three switches and the minimap one. | open |
 | A friend on this build, you on a released version with "Share my activity" off | The friend still sees your activity from before (nothing is wiped); new activity of yours doesn't reach them until you update. | open |
 | Both on this build | Each sees the other's activity; the Activity tab footer says "Friends with CommunitiesForever share their activity." | open |
+
+### CF-56 Goals tracked and shared
+`/cf doomsday` prints today's and this week's goals with progress, swaps, the streak and this week's points.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf doomsday` | "Doomsday <weekday day month>, resets in …", the source (`realm clock`, `the site's time zone` or `CET/CEST`), today's 3 PvE dailies and the Skirmish, this week's 3 weeklies and the Bounty, with progress. | open |
+| A day with "Finish 10 quests": 6 quests on one character, 4 on another | After the 10th: "Finish 10 quests: done <time>" in your own clock time. | open |
+| A swapped goal (e.g. a character without professions) | "(instead of: …)" after the replacement. | open |
+| Wait past 19:00 realm time (or the site's reset) | `/cf doomsday` shows the next day with new goals; Sunday's reset also starts a new week. | open |
+| Two accounts: A finishes a goal | Within about a minute B's saved file has `people[<A's BattleTag>].goals.days[<day>].done`. | open |
+| A full run of The Deadmines (all 7 bosses) in a week with "Clear every boss of a dungeon" | The weekly is done. Note the boss count `/cf activity` shows for Scarlet Monastery wings, Blackrock Spire, Dire Maul, Stratholme, Scholomance, Blackfathom Deeps and Sunken Temple, for their counts. | open |
+| A friend in Thailand (or a PC clock set to another zone) | The same day and goals as everyone; clock times in their own time. | open |
 
 ### CF-55b Raw kills in the record
 After CF-54's run (V73, V74, V76). One PvP-flagged character with this build; enemy nameplates on. After the steps `/reload` and look at `self.feed[<today>][<guid>].pvpKills`.

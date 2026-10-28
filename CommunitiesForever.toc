@@ -22,6 +22,7 @@ src\core\Loot.lua
 src\core\Play.lua
 src\core\Feed.lua
 src\core\Doomsday.lua
+src\core\Goals.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
@@ -65,11 +66,13 @@ src\adapters\Panels.lua
 src\adapters\Classes.lua
 src\adapters\PvpInfo.lua
 src\adapters\LootInfo.lua
+src\adapters\GoalEvents.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua
 src\services\PvpTracker.lua
 src\services\PlayTracker.lua
+src\services\DoomsdayTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua

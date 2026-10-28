@@ -57,7 +57,8 @@ end
 -- The RECORD message for the own record: all own characters (CF-17 feedback: always shared;
 -- the receiver decides what to show, see core rule 1) and the activity feed. CF-58: there is no
 -- sharing setting; a friend who doesn't want to share uninstalls the addon. Never sends `feed = false`.
-function Merge.outgoingRecord(selfRecord)
+-- goals (CF-56): the own Doomsday goals as Goals.outgoing gives them (nil: none yet).
+function Merge.outgoingRecord(selfRecord, goals)
   local feed = selfRecord.feed
   local chars = {}
   for guid, char in pairs(selfRecord.chars or {}) do
@@ -71,6 +72,7 @@ function Merge.outgoingRecord(selfRecord)
     chars = chars,
     invite = cleanInvite(selfRecord.invite),
     feed = feed,
+    goals = type(goals) == "table" and goals or nil, -- CF-56
     aid = selfRecord.accountId, -- CF-28: links this BattleTag to its community key for friends
   }
 end
@@ -202,6 +204,13 @@ local function mergedFeed(stored, record, direct, now)
   return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed), now + Merge.MAX_FUTURE_SECONDS)
 end
 
+-- CF-56: Doomsday goals to store. Missing or `false` (CF-58) = nothing sent: the stored goals stay; otherwise
+-- per day and week the newer `at` wins (also from the owner, so an older record can't undo a goal done).
+local function mergedGoals(stored, record, now)
+  if type(record.goals) ~= "table" then return stored and stored.goals end
+  return ns.Goals.merge(stored and stored.goals, ns.Goals.clean(record.goals), now + Merge.MAX_FUTURE_SECONDS)
+end
+
 --[[ Stores an accepted record: people[bt] = { displayName, version, receivedAt, chars, removed, via,
 invite, feed }. via is the BattleTag of the friend who relayed it, nil when it came from the owner.
 Characters merge one by one (Merge.mergeChars); the other fields come from the record when it is not
@@ -231,6 +240,7 @@ function Merge.store(people, record, now, senderBattleTag)
       or (stored and stored.aid) or nil,
     invite = invite,
     feed = mergedFeed(stored, record, direct, now),
+    goals = mergedGoals(stored, record, now),
   }
 end
 
@@ -285,7 +295,8 @@ function Merge.relayRecord(people, battleTag)
   local person = people[battleTag]
   if not person then return nil end
   return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
-           chars = person.chars, removed = person.removed, invite = cleanInvite(person.invite), feed = person.feed }
+           chars = person.chars, removed = person.removed, invite = cleanInvite(person.invite), feed = person.feed,
+           goals = person.goals }
 end
 
 ns.Merge = Merge

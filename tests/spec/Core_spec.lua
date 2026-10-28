@@ -83,11 +83,11 @@ describe("Core", function()
       state.slash.cf("help")
       local all = table.concat(state.printed, " | ")
       for _, command in ipairs({ "version", "self", "members", "friends", "people", "sync", "ping", "activity",
-                                 "settings", "setup", "ask" }) do
+                                 "settings", "setup", "ask", "doomsday" }) do
         assert.is_truthy(all:find("/cf " .. command, 1, true), command)
       end
       assert.is_falsy(all:find("debugon", 1, true))
-      assert.are.equal(15, #state.printed) -- the header and 14 lines
+      assert.are.equal(16, #state.printed) -- the header and 15 lines
     end)
   end)
 end)

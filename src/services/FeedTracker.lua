@@ -51,6 +51,7 @@ function FeedTracker.record(char, events, bumped, day)
     ns.Feed.add(feed, day or today, char, event, now)
   end
   ns.Feed.trim(feed, today)
+  if ns.DoomsdayTracker then ns.DoomsdayTracker.observeFeed(char, events) end -- CF-56: goal facts
   addonRef:SendMessage(FeedTracker.CHANGED)
   if bumped then return end
   pendingVersion = own().version
