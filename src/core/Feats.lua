@@ -2,7 +2,7 @@
 -- thresholds and titles as the site (web src/core/doomsday/feats.ts, WEB-56), without "First in the group" and
 -- without the group's mount count. The addon has only current data and 7 days of feed, so it remembers locally
 -- when it first saw each feat (Nico, 2026-10-28): self.feats[guid][key] = { at, title, detail } (at 0 = it was
--- there before, "Earlier"). Requires ns.Loot (the watch list) and ns.Pvp (rank names and titles).
+-- there before, "Earlier"). Requires ns.Pvp (rank names and titles) and ns.Text.
 local _, ns = ...
 
 local Feats = {}
@@ -35,11 +35,7 @@ local NOTABLE = {
   [19979] = { key = "extravaganzaWon", title = "Extravaganza winner", detail = "Won the Fishing Extravaganza" },
 }
 
--- 1234 -> "1,234".
-local function thousands(n)
-  local s = tostring(math.floor(n)):reverse():gsub("(%d%d%d)", "%1,"):reverse()
-  return (s:gsub("^,", ""))
-end
+local thousands = ns.Text.thousands
 
 -- "First blood", "1,000 honorable kills", "10,000 kills": an honor-kill step's title.
 local function killsTitle(step)

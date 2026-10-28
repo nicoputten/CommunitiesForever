@@ -4,7 +4,7 @@ describe("Version (CF-35)", function()
   local Version
 
   before_each(function()
-    Version = helpers.loadAddonFile("src/core/Version.lua", {})
+    Version = helpers.loadAddonFile("src/core/Version.lua", helpers.coreNs())
   end)
 
   it("parses release tags only", function()

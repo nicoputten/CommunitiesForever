@@ -13,17 +13,7 @@ PvpInfo.CHANGED = "CF_PVP_CHANGED"
 -- The game's statistic "Total deaths" (as on Retail).
 local STAT_DEATHS = 60
 
-local function readable(value)
-  if issecretvalue and issecretvalue(value) then return nil end
-  return value
-end
-
-local function call(fn, ...)
-  if type(fn) ~= "function" then return nil end
-  local ok, a, b, c = pcall(fn, ...)
-  if not ok then return nil end
-  return readable(a), readable(b), readable(c)
-end
+local readable, call = ns.Safe.value, ns.Safe.call
 
 -- { hk, rank, rankName, weekKills, weekHonor, deaths }, each nil when not readable.
 -- GetPVPLifetimeStats: hk, dishonorable kills, highest rank. UnitPVPRank gives the rank id, which

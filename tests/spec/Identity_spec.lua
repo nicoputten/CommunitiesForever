@@ -5,7 +5,7 @@ describe("Identity (CF-28)", function()
   local OWN = { battleTag = "Me#1", accountId = "aaaaaaaaaaaa" }
 
   before_each(function()
-    Identity = helpers.loadAddonFile("src/core/Identity.lua", {})
+    Identity = helpers.loadAddonFile("src/core/Identity.lua", helpers.coreNs())
   end)
 
   it("makes 12-character hex account IDs", function()

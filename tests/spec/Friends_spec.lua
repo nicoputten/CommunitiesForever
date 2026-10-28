@@ -15,7 +15,7 @@ describe("Friends", function()
   end
 
   before_each(function()
-    Friends = helpers.loadAddonFile("src/core/Friends.lua", {})
+    Friends = helpers.loadAddonFile("src/core/Friends.lua", helpers.coreNs())
   end)
 
   describe("snapshot", function()

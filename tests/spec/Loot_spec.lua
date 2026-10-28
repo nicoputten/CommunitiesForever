@@ -15,7 +15,7 @@ describe("Loot and Play (CF-53)", function()
   end
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/GameText.lua", ns)
     Feed = helpers.loadAddonFile("src/core/Feed.lua", ns)
     Loot = helpers.loadAddonFile("src/core/Loot.lua", ns)

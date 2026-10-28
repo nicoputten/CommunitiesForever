@@ -13,7 +13,7 @@ describe("Clubs", function()
   }
 
   before_each(function()
-    Clubs = helpers.loadAddonFile("src/core/Clubs.lua", {})
+    Clubs = helpers.loadAddonFile("src/core/Clubs.lua", helpers.coreNs())
   end)
 
   describe("selectable", function()

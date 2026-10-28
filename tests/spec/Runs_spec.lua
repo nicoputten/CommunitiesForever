@@ -7,7 +7,7 @@ describe("Runs (CF-23)", function()
   local WSG = { name = "Warsong Gulch", type = "pvp", instanceID = 489 }
 
   before_each(function()
-    Runs = helpers.loadAddonFile("src/core/Runs.lua", {})
+    Runs = helpers.loadAddonFile("src/core/Runs.lua", helpers.coreNs())
   end)
 
   it("starts runs only in dungeons, raids and battlegrounds", function()

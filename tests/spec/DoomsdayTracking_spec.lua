@@ -41,7 +41,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
   end)
 
   it("marks a daily done from progress on two characters, with its time", function()
-    local D = helpers.loadAddonFile("src/core/Doomsday.lua", {})
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local n = dayWith(D, "d.quests10")
     local start = D.dayStart(n, CET, RESET)
     load(function(s) s.serverTime = start + 3600 end)
@@ -61,7 +61,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
   end)
 
   it("turns the day at the reset and the week on Sunday", function()
-    local D = helpers.loadAddonFile("src/core/Doomsday.lua", {})
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local saturday = D.weekStart(D.week(D.EPOCH) + 1) - 1
     local start = D.dayStart(saturday, CET, RESET)
     load(function(s) s.serverTime = start + 86400 - 60 end)
@@ -152,5 +152,20 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     local week = addon.db.global.self.doomsday.weeks[ns.Doomsday.week(today)]
     assert.are.same({ 2, 1, 1, 1 }, { week.fish, week.trades, week.craftTrade, week.discoveries })
     for name in pairs(stubs) do _G[name] = nil end
+  end)
+
+  it("caches the state until something changes, with fresh countdowns (CF-59)", function()
+    load()
+    local first = ns.DoomsdayTracker.state()
+    local before = first.resetsIn
+    state.serverTime = state.serverTime + 60
+    local second = ns.DoomsdayTracker.state()
+    assert.are.equal(first, second) -- the same table: not rebuilt
+    assert.are.equal(before - 60, second.resetsIn) -- the countdown moved on
+    quest()
+    assert.are_not.equal(second, ns.DoomsdayTracker.state())
+    local third = ns.DoomsdayTracker.state()
+    addon:SendMessage(ns.Sync.PEOPLE_UPDATED, "Ada#1001")
+    assert.are_not.equal(third, ns.DoomsdayTracker.state())
   end)
 end)

@@ -11,7 +11,7 @@ describe("Members", function()
   end
 
   before_each(function()
-    Members = helpers.loadAddonFile("src/core/Members.lua", {})
+    Members = helpers.loadAddonFile("src/core/Members.lua", helpers.coreNs())
   end)
 
   describe("build", function()

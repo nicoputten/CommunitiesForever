@@ -4,7 +4,7 @@ describe("Filter (CF-36)", function()
   local Filter
 
   before_each(function()
-    Filter = helpers.loadAddonFile("src/core/Filter.lua", {})
+    Filter = helpers.loadAddonFile("src/core/Filter.lua", helpers.coreNs())
   end)
 
   local function row(extra)

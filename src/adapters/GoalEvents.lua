@@ -8,17 +8,7 @@ local GoalEvents = {}
 -- "discovered" (text).
 GoalEvents.CHANGED = "CF_GOAL_EVENT"
 
-local function readable(value)
-  if issecretvalue and issecretvalue(value) then return nil end
-  return value
-end
-
-local function call(fn, ...)
-  if type(fn) ~= "function" then return nil end
-  local ok, a, b = pcall(fn, ...)
-  if not ok then return nil end
-  return readable(a), readable(b)
-end
+local readable, call = ns.Safe.value, ns.Safe.call
 
 -- The game's discovery strings (ERR_ZONE_EXPLORED "Discovered: %s", ERR_ZONE_EXPLORED_XP).
 function GoalEvents.formats()
@@ -50,7 +40,7 @@ function GoalEvents.watch(addon)
   end)
   ns.Events.register(events, "TRADE_PLAYER_ITEM_CHANGED", readGiven)
   ns.Events.register(events, "UI_INFO_MESSAGE", function(_, _, text)
-    if type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then return end
+    if type(text) ~= "string" or ns.Safe.secret(text) then return end
     if ERR_TRADE_COMPLETE and text == ERR_TRADE_COMPLETE then
       if partner then addon:SendMessage(GoalEvents.CHANGED, "trade", partner, given) end
       partner, given = nil, {}

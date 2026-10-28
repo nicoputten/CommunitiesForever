@@ -6,7 +6,7 @@ describe("Pvp (CF-52)", function()
   local ME = "Ada Example"
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/GameText.lua", ns)
     Pvp = helpers.loadAddonFile("src/core/Pvp.lua", ns)
   end)

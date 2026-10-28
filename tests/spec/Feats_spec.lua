@@ -4,7 +4,7 @@ describe("Feats, scores and sprees (CF-57b)", function()
   local Feats, Feed, V, D
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/GameText.lua", ns)
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Feed = helpers.loadAddonFile("src/core/Feed.lua", ns)

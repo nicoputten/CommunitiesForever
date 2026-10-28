@@ -12,7 +12,7 @@ describe("Merge", function()
   end
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Feed.lua", ns)
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)

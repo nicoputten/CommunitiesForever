@@ -6,7 +6,8 @@ describe("SelfInfo", function()
 
   local function load(opts)
     state = wowapi.install(opts)
-    local ns = {}
+    local ns = helpers.coreNs()
+    helpers.loadAddonFile("src/adapters/Safe.lua", ns)
     helpers.loadAddonFile("src/adapters/Events.lua", ns)
     SelfInfo = helpers.loadAddonFile("src/adapters/SelfInfo.lua", ns)
   end

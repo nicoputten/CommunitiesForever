@@ -4,7 +4,7 @@ describe("Outbox", function()
   local Outbox
 
   before_each(function()
-    Outbox = helpers.loadAddonFile("src/core/Outbox.lua", {})
+    Outbox = helpers.loadAddonFile("src/core/Outbox.lua", helpers.coreNs())
   end)
 
   it("is empty at first", function()

@@ -6,7 +6,7 @@ describe("Feed: kills, deaths and duels (CF-52)", function()
   local ADA = { guid = "G-A", name = "Ada Example", classFile = "ROGUE" }
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     Feed = helpers.loadAddonFile("src/core/Feed.lua", ns)
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
@@ -81,7 +81,7 @@ describe("Feed: kills, deaths and duels (CF-52)", function()
   end)
 
   it("sends a week with 100 raw kills on each of 7 days in under 8 KB (CF-55b: the cap stays at 100)", function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Protocol.lua", ns)
     local codec = ns.Protocol.codec(helpers.lib("LibSerialize"), helpers.lib("LibDeflate"))
     local classes = { "WARRIOR", "MAGE", "ROGUE", "PRIEST", "HUNTER", "WARLOCK", "DRUID", "PALADIN" }

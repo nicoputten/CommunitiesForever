@@ -4,7 +4,7 @@ describe("DoomsdayView (CF-57)", function()
   local V, D
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/GameText.lua", ns)
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
     D = helpers.loadAddonFile("src/core/Doomsday.lua", ns)

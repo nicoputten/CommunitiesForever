@@ -4,11 +4,11 @@ describe("Store", function()
   local Store
 
   before_each(function()
-    Store = helpers.loadAddonFile("src/core/Store.lua", {})
+    Store = helpers.loadAddonFile("src/core/Store.lua", helpers.coreNs())
   end)
 
   it("registers itself on the private addon table", function()
-    local ns = {}
+    local ns = helpers.coreNs()
     local loaded = helpers.loadAddonFile("src/core/Store.lua", ns)
     assert.are.equal(loaded, ns.Store)
   end)

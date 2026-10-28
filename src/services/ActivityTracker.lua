@@ -28,7 +28,7 @@ local function describe(...)
   local args = {}
   for i = 1, select("#", ...) do
     local value = select(i, ...)
-    args[#args + 1] = (issecretvalue and issecretvalue(value)) and "<secret>" or tostring(value)
+    args[#args + 1] = ns.Safe.secret(value) and "<secret>" or tostring(value)
   end
   return table.concat(args, ", ")
 end

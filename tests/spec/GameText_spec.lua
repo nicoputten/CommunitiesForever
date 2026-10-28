@@ -5,7 +5,7 @@ describe("GameText", function()
   local FORMATS = { retreat = "%2$s has fled from %1$s in a duel" }
 
   before_each(function()
-    GameText = helpers.loadAddonFile("src/core/GameText.lua", {})
+    GameText = helpers.loadAddonFile("src/core/GameText.lua", helpers.coreNs())
   end)
 
   describe("format strings", function()

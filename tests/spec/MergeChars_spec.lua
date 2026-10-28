@@ -5,7 +5,7 @@ describe("per-character merge (CF-28)", function()
   local OWNER, RELAY = "Ann#1", "Ben#2"
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Feed.lua", ns)
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
@@ -183,7 +183,7 @@ describe("per-character merge (CF-28)", function()
 
     it("drops old days relative to the newest day", function()
       local merged = (function()
-        local ns = {}
+        local ns = helpers.coreNs()
         local Feed = helpers.loadAddonFile("src/core/Feed.lua", ns)
         return Feed.merge({ [DAY - 10] = { G1 = { at = 1 } } }, { [DAY] = { G1 = { at = 2 } } })
       end)()

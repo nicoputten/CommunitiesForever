@@ -6,7 +6,7 @@ describe("Pending (CF-47)", function()
   local NOW = 1793120000
 
   before_each(function()
-    Pending = helpers.loadAddonFile("src/core/Pending.lua", {})
+    Pending = helpers.loadAddonFile("src/core/Pending.lua", helpers.coreNs())
   end)
 
   it("makes ids from the account ID, the time and a counter", function()

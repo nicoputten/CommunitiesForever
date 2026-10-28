@@ -26,6 +26,8 @@ CommunitiesForever/
   src/
     Core.lua                 AceAddon init, wiring, internal event bus
     core/                    PURE Lua, unit tested
+      Calendar.lua           day numbers and calendar dates, weekday and month names (CF-59)
+      Text.lua               small text helpers: thousands separators (CF-59)
       Store.lua              schema, defaults, migrations
       Merge.lua              record accept rules, version rules
       Identity.lua           account IDs and person keys on the community wire ("aid:<id>"), key mapping (CF-28)
@@ -65,6 +67,7 @@ CommunitiesForever/
       Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
+      Safe.lua               secret values (issecretvalue) and guarded calls, shared by the adapters (CF-59)
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
       Timer.lua              C_Timer debounce, repeating ticker (CF-53, guarded)
       SelfInfo.lua           Unit*, GetProfessions, item level, riding skill (CF-53, guarded)
@@ -93,8 +96,9 @@ CommunitiesForever/
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
       PvpTracker.lua         chars[guid].pvp, kills by zone, deaths with their cause, duels into the feed (CF-52)
       PlayTracker.lua        loot, notable items, gold, sessions and groups into the feed (CF-53)
-      DoomsdayTracker.lua    facts from feed events and snapshots, goals done, reset setting (file, HELLO), /cf doomsday
-                             (CF-56)
+      DoomsdayTracker.lua    facts from feed events and snapshots, goals done, reset setting (file, HELLO), the
+                             cached state the tab and /cf doomsday show (CF-56, CF-59)
+      DoomsdayBoard.lua      the Board, Ladder and Feats data; the own feats' first-seen times (CF-57b, CF-59)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member

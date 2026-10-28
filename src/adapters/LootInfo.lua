@@ -7,10 +7,7 @@ local LootInfo = {}
 -- Internal message: (reason, ...). Reasons: "loot" (text), "money".
 LootInfo.CHANGED = "CF_LOOT_CHANGED"
 
-local function readable(value)
-  if issecretvalue and issecretvalue(value) then return nil end
-  return value
-end
+local readable = ns.Safe.value
 
 -- The game's loot strings (Loot.parse); nil when missing.
 function LootInfo.formats()

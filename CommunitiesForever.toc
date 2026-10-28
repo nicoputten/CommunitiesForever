@@ -12,6 +12,8 @@ embeds.xml
 
 Data\Runs.lua
 
+src\core\Calendar.lua
+src\core\Text.lua
 src\core\Store.lua
 src\core\Queue.lua
 src\core\Version.lua
@@ -48,6 +50,7 @@ src\core\Protocol.lua
 src\core\Outbox.lua
 src\core\Format.lua
 
+src\adapters\Safe.lua
 src\adapters\Events.lua
 src\adapters\Timer.lua
 src\adapters\Keys.lua
@@ -75,6 +78,7 @@ src\services\ActivityTracker.lua
 src\services\PvpTracker.lua
 src\services\PlayTracker.lua
 src\services\DoomsdayTracker.lua
+src\services\DoomsdayBoard.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua

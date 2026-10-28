@@ -5,7 +5,7 @@ describe("Runs v2 (CF-49)", function()
   local PlannedRuns
 
   before_each(function()
-    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", {})
+    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", helpers.coreNs())
   end)
 
   describe("levelFit", function()

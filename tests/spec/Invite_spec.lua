@@ -4,7 +4,7 @@ describe("Invite", function()
   local Invite
 
   before_each(function()
-    Invite = helpers.loadAddonFile("src/core/Invite.lua", {})
+    Invite = helpers.loadAddonFile("src/core/Invite.lua", helpers.coreNs())
   end)
 
   describe("parseCode", function()
