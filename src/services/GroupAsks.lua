@@ -11,6 +11,7 @@ GroupAsks.CHANGED = "CF_GROUP_ASK_CHANGED"
 
 local GOLD, GREY = "|cffffd100", "|cffa0a0a0"
 local ANSWER_TEXT = { join = "Join", later = "Later", no = "No" }
+local SITE_ANSWER = { join = "in", later = "maybe", no = "cant" } -- CF-51: as the site's answers
 
 local addonRef
 local mine         -- your ask: { id, dungeon, at, recipients, answers = { [battleTag] = { answer, char } } }
@@ -25,6 +26,16 @@ local function own() return addonRef.db.global.self end
 
 local function ownName()
   return ns.Linker.displayName(own().battleTag or "", own().displayName)
+end
+
+-- CF-51: the character you answer on, with its role when the addon knows it.
+local function ownChar()
+  local me = ns.SelfInfo.read()
+  local role
+  for guid, c in pairs(own().chars or {}) do
+    if guid == me.guid or c.guid == me.guid then role = c.role end
+  end
+  return { guid = me.guid, name = me.name, role = role }
 end
 
 function GroupAsks.receiving()
@@ -44,7 +55,9 @@ end
 
 -- Asks who's up for the dungeon. Returns the number of friends asked (0: nobody to ask), or nil and the
 -- seconds to wait when you asked too recently. note (CF-47): optional, shown with the ask.
-function GroupAsks.ask(dungeon, note)
+-- post (CF-51, optional): your Pending ask item { id, guid, role } when it is also posted on Discord: the ask then
+-- goes to every friend with the addon, so their files carry it to the site too (only those in range are asked).
+function GroupAsks.ask(dungeon, note, post)
   local ok, wait = GroupAsks.canAsk()
   if not ok then
     say(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
@@ -52,18 +65,24 @@ function GroupAsks.ask(dungeon, note)
   end
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), addonRef.db.global.people,
     own().battleTag)
-  if #recipients == 0 then
+  local targets = post and ns.GroupAsk.peers(ns.Sync.online(), addonRef.db.global.people, own().battleTag)
+    or recipients
+  if #targets == 0 then
     say("Nobody with CommunitiesForever is online with a character in range of " .. dungeon.name .. ".")
     return 0
   end
   counter = counter + 1
   local t = now()
   local id = string.format("%d%d", t, counter)
-  local message = ns.GroupAsk.message(id, dungeon, ownName(), ns.SelfInfo.read().name, t, note)
+  local message = ns.GroupAsk.message(id, dungeon, ownName(), ns.SelfInfo.read().name, t, note,
+    post and { item = post.id, guid = post.guid, role = post.role })
+  for _, r in ipairs(targets) do ns.Messenger.send(r.gameAccountID, message) end
   local names = {}
-  for i, r in ipairs(recipients) do
-    ns.Messenger.send(r.gameAccountID, message)
-    names[i] = tostring(r.displayName or r.battleTag)
+  for i, r in ipairs(recipients) do names[i] = tostring(r.displayName or r.battleTag) end
+  if #recipients == 0 then
+    say("Nobody with CommunitiesForever is online with a character in range of " .. dungeon.name .. ".")
+    lastAskAt = t
+    return 0
   end
   mine = { id = id, dungeon = dungeon, at = t, recipients = recipients, answers = {} }
   lastAskAt = t
@@ -72,17 +91,28 @@ function GroupAsks.ask(dungeon, note)
   return #recipients
 end
 
--- An ask from a friend: a chat line with a sound and the answer links.
+-- CF-51: a posted ask goes along to the site in your file (the asker's item id, so it is made once).
+local function carry(ask, battleTag)
+  local at = ask.sentAt
+  if not (ask.post and ask.item and ask.dungeon.id and at) or now() - at > ns.Pending.ASK_EXPIRE then return end
+  ns.Planner.carry({ id = ask.item, kind = "ask", at = at, dungeon = ask.dungeon.id, guid = ask.guid,
+                     name = ask.char, role = ask.role, note = ask.note, battleTag = battleTag })
+end
+
+-- An ask from a friend: a chat line with a sound and the answer links. CF-51: a posted ask is carried; one for
+-- a dungeon none of your characters is in range of is kept silently (it reached you only to be carried).
 local function onAsk(message, battleTag, gameAccountID)
-  if not GroupAsks.receiving() then return end
   local ask = ns.GroupAsk.cleanAsk(message)
   if not ask then return end
+  carry(ask, battleTag)
+  if not GroupAsks.receiving() then return end
   ask.battleTag, ask.gameAccountID, ask.at = battleTag, gameAccountID, now()
+  local chars = ns.GroupAsk.charsInRange(own().chars, ask.dungeon.min, ask.dungeon.max)
+  if ask.post and #chars == 0 then return end
   received[ask.id] = ask
   local d = ask.dungeon
   say(string.format("%s%s|r asks: %s now? %s(%d-%d)|r", GOLD, tostring(ask.from or battleTag), d.name, GREY,
     d.min, d.max) .. (ask.note and (" \226\128\156" .. ask.note .. "\226\128\157") or ""))
-  local chars = ns.GroupAsk.charsInRange(own().chars, d.min, d.max)
   if #chars > 0 then
     local list = {}
     for i, c in ipairs(chars) do list[i] = string.format("%s %d", tostring(c.name), c.level) end
@@ -102,6 +132,8 @@ local function answer(kind, id)
   end
   ns.Messenger.send(ask.gameAccountID, { t = "ANSWER", id = id, answer = kind, from = ownName(),
                                          char = ns.SelfInfo.read().name })
+  -- CF-51: your answer to a posted ask also reaches the site (with your next /reload or logout).
+  if ask.post and ask.item then ns.Planner.askAnswer(ask.item, SITE_ANSWER[kind], ownChar()) end
   say(string.format("You answered %s to %s.", ANSWER_TEXT[kind], tostring(ask.from or ask.battleTag)))
   if kind == "join" then
     if ns.Party.requestInvite(ask.char) then

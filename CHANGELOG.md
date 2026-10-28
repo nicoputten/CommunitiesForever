@@ -5,6 +5,9 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v0.7.0-beta1 (2026-10-28)
+- An Ask now that is also posted on Discord now reaches the site through any friend with the addon: everyone online carries it along with their next /reload or logout, and answers given in game show on the Discord post too. Only friends with a character in range are asked; the rest just carry it.
+
 ## v0.6.0-beta1 (2026-10-28)
 - **Planned runs in the Dungeons tab.** Runs planned on the website (brought into the game by the
   CommunitiesForever uploader) or shared by a friend's addon are listed on top: when, who organises, who's in,
