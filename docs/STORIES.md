@@ -28,9 +28,15 @@ Compatibility (rule 8): only new optional fields in `chars.*` and in feed entrie
 
 ### CF-53 Loot, mounts, gold and play sessions in the record
 - Per feed day and character:
-  - `loot = { rare = n, epic = { itemID, ... } }`: rare (blue) and epic (purple) items received. Candidate: `CHAT_MSG_LOOT` for your own loot, quality from `C_Item.GetItemQualityByID`.
+  - `loot = { rare = n, epic = { { id, name, slot, level }, ... } }`: rare (blue) and epic (purple) items received. Each epic carries its item id, its name as the loot link shows it, its equip slot as the game's `INVTYPE_*` token (nil for non-equippable items) and the character's level when it was looted, for the site's "first epic" milestone. Candidate: `CHAT_MSG_LOOT` for your own loot, quality and equip slot from `C_Item.GetItemQualityByID` / `C_Item.GetItemInfo`.
+  - `notable = { [itemID] = n }`: items from a fixed watch list that you looted or created that day, for the profession milestones (decided with Nico, 2026-10-28). The watch list is a pure table in `src/core` (changing it needs an addon release); each entry says whether looting, creating or both count:
+    - created: Arcanite Reaper, Arcanite Bar (the first Arcanite transmute), Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings
+    - looted (including quest rewards): Speckled Tastyfish (joined the Stranglethorn Fishing Extravaganza), Arcanite Fishing Pole and Hook of the Master Angler (the Extravaganza prize, so the winner)
+
+    Item IDs are looked up from an item database when building, never guessed, and checked at launch with FriendProbe (`VERIFY.md`). Created items: candidate the `You create:` loot message (`LOOT_ITEM_CREATED_SELF` format string) on `CHAT_MSG_LOOT`, or `CHAT_MSG_TRADESKILLS`; verify which one fires on Forever.
   - `gold = { gained, spent }` in copper: what came in and went out that day, from `PLAYER_MONEY` deltas. Never shown as an amount: the site only compares.
   - `sessions = { { from, to } }`: login to logout times (server time), for night owl, early bird and the longest session.
   - `groups = { [guid] = true }`: community characters you were in a group with that day, for "social butterfly" and "biggest group night".
 - Per character: `riding` (the riding skill rank, 0, 75 or 150), from the skill lines (as professions are read). This gives the mount milestones.
+- Profession milestones that need no new data (the site derives them from `professions` and the feed's `ranks`): first fishing catch, the flavour titles on Cooking, First Aid and Fishing 300, and "Jack of all trades". Specialisations, Old Ironjaw, Old Crafty, Mr. Pinchy, Crusader and engineering mishaps are out (not in Vanilla, or not detectable).
 - Caps and cleaning as in CF-52. Tests, docs and a fixture as in CF-52.
