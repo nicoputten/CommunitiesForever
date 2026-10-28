@@ -221,9 +221,9 @@ local function skillColumns(parent, d, y, width)
       local bar = take(cardPools.bars, parent)
       bar:SetPoint("TOPLEFT", PAD + 112, -(ly + 5))
       bar:SetWidth(math.max(40, left - 112 - 66))
-      local spec = ns.Format.skillBar(p, secondary)
+      local spec = ns.Card.skillBar(p, secondary)
       local color = spec.muted and { Theme.color("muted") } or nil
-      bar:SetValues(spec.fill * ns.Format.SKILL_SCALE, ns.Format.SKILL_SCALE, spec.cap * ns.Format.SKILL_SCALE,
+      bar:SetValues(spec.fill * ns.Card.SKILL_SCALE, ns.Card.SKILL_SCALE, spec.cap * ns.Card.SKILL_SCALE,
         spec.ticks, color)
       placeText(cardPools.small, parent, PAD + left - 58, ly, 58,
         string.format("%s / %s", tostring(p.rank), tostring(p.max)), "textDim")
@@ -397,7 +397,7 @@ local function characterLines(parent, characters, groupValue, y, width)
     line.name:SetText(tostring(c.name))
     line.name:SetTextColor(rgb[1], rgb[2], rgb[3], 1)
     local parts = { "Level " .. tostring(c.level or "?") }
-    if c.role then parts[#parts + 1] = ns.Format.ROLE_NAMES[c.role] or c.role end
+    if c.role then parts[#parts + 1] = ns.Card.ROLE_NAMES[c.role] or c.role end
     parts[#parts + 1] = c.seen == "Now" and "online" or ((c.own and "played " or "seen ") .. tostring(c.seen))
     if c.outside then parts[#parts + 1] = "not in community" end
     line.info:SetText(table.concat(parts, " \194\183 "))
@@ -566,7 +566,7 @@ function FriendsTab.render(v, empty)
   countText:SetText(#terms > 0 and string.format("%d of %d", shown, total) or "")
 
   local selected = st.selected
-  if not selected or ns.Format.detail(shownView, selected, GetServerTime()).kind == "message" then
+  if not selected or ns.Card.detail(shownView, selected, GetServerTime()).kind == "message" then
     selected = nodes[1] and nodes[1].value
   end
   st.selected = selected
@@ -575,7 +575,7 @@ function FriendsTab.render(v, empty)
     renderDetail({ kind = "message", text = string.format("No character matches \"%s\".", text) }, nil)
     return
   end
-  renderDetail(ns.Format.detail(view, selected, GetServerTime(), selected and helpers.showAllQuests[selected]),
+  renderDetail(ns.Card.detail(view, selected, GetServerTime(), selected and helpers.showAllQuests[selected]),
     selected)
 end
 

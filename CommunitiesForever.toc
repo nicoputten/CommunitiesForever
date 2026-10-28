@@ -49,6 +49,7 @@ src\core\Linker.lua
 src\core\Protocol.lua
 src\core\Outbox.lua
 src\core\Format.lua
+src\core\Card.lua
 
 src\adapters\Safe.lua
 src\adapters\Events.lua

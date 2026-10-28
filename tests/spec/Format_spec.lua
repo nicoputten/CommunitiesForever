@@ -1,7 +1,7 @@
 local helpers = require("helpers")
 
 describe("Format", function()
-  local Format
+  local Format, Card
   local NOW = 100000
 
   local function charRow(overrides)
@@ -35,6 +35,7 @@ describe("Format", function()
     local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Quests.lua", ns)
     Format = helpers.loadAddonFile("src/core/Format.lua", ns)
+    Card = helpers.loadAddonFile("src/core/Card.lua", ns) -- CF-59: the card models moved there
   end)
 
   describe("ago and seen", function()
@@ -89,18 +90,18 @@ describe("Format", function()
     it("uses the classic notation with the main tree", function()
       assert.are.same({ role = "Healer", roleSource = "talents", mainName = "Holy", numbers = "31 / 5 / 15",
                         treeNames = "Holy \194\183 Protection \194\183 Retribution" },
-        Format.talentSummary({ talents = talents(31, 5, 15), role = "heal" }))
+        Card.talentSummary({ talents = talents(31, 5, 15), role = "heal" }))
     end)
 
     it("has no main tree without spent points and says when the role was set by the player", function()
-      local summary = Format.talentSummary({ talents = talents(0, 0, 0), role = "tank", roleOverride = "tank" })
+      local summary = Card.talentSummary({ talents = talents(0, 0, 0), role = "tank", roleOverride = "tank" })
       assert.is_nil(summary.mainName)
       assert.are.equal("0 / 0 / 0", summary.numbers)
       assert.are.equal("player", summary.roleSource)
     end)
 
     it("returns nil without talent data", function()
-      assert.is_nil(Format.talentSummary({}))
+      assert.is_nil(Card.talentSummary({}))
     end)
   end)
 
@@ -162,33 +163,33 @@ describe("Format", function()
   describe("friends tab models (CF-40)", function()
     it("draws professions on the vanilla scale with training steps, secondary ones muted", function()
       assert.are.same({ fill = 60 / 300, cap = 150 / 300, ticks = { 0.25, 0.5, 0.75 }, muted = false },
-        Format.skillBar({ rank = 60, max = 150 }))
-      local cooking = Format.skillBar({ rank = 400, max = nil }, true)
+        Card.skillBar({ rank = 60, max = 150 }))
+      local cooking = Card.skillBar({ rank = 400, max = nil }, true)
       assert.are.same({ 1, 0, true }, { cooking.fill, cooking.cap, cooking.muted }) -- clamped, nil max
     end)
 
     it("draws talent trees as bars out of 31, the fullest tree marked", function()
-      assert.is_nil(Format.talentBars({}))
-      assert.is_nil(Format.talentBars({ talents = {} }))
-      local bars = Format.talentBars({ talents = { { name = "Arms", points = 31 }, { name = "Fury", points = 5 },
+      assert.is_nil(Card.talentBars({}))
+      assert.is_nil(Card.talentBars({ talents = {} }))
+      local bars = Card.talentBars({ talents = { { name = "Arms", points = 31 }, { name = "Fury", points = 5 },
                                                    { name = "Protection" } } })
       assert.are.same({ name = "Arms", points = 31, fraction = 1, main = true }, bars[1])
       assert.are.same({ name = "Fury", points = 5, fraction = 5 / 31, main = false }, bars[2])
       assert.are.same({ name = "Protection", points = 0, fraction = 0, main = false }, bars[3])
-      assert.is_false(Format.talentBars({ talents = { { name = "Arms", points = 0 } } })[1].main)
+      assert.is_false(Card.talentBars({ talents = { { name = "Arms", points = 0 } } })[1].main)
     end)
 
     it("says under the name who plays it and where it is", function()
       local view = { people = { person(), me() }, unlinked = unlinked }
-      local grom = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      local grom = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen 2 h ago", grom.subtitle)
       view.people[1].chars[2].lastZone = "The Barrens"
-      grom = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      grom = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen in The Barrens 2 h ago", grom.subtitle)
-      local ves = Format.detail(view, Format.path("Vestras#1000", "G-ME"), NOW)
+      local ves = Card.detail(view, Format.path("Vestras#1000", "G-ME"), NOW)
       assert.are.equal("your character \194\183 online in Orgrimmar", ves.subtitle)
       view.people[1].chars[1].outside = true
-      local garraka = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
+      local garraka = Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
       assert.are.equal("played by Sjaak \194\183 online in Orgrimmar \194\183 not in community", garraka.subtitle)
     end)
 
@@ -198,12 +199,12 @@ describe("Format", function()
                                           { name = "Protection", points = 0 } }
       view.people[1].chars[2].role = "tank"
       view.people[1].chars[2].roleOverride = "tank"
-      local d = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      local d = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
       assert.are.same({ label = "Item level", value = "-" }, d.tiles[2])
       assert.are.equal("Role", d.tiles[3].label)
       assert.is_string(d.tiles[3].note)
       assert.are.equal(3, #d.talentBars)
-      assert.is_nil(Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).talentBars)
+      assert.is_nil(Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).talentBars)
     end)
 
     it("sums up the sync state for the footer", function()
@@ -236,11 +237,11 @@ describe("Format", function()
 
     it("asks for a selection without a path", function()
       assert.are.same({ kind = "message", text = "Select a person or character on the left." },
-        Format.detail(view, nil, NOW))
+        Card.detail(view, nil, NOW))
     end)
 
     it("describes a person with status and characters", function()
-      local d = Format.detail(view, "Sjaakovich#2232", NOW)
+      local d = Card.detail(view, "Sjaakovich#2232", NOW)
       assert.are.equal("person", d.kind)
       assert.are.equal("Sjaak", d.title)
       assert.are.equal("Sjaakovich#2232", d.battleTag)
@@ -252,10 +253,10 @@ describe("Format", function()
 
     it("says on the card whether they run the addon (CF-34), not on your own", function()
       view.people[1] = person({ usesAddon = true })
-      assert.are.equal(Format.USES_ADDON, Format.detail(view, "Sjaakovich#2232", NOW).addon)
+      assert.are.equal(Card.USES_ADDON, Card.detail(view, "Sjaakovich#2232", NOW).addon)
       view.people[1] = person({ usesAddon = false })
-      assert.are.equal(Format.NO_ADDON, Format.detail(view, "Sjaakovich#2232", NOW).addon)
-      local mine = Format.detail(view, view.people[2].battleTag, NOW)
+      assert.are.equal(Card.NO_ADDON, Card.detail(view, "Sjaakovich#2232", NOW).addon)
+      local mine = Card.detail(view, view.people[2].battleTag, NOW)
       assert.is_nil(mine.addon)
       local nodes = Format.tree(view)
       assert.is_false(nodes[1].usesAddon)
@@ -263,13 +264,13 @@ describe("Format", function()
 
     it("describes an offline person and one on a character outside the community", function()
       view.people[1] = person({ online = false, currentChar = false })
-      assert.are.equal("Offline - last seen on Grom, 2 h ago", Format.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Offline - last seen on Grom, 2 h ago", Card.detail(view, "Sjaakovich#2232", NOW).status)
       view.people[1] = person({ currentChar = { name = "Alt", visible = false } })
-      assert.are.equal("Online on Alt (not in community)", Format.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Online on Alt (not in community)", Card.detail(view, "Sjaakovich#2232", NOW).status)
     end)
 
     it("describes a character with its subtitle, tiles and professions", function()
-      local d = Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
+      local d = Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
       assert.are.same({
         kind = "character", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, online = true,
         outside = false,
@@ -282,15 +283,15 @@ describe("Format", function()
     end)
 
     it("shows missing item level and offline characters", function()
-      local d = Format.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      local d = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen 2 h ago", d.subtitle)
       assert.are.equal("-", d.tiles[2].value)
       assert.are.same({}, d.professions)
     end)
 
     it("describes the Unlinked group and its characters", function()
-      assert.are.equal("unlinked", Format.detail(view, Format.UNLINKED, NOW).kind)
-      local d = Format.detail(view, Format.path(Format.UNLINKED, "U1"), NOW)
+      assert.are.equal("unlinked", Card.detail(view, Format.UNLINKED, NOW).kind)
+      local d = Card.detail(view, Format.path(Format.UNLINKED, "U1"), NOW)
       assert.are.equal("Stranger", d.name)
       assert.are.equal("community member \194\183 offline", d.subtitle)
     end)
@@ -301,9 +302,9 @@ describe("Format", function()
       p.chars[1].lastZone, p.chars[1].lastZoneAt = "The Barrens", NOW - 600
       view.people[1] = p
       assert.are.equal("Offline - last seen in The Barrens on Garraka, 10 min ago",
-        Format.detail(view, "Sjaakovich#2232", NOW).status)
+        Card.detail(view, "Sjaakovich#2232", NOW).status)
       assert.are.equal("played by Sjaak \194\183 offline, last seen in The Barrens 10 min ago",
-        Format.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).subtitle)
+        Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).subtitle)
     end)
 
     it("says \"played\" for your own characters", function()
@@ -311,21 +312,21 @@ describe("Format", function()
       mine.chars[2] = charRow({ guid = "G-ALT", name = "Alt", online = false, lastZone = "Durotar",
                                 lastPlayed = NOW - 60 })
       view.people[2] = mine
-      local d = Format.detail(view, Format.path("Vestras#1000", "G-ALT"), NOW)
+      local d = Card.detail(view, Format.path("Vestras#1000", "G-ALT"), NOW)
       assert.are.equal("your character \194\183 offline, last played in Durotar 1 min ago", d.subtitle)
-      assert.is_true(Format.detail(view, "Vestras#1000", NOW).characters[2].own)
+      assert.is_true(Card.detail(view, "Vestras#1000", NOW).characters[2].own)
     end)
 
     it("says just Offline when nothing is known", function()
       local p = person({ online = false, currentChar = false,
                          chars = { charRow({ online = false }) } })
       view.people[1] = p
-      assert.are.equal("Offline", Format.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Offline", Card.detail(view, "Sjaakovich#2232", NOW).status)
     end)
 
     it("falls back to the message for paths that no longer exist", function()
-      assert.are.equal("message", Format.detail(view, "Gone#1", NOW).kind)
-      assert.are.equal("message", Format.detail(view, Format.path("Sjaakovich#2232", "G9"), NOW).kind)
+      assert.are.equal("message", Card.detail(view, "Gone#1", NOW).kind)
+      assert.are.equal("message", Card.detail(view, Format.path("Sjaakovich#2232", "G9"), NOW).kind)
     end)
   end)
 

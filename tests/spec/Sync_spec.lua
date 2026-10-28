@@ -310,7 +310,7 @@ describe("Sync", function()
       assert.are.equal("Bram", bram.displayName)
       assert.are.equal("record", bram.chars[1].linkSource)
       assert.are.equal("Sjaakovich", bram.viaName)
-      local detail = ns.Format.detail(view, BRAM, 3000 + 3 * 3600)
+      local detail = ns.Card.detail(view, BRAM, 3000 + 3 * 3600)
       assert.are.equal("Updated 3 h ago via Sjaakovich", detail.source)
     end)
 
