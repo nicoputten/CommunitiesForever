@@ -6,7 +6,7 @@ local wowapi = require("mocks.wowapi")
 -- tests/fixtures/<version>/ were captured with tests/fixtures/capture.lua; this spec feeds them to the
 -- current code: messages as they arrive from a friend or community member on that version, and the
 -- SavedVariables file as that version left it. Add a label here after capturing a new release.
-local VERSIONS = { "v0.3", "v0.4", "v0.5", "v0.6" }
+local VERSIONS = { "v0.3", "v0.4", "v0.5", "v0.6", "v0.7" }
 local PEOPLE = dofile("tests/fixtures/people.lua")
 
 local function unhex(text)

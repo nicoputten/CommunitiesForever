@@ -18,6 +18,7 @@ src\core\Version.lua
 src\core\Filter.lua
 src\core\Pvp.lua
 src\core\Feed.lua
+src\core\Doomsday.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua

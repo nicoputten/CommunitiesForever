@@ -1,0 +1,3286 @@
+{
+ "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
+ "version": 1,
+ "poolVersion": 1,
+ "epoch": 20761,
+ "defaultReset": 68400,
+ "salts": {
+  "hunt": 1,
+  "skirmish": 2,
+  "bounty": 3,
+  "zoneOfDay": 4,
+  "zoneOfWeek": 5,
+  "dailies": [
+   11,
+   12,
+   13
+  ],
+  "weeklies": [
+   21,
+   22,
+   23
+  ]
+ },
+ "pools": {
+  "daily": [
+   "d.quests10",
+   "d.quests20",
+   "d.zone5",
+   "d.zones3",
+   "d.shared3",
+   "d.level",
+   "d.altLevel",
+   "d.ilvl",
+   "d.dungeon",
+   "d.dungeonFriend",
+   "d.bosses3",
+   "d.skill5",
+   "d.secondary",
+   "d.chars2"
+  ],
+  "weekly": [
+   "w.days3",
+   "w.days5",
+   "w.chars3",
+   "w.levels3",
+   "w.altLevels2",
+   "w.quests50",
+   "w.zones5",
+   "w.dungeons3",
+   "w.dungeonsDiff3",
+   "w.dungeonFriends2",
+   "w.fullClear",
+   "w.skill25",
+   "w.cap",
+   "w.newProf",
+   "w.ilvl3"
+  ],
+  "skirmish": [
+   "p.frontLine",
+   "p.loneWolf",
+   "p.untouchable"
+  ],
+  "bounty": [
+   "b.zone25",
+   "b.kills50",
+   "b.spree10",
+   "b.duels3",
+   "b.days5"
+  ],
+  "hunt": "off until the pool version that verifies victim race and class (the cases under hunts are for that version)"
+ },
+ "pick": [
+  {
+   "n": 0,
+   "salt": 0,
+   "count": 1,
+   "expect": 1
+  },
+  {
+   "n": 1,
+   "salt": 1,
+   "count": 20,
+   "expect": 3
+  },
+  {
+   "n": 20761,
+   "salt": 11,
+   "count": 14,
+   "expect": 7
+  },
+  {
+   "n": 20761,
+   "salt": 2,
+   "count": 3,
+   "expect": 1
+  },
+  {
+   "n": 2966,
+   "salt": 3,
+   "count": 5,
+   "expect": 2
+  },
+  {
+   "n": 99999,
+   "salt": 23,
+   "count": 15,
+   "expect": 1
+  },
+  {
+   "n": 20762,
+   "salt": 4,
+   "count": 6,
+   "expect": 1
+  }
+ ],
+ "realmOffset": [
+  {
+   "note": "CET, 20:30 realm at 19:30 UTC",
+   "hour": 20,
+   "minute": 30,
+   "serverTime": 1794339017,
+   "expect": 3600
+  },
+  {
+   "note": "CEST",
+   "hour": 21,
+   "minute": 30,
+   "serverTime": 1794339017,
+   "expect": 7200
+  },
+  {
+   "note": "realm already past midnight",
+   "hour": 0,
+   "minute": 10,
+   "serverTime": 1794352217,
+   "expect": 3600
+  },
+  {
+   "note": "realm still before midnight (west of UTC)",
+   "hour": 23,
+   "minute": 50,
+   "serverTime": 1794271817,
+   "expect": -3600
+  },
+  {
+   "note": "a minute of clock skew rounds to 15 min",
+   "hour": 20,
+   "minute": 29,
+   "serverTime": 1794339017,
+   "expect": 3600
+  },
+  {
+   "note": "52 minutes rounds to 45",
+   "hour": 20,
+   "minute": 22,
+   "serverTime": 1794339017,
+   "expect": 2700
+  }
+ ],
+ "schedule": [
+  {
+   "note": "one second before Tuesday's 19:00 reset (CET)",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20766,
+    "week": 2967,
+    "dayStart": 1794247200,
+    "resetsIn": 1,
+    "label": "Mon 9 Nov"
+   }
+  },
+  {
+   "note": "Tuesday's reset",
+   "serverTime": 1794333600,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20767,
+    "week": 2967,
+    "dayStart": 1794333600,
+    "resetsIn": 86400,
+    "label": "Tue 10 Nov"
+   }
+  },
+  {
+   "note": "realm midnight belongs to the day before",
+   "serverTime": 1794351600,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20767,
+    "week": 2967,
+    "dayStart": 1794333600,
+    "resetsIn": 68400,
+    "label": "Tue 10 Nov"
+   }
+  },
+  {
+   "note": "UTC midnight",
+   "serverTime": 1794355200,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20767,
+    "week": 2967,
+    "dayStart": 1794333600,
+    "resetsIn": 64800,
+    "label": "Tue 10 Nov"
+   }
+  },
+  {
+   "note": "Saturday 18:59, last minute of the week",
+   "serverTime": 1794765540,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20771,
+    "week": 2967,
+    "dayStart": 1794679200,
+    "resetsIn": 60,
+    "label": "Sat 14 Nov"
+   }
+  },
+  {
+   "note": "Sunday 19:00 starts the week",
+   "serverTime": 1794765600,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20772,
+    "week": 2968,
+    "dayStart": 1794765600,
+    "resetsIn": 86400,
+    "label": "Sun 15 Nov"
+   }
+  },
+  {
+   "note": "launch day, the epoch",
+   "serverTime": 1793815800,
+   "offset": 3600,
+   "reset": 68400,
+   "expect": {
+    "day": 20761,
+    "week": 2966,
+    "dayStart": 1793815200,
+    "resetsIn": 85800,
+    "label": "Wed 4 Nov"
+   }
+  },
+  {
+   "note": "reset 09:00 at CEST",
+   "serverTime": 1794297600,
+   "offset": 7200,
+   "reset": 32400,
+   "expect": {
+    "day": 20767,
+    "week": 2967,
+    "dayStart": 1794294000,
+    "resetsIn": 82800,
+    "label": "Tue 10 Nov"
+   }
+  },
+  {
+   "note": "reset 09:00, a minute before",
+   "serverTime": 1794293940,
+   "offset": 7200,
+   "reset": 32400,
+   "expect": {
+    "day": 20766,
+    "week": 2967,
+    "dayStart": 1794207600,
+    "resetsIn": 60,
+    "label": "Mon 9 Nov"
+   }
+  }
+ ],
+ "duration": [
+  {
+   "seconds": 11520,
+   "expect": "3 h 12 m"
+  },
+  {
+   "seconds": 720,
+   "expect": "12 m"
+  },
+  {
+   "seconds": 59,
+   "expect": "0 m"
+  },
+  {
+   "seconds": 3600,
+   "expect": "1 h 0 m"
+  }
+ ],
+ "draws": {
+  "days": [
+   {
+    "day": 20761,
+    "expect": {
+     "dailies": [
+      "d.altLevel",
+      "d.chars2",
+      "d.skill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20762,
+    "expect": {
+     "dailies": [
+      "d.dungeonFriend",
+      "d.ilvl",
+      "d.zones3"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "day": 20763,
+    "expect": {
+     "dailies": [
+      "d.shared3",
+      "d.chars2",
+      "d.level"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20764,
+    "expect": {
+     "dailies": [
+      "d.zone5",
+      "d.bosses3",
+      "d.ilvl"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20765,
+    "expect": {
+     "dailies": [
+      "d.skill5",
+      "d.shared3",
+      "d.level"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20766,
+    "expect": {
+     "dailies": [
+      "d.zones3",
+      "d.chars2",
+      "d.ilvl"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20767,
+    "expect": {
+     "dailies": [
+      "d.zone5",
+      "d.bosses3",
+      "d.level"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20768,
+    "expect": {
+     "dailies": [
+      "d.skill5",
+      "d.dungeonFriend",
+      "d.chars2"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20769,
+    "expect": {
+     "dailies": [
+      "d.ilvl",
+      "d.dungeon",
+      "d.quests10"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20770,
+    "expect": {
+     "dailies": [
+      "d.zones3",
+      "d.skill5",
+      "d.dungeonFriend"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20771,
+    "expect": {
+     "dailies": [
+      "d.bosses3",
+      "d.zone5",
+      "d.ilvl"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20772,
+    "expect": {
+     "dailies": [
+      "d.dungeonFriend",
+      "d.quests10",
+      "d.secondary"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20773,
+    "expect": {
+     "dailies": [
+      "d.zones3",
+      "d.bosses3",
+      "d.skill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20774,
+    "expect": {
+     "dailies": [
+      "d.dungeonFriend",
+      "d.ilvl",
+      "d.quests20"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "day": 20791,
+    "expect": {
+     "dailies": [
+      "d.dungeon",
+      "d.shared3",
+      "d.altLevel"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "day": 20821,
+    "expect": {
+     "dailies": [
+      "d.chars2",
+      "d.ilvl",
+      "d.zones3"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   }
+  ],
+  "weeks": [
+   {
+    "week": 2966,
+    "expect": {
+     "weeklies": [
+      "w.ilvl3",
+      "w.chars3",
+      "w.altLevels2"
+     ],
+     "bounty": "b.kills50"
+    }
+   },
+   {
+    "week": 2967,
+    "expect": {
+     "weeklies": [
+      "w.days3",
+      "w.skill25",
+      "w.quests50"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "week": 2968,
+    "expect": {
+     "weeklies": [
+      "w.cap",
+      "w.altLevels2",
+      "w.fullClear"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "week": 2969,
+    "expect": {
+     "weeklies": [
+      "w.newProf",
+      "w.chars3",
+      "w.skill25"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "week": 2970,
+    "expect": {
+     "weeklies": [
+      "w.dungeonsDiff3",
+      "w.fullClear",
+      "w.altLevels2"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "week": 2971,
+    "expect": {
+     "weeklies": [
+      "w.quests50",
+      "w.levels3",
+      "w.newProf"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "week": 2972,
+    "expect": {
+     "weeklies": [
+      "w.dungeons3",
+      "w.chars3",
+      "w.ilvl3"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "week": 2973,
+    "expect": {
+     "weeklies": [
+      "w.levels3",
+      "w.skill25",
+      "w.zones5"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "week": 2974,
+    "expect": {
+     "weeklies": [
+      "w.ilvl3",
+      "w.altLevels2",
+      "w.newProf"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "week": 2975,
+    "expect": {
+     "weeklies": [
+      "w.days3",
+      "w.levels3",
+      "w.days5"
+     ],
+     "bounty": "b.duels3"
+    }
+   }
+  ],
+  "hunts": [
+   {
+    "day": 20761,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "day": 20762,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "day": 20763,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "day": 20764,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "day": 20765,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "day": 20766,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "day": 20767,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "WARLOCK"
+     }
+    }
+   },
+   {
+    "day": 20768,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "WARLOCK"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "WARRIOR"
+     }
+    }
+   }
+  ],
+  "zones": [
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 19,
+    "expect": null
+   },
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 20,
+    "expect": "Stonetalon Mountains"
+   },
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 30,
+    "expect": "Alterac Mountains"
+   },
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 44,
+    "expect": "Alterac Mountains"
+   },
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 45,
+    "expect": "Azshara"
+   },
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 55,
+    "expect": "Silithus"
+   },
+   {
+    "n": 20761,
+    "salt": 4,
+    "level": 60,
+    "expect": "Silithus"
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 19,
+    "expect": null
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 20,
+    "expect": "Hillsbrad Foothills"
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 30,
+    "expect": "Stranglethorn Vale"
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 44,
+    "expect": "Stranglethorn Vale"
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 45,
+    "expect": "Tanaris"
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 55,
+    "expect": "Burning Steppes"
+   },
+   {
+    "n": 20762,
+    "salt": 4,
+    "level": 60,
+    "expect": "Burning Steppes"
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 19,
+    "expect": null
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 20,
+    "expect": "Ashenvale"
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 30,
+    "expect": "Dustwallow Marsh"
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 44,
+    "expect": "Dustwallow Marsh"
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 45,
+    "expect": "Feralas"
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 55,
+    "expect": "Felwood"
+   },
+   {
+    "n": 2966,
+    "salt": 5,
+    "level": 60,
+    "expect": "Felwood"
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 19,
+    "expect": null
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 20,
+    "expect": "Stonetalon Mountains"
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 30,
+    "expect": "Alterac Mountains"
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 44,
+    "expect": "Alterac Mountains"
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 45,
+    "expect": "The Hinterlands"
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 55,
+    "expect": "Winterspring"
+   },
+   {
+    "n": 2967,
+    "salt": 5,
+    "level": 60,
+    "expect": "Winterspring"
+   }
+  ]
+ },
+ "swaps": [
+  {
+   "note": "nothing to swap; the zone of the day from the highest character that played today",
+   "day": 20761,
+   "situation": {
+    "chars": 3,
+    "below60": 2,
+    "altBelow60": 1,
+    "highest": 34,
+    "highestToday": 22,
+    "ilvlReadable": true,
+    "dungeonInRange": true,
+    "hasProfession": true,
+    "hasFishing": true,
+    "hasCraftingProfession": true,
+    "professionBelow300": true,
+    "friendQuestLog": true
+   },
+   "expect": {
+    "set": [
+     "d.altLevel",
+     "d.chars2",
+     "d.skill5",
+     "p.frontLine"
+    ],
+    "swapped": {},
+    "zone": "Stonetalon Mountains"
+   }
+  },
+  {
+   "note": "one level-15 character without professions: fallbacks, then the next goal in pool order",
+   "day": 20761,
+   "situation": {
+    "chars": 1,
+    "below60": 1,
+    "altBelow60": 0,
+    "highest": 15,
+    "hasProfession": false
+   },
+   "expect": {
+    "set": [
+     "d.quests10",
+     "d.quests20",
+     "d.secondary",
+     "p.loneWolf"
+    ],
+    "swapped": {
+     "d.quests10": "d.altLevel",
+     "d.quests20": "d.chars2",
+     "d.secondary": "d.skill5",
+     "p.loneWolf": "p.frontLine"
+    }
+   }
+  },
+  {
+   "note": "unknown situation fields never swap",
+   "day": 20761,
+   "situation": {},
+   "expect": {
+    "set": [
+     "d.altLevel",
+     "d.chars2",
+     "d.skill5",
+     "p.frontLine"
+    ],
+    "swapped": {}
+   }
+  },
+  {
+   "note": "week: fallbacks, a fallback already taken moves on in pool order",
+   "week": 2966,
+   "situation": {
+    "chars": 2,
+    "below60": 0,
+    "altBelow60": 0,
+    "highest": 60,
+    "ilvlReadable": false
+   },
+   "expect": {
+    "set": [
+     "w.quests50",
+     "w.days3",
+     "w.zones5",
+     "b.kills50"
+    ],
+    "swapped": {
+     "w.quests50": "w.ilvl3",
+     "w.days3": "w.chars3",
+     "w.zones5": "w.altLevels2"
+    },
+    "zone": "Felwood"
+   }
+  }
+ ],
+ "kills": [
+  {
+   "note": "every band, a skull, unknown levels, solo, a community victim, the 4th kill of one victim that day, the next day, battleground kills on their own track. Results in time order.",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example",
+    "Ada Example"
+   ],
+   "kills": [
+    {
+     "t": 1794333660,
+     "zone": "Ashenvale",
+     "name": "Victim 1",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    },
+    {
+     "t": 1794333720,
+     "zone": "Ashenvale",
+     "name": "Victim 2",
+     "char": "Player-1-A",
+     "lvl": 34,
+     "myLvl": 30
+    },
+    {
+     "t": 1794333780,
+     "zone": "Ashenvale",
+     "name": "Victim 3",
+     "char": "Player-1-A",
+     "lvl": 33,
+     "myLvl": 30
+    },
+    {
+     "t": 1794333840,
+     "zone": "Ashenvale",
+     "name": "Victim 4",
+     "char": "Player-1-A",
+     "lvl": 32,
+     "myLvl": 30
+    },
+    {
+     "t": 1794333900,
+     "zone": "Ashenvale",
+     "name": "Victim 5",
+     "char": "Player-1-A",
+     "lvl": 27,
+     "myLvl": 30
+    },
+    {
+     "t": 1794333960,
+     "zone": "Ashenvale",
+     "name": "Victim 6",
+     "char": "Player-1-A",
+     "lvl": 26,
+     "myLvl": 30,
+     "solo": true
+    },
+    {
+     "t": 1794334020,
+     "zone": "Ashenvale",
+     "name": "Victim 7",
+     "char": "Player-1-A",
+     "lvl": -1,
+     "myLvl": 30,
+     "solo": true
+    },
+    {
+     "t": 1794334080,
+     "zone": "Ashenvale",
+     "name": "Victim 8",
+     "char": "Player-1-A",
+     "myLvl": 30
+    },
+    {
+     "t": 1794334140,
+     "zone": "Ashenvale",
+     "name": "Victim 9",
+     "char": "Player-1-A",
+     "lvl": 30
+    },
+    {
+     "t": 1794334200,
+     "zone": "Ashenvale",
+     "name": "Victim 10",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30,
+     "solo": true
+    },
+    {
+     "t": 1794334260,
+     "zone": "Ashenvale",
+     "name": "Bob Example",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    },
+    {
+     "t": 1794334320,
+     "zone": "Ashenvale",
+     "name": "Grim Tusk",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    },
+    {
+     "t": 1794334380,
+     "zone": "Ashenvale",
+     "name": "Grim Tusk",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    },
+    {
+     "t": 1794334440,
+     "zone": "Ashenvale",
+     "name": "Grim Tusk",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    },
+    {
+     "t": 1794334500,
+     "zone": "Ashenvale",
+     "name": "Grim Tusk",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    },
+    {
+     "t": 1794334620,
+     "zone": "Warsong Gulch",
+     "name": "Victim 17",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30,
+     "bg": true
+    },
+    {
+     "t": 1794334680,
+     "zone": "Warsong Gulch",
+     "name": "Victim 18",
+     "char": "Player-1-A",
+     "lvl": -1,
+     "myLvl": 30,
+     "bg": true,
+     "solo": true
+    },
+    {
+     "t": 1794420060,
+     "zone": "Ashenvale",
+     "name": "Grim Tusk",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 30
+    }
+   ],
+   "expect": {
+    "kills": [
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 2,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 2,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 0,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 4,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 2,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": false,
+      "points": 0,
+      "track": "pvp",
+      "day": 20767,
+      "reason": "community"
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": false,
+      "points": 0,
+      "track": "pvp",
+      "day": 20767,
+      "reason": "repeat"
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "bg",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 4,
+      "track": "bg",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 1,
+      "track": "pvp",
+      "day": 20768
+     }
+    ],
+    "pvp": 19,
+    "bg": 5,
+    "counted": 14
+   }
+  }
+ ],
+ "duels": [
+  {
+   "note": "the first duel per pair and day counts once; both sides agree, disputed, one side only, strangers and own alts ignored, the next day again",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "owner": {
+    "Ada Example": "Ada#1001",
+    "Ada Alt": "Ada#1001",
+    "Bob Example": "Bob#1002",
+    "Cy Example": "Cy#1003"
+   },
+   "duels": [
+    {
+     "friend": "Ada#1001",
+     "t": 1794333700,
+     "won": true,
+     "vs": "Bob Example"
+    },
+    {
+     "friend": "Bob#1002",
+     "t": 1794333701,
+     "won": false,
+     "vs": "Ada Example"
+    },
+    {
+     "friend": "Ada#1001",
+     "t": 1794334500,
+     "won": false,
+     "vs": "Bob Example"
+    },
+    {
+     "friend": "Bob#1002",
+     "t": 1794334501,
+     "won": true,
+     "vs": "Ada Example"
+    },
+    {
+     "friend": "Ada#1001",
+     "t": 1794333800,
+     "won": true,
+     "vs": "Cy Example"
+    },
+    {
+     "friend": "Cy#1003",
+     "t": 1794333801,
+     "won": true,
+     "vs": "Ada Example"
+    },
+    {
+     "friend": "Cy#1003",
+     "t": 1794333900,
+     "won": false,
+     "vs": "Bob Example"
+    },
+    {
+     "friend": "Ada#1001",
+     "t": 1794334000,
+     "won": true,
+     "vs": "Some Stranger"
+    },
+    {
+     "friend": "Ada#1001",
+     "t": 1794334100,
+     "won": true,
+     "vs": "Ada Alt"
+    },
+    {
+     "friend": "Ada#1001",
+     "t": 1794420100,
+     "won": false,
+     "vs": "Bob Example"
+    },
+    {
+     "friend": "Bob#1002",
+     "t": 1794420099,
+     "won": true,
+     "vs": "Ada Example"
+    }
+   ],
+   "expect": {
+    "points": {
+     "Ada#1001": 4,
+     "Bob#1002": 7,
+     "Cy#1003": 1
+    },
+    "duels": [
+     {
+      "day": 20767,
+      "a": "Ada#1001",
+      "b": "Bob#1002",
+      "winner": "Ada#1001",
+      "disputed": false
+     },
+     {
+      "day": 20767,
+      "a": "Ada#1001",
+      "b": "Cy#1003",
+      "disputed": true
+     },
+     {
+      "day": 20767,
+      "a": "Bob#1002",
+      "b": "Cy#1003",
+      "winner": "Bob#1002",
+      "disputed": false
+     },
+     {
+      "day": 20768,
+      "a": "Ada#1001",
+      "b": "Bob#1002",
+      "winner": "Bob#1002",
+      "disputed": false
+     }
+    ]
+   }
+  }
+ ],
+ "progress": [
+  {
+   "addonOnly": true,
+   "id": "d.quests10",
+   "facts": {
+    "quests": {
+     "Westfall": 6,
+     "Duskwood": 4
+    }
+   },
+   "expect": {
+    "value": 10,
+    "target": 10,
+    "done": true
+   },
+   "note": "6 on one character, 4 on another"
+  },
+  {
+   "addonOnly": true,
+   "id": "d.quests10",
+   "facts": {
+    "quests": {
+     "Westfall": 9
+    }
+   },
+   "expect": {
+    "value": 9,
+    "target": 10,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.quests20",
+   "facts": {
+    "quests": {
+     "Westfall": 12,
+     "Duskwood": 7
+    }
+   },
+   "expect": {
+    "value": 19,
+    "target": 20,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.zone5",
+   "facts": {
+    "quests": {
+     "Westfall": 4,
+     "Duskwood": 4
+    }
+   },
+   "expect": {
+    "value": 4,
+    "target": 5,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.zone5",
+   "facts": {
+    "quests": {
+     "Westfall": 5
+    }
+   },
+   "expect": {
+    "value": 5,
+    "target": 5,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.zones3",
+   "facts": {
+    "quests": {
+     "A": 1,
+     "B": 1,
+     "C": 1
+    }
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.shared3",
+   "facts": {
+    "sharedMax": 2
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.level",
+   "facts": {
+    "levels": 1
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.level",
+   "facts": {},
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   },
+   "note": "no facts yet"
+  },
+  {
+   "addonOnly": true,
+   "id": "d.altLevel",
+   "facts": {
+    "levels": 2,
+    "altLevels": 0
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.ilvl",
+   "facts": {
+    "ilvlGain": 1
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.dungeon",
+   "facts": {
+    "runs": [
+     {
+      "name": "The Deadmines",
+      "bosses": 2,
+      "friends": 0
+     }
+    ]
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.dungeonFriend",
+   "facts": {
+    "runs": [
+     {
+      "name": "The Deadmines",
+      "bosses": 2,
+      "friends": 0
+     }
+    ]
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.dungeonFriend",
+   "facts": {
+    "runs": [
+     {
+      "name": "The Deadmines",
+      "bosses": 2,
+      "friends": 1
+     }
+    ]
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.bosses3",
+   "facts": {
+    "runs": [
+     {
+      "name": "A",
+      "bosses": 2
+     },
+     {
+      "name": "B",
+      "bosses": 1
+     }
+    ]
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.skill5",
+   "facts": {
+    "skill": 4
+   },
+   "expect": {
+    "value": 4,
+    "target": 5,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.secondary",
+   "facts": {
+    "secondary": true
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "d.chars2",
+   "facts": {
+    "chars": 2
+   },
+   "expect": {
+    "value": 2,
+    "target": 2,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.days3",
+   "facts": {
+    "days": 3
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.chars3",
+   "facts": {
+    "chars": 2
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.levels3",
+   "facts": {
+    "levels": 3
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.altLevels2",
+   "facts": {
+    "altLevelsMax": 1
+   },
+   "expect": {
+    "value": 1,
+    "target": 2,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.quests50",
+   "facts": {
+    "quests": {
+     "A": 30,
+     "B": 20
+    }
+   },
+   "expect": {
+    "value": 50,
+    "target": 50,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.zones5",
+   "facts": {
+    "quests": {
+     "A": 1,
+     "B": 1,
+     "C": 1,
+     "D": 1
+    }
+   },
+   "expect": {
+    "value": 4,
+    "target": 5,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.dungeons3",
+   "facts": {
+    "runs": [
+     {
+      "name": "A"
+     },
+     {
+      "name": "A"
+     },
+     {
+      "name": "B"
+     }
+    ]
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.dungeonsDiff3",
+   "facts": {
+    "runs": [
+     {
+      "name": "A"
+     },
+     {
+      "name": "A"
+     },
+     {
+      "name": "B"
+     }
+    ]
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.dungeonFriends2",
+   "facts": {
+    "runs": [
+     {
+      "name": "A",
+      "friends": 1
+     },
+     {
+      "name": "B",
+      "friends": 3
+     }
+    ]
+   },
+   "expect": {
+    "value": 2,
+    "target": 2,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.fullClear",
+   "facts": {
+    "runs": [
+     {
+      "name": "A",
+      "fullClear": false
+     }
+    ]
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.skill25",
+   "facts": {
+    "skill": 25
+   },
+   "expect": {
+    "value": 25,
+    "target": 25,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.cap",
+   "facts": {
+    "capReached": true
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.newProf",
+   "facts": {
+    "learned": 0
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "w.ilvl3",
+   "facts": {
+    "ilvlGain": 2
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "p.frontLine",
+   "facts": {
+    "zone": "Ashenvale",
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333900,
+      "zone": "Desolace",
+      "name": "Victim 5",
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 4,
+    "target": 5,
+    "done": false
+   },
+   "note": "4 counted kills in the zone of the day, 1 elsewhere",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.loneWolf",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "solo": true
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "solo": true
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A",
+      "solo": true,
+      "bg": true
+     }
+    ]
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   },
+   "note": "a battleground kill never counts",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.untouchable",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333960,
+      "zone": "Ashenvale",
+      "name": "Victim 6",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334020,
+      "zone": "Ashenvale",
+      "name": "Victim 7",
+      "char": "Player-1-A"
+     }
+    ],
+    "deaths": [
+     {
+      "t": 1794333900,
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 4,
+    "target": 5,
+    "done": false
+   },
+   "note": "a death after 4 kills",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.untouchable",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333900,
+      "zone": "Ashenvale",
+      "name": "Victim 5",
+      "char": "Player-1-A"
+     }
+    ],
+    "deaths": [
+     {
+      "t": 1794333780,
+      "char": "Player-2-B"
+     }
+    ]
+   },
+   "expect": {
+    "value": 5,
+    "target": 5,
+    "done": true
+   },
+   "note": "another character's death doesn't break it",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.punchUp",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "lvl": 33,
+      "myLvl": 30
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "lvl": -1,
+      "myLvl": 30
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A",
+      "lvl": 32,
+      "myLvl": 30
+     }
+    ]
+   },
+   "expect": {
+    "value": 2,
+    "target": 2,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.variety",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "MAGE"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "class": "MAGE"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A",
+      "class": "ROGUE"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   },
+   "note": "a kill without a known class doesn't add one",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.ranked",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "rank": 0
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "rank": 2
+     }
+    ]
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "hunt",
+   "facts": {
+    "hunts": [
+     {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     }
+    ],
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "race": "Dwarf",
+      "class": "PALADIN"
+     }
+    ]
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "hunt",
+   "facts": {
+    "hunts": [
+     {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     },
+     {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    ],
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    ]
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   },
+   "note": "either faction's Hunt counts",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "hunt",
+   "facts": {
+    "hunts": [
+     {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     }
+    ],
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Bob Example",
+      "char": "Player-1-A",
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     }
+    ]
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   },
+   "note": "a community victim isn't counted",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.kills50",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333900,
+      "zone": "Ashenvale",
+      "name": "Victim 5",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333960,
+      "zone": "Ashenvale",
+      "name": "Victim 6",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334020,
+      "zone": "Ashenvale",
+      "name": "Victim 7",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334080,
+      "zone": "Ashenvale",
+      "name": "Victim 8",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334140,
+      "zone": "Ashenvale",
+      "name": "Victim 9",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334200,
+      "zone": "Ashenvale",
+      "name": "Victim 10",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334260,
+      "zone": "Ashenvale",
+      "name": "Victim 11",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334320,
+      "zone": "Ashenvale",
+      "name": "Victim 12",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334380,
+      "zone": "Ashenvale",
+      "name": "Victim 13",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334440,
+      "zone": "Ashenvale",
+      "name": "Victim 14",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334500,
+      "zone": "Ashenvale",
+      "name": "Victim 15",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334560,
+      "zone": "Ashenvale",
+      "name": "Victim 16",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334620,
+      "zone": "Ashenvale",
+      "name": "Victim 17",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334680,
+      "zone": "Ashenvale",
+      "name": "Victim 18",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334740,
+      "zone": "Ashenvale",
+      "name": "Victim 19",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334800,
+      "zone": "Ashenvale",
+      "name": "Victim 20",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334860,
+      "zone": "Ashenvale",
+      "name": "Victim 21",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334920,
+      "zone": "Ashenvale",
+      "name": "Victim 22",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334980,
+      "zone": "Ashenvale",
+      "name": "Victim 23",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335040,
+      "zone": "Ashenvale",
+      "name": "Victim 24",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335100,
+      "zone": "Ashenvale",
+      "name": "Victim 25",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335160,
+      "zone": "Ashenvale",
+      "name": "Victim 26",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335220,
+      "zone": "Ashenvale",
+      "name": "Victim 27",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335280,
+      "zone": "Ashenvale",
+      "name": "Victim 28",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335340,
+      "zone": "Ashenvale",
+      "name": "Victim 29",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335400,
+      "zone": "Ashenvale",
+      "name": "Victim 30",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335460,
+      "zone": "Ashenvale",
+      "name": "Victim 31",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335520,
+      "zone": "Ashenvale",
+      "name": "Victim 32",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335580,
+      "zone": "Ashenvale",
+      "name": "Victim 33",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335640,
+      "zone": "Ashenvale",
+      "name": "Victim 34",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335700,
+      "zone": "Ashenvale",
+      "name": "Victim 35",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335760,
+      "zone": "Ashenvale",
+      "name": "Victim 36",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335820,
+      "zone": "Ashenvale",
+      "name": "Victim 37",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335880,
+      "zone": "Ashenvale",
+      "name": "Victim 38",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335940,
+      "zone": "Ashenvale",
+      "name": "Victim 39",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794336000,
+      "zone": "Ashenvale",
+      "name": "Victim 40",
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 40,
+    "target": 50,
+    "done": false
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.spree10",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333900,
+      "zone": "Ashenvale",
+      "name": "Victim 5",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333960,
+      "zone": "Ashenvale",
+      "name": "Victim 6",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334020,
+      "zone": "Ashenvale",
+      "name": "Victim 7",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334080,
+      "zone": "Ashenvale",
+      "name": "Victim 8",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334140,
+      "zone": "Ashenvale",
+      "name": "Victim 9",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334200,
+      "zone": "Ashenvale",
+      "name": "Victim 10",
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 10,
+    "target": 10,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.allClasses",
+   "facts": {
+    "factions": [
+     "Horde"
+    ],
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "WARRIOR"
+     },
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "MAGE"
+     },
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "SHAMAN"
+     }
+    ]
+   },
+   "expect": {
+    "value": 2,
+    "target": 8,
+    "done": false
+   },
+   "note": "a Shaman isn't on the Alliance list",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.allRaces",
+   "facts": {
+    "factions": [
+     "Alliance"
+    ],
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "race": "Orc"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "race": "Scourge"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A",
+      "race": "Tauren"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 4",
+      "char": "Player-1-A",
+      "race": "Troll"
+     }
+    ]
+   },
+   "expect": {
+    "value": 4,
+    "target": 4,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.ranked5",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "rank": 1
+     },
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "rank": 1
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A",
+      "rank": 1
+     }
+    ]
+   },
+   "expect": {
+    "value": 3,
+    "target": 5,
+    "done": false
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.days5",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333600,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794420000,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794506400,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794592800,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794679200,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 5,
+    "target": 5,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.duels3",
+   "facts": {
+    "duelFriends": 2
+   },
+   "expect": {
+    "value": 2,
+    "target": 3,
+    "done": false
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "b.hunt3",
+   "facts": {
+    "huntDays": 3
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
+    "done": true
+   }
+  },
+  {
+   "addonOnly": true,
+   "id": "b.zone25",
+   "facts": {
+    "zone": "Tanaris",
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Tanaris",
+      "name": "Victim 1",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333720,
+      "zone": "Tanaris",
+      "name": "Victim 2",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333780,
+      "zone": "Tanaris",
+      "name": "Victim 3",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333840,
+      "zone": "Tanaris",
+      "name": "Victim 4",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333900,
+      "zone": "Tanaris",
+      "name": "Victim 5",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794333960,
+      "zone": "Tanaris",
+      "name": "Victim 6",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334020,
+      "zone": "Tanaris",
+      "name": "Victim 7",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334080,
+      "zone": "Tanaris",
+      "name": "Victim 8",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334140,
+      "zone": "Tanaris",
+      "name": "Victim 9",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334200,
+      "zone": "Tanaris",
+      "name": "Victim 10",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334260,
+      "zone": "Tanaris",
+      "name": "Victim 11",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334320,
+      "zone": "Tanaris",
+      "name": "Victim 12",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334380,
+      "zone": "Tanaris",
+      "name": "Victim 13",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334440,
+      "zone": "Tanaris",
+      "name": "Victim 14",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334500,
+      "zone": "Tanaris",
+      "name": "Victim 15",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334560,
+      "zone": "Tanaris",
+      "name": "Victim 16",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334620,
+      "zone": "Tanaris",
+      "name": "Victim 17",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334680,
+      "zone": "Tanaris",
+      "name": "Victim 18",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334740,
+      "zone": "Tanaris",
+      "name": "Victim 19",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334800,
+      "zone": "Tanaris",
+      "name": "Victim 20",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334860,
+      "zone": "Tanaris",
+      "name": "Victim 21",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334920,
+      "zone": "Tanaris",
+      "name": "Victim 22",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794334980,
+      "zone": "Tanaris",
+      "name": "Victim 23",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335040,
+      "zone": "Tanaris",
+      "name": "Victim 24",
+      "char": "Player-1-A"
+     },
+     {
+      "t": 1794335100,
+      "zone": "Tanaris",
+      "name": "Victim 25",
+      "char": "Player-1-A"
+     }
+    ]
+   },
+   "expect": {
+    "value": 25,
+    "target": 25,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  }
+ ],
+ "points": [
+  {
+   "done": {
+    "d.quests10": 1,
+    "d.level": 2,
+    "w.days3": 3,
+    "p.loneWolf": 4,
+    "b.kills50": 5,
+    "hunt": 6,
+    "x.newer": 7
+   },
+   "killPoints": 12,
+   "duelPoints": 4,
+   "expect": {
+    "pve": 25,
+    "pvp": 41
+   },
+   "note": "PvE: 2 dailies + 1 weekly; PvP: Skirmish + Hunt + Bounty + kills + duels; an id from a newer pool counts nothing"
+  },
+  {
+   "done": {},
+   "expect": {
+    "pve": 0,
+    "pvp": 0
+   }
+  }
+ ],
+ "crown": [
+  {
+   "note": "crossed out = all 3 PvE dailies; the PvP goal doesn't count; the first by the last daily's time; equal times go to the lower friend key",
+   "friends": [
+    {
+     "friend": "Mira#1004",
+     "set": [
+      "d.altLevel",
+      "d.chars2",
+      "d.skill5",
+      "p.frontLine"
+     ],
+     "done": {
+      "d.altLevel": 1794333650,
+      "d.chars2": 1794334550,
+      "d.skill5": 1794333900
+     }
+    },
+    {
+     "friend": "Bob#1002",
+     "set": [
+      "d.altLevel",
+      "d.chars2",
+      "d.skill5",
+      "p.frontLine"
+     ],
+     "done": {
+      "d.altLevel": 1794333610,
+      "d.chars2": 1794333620,
+      "p.frontLine": 1794333630
+     }
+    },
+    {
+     "friend": "Cy#1003",
+     "set": [
+      "d.altLevel",
+      "d.chars2",
+      "d.skill5",
+      "p.frontLine"
+     ],
+     "done": {
+      "d.altLevel": 1794333700,
+      "d.chars2": 1794333800,
+      "d.skill5": 1794334500
+     }
+    },
+    {
+     "friend": "Ada#1001",
+     "set": [
+      "d.altLevel",
+      "d.chars2",
+      "d.skill5",
+      "p.frontLine"
+     ],
+     "done": {
+      "d.altLevel": 1794334500,
+      "d.chars2": 1794333610,
+      "d.skill5": 1794333620
+     }
+    }
+   ],
+   "expect": {
+    "crossedOut": {
+     "Mira#1004": true,
+     "Bob#1002": false,
+     "Cy#1003": true,
+     "Ada#1001": true
+    },
+    "crown": "Ada#1001"
+   }
+  },
+  {
+   "friends": [
+    {
+     "friend": "Bob#1002",
+     "set": [
+      "d.altLevel",
+      "d.chars2",
+      "d.skill5",
+      "p.frontLine"
+     ],
+     "done": {
+      "p.frontLine": 1794333600
+     }
+    }
+   ],
+   "expect": {
+    "crossedOut": {
+     "Bob#1002": false
+    }
+   }
+  }
+ ],
+ "streak": [
+  {
+   "note": "today counts once a goal is done",
+   "today": 20767,
+   "days": {
+    "20767": 1,
+    "20766": 2,
+    "20765": 1
+   },
+   "expect": {
+    "streak": 3,
+    "best": 3
+   }
+  },
+  {
+   "note": "today without a goal yet doesn't end it",
+   "today": 20767,
+   "days": {
+    "20766": 1,
+    "20765": 1
+   },
+   "expect": {
+    "streak": 2,
+    "best": 2
+   }
+  },
+  {
+   "note": "a missed day ends it; the best run stays",
+   "today": 20767,
+   "days": {
+    "20767": 1,
+    "20765": 1,
+    "20764": 1,
+    "20763": 1,
+    "20762": 0
+   },
+   "expect": {
+    "streak": 1,
+    "best": 3
+   }
+  },
+  {
+   "note": "a stored best from days no longer kept",
+   "today": 20767,
+   "days": {
+    "20767": 1
+   },
+   "best": 9,
+   "expect": {
+    "streak": 1,
+    "best": 9
+   }
+  }
+ ],
+ "ladder": [
+  {
+   "note": "one ranking per track; PvE ties on goals then name; PvP Virgins aren't ranked; PvP ties on goals, then counted kills; movement since last week",
+   "friends": [
+    {
+     "friend": "Ada#1001",
+     "name": "Ada",
+     "pve": 85,
+     "pvp": 40,
+     "goals": 7,
+     "kills": 10,
+     "killedEver": true
+    },
+    {
+     "friend": "Bob#1002",
+     "name": "Bob",
+     "pve": 85,
+     "pvp": 40,
+     "goals": 9,
+     "kills": 3,
+     "killedEver": true
+    },
+    {
+     "friend": "Cy#1003",
+     "name": "Cy",
+     "pve": 85,
+     "pvp": 0,
+     "goals": 9,
+     "kills": 0,
+     "killedEver": false
+    },
+    {
+     "friend": "Mira#1004",
+     "name": "Mira",
+     "pve": 20,
+     "pvp": 40,
+     "goals": 9,
+     "kills": 12,
+     "killedEver": true
+    }
+   ],
+   "previous": {
+    "pve": {
+     "Ada#1001": 1,
+     "Bob#1002": 3,
+     "Mira#1004": 2
+    },
+    "pvp": {
+     "Bob#1002": 1
+    }
+   },
+   "expect": {
+    "pve": [
+     {
+      "friend": "Bob#1002",
+      "rank": 1,
+      "points": 85,
+      "move": 2
+     },
+     {
+      "friend": "Cy#1003",
+      "rank": 2,
+      "points": 85,
+      "move": "new"
+     },
+     {
+      "friend": "Ada#1001",
+      "rank": 3,
+      "points": 85,
+      "move": -2
+     },
+     {
+      "friend": "Mira#1004",
+      "rank": 4,
+      "points": 20,
+      "move": -2
+     }
+    ],
+    "pvp": [
+     {
+      "friend": "Mira#1004",
+      "rank": 1,
+      "points": 40,
+      "move": "new"
+     },
+     {
+      "friend": "Bob#1002",
+      "rank": 2,
+      "points": 40,
+      "move": -1
+     },
+     {
+      "friend": "Ada#1001",
+      "rank": 3,
+      "points": 40,
+      "move": "new"
+     }
+    ],
+    "virgins": [
+     "Cy#1003"
+    ]
+   }
+  }
+ ]
+}
