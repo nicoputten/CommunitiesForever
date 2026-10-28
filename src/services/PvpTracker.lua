@@ -1,6 +1,9 @@
 -- PvpTracker: PvP counters, honorable kills by zone, deaths and duels of the own characters (CF-52).
 -- Keeps `chars[guid].pvp` in the own record and adds the events to the activity feed (FeedTracker).
 -- Counter changes travel with the feed's debounced bump; a new PvP rank bumps the version right away.
+-- CF-55b: one pvpKills entry per honor message of a kill, its victim fields from the players seen shortly
+-- before (target, mouseover, nameplates); kills the counter shows without an honor message get an entry
+-- without a victim.
 local _, ns = ...
 
 local PvpTracker = {}
@@ -8,6 +11,9 @@ local PvpTracker = {}
 local addonRef
 -- The last damage taken ({ kind, at }, Pvp.damage) and the mirror timers ({ [name] = { startedAt, stoppedAt } }).
 local lastDamage, timers = nil, {}
+-- CF-55b: enemy players seen (Pvp.remember), the game's rank names, and the kills each source reported since
+-- the counter last rose (the counter fallback compares them after Pvp.FALLBACK_DELAY).
+local seen, rankNumbers, honorKills, counterKills, fallbackLater = {}, nil, 0, 0, nil
 
 local function own() return addonRef.db.global.self end
 
@@ -43,6 +49,8 @@ local function refresh(countKills)
   char.updatedAt = GetServerTime() -- relays merge characters on updatedAt
   if kills > 0 then
     ns.FeedTracker.record(char, { { kind = "kills", zone = ns.SelfInfo.zone(), count = kills } })
+    counterKills = counterKills + kills
+    fallbackLater()
   end
   if pvp and pvp.rank ~= nil and pvp.rank ~= (before and before.rank) then
     bumpNow()
@@ -51,11 +59,36 @@ local function refresh(countKills)
   end
 end
 
+-- CF-55b: one raw kill of the current character. name nil: a kill the counter showed without an honor message.
+local function recordKill(char, name, rank)
+  local now = GetServerTime()
+  local info = ns.Instance.info()
+  local kill = { t = now, zone = ns.SelfInfo.zone(), name = name, rank = rank, myLvl = char.level,
+                 solo = ns.PvpInfo.solo(), bg = info ~= nil and info.type == "pvp" }
+  ns.FeedTracker.record(char, { { kind = "pvpKill", kill = ns.Pvp.killEntry(kill, ns.Pvp.recall(seen, name, now)) } })
+end
+
+-- Counter rises the honor messages didn't explain get entries without a victim.
+local function fallback()
+  local char = currentChar()
+  local missing = counterKills - honorKills
+  counterKills, honorKills = 0, 0
+  if not char then return end
+  for _ = 1, math.min(missing, ns.Pvp.MAX_KILLS_PER_CHANGE) do recordKill(char, nil, nil) end
+end
+
 -- Without a readable lifetime count, each honor message of a kill (the game's COMBATLOG_HONORGAIN) counts.
 local function honor(text)
   local char = currentChar()
   if not char then return end
-  if char.pvp and char.pvp.hk ~= nil then return refresh(true) end
+  rankNumbers = rankNumbers or ns.PvpInfo.rankNumbers()
+  local victim, rank = ns.Pvp.victim(text, ns.PvpInfo.formats().honor, rankNumbers)
+  local counted = char.pvp and char.pvp.hk ~= nil -- the counter fallback runs only with a readable counter
+  if victim then
+    if counted then honorKills = honorKills + 1 end
+    recordKill(char, victim, rank)
+  end
+  if counted then return refresh(true) end
   if ns.GameText.parse(text, ns.PvpInfo.formats().honor) then
     ns.FeedTracker.record(char, { { kind = "kills", zone = ns.SelfInfo.zone(), count = 1 } })
   end
@@ -101,6 +134,10 @@ local HANDLERS = {
   timerStop = function(name)
     if type(name) == "string" and timers[name] then timers[name].stoppedAt = GetServerTime() end
   end,
+  unit = function(unit)
+    local name, fields = ns.PvpInfo.enemy(unit)
+    if name then ns.Pvp.remember(seen, name, fields, GetServerTime()) end
+  end,
   damage = function(subevent, environment, sourceFlags, sourceGuid)
     lastDamage = ns.Pvp.damage(subevent, environment, sourceFlags, sourceGuid, GetServerTime()) or lastDamage
   end,
@@ -109,6 +146,8 @@ local HANDLERS = {
 function PvpTracker.start(addon)
   addonRef = addon
   lastDamage, timers = nil, {}
+  seen, rankNumbers, honorKills, counterKills = {}, nil, 0, 0
+  fallbackLater = ns.Timer.debounce(ns.Pvp.FALLBACK_DELAY, fallback)
   PvpTracker.combatLog = ns.PvpInfo.watch(addon)
   addon:RegisterMessage(ns.PvpInfo.CHANGED, function(_, reason, ...)
     local handler = HANDLERS[reason]

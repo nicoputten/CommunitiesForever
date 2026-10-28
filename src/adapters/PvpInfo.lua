@@ -6,7 +6,8 @@ local _, ns = ...
 local PvpInfo = {}
 
 -- Internal message: (reason, ...). Reasons: "kills", "honor" (text), "dead", "system" (text),
--- "timerStart" (name), "timerStop" (name), "damage" (subevent, environmentalType, sourceFlags, sourceGUID).
+-- "timerStart" (name), "timerStop" (name), "damage" (subevent, environmentalType, sourceFlags, sourceGUID),
+-- "unit" (unit token: an enemy player may be seen there, CF-55b).
 PvpInfo.CHANGED = "CF_PVP_CHANGED"
 
 -- The game's statistic "Total deaths" (as on Retail).
@@ -70,6 +71,46 @@ function PvpInfo.recapDamage()
   return readable(last.event), readable(last.environmentalType), readable(last.sourceGUID)
 end
 
+-- CF-55b: an enemy player at a unit token: full name, { lvl (-1 skull), class, race (tokens), rank }, or nil.
+-- Unverified (VERIFY.md V74): every value guarded, a secret one is nil.
+function PvpInfo.enemy(unit)
+  if not (UnitExists and UnitIsPlayer and GetUnitName) then return nil end
+  if not (call(UnitExists, unit) and call(UnitIsPlayer, unit)) then return nil end
+  local enemy = call(UnitIsEnemy, "player", unit) or call(UnitCanAttack, "player", unit)
+  if not enemy then return nil end
+  local name = call(GetUnitName, unit, true)
+  if type(name) ~= "string" or name == "" then return nil end
+  local _, class = call(UnitClass, unit)
+  local _, race = call(UnitRace, unit)
+  local fields = { lvl = call(UnitLevel, unit), class = class, race = race }
+  local rankID = call(UnitPVPRank, unit)
+  if rankID then
+    local _, number = call(GetPVPRankInfo, rankID, unit)
+    if type(number) == "number" then fields.rank = math.max(0, number) end
+  end
+  return name, fields
+end
+
+-- The game's PvP rank names of both factions: { [name] = rank number }, for the honor message's rank.
+-- GetPVPRankInfo(rankID, faction) with the Classic rank ids (rank 1 is id 5).
+function PvpInfo.rankNumbers()
+  local numbers = {}
+  for id = 1, 18 do
+    for _, faction in ipairs({ 0, 1 }) do
+      local name, number = call(GetPVPRankInfo, id, faction)
+      if type(name) == "string" and type(number) == "number" and number > 0 then numbers[name] = number end
+    end
+  end
+  return numbers
+end
+
+-- true when not in a group, nil when unknown (IsInGroup, unverified: V76).
+function PvpInfo.solo()
+  local grouped = call(IsInGroup)
+  if grouped == nil then return nil end
+  return not grouped
+end
+
 local EVENTS = {
   PLAYER_PVP_KILLS_CHANGED = "kills",
   CHAT_MSG_COMBAT_HONOR_GAIN = "honor", -- arg 1 is the text
@@ -78,6 +119,10 @@ local EVENTS = {
   MIRROR_TIMER_START = "timerStart",    -- arg 1 is the timer: BREATH, EXHAUSTION, FEIGNDEATH
   MIRROR_TIMER_STOP = "timerStop",
 }
+
+-- CF-55b: where an enemy player can be seen (V74). NAME_PLATE_UNIT_ADDED passes the unit token.
+local UNIT_EVENTS = { PLAYER_TARGET_CHANGED = "target", UPDATE_MOUSEOVER_UNIT = "mouseover",
+                      NAME_PLATE_UNIT_ADDED = false }
 
 -- Damage the player takes, from the combat log. Under the Midnight restrictions an addon may not be
 -- allowed to register it: then it is skipped (pcall), and deaths fall back to timers or "other".
@@ -99,6 +144,11 @@ function PvpInfo.watch(addon)
   for event, reason in pairs(EVENTS) do
     ns.Events.register(addon, event, function(_, ...)
       addon:SendMessage(PvpInfo.CHANGED, reason, ...)
+    end)
+  end
+  for event, unit in pairs(UNIT_EVENTS) do
+    ns.Events.register(addon, event, function(_, token)
+      addon:SendMessage(PvpInfo.CHANGED, "unit", unit or token)
     end)
   end
   return watchCombatLog(addon)

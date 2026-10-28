@@ -45,39 +45,6 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 - The finding names which victim fields are readable at the moment of the honor message: from the message itself, or only from a target, mouseover or nameplate seen before. It decides whether the Hunt stays (`DOOMSDAY.md`, "The Hunt").
 - If the killer's name is readable, propose stories for a Wanted poster (the enemy who killed us most this week, a bounty on them) and a revenge kill (killing your killer within 10 minutes).
 
-### CF-55 Raw kills and the Doomsday core
-After CF-52; its victim fields are filled once CF-54 has answered.
-
-Split in two PRs (Nico, 2026-10-28): **CF-55a** the core (`src/core/Doomsday.lua`) and the golden file, done first so the site's WEB-58 can start (PR #97); **CF-55b** recording `pvpKills`, the victim cache, cleaning, the sync-size check, feats and sprees. The exact algorithm is in `DOOMSDAY.md` "The algorithm, exactly". Feats and sprees moved to 55b.
-- Per feed day and character, `pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } }`, one entry per honorable kill:
-  - `name`: the victim's full name as the game gives it (never split)
-  - `lvl`: the victim's level, `-1` for a skull; `myLvl`: your level at the kill
-  - `class`, `race`: tokens (`WARLOCK`, `Human`); `rank`: the victim's PvP rank number
-  - `solo`: true when not in a group; `bg`: true inside a battleground
-  - Each victim field only when CF-54 found it readable. They come from the honor message or from a short-lived cache by full name, filled from target, mouseover and nameplates (at most 200 names, 10 minutes). Otherwise nil.
-- At most 100 entries per day and character. CF-52's `kills = { [zone] = n }` keeps counting every kill, also past the cap.
-- `src/core/Doomsday.lua` (pure, rule 1) implements `docs/DOOMSDAY.md`:
-  - the schedule: realm offset, day number and week number from the reset setting (default 19:00, `Runs.lua` value when known)
-  - the draw: the PvE pools, the Hunt, the Skirmish, the Weekly bounty, `POOL_VERSION`, swaps and fallbacks
-  - goal progress from facts per Doomsday day and week
-  - points per track, kill points, the Duel slot, crossing out, the crown and the streak
-  - the week's ladder as data (per track, the split per character, PvP details without Elo, the battleground block, PvP Virgin)
-  - the feats the addon can derive from records (the same thresholds as the site, without "First in the group")
-  - sprees (5 and 10 kills without dying) as feed badges, not points
-- `tests/fixtures/doomsday-cases.json`, the golden cases shared with the site. They cover:
-  - every kill band, a skull, an unknown level, solo, a community victim, the 4th kill of the same victim, battleground kills going to the block
-  - the schedule at 19:00 and at another reset time, around midnight and the reset, including the week turning on Sunday
-  - the draws for fixed days and weeks (3 categories, no repeats in a row), the swaps
-  - every goal done and not done, progress adding up over two characters
-  - a duel recorded by both sides, and a disputed one
-  - the crown, crossing out, the streak over a missed day
-  - a goal left out because its field is unknown
-
-  `tests/spec/Doomsday_spec.lua` reads it with a small JSON reader in the test helpers (no new dependency) and checks `Doomsday` against it.
-- Caps and cleaning of received `pvpKills` as for other feed fields (`SYNC.md`): numbers checked, strings stripped of `|`, unknown tokens dropped.
-- Check the sync size of a week with 100 kills on each of 7 days (a test on `Serialize`). If it is over what CF-28 sends comfortably, lower the cap and note it in `DOOMSDAY.md`.
-- `ARCHITECTURE.md` and `SYNC.md` updated. A fixture with `pvpKills`, and `Compat_spec` passes on earlier fixtures.
-
 ### CF-56 Goals tracked and shared
 After CF-55.
 - A service (`src/services/DoomsdayTracker.lua`) keeps the facts per Doomsday day and week, summed over your own characters:
@@ -135,4 +102,5 @@ After CF-56. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built wit
 - A **toast** "First to finish today!" when you take the crown: a gold glow, fading in over 400 ms and sliding 12 px, that just appears when "Ambient effects" is off.
 - The character card gets a PvP line: lifetime honorable kills, rank with our title ("Stone Guard, a.k.a. Mailbox Menace"), this week's PvP points, or **PvP Virgin**.
 - Friends without Doomsday data show "no Doomsday data yet", never 0.
-- Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts) with busted. Manual steps in `VERIFY.md`.
+- **Feats and sprees** (moved here from CF-55, Nico 2026-10-28): the feats the addon can derive from the records it holds (the site's thresholds, web WEB-56, without "First in the group") and spree badges (5 and 10 kills without dying) in the feed, both in `src/core/Doomsday.lua`.
+- Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts, feats, sprees) with busted. Manual steps in `VERIFY.md`.

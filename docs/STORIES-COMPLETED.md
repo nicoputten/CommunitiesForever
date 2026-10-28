@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -529,3 +529,40 @@ Decided with Nico (2026-10-28): an ask with "Also post on Discord" reached the s
 - Watch-list item IDs checked on Wowhead Classic (2026-10-28): Arcanite Reaper 12784, Arcanite Bar 12360, Mooncloth 14342, Devilsaur Gauntlets 15063, Devilsaur Leggings 15062, Speckled Tastyfish 19807, Arcanite Fishing Pole 19970, Hook of the Master Angler 19979.
 - Rule 8: optional fields only within `pv` 1 (`chars.*.riding`, the feed's `loot`, `notable`, `gold`, `sessions`, `groups`), no migration. A session's start and end don't bump the version on their own.
 - Done (PR #95): `src/core/GameText.lua` (format strings and item links, moved from `Pvp`), `src/core/Loot.lua`, `src/core/Play.lua`, `src/adapters/LootInfo.lua`, the riding read in `SelfInfo`, `Timer.every`, `src/services/PlayTracker.lua`. VERIFY.md "CF-53" and V82, V83.
+
+### CF-55 Raw kills and the Doomsday core
+After CF-52; its victim fields are filled once CF-54 has answered.
+
+Split in two PRs (Nico, 2026-10-28): **CF-55a** the core (`src/core/Doomsday.lua`) and the golden file, done first so the site's WEB-58 can start (PR #97); **CF-55b** recording `pvpKills`, the victim cache, cleaning, the sync-size check, feats and sprees. The exact algorithm is in `DOOMSDAY.md` "The algorithm, exactly". Feats and sprees moved to 55b.
+- Per feed day and character, `pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } }`, one entry per honorable kill:
+  - `name`: the victim's full name as the game gives it (never split)
+  - `lvl`: the victim's level, `-1` for a skull; `myLvl`: your level at the kill
+  - `class`, `race`: tokens (`WARLOCK`, `Human`); `rank`: the victim's PvP rank number
+  - `solo`: true when not in a group; `bg`: true inside a battleground
+  - Each victim field only when CF-54 found it readable. They come from the honor message or from a short-lived cache by full name, filled from target, mouseover and nameplates (at most 200 names, 10 minutes). Otherwise nil.
+- At most 100 entries per day and character. CF-52's `kills = { [zone] = n }` keeps counting every kill, also past the cap.
+- `src/core/Doomsday.lua` (pure, rule 1) implements `docs/DOOMSDAY.md`:
+  - the schedule: realm offset, day number and week number from the reset setting (default 19:00, `Runs.lua` value when known)
+  - the draw: the PvE pools, the Hunt, the Skirmish, the Weekly bounty, `POOL_VERSION`, swaps and fallbacks
+  - goal progress from facts per Doomsday day and week
+  - points per track, kill points, the Duel slot, crossing out, the crown and the streak
+  - the week's ladder as data (per track, the split per character, PvP details without Elo, the battleground block, PvP Virgin)
+  - the feats the addon can derive from records (the same thresholds as the site, without "First in the group")
+  - sprees (5 and 10 kills without dying) as feed badges, not points
+- `tests/fixtures/doomsday-cases.json`, the golden cases shared with the site. They cover:
+  - every kill band, a skull, an unknown level, solo, a community victim, the 4th kill of the same victim, battleground kills going to the block
+  - the schedule at 19:00 and at another reset time, around midnight and the reset, including the week turning on Sunday
+  - the draws for fixed days and weeks (3 categories, no repeats in a row), the swaps
+  - every goal done and not done, progress adding up over two characters
+  - a duel recorded by both sides, and a disputed one
+  - the crown, crossing out, the streak over a missed day
+  - a goal left out because its field is unknown
+
+  `tests/spec/Doomsday_spec.lua` reads it with a small JSON reader in the test helpers (no new dependency) and checks `Doomsday` against it.
+- Caps and cleaning of received `pvpKills` as for other feed fields (`SYNC.md`): numbers checked, strings stripped of `|`, unknown tokens dropped.
+- Check the sync size of a week with 100 kills on each of 7 days (a test on `Serialize`). If it is over what CF-28 sends comfortably, lower the cap and note it in `DOOMSDAY.md`.
+- `ARCHITECTURE.md` and `SYNC.md` updated. A fixture with `pvpKills`, and `Compat_spec` passes on earlier fixtures.
+- Decided with Nico (2026-10-28): each `pvpKills` entry comes from the honor message (`COMBATLOG_HONORGAIN`: victim name and rank name, the rank number from the game's rank names), the other victim fields from a 10-minute cache of enemy players seen as target, mouseover or nameplate; a counter rise without an honor message within 3 s adds an entry without a victim. Feats and sprees moved to CF-57.
+- Sync size: a week at the cap (7 × 100 kills) encodes to about 6.3 KB, under 8 KB (a test): 2 Battle.net parts or ~28 community parts. The cap stays at 100.
+- Rule 8: a new optional feed field within `pv` 1; older clients drop it in `Feed.clean`, and since CF-52 their relayed copies can't wipe it.
+- Done: CF-55a (PR #97), CF-55b (PR #TBD): `Pvp.remember`/`recall`/`victim`/`killEntry`, `PvpInfo.enemy`/`rankNumbers`/`solo`, the tracker's honor-message kills and counter fallback, `Feed` `pvpKills` with cleaning. VERIFY.md "CF-55b".

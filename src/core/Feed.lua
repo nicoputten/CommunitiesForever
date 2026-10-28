@@ -25,6 +25,7 @@ local MAX_BOSSES = 40
 local RUN_KINDS = { party = true, raid = true, pvp = true }
 local MAX_DEATHS = 50      -- CF-52: deaths and duels per character and day
 local MAX_DUELS = 50
+local MAX_KILLS = 100      -- CF-55b: pvpKills per character and day (kills by zone keep counting past it)
 local MAX_EPICS = 20       -- CF-53: epic items, watch-list items, sessions and group members per character and day
 local MAX_NOTABLE = 20
 local MAX_SESSIONS = 20
@@ -120,13 +121,15 @@ end
                                 duels = { { t, won, vs } },
                                 loot = { rare = n, epic = { { id, name, slot, level } } },
                                 notable = { [itemID] = n }, gold = { gained, spent },
-                                sessions = { { from, to } }, groups = { [guid] = true } } } }
+                                sessions = { { from, to } }, groups = { [guid] = true },
+                                pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } } } } }
 char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, a finished run
 (CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with }, or
 (CF-52) honorable kills { kind = "kills", zone, count }, a death { kind = "death", t, zone, cause } or a
 finished duel { kind = "duel", t, won, vs } (vs: the opponent's full name as the game gives it), or (CF-53)
 { kind = "rare", count } | { kind = "epic", id, name, slot, level } | { kind = "notable", id, count } |
-{ kind = "gold", gained, spent } | { kind = "session", from } | { kind = "group", guid }.
+{ kind = "gold", gained, spent } | { kind = "session", from } | { kind = "group", guid }, or (CF-55b) one
+honorable kill { kind = "pvpKill", kill = Pvp.killEntry(...) }.
 ]]
 function Feed.add(feed, day, char, event, now)
   local entry = entryFor(feed, day, char, now)
@@ -186,6 +189,9 @@ function Feed.add(feed, day, char, event, now)
     if #entry.sessions < MAX_SESSIONS then
       entry.sessions[#entry.sessions + 1] = { from = event.from, to = event.from }
     end
+  elseif event.kind == "pvpKill" then
+    entry.pvpKills = entry.pvpKills or {}
+    if #entry.pvpKills < MAX_KILLS then entry.pvpKills[#entry.pvpKills + 1] = event.kill end
   elseif event.kind == "group" then
     entry.groups = entry.groups or {}
     local count = 0
@@ -335,6 +341,27 @@ local function cleanSessions(sessions)
   return #result > 0 and result or nil
 end
 
+-- CF-55b: received raw kills. Tokens: class upper case (WARLOCK), race letters (NightElf); unknown ones dropped.
+local function cleanKills(kills)
+  if type(kills) ~= "table" then return nil end
+  local result = {}
+  for _, k in ipairs(kills) do
+    if #result >= MAX_KILLS then break end
+    if type(k) == "table" and type(k.t) == "number" and k.t == k.t then
+      local lvl = type(k.lvl) == "number" and k.lvl == math.floor(k.lvl) and k.lvl >= -1 and k.lvl <= 100
+        and k.lvl ~= 0 and k.lvl or nil
+      local class = type(k.class) == "string" and #k.class <= 12 and k.class:match("^%u+$") or nil
+      local race = type(k.race) == "string" and #k.race <= 12 and k.race:match("^%a+$") or nil
+      local rank = cleanNumber(k.rank, 14)
+      local myLvl = cleanNumber(k.myLvl, 100)
+      result[#result + 1] = { t = cleanNumber(k.t, math.huge), zone = cleanText(k.zone), name = cleanText(k.name),
+                              lvl = lvl, myLvl = myLvl ~= 0 and myLvl or nil, class = class, race = race,
+                              rank = rank, solo = k.solo == true or nil, bg = k.bg == true or nil }
+    end
+  end
+  return #result > 0 and result or nil
+end
+
 -- Copy of a received feed with only the expected fields, cleaned and limited, or nil.
 function Feed.clean(feed)
   if type(feed) ~= "table" then return nil end
@@ -362,6 +389,7 @@ function Feed.clean(feed)
             gold = cleanGold(e.gold),
             sessions = cleanSessions(e.sessions),
             groups = cleanMap(e.groups, MAX_GROUPED, isTrue),
+            pvpKills = cleanKills(e.pvpKills),
           }
           count = count + 1
         end

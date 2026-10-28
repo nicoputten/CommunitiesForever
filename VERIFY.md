@@ -49,6 +49,17 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-55b Raw kills in the record
+After CF-54's run (V73, V74, V76). One PvP-flagged character with this build; enemy nameplates on. After the steps `/reload` and look at `self.feed[<today>][<guid>].pvpKills`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Target an enemy player, then get the honorable kill on them, solo | An entry with `name`, `lvl` (or `-1` for a skull), `class`, `race`, `rank` (when ranked), `myLvl`, `solo = true`, the zone and time. | open |
+| A kill on a player you never targeted or saw a nameplate of | An entry with `name` (and `rank`) only. | open |
+| A kill in a group | No `solo`. | open |
+| A kill in a battleground | `bg = true`, the battleground as zone. | open |
+| If no honor message comes for a kill (the counter rose) | An entry without `name` about 3 s later. | open |
+
 ### CF-53 Loot, gold, play sessions and groups in the record
 One character with this build. After the steps `/reload` and look at `self.feed[<today>][<guid>]` in the saved file (`CommunitiesForeverDB`).
 
