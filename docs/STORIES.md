@@ -46,3 +46,18 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 - Every call is guarded; a missing one logs `missing`, a secret value logs `secret`.
 - The finding names which victim fields are readable at the moment of the honor message: from the message itself, or only from a target, mouseover or nameplate seen before. It decides whether the Hunt stays (`DOOMSDAY.md`, "The Hunt").
 - If the killer's name is readable, propose stories for a Wanted poster (the enemy who killed us most this week, a bounty on them) and a revenge kill (killing your killer within 10 minutes).
+
+## E16 Release preparation
+
+### CF-59 Clean-up before the Doomsday release
+Agreed with Nico (2026-10-29): a clean-up of the addon before the release that brings Doomsday (E15) to friends. One or more PRs; nothing a friend sees changes except fixes.
+- **Dependencies:** the `.pkgmeta` externals (Ace3 parts, LibSerialize, LibDeflate, LibDataBroker, LibDBIcon, ...) and the local toolchain (`tools/setup-lua.ps1`: Lua, busted, luacheck) move to their newest releases where newer ones exist. `tools/fetch-libs.ps1` and its `embeds.xml` check still pass. A major version only when `busted` and `luacheck` pass with it. No new dependencies (rule 7).
+- **Technical debt:** a list of what to refactor, each with effort and risk, goes to Nico first; only what he picks is built. Rule 1 (pure core) and rule 8 (no change to stored or sent formats unless compatible) hold throughout.
+- **Docs:**
+  - every finished story moves to `docs/STORIES-COMPLETED.md` (CF-52 to CF-58 at least); `docs/STORIES.md` keeps open stories only, with a correct build order
+  - `docs/ARCHITECTURE.md`, `docs/SYNC.md`, `docs/DOOMSDAY.md`, `docs/API-FINDINGS.md` and the README describe the code as it is
+  - `VERIFY.md` holds open items only
+  - `CHANGELOG.md` `## Unreleased` reads as the release notes of the Doomsday release: one entry per feature, in plain words, newest feature first
+- **Dead code, leftovers and CI:** unused functions, fields, settings, test helpers and files go; flaky tests are fixed, not rerun.
+- **Left alone:** branches (the orchestrator cleans them up at the end) and PR #63 (CF-38, waits for launch).
+- `busted` and `luacheck` pass; `Compat_spec` passes on every earlier release's fixtures.
