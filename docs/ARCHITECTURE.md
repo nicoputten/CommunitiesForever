@@ -48,7 +48,7 @@ CommunitiesForever/
       Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
                              progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
       Pvp.lua                PvP counters, death cause, duel result from the game's format strings, rank titles,
-                             cleaning of received PvP data (CF-52)
+                             cleaning of received PvP data (CF-52); victim cache, honor message, kill entry (CF-55b)
       GameText.lua           the game's own messages through its format strings, item links (CF-52, CF-53)
       Loot.lua               loot messages, rare and epic items, the watch list of notable items, gold (CF-53)
       Play.lua               play sessions in the feed: continue within 5 minutes, heartbeat end (CF-53)
@@ -210,7 +210,9 @@ Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                               deaths = { { t, zone, cause } }, duels = { { t, won, vs } },       -- CF-52
                               loot = { rare, epic = { { id, name, slot, level } } },             -- CF-53
                               notable = { [itemID] = n }, gold = { gained, spent },              -- CF-53
-                              sessions = { { from, to } }, groups = { [guid] = true } } } }      -- CF-53
+                              sessions = { { from, to } }, groups = { [guid] = true },          -- CF-53
+                              pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank,     -- CF-55b
+                                             solo, bg } } } } }
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,

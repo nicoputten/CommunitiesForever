@@ -138,6 +138,51 @@ function Pvp.rankText(pvp)
   return string.format("%s a.k.a. %s", name or ("rank " .. rank), Pvp.TITLES[rank])
 end
 
+-- ===== Raw kills (CF-55b) =====
+
+Pvp.CACHE_SIZE = 200      -- enemy players remembered by full name
+Pvp.CACHE_SECONDS = 600   -- for 10 minutes
+Pvp.FALLBACK_DELAY = 3    -- seconds a counter rise waits for its honor messages
+
+--[[ Remembers what was seen of an enemy player (target, mouseover, nameplate) by full name, in place:
+cache = { [name] = { lvl, class, race, rank, at } }. Over CACHE_SIZE names the oldest goes. ]]
+function Pvp.remember(cache, name, fields, now)
+  if type(name) ~= "string" or name == "" or type(fields) ~= "table" then return end
+  cache[name] = { lvl = fields.lvl, class = fields.class, race = fields.race, rank = fields.rank, at = now }
+  local size, oldest, oldestAt = 0, nil, nil
+  for key, entry in pairs(cache) do
+    size = size + 1
+    if not oldestAt or entry.at < oldestAt then oldest, oldestAt = key, entry.at end
+  end
+  if size > Pvp.CACHE_SIZE then cache[oldest] = nil end
+end
+
+-- What was seen of a player within CACHE_SECONDS, or nil.
+function Pvp.recall(cache, name, now)
+  local entry = type(name) == "string" and cache[name]
+  if entry and now - entry.at <= Pvp.CACHE_SECONDS then return entry end
+  return nil
+end
+
+--[[ The victim of an honor message: full name and rank number, from the game's COMBATLOG_HONORGAIN
+("%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)"). rankNumbers = { [rank name] = number } from
+the game's rank names (both factions); an unknown or empty rank name gives rank nil. nil when it isn't a kill. ]]
+function Pvp.victim(text, format, rankNumbers)
+  local args = ns.GameText.parse(text, format)
+  if not (args and args[1]) then return nil end
+  local rank = rankNumbers and args[2] and rankNumbers[args[2]]
+  return args[1], type(rank) == "number" and rank or nil
+end
+
+--[[ A pvpKills entry: { t, zone, name, lvl, myLvl, class, race, rank, solo, bg }. seen: Pvp.recall's entry (its
+lvl, class, race; its rank when the message gave none). Each victim field is nil when unknown. ]]
+function Pvp.killEntry(kill, seen)
+  seen = seen or {}
+  return { t = kill.t, zone = kill.zone, name = kill.name, lvl = seen.lvl, myLvl = kill.myLvl, class = seen.class,
+           race = seen.race, rank = kill.rank or seen.rank, solo = kill.solo == true or nil,
+           bg = kill.bg == true or nil }
+end
+
 local MAX_NUMBER = 10000000
 
 local function cleanCount(value)

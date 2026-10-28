@@ -161,4 +161,71 @@ describe("PvP, duels and deaths (CF-52)", function()
     local record = ns.Merge.outgoingRecord(addon.db.global.self, true)
     assert.are.equal(5, record.chars[myGuid].pvp.hk)
   end)
+
+  describe("raw kills (CF-55b)", function()
+    local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup" }
+    local HONOR = "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)"
+
+    -- An enemy player as the target: Grim Tusk, a level 33 Orc Warrior.
+    local function enemyTarget()
+      _G.UnitExists = function(unit) return unit == "target" end
+      _G.UnitIsPlayer = function() return true end
+      _G.UnitIsEnemy = function() return true end
+      _G.UnitClass = function() return "Warrior", "WARRIOR" end
+      _G.IsInGroup = function() return false end
+      _G.GetUnitName = function(unit) return unit == "player" and ME or "Grim Tusk" end
+      _G.UnitLevel = function(unit) return unit == "player" and state.player.level or 33 end
+      _G.UnitRace = function(unit)
+        if unit == "player" then return unpack(state.player.race) end
+        return "Orc", "Orc", 2
+      end
+    end
+
+    after_each(function()
+      for _, name in ipairs(stubs) do _G[name] = nil end
+    end)
+
+    it("records a kill from the honor message with what was seen of the victim", function()
+      load(nil, { hk = 10 })
+      enemyTarget()
+      state.zone = "Ashenvale"
+      state.serverTime = 1500
+      wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+      state.pvp.hk = 11
+      wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", HONOR)
+      wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+      for _ = 1, 5 do
+        state.time = state.time + 5
+        wowapi.runTimers(state)
+      end
+      assert.are.same({ { t = 1500, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
+                          race = "Orc", solo = true } }, entry().pvpKills)
+      assert.are.same({ Ashenvale = 1 }, entry().kills)
+    end)
+
+    it("adds kills the counter shows without an honor message, without a victim", function()
+      load(nil, { hk = 10 })
+      state.zone = "Ashenvale"
+      state.pvp.hk = 12
+      wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+      state.time = state.time + 1
+      wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", HONOR) -- one of the two arrives a moment later
+      for _ = 1, 5 do
+        state.time = state.time + 5
+        wowapi.runTimers(state)
+      end
+      assert.are.equal(2, #entry().pvpKills)
+      assert.are.equal("Grim Tusk", entry().pvpKills[1].name)
+      assert.is_nil(entry().pvpKills[2].name)
+      assert.are.equal(11, entry().pvpKills[2].myLvl)
+    end)
+
+    it("marks battleground kills", function()
+      load()
+      state.instance = { name = "Warsong Gulch", type = "pvp", instanceID = 489 }
+      wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", HONOR)
+      assert.is_true(entry().pvpKills[1].bg)
+      assert.is_nil(entry().pvpKills[1].solo) -- IsInGroup unknown
+    end)
+  end)
 end)

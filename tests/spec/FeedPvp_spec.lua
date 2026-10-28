@@ -61,6 +61,45 @@ describe("Feed: kills, deaths and duels (CF-52)", function()
     assert.is_nil(none[TODAY]["G-A"].duels)
   end)
 
+  it("adds raw kills up to 100 a day, and cleans received ones (CF-55b)", function()
+    local feed = {}
+    for i = 1, 105 do Feed.add(feed, TODAY, ADA, { kind = "pvpKill", kill = { t = i, name = "V" .. i } }, i) end
+    assert.are.equal(100, #feed[TODAY][ADA.guid].pvpKills)
+    local kills = {
+      { t = 1, zone = "Ashenvale", name = "Grim Tusk", lvl = -1, myLvl = 30, class = "WARLOCK", race = "NightElf",
+        rank = 4, solo = true, bg = false, extra = "x" },
+      { t = 2, lvl = 0, myLvl = 0, class = "warlock", race = "Night Elf", rank = 30, solo = "yes" },
+      { t = 3, lvl = 61.5, class = "|cffWARLOCK", name = "Bad|Name" },
+      { zone = "no time" },
+    }
+    local clean = Feed.clean({ [TODAY] = { ["G-A"] = { at = 1, pvpKills = kills } } })[TODAY]["G-A"].pvpKills
+    assert.are.same({ t = 1, zone = "Ashenvale", name = "Grim Tusk", lvl = -1, myLvl = 30, class = "WARLOCK",
+                      race = "NightElf", rank = 4, solo = true }, clean[1])
+    assert.are.same({ t = 2, rank = 14 }, clean[2])
+    assert.are.same({ t = 3, name = "BadName" }, clean[3])
+    assert.are.equal(3, #clean)
+  end)
+
+  it("sends a week with 100 raw kills on each of 7 days in under 8 KB (CF-55b: the cap stays at 100)", function()
+    local ns = {}
+    helpers.loadAddonFile("src/core/Protocol.lua", ns)
+    local codec = ns.Protocol.codec(helpers.lib("LibSerialize"), helpers.lib("LibDeflate"))
+    local classes = { "WARRIOR", "MAGE", "ROGUE", "PRIEST", "HUNTER", "WARLOCK", "DRUID", "PALADIN" }
+    local races, zones = { "Human", "Dwarf", "NightElf", "Gnome" }, { "Ashenvale", "Hillsbrad Foothills", "Desolace" }
+    local feed = {}
+    for d = 1, 7 do
+      local kills = {}
+      for i = 1, 100 do
+        kills[i] = { t = 1793210000 + d * 86400 + i * 97, zone = zones[i % 3 + 1],
+                     name = "Enemy" .. (i * 7919 % 211) .. " Lastname" .. d, lvl = 20 + i % 40, myLvl = 40,
+                     class = classes[i % 8 + 1], race = races[i % 4 + 1], rank = i % 6, solo = i % 2 == 0 or nil }
+      end
+      feed[TODAY - 7 + d] = { ["G-A"] = { name = "Ada Example", classFile = "ROGUE", at = 1, pvpKills = kills } }
+    end
+    local encoded = codec:encode({ t = "RECORD", bt = "Ada#1001", version = 1, chars = {}, feed = feed })
+    assert.is_true(#encoded < 8000, "encoded " .. #encoded .. " bytes")
+  end)
+
   it("keeps the stored entry when a relayed copy has the same time (an older client drops new fields)", function()
     local stored = { [TODAY] = { ["G-A"] = { at = 5, kills = { Ashenvale = 3 } } } }
     local relayed = { [TODAY] = { ["G-A"] = { at = 5 } } }

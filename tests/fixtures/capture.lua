@@ -54,6 +54,8 @@ world:with("A", function(c)
   c.state.pvp = { hk = 10, rankID = 6, rankNumber = 2, rankName = "Grunt", weekKills = 2, weekHonor = 30, deaths = 4 }
   wowapi.fireEvent(c.state, "PLAYER_PVP_KILLS_CHANGED")
   c.state.pvp.hk, c.state.zone = 11, "Ashenvale"
+  wowapi.fireEvent(c.state, "CHAT_MSG_COMBAT_HONOR_GAIN", -- CF-55b: a raw kill with its victim
+    "Grim Tusk dies, honorable kill Rank: Scout (Estimated Honor Points: 12)")
   wowapi.fireEvent(c.state, "PLAYER_PVP_KILLS_CHANGED")
   wowapi.fireEvent(c.state, "CHAT_MSG_SYSTEM", world.people.A.name .. " has defeated " .. world.people.B.name
     .. " in a duel")

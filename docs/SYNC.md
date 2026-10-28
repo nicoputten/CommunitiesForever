@@ -162,7 +162,9 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
         "notable": { "14342": 2 },
         "gold": { "gained": 15230, "spent": 4100 },
         "sessions": [ { "from": 1729990000, "to": 1730000400 } ],
-        "groups": { "Player-4619-0B0B0B0B": true }
+        "groups": { "Player-4619-0B0B0B0B": true },
+        "pvpKills": [ { "t": 1730000250, "zone": "Hillsbrad Foothills", "name": "Grim Tusk", "lvl": 26, "myLvl": 24,
+                        "class": "WARRIOR", "race": "Orc", "rank": 2, "solo": true } ]
       }
     }
   } }
@@ -192,6 +194,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `feed.*.*.gold` | CF-53: `{ gained, spent }` in copper that day. Never shown as an amount |
 | `feed.*.*.sessions` | CF-53: `{ from, to }` server times, at most 20, under the day the session started; `to` moves every 5 minutes and at logout, a login within 5 minutes continues the session |
 | `feed.*.*.groups` | CF-53: `{ [guid] = true }` characters of the selected community you were in a group with |
+| `feed.*.*.pvpKills` | CF-55b: one entry per honorable kill, at most 100 (`kills` keeps counting past it): `t`, `zone`, `name` (the victim's full name from the honor message; missing for a kill only the counter showed), `lvl` (-1 skull), `myLvl`, `class` and `race` tokens, `rank` (number), `solo`, `bg`. Victim fields come from the honor message or from what was seen of that player (target, mouseover, nameplate) in the 10 minutes before; each is missing when unknown. Received: tokens checked (`^%u+$`, `^%a+$`), levels -1 to 100, rank 0 to 14 |
 | `feed.*.*.duels` | CF-52: `{ t, won, vs }`, at most 50, every duel of that character; `vs` = the opponent's full name as the game gives it (never split) |
 
 Not in a record: zone, online status and current level of community characters: those come live from the
@@ -342,7 +345,8 @@ the BattleTag, so a person never shows twice.
 | One character in a record | Roughly 200–800 bytes before compression; most of it is the quest log (titles) |
 | A record with 5 characters, full quest logs and a week of activity | Roughly 2–5 KB compressed: 1–2 Battle.net parts or ~10–20 community parts |
 | Send pace | One part per 0.2 s across all targets: 20 community parts take ~4 s |
-| Feed kept | 7 realm days; received feeds are capped (days, characters per day, zones, runs, 50 deaths and 50 duels) |
+| Feed kept | 7 realm days; received feeds are capped (days, characters per day, zones, runs, 50 deaths and 50 duels, 100 raw kills) |
+| A week of raw kills at the cap (7 × 100) | Under 8 KB encoded (about 6.3 KB measured, CF-55b): 2 Battle.net parts or ~28 community parts |
 
 The numbers in this table are estimates from the field sizes, not measurements.
 

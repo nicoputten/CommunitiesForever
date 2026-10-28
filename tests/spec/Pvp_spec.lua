@@ -101,6 +101,46 @@ describe("Pvp (CF-52)", function()
     end)
   end)
 
+  describe("raw kills (CF-55b)", function()
+    local HONOR = "%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)"
+
+    it("remembers enemy players for 10 minutes, at most 200", function()
+      local cache = {}
+      Pvp.remember(cache, "Grim Tusk", { lvl = 30, class = "WARRIOR", race = "Orc", rank = 2, extra = 1 }, 100)
+      assert.are.same({ lvl = 30, class = "WARRIOR", race = "Orc", rank = 2, at = 100 },
+        Pvp.recall(cache, "Grim Tusk", 700))
+      assert.is_nil(Pvp.recall(cache, "Grim Tusk", 701))
+      assert.is_nil(Pvp.recall(cache, nil, 100))
+      for i = 1, 205 do Pvp.remember(cache, "P" .. i, {}, 200 + i) end
+      local size = 0
+      for _ in pairs(cache) do size = size + 1 end
+      assert.are.equal(200, size)
+      assert.is_nil(cache["Grim Tusk"]) -- the oldest went first
+      Pvp.remember(cache, nil, {}, 1)
+      Pvp.remember(cache, "", {}, 1)
+      assert.is_nil(cache[""])
+    end)
+
+    it("reads the victim and rank of an honor message", function()
+      local ranks = { Grunt = 2, ["Senior Sergeant"] = 4 }
+      assert.are.same({ "Grim Tusk", 2 },
+        { Pvp.victim("Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)", HONOR, ranks) })
+      assert.are.same({ "Grim Tusk" },
+        { Pvp.victim("Grim Tusk dies, honorable kill Rank: None (Estimated Honor Points: 12)", HONOR, ranks) })
+      assert.is_nil(Pvp.victim("You have been awarded 50 honor points.", HONOR, ranks))
+      assert.is_nil(Pvp.victim("Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)", nil, ranks))
+    end)
+
+    it("builds a kill entry from the kill and what was seen of the victim", function()
+      assert.are.same({ t = 5, zone = "Ashenvale", name = "Grim Tusk", lvl = -1, myLvl = 30, class = "ROGUE",
+                        race = "Troll", rank = 3, solo = true },
+        Pvp.killEntry({ t = 5, zone = "Ashenvale", name = "Grim Tusk", myLvl = 30, solo = true, bg = false },
+          { lvl = -1, class = "ROGUE", race = "Troll", rank = 3 }))
+      assert.are.equal(1, Pvp.killEntry({ rank = 1 }, { rank = 3 }).rank) -- the honor message wins
+      assert.are.same({ t = 5, bg = true }, Pvp.killEntry({ t = 5, bg = true }))
+    end)
+  end)
+
   it("names the rank with our title", function()
     assert.are.equal("Stone Guard a.k.a. Mailbox Menace", Pvp.rankText({ rank = 6, rankName = "Stone Guard" }))
     assert.are.equal("rank 0 a.k.a. Conscientious Objector", Pvp.rankText({ rank = 0 }))
