@@ -81,16 +81,12 @@ describe("activity feed (CF-22)", function()
     assert.are.equal(after, addon.db.global.self.version)
   end)
 
-  it("sends the feed with the record unless sharing is off", function()
+  it("always sends the feed with the record (CF-58: no sharing setting)", function()
     load()
+    addon.db.global.settings.shareActivity = false -- stored by a released version: ignored
     wowapi.fireEvent(state, "QUEST_TURNED_IN", 101, 500, 0)
-    assert.is_truthy(ns.Merge.outgoingRecord(addon.db.global.self, ns.FeedTracker.shared()).feed)
-    local before = addon.db.global.self.version
-    state.serverTime = 3000
-    ns.Settings.options().args.shareActivity.set({}, false)
-    assert.is_true(addon.db.global.self.version > before) -- friends get the record without the feed
-    assert.is_false(ns.Merge.outgoingRecord(addon.db.global.self, ns.FeedTracker.shared()).feed) -- CF-28
-    assert.is_truthy(addon.db.global.self.feed) -- still kept for your own window
+    assert.is_truthy(ns.Merge.outgoingRecord(addon.db.global.self).feed)
+    assert.is_nil(ns.Settings.options().args.shareActivity)
   end)
 
   it("shows one entry per person per day in the Activity tab, expandable (CF-41)", function()
@@ -128,7 +124,7 @@ describe("activity feed (CF-22)", function()
 
     -- The footer: who shares, how long it keeps.
     local window = ns.MainFrame.window()
-    assert.is_truthy(window.footerText.text:find("Share my activity", 1, true))
+    assert.are.equal("Friends with CommunitiesForever share their activity.", window.footerText.text)
     assert.are.equal("Keeps 7 days", window.footerRightText.text)
 
     ns.MainFrame.selectTab("friends")

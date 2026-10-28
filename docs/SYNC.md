@@ -184,7 +184,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `chars.*.pvp` | CF-52, optional: `hk` lifetime honorable kills, `rank` PvP rank number (0 none, 1 to 14) and `rankName` the game's name for it, `weekKills`/`weekHonor` this week's, and the addon's own lifetime counters `deaths` (or the game's death statistic when higher), `duelsWon`, `duelsLost` (counted since the addon recorded them). Each field missing = unknown |
 | `chars.*.riding` | CF-53, optional: riding skill 0, 75 or 150 (missing = unknown) |
 | `removed` | Only in relayed copies: characters the owner dropped, with the time |
-| `feed` | Activity of the last 7 realm days by day number and character; `false` = the owner does not share it; missing = unknown (relayed) |
+| `feed` | Activity of the last 7 realm days by day number and character; always sent (CF-58). Missing = unknown (relayed). `false` comes only from released clients that had "Share my activity" off: it means nothing was sent, and the stored feed stays |
 | `feed.*.*.at` | When the entry last changed: the feed merge key |
 | `feed.*.*.runs` | Dungeons, raids, battlegrounds (CF-23); `with` = companions' GUIDs (community members only) |
 | `feed.*.*.kills` | CF-52: honorable kills by the zone where the kill counter rose (battlegrounds by their name) |
@@ -303,7 +303,7 @@ The version bumps only when a synced field of the character you are on really ch
 | A profession learned, a skill point, a new rank | Quest progress (only the set of quest IDs counts) |
 | Talent points (2 s debounce) or your role override | `lastPlayed` (login and logout) |
 | A quest accepted, abandoned or turned in (2 s debounce) | Logging in on the same character with nothing changed |
-| Display name, invite link, "Share my activity" | |
+| Display name, invite link | |
 | Activity feed changes: at most one bump per 60 s (questing does not sync per turn-in) | |
 | A new PvP rank (CF-52) right away; kills, honor, deaths and duels with the feed's 60 s bump | |
 | Loot, gold and groups (CF-53) with the feed's 60 s bump; the riding skill like other snapshot fields | A session's start and end (CF-53: they travel with the next bump) |

@@ -12,7 +12,6 @@ function Store.defaults()
   return {
     global = {
       settings = { notifications = true, minimap = {}, window = {}, tree = {}, sendInterval = 0.2,
-                   shareActivity = true,    -- CF-22
                    chatAlert = true, chatSound = false, chatKeepGeneral = true, chatTab = {},  -- CF-25
                    openOnLogin = false, ambientEffects = true,  -- CF-43
                    levelUpToast = true },  -- CF-44

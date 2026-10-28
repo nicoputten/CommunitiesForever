@@ -51,7 +51,7 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
   it("walks through all steps to Finish and does not open again", function()
     load()
     wowapi.runTimers(state)
-    for _, title in ipairs({ "Community", "Your name", "Community chat", "Notifications and sharing", "Done" }) do
+    for _, title in ipairs({ "Community", "Your name", "Community chat", "Notifications", "Done" }) do
       forward()
       assert.are.equal(title, wizard().titleText:GetText())
     end
@@ -128,7 +128,7 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     click("Create chat tab")
     assert.are.equal(windows + 1, #state.chatWindows)
     assert.is_true(settings().chatTab[guid()])
-    assert.are.equal("Notifications and sharing", wizard().titleText:GetText())
+    assert.are.equal("Notifications", wizard().titleText:GetText())
     click("Back")
     assert.is_truthy(text():find("This character has a", 1, true))
     button("Next") -- with a tab the step has Skip setup and Next again
@@ -144,7 +144,7 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     click("Not now")
     assert.are.equal(windows, #state.chatWindows)
     assert.is_true(ns.Setup.isShown())
-    assert.are.equal("Notifications and sharing", wizard().titleText:GetText())
+    assert.are.equal("Notifications", wizard().titleText:GetText())
   end)
 
   it("starts every switch at the settings defaults and writes the settings", function()
@@ -157,7 +157,7 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
       assert.are.equal(ns.Onboarding.DEFAULTS[default], box:GetChecked(), key)
     end
     forward()
-    for _, key in ipairs({ "notifications", "levelUps", "shareActivity", "minimap" }) do
+    for _, key in ipairs({ "notifications", "levelUps", "minimap" }) do
       local box = ns.Setup.checkbox(ns.Settings.options().args[key].name)
       assert.are.equal(ns.Onboarding.DEFAULTS[key], box:GetChecked(), key)
     end

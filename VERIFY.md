@@ -49,6 +49,13 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-58 Drop "Share my activity"
+| Step | Expected | Status |
+|---|---|---|
+| `/cf settings` | Sharing has only "Receive group asks"; no "Share my activity". `/cf setup`: the step is called "Notifications" with three switches and the minimap one. | open |
+| A friend on this build, you on a released version with "Share my activity" off | The friend still sees your activity from before (nothing is wiped); new activity of yours doesn't reach them until you update. | open |
+| Both on this build | Each sees the other's activity; the Activity tab footer says "Friends with CommunitiesForever share their activity." | open |
+
 ### CF-55b Raw kills in the record
 After CF-54's run (V73, V74, V76). One PvP-flagged character with this build; enemy nameplates on. After the steps `/reload` and look at `self.feed[<today>][<guid>].pvpKills`.
 
@@ -210,7 +217,7 @@ Compare with `docs/design/revamp-2026-10/settings-setup.html`.
 | Ambient effects | On: a slow light streak across the window title and across LEVEL UP chips in Activity (V64). Off: none. | open |
 | Esc → Options → AddOns → CommunitiesForever | The line and "Open settings", which opens the window (V66). | open |
 | `/cf setup` | A 600 × 460 window: progress bars and "Step 1 of 6 · Welcome → Community → ...", "Who is who in your community", three tiles (Friends, Activity, Dungeons). Skip setup (left of Next) and Back. | open |
-| Through the steps | Community: the dropdown; Your name: the field (saved on Next); Community chat: Not now and Create chat tab in the Next spot; Sharing and notifications: four switches; Done: Finish. Each switch matches the settings window. | open |
+| Through the steps | Community: the dropdown; Your name: the field (saved on Next); Community chat: Not now and Create chat tab in the Next spot; Notifications: four switches; Done: Finish. Each switch matches the settings window. | open |
 | Another character after the setup | The Community tab prompt in the new look: one gold button; closing is no. | open |
 
 ### CF-42 Dungeons tab in the new look
@@ -238,7 +245,7 @@ Compare with `docs/design/revamp-2026-10/activity.html`. Best with a friend who 
 | A friend with activity on two characters | "and 1 more character", "Show all (N)" opens the other character's pieces under "on <character>"; "Show less" folds it. | open |
 | Each chip | Level-ups: only entries with a level change (whole entries); Dungeons: entries with a dungeon, raid or battleground; Together: the together entries. No match: "Nothing of this kind in the last 7 days." | open |
 | Close and open the window | The chips start at All again. | open |
-| Footer | Left "Activity is shared only by friends who turned on "Share my activity".", right "Keeps 7 days". Friends tab: its own footer again. | open |
+| Footer | Left "Friends with CommunitiesForever share their activity.", right "Keeps 7 days". Friends tab: its own footer again. | open |
 | Many entries | The feed scrolls with the mouse wheel (V62). | open |
 
 ### CF-40 Friends tab in the new look
@@ -344,8 +351,8 @@ character in no community.
 | Step | Expected | Status |
 |---|---|---|
 | On a character without a Community chat tab: `/cf setup`, Next until "Community chat" | The buttons read Back, Not now, Create chat tab (where Next was). | open |
-| Click **Create chat tab** | A Community chat tab appears and the setup is on "Notifications and sharing". Back: the chat step says "This character has a Community chat tab" with Skip and Next. | open |
-| Close the new tab, `/cf setup` again to the chat step, click **Not now** | No tab is created; the setup goes on to "Notifications and sharing". | open |
+| Click **Create chat tab** | A Community chat tab appears and the setup is on "Notifications". Back: the chat step says "This character has a Community chat tab" with Skip and Next. | open |
+| Close the new tab, `/cf setup` again to the chat step, click **Not now** | No tab is created; the setup goes on to "Notifications". | open |
 
 ### CF-02 part 2: release on tag
 | Step | Expected | Status |
@@ -386,7 +393,6 @@ Unit tested in depth (older copies, levels, deleted characters, activity). In ga
 |---|---|---|
 | A friend with this build levels up, turns in a quest and trains a profession rank | You see the new level, the level-up line, the quest in Shared quests and the activity line as before. | open |
 | `/reload` on both sides | Nothing goes back to older data (level, quests, activity). | open |
-| Friend unticks "Share my activity" | Their activity lines disappear for you after the next sync, as before. | open |
 
 ### CF-27 Who's up for it?
 Needs a friend running this build, online in Forever, with a character in range of a dungeon you also fit (an alt counts). Run V47 and V48 first if you can.
