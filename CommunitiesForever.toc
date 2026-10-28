@@ -78,6 +78,7 @@ src\services\ActivityTracker.lua
 src\services\PvpTracker.lua
 src\services\PlayTracker.lua
 src\services\DoomsdayTracker.lua
+src\services\DoomsdayBoard.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua

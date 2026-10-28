@@ -86,6 +86,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     for i, id in ipairs(day.set) do
       if ns.Doomsday.goal(id).slot == "daily" then day.done[id] = start + 60 * i end
     end
+    ns.DoomsdayTracker.invalidate() -- the goals were changed by hand
     addon:SendMessage(ns.DoomsdayTracker.CHANGED, {}, {})
     local shown = ns.CrownToast.shown()
     assert.are.equal(1, #shown)
@@ -156,7 +157,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       assert.is_truthy(t:find("\n0/10\n", 1, true)) -- your own progress
       assert.is_truthy(t:find("\nno Doomsday data yet\n", 1, true)) -- Tok, an older addon
       assert.is_truthy(t:find("\n6\n", 1, true)) -- Mira's streak
-      local board = ns.DoomsdayTracker.board()
+      local board = ns.DoomsdayBoard.board()
       local mira
       for _, row in ipairs(board.rows) do
         if row.name == "Mira" then mira = row end
@@ -171,7 +172,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       ns.DoomsdayTab.chips().ladder:RunScript("OnClick")
       local t = texts()
       assert.is_truthy(t:find("\nPvE\n", 1, true) and t:find("\nPvP\n", 1, true))
-      local l = ns.DoomsdayTracker.ladder()
+      local l = ns.DoomsdayBoard.ladder()
       assert.are.equal("Sjaakovich#2232", l.pve[1].friend)
       assert.are.equal(15, l.pve[1].points)
       assert.are.same({ "Vestras#1000" }, l.virgins)

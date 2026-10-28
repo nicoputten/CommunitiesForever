@@ -153,4 +153,19 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     assert.are.same({ 2, 1, 1, 1 }, { week.fish, week.trades, week.craftTrade, week.discoveries })
     for name in pairs(stubs) do _G[name] = nil end
   end)
+
+  it("caches the state until something changes, with fresh countdowns (CF-59)", function()
+    load()
+    local first = ns.DoomsdayTracker.state()
+    local before = first.resetsIn
+    state.serverTime = state.serverTime + 60
+    local second = ns.DoomsdayTracker.state()
+    assert.are.equal(first, second) -- the same table: not rebuilt
+    assert.are.equal(before - 60, second.resetsIn) -- the countdown moved on
+    quest()
+    assert.are_not.equal(second, ns.DoomsdayTracker.state())
+    local third = ns.DoomsdayTracker.state()
+    addon:SendMessage(ns.Sync.PEOPLE_UPDATED, "Ada#1001")
+    assert.are_not.equal(third, ns.DoomsdayTracker.state())
+  end)
 end)

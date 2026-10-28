@@ -218,7 +218,7 @@ local POINTS_WIDTH = 110
 local function points(p) return string.format("%d \194\183 %d", p.pve or 0, p.pvp or 0) end
 
 local function board(parent, width)
-  local b = ns.DoomsdayTracker.board()
+  local b = ns.DoomsdayBoard.board()
   local y = header(parent, "Today \194\183 " .. b.label, 0, width,
     "Live for friends online with the addon; others update after their upload.")
   local cols = math.max(1, #b.columns)
@@ -306,7 +306,7 @@ local function ladderSection(parent, width, y, title, track, rows, ladder)
 end
 
 local function ladder(parent, width)
-  local l = ns.DoomsdayTracker.ladder()
+  local l = ns.DoomsdayBoard.ladder()
   local state = ns.DoomsdayTracker.state()
   local y = header(parent, "This week", 0, width, "week resets in " .. ns.DoomsdayView.until_(state.weekResetsIn))
   y = ladderSection(parent, width, y, "PvE", "pve", l.pve, l)
@@ -346,7 +346,7 @@ end
 
 local function feats(parent, width)
   local y = header(parent, "Feats \194\183 your characters", 0, width)
-  for _, c in ipairs(ns.DoomsdayTracker.feats()) do
+  for _, c in ipairs(ns.DoomsdayBoard.feats()) do
     local name = Theme.rgbCode(Kit.classColor(c.classFile)) .. tostring(c.name) .. "|r"
     local count = string.format("  \194\183 %d %s", #c.feats, #c.feats == 1 and "feat" or "feats")
     y = y + textLine(parent, name .. dim(count), y + 6, width, "text", pools.body) + 4
