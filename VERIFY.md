@@ -49,6 +49,19 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-54 FriendProbe: kills, victims and realm time (at launch, from 2026-11-05)
+One run answers V73 to V78 (and V79 to V83 of CF-52/CF-53). Copy the new `tools/FriendProbe` into `Interface\AddOns` (replace the old one), on a PvP-flagged character of level 20 or more.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/fp start` | The log has `V77 region`, `V78 realm time ... offset +60 min` (or +120 in summer time) and the `V79`–`V83` lines. | open |
+| `/fp pvp`, enemy nameplates on | `V75 combat log: registered` or `blocked: ...`. | open |
+| Target, mouse over and look at enemy players, one with a skull | A `V74 unit` line per player (name, level, class, race, rank, GUID); `secret` or `missing` answers V74. | open |
+| An honorable kill solo, one in a group, one in a battleground | Per kill `V73 honor` (all arguments, the parsed victim and rank, whether the victim was seen before and how), `V76 at the kill: group ..., instance ...`, and `V73 PLAYER_PVP_KILLS_CHANGED` with the counters. | open |
+| Die once to an enemy player, once by falling, once by drowning | `V75 killed by ...` (the killer's name, if the combat log is allowed), `V81` mirror timer and recap lines, `V79 total deaths`. | open |
+| Duel a friend; loot a blue item; buy something | `V80 system ... in a duel`, `V83 CHAT_MSG_LOOT ...`, `V83 PLAYER_MONEY`. | open |
+| `/reload`, send `WTF\Account\<account>\SavedVariables\FriendProbe.lua` | Claude Code moves the answers to `docs/API-FINDINGS.md`, decides which victim fields CF-55b fills and the next pool version (the Hunt stays or becomes a second Skirmish), and proposes the Wanted poster and revenge-kill stories if the killer's name is readable. | open |
+
 ### CF-53 Loot, gold, play sessions and groups in the record
 One character with this build. After the steps `/reload` and look at `self.feed[<today>][<guid>]` in the saved file (`CommunitiesForeverDB`).
 

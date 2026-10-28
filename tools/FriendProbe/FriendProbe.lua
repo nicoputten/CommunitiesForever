@@ -8,6 +8,10 @@
 --   /fp reloadfile  V67 (CF-45): which version of ReloadProbe.lua (and ReloadProbeLate.lua) the game loaded
 --   /fp reload      V68 (CF-45): buttons that call C_UI.Reload() and ReloadUI() from a click
 --   /fp inviteall   V69 (CF-45): one button that invites every friend online in Forever by name
+--   /fp pvp         V73-V76 (CF-54), V79-V83 (CF-52, CF-53): log honor messages, kill counters, enemy players
+--                   seen (target, mouseover, nameplates), the combat log if allowed, deaths, duel lines, mirror
+--                   timers and loot (stays on after /reload)
+--   /fp pvp off     stop pvp logging
 --   /fp feed off    stop feed logging (V35)
 --   /fp clear       wipe the saved log
 -- Checks (by VERIFY.md number):
@@ -22,6 +26,8 @@
 --   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
 --   V52      community member presence (run after a member logged out: still online?)
 --   V57      which menu, whisper and invite functions exist (the clicks need /fp menu)
+--   V77/V78  region, and the realm clock next to the server time (the realm's offset from UTC)
+--   V79-V83  PvP counters and rank, duel strings, death recap, riding skill, loot strings, watch-list items
 --   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
 --   /fp comm channel         one addon message in the community channel (V49: run on two clients)
 --   /fp comm summary         what came back so far
@@ -697,6 +703,220 @@ commFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender, tar
   end
 end)
 
+-- ===== V73-V76 (CF-54), V79-V83 (CF-52, CF-53): kills, victims, deaths, duels, loot =====
+-- /fp pvp switches the logging on (stays on after /reload; /fp pvp off). Every call is guarded: a missing
+-- function logs "missing", a secret value "secret".
+local function Val(v)
+  if v == nil then return "missing" end
+  if issecretvalue and issecretvalue(v) then return "secret" end
+  return S(v)
+end
+
+-- Every return value of fn(...) through Val, or "missing" / "error".
+local function Vals(fn, ...)
+  if not fn then return "missing" end
+  local results = { pcall(fn, ...) }
+  if not results[1] then return "error " .. S(results[2]) end
+  local parts = {}
+  for i = 2, table.maxn(results) do parts[#parts + 1] = Val(results[i]) end
+  return #parts > 0 and table.concat(parts, ", ") or "(nothing)"
+end
+
+-- Lua pattern of a game format string ("%s dies, honorable kill Rank: %s ..."), positional args too.
+local function Pattern(format)
+  if type(format) ~= "string" then return nil end
+  local p = format:gsub("%%%d%$([sd])", "%%%1") -- "%1$s" -> "%s"
+  p = p:gsub("([%(%)%.%[%]%*%+%-%?%^%$])", "%%%1")
+  p = p:gsub("%%s", "(.+)"):gsub("%%d", "(%%d+)")
+  return "^" .. p .. "$"
+end
+
+local PVP_EVENTS = { "CHAT_MSG_COMBAT_HONOR_GAIN", "PLAYER_PVP_KILLS_CHANGED", "NAME_PLATE_UNIT_ADDED",
+  "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT", "PLAYER_DEAD", "CHAT_MSG_SYSTEM", "MIRROR_TIMER_START",
+  "MIRROR_TIMER_STOP", "CHAT_MSG_LOOT", "PLAYER_MONEY" }
+local pvpFrame = CreateFrame("Frame")
+local pvpRegistered, combatLog = false, nil
+local unitSeen = {}   -- guid -> GetTime() of the last V74 line (one line per player per minute)
+local seenByName = {} -- full name -> the fields seen, for the honor message
+local lastDamage      -- the last damage the player took (combat log)
+
+local function Counters(label)
+  log(label, "session", Vals(GetPVPSessionStats), "| lifetime", Vals(GetPVPLifetimeStats),
+    "| this week", Vals(GetPVPThisWeekStats))
+end
+
+local function LogUnit(unit, source)
+  if not (UnitExists and UnitExists(unit) and UnitIsPlayer and UnitIsPlayer(unit)) then return end
+  local enemy = (UnitIsEnemy and UnitIsEnemy("player", unit)) or (UnitCanAttack and UnitCanAttack("player", unit))
+  if not enemy then return end
+  local guid = UnitGUID(unit)
+  local key = Val(guid)
+  if unitSeen[key] and GetTime() - unitSeen[key] < 60 then return end
+  unitSeen[key] = GetTime()
+  local name = GetUnitName and GetUnitName(unit, true)
+  local level = UnitLevel and UnitLevel(unit)
+  local _, class = UnitClass(unit)
+  local _, race = UnitRace(unit)
+  local rank = UnitPVPRank and UnitPVPRank(unit)
+  log("V74 unit", source, "name", Val(name), "level", Val(level), "class", Val(class), "race", Val(race),
+    "UnitPVPRank", Val(rank), "rankInfo", rank and Vals(GetPVPRankInfo, rank, unit) or "missing", "guid", Val(guid))
+  if type(name) == "string" and not (issecretvalue and issecretvalue(name)) then
+    seenByName[name] = { level = level, class = class, race = race, rank = rank, at = GetTime(), source = source }
+  end
+end
+
+local function Honor(text, ...)
+  local args = { ... }
+  for i = 1, #args do args[i] = Val(args[i]) end
+  log("V73 honor", Val(text), "| other args:", table.concat(args, " | "))
+  local pattern = Pattern(COMBATLOG_HONORGAIN)
+  log("V73 honor format COMBATLOG_HONORGAIN", Val(COMBATLOG_HONORGAIN))
+  local victim, rank
+  if pattern and type(text) == "string" then victim, rank = text:match(pattern) end
+  log("V73 honor parsed: victim", Val(victim), "rank", Val(rank))
+  local seen = victim and seenByName[victim]
+  if seen then
+    log("V73 victim seen", string.format("%.0f s before", GetTime() - seen.at), "via", seen.source, "level",
+      Val(seen.level), "class", Val(seen.class), "race", Val(seen.race), "rank", Val(seen.rank))
+  else
+    log("V73 victim not seen as target, mouseover or nameplate")
+  end
+  local _, instanceType = GetInstanceInfo()
+  log("V76 at the kill: group", Vals(IsInGroup), "instance", Val(instanceType), "zone", Vals(GetRealZoneText))
+  Counters("V73 counters (honor)")
+end
+
+-- Damage to the player and party kills from the combat log, when an addon may register it (V75, V81).
+local function CombatLogEvent()
+  local info = { pcall(CombatLogGetCurrentEventInfo) }
+  if not info[1] then return end
+  local subevent, sourceGUID, sourceName, sourceFlags, destGUID, destName =
+    info[3], info[5], info[6], info[7], info[9], info[10]
+  if subevent == "PARTY_KILL" and sourceGUID == UnitGUID("player") then
+    log("V75 PARTY_KILL", Val(destName), Val(destGUID), "GetPlayerInfoByGUID", Vals(GetPlayerInfoByGUID, destGUID))
+  elseif destGUID == UnitGUID("player") and type(subevent) == "string" and subevent:match("_DAMAGE$") then
+    lastDamage = { subevent = subevent, name = sourceName, guid = sourceGUID, flags = sourceFlags,
+                   environment = info[13], at = GetTime() }
+    if subevent == "ENVIRONMENTAL_DAMAGE" then log("V81 environmental damage", Val(info[13])) end
+  end
+end
+
+local function Dead()
+  if lastDamage and GetTime() - lastDamage.at < 10 then
+    log("V75 killed by", Val(lastDamage.name), Val(lastDamage.guid), "flags", Val(lastDamage.flags), "via",
+      lastDamage.subevent, "environment", Val(lastDamage.environment))
+  else
+    log("V75 killed by: no damage in the combat log (" .. S(combatLog) .. ")")
+  end
+  log("V81 death recap GetRecapEvents()", Vals(C_DeathRecap and C_DeathRecap.GetRecapEvents))
+  if C_DeathRecap and C_DeathRecap.GetRecapEvents then
+    local ok, events = pcall(C_DeathRecap.GetRecapEvents)
+    if ok and type(events) == "table" then
+      for i, e in ipairs(events) do DumpTable("V81 recap " .. i, e) end
+    end
+  end
+  log("V79 total deaths GetStatistic(60)", Vals(GetStatistic, 60))
+  lastDamage = nil
+end
+
+pvpFrame:SetScript("OnEvent", function(_, event, ...)
+  if not (FriendProbeDB and FriendProbeDB.pvp) then return end
+  if event == "COMBAT_LOG_EVENT_UNFILTERED" then
+    CombatLogEvent()
+  elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
+    Honor(...)
+  elseif event == "PLAYER_PVP_KILLS_CHANGED" then
+    Counters("V73 PLAYER_PVP_KILLS_CHANGED")
+  elseif event == "NAME_PLATE_UNIT_ADDED" then
+    LogUnit((...), "nameplate")
+  elseif event == "PLAYER_TARGET_CHANGED" then
+    LogUnit("target", "target")
+  elseif event == "UPDATE_MOUSEOVER_UNIT" then
+    LogUnit("mouseover", "mouseover")
+  elseif event == "PLAYER_DEAD" then
+    Dead()
+  elseif event == "CHAT_MSG_SYSTEM" then
+    local text = ...
+    local me = GetUnitName and GetUnitName("player", true)
+    if type(text) == "string" and type(me) == "string" and text:find(me, 1, true) then log("V80 system", text) end
+  elseif event == "CHAT_MSG_LOOT" or event == "PLAYER_MONEY" then
+    log("V83 " .. event, Val((...)), "money", Vals(GetMoney))
+  else
+    local args = {}
+    for i = 1, select("#", ...) do args[#args + 1] = Val((select(i, ...))) end
+    log("V81 " .. event, table.concat(args, " | "))
+  end
+end)
+
+local function PvpRegister()
+  if pvpRegistered then return end
+  pvpRegistered = true
+  for _, event in ipairs(PVP_EVENTS) do
+    if not pcall(pvpFrame.RegisterEvent, pvpFrame, event) then log("pvp: unknown event", event) end
+  end
+  local ok, err = pcall(pvpFrame.RegisterEvent, pvpFrame, "COMBAT_LOG_EVENT_UNFILTERED")
+  combatLog = ok and "registered" or ("blocked: " .. S(err))
+  log("V75 combat log:", combatLog)
+end
+
+local function PvpOn()
+  FriendProbeDB.pvp = true
+  PvpRegister()
+  log("pvp logging on (stays on after /reload; /fp pvp off stops it). Get honorable kills in the world (one solo,")
+  log("one in a group) and one in a battleground; target, mouse over and look at enemy players with nameplates on;")
+  log("die once to a player and once by falling; duel a friend; loot a blue. Then /reload and send the log.")
+  Counters("V73 counters (now)")
+  LogUnit("target", "target")
+end
+
+-- ===== V77, V78 (CF-54) and V79-V83 (CF-52, CF-53): values to read once =====
+local WATCH_ITEMS = { 12784, 12360, 14342, 15063, 15062, 19807, 19970, 19979 }
+local RIDING_LINES = { 148, 149, 150, 152, 533, 553, 554, 713, 762 }
+
+local function RealmTime()
+  log("V77 region GetCurrentRegion()", Vals(GetCurrentRegion))
+  local hour, minute = GetGameTime and GetGameTime()
+  local now = GetServerTime()
+  if type(hour) ~= "number" then
+    log("V78 realm time: GetGameTime missing")
+    return
+  end
+  local diff = (hour * 60 + minute) - math.floor(now / 60) % 1440
+  if diff > 720 then diff = diff - 1440 elseif diff <= -720 then diff = diff + 1440 end
+  local offset = math.floor(diff / 15 + 0.5) * 15
+  log(string.format("V78 realm time GetGameTime %02d:%02d, server (UTC) %s, offset %+d min", hour, minute,
+    date("!%H:%M", now), offset))
+end
+
+local function DataApis()
+  log("V79 lifetime", Vals(GetPVPLifetimeStats), "| UnitPVPRank", Vals(UnitPVPRank, "player"),
+    "| this week", Vals(GetPVPThisWeekStats), "| deaths GetStatistic(60)", Vals(GetStatistic, 60))
+  local rank = UnitPVPRank and UnitPVPRank("player")
+  log("V79 GetPVPRankInfo(rank, player)", rank and Vals(GetPVPRankInfo, rank, "player") or "missing")
+  log("V80 DUEL_WINNER_KNOCKOUT", Val(DUEL_WINNER_KNOCKOUT), "| DUEL_WINNER_RETREAT", Val(DUEL_WINNER_RETREAT))
+  log("V81 C_DeathRecap", C_DeathRecap and "exists" or "missing", "GetRecapEvents",
+    Val(C_DeathRecap and C_DeathRecap.GetRecapEvents))
+  for _, line in ipairs(RIDING_LINES) do
+    local fn = C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID
+    if fn then
+      local ok, info = pcall(fn, line)
+      if ok and type(info) == "table" and (info.skillLevel or 0) > 0 then DumpTable("V82 skill line " .. line, info) end
+    end
+  end
+  log("V82 GetProfessionInfoBySkillLineID", Val(C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID),
+    "| IsSpellKnown 33388/33391", Vals(IsSpellKnown, 33388), Vals(IsSpellKnown, 33391), "| GetNumSkillLines",
+    Vals(GetNumSkillLines), "| C_Timer.NewTicker", Val(C_Timer and C_Timer.NewTicker))
+  if GetNumSkillLines and GetSkillLineInfo then
+    for i = 1, GetNumSkillLines() or 0 do log("V82 skill", i, Vals(GetSkillLineInfo, i)) end
+  end
+  log("V83 LOOT_ITEM_SELF", Val(LOOT_ITEM_SELF), "| _MULTIPLE", Val(LOOT_ITEM_SELF_MULTIPLE), "| PUSHED",
+    Val(LOOT_ITEM_PUSHED_SELF), "| CREATED", Val(LOOT_ITEM_CREATED_SELF), "| GetMoney", Vals(GetMoney))
+  for _, id in ipairs(WATCH_ITEMS) do
+    log("V83 item", id, Vals(C_Item and C_Item.GetItemNameByID, id), "quality",
+      Vals(C_Item and C_Item.GetItemQualityByID, id), "slot", Vals(C_Item and C_Item.GetItemInfoInstant, id))
+  end
+end
+
 local function Start()
   FriendProbeDB = FriendProbeDB or {}
   FriendProbeDB.log = {}
@@ -711,6 +931,8 @@ local function Start()
   Section("V49/V50 COMMUNITY TRANSPORT", CommunityTransport)
   Section("V35 FEED", FeedOn)
   Section("V57 MENU APIS", MenuApis)
+  Section("V77/V78 REGION AND REALM TIME", RealmTime)
+  Section("V79-V83 DOOMSDAY DATA APIS", DataApis)
   log("start done: /reload, then send WTF\\Account\\<account>\\SavedVariables\\FriendProbe.lua")
 end
 
@@ -724,6 +946,7 @@ loader:SetScript("OnEvent", function(_, _, name)
     FriendProbeDB.reloadBy = nil
   end
   if FriendProbeDB.feed then FeedRegister() end
+  if FriendProbeDB.pvp then PvpRegister() end
   if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then C_ChatInfo.RegisterAddonMessagePrefix(COMM_PREFIX) end
 end)
 
@@ -757,6 +980,11 @@ SlashCmdList.FRIENDPROBE = function(msg)
     InviteAll()
   elseif cmd == "menu" then
     Section("V57 MENU", MenuTest)
+  elseif cmd == "pvp" and arg == "off" then
+    FriendProbeDB.pvp = nil
+    log("pvp logging off")
+  elseif cmd == "pvp" then
+    Section("V73-V76 PVP", PvpOn)
   elseif cmd == "feed" and arg == "off" then
     FriendProbeDB.feed = nil
     log("feed logging off")
@@ -764,6 +992,6 @@ SlashCmdList.FRIENDPROBE = function(msg)
     FriendProbeDB.log = {}
     print("|cff33ff99FP|r log cleared")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | invite | reloadfile | reload | inviteall | menu | comm whisper <name> | feed off | clear")
+    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | pvp | pvp off | invite | reloadfile | reload | inviteall | menu | comm whisper <name> | feed off | clear")
   end
 end
