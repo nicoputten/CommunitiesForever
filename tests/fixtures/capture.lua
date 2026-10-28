@@ -50,7 +50,10 @@ world:with("A", function(c)
 end)
 world:settle()
 world:with("A", function(c)
-  c.ns.GroupAsks.ask({ id = "dm", name = "The Deadmines", min = 17, max = 26 })
+  -- CF-51: also posted on Discord, so the ASK carries post, item, guid and role.
+  local p = c.state.player
+  local post = c.ns.Planner.askOnDiscord("dm", { guid = p.guid, name = p.name, role = "dps" })
+  c.ns.GroupAsks.ask({ id = "dm", name = "The Deadmines", min = 17, max = 26 }, nil, post)
   c.ns.Ping.send(10)
 end)
 world:settle()
