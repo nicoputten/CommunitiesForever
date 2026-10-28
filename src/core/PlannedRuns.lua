@@ -365,7 +365,8 @@ function PlannedRuns.close(run, candidates, dungeon)
   for _, c in ipairs(candidates or {}) do
     if not answered[c.guid] and type(c.level) == "number" then
       local fit = PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max)
-      if fit.canPick and not fit.suggested then
+      -- "Close" (could fill's fallback): 1-5 below or a carry; 6+ below is never suggested (CF-50).
+      if fit.kind == "low" or fit.kind == "carry" then
         local gap = c.level < dungeon.min and dungeon.min - c.level or c.level - dungeon.max
         list[#list + 1] = { char = c, fit = fit, gap = gap }
       end
@@ -383,15 +384,15 @@ end
 -- ===== Level fit and roles (CF-49, the web's WEB-47) =====
 
 PlannedRuns.CARRY_FROM = 10 -- levels above the range from which a character carries the group
-PlannedRuns.LOW_UNTIL = 5   -- levels below the range a character may still join; more is Maybe only
+PlannedRuns.LOW_UNTIL = 5   -- levels below the range that are "low"; more is "tooLow" (never suggested)
 
 --[[ How a level fits min-max, one rule with the site and Discord:
   { kind = "fits"|"over"|"carry"|"low"|"tooLow", label, canPick, suggested, note }
-canPick: may answer I'm in with it (tooLow: Maybe only); suggested: offered as "could fill". An unknown level
-counts as too low. ]]
+canPick: may answer I'm in with it: always since CF-50 (the web's WEB-52, Nico's "recommend, never restrict"),
+6+ below too with "This will be tough."; suggested: offered as "could fill". An unknown level counts as too low. ]]
 function PlannedRuns.levelFit(level, min, max)
   if type(level) ~= "number" then
-    return { kind = "tooLow", label = "level unknown", canPick = false, suggested = false }
+    return { kind = "tooLow", label = "level unknown", canPick = true, suggested = false }
   end
   if level > max then
     local over = level - max
@@ -407,7 +408,8 @@ function PlannedRuns.levelFit(level, min, max)
       return { kind = "low", label = below .. " below", canPick = true, suggested = false,
                note = "This will be tough." }
     end
-    return { kind = "tooLow", label = below .. " below", canPick = false, suggested = false }
+    return { kind = "tooLow", label = below .. " below", canPick = true, suggested = false,
+             note = "This will be tough." }
   end
   return { kind = "fits", label = "fits", canPick = true, suggested = true }
 end

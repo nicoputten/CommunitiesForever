@@ -38,6 +38,15 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-50 Any level may answer I'm in
+Use the CF-49 setup: a run 12+ levels above your character (`dungeon = "smarm"` at level 20). `/reload` after each edit.
+
+| Step | Expected | Status |
+|---|---|---|
+| The run, "Answer", pick the character | "12 below", "This will be tough." in orange under the characters; I'm in stays enabled and selected. | open |
+| Save answer | `pending` in the saved file (after `/reload`) has `answer = "in"` with that character. | open |
+| The Dungeons tab, a run you don't fit | Your 6+ below alt is not in "Close: …" (only 1–5 below and carries are). | open |
+
 ### CF-49 Runs v2: level fit and roles
 Use the CF-46 test file. Give one run a dungeon well above your character (e.g. `dungeon = "smarm"` at level 20) and add answers with `role`, `fit` and `reserve`: `{ name = "Cy Example", answer = "in", role = "dps", fit = "carry \194\183 +12" }`, `{ name = "Bo Stone", answer = "maybe", role = "heal", reserve = true }`. `/reload` after each edit.
 
@@ -45,7 +54,7 @@ Use the CF-46 test file. Give one run a dungeon well above your character (e.g. 
 |---|---|---|
 | A run in range, "Answer" | Your characters with "fits", "+N over", "carry · +N" or "N below", fits first. Under them "ROLE" with only the roles the class can play (Warrior Tank and Damage, Mage only Damage), starting on the character's role. A carry shows "Little XP for you here.", 1–5 below "This will be tough." | open |
 | Healer, Save answer | `pending` in the saved file (after `/reload`) has the answer with `role = "heal"`. With the organiser online with this build: their slot shows you as Healer. | open |
-| The run 12+ levels above you, "Answer", pick the character | "6+ levels below: Maybe only" in orange, I'm in greyed out, the answer switched to Maybe. | open |
+| The run 12+ levels above you, "Answer", pick the character | ~~"6+ levels below: Maybe only", I'm in greyed out~~ Since CF-50: see CF-50. | open |
 | "Plan a run" | A ROLE row under Lead as; another Lead as character changes the roles; the plan's `role` in `pending` is the one picked. | open |
 | The run with Cy and Bo in the Dungeons tab | Cy's slot says "carry · +12" in orange; Bo has no slot; "Reserve: Bo Stone (Healer)" under the slots. A character of yours 1–5 below or a carry is in "Close: … (your alt, 4 below)". | open |
 | A Runs.lua from before (no role, fit, reserve) | The tab looks as with CF-46. | open |

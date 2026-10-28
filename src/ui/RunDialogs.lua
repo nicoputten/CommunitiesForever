@@ -12,7 +12,6 @@ local PAD = 20
 local DOT = " \194\183 "
 local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
 local ROLE_BUTTONS = { tank = "Tank", heal = "Healer", dps = "Damage" }
-local TOO_LOW = "6+ levels below: Maybe only"
 local ANSWERS = { { value = "in", text = "I'm in" }, { value = "maybe", text = "Maybe" },
                   { value = "cant", text = "Can't" } }
 local LATER = "Reaches the site and Discord after /reload. You'll be asked next."
@@ -381,13 +380,11 @@ local function picks(run)
   return list
 end
 
--- CF-49: picks a character: its role (the addon's when the class can play it) and, when it is 6+ levels
--- below, Maybe instead of I'm in.
+-- CF-49: picks a character: its role (the addon's when the class can play it). CF-50: any level may say I'm in.
 local function pick(o, role)
   state.char, state.fit = o.char, o.fit
   state.role = role and ns.PlannedRuns.canPlay(o.char.classFile, role) and role
     or ns.PlannedRuns.defaultRole(o.char.classFile, o.char.role)
-  if not o.fit.canPick and state.answer == "in" then state.answer = "maybe" end
 end
 
 function RunDialogs.answer(run)
@@ -398,15 +395,14 @@ function RunDialogs.answer(run)
   for _, o in ipairs(options) do
     if mine and o.char.guid == mine.guid then pick(o, mine.role) end
   end
-  if not state.char and options[1] and options[1].fit.canPick then pick(options[1]) end
+  if not state.char and options[1] then pick(options[1]) end
   RunDialogs.drawAnswer(options)
 end
 
 function RunDialogs.drawAnswer(options)
   local run = state.run
   local showRole = state.answer ~= "cant" and state.char ~= nil
-  local note = state.answer ~= "cant" and state.fit and (state.fit.canPick and state.fit.note or
-    (not state.fit.canPick and TOO_LOW))
+  local note = state.answer ~= "cant" and state.fit and state.fit.note
   begin("Answer", 160 + 28 * #options + 80 + (showRole and 56 or 0) + (note and 20 or 0))
   local dungeon = ns.Dungeons.get(run.dungeon)
   local y = 16
@@ -426,8 +422,6 @@ function RunDialogs.drawAnswer(options)
     b:ClearAllPoints()
     b:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", x, -y)
     x = x + (b:GetWidth() or 60) + 4
-    -- CF-49: a character 6+ levels below can only answer Maybe.
-    if a.value == "in" and state.fit and not state.fit.canPick then b:SetEnabled(false) end
   end
   y = y + 40
   if state.answer ~= "cant" then
@@ -451,7 +445,7 @@ function RunDialogs.drawAnswer(options)
       y = y + 28
     end
     if note then
-      text("tiny", y + 2, note, state.fit.canPick and "muted" or "warning")
+      text("tiny", y + 2, note, state.fit.kind == "tooLow" and "warning" or "muted")
       y = y + 20
     end
     if showRole then
