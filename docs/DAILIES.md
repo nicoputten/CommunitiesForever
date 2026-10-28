@@ -1,6 +1,6 @@
 # Dailies and weeklies: the pool
 
-The catalogue of daily and weekly goals (CF-57 to CF-60; designed with Nico on 2026-10-28). The code (`src/core/Dailies.lua`) is the source of truth once it exists. Change this file together with it. The site keeps a copy of the ids and titles (web `docs/STORIES.md`, WEB-58).
+The catalogue of daily and weekly goals (CF-57 to CF-60; designed with Nico on 2026-10-28). The code (`src/core/Dailies.lua`) is the source of truth once it exists. Change this file together with it. The site keeps a copy of the ids and titles (web `docs/STORIES.md`, WEB-60).
 
 ## Rules
 
