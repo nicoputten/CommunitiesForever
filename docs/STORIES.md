@@ -37,7 +37,7 @@ Compatibility (rule 8): only new optional fields in `chars.*` and in feed entrie
 - Caps and cleaning as in CF-52. Tests, docs and a fixture as in CF-52.
 
 ## E16 PvP ladder (decided with Nico, 2026-10-28)
-A weekly and a lifetime ladder, duels and a battleground block, with points per kill and daily and weekly goals. It shows in the addon (a Ladder tab and a PvP line on the character card), on the site (web WEB-58, WEB-59) and in Discord (`/ladder`, bot BOT-15). The rules are in `docs/LADDER.md`; the addon stores raw kills and derives the points, so the rules can change later. Designs come from Nico (web `docs/DESIGN-PROMPT-RECAP-V2.md`, section 3). Order: CF-54 at launch (from 2026-11-05), then CF-55 (after CF-52), then CF-56 once the designs are in.
+A weekly and a lifetime ladder, duels and a battleground block, with **DoomPoints PvP** per kill and for daily and weekly goals (next to, never summed with, the DoomPoints PvE of the dailies and weeklies). It shows in the addon (a Ladder tab and a PvP line on the character card), on the site (web WEB-58, WEB-59) and in Discord (`/ladder`, bot BOT-15). The rules are in `docs/LADDER.md`; the addon stores raw kills and derives the points, so the rules can change later. Designs come from Nico (web `docs/DESIGN-PROMPT-RECAP-V2.md`, section 3). Order: CF-54 at launch (from 2026-11-05), then CF-55 (after CF-52), then CF-56 once the designs are in.
 
 Compatibility (rule 8): only new optional fields in feed entries, within `pv` 1. Older clients ignore `pvpKills` and the death `t`, relay what they keep, and a relayed record without them changes nothing. Friends without CF-55 show on the ladder with their lifetime honorable kills and "no ladder data yet" instead of points, never a made-up 0.
 
@@ -86,14 +86,14 @@ After CF-52 and CF-54.
 ### CF-56 Ladder tab and the PvP line on the character card
 After CF-55, once Nico's designs are in (boards from web `docs/DESIGN-PROMPT-RECAP-V2.md`, section 3).
 - A **Ladder** tab in the main window, drawn from `Ladder` (CF-55):
-  - **Week:** friends by points, expandable to their characters, your own row highlighted
+  - **Week:** friends by DoomPoints PvP, expandable to their characters, your own row highlighted
   - **Lifetime:** honorable kills and rank
   - **Duels:** this week's wins and losses and the head-to-head grid
   - **Battlegrounds:** the block
 - A goals panel for the character you are on:
   - today's Hunt, Class hunt, Daily and Duel, with progress (for example "Human Warlock 1/3")
   - the week's Streak, Class weekly and Weekly bounty
-- The character card gets a PvP line: lifetime honorable kills, rank, this week's points and place, or **PvP Virgin**.
+- The character card gets a PvP line: lifetime honorable kills, rank, this week's DoomPoints PvP and place, or **PvP Virgin**. Where the card shows DoomPoints, PvE and PvP stand side by side ("DoomPoints · PvE 34 · PvP 1,210").
 - Spree badges in the Activity tab (5 and 10 kills without dying).
 - Friends without CF-55 data show their lifetime numbers and "no ladder data yet", never 0 points as if known.
 - Manual steps in `VERIFY.md`.

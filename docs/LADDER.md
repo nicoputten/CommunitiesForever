@@ -2,6 +2,8 @@
 
 Decided with Nico, 2026-10-28. This file is the one description of the ladder's points and goals. The addon (CF-55, CF-56), the site (web WEB-58, WEB-59) and the bot (BOT-15) follow it. The addon computes the ladder in `src/core/Ladder.lua`, and the site has its own TypeScript copy. `tests/fixtures/ladder-cases.json` (golden cases: kills and duels in, points, goal progress and draws out) is copied into the web repo and tested in both, so the two copies can't drift apart. A rule change updates this file, the golden file and both copies in the same release.
 
+**Name:** the ladder's points are **DoomPoints PvP**. The dailies and weeklies (a separate workshop and stories) give **DoomPoints PvE**. The two are shown side by side ("DoomPoints · PvE 34 · PvP 1,210", this week and all time), never summed and never ranked together. PvP goals (kills, duels, battleground wins) live only here, and the dailies pool has none.
+
 Product rule: recommend, never restrict. Goals are suggestions with points, never conditions to play.
 
 ## Data
@@ -16,7 +18,7 @@ Any victim field may be unknown (nil). A rule that needs an unknown field gives 
 - A week starts on the game's weekly reset day: **Wednesday** in Europe (region 3), **Tuesday** everywhere else. The addon reads the region from `GetCurrentRegion()` (guarded; Wednesday when unknown). The site has one setting for its group.
 - Week number: `week = floor((day + 3 - resetWeekday) / 7)`, where `resetWeekday` is 1 for Tuesday and 2 for Wednesday (Monday = 0; day 0, 1970-01-01, was a Thursday).
 
-## Points per kill (world kills)
+## DoomPoints PvP per kill (world kills)
 A kill with `bg = true` never counts here: it goes to the battleground block.
 
 A kill is **counted** unless:
@@ -82,7 +84,7 @@ The enemy faction is the other faction of the character's own one. There is no s
 ### Battleground block
 - Battleground kills (`bg = true`) score with the same bands and the same counting rules.
 - Daily **Battleground win:** +5 for a won battleground (`runs`, `kind = "pvp"`, `won = true`), once a day.
-- The block ranks by these points and shows wins, losses and kills per battleground. It never adds to the world ladder.
+- The block ranks by these battleground points (not DoomPoints PvP) and shows wins, losses and kills per battleground. It never adds to the world ladder.
 
 ## Lists
 Enemy combinations (race token as `UnitRace` gives it, class token):
@@ -108,8 +110,8 @@ Zone bands (the zone names as the feed stores them):
 - **55–60:** Burning Steppes, Felwood, Winterspring, Eastern Plaguelands, Western Plaguelands, Silithus
 
 ## Views
-- **Week:** friends ranked by the week's world points (kill points plus goal points), the sum of their characters, which can be expanded to the split per character. Ties: more counted kills first.
-- **Lifetime:** friends ranked by the game's lifetime honorable kills (`chars.*.pvp`, summed), with each character's PvP rank. The site also shows all-time points, because it keeps every day; the addon only keeps 7 days.
+- **Week:** friends ranked by the week's DoomPoints PvP (kill points plus goal points), the sum of their characters, which can be expanded to the split per character. Ties: more counted kills first.
+- **Lifetime:** friends ranked by the game's lifetime honorable kills (`chars.*.pvp`, summed), with each character's PvP rank. The site also shows all-time DoomPoints PvP, because it keeps every day; the addon only keeps 7 days.
 - **Duels:**
   - wins and losses this week
   - a head-to-head grid between friends
