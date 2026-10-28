@@ -19,6 +19,7 @@ src\core\Filter.lua
 src\core\GameText.lua
 src\core\Pvp.lua
 src\core\Loot.lua
+src\core\Feats.lua
 src\core\Play.lua
 src\core\Feed.lua
 src\core\Doomsday.lua

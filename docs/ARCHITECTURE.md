@@ -52,6 +52,7 @@ CommunitiesForever/
       GameText.lua           the game's own messages through its format strings, item links (CF-52, CF-53)
       Loot.lua               loot messages, rare and epic items, the watch list of notable items, gold (CF-53)
       Play.lua               play sessions in the feed: continue within 5 minutes, heartbeat end (CF-53)
+      Feats.lua              the own characters' feats with the site's thresholds and titles, first-seen times (CF-57b)
       Goals.lua              own Doomsday goals: realm offset fallbacks, the reset setting, facts per day and week,
                              the situation for swaps, done marks, cleaning and merging received goals (CF-56)
       DoomsdayView.lua       what the Doomsday tab, its chat lines and the character card's PvP line show (CF-57)
@@ -117,7 +118,7 @@ CommunitiesForever/
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
       RunDialogs.lua         Ask now, Plan a run, Answer and the reload prompt, one kit dialog (CF-47)
-      DoomsdayTab.lua        the Doomsday tab: Today and Week (CF-57a; Board, Ladder, Feats in CF-57b)
+      DoomsdayTab.lua        the Doomsday tab: Today and Week (CF-57a), Board, Ladder and Feats (CF-57b)
       CrownToast.lua         "First to finish today!" under the minimap, fading in and sliding with Ambient effects (CF-57)
       RunToasts.lua          the reminder and Starting now notes under the minimap, 20 s (CF-48)
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
@@ -196,7 +197,8 @@ global = {
                 feed = Feed,                         -- CF-22: activity feed, last 7 realm days
                 goals = { days = { [n] = Goal }, weeks = { [w] = Goal }, streak = { n, last }, best },
                                                      -- CF-56: own Doomsday goals, 14 days and 2 weeks, sent
-                doomsday = { days = { [n] = Facts }, weeks = { [w] = Facts }, chars = { [guid] = { death, level } } } },
+                doomsday = { days = { [n] = Facts }, weeks = { [w] = Facts }, chars = { [guid] = { death, level } } },
+                feats = { [guid] = { [key] = { at, title, detail } } } }, -- CF-57b: own feats, first seen (0 = earlier), local
                                                      -- CF-56: the facts behind them (core/Goals.lua), local only
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char }, via, invite, feed,      -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)

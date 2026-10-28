@@ -221,6 +221,109 @@ function DoomsdayView.swapLine(originalText, newText, arrow)
   return string.format("Swapped for you: \"%s\" %s \"%s\"", originalText, arrow or "to", newText)
 end
 
+-- ===== Board and Ladder (CF-57b; board DD08AddonBoard) =====
+
+-- Column labels of the Board (the goal's short name).
+local SHORT = {
+  ["d.quests10"] = "10 quests", ["d.quests20"] = "20 quests", ["d.zone5"] = "5 in a zone", ["d.zones3"] = "3 zones",
+  ["d.shared3"] = "Shared quests", ["d.level"] = "Level up", ["d.altLevel"] = "Alt level", ["d.ilvl"] = "Item level",
+  ["d.cleanLevel"] = "Clean level", ["d.dungeon"] = "Dungeon", ["d.dungeonFriend"] = "Dungeon w/ friend",
+  ["d.bosses3"] = "3 bosses", ["d.skill5"] = "5 skill points", ["d.secondary"] = "Cooking / FA / Fishing",
+  ["d.fish20"] = "20 fish", ["d.chars2"] = "2 characters", ["d.groupFriend"] = "Group up", ["d.trade"] = "Trade",
+  ["d.rare"] = "Rare loot", ["d.earlyBird"] = "Early bird", ["p.frontLine"] = "Front line", ["p.punchUp"] = "Punch up",
+  ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouchable", ["p.variety"] = "Variety", ["p.ranked"] = "Ranked",
+  hunt = "Hunt",
+}
+
+function DoomsdayView.short(id)
+  return SHORT[id] or (ns.Doomsday.goal(id) and ns.Doomsday.goal(id).text) or "Newer goal"
+end
+
+--[[ One friend's points and counts for a day and a week from their synced data:
+d = { goals = { days, weeks, streak }, feed, chars, schedule, community, day, week }.
+Returns { day = entry, today = { pve, pvp }, week = { pve, pvp }, goals (done this week), kills (counted PvP this
+week), perChar = { [guid] = pvp points this week }, killedEver, streak, killsByZone, bg = { [name] = { won, lost,
+points } } }. Duel points are the caller's (they need everyone's records). ]]
+function DoomsdayView.score(d)
+  local D = ns.Doomsday
+  local goals = type(d.goals) == "table" and d.goals or {}
+  local r = { day = goals.days and goals.days[d.day], today = { pve = 0, pvp = 0 }, week = { pve = 0, pvp = 0 },
+              goals = 0, kills = 0, perChar = {}, killedEver = false, streak = goals.streak, killsByZone = {}, bg = {} }
+  local function count(done, into)
+    for id in pairs(done or {}) do
+      local track, p = D.goalPoints(id)
+      if track then
+        into[track] = into[track] + p
+        if into == r.week then r.goals = r.goals + 1 end
+      end
+    end
+  end
+  for n, e in pairs(goals.days or {}) do
+    if D.week(n) == d.week then count(e.done, r.week) end
+    if n == d.day then count(e.done, r.today) end
+  end
+  if goals.weeks and goals.weeks[d.week] then count(goals.weeks[d.week].done, r.week) end
+  local kills = {}
+  for feedDay, chars in pairs(d.feed or {}) do
+    for guid, e in pairs(type(chars) == "table" and chars or {}) do
+      -- Battleground results (CF-23) by the feed's realm day, which is close enough to the Doomsday week.
+      for _, run in ipairs(type(feedDay) == "number" and D.week(feedDay) == d.week and e.runs or {}) do
+        if run.kind == "pvp" and run.won ~= nil then
+          r.bg[run.name] = r.bg[run.name] or { won = 0, lost = 0, points = 0 }
+          local b = r.bg[run.name]
+          if run.won then b.won = b.won + 1 else b.lost = b.lost + 1 end
+        end
+      end
+      for _, k in ipairs(e.pvpKills or {}) do
+        local copy = {}
+        for key, v in pairs(k) do copy[key] = v end
+        copy.char = guid
+        kills[#kills + 1] = copy
+      end
+    end
+  end
+  for _, c in pairs(d.chars or {}) do
+    if c.pvp and (c.pvp.hk or 0) > 0 then r.killedEver = true end
+  end
+  if #kills > 0 then r.killedEver = true end
+  for _, s in ipairs(D.scoreKills(kills, d.schedule, d.community)) do
+    if D.week(s.day) == d.week then
+      if s.track == "pvp" then
+        r.week.pvp = r.week.pvp + s.points
+        r.perChar[s.kill.char] = (r.perChar[s.kill.char] or 0) + s.points
+        if s.counted then
+          r.kills = r.kills + 1
+          local zone = s.kill.zone or "Other"
+          r.killsByZone[zone] = (r.killsByZone[zone] or 0) + 1
+        end
+      else
+        local zone = s.kill.zone or "a battleground"
+        r.bg[zone] = r.bg[zone] or { won = 0, lost = 0, points = 0 }
+        r.bg[zone].points = r.bg[zone].points + s.points
+      end
+      if s.day == d.day and s.track == "pvp" then r.today.pvp = r.today.pvp + s.points end
+    end
+  end
+  return r
+end
+
+-- The zone with the most counted kills: name, count (nil without kills).
+function DoomsdayView.topZone(killsByZone)
+  local best, n
+  for zone, c in pairs(killsByZone or {}) do
+    if not n or c > n or (c == n and zone < best) then best, n = zone, c end
+  end
+  return best, n
+end
+
+-- "+2", "-1", "new" (the board's ▲2 / ▼1 when the font has the triangles).
+function DoomsdayView.moveText(move, triangles)
+  if move == "new" then return "new" end
+  if move == 0 then return "" end
+  if triangles then return (move > 0 and "\226\150\178" or "\226\150\188") .. math.abs(move) end
+  return (move > 0 and "+" or "-") .. math.abs(move)
+end
+
 -- ===== The character card (CF-57) =====
 
 --[[ The PvP line of a character: "Stone Guard, a.k.a. Mailbox Menace · 1,234 honorable kills · PvP 40 this
