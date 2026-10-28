@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+
+## v0.7.0-beta1 (2026-10-28)
 - An Ask now that is also posted on Discord now reaches the site through any friend with the addon: everyone online carries it along with their next /reload or logout, and answers given in game show on the Discord post too. Only friends with a character in range are asked; the rest just carry it.
 
 ## v0.6.0-beta1 (2026-10-28)
