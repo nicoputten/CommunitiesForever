@@ -23,6 +23,10 @@ local MAX_RUNS = 30        -- CF-23: dungeon, raid and battleground runs per cha
 local MAX_COMPANIONS = 40
 local MAX_BOSSES = 40
 local RUN_KINDS = { party = true, raid = true, pvp = true }
+local MAX_DEATHS = 50      -- CF-52: deaths and duels per character and day
+local MAX_DUELS = 50
+local DEATH_CAUSES = { fall = true, fire = true, lava = true, drown = true, fatigue = true, player = true,
+                       creature = true, other = true }
 
 -- Day number (days since 1970-01-01) of a calendar date. Pure, so days compare and subtract easily.
 function Feed.dayNumber(year, month, day)
@@ -106,9 +110,13 @@ end
   feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                                 quests = { [zone] = count }, ranks = { [profession] = rank },
                                 learned = { [profession] = true },
-                                runs = { { name, kind, bosses, won, with = { guid, ... } } } } } }
-char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, or a finished run
-(CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with }.
+                                runs = { { name, kind, bosses, won, with = { guid, ... } } },
+                                kills = { [zone] = count }, deaths = { { t, zone, cause } },
+                                duels = { { t, won, vs } } } } }
+char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, a finished run
+(CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with }, or
+(CF-52) honorable kills { kind = "kills", zone, count }, a death { kind = "death", t, zone, cause } or a
+finished duel { kind = "duel", t, won, vs } (vs: the opponent's full name as the game gives it).
 ]]
 function Feed.add(feed, day, char, event, now)
   local entry = entryFor(feed, day, char, now)
@@ -130,6 +138,20 @@ function Feed.add(feed, day, char, event, now)
     if #entry.runs < MAX_RUNS then
       entry.runs[#entry.runs + 1] = { name = event.name, kind = event.instance, bosses = event.bosses,
                                       won = event.won, with = event.with }
+    end
+  elseif event.kind == "kills" then
+    entry.kills = entry.kills or {}
+    local zone = event.zone or "Other"
+    entry.kills[zone] = (entry.kills[zone] or 0) + (event.count or 1)
+  elseif event.kind == "death" then
+    entry.deaths = entry.deaths or {}
+    if #entry.deaths < MAX_DEATHS then
+      entry.deaths[#entry.deaths + 1] = { t = event.t, zone = event.zone, cause = event.cause }
+    end
+  elseif event.kind == "duel" then
+    entry.duels = entry.duels or {}
+    if #entry.duels < MAX_DUELS then
+      entry.duels[#entry.duels + 1] = { t = event.t, won = event.won, vs = event.vs }
     end
   end
 end
@@ -197,6 +219,34 @@ local function cleanRuns(runs)
   return #result > 0 and result or nil
 end
 
+-- CF-52: received deaths and duels, only the expected fields. An unknown cause becomes "other"; a duel
+-- needs its result and opponent.
+local function cleanDeaths(deaths)
+  if type(deaths) ~= "table" then return nil end
+  local result = {}
+  for _, d in ipairs(deaths) do
+    if #result >= MAX_DEATHS then break end
+    if type(d) == "table" and type(d.t) == "number" then
+      result[#result + 1] = { t = cleanNumber(d.t, math.huge), zone = cleanText(d.zone),
+                              cause = DEATH_CAUSES[d.cause] and d.cause or "other" }
+    end
+  end
+  return #result > 0 and result or nil
+end
+
+local function cleanDuels(duels)
+  if type(duels) ~= "table" then return nil end
+  local result = {}
+  for _, d in ipairs(duels) do
+    if #result >= MAX_DUELS then break end
+    local vs = type(d) == "table" and cleanText(d.vs)
+    if vs and type(d.t) == "number" and type(d.won) == "boolean" then
+      result[#result + 1] = { t = cleanNumber(d.t, math.huge), won = d.won, vs = vs }
+    end
+  end
+  return #result > 0 and result or nil
+end
+
 -- Copy of a received feed with only the expected fields, cleaned and limited, or nil.
 function Feed.clean(feed)
   if type(feed) ~= "table" then return nil end
@@ -216,6 +266,9 @@ function Feed.clean(feed)
             ranks = cleanMap(e.ranks, MAX_PROFESSIONS, cleanText),
             learned = cleanMap(e.learned, MAX_PROFESSIONS, isTrue),
             runs = cleanRuns(e.runs),
+            kills = cleanMap(e.kills, MAX_ZONES, function(v) return cleanNumber(v, MAX_COUNT) end),
+            deaths = cleanDeaths(e.deaths),
+            duels = cleanDuels(e.duels),
           }
           count = count + 1
         end
@@ -241,7 +294,8 @@ function Feed.merge(stored, incoming, maxAt)
       for guid, entry in pairs(chars) do
         local have = result[day][guid]
         local future = n == 2 and maxAt and (entry.at or 0) > maxAt
-        if not future and (not have or (entry.at or 0) >= (have.at or 0)) then result[day][guid] = entry end
+        -- On equal `at` the stored entry stays: a copy relayed by an older client may lack newer fields (CF-52).
+        if not future and (not have or (entry.at or 0) > (have.at or 0)) then result[day][guid] = entry end
       end
       if not newest or day > newest then newest = day end
     end

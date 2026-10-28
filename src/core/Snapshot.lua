@@ -104,6 +104,7 @@ function Snapshot.apply(record, info, now)
       char.talents, char.mainTree, char.autoRole = previous.talents, previous.mainTree, previous.autoRole
     end
     if char.quests == nil then char.quests = previous.quests end
+    char.pvp = previous.pvp -- CF-52: kept by PvpTracker, not read with the snapshot
     -- The role override is set by the player in settings, not read from the game.
     char.roleOverride = previous.roleOverride
     char.role = char.roleOverride or char.autoRole

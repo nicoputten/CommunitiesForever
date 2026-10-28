@@ -1,5 +1,5 @@
 -- Describe: stable, human-readable text for records (used by /cf self for testing).
--- Pure Lua, no WoW globals.
+-- Pure Lua, no WoW globals. Requires ns.Pvp (CF-52) for the PvP line.
 local _, ns = ...
 
 local Describe = {}
@@ -42,6 +42,14 @@ function Describe.selfRecord(record, now)
       profs[#profs + 1] = string.format("%s %s/%s [%d]", tostring(p.name), tostring(p.rank), tostring(p.max), skillLine)
     end
     lines[#lines + 1] = "  " .. (#profs > 0 and table.concat(profs, ", ") or "no professions")
+    local pvp = c.pvp
+    if pvp then -- CF-52
+      local rank = ns.Pvp.rankText(pvp)
+      lines[#lines + 1] = string.format("  PvP: %s honorable kills, %s, this week %s kills and %s honor; "
+        .. "%s deaths, duels %s won %s lost", tostring(pvp.hk or "?"), rank or "rank unknown",
+        tostring(pvp.weekKills or "?"), tostring(pvp.weekHonor or "?"), tostring(pvp.deaths or 0),
+        tostring(pvp.duelsWon or 0), tostring(pvp.duelsLost or 0))
+    end
     if c.talents then
       local split = {}
       for _, t in ipairs(c.talents) do split[#split + 1] = string.format("%s %d", tostring(t.name), t.points or 0) end

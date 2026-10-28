@@ -32,17 +32,6 @@ Order:
 
 The site's WEB-58 needs CF-55's golden file.
 
-### CF-52 PvP, duels and deaths in the record
-- Per character (`chars.*.pvp`): lifetime honorable kills, current PvP rank (number and title), and this week's honor, if readable. Candidates: `GetPVPLifetimeStats`, `UnitPVPRank`/`GetPVPRankInfo`, `GetPVPThisWeekStats`. Updated on `PLAYER_PVP_KILLS_CHANGED` and at login.
-- Per feed day and character:
-  - `kills = { [zone] = n }`: honorable kills by zone (the zone where the kill counter rose)
-  - `deaths = { { t, zone, cause } }`, where `t` is the time and `cause` is one of `fall`, `fire` (a campfire or other fire damage), `lava`, `drown`, `fatigue`, `player`, `creature` or `other`. Candidates: `ENVIRONMENTAL_DAMAGE` subevents in the combat log just before `PLAYER_DEAD`, or `C_DeathRecap`. Under the Midnight restrictions the combat log may be unavailable: then `cause` is `other`.
-  - `duels = { { t, won, vs } }` where `vs` is the opponent's full character name as the game gives it (never split, rule 4). The winner comes from the `DUEL_WINNER_KNOCKOUT`/`DUEL_WINNER_RETREAT` system message, matched through the game's own format string, never hardcoded English.
-- Battleground results are already in `runs` (`kind`, `won`, CF-23). Check that they are filled for Warsong Gulch, Arathi Basin and Alterac Valley once those are open.
-- Sizes are capped like the rest of the feed (at most 50 deaths and 50 duels per day and character), and received data is cleaned (SYNC.md).
-- `/cf self` shows the PvP line (kills, rank) for the current character.
-- Tests: the pure parts (cause from the last environmental damage, duel result from a formatted message, caps, merge of the new fields) with busted. `SYNC.md` and `ARCHITECTURE.md` updated. A fixture for the new fields.
-
 ### CF-53 Loot, mounts, gold and play sessions in the record
 - Per feed day and character:
   - `loot = { rare = n, epic = { { id, name, slot, level }, ... } }`: rare (blue) and epic (purple) items received. Each epic carries its item id, its name as the loot link shows it, its equip slot as the game's `INVTYPE_*` token (nil for non-equippable items) and the character's level when it was looted, for the site's "first epic" feat. Candidate: `CHAT_MSG_LOOT` for your own loot, quality and equip slot from `C_Item.GetItemQualityByID` / `C_Item.GetItemInfo`.

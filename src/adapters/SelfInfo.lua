@@ -128,7 +128,10 @@ function SelfInfo.read()
   }
 end
 
--- Translates WoW events into SelfInfo.CHANGED messages on the addon object.
+-- The current character's GUID and full name, without reading everything else (CF-52).
+function SelfInfo.guid() return UnitGUID("player") end
+SelfInfo.fullName = fullName
+
 -- Today's realm date (CF-22: the activity feed groups by realm day): year, month, day.
 -- C_DateAndTime.GetCurrentCalendarTime is unverified on Forever (VERIFY.md V36); falls back to the
 -- local date of the server time.
