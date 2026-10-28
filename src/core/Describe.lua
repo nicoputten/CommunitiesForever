@@ -44,7 +44,7 @@ function Describe.selfRecord(record, now)
     lines[#lines + 1] = "  " .. (#profs > 0 and table.concat(profs, ", ") or "no professions")
     local pvp = c.pvp
     if pvp then -- CF-52
-      local rank = ns.Pvp.rankText(pvp)
+      local rank = ns.Pvp.rankText(pvp, c.faction)
       lines[#lines + 1] = string.format("  PvP: %s honorable kills, %s, this week %s kills and %s honor; "
         .. "%s deaths, duels %s won %s lost", tostring(pvp.hk or "?"), rank or "rank unknown",
         tostring(pvp.weekKills or "?"), tostring(pvp.weekHonor or "?"), tostring(pvp.deaths or 0),

@@ -377,6 +377,10 @@ end
 function renderCard.character(parent, d, width, path)
   local y = characterHeader(parent, d, PAD - 4, width, path)
   y = tiles(parent, d, y, width)
+  if d.pvp then -- CF-57
+    placeText(cardPools.small, parent, PAD, y - 4, width - 2 * PAD, d.pvp, "goldLight")
+    y = y + 22
+  end
   y = skillColumns(parent, d, y, width) + 14
   return sharedQuests(parent, d.sharedQuests, y, width, path)
 end

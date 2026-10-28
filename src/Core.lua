@@ -55,6 +55,7 @@ function addon:OnEnable()
   ns.ChatLinks.watch(self) -- CF-27: clickable chat links
   ns.GroupAsks.start(self) -- CF-27: "Who's up for it?"
   ns.RunAlerts.start(self) -- CF-48: run reminders, start time, chat lines
+  ns.DoomsdayAlerts.start(self) -- CF-57: Doomsday chat lines and the crown toast (after Sync: PEOPLE_UPDATED)
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
 end
 

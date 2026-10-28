@@ -8,7 +8,8 @@ local MainFrame = {}
 
 local REFRESH_DEBOUNCE = 0.2
 local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
-               { value = "dungeons", text = "Dungeons" } } -- CF-24: a badge counts planned runs
+               { value = "dungeons", text = "Dungeons" }, -- CF-24: a badge counts planned runs
+               { value = "doomsday", text = "Doomsday" } } -- CF-57
 local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 
 local GROUP_ASK_NOTE = "Group asks wait until combat ends" -- CF-42
@@ -55,6 +56,10 @@ function MainFrame.render()
   end
   if activeTab == "dungeons" then
     ns.DungeonsTab.render(view, empty)
+    return
+  end
+  if activeTab == "doomsday" then
+    ns.DoomsdayTab.render(view, empty)
     return
   end
   ns.FriendsTab.render(view, empty)
@@ -166,6 +171,11 @@ function updateFooter(empty)
     frame.footerRightText:SetText(GROUP_ASK_NOTE)
     return
   end
+  if activeTab == "doomsday" then -- CF-57
+    frame.footerText:SetText(empty and "" or ns.Format.syncedText(view, GetServerTime()))
+    frame.footerRightText:SetText(ns.DoomsdayTab.NOTE)
+    return
+  end
   frame.footerText:SetText(activeTab == "friends" and not empty and ns.Format.friendsFooter(view, GetServerTime())
     or "")
   frame.footerRightText:SetText(FOOTER_HINT)
@@ -180,6 +190,7 @@ local function create()
     onClose = function()
       MainFrame.setFilter("")
       ns.ActivityTab.reset()
+      ns.DoomsdayTab.reset() -- CF-57: Today again next time
     end,
     onSettings = function() ns.Settings.open() end,
     onResize = function()
@@ -192,6 +203,7 @@ local function create()
   ns.ActivityTab.create(frame.content, { settings = settings, render = MainFrame.render }) -- CF-41
   ns.DungeonsTab.create(frame.content, { settings = settings, render = MainFrame.render, -- CF-42
                                          print = function(text) addonRef:Print(text) end })
+  ns.DoomsdayTab.create(frame.content, { settings = settings, render = MainFrame.render }) -- CF-57
   MainFrame.selectTab(activeTab)
 end
 
@@ -211,6 +223,7 @@ function MainFrame.selectTab(value)
   if value == "friends" then ns.FriendsTab.show() else ns.FriendsTab.hide() end
   if value == "activity" then ns.ActivityTab.show() else ns.ActivityTab.hide() end
   if value == "dungeons" then ns.DungeonsTab.show() else ns.DungeonsTab.hide() end
+  if value == "doomsday" then ns.DoomsdayTab.show() else ns.DoomsdayTab.hide() end
   if view then MainFrame.render() end
 end
 
@@ -263,6 +276,7 @@ local function refreshMessages()
     ns.Planner.UPDATED, -- CF-46: planned runs from a friend
     ns.GroupAsks.CHANGED, -- CF-27: your ask and its answers
     ns.Sync.PEERS_CHANGED, -- CF-28: community members coming online or leaving
+    ns.DoomsdayTracker.CHANGED, -- CF-57: a Doomsday goal done
   }
 end
 

@@ -130,12 +130,23 @@ function Pvp.count(pvp, event, statDeaths)
   end
 end
 
--- "Stone Guard a.k.a. Mailbox Menace", "rank 0 a.k.a. Conscientious Objector", or nil without a rank.
-function Pvp.rankText(pvp)
+-- The official rank names per faction (warcraft.wiki.gg "Honor system (pre-2.0)"; the site's PVP_RANKS), for when
+-- the game gave none.
+Pvp.RANK_NAMES = {
+  Horde = { "Scout", "Grunt", "Sergeant", "Senior Sergeant", "First Sergeant", "Stone Guard", "Blood Guard",
+            "Legionnaire", "Centurion", "Champion", "Lieutenant General", "General", "Warlord", "High Warlord" },
+  Alliance = { "Private", "Corporal", "Sergeant", "Master Sergeant", "Sergeant Major", "Knight", "Knight-Lieutenant",
+               "Knight-Captain", "Knight-Champion", "Lieutenant Commander", "Commander", "Marshal", "Field Marshal",
+               "Grand Marshal" },
+}
+
+-- "Stone Guard, a.k.a. Mailbox Menace" (CF-57: the card's wording), "rank 0, a.k.a. Conscientious Objector", or
+-- nil without a rank. The game's name first, else the official one for the faction.
+function Pvp.rankText(pvp, faction)
   local rank = type(pvp) == "table" and pvp.rank
   if type(rank) ~= "number" or not Pvp.TITLES[rank] then return nil end
-  local name = rank > 0 and pvp.rankName or nil
-  return string.format("%s a.k.a. %s", name or ("rank " .. rank), Pvp.TITLES[rank])
+  local name = rank > 0 and (pvp.rankName or (Pvp.RANK_NAMES[faction or ""] or {})[rank]) or nil
+  return string.format("%s, a.k.a. %s", name or ("rank " .. rank), Pvp.TITLES[rank])
 end
 
 -- ===== Raw kills (CF-55b) =====
