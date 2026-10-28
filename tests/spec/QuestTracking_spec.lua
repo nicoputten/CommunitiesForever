@@ -16,13 +16,9 @@ describe("shared quests in the window (CF-19)", function()
   end
 
   local function load()
-    state = wowapi.install()
-    state.questLog = questLog()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = function(s)
+      s.questLog = questLog()
+    end })
     -- The mock's first community member is the player, the second an online Battle.net friend.
     myGuid = state.clubMembers["23125681"][1].guid
     friendGuid = state.clubMembers["23125681"][2].guid

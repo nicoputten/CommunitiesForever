@@ -16,14 +16,10 @@ describe("talents and role in the window (CF-18)", function()
   end
 
   local function load()
-    state = wowapi.install()
-    state.player.classFile = "WARRIOR"
-    state.talentNodes = armsBuild()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = function(s)
+      s.player.classFile = "WARRIOR"
+      s.talentNodes = armsBuild()
+    end })
   end
 
   local function settle()

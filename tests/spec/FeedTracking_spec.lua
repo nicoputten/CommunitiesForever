@@ -7,17 +7,13 @@ describe("activity feed (CF-22)", function()
   local myGuid, friendTag, friendGuid
 
   local function load()
-    state = wowapi.install()
-    state.questLog = {
-      { isHeader = true, title = "Westfall" },
-      { questID = 101, title = "Quest A" },
-      { questID = 102, title = "Quest B" },
-    }
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = function(s)
+      s.questLog = {
+        { isHeader = true, title = "Westfall" },
+        { questID = 101, title = "Quest A" },
+        { questID = 102, title = "Quest B" },
+      }
+    end })
     -- The mock's first community member is the player, the second an online Battle.net friend.
     myGuid = state.clubMembers["23125681"][1].guid
     friendGuid = state.clubMembers["23125681"][2].guid

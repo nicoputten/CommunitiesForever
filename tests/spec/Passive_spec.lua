@@ -63,13 +63,9 @@ describe("passive without a community", function()
   end)
 
   it("is active with a stored community, also on a character outside it", function()
-    state = wowapi.install()
-    state.clubs = {}
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = function(s)
+      s.clubs = {}
+    end })
     assert.is_false(ns.CommunitySelection.passive())
     assert.is_true(state.minimapIcon.shown)
   end)

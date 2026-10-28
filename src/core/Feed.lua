@@ -45,7 +45,7 @@ function Feed.dayLabel(day, today)
   if day == today then return "Today" end
   if day == today - 1 then return "Yesterday" end
   local _, month, monthDay = Feed.date(day)
-  return string.format("%s %d %s", WEEKDAYS[(day + 4) % 7 + 1], monthDay, MONTHS[month]) -- day 0 was a Thursday
+  return string.format("%s %d %s", WEEKDAYS[ns.Calendar.weekday(day) + 1], monthDay, MONTHS[month])
 end
 
 --[[ Events from the difference between the stored and the new snapshot of the current character:

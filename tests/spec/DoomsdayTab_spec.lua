@@ -14,13 +14,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
   end
 
   local function load(setup)
-    state = wowapi.install()
-    if setup then setup(state) end
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = setup })
   end
 
   local function texts()
@@ -29,7 +23,11 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     return "\n" .. table.concat(list, "\n") .. "\n"
   end
 
-  local function quest() wowapi.fireEvent(state, "QUEST_TURNED_IN", 9000 + math.random(999), 500, 0) end
+  local questId = 9000
+  local function quest()
+    questId = questId + 1 -- a quest the log doesn't know: it counts under the zone you're in
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", questId, 500, 0)
+  end
 
   local function printed(text)
     for _, line in ipairs(state.printed) do

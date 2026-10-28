@@ -27,7 +27,11 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
   end
 
   local function goals() return addon.db.global.self.goals end
-  local function quest() wowapi.fireEvent(state, "QUEST_TURNED_IN", 9000 + math.random(999), 500, 0) end
+  local questId = 9000
+  local function quest()
+    questId = questId + 1 -- a quest the log doesn't know: it counts under the zone you're in
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", questId, 500, 0)
+  end
 
   -- Logs in on another character of the same account.
   local function switchTo(guid, name, level)
