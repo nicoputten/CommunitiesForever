@@ -286,10 +286,11 @@ describe("PlannedRuns views (CF-46)", function()
     assert.is_nil(PlannedRuns.youFit({ organiser = { battleTag = "Me#1000" }, answers = {} }, CANDIDATES, DM, ME))
   end)
 
-  it("lists characters close to the range, your own first", function()
+  it("lists characters that may join but aren't suggested (CF-49: 1-5 below, carries), your own first", function()
     local close = PlannedRuns.close({ answers = {} }, CANDIDATES, DM)
-    assert.are.same({ "Low Example", "Cy Example" }, { close[1].char.name, close[2].char.name })
-    assert.are.same({ 4, 4 }, { close[1].short, close[2].over })
+    -- Cy Example is 4 over: suggested, so not "close".
+    assert.are.equal(1, #close)
+    assert.are.same({ "Low Example", "4 below" }, { close[1].char.name, close[1].fit.label })
     assert.are.same({}, PlannedRuns.close({ answers = {} }, CANDIDATES, nil))
   end)
 

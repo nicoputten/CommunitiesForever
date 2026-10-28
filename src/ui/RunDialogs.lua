@@ -11,6 +11,8 @@ local WIDTH = 460
 local PAD = 20
 local DOT = " \194\183 "
 local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
+local ROLE_BUTTONS = { tank = "Tank", heal = "Healer", dps = "Damage" }
+local TOO_LOW = "6+ levels below: Maybe only"
 local ANSWERS = { { value = "in", text = "I'm in" }, { value = "maybe", text = "Maybe" },
                   { value = "cant", text = "Can't" } }
 local LATER = "Reaches the site and Discord after /reload. You'll be asked next."
@@ -94,6 +96,10 @@ local function create()
     for _, c in ipairs(ownChars()) do
       if c.guid == value then state.char = c end
     end
+    -- CF-49: the role row follows the character's class.
+    state.role = state.char and ns.PlannedRuns.defaultRole(state.char.classFile, state.char.role)
+    state.time, state.note = timeBox:GetText(), noteBox:GetText()
+    RunDialogs.drawPlan()
   end)
   discordBox = Kit.checkbox(content, "Also post on Discord", DISCORD_HELP, false, function(on) state.discord = on end)
 end
@@ -148,6 +154,28 @@ local function actions(mainLabel, onMain, note)
     h.text:SetTextColor(Theme.color("faint"))
   end
   return main
+end
+
+-- CF-49: a row of the roles the class can play (Tank, Healer, Damage), the picked one highlighted.
+local function roleRow(y, classFile, picked, onPick)
+  label(y, "Role")
+  local x = PAD
+  for _, role in ipairs(ns.PlannedRuns.rolesFor(classFile)) do
+    local b = button(role == picked and "buttons" or "ghost", ROLE_BUTTONS[role], function() onPick(role) end)
+    b:ClearAllPoints()
+    b:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", x, -(y + 18))
+    x = x + (b:GetWidth() or 60) + 4
+  end
+  return y + 56
+end
+
+-- A copy of the character with the picked role (what goes into the pending item).
+local function withRole(c, role)
+  if not c then return nil end
+  local copy = {}
+  for k, v in pairs(c) do copy[k] = v end
+  copy.role = role or c.role
+  return copy
 end
 
 -- ===== Reload prompt =====
@@ -250,14 +278,15 @@ end
 -- ===== Plan a run =====
 
 function RunDialogs.plan(dungeon)
-  state = { dungeon = dungeon, char = currentChar(), days = date and ns.PlannedRuns.dayChoices(now(), date) or {},
-            day = 1, time = "20:00", note = "" }
+  local char = currentChar()
+  state = { dungeon = dungeon, char = char, days = date and ns.PlannedRuns.dayChoices(now(), date) or {},
+            day = 1, time = "20:00", note = "", role = ns.PlannedRuns.defaultRole(char.classFile, char.role) }
   RunDialogs.drawPlan()
 end
 
 -- (Redrawn when a day is picked; what was typed is kept.)
 function RunDialogs.drawPlan()
-  begin("Plan a run", 440)
+  begin("Plan a run", 496)
   local y = 16
   label(y, "Dungeon")
   local list = {}
@@ -281,6 +310,10 @@ function RunDialogs.drawPlan()
   leadSelect:SetWidth(WIDTH - 2 * PAD)
   place(leadSelect, PAD, y + 18)
   y = y + 56
+  y = roleRow(y, state.char and state.char.classFile, state.role, function(role)
+    state.role, state.time, state.note = role, timeBox:GetText(), noteBox:GetText()
+    RunDialogs.drawPlan()
+  end)
   label(y, "Day")
   local x = PAD
   for i, d in ipairs(state.days) do
@@ -323,7 +356,7 @@ function RunDialogs.drawPlan()
       problem.text:SetText("Pick a dungeon and a character.")
       return
     end
-    ns.Planner.plan(state.dungeon.id, startsAt, state.char, noteBox:GetText())
+    ns.Planner.plan(state.dungeon.id, startsAt, withRole(state.char, state.role), noteBox:GetText())
     dialog:Hide()
     RunDialogs.reloadPrompt()
   end, LATER)
@@ -331,21 +364,30 @@ end
 
 -- ===== Answer a run =====
 
--- Your characters for a run: fits, too high, too low (fits first).
+-- Your characters for a run with their fit (CF-49 levelFit: "fits", "+3 over", "carry · +12", "4 below"),
+-- fits first, then by level.
 local function picks(run)
   local dungeon = ns.Dungeons.get(run.dungeon)
   local list = {}
   for _, c in ipairs(ownChars()) do
-    local fit = "fits"
-    if dungeon and c.level > dungeon.max then fit = "too high" elseif dungeon and c.level < dungeon.min then
-      fit = "too low" end
+    local fit = dungeon and ns.PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max)
+      or { kind = "fits", label = "fits", canPick = true }
     list[#list + 1] = { char = c, fit = fit }
   end
   table.sort(list, function(a, b)
-    if (a.fit == "fits") ~= (b.fit == "fits") then return a.fit == "fits" end
+    if (a.fit.kind == "fits") ~= (b.fit.kind == "fits") then return a.fit.kind == "fits" end
     return a.char.level > b.char.level
   end)
   return list
+end
+
+-- CF-49: picks a character: its role (the addon's when the class can play it) and, when it is 6+ levels
+-- below, Maybe instead of I'm in.
+local function pick(o, role)
+  state.char, state.fit = o.char, o.fit
+  state.role = role and ns.PlannedRuns.canPlay(o.char.classFile, role) and role
+    or ns.PlannedRuns.defaultRole(o.char.classFile, o.char.role)
+  if not o.fit.canPick and state.answer == "in" then state.answer = "maybe" end
 end
 
 function RunDialogs.answer(run)
@@ -354,15 +396,18 @@ function RunDialogs.answer(run)
   local options = picks(run)
   state = { run = run, answer = mine and mine.answer or "in", char = nil }
   for _, o in ipairs(options) do
-    if mine and o.char.guid == mine.guid then state.char = o.char end
+    if mine and o.char.guid == mine.guid then pick(o, mine.role) end
   end
-  if not state.char and options[1] and options[1].fit == "fits" then state.char = options[1].char end
+  if not state.char and options[1] and options[1].fit.canPick then pick(options[1]) end
   RunDialogs.drawAnswer(options)
 end
 
 function RunDialogs.drawAnswer(options)
   local run = state.run
-  begin("Answer", 160 + 28 * #options + 80)
+  local showRole = state.answer ~= "cant" and state.char ~= nil
+  local note = state.answer ~= "cant" and state.fit and (state.fit.canPick and state.fit.note or
+    (not state.fit.canPick and TOO_LOW))
+  begin("Answer", 160 + 28 * #options + 80 + (showRole and 56 or 0) + (note and 20 or 0))
   local dungeon = ns.Dungeons.get(run.dungeon)
   local y = 16
   text("name", y, dungeon and dungeon.name or run.dungeon, "goldLight")
@@ -381,6 +426,8 @@ function RunDialogs.drawAnswer(options)
     b:ClearAllPoints()
     b:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", x, -y)
     x = x + (b:GetWidth() or 60) + 4
+    -- CF-49: a character 6+ levels below can only answer Maybe.
+    if a.value == "in" and state.fit and not state.fit.canPick then b:SetEnabled(false) end
   end
   y = y + 40
   if state.answer ~= "cant" then
@@ -393,20 +440,31 @@ function RunDialogs.drawAnswer(options)
       r:SetPoint("RIGHT", dialog.content, "RIGHT", -PAD, 0)
       r:SetHeight(26)
       r.text:SetText(charText(o.char))
-      r.right:SetText(o.fit)
-      r.right:SetTextColor(Theme.color(o.fit == "fits" and "onlineText" or "muted"))
+      r.right:SetText(o.fit.label)
+      r.right:SetTextColor(Theme.color(o.fit.kind == "fits" and "onlineText"
+        or o.fit.kind == "carry" and "warning" or "muted"))
       r:SetSelected(state.char ~= nil and state.char.guid == o.char.guid)
       r:SetScript("OnClick", function()
-        state.char = o.char
+        pick(o)
         RunDialogs.drawAnswer(options)
       end)
       y = y + 28
+    end
+    if note then
+      text("tiny", y + 2, note, state.fit.canPick and "muted" or "warning")
+      y = y + 20
+    end
+    if showRole then
+      y = roleRow(y + 6, state.char.classFile, state.role, function(role)
+        state.role = role
+        RunDialogs.drawAnswer(options)
+      end) - 6
     end
   end
   text("tiny", y + 6, "reaches Discord after /reload", "faint")
   local organiser = run.organiser and (run.organiser.name or run.organiser.battleTag) or "The organiser"
   actions("Save answer", function()
-    ns.Planner.answer(run, state.answer, state.answer ~= "cant" and state.char or nil)
+    ns.Planner.answer(run, state.answer, state.answer ~= "cant" and withRole(state.char, state.role) or nil)
     dialog:Hide()
   end, organiser .. "'s addon gets it right away over addon sync when you're both online.")
 end

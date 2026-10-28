@@ -372,6 +372,11 @@ local function runSlots(parent, run, candidates, me, y, width)
       elseif c and c.online then
         state, stateColor = "online", "onlineText"
       end
+      -- CF-49: how the level fits when it isn't "fits": a carry in the warning colour, others muted.
+      local fit = not state and ns.PlannedRuns.fitOf(a, c, dungeonOf(run))
+      if fit and fit.label ~= "fits" then
+        state, stateColor = fit.label, fit.kind == "carry" and "warning" or "muted"
+      end
       s.status:SetText(state or "")
       s.status:SetTextColor(Theme.color(stateColor or "muted"))
       edge(s, mine and "gold" or "divider")
@@ -534,13 +539,22 @@ local function renderRun(run, me, candidates)
 
   y = section(parent, PAD, y + 4, width, "Group", countsText(run))
   y = runSlots(parent, run, candidates, me, y, width)
+  -- CF-49: reserves wait for a full role; they take no slot.
+  local reserves = {}
+  for _, a in ipairs(ns.PlannedRuns.reserves(run)) do
+    local who = a.name or tagName(a.battleTag) or "?"
+    reserves[#reserves + 1] = who .. (a.role and (" (" .. ROLE_NAMES[a.role] .. ")") or "")
+  end
+  if #reserves > 0 then
+    placeText(pools.tiny, parent, PAD, y, width, "Reserve: " .. table.concat(reserves, ", "), "muted")
+    y = y + 20
+  end
   local close = {}
   for i, entry in ipairs(ns.PlannedRuns.close(run, candidates, dungeon)) do
     if i > 3 then break end
     local c = entry.char
     local whose = c.own and "your alt" or (c.displayName or "member")
-    local gap = entry.short and (plural(entry.short, "level") .. " short") or (plural(entry.over, "level") .. " over")
-    close[#close + 1] = classColored(c, c.name) .. " " .. c.level .. " (" .. whose .. ", " .. gap .. ")"
+    close[#close + 1] = classColored(c, c.name) .. " " .. c.level .. " (" .. whose .. ", " .. entry.fit.label .. ")"
   end
   if #close > 0 then
     placeText(pools.tiny, parent, PAD, y, width, "Close: " .. table.concat(close, ", "), "muted")

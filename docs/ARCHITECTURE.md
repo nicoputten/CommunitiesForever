@@ -241,9 +241,11 @@ CF_RUNS = {
       answers = {                 -- at most 40
         { battleTag = "Ada#1001", guid = "Player-...", name = "Ada Lovewell",
           answer = "in",          -- in | maybe | cant
-          role = "tank",          -- tank | heal | dps: the slot the character fills (the site assigns slots)
+          role = "tank",          -- tank | heal | dps: the role picked for this run (web WEB-47)
           source = "discord",     -- site | discord | game
-          at = 1793100000 },
+          at = 1793100000,
+          fit = "carry · +12",    -- CF-49, optional: the site's levelFit label (at most 24 characters)
+          reserve = true },       -- CF-49, optional: an I'm in waiting for a full role; sent as answer = "maybe"
       },
     },
   },
@@ -254,6 +256,10 @@ CF_RUNS = {
   200, ids 64, links 200) and never walks past a cap. A run without `id`, `dungeon` or `startsAt` is dropped,
   as is a second run with the same id; a wrong optional field becomes nil. A person needs at least one of
   `battleTag`, `guid`, `name`.
+- CF-49 (Runs v2, web WEB-47): `PlannedRuns.levelFit(level, min, max)` and `PlannedRuns.rolesFor(classFile)`
+  give the same fit kinds and labels and class roles as the site. The addon computes a sign-up's fit from the
+  character's level when it knows it, else shows the file's `fit`. A reserve takes no slot. Older addons read
+  a reserve as Maybe and ignore `fit`; without `role`, `fit` and `reserve` this addon behaves as before.
 - Compatibility: the uploader only adds optional fields within `v = 1` (older addons drop unknown fields); a
   breaking change writes `v = 2`, which older addons ignore. The file is not SavedVariables: the addon never
   writes it, and an addon update replaces it with the empty one until the uploader writes it again.

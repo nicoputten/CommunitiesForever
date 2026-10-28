@@ -190,6 +190,41 @@ describe("Run dialogs (CF-47)", function()
     assert.is_falsy(meta:find("reaches Discord", 1, true))
   end)
 
+  -- CF-49: the role is picked apart from the character, from the roles its class can play.
+  it("answers with a role the class can play, and plans as one", function()
+    load(runs())
+    open("run:r2")
+    ns.DungeonsTab.buttons()["Answer"]:RunScript("OnClick")
+    assert.is_truthy(dialogText():find("\nROLE\n", 1, true))
+    local buttons = ns.RunDialogs.buttons()
+    assert.is_truthy(buttons["Tank"] and buttons["Healer"] and buttons["Damage"]) -- a paladin plays all three
+    click("Healer")
+    click("Save answer")
+    assert.are.equal("heal", pending()[1].role)
+    assert.are.equal("heal", ofType("RUNANSWER")[1].message.role)
+
+    open("dm")
+    ns.DungeonsTab.buttons()["Plan a run"]:RunScript("OnClick")
+    click("Tank")
+    ns.RunDialogs.widgets().time:SetText("23:30")
+    click("Plan run")
+    assert.are.equal("tank", pending()[2].role)
+  end)
+
+  it("lets a character 6+ levels below answer only Maybe", function()
+    local data = runs()
+    data.runs[2].dungeon = "smarm" -- 32-42: Ves at 20 is 12 below
+    load(data)
+    open("run:r2")
+    ns.DungeonsTab.buttons()["Answer"]:RunScript("OnClick")
+    assert.is_truthy(dialogText():find("Ves Doombringer 20 \194\183 damage | 12 below", 1, true))
+    ns.RunDialogs.rows()[1]:RunScript("OnClick")
+    assert.is_truthy(dialogText():find("6+ levels below: Maybe only", 1, true))
+    assert.is_false(ns.RunDialogs.buttons()["I'm in"].enabled)
+    click("Save answer")
+    assert.are.equal("maybe", pending()[1].answer)
+  end)
+
   it("as organiser, shows an answer a friend sent in game; ignores answers to other runs", function()
     load(runs())
     addon:SendMessage(ns.Messenger.RECEIVED, { t = "RUNANSWER", run = "r1", answer = "in", guid = GARRAKA,
