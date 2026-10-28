@@ -621,4 +621,4 @@ After CF-55.
   - `w.fullClear` uses a boss count per dungeon from the game's DungeonEncounter table (Classic Era); multi-wing dungeons and ones with optional or Season of Discovery bosses get counts after launch.
 - CF-58 folded in: `goals` is always sent; `false` or missing = nothing sent.
 - Rule 8: optional RECORD field `goals` and HELLO field `dd` within `pv` 1; older clients ignore and drop them. New optional stored data (`self.goals`, `self.doomsday`, `settings.doomsdayReset`, `people.*.goals`); no migration.
-- Done (PR #TBD): `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `src/adapters/GoalEvents.lua`, `SelfInfo.gameTime`, `RunsFile.doomsday`, `Merge` (outgoing, merge, relay of `goals`), HELLO `dd`, `/cf doomsday` (`Describe.doomsday`). VERIFY.md "CF-56", V84 to V86.
+- Done (PR #101): `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `src/adapters/GoalEvents.lua`, `SelfInfo.gameTime`, `RunsFile.doomsday`, `Merge` (outgoing, merge, relay of `goals`), HELLO `dd`, `/cf doomsday` (`Describe.doomsday`). VERIFY.md "CF-56", V84 to V86.
