@@ -73,6 +73,8 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 
 ### CF-55 Raw kills and the Doomsday core
 After CF-52; its victim fields are filled once CF-54 has answered.
+
+Split in two PRs (Nico, 2026-10-28): **CF-55a** the core (`src/core/Doomsday.lua`) and the golden file, done first so the site's WEB-58 can start (PR #TBD); **CF-55b** recording `pvpKills`, the victim cache, cleaning, the sync-size check, feats and sprees. The exact algorithm is in `DOOMSDAY.md` "The algorithm, exactly". Feats and sprees moved to 55b.
 - Per feed day and character, `pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } }`, one entry per honorable kill:
   - `name`: the victim's full name as the game gives it (never split)
   - `lvl`: the victim's level, `-1` for a skull; `myLvl`: your level at the kill
