@@ -20,8 +20,9 @@ describe("Runs v2 (CF-49)", function()
       { 60, "carry", "carry \194\183 +20", true, false },
       { 29, "low", "1 below", true, false },
       { 25, "low", "5 below", true, false },
-      { 24, "tooLow", "6 below", false, false },
-      { 1, "tooLow", "29 below", false, false },
+      -- CF-50: every level may say I'm in; 6+ below is never suggested.
+      { 24, "tooLow", "6 below", true, false },
+      { 1, "tooLow", "29 below", true, false },
     }
     for _, c in ipairs(cases) do
       it("level " .. c[1] .. " is " .. c[3], function()
@@ -39,11 +40,26 @@ describe("Runs v2 (CF-49)", function()
       assert.is_nil(PlannedRuns.levelFit(35, 30, 40).note)
     end)
 
-    it("counts an unknown level as too low", function()
+    it("counts an unknown level as too low, and it may still say I'm in (CF-50)", function()
       local fit = PlannedRuns.levelFit(nil, 30, 40)
       assert.are.equal("tooLow", fit.kind)
       assert.are.equal("level unknown", fit.label)
-      assert.is_false(fit.canPick)
+      assert.is_true(fit.canPick)
+      assert.is_false(fit.suggested)
+    end)
+
+    it("6+ below may say I'm in with the tough note, and is never close or suggested (CF-50)", function()
+      local fit = PlannedRuns.levelFit(20, 30, 40)
+      assert.is_true(fit.canPick)
+      assert.is_false(fit.suggested)
+      assert.are.equal("This will be tough.", fit.note)
+      local run = { answers = {} }
+      local close = PlannedRuns.close(run, {
+        { guid = "LOW", name = "Low", level = 27 },
+        { guid = "TOO", name = "Too", level = 20 },
+      }, { min = 30, max = 40 })
+      assert.are.equal(1, #close)
+      assert.are.equal("LOW", close[1].char.guid)
     end)
   end)
 

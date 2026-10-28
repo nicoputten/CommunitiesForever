@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- Any character may answer I'm in for a run, also one 6 or more levels below the dungeon: it shows how far below it is and "This will be tough." It is still never suggested.
 
 ## v0.6.0-beta1 (2026-10-28)
 - **Planned runs in the Dungeons tab.** Runs planned on the website (brought into the game by the
