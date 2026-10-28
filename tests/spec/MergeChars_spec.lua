@@ -7,6 +7,7 @@ describe("per-character merge (CF-28)", function()
   before_each(function()
     local ns = {}
     helpers.loadAddonFile("src/core/Feed.lua", ns)
+    helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
   end)
 

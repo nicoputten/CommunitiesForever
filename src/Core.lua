@@ -32,6 +32,7 @@ function addon:OnEnable()
   ns.SelfInfo.watch(self)
   ns.FeedTracker.start(self) -- before SelfTracker: its first refresh may record feed events
   ns.SelfTracker.start(self)
+  ns.PvpTracker.start(self) -- CF-52: after SelfTracker (keeps chars[guid].pvp of the stored character)
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
   ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab

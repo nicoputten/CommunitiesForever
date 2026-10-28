@@ -34,9 +34,25 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V71 | Does `time({ year, month, day, hour, min })` exist and give the UTC seconds of a local date and time? (CF-47: Plan a run turns your PC-clock time into UTC) | `/run print(time({ year = 2026, month = 11, day = 6, hour = 20, min = 30 }), GetServerTime())`: a number close to the server time (differing by the days and hours to that date). `nil` or an error: Plan a run says it can't convert the time. | open |
 
 | V72 | Does `ChatFrameUtil.OpenChat("/w <name> <text>")` (or `ChatFrame_OpenChat`) open the chat input with the whisper and text filled in? (CF-48: Whisper on the start panel) | On the CF-48 start panel, click Whisper on a friend who is on another character. Expected: the chat input opens as a whisper to that character with "You're on … Switch to …?" filled in, not sent yet. If it opens empty (or not at all), say which. | open |
+| V79 | Do `GetPVPLifetimeStats`, `UnitPVPRank` with `GetPVPRankInfo(rankID, "player")`, `GetPVPThisWeekStats` and `GetStatistic(60)` (total deaths) exist and give numbers, and does `PLAYER_PVP_KILLS_CHANGED` fire on an honorable kill? (CF-52) | `/run print(GetPVPLifetimeStats and GetPVPLifetimeStats(), UnitPVPRank and UnitPVPRank("player"))`, `/run print(GetPVPRankInfo and GetPVPRankInfo(UnitPVPRank("player"), "player"))`, `/run print(GetPVPThisWeekStats and GetPVPThisWeekStats(), GetStatistic and GetStatistic(60))`. Expected numbers (a rank name and number for a ranked character; `nil` means missing: send which). Then see the CF-52 steps. | open |
+| V80 | Do `DUEL_WINNER_KNOCKOUT` and `DUEL_WINNER_RETREAT` match the duel lines in chat (`CHAT_MSG_SYSTEM`), with the winner as the first argument in both? (CF-52) | `/run print(DUEL_WINNER_KNOCKOUT, "/", DUEL_WINNER_RETREAT)`. Expected (enUS) `%1$s has defeated %2$s in a duel / %2$s has fled from %1$s in a duel`. Then the CF-52 duel steps: a win, a loss and fleeing the duel area. | open |
+| V81 | Where can the cause of a death come from? (CF-52) Can an addon register `COMBAT_LOG_EVENT_UNFILTERED` (see also V75); do `MIRROR_TIMER_START`/`MIRROR_TIMER_STOP` fire with `BREATH` and `EXHAUSTION`; does `C_DeathRecap.GetRecapEvents()` without an id give the latest death's events (`event`, `environmentalType`, `sourceGUID`, `timestamp`)? | `/run print(C_DeathRecap and C_DeathRecap.GetRecapEvents)`. After a death: `/dump C_DeathRecap.GetRecapEvents()`. Then the CF-52 death steps: the `/cf self` deaths and the saved file's `deaths` causes. If the combat log is blocked, a Lua error may show once at login (send it). | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-52 PvP, duels and deaths in the record
+One character with this build, flagged for PvP. `/cf self` shows a `PvP:` line under the character. After the steps `/reload` and look at `CommunitiesForeverDB` in the saved file: `self.chars[<guid>].pvp` and `self.feed[<today>][<guid>]`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, `/cf self` | `PvP: <lifetime honorable kills>, <rank name> a.k.a. <our title>` (or `rank 0 a.k.a. Conscientious Objector`), this week's kills and honor as the honor tab shows them. `?` means the counter was not readable (V79). | open |
+| Get two honorable kills in one zone, one in another | The feed entry has `kills = { [zone] = 2, [other zone] = 1 }`; `/cf self` shows the lifetime count 3 higher. | open |
+| Duel a friend and win; duel again and lose; duel once more and run out of the duel area | `duels` has three entries `{ t, won, vs }` with `won = true`, `false`, `false` and the friend's full name; `pvp.duelsWon = 1`, `pvp.duelsLost = 2`. A duel between two other players nearby adds nothing. | open |
+| Die by falling, by drowning (stay under water), to a monster and to an enemy player | `deaths` has one entry each with `cause` `fall`, `drown`, `creature`, `player`. Without the combat log (V81) `fall` and `creature`/`player` show as `other`, drowning still as `drown`. `pvp.deaths` counts up. | open |
+| A friend with this build: after a minute | The friend's saved file has your `chars[<guid>].pvp` and the feed's `kills`, `deaths`, `duels` under `people[<your BattleTag>]`. | open |
+| Gain a PvP rank (when the weekly ranking comes) | `/cf self` shows the new rank and title; friends get it within seconds (not after 60 s). | open |
+| Warsong Gulch, Arathi Basin and Alterac Valley, once each is open: finish a match | The feed's `runs` has the battleground with `kind = "pvp"` and `won` true or false (CF-23). | open |
 
 ### CF-51 Carry friends' asks
 Two accounts with this build, Battle.net friends, both in the community: A (asks) and B (carries). The site on WEB-53.
