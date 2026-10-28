@@ -45,7 +45,7 @@ describe("Linker", function()
   end
 
   before_each(function()
-    Linker = helpers.loadAddonFile("src/core/Linker.lua", {})
+    Linker = helpers.loadAddonFile("src/core/Linker.lua", helpers.coreNs())
   end)
 
   describe("visibility", function()

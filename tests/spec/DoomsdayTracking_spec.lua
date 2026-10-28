@@ -41,7 +41,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
   end)
 
   it("marks a daily done from progress on two characters, with its time", function()
-    local D = helpers.loadAddonFile("src/core/Doomsday.lua", {})
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local n = dayWith(D, "d.quests10")
     local start = D.dayStart(n, CET, RESET)
     load(function(s) s.serverTime = start + 3600 end)
@@ -61,7 +61,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
   end)
 
   it("turns the day at the reset and the week on Sunday", function()
-    local D = helpers.loadAddonFile("src/core/Doomsday.lua", {})
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local saturday = D.weekStart(D.week(D.EPOCH) + 1) - 1
     local start = D.dayStart(saturday, CET, RESET)
     load(function(s) s.serverTime = start + 86400 - 60 end)

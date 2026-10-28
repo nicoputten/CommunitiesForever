@@ -4,7 +4,7 @@ describe("Quests (CF-19)", function()
   local Quests
 
   before_each(function()
-    Quests = helpers.loadAddonFile("src/core/Quests.lua", {})
+    Quests = helpers.loadAddonFile("src/core/Quests.lua", helpers.coreNs())
   end)
 
   describe("fromLog", function()

@@ -22,7 +22,7 @@ describe("Talents (CF-18)", function()
   end
 
   before_each(function()
-    Talents = helpers.loadAddonFile("src/core/Talents.lua", {})
+    Talents = helpers.loadAddonFile("src/core/Talents.lua", helpers.coreNs())
   end)
 
   describe("summarize", function()

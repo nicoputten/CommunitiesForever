@@ -26,7 +26,7 @@ describe("PlannedRuns (CF-45)", function()
   end
 
   before_each(function()
-    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", {})
+    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", helpers.coreNs())
   end)
 
   it("keeps a valid file, runs sorted by start time", function()
@@ -154,7 +154,7 @@ end)
 -- The adapter reads the global once per load and clears it.
 describe("RunsFile (CF-45)", function()
   local function load()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/PlannedRuns.lua", ns)
     return helpers.loadAddonFile("src/adapters/RunsFile.lua", ns)
   end
@@ -205,7 +205,7 @@ describe("PlannedRuns views (CF-46)", function()
   }
 
   before_each(function()
-    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", {})
+    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", helpers.coreNs())
   end)
 
   it("takes newer runs only, not far in the future", function()
@@ -322,7 +322,7 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
   local NOW = 1793120000
 
   before_each(function()
-    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", {})
+    PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", helpers.coreNs())
   end)
 
   it("keeps the ids the site received, capped, and sends them on", function()

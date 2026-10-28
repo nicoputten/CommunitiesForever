@@ -16,9 +16,7 @@ Instance.EVENTS = {
 
 -- A value that is readable: Midnight can hand addons secret values (issecretvalue exists, V37).
 local function readable(value)
-  if value == nil then return false end
-  if issecretvalue and issecretvalue(value) then return false end
-  return true
+  return value ~= nil and not ns.Safe.secret(value)
 end
 
 -- { name, type, instanceID } of where the player is. GetInstanceInfo verified outside instances only

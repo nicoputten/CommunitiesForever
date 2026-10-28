@@ -4,7 +4,7 @@ describe("Describe", function()
   local Describe
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Describe = helpers.loadAddonFile("src/core/Describe.lua", ns)
   end)

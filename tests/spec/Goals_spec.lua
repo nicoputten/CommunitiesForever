@@ -4,7 +4,7 @@ describe("Goals (CF-56)", function()
   local Goals, Doomsday
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     Doomsday = helpers.loadAddonFile("src/core/Doomsday.lua", ns)
     Goals = helpers.loadAddonFile("src/core/Goals.lua", ns)
   end)

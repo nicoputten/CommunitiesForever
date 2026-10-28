@@ -1,7 +1,7 @@
 -- Doomsday: the rules of docs/DOOMSDAY.md (CF-55). Pure Lua, no WoW globals: the addon and the site's
 -- TypeScript copy both follow it, checked against tests/fixtures/doomsday-cases.json (the golden cases).
 -- Any change here changes DOOMSDAY.md, the golden file and the site's copy in the same release.
-local _, ns = ...
+local _, ns = ... -- requires ns.Calendar (load core/Calendar.lua first)
 
 local Doomsday = {}
 
@@ -58,33 +58,12 @@ function Doomsday.resetsIn(serverTime, offset, reset)
 end
 
 local WEEKDAYS = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
-local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+local MONTHS = ns.Calendar.MONTHS
+local civil = ns.Calendar.date
 
--- Calendar date of a day number (days since 1970-01-01): year, month, day.
-local function civil(n)
-  local z = n + 719468
-  local era = math.floor(z / 146097)
-  local doe = z - era * 146097
-  local yoe = math.floor((doe - math.floor(doe / 1460) + math.floor(doe / 36524) - math.floor(doe / 146096)) / 365)
-  local doy = doe - (365 * yoe + math.floor(yoe / 4) - math.floor(yoe / 100))
-  local mp = math.floor((5 * doy + 2) / 153)
-  local d = doy - math.floor((153 * mp + 2) / 5) + 1
-  local m = mp < 10 and mp + 3 or mp - 9
-  return yoe + era * 400 + (m <= 2 and 1 or 0), m, d
-end
-
-Doomsday.civil = civil
-
--- Day number (days since 1970-01-01) of a calendar date (days from civil, Howard Hinnant's algorithm).
-function Doomsday.dayNumberOf(year, month, day)
-  local y = month <= 2 and year - 1 or year
-  local era = math.floor(y / 400)
-  local yoe = y - era * 400
-  local m = month <= 2 and month + 9 or month - 3
-  local doy = math.floor((153 * m + 2) / 5) + day - 1
-  local doe = yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy
-  return era * 146097 + doe - 719468
-end
+-- Kept under their names here (CF-59: the math is in core/Calendar.lua).
+Doomsday.civil = ns.Calendar.date
+Doomsday.dayNumberOf = ns.Calendar.dayNumber
 
 -- "Tue 28 Oct": the day's name (the realm date it starts on).
 function Doomsday.label(n)

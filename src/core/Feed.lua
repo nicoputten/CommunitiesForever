@@ -1,7 +1,7 @@
 -- Feed: the activity feed (CF-22). Pure Lua, no WoW globals.
 -- Each client records what its own characters did, aggregated per realm day and character, and syncs
 -- it with its record (field `feed`). The window shows one line per person per day.
-local _, ns = ...
+local _, ns = ... -- requires ns.Calendar (load core/Calendar.lua first)
 
 local Feed = {}
 
@@ -11,7 +11,7 @@ Feed.MILESTONES = { 10, 20, 40, 60 }
 -- Profession max skill -> rank name (single-tier Vanilla professions).
 Feed.RANKS = { [75] = "Apprentice", [150] = "Journeyman", [225] = "Expert", [300] = "Artisan" }
 
-local WEEKDAYS = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }
+local WEEKDAYS = ns.Calendar.WEEKDAYS
 
 -- Limits for received feeds (a modified addon must not blow up the saved variables or the window).
 local MAX_TEXT = 40
@@ -34,32 +34,11 @@ local MAX_GOLD = 1e12      -- copper
 local DEATH_CAUSES = { fall = true, fire = true, lava = true, drown = true, fatigue = true, player = true,
                        creature = true, other = true }
 
--- Day number (days since 1970-01-01) of a calendar date. Pure, so days compare and subtract easily.
-function Feed.dayNumber(year, month, day)
-  -- Days from civil (Howard Hinnant's algorithm).
-  local y = month <= 2 and year - 1 or year
-  local era = math.floor(y / 400)
-  local yoe = y - era * 400
-  local m = month <= 2 and month + 9 or month - 3
-  local doy = math.floor((153 * m + 2) / 5) + day - 1
-  local doe = yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy
-  return era * 146097 + doe - 719468
-end
+-- Day numbers and calendar dates (CF-59: core/Calendar.lua, kept here under their old names).
+Feed.dayNumber = ns.Calendar.dayNumber
+Feed.date = ns.Calendar.date
 
--- Calendar date of a day number: year, month, day (civil from days, the inverse of dayNumber).
-function Feed.date(dayNumber)
-  local z = dayNumber + 719468
-  local era = math.floor(z / 146097)
-  local doe = z - era * 146097
-  local yoe = math.floor((doe - math.floor(doe / 1460) + math.floor(doe / 36524) - math.floor(doe / 146096)) / 365)
-  local doy = doe - (365 * yoe + math.floor(yoe / 4) - math.floor(yoe / 100))
-  local mp = math.floor((5 * doy + 2) / 153)
-  local d = doy - math.floor((153 * mp + 2) / 5) + 1
-  local m = mp < 10 and mp + 3 or mp - 9
-  return yoe + era * 400 + (m <= 2 and 1 or 0), m, d
-end
-
-local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+local MONTHS = ns.Calendar.MONTHS
 
 -- "Today", "Yesterday", or the weekday and date for older days ("Monday 26 Oct", CF-41).
 function Feed.dayLabel(day, today)

@@ -341,12 +341,7 @@ function DoomsdayView.pvpLine(pvp, faction, weekPoints)
   return #parts > 0 and table.concat(parts, " \194\183 ") or nil
 end
 
--- 1234 -> "1,234".
-function DoomsdayView.thousands(n)
-  local s = tostring(math.floor(n))
-  local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
-  return (out:gsub("^,", ""))
-end
+DoomsdayView.thousands = ns.Text.thousands
 
 ns.DoomsdayView = DoomsdayView
 return DoomsdayView

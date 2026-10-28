@@ -5,7 +5,7 @@ describe("Chat (CF-25)", function()
   local CHANNEL = "Community:1:1"
 
   before_each(function()
-    Chat = helpers.loadAddonFile("src/core/Chat.lua", {})
+    Chat = helpers.loadAddonFile("src/core/Chat.lua", helpers.coreNs())
   end)
 
   it("uses purple unless another valid color is set", function()

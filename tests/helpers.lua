@@ -21,6 +21,15 @@ function helpers.tocFiles()
   return files
 end
 
+-- CF-59: a private table with the core's shared modules (Calendar, Text) loaded, for specs that load core
+-- files one by one.
+function helpers.coreNs()
+  local ns = {}
+  helpers.loadAddonFile("src/core/Calendar.lua", ns)
+  helpers.loadAddonFile("src/core/Text.lua", ns)
+  return ns
+end
+
 -- Loads every addon file in TOC order into a fresh private table and returns it.
 -- Install the WoW mock first (tests/mocks/wowapi.lua).
 function helpers.loadAddon()

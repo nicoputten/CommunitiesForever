@@ -4,7 +4,7 @@ describe("Onboarding (CF-26)", function()
   local Onboarding
 
   before_each(function()
-    Onboarding = helpers.loadAddonFile("src/core/Onboarding.lua", {})
+    Onboarding = helpers.loadAddonFile("src/core/Onboarding.lua", helpers.coreNs())
   end)
 
   local function ids(steps)

@@ -32,7 +32,7 @@ describe("Format", function()
   local unlinked = { { guid = "U1", name = "Stranger", classID = 8, level = 9, online = false } }
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Quests.lua", ns)
     Format = helpers.loadAddonFile("src/core/Format.lua", ns)
   end)

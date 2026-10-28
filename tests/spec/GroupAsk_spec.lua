@@ -5,7 +5,7 @@ describe("GroupAsk (CF-27)", function()
   local DM = { id = "dm", name = "The Deadmines", min = 17, max = 26 }
 
   before_each(function()
-    GroupAsk = helpers.loadAddonFile("src/core/GroupAsk.lua", {})
+    GroupAsk = helpers.loadAddonFile("src/core/GroupAsk.lua", helpers.coreNs())
   end)
 
   local function record(name, chars)

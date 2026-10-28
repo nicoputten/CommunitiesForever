@@ -83,11 +83,7 @@ local RIDING_NAMES = { ["Horse Riding"] = true, ["Wolf Riding"] = true, ["Tiger 
   ["Ram Riding"] = true, ["Raptor Riding"] = true, ["Mechanostrider Piloting"] = true,
   ["Undead Horsemanship"] = true, ["Kodo Riding"] = true, ["Riding"] = true }
 
-local function safe(fn, ...)
-  local ok, a, b, c, d, e, f, g = pcall(fn, ...)
-  if not ok or (issecretvalue and issecretvalue(a)) then return nil end
-  return a, b, c, d, e, f, g
-end
+local safe = ns.Safe.call
 
 local function readRiding()
   local best, answered = 0, false
@@ -183,9 +179,7 @@ SelfInfo.fullName = fullName
 
 -- CF-56: the realm clock (GetGameTime, unverified: VERIFY.md V78): hour, minute, or nil.
 function SelfInfo.gameTime()
-  if not GetGameTime then return nil end
-  local ok, hour, minute = pcall(GetGameTime)
-  if not ok or (issecretvalue and (issecretvalue(hour) or issecretvalue(minute))) then return nil end
+  local hour, minute = ns.Safe.call(GetGameTime)
   if type(hour) ~= "number" or type(minute) ~= "number" then return nil end
   return hour, minute
 end
@@ -207,8 +201,7 @@ end
 function SelfInfo.zone()
   if not GetRealZoneText then return nil end
   local zone = GetRealZoneText()
-  if issecretvalue and issecretvalue(zone) then return nil end
-  if type(zone) ~= "string" or zone == "" then return nil end
+  if ns.Safe.secret(zone) or type(zone) ~= "string" or zone == "" then return nil end
   return zone
 end
 

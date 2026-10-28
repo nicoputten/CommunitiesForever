@@ -7,7 +7,7 @@ describe("Doomsday (CF-55)", function()
   local cases = helpers.readJson("tests/fixtures/doomsday-cases.json")
 
   before_each(function()
-    Doomsday = helpers.loadAddonFile("src/core/Doomsday.lua", {})
+    Doomsday = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
   end)
 
   local function set(list)
