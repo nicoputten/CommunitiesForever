@@ -50,7 +50,7 @@ One run answers V73 to V78 (and V79 to V83 of CF-52/CF-53). Copy the new `tools/
 | Step | Expected | Status |
 |---|---|---|
 | `/fp start` | The log has `V77 region`, `V78 realm time ... offset +60 min` (or +120 in summer time) and the `V79`–`V83` lines. | open |
-| `/fp pvp`, nameplates on (V) | `V75 combat log: registered` or `blocked: ...`. | open |
+| `/fp pvp`, enemy nameplates on | `V75 combat log: registered` or `blocked: ...`. | open |
 | Target, mouse over and look at enemy players, one with a skull | A `V74 unit` line per player (name, level, class, race, rank, GUID); `secret` or `missing` answers V74. | open |
 | An honorable kill solo, one in a group, one in a battleground | Per kill `V73 honor` (all arguments, the parsed victim and rank, whether the victim was seen before and how), `V76 at the kill: group ..., instance ...`, and `V73 PLAYER_PVP_KILLS_CHANGED` with the counters. | open |
 | Die once to an enemy player, once by falling, once by drowning | `V75 killed by ...` (the killer's name, if the combat log is allowed), `V81` mirror timer and recap lines, `V79 total deaths`. | open |
