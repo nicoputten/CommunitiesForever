@@ -59,6 +59,24 @@ describe("GroupAsk (CF-27)", function()
     assert.is_nil(GroupAsk.cleanAnswer({ id = "17", answer = "maybe" }))
   end)
 
+  it("carries the post fields of an ask also posted on Discord (CF-51)", function()
+    local d = { id = "dm", name = "The Deadmines", min = 17, max = 26 }
+    local post = { item = "k-1", guid = "Player-1-A", role = "heal" }
+    local m = GroupAsk.message("1", d, "Ann", "Ann Example", 100, nil, post)
+    assert.are.same({ true, "k-1", "Player-1-A", "heal" }, { m.post, m.item, m.guid, m.role })
+    assert.is_nil(GroupAsk.message("1", d, "Ann", "Ann Example", 100).post)
+    local clean = GroupAsk.cleanAsk(m)
+    assert.are.same({ true, "k-1", "Player-1-A", "heal", 100 },
+      { clean.post, clean.item, clean.guid, clean.role, clean.sentAt })
+    -- A broken item id or role is left out.
+    local bad = GroupAsk.cleanAsk({ t = "ASK", id = "2", dungeon = d, post = true, item = "bad id|", role = "boss" })
+    assert.is_nil(bad.post)
+    assert.is_nil(bad.item)
+    assert.are.same({ { battleTag = "Ben#2", gameAccountID = 7 } },
+      GroupAsk.peers({ ["Ben#2"] = { gameAccountID = 7 }, ["Me#1"] = { gameAccountID = 1 }, ["X#3"] = {} },
+        { ["Ben#2"] = {}, ["Me#1"] = {}, ["X#3"] = {} }, "Me#1"))
+  end)
+
   it("sums up the answers per person", function()
     local ask = { recipients = { { battleTag = "B", displayName = "Ben" }, { battleTag = "C", displayName = "Cid" },
                                  { battleTag = "D", displayName = "Dee" }, { battleTag = "E", displayName = "Eve" } },

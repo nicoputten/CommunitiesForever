@@ -38,6 +38,16 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-51 Carry friends' asks
+Two accounts with this build, Battle.net friends, both in the community: A (asks) and B (carries). The site on WEB-53.
+
+| Step | Expected | Status |
+|---|---|---|
+| A: Ask now for a dungeon B has no character in range of, tick "Also post on Discord" | B gets no "asks: … now?" line; after B's `/reload`, B's saved file has a `pending` item `kind = "ask"` with A's item id (as in A's file), A's guid and BattleTag. | open |
+| B uploads (the uploader app) before A reloads | The ask shows on Discord as A's ask, once; after A's upload too, still one post. B's next runs fetch lists the id under `received` and B's `pending` loses it. | open |
+| A: Ask now for a dungeon B fits, posted on Discord; B: [Join] | B's `pending` gets the ask and an `askAnswer` (`answer = "in"`); after B's upload the Discord post lists B as In. | open |
+| B waits 11 minutes before `/reload` | The carried ask and the answer are pruned, nothing reaches the site. | open |
+
 ### CF-50 Any level may answer I'm in
 Use the CF-49 setup: a run 12+ levels above your character (`dungeon = "smarm"` at level 20). `/reload` after each edit.
 

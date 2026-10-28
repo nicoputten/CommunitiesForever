@@ -44,6 +44,19 @@ describe("Pending (CF-47)", function()
     assert.are.equal(2, #list)
   end)
 
+  it("keeps an item once by its id, one answer per ask, and drops ask answers with their ask (CF-51)", function()
+    local list = {}
+    Pending.add(list, { id = "k-1", kind = "ask", at = 100, dungeon = "dm" })
+    Pending.add(list, { id = "k-1", kind = "ask", at = 100, dungeon = "dm", note = "again" })
+    assert.are.equal(1, #list)
+    assert.is_nil(list[1].note)
+    Pending.add(list, { id = "a-1", kind = "askAnswer", at = 110, ask = "k-1", answer = "in" })
+    Pending.add(list, { id = "a-2", kind = "askAnswer", at = 120, ask = "k-1", answer = "cant" })
+    assert.are.same({ "k-1", "a-2" }, { list[1].id, list[2].id })
+    Pending.prune(list, 120 + Pending.ASK_EXPIRE + 1)
+    assert.are.equal(0, #list)
+  end)
+
   it("removes what the site confirmed", function()
     local list = { { id = "a", kind = "plan", at = NOW }, { id = "b", kind = "ask", at = NOW } }
     assert.are.equal(1, Pending.confirm(list, { "b", "zzz" }))

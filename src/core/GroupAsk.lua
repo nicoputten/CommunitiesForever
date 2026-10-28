@@ -76,9 +76,21 @@ end
 
 -- The ASK message for a dungeon. id: unique per asker and ask.
 -- note (CF-47, optional): what the asker typed; older clients ignore it.
-function GroupAsk.message(id, dungeon, from, char, now, note)
-  return { t = "ASK", id = id, dungeon = { id = dungeon.id, name = dungeon.name, min = dungeon.min, max = dungeon.max },
-           from = from, char = char, at = now, note = note }
+-- post (CF-51, optional): { item, guid, role } when the asker ticked "Also post on Discord": the message gets
+-- post = true, the asker's Pending item id and character, so every friend's file carries the ask to the site.
+function GroupAsk.message(id, dungeon, from, char, now, note, post)
+  local m = { t = "ASK", id = id,
+              dungeon = { id = dungeon.id, name = dungeon.name, min = dungeon.min, max = dungeon.max },
+              from = from, char = char, at = now, note = note }
+  if post and post.item then
+    m.post, m.item, m.guid, m.role = true, post.item, post.guid, post.role
+  end
+  return m
+end
+
+local ROLES = { tank = true, heal = true, dps = true }
+local function cleanId(value)
+  return type(value) == "string" and value:match("^[%w%-:.]+$") and #value <= 64 and value or nil
 end
 
 -- A received ASK with only the expected fields, cleaned, or nil.
@@ -87,9 +99,31 @@ function GroupAsk.cleanAsk(message)
   local d = message.dungeon
   local id, name, min, max = cleanText(message.id), cleanText(d.name), cleanLevel(d.min), cleanLevel(d.max)
   if not (id and name and min and max and min <= max) then return nil end
-  return { id = id, dungeon = { id = cleanText(d.id), name = name, min = min, max = max },
-           from = cleanText(message.from), char = cleanText(message.char),
-           note = type(message.note) == "string" and message.note:gsub("[|%c]", ""):sub(1, 120) or nil }
+  local ask = { id = id, dungeon = { id = cleanText(d.id), name = name, min = min, max = max },
+                from = cleanText(message.from), char = cleanText(message.char),
+                note = type(message.note) == "string" and message.note:gsub("[|%c]", ""):sub(1, 120) or nil }
+  -- CF-51: a posted ask, carried for the site with the asker's item id and character.
+  local item = cleanId(message.item)
+  if message.post == true and item then
+    ask.post, ask.item = true, item
+    ask.guid = cleanId(message.guid)
+    ask.role = ROLES[message.role] and message.role or nil
+    ask.sentAt = type(message.at) == "number" and message.at == message.at and math.floor(message.at) or nil
+  end
+  return ask
+end
+
+-- CF-51: every online peer running the addon (a posted ask goes to all of them, in range or not).
+function GroupAsk.peers(online, records, selfTag)
+  local result = {}
+  for battleTag, presence in pairs(online or {}) do
+    local target = type(presence) == "table" and (presence.gameAccountID or presence.target)
+    if battleTag ~= selfTag and records and records[battleTag] and target then
+      result[#result + 1] = { battleTag = battleTag, gameAccountID = target }
+    end
+  end
+  table.sort(result, function(a, b) return a.battleTag < b.battleTag end)
+  return result
 end
 
 -- A received ANSWER, cleaned, or nil.
