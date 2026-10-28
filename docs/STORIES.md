@@ -29,6 +29,7 @@ Order:
 3. CF-55 (raw kills and the rules core) after CF-52, with its fields filled once CF-54 has answered.
 4. CF-56 (goals tracked and shared) after CF-55.
 5. CF-57 (the tab) after CF-56.
+6. CF-58 (drop "Share my activity") any time, best before CF-56.
 
 The site's WEB-58 needs CF-55's golden file.
 
@@ -66,7 +67,7 @@ After CF-55.
   Each of these goals joins the pool (a `POOL_VERSION` bump) only once its API is verified.
 - Stored: `self.goals = { days = { [n] = { set, swapped = { [id] = originalId }, done = { [id] = at }, at } }, weeks = { [week] = { ... } }, streak = { n, last }, best }`. 14 days and 2 weeks are kept: the addon keeps no all-time totals (Nico: the site and the bot have them). New optional data, so no migration; code reading it handles nil.
 - RECORD gets the optional field `goals` (rule 8, within `pv` 1): the last 7 Doomsday days and the current and previous week (`set`, `swapped`, `done`, `at`), `streak`, `best`, `pool` (the pool version) and `reset` (the reset setting the addon used).
-  - It is sent only when "Share my activity" is on, and is `false` when it is off (as `feed`, CF-28).
+  - It is always sent: there is no "Share my activity" (CF-58).
   - A completion bumps the version through the feed's debounce (at most once per 60 s).
 - **Receiving:**
   - Per day and per week, the newer `at` wins.
@@ -80,7 +81,7 @@ After CF-55.
 - **Manual (`VERIFY.md`):**
   - Finish 10 quests on two characters and see the daily done.
   - The day rolls over at 19:00 realm time.
-  - Two accounts: A's completion shows on B within a minute, and turning sharing off on A removes it on B.
+  - Two accounts: A's completion shows on B within a minute.
 
 ### CF-57 Doomsday tab, chat lines and the toast
 After CF-56. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built with the kit (pools, `Kit.scrollArea`, `Kit.toast`), as the other tabs.
@@ -104,3 +105,13 @@ After CF-56. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built wit
 - Friends without Doomsday data show "no Doomsday data yet", never 0.
 - **Feats and sprees** (moved here from CF-55, Nico 2026-10-28): the feats the addon can derive from the records it holds (the site's thresholds, web WEB-56, without "First in the group") and spree badges (5 and 10 kills without dying) in the feed, both in `src/core/Doomsday.lua`.
 - Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts, feats, sprees) with busted. Manual steps in `VERIFY.md`.
+
+### CF-58 Drop "Share my activity"
+Decided with Nico (2026-10-28): there is no sharing toggle. A friend who doesn't want to share uninstalls the addon. This makes the feed, Doomsday's `goals` (CF-56) and their relaying simpler.
+- The setting **Share my activity** goes: from Settings (the Sharing group keeps "Receive group asks"), from onboarding step 5, from `Store` defaults and from `FeedTracker`. A stored `settings.shareActivity` is ignored (and may be cleared); no migration needed.
+- `Merge.outgoingRecord` always sends `feed` (and, after CF-56, `goals`). The addon never sends `false` for either.
+- **Receiving** (rule 8): released clients may still send or relay `feed = false`. It now means "nothing sent": the stored feed of that friend stays, as for a record without `feed`. The same holds for `goals = false`.
+- The Activity tab's footer loses "Activity is shared only by friends who turned on Share my activity".
+- `docs/SYNC.md` (RECORD fields, merge rule), `docs/ARCHITECTURE.md` (settings, RECORD) and `docs/DOOMSDAY.md` (if it mentions sharing) updated.
+- Tests (busted): `outgoingRecord` without the setting; a received `feed = false` keeps the stored feed; `Compat_spec` passes on earlier fixtures.
+- The site does the same on its side (web WEB-55): `false` from released clients means nothing sent.
