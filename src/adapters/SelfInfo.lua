@@ -73,6 +73,54 @@ local function readTalentNodes()
   return #nodes > 0 and nodes or nil
 end
 
+-- CF-53: the riding skill (0, 75 or 150), or nil when nothing could be read (VERIFY.md V82). Vanilla has a
+-- riding skill per race: Horse 148, Wolf 149, Tiger 150, Ram 152, Raptor 533, Mechanostrider 553, Undead
+-- Horsemanship 554, Kodo 713; 762 is the later shared Riding. Tried in order: the skill lines by ID, the
+-- shared riding spells (Apprentice 33388, Journeyman 33391), the Classic skill list by name.
+local RIDING_LINES = { 148, 149, 150, 152, 533, 553, 554, 713, 762 }
+local RIDING_SPELLS = { { 33391, 150 }, { 33388, 75 } }
+local RIDING_NAMES = { ["Horse Riding"] = true, ["Wolf Riding"] = true, ["Tiger Riding"] = true,
+  ["Ram Riding"] = true, ["Raptor Riding"] = true, ["Mechanostrider Piloting"] = true,
+  ["Undead Horsemanship"] = true, ["Kodo Riding"] = true, ["Riding"] = true }
+
+local function safe(fn, ...)
+  local ok, a, b, c, d, e, f, g = pcall(fn, ...)
+  if not ok or (issecretvalue and issecretvalue(a)) then return nil end
+  return a, b, c, d, e, f, g
+end
+
+local function readRiding()
+  local best, answered = 0, false
+  local byLine = C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID
+  if byLine then
+    for _, line in ipairs(RIDING_LINES) do
+      local info = safe(byLine, line)
+      if type(info) == "table" and type(info.skillLevel) == "number" then
+        answered = true
+        best = math.max(best, info.skillLevel)
+      end
+    end
+  end
+  local known = (C_SpellBook and C_SpellBook.IsSpellKnown) or IsSpellKnown
+  if best == 0 and known then
+    for _, spell in ipairs(RIDING_SPELLS) do
+      if safe(known, spell[1]) then
+        best = spell[2]
+        break
+      end
+    end
+  end
+  if best == 0 and GetNumSkillLines and GetSkillLineInfo then
+    answered = true
+    for i = 1, safe(GetNumSkillLines) or 0 do
+      local name, header, _, rank = safe(GetSkillLineInfo, i)
+      if not header and RIDING_NAMES[name] and type(rank) == "number" then best = math.max(best, rank) end
+    end
+  end
+  if best > 0 then return best end
+  return answered and 0 or nil
+end
+
 -- Raw quest log entries in log order (CF-19, V23): { questID, title, isHeader, isHidden, tagID }.
 -- tagID from C_QuestLog.GetQuestTagInfo (unverified, VERIFY.md V31). nil when the log is not readable.
 local function readQuestLog()
@@ -125,6 +173,7 @@ function SelfInfo.read()
     battleTag = (select(2, BNGetInfo())),
     talentNodes = readTalentNodes(),
     questLog = readQuestLog(),
+    riding = readRiding(),
   }
 end
 

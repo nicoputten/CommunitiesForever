@@ -43,9 +43,26 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V79 | Do `GetPVPLifetimeStats`, `UnitPVPRank` with `GetPVPRankInfo(rankID, "player")`, `GetPVPThisWeekStats` and `GetStatistic(60)` (total deaths) exist and give numbers, and does `PLAYER_PVP_KILLS_CHANGED` fire on an honorable kill? (CF-52) | `/run print(GetPVPLifetimeStats and GetPVPLifetimeStats(), UnitPVPRank and UnitPVPRank("player"))`, `/run print(GetPVPRankInfo and GetPVPRankInfo(UnitPVPRank("player"), "player"))`, `/run print(GetPVPThisWeekStats and GetPVPThisWeekStats(), GetStatistic and GetStatistic(60))`. Expected numbers (a rank name and number for a ranked character; `nil` means missing: send which). Then see the CF-52 steps. | open |
 | V80 | Do `DUEL_WINNER_KNOCKOUT` and `DUEL_WINNER_RETREAT` match the duel lines in chat (`CHAT_MSG_SYSTEM`), with the winner as the first argument in both? (CF-52) | `/run print(DUEL_WINNER_KNOCKOUT, "/", DUEL_WINNER_RETREAT)`. Expected (enUS) `%1$s has defeated %2$s in a duel / %2$s has fled from %1$s in a duel`. Then the CF-52 duel steps: a win, a loss and fleeing the duel area. | open |
 | V81 | Where can the cause of a death come from? (CF-52) Can an addon register `COMBAT_LOG_EVENT_UNFILTERED` (see also V75); do `MIRROR_TIMER_START`/`MIRROR_TIMER_STOP` fire with `BREATH` and `EXHAUSTION`; does `C_DeathRecap.GetRecapEvents()` without an id give the latest death's events (`event`, `environmentalType`, `sourceGUID`, `timestamp`)? | `/run print(C_DeathRecap and C_DeathRecap.GetRecapEvents)`. After a death: `/dump C_DeathRecap.GetRecapEvents()`. Then the CF-52 death steps: the `/cf self` deaths and the saved file's `deaths` causes. If the combat log is blocked, a Lua error may show once at login (send it). | open |
+| V82 | How can an addon read the riding skill? (CF-53) Vanilla has one per race (skill lines 148, 149, 150, 152, 533, 553, 554, 713). Does `C_TradeSkillUI.GetProfessionInfoBySkillLineID(<line>)` give `skillLevel` for it, do `C_SpellBook.IsSpellKnown`/`IsSpellKnown` know 33388/33391, or do `GetNumSkillLines`/`GetSkillLineInfo` exist? And does `C_Timer.NewTicker` exist (the session heartbeat)? | On a character with riding (level 40+): `/dump C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID(149)` (your race's line: Orc 149, Tauren 713, Troll 533, Undead 554, Human 148, Dwarf 152, Night Elf 150, Gnome 553), then `/run print(IsSpellKnown and IsSpellKnown(33388), GetNumSkillLines, C_Timer.NewTicker)`. After `/reload`, the saved file's `self.chars[<guid>].riding`: 75 (0 without riding, missing = unreadable). | open |
+| V83 | Do `CHAT_MSG_LOOT` and the strings `LOOT_ITEM_SELF`, `LOOT_ITEM_SELF_MULTIPLE`, `LOOT_ITEM_PUSHED_SELF`, `LOOT_ITEM_CREATED_SELF` (and their `_MULTIPLE`) match your own loot, quest rewards and crafted items? Do `C_Item.GetItemQualityByID`, `C_Item.GetItemInfoInstant`, `GetMoney` and `PLAYER_MONEY` work? Are the watch-list item IDs right on Forever? (CF-53) | `/run print(LOOT_ITEM_SELF, LOOT_ITEM_PUSHED_SELF, LOOT_ITEM_CREATED_SELF, GetMoney())`. Expected `You receive loot: %s.`, `You receive item: %s.`, `You create: %s.` and your copper. For the watch list: `/run for _, id in ipairs({12784,12360,14342,15063,15062,19807,19970,19979}) do print(id, C_Item.GetItemNameByID and C_Item.GetItemNameByID(id)) end`: Arcanite Reaper, Arcanite Bar, Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings, Speckled Tastyfish, Arcanite Fishing Pole, Hook of the Master Angler (a `nil` may just be uncached: run it twice). | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-53 Loot, gold, play sessions and groups in the record
+One character with this build. After the steps `/reload` and look at `self.feed[<today>][<guid>]` in the saved file (`CommunitiesForeverDB`).
+
+| Step | Expected | Status |
+|---|---|---|
+| Loot a blue item, take a blue quest reward, loot a grey and a green | `loot.rare = 2`; nothing for the grey and green. | open |
+| Loot (or win the roll for) a purple item | `loot.epic` has `{ id, name, slot = "INVTYPE_...", level }` with your level at that moment. | open |
+| A friend in your group loots a blue | Nothing in your `loot`. | open |
+| Tailor: create Mooncloth (or any watch-list item you can) | `notable = { [14342] = 1 }`. Crafting an item off the watch list adds nothing. | open |
+| Sell something to a vendor, buy something | `gold.gained` and `gold.spent` in copper match. | open |
+| Log in, play 10 minutes, `/reload`, play 10 more, log out | One session in `sessions`: `from` at the login, `to` at the logout (20+ minutes). | open |
+| Log in again after 10 minutes away | A second session. | open |
+| Group with a friend's community character, then with a stranger | `groups` has the friend's character GUID only. | open |
+| Learn riding (level 40) | `self.chars[<guid>].riding = 75`; friends see it after the next sync. | open |
 
 ### CF-52 PvP, duels and deaths in the record
 One character with this build, flagged for PvP. `/cf self` shows a `PvP:` line under the character. After the steps `/reload` and look at `CommunitiesForeverDB` in the saved file: `self.chars[<guid>].pvp` and `self.feed[<today>][<guid>]`.

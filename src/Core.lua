@@ -39,6 +39,7 @@ function addon:OnEnable()
   ns.SyncChannel.start(self) -- CF-31: the hidden channel HELLO and BYE are broadcast on
   ns.MemberTracker.start(self)
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
+  ns.PlayTracker.start(self) -- CF-53: after ActivityTracker (instance events) and MemberTracker (groups)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)

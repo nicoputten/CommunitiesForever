@@ -42,7 +42,7 @@ describe("PvP, duels and deaths (CF-52)", function()
   it("stores the counters and rank at login, and counts new kills by zone", function()
     load(nil, { hk = 100, rankID = 7, rankNumber = 3, rankName = "Sergeant", weekKills = 4, weekHonor = 90 })
     assert.are.same({ hk = 100, rank = 3, rankName = "Sergeant", weekKills = 4, weekHonor = 90 }, char().pvp)
-    assert.is_nil(addon.db.global.self.feed)
+    assert.is_nil(entry().kills) -- the first read only sets the base
     state.zone = "Ashenvale"
     state.pvp.hk, state.pvp.weekKills = 102, 6
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")

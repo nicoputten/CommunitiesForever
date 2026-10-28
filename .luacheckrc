@@ -45,6 +45,9 @@ stds.wow = {
     "GetPVPLifetimeStats", "UnitPVPRank", "GetPVPRankInfo", "GetPVPThisWeekStats", "GetStatistic", -- CF-52 (V79)
     "DUEL_WINNER_KNOCKOUT", "DUEL_WINNER_RETREAT", "COMBATLOG_HONORGAIN", -- CF-52 (V79, V80)
     "C_DeathRecap", "CombatLogGetCurrentEventInfo", -- CF-52 (V81)
+    "LOOT_ITEM_SELF", "LOOT_ITEM_SELF_MULTIPLE", "LOOT_ITEM_PUSHED_SELF", "LOOT_ITEM_PUSHED_SELF_MULTIPLE", -- CF-53
+    "LOOT_ITEM_CREATED_SELF", "LOOT_ITEM_CREATED_SELF_MULTIPLE", "C_Item", "GetMoney", -- CF-53 (V83)
+    "C_TradeSkillUI", "C_SpellBook", "IsSpellKnown", "GetNumSkillLines", "GetSkillLineInfo", -- CF-53 (V82)
     -- Battle.net
     "BNGetInfo", "BNGetNumFriends", "BNSendGameData", "BNET_CLIENT_WOW",
     -- UI

@@ -6,7 +6,8 @@ local Snapshot = {}
 
 -- Synced scalar Char fields. updatedAt and lastPlayed are metadata and never compared.
 local SCALAR_FIELDS = { "guid", "name", "classFile", "raceID", "level", "faction", "realm", "ilvl",
-  "mainTree", "autoRole", "roleOverride", "role" }   -- CF-18: talents and role
+  "mainTree", "autoRole", "roleOverride", "role",   -- CF-18: talents and role
+  "riding" }                                       -- CF-53: riding skill 0, 75 or 150
 
 -- Builds a Char from raw SelfInfo values.
 -- info.professions is a list of { name, rank, max, skillLine }; entries without skillLine are skipped.
@@ -105,6 +106,7 @@ function Snapshot.apply(record, info, now)
     end
     if char.quests == nil then char.quests = previous.quests end
     char.pvp = previous.pvp -- CF-52: kept by PvpTracker, not read with the snapshot
+    if char.riding == nil then char.riding = previous.riding end -- CF-53: not readable right now
     -- The role override is set by the player in settings, not read from the game.
     char.roleOverride = previous.roleOverride
     char.role = char.roleOverride or char.autoRole

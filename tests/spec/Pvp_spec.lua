@@ -6,7 +6,9 @@ describe("Pvp (CF-52)", function()
   local ME = "Ada Example"
 
   before_each(function()
-    Pvp = helpers.loadAddonFile("src/core/Pvp.lua", {})
+    local ns = {}
+    helpers.loadAddonFile("src/core/GameText.lua", ns)
+    Pvp = helpers.loadAddonFile("src/core/Pvp.lua", ns)
   end)
 
   describe("death cause", function()
@@ -36,24 +38,6 @@ describe("Pvp (CF-52)", function()
       assert.are.equal("other", Pvp.deathCause(nil, { FEIGNDEATH = { startedAt = 99 } }, 100))
       assert.are.equal("creature", Pvp.deathCause({ kind = "creature", at = 99 }, { BREATH = { startedAt = 1 } }, 100))
       assert.are.equal("other", Pvp.deathCause(nil, nil, 100))
-    end)
-  end)
-
-  describe("format strings", function()
-    it("turns positional and plain arguments into a pattern", function()
-      local args = Pvp.parse("Bob Example has fled from Ada Example in a duel", FORMATS.retreat)
-      assert.are.same({ "Ada Example", "Bob Example" }, args)
-      args = Pvp.parse("Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)",
-        "%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)")
-      assert.are.same({ "Grim Tusk", "Grunt", "12" }, args)
-      assert.is_nil(Pvp.parse("You have been awarded 50 honor points.", "%s dies, honorable kill Rank: %s"))
-      assert.is_nil(Pvp.parse("anything", "no arguments"))
-      assert.is_nil(Pvp.parse("anything", nil))
-    end)
-
-    it("escapes magic characters of the format string", function()
-      assert.are.same({ "x" }, Pvp.parse("(100%) x.", "(100%%) %s."))
-      assert.is_nil(Pvp.parse("(100%) xy", "(100%%) %s."))
     end)
   end)
 
