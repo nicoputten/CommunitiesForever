@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doomsday addon today</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;background:#0B0F0A}
+a{color:#D4AF6A}a:hover{color:#F0D08E}
+.win{position:absolute;background:rgba(9,15,27,.96);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 0 0 1px #02050A,inset 0 1px 0 rgba(240,208,142,.18),0 24px 60px rgba(0,0,0,.7);display:flex;flex-direction:column;font-family:Inter,sans-serif;color:#E6E1D6}
+.orn{position:absolute;width:8px;height:8px;background:#D4AF6A;transform:rotate(45deg);box-shadow:0 0 0 2px #02050A}
+.title{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;background:linear-gradient(180deg,rgba(212,175,106,.10),rgba(212,175,106,0));border-bottom:1px solid rgba(212,175,106,.25)}
+.x{width:26px;height:26px;border-radius:6px;border:1px solid rgba(212,175,106,.35);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tabs{height:36px;flex:none;display:flex;gap:4px;padding:0 12px;border-bottom:1px solid rgba(212,175,106,.18)}
+.tab{display:flex;align-items:center;gap:6px;padding:0 14px;font:15px 'Marcellus SC',serif;letter-spacing:.05em;color:#8E98A8}
+.tab.on{color:#F3DFAE;box-shadow:inset 0 -2px 0 #D4AF6A;background:linear-gradient(0deg,rgba(212,175,106,.12),rgba(212,175,106,0))}
+.badge{min-width:16px;height:16px;border-radius:8px;background:#D4AF6A;color:#0B0F14;font:600 10px/16px Inter,sans-serif;text-align:center;padding:0 3px;box-sizing:border-box}
+.lh{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898;padding:12px 12px 4px}
+.dr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:6px 12px;font-size:13px}
+.dr .n{font:14px 'Marcellus',serif;color:#F0D08E}
+.dr .m{grid-column:1/-1;font-size:11px;color:#8E98A8;display:flex;gap:10px}
+.dr.sel{background:rgba(212,175,106,.13);box-shadow:inset 3px 0 0 #D4AF6A}
+.sec{font:15px 'Marcellus SC',serif;letter-spacing:.07em;color:#F0D08E;margin:0}
+.slot{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:8px;border:1px solid rgba(212,175,106,.2);background:rgba(255,255,255,.03);font-size:11px;color:#AEB6C3;text-align:center}
+.slot.empty{border-style:dashed;color:#7E8898}
+.slot.miss{border-color:rgba(224,138,74,.5);color:#F0A774;border-style:dashed}
+.disc{width:26px;height:26px;border-radius:50%;font:600 9px/26px Inter,sans-serif;text-align:center;color:#0B0F14}
+.mr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.btn{min-height:30px;padding:0 14px;border-radius:6px;border:1px solid rgba(212,175,106,.5);background:linear-gradient(180deg,rgba(212,175,106,.25),rgba(212,175,106,.08));color:#F3DFAE;font:600 12px Inter,sans-serif;cursor:pointer}
+.btn.pri{background:linear-gradient(180deg,#E2C07A,#C59B52);color:#0B0F14;border-color:#F0D08E}
+
+.seg{display:flex;border:1px solid rgba(212,175,106,.35);border-radius:6px;overflow:hidden}
+.seg span{padding:0 12px;height:28px;line-height:28px;font:13px 'Marcellus SC',serif;letter-spacing:.04em;color:#8E98A8;border-right:1px solid rgba(212,175,106,.2)}
+.seg span:last-child{border-right:0}
+.seg .on{background:rgba(212,175,106,.2);color:#F3DFAE}
+.gr{display:grid;grid-template-columns:70px minmax(0,1fr) 110px;gap:10px;align-items:center;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid rgba(212,175,106,.12)}
+.gr.done{border-color:rgba(127,217,154,.35);background:rgba(127,217,154,.05)}
+.gr .k{font:600 10px Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.gr .t{font:14px Marcellus,serif;color:#F3EBDA}
+.gr.done .t{text-decoration:line-through;color:#AEB6C3}
+.pb{height:5px;border-radius:3px;background:#1F2837;overflow:hidden;margin-top:4px}
+.pb i{display:block;height:100%;background:#9BE3B0}.pb.pvp i{background:#F08A80}
+.pve{color:#9BE3B0}.pvp{color:#F08A80}
+.bt2{width:100%;border-collapse:collapse;font-size:12px}
+.bt2 th{font:600 10px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#7E8898;text-align:left;padding:5px 6px;border-bottom:1px solid rgba(212,175,106,.3);vertical-align:bottom}
+.bt2 td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.05);color:#C9CFD9}
+.ck{color:#9BE3B0;font-weight:700}
+.pl{display:inline-flex;align-items:center;gap:4px;font:600 10px/1 Inter,sans-serif;padding:4px 6px;border-radius:999px;white-space:nowrap}
+.first{background:rgba(212,175,106,.2);color:#F3DFAE;border:1px solid rgba(212,175,106,.5)}
+.virgin{background:rgba(141,176,255,.12);color:#AFC6FF;border:1px solid rgba(141,176,255,.35)}
+.cap2{position:absolute;font:13px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E;background:rgba(5,9,16,.85);padding:4px 10px;border-radius:6px;border:1px solid rgba(212,175,106,.3)}
+.chat{font:13px/1.6 Inter,sans-serif;text-shadow:0 1px 1px #000}
+.drc{color:#FF9A45}.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.dr{color:#FF9A45}
+
+</style>
+</helmet>
+<div style="position: relative; width: 1900px; height: 1420px; overflow: hidden; background: radial-gradient(ellipse at 60% 70%, #2B3322 0%, #1A2116 40%, #0B0F0A 85%); font-family: Inter, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)"></div>
+  <div style="position: absolute; left: 60px; top: 28px; right: 60px; display: flex; align-items: baseline; gap: 16px"><h1 style="margin: 0; font: 32px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Addon · Doomsday tab · Today &amp; Week</h1><span style="font-size: 13px; color: #AEB6C3">A fourth tab next to Friends, Activity and Dungeons. Built with the widget kit (ScrollBox rows, StatusBar, AnimationGroup toast).</span></div>
+  <span class="cap2" style="left: 60px; top: 86px">1 · Today · 21:30</span>
+  <section class="win" style="left: 60px; top: 120px; width: 860px; height: 560px"><span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 18px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE">Doombringers</span><span style="font-size: 11px; color: #7E8898">CommunitiesForever</span><span style="flex: 1"></span><span style="font-size: 12px; color: #9BE3B0">● 3 online</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <nav class="tabs"><span class="tab">Friends</span><span class="tab">Activity</span><span class="tab">Dungeons</span><span class="tab on"><svg width="16" height="16" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M32 34 L52.8 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L44.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L32.0 10.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L20.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L11.2 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M6 40h52" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round"></path><path d="M14 40c4 14 32 14 36 0z" fill="#121B2A" stroke="#F0D08E" stroke-width="2.4"></path><path d="M27 46h10M32 41v10" stroke="#F0D08E" stroke-width="2.4" stroke-linecap="round"></path></svg> Doomsday</span></nav>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid rgba(212,175,106,.12)"><div class="seg"><span class="on">Today</span><span class="">Week</span><span class="">Board</span><span class="">Ladder</span><span class="">Feats</span></div><span style="flex: 1"></span><span style="font: 600 12px Inter, sans-serif; color: #F6C29C">resets in 11 h 30 m</span></div>
+    <div style="flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden"><div style="display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 12px; min-height: 0">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <div class="lh" style="padding: 0 0 2px">Today · Tue 28 Oct · 3 of 5 done</div>
+    <div class="gr done"><span class="k" style="color: #9BE3B0">Daily</span><span class="t">Finish 10 quests</span><span class="ck" style="text-align: right">✓ 10:42</span></div>
+    <div class="gr done"><span class="k" style="color: #9BE3B0">Daily</span><span class="t">Run a dungeon with a friend</span><span class="ck" style="text-align: right">✓ 21:05</span></div>
+    <div class="gr"><span class="k" style="color: #9BE3B0">Daily</span><span class="t">Raise Cooking, First Aid or Fishing</span><div style="text-align: right"><span style="font: 600 13px Inter, sans-serif; color: #E6E1D6">3/5</span><div class="pb"><i style="width: 60%"></i></div></div></div>
+    <div class="gr done"><span class="k" style="color: #F08A80">Hunt</span><span class="t">Night Elf Druids</span><span class="ck" style="text-align: right">✓ 20:12</span></div>
+    <div class="gr"><span class="k" style="color: #F08A80">Skirmish</span><span class="t">Lone wolf: 3 solo kills</span><div style="text-align: right"><span style="font: 600 13px Inter, sans-serif; color: #E6E1D6">2/3</span><div class="pb pvp"><i style="width: 66%"></i></div></div></div>
+    <div class="gr" style="border-style: dashed"><span class="k pvp">Duel</span><span class="t">First duel with each friend <span style="font: 12px Inter, sans-serif; color: #8E98A8">· won vs Bob</span></span><span style="text-align: right; font: 600 13px Inter, sans-serif; color: #E6E1D6">1</span></div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,106,.2)"><div class="lh" style="padding: 0">Today</div><div style="font: 600 15px Inter, sans-serif"><span class="pve">PvE 10</span> · <span class="pvp">PvP 9</span></div><div style="font-size: 11px; color: #8E98A8">9 kills: 4 near level, 2 solo, 1 above</div></div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,106,.2)"><div class="lh" style="padding: 0">Streak</div><div style="font: 600 15px Inter, sans-serif; color: #F6C29C"><svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align: -2px"><path d="M7 1c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 2 1 2 0-2 0-4 1-6z" fill="#F0A774"></path></svg> 6 days</div><div style="font-size: 11px; color: #8E98A8">best 11</div></div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: rgba(212,175,106,.08); border: 1px solid rgba(212,175,106,.4); font-size: 12px; color: #E6E1D6"><svg width="14" height="14" viewBox="0 0 16 16" aria-label="first to finish" style="flex: none; vertical-align: -2px"><path d="M2 12h12l1-8-4 3-3-5-3 5-4-3z" fill="#F0D08E" stroke="#B88A3A" stroke-width=".8" stroke-linejoin="round"></path><rect x="2" y="12.5" width="12" height="2" rx="1" fill="#D4AF6A"></rect></svg> <b style="font-weight: 600">Mira</b> finished all dailies first, 19:30</div>
+    <div style="font-size: 11px; color: #7E8898; line-height: 1.5">Any of your characters counts. Ada Brightmoss's 2 quests are in the 10.</div>
+  </div>
+</div></div>
+    <footer style="height: 26px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-top: 1px solid rgba(212,175,106,0.18); font-size: 11px; color: #7E8898"><span>Synced with Mira 3 min ago</span><span style="flex: 1"></span><span>Suggestions, never rules · all-time totals on the site</span></footer>
+  </section>
+  <span class="cap2" style="left: 980px; top: 86px">2 · Week</span>
+  <section class="win" style="left: 980px; top: 120px; width: 860px; height: 560px"><span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 18px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE">Doombringers</span><span style="font-size: 11px; color: #7E8898">CommunitiesForever</span><span style="flex: 1"></span><span style="font-size: 12px; color: #9BE3B0">● 3 online</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <nav class="tabs"><span class="tab">Friends</span><span class="tab">Activity</span><span class="tab">Dungeons</span><span class="tab on"><svg width="16" height="16" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M32 34 L52.8 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L44.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L32.0 10.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L20.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L11.2 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M6 40h52" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round"></path><path d="M14 40c4 14 32 14 36 0z" fill="#121B2A" stroke="#F0D08E" stroke-width="2.4"></path><path d="M27 46h10M32 41v10" stroke="#F0D08E" stroke-width="2.4" stroke-linecap="round"></path></svg> Doomsday</span></nav>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid rgba(212,175,106,.12)"><div class="seg"><span class="">Today</span><span class="on">Week</span><span class="">Board</span><span class="">Ladder</span><span class="">Feats</span></div><span style="flex: 1"></span><span style="font: 600 12px Inter, sans-serif; color: #F6C29C">week resets Sun 09:00 · in 4 d 11 h</span></div>
+    <div style="flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden"><div style="display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 12px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <div class="lh" style="padding: 0 0 2px">This week · 15 points each</div>
+    <div class="gr"><span class="k" style="color: #9BE3B0">Weekly</span><span class="t">Run 3 different dungeons</span><div style="text-align: right"><span style="font: 600 13px Inter, sans-serif; color: #E6E1D6">2/3</span><div class="pb"><i style="width: 66%"></i></div></div></div>
+    <div class="gr"><span class="k" style="color: #9BE3B0">Weekly</span><span class="t">Gain 3 levels</span><div style="text-align: right"><span style="font: 600 13px Inter, sans-serif; color: #E6E1D6">1/3</span><div class="pb"><i style="width: 33%"></i></div></div></div>
+    <div class="gr done"><span class="k" style="color: #9BE3B0">Weekly</span><span class="t">Group with 3 different friends</span><span class="ck" style="text-align: right">✓ Mon 22:10</span></div>
+    <div class="gr"><span class="k" style="color: #F08A80">Bounty</span><span class="t">A kill of every enemy class</span><div style="text-align: right"><span style="font: 600 13px Inter, sans-serif; color: #E6E1D6">5/8</span><div class="pb pvp"><i style="width: 62%"></i></div></div></div>
+    <div style="font-size: 11px; color: #8E98A8; padding: 4px 2px">Still needed for the bounty: Paladin, Priest, Hunter</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,106,.2)"><div class="lh" style="padding: 0">This week</div><div style="font: 600 17px Inter, sans-serif"><span class="pve">PvE 85</span> · <span class="pvp">PvP 240</span></div></div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,106,.2); font-size: 12px; line-height: 1.7"><div class="lh" style="padding: 0">Per character</div><span class="wl">Ada Nightshade</span> 60 · 228<br><span class="drc">Ada Brightmoss</span> 25 · 12</div>
+    <div style="padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(212,175,106,.2)"><div class="lh" style="padding: 0">Streak</div><div style="font: 600 15px Inter, sans-serif; color: #F6C29C"><svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align: -2px"><path d="M7 1c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 2 1 2 0-2 0-4 1-6z" fill="#F0A774"></path></svg> 6 days · best 11</div></div>
+  </div>
+</div></div>
+    <footer style="height: 26px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-top: 1px solid rgba(212,175,106,0.18); font-size: 11px; color: #7E8898"><span>Synced with Mira 3 min ago</span><span style="flex: 1"></span><span>Suggestions, never rules · all-time totals on the site</span></footer>
+  </section>
+  <span class="cap2" style="left: 60px; top: 756px">3 · State · everything done</span>
+  <section class="win" style="left: 60px; top: 790px; width: 860px; height: 520px"><span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 18px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE">Doombringers</span><span style="font-size: 11px; color: #7E8898">CommunitiesForever</span><span style="flex: 1"></span><span style="font-size: 12px; color: #9BE3B0">● 3 online</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <nav class="tabs"><span class="tab">Friends</span><span class="tab">Activity</span><span class="tab">Dungeons</span><span class="tab on"><svg width="16" height="16" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M32 34 L52.8 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L44.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L32.0 10.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L20.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L11.2 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M6 40h52" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round"></path><path d="M14 40c4 14 32 14 36 0z" fill="#121B2A" stroke="#F0D08E" stroke-width="2.4"></path><path d="M27 46h10M32 41v10" stroke="#F0D08E" stroke-width="2.4" stroke-linecap="round"></path></svg> Doomsday</span></nav>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid rgba(212,175,106,.12)"><div class="seg"><span class="on">Today</span><span class="">Week</span><span class="">Board</span><span class="">Ladder</span><span class="">Feats</span></div><span style="flex: 1"></span><span style="font: 600 12px Inter, sans-serif; color: #F6C29C">resets in 11 h 30 m</span></div>
+    <div style="flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden"><div style="display: flex; flex-direction: column; gap: 6px">
+  <div style="padding: 12px; border-radius: 6px; background: radial-gradient(circle at 0% 50%, rgba(240,208,142,.18), rgba(5,9,16,0) 70%); border: 1px solid #D4AF6A; display: flex; gap: 10px; align-items: center"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M32 34 L52.8 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L44.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L32.0 10.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L20.0 13.2" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><path d="M32 34 L11.2 22.0" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round" opacity=".8"></path><circle cx="32" cy="34" r="14" fill="#F0D08E"></circle><path d="M6 40h52" stroke="#D4AF6A" stroke-width="3" stroke-linecap="round"></path><path d="M14 40c4 14 32 14 36 0z" fill="#121B2A" stroke="#F0D08E" stroke-width="2.4"></path><path d="M27 46h10M32 41v10" stroke="#F0D08E" stroke-width="2.4" stroke-linecap="round"></path></svg><div><div style="font: 16px Marcellus, serif; color: #F3DFAE">Doomsday done. Go touch grass.</div><div style="font-size: 11px; color: #AEB6C3">All 5 goals · PvE 15 · PvP 22 · streak 7</div></div></div>
+  <div class="gr done"><span class="k" style="color: #9BE3B0">Daily</span><span class="t">Finish 10 quests</span><span class="ck" style="text-align: right">✓ 10:42</span></div><div class="gr done"><span class="k" style="color: #9BE3B0">Daily</span><span class="t">Run a dungeon with a friend</span><span class="ck" style="text-align: right">✓ 21:05</span></div><div class="gr done"><span class="k" style="color: #9BE3B0">Daily</span><span class="t">Raise Cooking, First Aid or Fishing</span><span class="ck" style="text-align: right">✓ 22:51</span></div><div class="gr done"><span class="k" style="color: #F08A80">Hunt</span><span class="t">Night Elf Druids</span><span class="ck" style="text-align: right">✓ 20:12</span></div><div class="gr done"><span class="k" style="color: #F08A80">Skirmish</span><span class="t">Lone wolf: 3 solo kills</span><span class="ck" style="text-align: right">✓ 23:04</span></div>
+</div></div>
+    <footer style="height: 26px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-top: 1px solid rgba(212,175,106,0.18); font-size: 11px; color: #7E8898"><span>Synced with Mira 3 min ago</span><span style="flex: 1"></span><span>Suggestions, never rules · all-time totals on the site</span></footer>
+  </section>
+  <span class="cap2" style="left: 980px; top: 756px">4 · chat lines (addon chat style)</span>
+  <section class="chat" style="color: #E6E1D6; position: absolute; left: 980px; top: 790px; width: 860px; padding: 14px 16px; background: rgba(0,0,0,0.35); border-radius: 4px">
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span style="color: #9BE3B0">Daily done:</span> Finish 10 quests <span style="color: #9BE3B0">(+5 PvE, 2 of 3 today)</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span style="color: #F08A80">Hunt done:</span> a Night Elf Druid fell to <span class="wl">Ada Nightshade</span> <span style="color: #F08A80">(+5 PvP)</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> Kill: +2 PvP · 3 levels above you, and solo <span style="color: #8E98A8">(+1)</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span style="color: #F3DFAE">Mira finished Doomsday first today.</span> <span style="color: #8E98A8">You're at 3 of 5.</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span style="color: #AFC6FF">Swapped for you:</span> “Gain a level on an alt” → “Finish 3 quests in a level-60 zone”</div>
+  </section>
+  <span class="cap2" style="left: 980px; top: 1040px">5 · toast · first to finish (slides in under the minimap)</span>
+  <section class="pane" style="position: absolute; left: 980px; top: 1074px; width: 400px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; background: rgba(9,15,27,.97); border: 1px solid #D4AF6A; box-shadow: 0 0 30px rgba(240,208,142,.25), 0 20px 50px rgba(0,0,0,.6); border-radius: 4px; font-family: Inter, sans-serif">
+    <span style="width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #3A2E14, #120D04); border: 1px solid #F0D08E; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 16 16" aria-label="first to finish" style="flex: none; vertical-align: -2px"><path d="M2 12h12l1-8-4 3-3-5-3 5-4-3z" fill="#F0D08E" stroke="#B88A3A" stroke-width=".8" stroke-linejoin="round"></path><rect x="2" y="12.5" width="12" height="2" rx="1" fill="#D4AF6A"></rect></svg></span>
+    <div><div style="font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #F0D08E">First to finish today!</div><div style="font: 17px Marcellus, serif; color: #F3EBDA">All three dailies done at 19:30</div><div style="font-size: 12px; color: #AEB6C3">The crown is yours until 09:00. Others have been told, gently.</div></div>
+  </section>
+  <div style="position: absolute; left: 1420px; top: 1084px; width: 420px; font-size: 12px; color: #8E98A8; line-height: 1.6">Toast: gold glow fades in over 400 ms and slides 12 px; with reduced motion it just appears. Version B has no “+3” anywhere; the toast is the same.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1900,"height":1420}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
