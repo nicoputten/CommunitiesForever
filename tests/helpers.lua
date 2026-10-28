@@ -87,6 +87,106 @@ function helpers.activityTab(ns)
   return tab
 end
 
+-- CF-55: a small JSON reader for the golden cases shared with the site (tests/fixtures/doomsday-cases.json).
+-- Objects become tables with string keys, arrays 1-based lists; null becomes nil (not used in arrays there).
+function helpers.json(text)
+  local pos = 1
+  local function fail(what) error(string.format("JSON: %s at %d", what, pos)) end
+  local function skip() pos = text:find("[^ \t\r\n]", pos) or #text + 1 end
+  local value
+  local function str()
+    local parts = {}
+    pos = pos + 1
+    while true do
+      local c = text:sub(pos, pos)
+      if c == "" then fail("unterminated string") end
+      if c == '"' then pos = pos + 1; break end
+      if c == "\\" then
+        local e = text:sub(pos + 1, pos + 1)
+        local map = { n = "\n", t = "\t", r = "\r", b = "\b", f = "\f", ['"'] = '"', ["\\"] = "\\", ["/"] = "/" }
+        if e == "u" then
+          local code = tonumber(text:sub(pos + 2, pos + 5), 16)
+          if code < 0x80 then
+            parts[#parts + 1] = string.char(code)
+          elseif code < 0x800 then
+            parts[#parts + 1] = string.char(0xC0 + math.floor(code / 64), 0x80 + code % 64)
+          else
+            parts[#parts + 1] = string.char(0xE0 + math.floor(code / 4096), 0x80 + math.floor(code / 64) % 64,
+              0x80 + code % 64)
+          end
+          pos = pos + 6
+        else
+          parts[#parts + 1] = map[e] or fail("bad escape")
+          pos = pos + 2
+        end
+      else
+        parts[#parts + 1] = c
+        pos = pos + 1
+      end
+    end
+    return table.concat(parts)
+  end
+  function value()
+    skip()
+    local c = text:sub(pos, pos)
+    if c == "{" then
+      local obj = {}
+      pos = pos + 1
+      skip()
+      if text:sub(pos, pos) == "}" then pos = pos + 1; return obj end
+      while true do
+        skip()
+        local key = str()
+        skip()
+        if text:sub(pos, pos) ~= ":" then fail("expected :") end
+        pos = pos + 1
+        obj[key] = value()
+        skip()
+        local sep = text:sub(pos, pos)
+        pos = pos + 1
+        if sep == "}" then return obj end
+        if sep ~= "," then fail("expected , or }") end
+      end
+    elseif c == "[" then
+      local list = {}
+      pos = pos + 1
+      skip()
+      if text:sub(pos, pos) == "]" then pos = pos + 1; return list end
+      while true do
+        list[#list + 1] = value()
+        skip()
+        local sep = text:sub(pos, pos)
+        pos = pos + 1
+        if sep == "]" then return list end
+        if sep ~= "," then fail("expected , or ]") end
+      end
+    elseif c == '"' then
+      return str()
+    elseif text:sub(pos, pos + 3) == "true" then
+      pos = pos + 4; return true
+    elseif text:sub(pos, pos + 4) == "false" then
+      pos = pos + 5; return false
+    elseif text:sub(pos, pos + 3) == "null" then
+      pos = pos + 4; return nil
+    end
+    local number = text:match("^-?%d+%.?%d*[eE]?[-+]?%d*", pos)
+    if not number or number == "" then fail("unexpected " .. c) end
+    pos = pos + #number
+    return tonumber(number)
+  end
+  local result = value()
+  skip()
+  if pos <= #text then fail("trailing text") end
+  return result
+end
+
+function helpers.readJson(path)
+  local f = assert(io.open(path, "rb"))
+  local text = f:read("*a")
+  f:close()
+  return helpers.json(text)
+end
+
 -- Pure-Lua libraries from Libs/ (fetched by tools/fetch-libs.ps1). Without LibStub they
 -- return themselves. Cached, so a spec gets the same instance as the addon would.
 local libs = {}

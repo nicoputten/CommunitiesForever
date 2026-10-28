@@ -45,6 +45,8 @@ CommunitiesForever/
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
+      Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
+                             progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
       Pvp.lua                PvP counters, death cause, duel result from the game's format strings, rank titles,
                              cleaning of received PvP data (CF-52)
       GameText.lua           the game's own messages through its format strings, item links (CF-52, CF-53)
