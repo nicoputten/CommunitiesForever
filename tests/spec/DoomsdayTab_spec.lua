@@ -123,4 +123,71 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     end
     assert.is_true(tab.has("Stone Guard, a.k.a. Mailbox Menace \194\183 1,234 honorable kills"))
   end)
+
+  describe("Board, Ladder and Feats (CF-57b)", function()
+    local D, n, start
+
+    local function setup()
+      D = helpers.loadAddonFile("src/core/Doomsday.lua", {})
+      n = dayWith(D, "d.quests10")
+      start = D.dayStart(n, CET, RESET)
+      load(function(s) s.serverTime = start + 3600 end)
+      local bt = state.friends[1].battleTag
+      local set = addon.db.global.self.goals.days[n].set
+      local done = {}
+      for _, id in ipairs(set) do done[id] = start + 600 end
+      local guid = state.clubMembers["23125681"][2].guid
+      addon.db.global.people[bt] = { displayName = "Mira", version = 3, goals = {
+        days = { [n] = { set = set, done = done, at = start + 600 } }, weeks = {}, streak = 6 },
+        chars = { [guid] = { name = "Garraka Doombringer", classFile = "MAGE", level = 11, pvp = { hk = 3 } } },
+        feed = { [n] = { [guid] = { pvpKills = { { t = start + 700, name = "Grim Tusk", lvl = 12, myLvl = 11 } } } } } }
+      addon.db.global.people["Tok#1003"] = { displayName = "Tok", version = 2, chars = {} }
+      ns.MainFrame.toggle()
+      ns.MainFrame.selectTab("doomsday")
+    end
+
+    it("shows everyone's goals on the Board, crossed out and crowned", function()
+      setup()
+      ns.DoomsdayTab.chips().board:RunScript("OnClick")
+      local t = texts()
+      assert.is_truthy(t:find("\nFRIEND\n", 1, true))
+      assert.is_truthy(t:find("\n10 QUESTS\n", 1, true))
+      assert.is_truthy(t:find("Mira  crown", 1, true))
+      assert.is_truthy(t:find("\n0/10\n", 1, true)) -- your own progress
+      assert.is_truthy(t:find("\nno Doomsday data yet\n", 1, true)) -- Tok, an older addon
+      assert.is_truthy(t:find("\n6\n", 1, true)) -- Mira's streak
+      local board = ns.DoomsdayTracker.board()
+      local mira
+      for _, row in ipairs(board.rows) do
+        if row.name == "Mira" then mira = row end
+      end
+      assert.is_true(mira.crossed)
+      assert.is_true(mira.crown)
+      assert.are.same({ pve = 15, pvp = 5 + 1 }, mira.today)
+    end)
+
+    it("ranks this week on the Ladder, PvE and PvP apart, the PvP Virgin unranked", function()
+      setup()
+      ns.DoomsdayTab.chips().ladder:RunScript("OnClick")
+      local t = texts()
+      assert.is_truthy(t:find("\nPvE\n", 1, true) and t:find("\nPvP\n", 1, true))
+      local l = ns.DoomsdayTracker.ladder()
+      assert.are.equal("Sjaakovich#2232", l.pve[1].friend)
+      assert.are.equal(15, l.pve[1].points)
+      assert.are.same({ "Vestras#1000" }, l.virgins)
+      assert.is_truthy(t:find("PvP Virgin", 1, true))
+      assert.is_truthy(t:find("All-time totals, Elo and battleground history", 1, true))
+    end)
+
+    it("lists your characters' feats, Earlier at the first sight", function()
+      setup()
+      ns.DoomsdayTab.chips().feats:RunScript("OnClick")
+      local t = texts()
+      assert.is_truthy(t:find("Level 10", 1, true))
+      assert.is_truthy(t:find("Reached level 10 \194\183 earlier", 1, true))
+      wowapi.fireEvent(state, "PLAYER_LEVEL_UP", 20)
+      local feats = addon.db.global.self.feats[state.player.guid]
+      assert.are.equal(state.serverTime, feats["level:20"].at)
+    end)
+  end)
 end)

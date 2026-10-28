@@ -59,6 +59,17 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | A friend on this build, you on a released version with "Share my activity" off | The friend still sees your activity from before (nothing is wiped); new activity of yours doesn't reach them until you update. | open |
 | Both on this build | Each sees the other's activity; the Activity tab footer says "Friends with CommunitiesForever share their activity." | open |
 
+### CF-57b Doomsday tab: Board, Ladder and Feats
+Compare with `docs/design/doomsday-2026-10/DD08AddonBoard.dc.html`. Best with two friends on this build.
+
+| Step | Expected | Status |
+|---|---|---|
+| Doomsday › Board | One row per friend: you first, then friends with Doomsday data, then the rest ("no Doomsday data yet"); a column per goal of today with the time a friend finished it, your own progress ("3/10"), a "*" on a swapped goal (hover: the original); a line through the name of a friend who did all 3 PvE dailies; "crown" after the first one; streak; today's "PvE · PvP". | open |
+| Doomsday › Ladder | PvE and PvP apart, each ranked this week with points and movement against last week ("+2", "new"); clicking a row shows the characters. A friend who never killed anyone: "PvP Virgin · not ranked". Your PvP: rank and title, kills this week and the zone with most, duels won–lost, each battleground won–lost with its points. | open |
+| Doomsday › Feats | Your characters with their feats, newest first; what they had before the update says "earlier". The next honorable-kill feat with "412 / 1,000"; a character without kills: "no kills yet · Rank title: Conscientious Objector until the first kill." | open |
+| Level up | A new feat "Level N" with today's date. | open |
+| Activity tab, a day with 5 (or 10) kills in a row without dying | "a spree of 5" (or 10) on that line. | open |
+
 ### CF-57a Doomsday tab: Today, Week, chat lines and the toast
 Compare with `docs/design/doomsday-2026-10/DD07AddonToday.dc.html`.
 

@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -622,3 +622,29 @@ After CF-55.
 - CF-58 folded in: `goals` is always sent; `false` or missing = nothing sent.
 - Rule 8: optional RECORD field `goals` and HELLO field `dd` within `pv` 1; older clients ignore and drop them. New optional stored data (`self.goals`, `self.doomsday`, `settings.doomsdayReset`, `people.*.goals`); no migration.
 - Done (PR #101): `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `src/adapters/GoalEvents.lua`, `SelfInfo.gameTime`, `RunsFile.doomsday`, `Merge` (outgoing, merge, relay of `goals`), HELLO `dd`, `/cf doomsday` (`Describe.doomsday`). VERIFY.md "CF-56", V84 to V86.
+
+### CF-57 Doomsday tab, chat lines and the toast
+After CF-56. Split in two (Nico, 2026-10-29): **CF-57a** the tab with Today and Week, the chat lines, the toast, the setting and the card's PvP line (PR #102); **CF-57b** Board, Ladder and Feats (with sprees). Feats: the addon remembers locally when it first saw each one (`self.feats[guid][key] = time`), newest first from then on; feats a character already had show under "Earlier" (Nico).
+Decided in CF-57a: swap lines come when the day turns while you play or with the first goal done that day, never at login; chat lines only on a character in the selected community. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built with the kit (pools, `Kit.scrollArea`, `Kit.toast`), as the other tabs.
+- A tab **Doomsday** after Dungeons, with:
+  - **Today:** your 3 PvE dailies, the Hunt and the Skirmish, with progress ("7/10") or a check with its time, the time to the reset, the swap mark with the original in its tooltip, and the Duel slot (who you dueled, who's still open). Plus today's points (PvE and PvP), a kill summary ("9 kills: 4 near level, 2 solo, 1 above"), the streak, and who has the crown.
+  - **Week:** the 3 PvE weeklies and the Weekly bounty with progress (for the bounty, what's still needed: "Paladin, Priest, Hunter"), this week's points per track and per character, the streak.
+  - **Board:** every friend's goals today, from synced `goals`. A finished goal is checked and struck through with its time, and a friend is crossed out when all 3 PvE dailies are done. The crown, streaks, today's and this week's points.
+  - **Ladder:** this week only, PvE and PvP side by side, each with its own ranking. Rows expand to characters. PvP Virgin is shown, not ranked. "All-time totals on the site."
+  - **Feats:** your characters' feats as far as the addon can derive them, newest first.
+  - The "everything done" state ("Doomsday done. Go touch grass.") and "Synced with Mira 3 min ago".
+- Chat lines in the addon's chat style, as on the board:
+  - a daily done
+  - the Hunt done
+  - a kill worth bonus points
+  - someone else took the crown
+  - a goal swapped for you
+  
+  A setting **Doomsday in chat** (on by default).
+- A **toast** "First to finish today!" when you take the crown: a gold glow, fading in over 400 ms and sliding 12 px, that just appears when "Ambient effects" is off.
+- The character card gets a PvP line: lifetime honorable kills, rank with our title ("Stone Guard, a.k.a. Mailbox Menace"), this week's PvP points, or **PvP Virgin**.
+- Friends without Doomsday data show "no Doomsday data yet", never 0.
+- **Feats and sprees** (moved here from CF-55, Nico 2026-10-28): the feats the addon can derive from the records it holds (the site's thresholds, web WEB-56, without "First in the group") and spree badges (5 and 10 kills without dying) in the feed, both in `src/core/Doomsday.lua`.
+- Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts, feats, sprees) with busted. Manual steps in `VERIFY.md`.
+- Decided in CF-57b: the Board's columns follow your own set of the day (a friend's swapped goal stays in its slot, with "*"); points per friend come from their synced `goals`, the kills in their feed and the Duel slot of everyone's records; the Ladder's movement compares with last week from the data at hand (the last 7 feed days and last week's goals); the battleground block comes from the feed's runs and battleground kills (DOOMSDAY.md wins over the board's "battlegrounds on the site"). Feats: the site's kinds, thresholds and titles (web feats.ts), without "First in the group" and without the group's mount count.
+- Done: CF-57a (PR #102), CF-57b (PR #TBD): `src/core/Feats.lua`, `DoomsdayView.score`, `DoomsdayTracker.board/ladder/feats`, the Board, Ladder and Feats views, `Feed.spree` and the spree piece. VERIFY.md "CF-57a", "CF-57b".

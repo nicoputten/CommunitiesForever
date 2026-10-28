@@ -571,6 +571,30 @@ Milestone: the highest of MILESTONES reached that day replaces the range text ("
 ctx (optional, see participants): runs together with another person are left out here; they show on a
 shared line (Feed.days). Without ctx every run is the character's own and companions are left out. ]]
 Feed.ZONE_PILLS = 2
+Feed.SPREES = { 10, 5 } -- CF-57b: kills without dying that make a badge, highest first
+
+-- The longest run of world kills (not in a battleground) of one character's day without a death in between.
+function Feed.spree(entry)
+  local events = {}
+  for _, k in ipairs(entry.pvpKills or {}) do
+    if not k.bg then events[#events + 1] = { t = k.t or 0, kill = true } end
+  end
+  for _, d in ipairs(entry.deaths or {}) do events[#events + 1] = { t = d.t or 0 } end
+  table.sort(events, function(a, b)
+    if a.t ~= b.t then return a.t < b.t end
+    return (a.kill and 1 or 0) < (b.kill and 1 or 0)
+  end)
+  local run, best = 0, 0
+  for _, e in ipairs(events) do
+    if e.kill then
+      run = run + 1
+      best = math.max(best, run)
+    else
+      run = 0
+    end
+  end
+  return best
+end
 
 function Feed.pieces(entry, ctx)
   local pieces = {}
@@ -582,6 +606,14 @@ function Feed.pieces(entry, ctx)
       if #tags == 1 then aggregate(agg, run, names) end
     end
     for _, text in ipairs(runParts(agg)) do pieces[#pieces + 1] = { kind = "run", text = text } end
+  end
+  -- CF-57b: a spree badge (kills without dying), not points.
+  local spree = Feed.spree(entry)
+  for _, size in ipairs(Feed.SPREES) do
+    if spree >= size then
+      pieces[#pieces + 1] = { kind = "spree", text = "a spree of " .. size }
+      break
+    end
   end
   if entry.levelTo and entry.levelFrom and entry.levelTo > entry.levelFrom then
     local milestone
