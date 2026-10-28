@@ -227,6 +227,16 @@ run. The answer also waits in `global.pending` and reaches the site after `/relo
 
 Sent only to peers with a character in range; `answer` is `join`, `later` or `no`. ASK may carry `note` (CF-47, what the asker typed in Ask now); older clients ignore it.
 
+CF-51 (optional fields within pv 1): when the asker ticked "Also post on Discord", ASK carries `post = true`, `item` (the asker's Pending item id, `[%w-:.]`, at most 64), `guid` and `role` (`tank` / `heal` / `dps`) of the asker's character, and is sent to **every** online peer with the addon, not only those in range:
+
+```json
+{ "t": "ASK", "pv": 1, "id": "17300004201", "post": true, "item": "k3f9c0a7e21b-1730000420-1",
+  "guid": "Player-1-0000AAAA", "role": "tank", "at": 1730000420,
+  "dungeon": { "id": "dm", "name": "The Deadmines", "min": 17, "max": 26 }, "from": "Ann", "char": "Ann Example" }
+```
+
+Every receiver keeps it as a Pending `ask` item with the asker's `item` id, `at`, `guid`, `char` (as `name`), `role`, `note` and the sender's BattleTag, within the 10 minutes (`Pending.ASK_EXPIRE`), so the next `/reload` or logout of any friend brings it to the site (web WEB-53), which makes it once. Only receivers with a character in range get the "asks: … now?" line; the rest keep it silently. An answer to such an ask is also kept as a Pending `askAnswer` item (`ask` = the `item` id). Older clients ignore the new fields, but show the line to anyone who gets the ASK, also out of range (Nico, 2026-10-28: everyone runs the latest version).
+
 ### PING and PONG (`/cf ping`, testing)
 
 ```json

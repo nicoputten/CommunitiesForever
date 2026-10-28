@@ -266,8 +266,9 @@ function RunDialogs.askNow(dungeon)
   local ok, wait = ns.GroupAsks.canAsk()
   local main = actions("Ask now", function()
     local note = noteBox:GetText()
-    if #recipients > 0 then ns.GroupAsks.ask(dungeon, ns.Pending.note(note)) end
-    if state.discord then ns.Planner.askOnDiscord(dungeon.id, state.char, note) end
+    -- CF-51: the Discord ask first, so the whisper carries its id to every friend's file.
+    local post = state.discord and ns.Planner.askOnDiscord(dungeon.id, state.char, note) or nil
+    if #recipients > 0 or post then ns.GroupAsks.ask(dungeon, ns.Pending.note(note), post) end
     dialog:Hide()
     if state.discord then RunDialogs.reloadPrompt() end
   end, not ok and string.format("You can ask again in %d min.", math.ceil(wait / 60)) or nil)

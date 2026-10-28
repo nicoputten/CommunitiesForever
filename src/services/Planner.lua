@@ -186,6 +186,18 @@ function Planner.askOnDiscord(dungeonId, char, note)
                  note = ns.Pending.note(note) })
 end
 
+-- CF-51: a friend's ask carried for the site, kept as the asker made it (their item id, so the site makes it
+-- once whoever's file brings it). No reload prompt: it goes along with the next /reload or logout.
+function Planner.carry(item)
+  return ns.Pending.add(pending(), item)
+end
+
+-- CF-51: your in-game answer to a friend's posted ask (askId: the asker's item id). char = { guid, name, role }.
+function Planner.askAnswer(askId, answer, char)
+  return queue({ kind = "askAnswer", ask = askId, answer = answer, guid = char and char.guid,
+                 name = char and char.name, role = char and char.role })
+end
+
 -- CF-48: a Discord ping for a friend missing at start time (who: their BattleTag, else their character).
 function Planner.ping(run, answer)
   return queue({ kind = "ping", run = run.id, battleTag = answer.battleTag, guid = answer.guid,

@@ -152,6 +152,77 @@ describe("Who's up for it? (CF-27)", function()
     end)
   end)
 
+  describe("carried asks (CF-51)", function()
+    local function posted(over)
+      local m = { t = "ASK", id = "2001", from = "Ben", char = "Ben Main", post = true, item = "kben-1793-1",
+                  guid = "Player-1-B1", role = "tank", at = state.serverTime - 30, note = "Quick",
+                  dungeon = { id = "dm", name = "The Deadmines", min = 17, max = 26 } }
+      for k, v in pairs(over or {}) do m[k] = v end
+      return m
+    end
+    local function pending() return addon.db.global.pending or {} end
+    local function ofKind(kind)
+      local out = {}
+      for _, item in ipairs(pending()) do
+        if item.kind == kind then out[#out + 1] = item end
+      end
+      return out
+    end
+
+    it("sends a posted ask to every friend with the addon, also out of range", function()
+      load()
+      addon.db.global.people[FRIEND].chars = { ["Player-1-B1"] = { name = "Ben Main", level = 50 } }
+      local item = { id = "kme-1-1", guid = state.player.guid, role = "dps" }
+      assert.are.equal(0, ns.GroupAsks.ask(ns.Dungeons.get("dm"), nil, item))
+      assert.are.equal(1, #sent)
+      local m = sent[1].message
+      assert.are.same({ true, "kme-1-1", state.player.guid, "dps" }, { m.post, m.item, m.guid, m.role })
+      -- Without "Also post on Discord" an out-of-range friend isn't asked.
+      state.serverTime = state.serverTime + 180
+      sent = {}
+      assert.are.equal(0, ns.GroupAsks.ask(ns.Dungeons.get("dm")))
+      assert.are.equal(0, #sent)
+    end)
+
+    it("carries a friend's posted ask once, with the asker's id, and asks you when you fit", function()
+      load()
+      deliver(posted())
+      deliver(posted())
+      local asks = ofKind("ask")
+      assert.are.equal(1, #asks)
+      assert.are.same({ "kben-1793-1", "dm", "Player-1-B1", "Ben Main", "tank", FRIEND, "Quick" },
+        { asks[1].id, asks[1].dungeon, asks[1].guid, asks[1].name, asks[1].role, asks[1].battleTag, asks[1].note })
+      assert.is_truthy(printed():find("Ben|r asks: The Deadmines now?", 1, true))
+    end)
+
+    it("carries silently when none of your characters fits, and drops an expired ask", function()
+      load()
+      deliver(posted({ dungeon = { id = "scholo", name = "Scholomance", min = 58, max = 60 }, item = "kben-2" }))
+      assert.are.equal(1, #ofKind("ask"))
+      assert.are.equal("", printed())
+      deliver(posted({ item = "kben-old", at = state.serverTime - 700 }))
+      assert.are.equal(1, #ofKind("ask"))
+    end)
+
+    it("keeps your answer to a posted ask for the site", function()
+      load()
+      deliver(posted())
+      click("ask:join:2001")
+      local answers = ofKind("askAnswer")
+      assert.are.equal(1, #answers)
+      assert.are.same({ "kben-1793-1", "in", state.player.guid },
+        { answers[1].ask, answers[1].answer, answers[1].guid })
+      -- A newer answer replaces it; an ask that wasn't posted makes none.
+      click("ask:no:2001")
+      assert.are.equal("cant", ofKind("askAnswer")[1].answer)
+      assert.are.equal(1, #ofKind("askAnswer"))
+      deliver({ t = "ASK", id = "1001", from = "Ben", char = "Ben Main",
+                dungeon = { id = "dm", name = "The Deadmines", min = 17, max = 26 } })
+      click("ask:join:1001")
+      assert.are.equal(1, #ofKind("askAnswer"))
+    end)
+  end)
+
   it("asks from the Dungeons tab and shows the answers there", function()
     load()
     ns.MainFrame.toggle()

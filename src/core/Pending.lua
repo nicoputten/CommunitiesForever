@@ -1,5 +1,6 @@
 -- Pending: what the player did in game that has to reach the website (CF-47): runs planned, answers given,
--- asks to post on Discord, and (CF-48) Discord pings. Pure Lua, no WoW globals.
+-- asks to post on Discord, and (CF-48) Discord pings; CF-51: friends' posted asks carried for the site, and your
+-- answers to them. Pure Lua, no WoW globals.
 -- The items live in global.pending; the game writes them to the saved file on /reload or logout, the
 -- uploader sends that file, and the site (web WEB-43) turns each item into a run, an answer or a Discord
 -- post. Each item has an id, so a file uploaded twice changes nothing. An item stays until the runs data
@@ -12,13 +13,15 @@ Pending.ASK_EXPIRE = 600            -- an ask is posted only within 10 minutes (
 Pending.MAX_AGE = 14 * 24 * 3600    -- anything older is dropped (the site would ignore it)
 Pending.MAX_ITEMS = 100
 Pending.MAX_NOTE = 200
-Pending.KINDS = { plan = true, answer = true, ask = true, ping = true }
+Pending.KINDS = { plan = true, answer = true, ask = true, ping = true, askAnswer = true }
 
 --[[ Item shapes (also the saved file's, read by the site; sample in tests/fixtures/pending.lua):
   plan   { id, kind = "plan", at, dungeon, startsAt, guid, name, role, note }      -- you lead as guid/name
   answer { id, kind = "answer", at, run, answer = "in"|"maybe"|"cant", guid, name, role }
   ask    { id, kind = "ask", at, dungeon, guid, name, role, note }                 -- "Also post on Discord"
+         CF-51: a friend's ask carried for the site keeps the asker's id, at, guid, name, role and adds battleTag
   ping   { id, kind = "ping", at, run, battleTag, guid, name }                     -- CF-48: who to ping
+  askAnswer { id, kind = "askAnswer", at, ask, answer = "in"|"maybe"|"cant", guid, name, role } -- CF-51
 at and startsAt: UTC seconds. guid/name: the character; role: tank | heal | dps. ]]
 
 -- A unique id: the account ID (CF-28), the time and a counter ("k3f9c0a7e21b-1793120000-1").
@@ -26,8 +29,17 @@ function Pending.newId(accountId, now, counter)
   return string.format("%s-%d-%d", tostring(accountId or "x"), now, counter)
 end
 
--- Adds an item. A newer answer for the same run replaces the older one. Returns the item.
+-- Adds an item. A newer answer for the same run (CF-51: or ask) replaces the older one; an id already there
+-- (CF-51: a friend's ask carried twice) is kept as it is. Returns the item.
 function Pending.add(list, item)
+  for _, existing in ipairs(list) do
+    if existing.id == item.id then return existing end
+  end
+  if item.kind == "askAnswer" then
+    for i = #list, 1, -1 do
+      if list[i].kind == "askAnswer" and list[i].ask == item.ask then table.remove(list, i) end
+    end
+  end
   if item.kind == "answer" then
     for i = #list, 1, -1 do
       if list[i].kind == "answer" and list[i].run == item.run then table.remove(list, i) end
@@ -44,7 +56,8 @@ function Pending.prune(list, now)
   for i = #list, 1, -1 do
     local item = list[i]
     local broken = type(item) ~= "table" or not Pending.KINDS[item.kind] or type(item.at) ~= "number"
-    if broken or now - item.at > Pending.MAX_AGE or (item.kind == "ask" and now - item.at > Pending.ASK_EXPIRE) then
+    local short = item and (item.kind == "ask" or item.kind == "askAnswer") -- CF-51: an answer lives as its ask
+    if broken or now - item.at > Pending.MAX_AGE or (short and now - item.at > Pending.ASK_EXPIRE) then
       table.remove(list, i)
     end
   end
