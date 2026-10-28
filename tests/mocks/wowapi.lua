@@ -618,6 +618,35 @@ function wowapi.install(opts)
     groupUnits()
   end
 
+  -- CF-52: PvP. state.pvp = { hk, rankID, rankName, rankNumber, weekKills, weekHonor, deaths } (nil: the
+  -- PvP functions return nothing); state.combatEvent = CombatLogGetCurrentEventInfo() results.
+  globals.GetPVPLifetimeStats = function() return state.pvp and state.pvp.hk, 0, 0 end
+  globals.UnitPVPRank = function() return state.pvp and state.pvp.rankID end
+  globals.GetPVPRankInfo = function() return state.pvp and state.pvp.rankName, state.pvp and state.pvp.rankNumber end
+  globals.GetPVPThisWeekStats = function()
+    return state.pvp and state.pvp.weekKills, state.pvp and state.pvp.weekHonor
+  end
+  globals.GetStatistic = function() return state.pvp and state.pvp.deaths and tostring(state.pvp.deaths) or "--" end
+  globals.DUEL_WINNER_KNOCKOUT = "%1$s has defeated %2$s in a duel"
+  globals.DUEL_WINNER_RETREAT = "%2$s has fled from %1$s in a duel"
+  globals.COMBATLOG_HONORGAIN = "%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)"
+  globals.CombatLogGetCurrentEventInfo = function() return unpack(state.combatEvent or {}) end
+
+  -- CF-53: loot and money. state.items[itemID] = { quality, slot } (C_Item); state.money = GetMoney() (nil:
+  -- missing). C_Timer.NewTicker is not mocked: the session heartbeat does not run in specs.
+  state.items = {}
+  globals.LOOT_ITEM_SELF = "You receive loot: %s."
+  globals.LOOT_ITEM_SELF_MULTIPLE = "You receive loot: %sx%d."
+  globals.LOOT_ITEM_PUSHED_SELF = "You receive item: %s."
+  globals.LOOT_ITEM_PUSHED_SELF_MULTIPLE = "You receive item: %sx%d."
+  globals.LOOT_ITEM_CREATED_SELF = "You create: %s."
+  globals.LOOT_ITEM_CREATED_SELF_MULTIPLE = "You create: %sx%d."
+  globals.C_Item = {
+    GetItemQualityByID = function(id) return state.items[id] and state.items[id].quality end,
+    GetItemInfoInstant = function(id) return id, "Armor", "Plate", state.items[id] and state.items[id].slot or "" end,
+  }
+  globals.GetMoney = function() return state.money end
+
   -- CF-39: native frames for the kit (see newRegion).
   globals.UIParent = newRegion(state, "Frame", nil)
   globals.CreateFrame = function(frameType, _, parent) return newRegion(state, frameType, parent) end

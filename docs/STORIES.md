@@ -29,34 +29,9 @@ Order:
 3. CF-55 (raw kills and the rules core) after CF-52, with its fields filled once CF-54 has answered.
 4. CF-56 (goals tracked and shared) after CF-55.
 5. CF-57 (the tab) after CF-56.
+6. CF-58 (drop "Share my activity") any time, best before CF-56.
 
 The site's WEB-58 needs CF-55's golden file.
-
-### CF-52 PvP, duels and deaths in the record
-- Per character (`chars.*.pvp`): lifetime honorable kills, current PvP rank (number and title), and this week's honor, if readable. Candidates: `GetPVPLifetimeStats`, `UnitPVPRank`/`GetPVPRankInfo`, `GetPVPThisWeekStats`. Updated on `PLAYER_PVP_KILLS_CHANGED` and at login.
-- Per feed day and character:
-  - `kills = { [zone] = n }`: honorable kills by zone (the zone where the kill counter rose)
-  - `deaths = { { t, zone, cause } }`, where `t` is the time and `cause` is one of `fall`, `fire` (a campfire or other fire damage), `lava`, `drown`, `fatigue`, `player`, `creature` or `other`. Candidates: `ENVIRONMENTAL_DAMAGE` subevents in the combat log just before `PLAYER_DEAD`, or `C_DeathRecap`. Under the Midnight restrictions the combat log may be unavailable: then `cause` is `other`.
-  - `duels = { { t, won, vs } }` where `vs` is the opponent's full character name as the game gives it (never split, rule 4). The winner comes from the `DUEL_WINNER_KNOCKOUT`/`DUEL_WINNER_RETREAT` system message, matched through the game's own format string, never hardcoded English.
-- Battleground results are already in `runs` (`kind`, `won`, CF-23). Check that they are filled for Warsong Gulch, Arathi Basin and Alterac Valley once those are open.
-- Sizes are capped like the rest of the feed (at most 50 deaths and 50 duels per day and character), and received data is cleaned (SYNC.md).
-- `/cf self` shows the PvP line (kills, rank) for the current character.
-- Tests: the pure parts (cause from the last environmental damage, duel result from a formatted message, caps, merge of the new fields) with busted. `SYNC.md` and `ARCHITECTURE.md` updated. A fixture for the new fields.
-
-### CF-53 Loot, mounts, gold and play sessions in the record
-- Per feed day and character:
-  - `loot = { rare = n, epic = { { id, name, slot, level }, ... } }`: rare (blue) and epic (purple) items received. Each epic carries its item id, its name as the loot link shows it, its equip slot as the game's `INVTYPE_*` token (nil for non-equippable items) and the character's level when it was looted, for the site's "first epic" feat. Candidate: `CHAT_MSG_LOOT` for your own loot, quality and equip slot from `C_Item.GetItemQualityByID` / `C_Item.GetItemInfo`.
-  - `notable = { [itemID] = n }`: items from a fixed watch list that you looted or created that day, for the profession feats. The watch list is a pure table in `src/core` (changing it needs an addon release); each entry says whether looting, creating or both count:
-    - created: Arcanite Reaper, Arcanite Bar (the first Arcanite transmute), Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings
-    - looted (including quest rewards): Speckled Tastyfish (joined the Stranglethorn Fishing Extravaganza), Arcanite Fishing Pole and Hook of the Master Angler (the Extravaganza prize, so the winner)
-
-    Item IDs are looked up from an item database when building, never guessed, and checked at launch with FriendProbe (`VERIFY.md`). Created items: candidate the `You create:` loot message (`LOOT_ITEM_CREATED_SELF` format string) on `CHAT_MSG_LOOT`, or `CHAT_MSG_TRADESKILLS`; verify which one fires on Forever.
-  - `gold = { gained, spent }` in copper: what came in and went out that day, from `PLAYER_MONEY` deltas. Never shown as an amount: the site only compares.
-  - `sessions = { { from, to } }`: login to logout times (server time), for night owl, early bird and the longest session.
-  - `groups = { [guid] = true }`: community characters you were in a group with that day, for "social butterfly" and "biggest group night".
-- Per character: `riding` (the riding skill rank, 0, 75 or 150), from the skill lines (as professions are read). This gives the mount feats.
-- Profession feats that need no new data (the site derives them from `professions` and the feed's `ranks`): the first fishing catch, the flavour titles on Cooking, First Aid and Fishing 300, and "Jack of all trades".
-- Caps and cleaning as in CF-52. Tests, docs and a fixture as in CF-52.
 
 ### CF-54 FriendProbe: what Forever tells about a kill, and realm time
 Probe written (PR #98): `/fp pvp` and the V77/V78 and V79–V83 lines in `/fp start`. The story stays open until the launch run is in `API-FINDINGS.md` (`VERIFY.md` "CF-54").
@@ -74,6 +49,8 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 
 ### CF-55 Raw kills and the Doomsday core
 After CF-52; its victim fields are filled once CF-54 has answered.
+
+Split in two PRs (Nico, 2026-10-28): **CF-55a** the core (`src/core/Doomsday.lua`) and the golden file, done first so the site's WEB-58 can start (PR #97); **CF-55b** recording `pvpKills`, the victim cache, cleaning, the sync-size check, feats and sprees. The exact algorithm is in `DOOMSDAY.md` "The algorithm, exactly". Feats and sprees moved to 55b.
 - Per feed day and character, `pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } }`, one entry per honorable kill:
   - `name`: the victim's full name as the game gives it (never split)
   - `lvl`: the victim's level, `-1` for a skull; `myLvl`: your level at the kill
@@ -124,7 +101,7 @@ After CF-55.
   Each of these goals joins the pool (a `POOL_VERSION` bump) only once its API is verified.
 - Stored: `self.goals = { days = { [n] = { set, swapped = { [id] = originalId }, done = { [id] = at }, at } }, weeks = { [week] = { ... } }, streak = { n, last }, best }`. 14 days and 2 weeks are kept: the addon keeps no all-time totals (Nico: the site and the bot have them). New optional data, so no migration; code reading it handles nil.
 - RECORD gets the optional field `goals` (rule 8, within `pv` 1): the last 7 Doomsday days and the current and previous week (`set`, `swapped`, `done`, `at`), `streak`, `best`, `pool` (the pool version) and `reset` (the reset setting the addon used).
-  - It is sent only when "Share my activity" is on, and is `false` when it is off (as `feed`, CF-28).
+  - It is always sent: there is no "Share my activity" (CF-58).
   - A completion bumps the version through the feed's debounce (at most once per 60 s).
 - **Receiving:**
   - Per day and per week, the newer `at` wins.
@@ -138,7 +115,7 @@ After CF-55.
 - **Manual (`VERIFY.md`):**
   - Finish 10 quests on two characters and see the daily done.
   - The day rolls over at 19:00 realm time.
-  - Two accounts: A's completion shows on B within a minute, and turning sharing off on A removes it on B.
+  - Two accounts: A's completion shows on B within a minute.
 
 ### CF-57 Doomsday tab, chat lines and the toast
 After CF-56. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built with the kit (pools, `Kit.scrollArea`, `Kit.toast`), as the other tabs.
@@ -161,3 +138,13 @@ After CF-56. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built wit
 - The character card gets a PvP line: lifetime honorable kills, rank with our title ("Stone Guard, a.k.a. Mailbox Menace"), this week's PvP points, or **PvP Virgin**.
 - Friends without Doomsday data show "no Doomsday data yet", never 0.
 - Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts) with busted. Manual steps in `VERIFY.md`.
+
+### CF-58 Drop "Share my activity"
+Decided with Nico (2026-10-28): there is no sharing toggle. A friend who doesn't want to share uninstalls the addon. This makes the feed, Doomsday's `goals` (CF-56) and their relaying simpler.
+- The setting **Share my activity** goes: from Settings (the Sharing group keeps "Receive group asks"), from onboarding step 5, from `Store` defaults and from `FeedTracker`. A stored `settings.shareActivity` is ignored (and may be cleared); no migration needed.
+- `Merge.outgoingRecord` always sends `feed` (and, after CF-56, `goals`). The addon never sends `false` for either.
+- **Receiving** (rule 8): released clients may still send or relay `feed = false`. It now means "nothing sent": the stored feed of that friend stays, as for a record without `feed`. The same holds for `goals = false`.
+- The Activity tab's footer loses "Activity is shared only by friends who turned on Share my activity".
+- `docs/SYNC.md` (RECORD fields, merge rule), `docs/ARCHITECTURE.md` (settings, RECORD) and `docs/DOOMSDAY.md` (if it mentions sharing) updated.
+- Tests (busted): `outgoingRecord` without the setting; a received `feed = false` keeps the stored feed; `Compat_spec` passes on earlier fixtures.
+- The site does the same on its side (web WEB-55): `false` from released clients means nothing sent.

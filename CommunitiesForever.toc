@@ -16,7 +16,12 @@ src\core\Store.lua
 src\core\Queue.lua
 src\core\Version.lua
 src\core\Filter.lua
+src\core\GameText.lua
+src\core\Pvp.lua
+src\core\Loot.lua
+src\core\Play.lua
 src\core\Feed.lua
+src\core\Doomsday.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
@@ -58,9 +63,13 @@ src\adapters\Channels.lua
 src\adapters\Transport.lua
 src\adapters\Panels.lua
 src\adapters\Classes.lua
+src\adapters\PvpInfo.lua
+src\adapters\LootInfo.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua
+src\services\PvpTracker.lua
+src\services\PlayTracker.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua

@@ -57,6 +57,14 @@ function FeedTracker.record(char, events, bumped, day)
   bumpDebounced()
 end
 
+-- Something the own record carries changed without a feed event (CF-52: PvP counters): bumps the version
+-- through the same debounce as feed changes.
+function FeedTracker.changedLater()
+  if not addonRef then return end
+  pendingVersion = own().version
+  bumpDebounced()
+end
+
 -- "Share my activity" (settings): changes what friends get, so it bumps the version right away.
 function FeedTracker.setShared(on)
   local settings = addonRef.db.global.settings

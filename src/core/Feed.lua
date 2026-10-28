@@ -23,6 +23,15 @@ local MAX_RUNS = 30        -- CF-23: dungeon, raid and battleground runs per cha
 local MAX_COMPANIONS = 40
 local MAX_BOSSES = 40
 local RUN_KINDS = { party = true, raid = true, pvp = true }
+local MAX_DEATHS = 50      -- CF-52: deaths and duels per character and day
+local MAX_DUELS = 50
+local MAX_EPICS = 20       -- CF-53: epic items, watch-list items, sessions and group members per character and day
+local MAX_NOTABLE = 20
+local MAX_SESSIONS = 20
+local MAX_GROUPED = 40
+local MAX_GOLD = 1e12      -- copper
+local DEATH_CAUSES = { fall = true, fire = true, lava = true, drown = true, fatigue = true, player = true,
+                       creature = true, other = true }
 
 -- Day number (days since 1970-01-01) of a calendar date. Pure, so days compare and subtract easily.
 function Feed.dayNumber(year, month, day)
@@ -106,9 +115,18 @@ end
   feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                                 quests = { [zone] = count }, ranks = { [profession] = rank },
                                 learned = { [profession] = true },
-                                runs = { { name, kind, bosses, won, with = { guid, ... } } } } } }
-char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, or a finished run
-(CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with }.
+                                runs = { { name, kind, bosses, won, with = { guid, ... } } },
+                                kills = { [zone] = count }, deaths = { { t, zone, cause } },
+                                duels = { { t, won, vs } },
+                                loot = { rare = n, epic = { { id, name, slot, level } } },
+                                notable = { [itemID] = n }, gold = { gained, spent },
+                                sessions = { { from, to } }, groups = { [guid] = true } } } }
+char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, a finished run
+(CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with }, or
+(CF-52) honorable kills { kind = "kills", zone, count }, a death { kind = "death", t, zone, cause } or a
+finished duel { kind = "duel", t, won, vs } (vs: the opponent's full name as the game gives it), or (CF-53)
+{ kind = "rare", count } | { kind = "epic", id, name, slot, level } | { kind = "notable", id, count } |
+{ kind = "gold", gained, spent } | { kind = "session", from } | { kind = "group", guid }.
 ]]
 function Feed.add(feed, day, char, event, now)
   local entry = entryFor(feed, day, char, now)
@@ -131,6 +149,48 @@ function Feed.add(feed, day, char, event, now)
       entry.runs[#entry.runs + 1] = { name = event.name, kind = event.instance, bosses = event.bosses,
                                       won = event.won, with = event.with }
     end
+  elseif event.kind == "kills" then
+    entry.kills = entry.kills or {}
+    local zone = event.zone or "Other"
+    entry.kills[zone] = (entry.kills[zone] or 0) + (event.count or 1)
+  elseif event.kind == "death" then
+    entry.deaths = entry.deaths or {}
+    if #entry.deaths < MAX_DEATHS then
+      entry.deaths[#entry.deaths + 1] = { t = event.t, zone = event.zone, cause = event.cause }
+    end
+  elseif event.kind == "duel" then
+    entry.duels = entry.duels or {}
+    if #entry.duels < MAX_DUELS then
+      entry.duels[#entry.duels + 1] = { t = event.t, won = event.won, vs = event.vs }
+    end
+  elseif event.kind == "rare" or event.kind == "epic" then
+    entry.loot = entry.loot or {}
+    if event.kind == "rare" then
+      entry.loot.rare = (entry.loot.rare or 0) + (event.count or 1)
+    else
+      entry.loot.epic = entry.loot.epic or {}
+      if #entry.loot.epic < MAX_EPICS then
+        entry.loot.epic[#entry.loot.epic + 1] = { id = event.id, name = event.name, slot = event.slot,
+                                                  level = event.level }
+      end
+    end
+  elseif event.kind == "notable" then
+    entry.notable = entry.notable or {}
+    entry.notable[event.id] = (entry.notable[event.id] or 0) + (event.count or 1)
+  elseif event.kind == "gold" then
+    entry.gold = entry.gold or { gained = 0, spent = 0 }
+    entry.gold.gained = entry.gold.gained + (event.gained or 0)
+    entry.gold.spent = entry.gold.spent + (event.spent or 0)
+  elseif event.kind == "session" then
+    entry.sessions = entry.sessions or {}
+    if #entry.sessions < MAX_SESSIONS then
+      entry.sessions[#entry.sessions + 1] = { from = event.from, to = event.from }
+    end
+  elseif event.kind == "group" then
+    entry.groups = entry.groups or {}
+    local count = 0
+    for _ in pairs(entry.groups) do count = count + 1 end
+    if count < MAX_GROUPED then entry.groups[event.guid] = true end
   end
 end
 
@@ -197,6 +257,84 @@ local function cleanRuns(runs)
   return #result > 0 and result or nil
 end
 
+-- CF-52: received deaths and duels, only the expected fields. An unknown cause becomes "other"; a duel
+-- needs its result and opponent.
+local function cleanDeaths(deaths)
+  if type(deaths) ~= "table" then return nil end
+  local result = {}
+  for _, d in ipairs(deaths) do
+    if #result >= MAX_DEATHS then break end
+    if type(d) == "table" and type(d.t) == "number" then
+      result[#result + 1] = { t = cleanNumber(d.t, math.huge), zone = cleanText(d.zone),
+                              cause = DEATH_CAUSES[d.cause] and d.cause or "other" }
+    end
+  end
+  return #result > 0 and result or nil
+end
+
+local function cleanDuels(duels)
+  if type(duels) ~= "table" then return nil end
+  local result = {}
+  for _, d in ipairs(duels) do
+    if #result >= MAX_DUELS then break end
+    local vs = type(d) == "table" and cleanText(d.vs)
+    if vs and type(d.t) == "number" and type(d.won) == "boolean" then
+      result[#result + 1] = { t = cleanNumber(d.t, math.huge), won = d.won, vs = vs }
+    end
+  end
+  return #result > 0 and result or nil
+end
+
+-- CF-53: received loot, watch-list items, gold and sessions, only the expected fields.
+local function cleanLoot(loot)
+  if type(loot) ~= "table" then return nil end
+  local epic = {}
+  for _, e in ipairs(type(loot.epic) == "table" and loot.epic or {}) do
+    if #epic >= MAX_EPICS then break end
+    local id = type(e) == "table" and cleanNumber(e.id, 1e7)
+    if id and id > 0 then
+      local slot = cleanText(e.slot)
+      epic[#epic + 1] = { id = id, name = cleanText(e.name), slot = slot and slot:match("^INVTYPE_[%u_]+$"),
+                          level = cleanNumber(e.level, 100) }
+    end
+  end
+  local result = { rare = cleanNumber(loot.rare, MAX_COUNT), epic = #epic > 0 and epic or nil }
+  return next(result) and result or nil
+end
+
+local function cleanNotable(notable)
+  if type(notable) ~= "table" then return nil end
+  local result, count = {}, 0
+  for id, n in pairs(notable) do
+    local cleanId, cleanCount = cleanNumber(id, 1e7), cleanNumber(n, MAX_COUNT)
+    if cleanId and cleanId == id and cleanCount then
+      result[cleanId] = cleanCount
+      count = count + 1
+      if count >= MAX_NOTABLE then break end
+    end
+  end
+  return count > 0 and result or nil
+end
+
+local function cleanGold(gold)
+  if type(gold) ~= "table" then return nil end
+  local gained, spent = cleanNumber(gold.gained, MAX_GOLD), cleanNumber(gold.spent, MAX_GOLD)
+  if not (gained and spent) then return nil end
+  return { gained = gained, spent = spent }
+end
+
+local function cleanSessions(sessions)
+  if type(sessions) ~= "table" then return nil end
+  local result = {}
+  for _, s in ipairs(sessions) do
+    if #result >= MAX_SESSIONS then break end
+    local from = type(s) == "table" and cleanNumber(s.from, math.huge)
+    local to = from and cleanNumber(s.to, math.huge)
+    if to and to >= from then result[#result + 1] = { from = from, to = to } end
+  end
+  return #result > 0 and result or nil
+end
+
 -- Copy of a received feed with only the expected fields, cleaned and limited, or nil.
 function Feed.clean(feed)
   if type(feed) ~= "table" then return nil end
@@ -216,6 +354,14 @@ function Feed.clean(feed)
             ranks = cleanMap(e.ranks, MAX_PROFESSIONS, cleanText),
             learned = cleanMap(e.learned, MAX_PROFESSIONS, isTrue),
             runs = cleanRuns(e.runs),
+            kills = cleanMap(e.kills, MAX_ZONES, function(v) return cleanNumber(v, MAX_COUNT) end),
+            deaths = cleanDeaths(e.deaths),
+            duels = cleanDuels(e.duels),
+            loot = cleanLoot(e.loot),
+            notable = cleanNotable(e.notable),
+            gold = cleanGold(e.gold),
+            sessions = cleanSessions(e.sessions),
+            groups = cleanMap(e.groups, MAX_GROUPED, isTrue),
           }
           count = count + 1
         end
@@ -241,7 +387,8 @@ function Feed.merge(stored, incoming, maxAt)
       for guid, entry in pairs(chars) do
         local have = result[day][guid]
         local future = n == 2 and maxAt and (entry.at or 0) > maxAt
-        if not future and (not have or (entry.at or 0) >= (have.at or 0)) then result[day][guid] = entry end
+        -- On equal `at` the stored entry stays: a copy relayed by an older client may lack newer fields (CF-52).
+        if not future and (not have or (entry.at or 0) > (have.at or 0)) then result[day][guid] = entry end
       end
       if not newest or day > newest then newest = day end
     end

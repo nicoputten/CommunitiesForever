@@ -32,12 +32,14 @@ function addon:OnEnable()
   ns.SelfInfo.watch(self)
   ns.FeedTracker.start(self) -- before SelfTracker: its first refresh may record feed events
   ns.SelfTracker.start(self)
+  ns.PvpTracker.start(self) -- CF-52: after SelfTracker (keeps chars[guid].pvp of the stored character)
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
   ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab
   ns.SyncChannel.start(self) -- CF-31: the hidden channel HELLO and BYE are broadcast on
   ns.MemberTracker.start(self)
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
+  ns.PlayTracker.start(self) -- CF-53: after ActivityTracker (instance events) and MemberTracker (groups)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)

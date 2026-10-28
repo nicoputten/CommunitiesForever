@@ -49,6 +49,25 @@ world:with("A", function(c)
   wowapi.fireEvent(c.state, "PLAYER_LEVEL_UP", 21)
 end)
 world:settle()
+-- CF-52: PvP counters, a kill, a duel with Bob and a death.
+world:with("A", function(c)
+  c.state.pvp = { hk = 10, rankID = 6, rankNumber = 2, rankName = "Grunt", weekKills = 2, weekHonor = 30, deaths = 4 }
+  wowapi.fireEvent(c.state, "PLAYER_PVP_KILLS_CHANGED")
+  c.state.pvp.hk, c.state.zone = 11, "Ashenvale"
+  wowapi.fireEvent(c.state, "PLAYER_PVP_KILLS_CHANGED")
+  wowapi.fireEvent(c.state, "CHAT_MSG_SYSTEM", world.people.A.name .. " has defeated " .. world.people.B.name
+    .. " in a duel")
+  wowapi.fireEvent(c.state, "PLAYER_DEAD")
+  -- CF-53: an epic, a watch-list craft and money.
+  c.state.items[12784] = { quality = 4, slot = "INVTYPE_2HWEAPON" }
+  wowapi.fireEvent(c.state, "CHAT_MSG_LOOT", "You receive loot: |cffa335ee|Hitem:12784::::|h[Arcanite Reaper]|h|r.")
+  wowapi.fireEvent(c.state, "CHAT_MSG_LOOT", "You create: |cffffffff|Hitem:14342::::|h[Mooncloth]|h|r.")
+  c.state.money = 5000
+  wowapi.fireEvent(c.state, "PLAYER_MONEY")
+  c.state.money = 4200
+  wowapi.fireEvent(c.state, "PLAYER_MONEY")
+end)
+world:settle()
 world:with("A", function(c)
   -- CF-51: also posted on Discord, so the ASK carries post, item, guid and role.
   local p = c.state.player

@@ -1,5 +1,5 @@
 -- Merge: record accept rules and version rules. Pure Lua, no WoW globals.
--- Requires ns.Feed (load core/Feed.lua first).
+-- Requires ns.Feed and ns.Pvp (load core/Feed.lua and core/Pvp.lua first).
 local _, ns = ...
 
 local Merge = {}
@@ -34,6 +34,15 @@ local function stripEscapes(value, depth)
   local copy = {}
   for k, v in pairs(value) do copy[k] = stripEscapes(v, depth + 1) end
   return copy
+end
+
+-- Received characters: escape sequences removed, and `pvp` (CF-52) only with its expected fields.
+local function cleanChars(chars)
+  local result = stripEscapes(chars, 0)
+  for _, char in pairs(result or {}) do
+    if type(char) == "table" and char.pvp ~= nil then char.pvp = ns.Pvp.clean(char.pvp) end
+  end
+  return result
 end
 
 -- Invite code shared with the record (CF-21): only the expected fields, or nil.
@@ -205,7 +214,7 @@ function Merge.store(people, record, now, senderBattleTag)
   local stored = people[record.bt]
   local direct = senderBattleTag == record.bt
   local chars, removed = Merge.mergeChars(stored and stored.chars, stored and stored.removed,
-    stripEscapes(record.chars, 0), cleanRemoved(record.removed), direct, now)
+    cleanChars(record.chars), cleanRemoved(record.removed), direct, now)
   local newer = not stored or (stored.version or 0) <= record.version or direct
   local displayName, invite
   if newer then

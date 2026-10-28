@@ -139,6 +139,8 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
                    { "name": "Frost", "points": 0 } ],
       "mainTree": 2, "autoRole": "dps", "roleOverride": null, "role": "dps",
       "quests": { "1654": { "title": "The Test of Righteousness", "area": "Shadowfang Keep", "dungeon": true } },
+      "pvp": { "hk": 140, "rank": 3, "rankName": "Sergeant", "weekKills": 12, "weekHonor": 310,
+               "deaths": 57, "duelsWon": 4, "duelsLost": 2 },
       "updatedAt": 1730000420, "lastPlayed": 1730000100
     }
   },
@@ -151,7 +153,16 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
         "quests": { "Silverpine Forest": 6 },
         "ranks": { "Mining": "Journeyman" }, "learned": { "Cooking": true },
         "runs": [ { "name": "Shadowfang Keep", "kind": "party", "bosses": 3, "won": null,
-                    "with": [ "Player-4619-0B0B0B0B" ] } ]
+                    "with": [ "Player-4619-0B0B0B0B" ] } ],
+        "kills": { "Hillsbrad Foothills": 3 },
+        "deaths": [ { "t": 1730000300, "zone": "Hillsbrad Foothills", "cause": "player" } ],
+        "duels": [ { "t": 1730000200, "won": true, "vs": "Bob Example" } ],
+        "loot": { "rare": 2, "epic": [ { "id": 12784, "name": "Arcanite Reaper", "slot": "INVTYPE_2HWEAPON",
+                                         "level": 60 } ] },
+        "notable": { "14342": 2 },
+        "gold": { "gained": 15230, "spent": 4100 },
+        "sessions": [ { "from": 1729990000, "to": 1730000400 } ],
+        "groups": { "Player-4619-0B0B0B0B": true }
       }
     }
   } }
@@ -168,10 +179,20 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `chars.*.updatedAt` | When the owner last saw this character change: the per-character merge key |
 | `chars.*.lastPlayed` | Last login on that character (updated without a version change) |
 | `chars.*.quests` | Quest log: `{ questID = { title, area, dungeon } }`, IDs only, no progress |
+| `chars.*.pvp` | CF-52, optional: `hk` lifetime honorable kills, `rank` PvP rank number (0 none, 1 to 14) and `rankName` the game's name for it, `weekKills`/`weekHonor` this week's, and the addon's own lifetime counters `deaths` (or the game's death statistic when higher), `duelsWon`, `duelsLost` (counted since the addon recorded them). Each field missing = unknown |
+| `chars.*.riding` | CF-53, optional: riding skill 0, 75 or 150 (missing = unknown) |
 | `removed` | Only in relayed copies: characters the owner dropped, with the time |
 | `feed` | Activity of the last 7 realm days by day number and character; `false` = the owner does not share it; missing = unknown (relayed) |
 | `feed.*.*.at` | When the entry last changed: the feed merge key |
 | `feed.*.*.runs` | Dungeons, raids, battlegrounds (CF-23); `with` = companions' GUIDs (community members only) |
+| `feed.*.*.kills` | CF-52: honorable kills by the zone where the kill counter rose (battlegrounds by their name) |
+| `feed.*.*.deaths` | CF-52: `{ t, zone, cause }`, at most 50; `cause` one of `fall`, `fire`, `lava`, `drown`, `fatigue`, `player`, `creature`, `other` (unknown received causes become `other`) |
+| `feed.*.*.loot` | CF-53: `rare` = blue items looted or received as quest rewards; `epic` = purple (or better) ones, at most 20, `{ id, name, slot, level }` with the `INVTYPE_*` slot (missing for items you can't equip) and the character's level then |
+| `feed.*.*.notable` | CF-53: `{ [itemID] = n }` for the watch list (`Loot.WATCH`): created (Arcanite Reaper, Arcanite Bar, Mooncloth, Devilsaur Gauntlets and Leggings) or looted (Speckled Tastyfish, Arcanite Fishing Pole, Hook of the Master Angler). Numeric keys |
+| `feed.*.*.gold` | CF-53: `{ gained, spent }` in copper that day. Never shown as an amount |
+| `feed.*.*.sessions` | CF-53: `{ from, to }` server times, at most 20, under the day the session started; `to` moves every 5 minutes and at logout, a login within 5 minutes continues the session |
+| `feed.*.*.groups` | CF-53: `{ [guid] = true }` characters of the selected community you were in a group with |
+| `feed.*.*.duels` | CF-52: `{ t, won, vs }`, at most 50, every duel of that character; `vs` = the opponent's full name as the game gives it (never split) |
 
 Not in a record: zone, online status and current level of community characters: those come live from the
 community (`C_Club`) and Battle.net presence.
@@ -281,6 +302,8 @@ The version bumps only when a synced field of the character you are on really ch
 | A quest accepted, abandoned or turned in (2 s debounce) | Logging in on the same character with nothing changed |
 | Display name, invite link, "Share my activity" | |
 | Activity feed changes: at most one bump per 60 s (questing does not sync per turn-in) | |
+| A new PvP rank (CF-52) right away; kills, honor, deaths and duels with the feed's 60 s bump | |
+| Loot, gold and groups (CF-53) with the feed's 60 s bump; the riding skill like other snapshot fields | A session's start and end (CF-53: they travel with the next bump) |
 
 ## 6. What the receiver checks (accept and merge)
 
@@ -303,7 +326,9 @@ The version bumps only when a synced field of the character you are on really ch
 - Relayed: per character the copy with the newer `updatedAt` stays; a relayed copy never lowers a level;
   `updatedAt`, removal times and feed `at` more than 5 minutes in the future are ignored; a removal only
   takes away copies not newer than it.
-- Activity feed: per day and character, the entry with the newer `at` stays.
+- Activity feed: per day and character, the entry with the newer `at` stays; on an equal `at` the stored one
+  (CF-52: a copy relayed by an older client lacks the newer fields).
+- `chars.*.pvp` (CF-52): only the expected fields, whole numbers ≥ 0, rank at most 14.
 - All received text is cleaned: color, link and texture codes removed; names, feed sizes and days capped.
 
 **Keys:** a Battle.net record that shows an `aid` merges an earlier `aid:` entry of the same account into
@@ -317,7 +342,7 @@ the BattleTag, so a person never shows twice.
 | One character in a record | Roughly 200–800 bytes before compression; most of it is the quest log (titles) |
 | A record with 5 characters, full quest logs and a week of activity | Roughly 2–5 KB compressed: 1–2 Battle.net parts or ~10–20 community parts |
 | Send pace | One part per 0.2 s across all targets: 20 community parts take ~4 s |
-| Feed kept | 7 realm days; received feeds are capped (days, characters per day, zones, runs) |
+| Feed kept | 7 realm days; received feeds are capped (days, characters per day, zones, runs, 50 deaths and 50 duels) |
 
 The numbers in this table are estimates from the field sizes, not measurements.
 

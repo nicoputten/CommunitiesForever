@@ -45,6 +45,13 @@ CommunitiesForever/
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
+      Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
+                             progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
+      Pvp.lua                PvP counters, death cause, duel result from the game's format strings, rank titles,
+                             cleaning of received PvP data (CF-52)
+      GameText.lua           the game's own messages through its format strings, item links (CF-52, CF-53)
+      Loot.lua               loot messages, rare and epic items, the watch list of notable items, gold (CF-53)
+      Play.lua               play sessions in the feed: continue within 5 minutes, heartbeat end (CF-53)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
@@ -55,8 +62,8 @@ CommunitiesForever/
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
-      Timer.lua              C_Timer debounce
-      SelfInfo.lua           Unit*, GetProfessions, item level
+      Timer.lua              C_Timer debounce, repeating ticker (CF-53, guarded)
+      SelfInfo.lua           Unit*, GetProfessions, item level, riding skill (CF-53, guarded)
       Community.lua          C_Club (club list, members, club and member events)
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
@@ -69,12 +76,17 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
+      PvpInfo.lua            PvP counters and rank, death statistic and recap, duel/honor format strings, PvP and
+                             death events, combat log damage to the player when allowed (CF-52, guarded)
+      LootInfo.lua           loot strings, item quality and slot (C_Item), money, loot and money events (CF-53, guarded)
       RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
       RunAlerts.lua          run reminders and start (15 s checks while runs exist), chat lines with links (CF-48)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
+      PvpTracker.lua         chars[guid].pvp, kills by zone, deaths with their cause, duels into the feed (CF-52)
+      PlayTracker.lua        loot, notable items, gold, sessions and groups into the feed (CF-53)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
@@ -193,7 +205,12 @@ Run = { name, kind = "party"|"raid"|"pvp", instanceID, day, startedAt, lastAt,
 Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                               quests = { [zone] = count }, ranks = { [profession] = rank },
                               learned = { [profession] = true },
-                              runs = { { name, kind, bosses, won, with = { guid, ... } } } } } }  -- CF-23
+                              runs = { { name, kind, bosses, won, with = { guid, ... } } },     -- CF-23
+                              kills = { [zone] = count },                                       -- CF-52
+                              deaths = { { t, zone, cause } }, duels = { { t, won, vs } },       -- CF-52
+                              loot = { rare, epic = { { id, name, slot, level } } },             -- CF-53
+                              notable = { [itemID] = n }, gold = { gained, spent },              -- CF-53
+                              sessions = { { from, to } }, groups = { [guid] = true } } } }      -- CF-53
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,
@@ -202,7 +219,10 @@ Char = {
   talents = { { name, points } x3 }, mainTree,       -- CF-18: points per Vanilla tree, tree with most points
   autoRole, roleOverride, role,                      -- CF-18: guessed, player override, effective (tank/heal/dps)
   quests = { [questID] = { title, area, dungeon } },  -- CF-19: quest log, names only, no progress; area = log header
-  updatedAt,                                         -- last synced-field change
+  riding,                                            -- CF-53: riding skill 0, 75 or 150; nil = unknown
+  pvp = { hk, rank, rankName, weekKills, weekHonor,  -- CF-52: kept by PvpTracker (not part of Snapshot.equal);
+          deaths, duelsWon, duelsLost },             -- lifetime counters counted by the addon; nil = unknown
+  updatedAt,                                         -- last synced-field change (CF-52: also a pvp change)
   lastPlayed,                                        -- own chars: login/logout time (not compared, no bump)
 }
 ```

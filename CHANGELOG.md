@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- Your characters' PvP now syncs to friends: lifetime honorable kills, PvP rank, this week's kills and honor, deaths (and what killed you: a fall, drowning, a player, a monster, …) and duels won and lost. `/cf self` shows the PvP line. It lays the ground for Doomsday.
+- Also synced for Doomsday and the website's feats: blue and purple loot, notable crafts and catches (Arcanite Reaper, Mooncloth, the Fishing Extravaganza and more), how much gold came in and went out (never shown as an amount), play sessions, who from the community you grouped with, and your riding skill.
 
 ## v0.7.0-beta1 (2026-10-28)
 - An Ask now that is also posted on Discord now reaches the site through any friend with the addon: everyone online carries it along with their next /reload or logout, and answers given in game show on the Discord post too. Only friends with a character in range are asked; the rest just carry it.
