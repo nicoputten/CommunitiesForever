@@ -18,6 +18,7 @@ PlannedRuns.MAX_REMINDER = 1440  -- minutes
 PlannedRuns.MAX_TIME = 4102444800 -- 2100-01-01 UTC: any later timestamp is broken data
 PlannedRuns.MAX_UTC_OFFSET = 14 * 3600
 PlannedRuns.MAX_RECEIVED = 200   -- CF-47: ids of game items the site has (Pending.confirm)
+PlannedRuns.MAX_FIT = 24         -- CF-49: an answer's fit label ("carry \194\183 +12")
 
 PlannedRuns.STATES = { open = true, full = true, started = true, cancelled = true }
 PlannedRuns.ANSWERS = { ["in"] = true, maybe = true, cant = true }
@@ -87,6 +88,8 @@ local function answer(raw)
   a.role = oneOf(PlannedRuns.ROLES, raw.role)
   a.source = oneOf(PlannedRuns.SOURCES, raw.source)
   a.at = time(raw.at)
+  a.fit = text(raw.fit, PlannedRuns.MAX_FIT) -- CF-49 (web WEB-47): the site's levelFit label
+  a.reserve = raw.reserve == true or nil      -- CF-49: an I'm in waiting for a full role (sent as maybe)
   return a
 end
 
@@ -347,6 +350,72 @@ function PlannedRuns.close(run, candidates, dungeon)
     return tostring(a.char.name) < tostring(b.char.name)
   end)
   return list
+end
+
+-- ===== Level fit and roles (CF-49, the web's WEB-47) =====
+
+PlannedRuns.CARRY_FROM = 10 -- levels above the range from which a character carries the group
+PlannedRuns.LOW_UNTIL = 5   -- levels below the range a character may still join; more is Maybe only
+
+--[[ How a level fits min-max, one rule with the site and Discord:
+  { kind = "fits"|"over"|"carry"|"low"|"tooLow", label, canPick, suggested, note }
+canPick: may answer I'm in with it (tooLow: Maybe only); suggested: offered as "could fill". An unknown level
+counts as too low. ]]
+function PlannedRuns.levelFit(level, min, max)
+  if type(level) ~= "number" then
+    return { kind = "tooLow", label = "level unknown", canPick = false, suggested = false }
+  end
+  if level > max then
+    local over = level - max
+    if over >= PlannedRuns.CARRY_FROM then
+      return { kind = "carry", label = "carry \194\183 +" .. over, canPick = true, suggested = false,
+               note = "Little XP for you here." }
+    end
+    return { kind = "over", label = "+" .. over .. " over", canPick = true, suggested = true }
+  end
+  if level < min then
+    local below = min - level
+    if below <= PlannedRuns.LOW_UNTIL then
+      return { kind = "low", label = below .. " below", canPick = true, suggested = false,
+               note = "This will be tough." }
+    end
+    return { kind = "tooLow", label = below .. " below", canPick = false, suggested = false }
+  end
+  return { kind = "fits", label = "fits", canPick = true, suggested = true }
+end
+
+PlannedRuns.CLASS_ROLES = {
+  WARRIOR = { "tank", "dps" },
+  PALADIN = { "tank", "heal", "dps" },
+  DRUID = { "tank", "heal", "dps" },
+  PRIEST = { "heal", "dps" },
+  SHAMAN = { "heal", "dps" },
+  MAGE = { "dps" },
+  WARLOCK = { "dps" },
+  HUNTER = { "dps" },
+  ROGUE = { "dps" },
+}
+
+-- The roles a class can fill (tank, heal, dps; a new list each time); all three for an unknown class.
+function PlannedRuns.rolesFor(classFile)
+  local roles = PlannedRuns.CLASS_ROLES[classFile] or { "tank", "heal", "dps" }
+  local copy = {}
+  for i, r in ipairs(roles) do copy[i] = r end
+  return copy
+end
+
+-- True when the class can fill the role.
+function PlannedRuns.canPlay(classFile, role)
+  for _, r in ipairs(PlannedRuns.rolesFor(classFile)) do
+    if r == role then return true end
+  end
+  return false
+end
+
+-- The role to start on for a character: its own (the addon's) when the class can play it, else the first.
+function PlannedRuns.defaultRole(classFile, role)
+  if role and PlannedRuns.canPlay(classFile, role) then return role end
+  return PlannedRuns.rolesFor(classFile)[1]
 end
 
 -- ===== Times (local time; dateFn: the game's date, os.date in tests) =====
