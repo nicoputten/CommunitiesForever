@@ -9,8 +9,11 @@ local DoomsdayTracker = {}
 
 -- Internal message, sent when a goal got done or the day turned (the window refreshes).
 DoomsdayTracker.CHANGED = "CF_DOOMSDAY_CHANGED"
+-- CF-57: a kill of the current character, scored (Doomsday.scoreKills entry), for the chat line.
+DoomsdayTracker.KILL = "CF_DOOMSDAY_KILL"
 
 local addonRef, events
+local started, newDay = false, false -- CF-57: a day made after login is told (DoomsdayAlerts' swap lines)
 
 local function global() return addonRef.db.global end
 local function own() return global().self end
@@ -139,6 +142,7 @@ local function dayEntry(n)
   if drawn.hunt then set[#set + 1] = "hunt" end
   entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
   goals.days[n] = entry
+  newDay = started
   f.zone, f.hunts = drawn.zone, drawn.hunt
   return entry
 end
@@ -203,7 +207,8 @@ local function evaluate()
   local _, goals = store()
   ns.Goals.prune(goals.days, today, ns.Goals.KEEP_DAYS)
   ns.Goals.prune(goals.weeks, week, ns.Goals.KEEP_WEEKS)
-  if #newly + #weekly > 0 then
+  if #newly + #weekly > 0 or newDay then
+    newDay = false
     ns.FeedTracker.changedLater()
     addonRef:SendMessage(DoomsdayTracker.CHANGED, newly, weekly)
   end
@@ -257,6 +262,16 @@ local function fromFeed(char, list)
       observe({ kind = "run", name = e.name, bosses = e.bosses, friends = n })
     elseif k == "pvpKill" then
       observe({ kind = "kill", kill = e.kill, char = char.guid })
+      -- CF-57: score it among today's kills (the 4th of a victim counts nothing) for the chat line.
+      local today, schedule = DoomsdayTracker.today()
+      local scored = ns.Doomsday.scoreKills(store().days[today] and store().days[today].kills, schedule,
+        communityNames())
+      for i = #scored, 1, -1 do
+        if scored[i].kill.t == e.kill.t and scored[i].kill.name == e.kill.name then
+          addonRef:SendMessage(DoomsdayTracker.KILL, scored[i], char)
+          break
+        end
+      end
     elseif k == "death" then
       state[char.guid] = state[char.guid] or {}
       state[char.guid].death = e.t or now
@@ -347,6 +362,64 @@ function DoomsdayTracker.outgoing()
   return ns.Goals.outgoing(goals, today, ns.Doomsday.week(today), ns.Doomsday.POOL_VERSION, schedule.reset)
 end
 
+-- The display name of a friend key (or the BattleTag's name part).
+local function nameOf(bt)
+  local person = global().people[bt]
+  if bt == own().battleTag then return own().displayName or (tostring(bt):match("^([^#]+)") or tostring(bt)) end
+  return person and person.displayName or (tostring(bt):match("^([^#]+)") or tostring(bt))
+end
+DoomsdayTracker.nameOf = nameOf
+
+-- Every friend's duel records, with the full names of everyone's characters (Doomsday.duels input).
+local function duelInput()
+  local duels, owner = {}, {}
+  local mine = own().battleTag or "self"
+  local function collect(key, feed, chars)
+    for _, c in pairs(chars or {}) do
+      if type(c.name) == "string" then owner[c.name] = key end
+    end
+    for _, day in pairs(feed or {}) do
+      for _, e in pairs(day) do
+        for _, d in ipairs(e.duels or {}) do
+          duels[#duels + 1] = { friend = key, t = d.t, won = d.won, vs = d.vs }
+        end
+      end
+    end
+  end
+  collect(mine, own().feed, own().chars)
+  for bt, person in pairs(global().people or {}) do
+    if bt ~= mine then collect(bt, person.feed, person.chars) end
+  end
+  return duels, owner, mine
+end
+
+-- The day's crown: { friend, name, at, mine } or nil. Friends' sets and done come from their synced goals.
+local function crownOf(day, today)
+  local list = { { friend = own().battleTag or "self", set = today.set, done = today.done } }
+  for bt, person in pairs(global().people or {}) do
+    local e = type(person.goals) == "table" and person.goals.days and person.goals.days[day]
+    if e and bt ~= own().battleTag then list[#list + 1] = { friend = bt, set = e.set, done = e.done } end
+  end
+  local winner = ns.Doomsday.crown(list)
+  if not winner then return nil end
+  local at
+  for _, f in ipairs(list) do
+    if f.friend == winner then at = ns.Doomsday.finishedAt(f.set, f.done) end
+  end
+  return { friend = winner, name = nameOf(winner), at = at, mine = winner == list[1].friend }
+end
+DoomsdayTracker.crownOf = crownOf
+
+-- Friends who run the addon (a record we hold), other than you.
+local function friendKeys()
+  local list = {}
+  for bt, person in pairs(global().people or {}) do
+    if bt ~= own().battleTag and person.version and not tostring(bt):match("^aid:") then list[#list + 1] = bt end
+  end
+  table.sort(list)
+  return list
+end
+
 --[[ What /cf doomsday prints and the tab shows: { day, week, label, resetsIn, source, today = entry,
 week = entry, progress = { [id] = { value, target, done } }, weekProgress, streak, best, points = { pve, pvp } } ]]
 function DoomsdayTracker.state()
@@ -385,10 +458,37 @@ function DoomsdayTracker.state()
   for _, s in ipairs(ns.Doomsday.scoreKills(wf.kills, schedule, community)) do
     if s.track == "pvp" then points.pvp = points.pvp + s.points end
   end
+  -- CF-57: today's and this week's kills, the PvP points per own character, the Duel slot, the crown.
+  local dayScored = ns.Doomsday.scoreKills(df.kills, schedule, community)
+  local weekScored = ns.Doomsday.scoreKills(wf.kills, schedule, community)
+  local perChar = {}
+  for guid, c in pairs(own().chars or {}) do
+    perChar[guid] = { guid = guid, name = c.name, classFile = c.classFile, level = c.level, pvp = 0 }
+  end
+  for _, s in ipairs(weekScored) do
+    local c = perChar[s.kill.char]
+    if c and s.track == "pvp" then c.pvp = c.pvp + s.points end
+  end
+  local chars = {}
+  for _, c in pairs(perChar) do chars[#chars + 1] = c end
+  table.sort(chars, function(a, b)
+    if (a.level or 0) ~= (b.level or 0) then return (a.level or 0) > (b.level or 0) end
+    return tostring(a.name) < tostring(b.name)
+  end)
+  local duels, owner, me = duelInput()
+  local duelResult = ns.Doomsday.duels(duels, owner, schedule)
+  local names = {}
+  for _, key in ipairs(friendKeys()) do names[key] = nameOf(key) end
+  points.pvp = points.pvp + (duelResult.points[me] or 0)
   return { day = today, week = week, label = ns.Doomsday.label(today),
            resetsIn = ns.Doomsday.resetsIn(GetServerTime(), schedule.offset, schedule.reset), source = schedule.source,
-           today = day, thisWeek = wk, progress = list(day, dayProgress), weekProgress = list(wk, weekProgress),
-           streak = goals.streak and goals.streak.n or 0, best = goals.best or 0, points = points }
+           weekResetsIn = ns.Doomsday.dayStart(ns.Doomsday.weekStart(week + 1), schedule.offset, schedule.reset)
+             - GetServerTime(),
+           reset = schedule.reset, today = day, thisWeek = wk, progress = list(day, dayProgress),
+           weekProgress = list(wk, weekProgress), streak = goals.streak and goals.streak.n or 0, best = goals.best or 0,
+           points = points, hunts = huntList(df.hunts), factions = factions(), dayScored = dayScored,
+           weekScored = weekScored, chars = chars, crown = crownOf(today, day),
+           duels = ns.DoomsdayView.duelSlot(duelResult.duels, today, me, names, friendKeys()) }
 end
 
 function DoomsdayTracker.start(addon)
@@ -405,8 +505,10 @@ function DoomsdayTracker.start(addon)
     fromGoalEvent(reason, a, b)
     evaluate()
   end)
+  started = false
   fromSnapshot()
   evaluate()
+  started = true
 end
 
 ns.DoomsdayTracker = DoomsdayTracker

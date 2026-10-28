@@ -312,7 +312,24 @@ local function characterTiles(row, talents)
   }
 end
 
-local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
+-- CF-57: this week's PvP kill points of one character from its owner's feed (view.doomsday: schedule, community).
+local function weekKillPoints(feed, guid, dd, now)
+  if not (feed and dd and dd.schedule) then return 0 end
+  local D = ns.Doomsday
+  local week = D.week(D.day(now, dd.schedule.offset, dd.schedule.reset))
+  local kills = {}
+  for _, chars in pairs(feed) do
+    local e = type(chars) == "table" and chars[guid]
+    for _, k in ipairs(e and e.pvpKills or {}) do kills[#kills + 1] = k end
+  end
+  local points = 0
+  for _, s in ipairs(D.scoreKills(kills, dd.schedule, dd.community)) do
+    if s.track == "pvp" and D.week(s.day) == week then points = points + s.points end
+  end
+  return points
+end
+
+local function characterDetail(row, owner, now, own, sharedWith, showAllQuests, person, dd)
   local talents = Format.talentSummary(row)
   return {
     kind = "character",
@@ -329,6 +346,9 @@ local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
     talentBars = Format.talentBars(row),
     -- CF-19: only on a friend's characters (nil on your own and on Unlinked characters).
     sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith, showAllQuests) or nil,
+    -- CF-57: "Stone Guard, a.k.a. Mailbox Menace · 1,234 honorable kills · PvP 40 this week" or "PvP Virgin".
+    pvp = row.pvp ~= nil and ns.DoomsdayView.pvpLine(row.pvp, row.factionName,
+      weekKillPoints(person and person.feed, row.guid, dd, now)) or nil,
   }
 end
 
@@ -367,7 +387,7 @@ function Format.detail(view, path, now, showAllQuests)
       if row.guid == guid then
         local friend = person and not person.isSelf
         return characterDetail(row, person and person.displayName, now, person and person.isSelf,
-                               friend and ownRows(view) or nil, showAllQuests)
+                               friend and ownRows(view) or nil, showAllQuests, person, view.doomsday)
       end
     end
     return Format.detail(view, nil, now)

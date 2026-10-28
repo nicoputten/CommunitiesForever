@@ -59,6 +59,22 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | A friend on this build, you on a released version with "Share my activity" off | The friend still sees your activity from before (nothing is wiped); new activity of yours doesn't reach them until you update. | open |
 | Both on this build | Each sees the other's activity; the Activity tab footer says "Friends with CommunitiesForever share their activity." | open |
 
+### CF-57a Doomsday tab: Today, Week, chat lines and the toast
+Compare with `docs/design/doomsday-2026-10/DD07AddonToday.dc.html`.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, the new tab **Doomsday** after Dungeons | Chips Today and Week, "resets in …" on the right. Today: "Today · <day> · N of 5 done", one row per goal (DAILY, HUNT once it's on, SKIRMISH) with "3/10" and a gold bar, or "✓ 20:14" in your own clock time; the DUEL row with whom you dueled ("won vs Bob") and who's still open; "PvE 10 · PvP 9", the kill summary, the streak, who has the crown. Footer: "Synced with …" and "Suggestions, never rules · all-time totals on the site". | open |
+| Hover a goal marked "(swapped)" | A tooltip "Instead of: <the original goal>". | open |
+| Week | "This week · 15 points each", "week resets <weekday> <time> · in N d N h", the weeklies and the Bounty (for "every enemy class": "Still needed for the bounty: …"), this week's points, your characters with their level and PvP points, the streak. | open |
+| Finish a daily | Chat: "Daily done: <goal> (+5 PvE, N of 3 today)". A weekly: "Weekly done: … (+15 PvE)". | open |
+| A kill on a player 3+ levels above you, solo | Chat: "Kill: +2 PvP · 3 levels above you, and solo (+1)". A kill worth 1 point says nothing. | open |
+| Finish all 3 PvE dailies first in the group | Under the minimap: "First to finish today!", "All three dailies done at <time>", "The crown is yours until <reset time>. Others have been told, gently." It fades in and slides with Ambient effects on, just appears with them off. | open |
+| A friend finished first (after their record syncs) | Chat: "<friend> finished Doomsday first today. You're at N of 5." Once a day. | open |
+| The day turns at the reset while you play, with a swapped goal | Chat: "Swapped for you: "<original>" → "<new>"". Not at login. | open |
+| Settings → Doomsday in chat off | No Doomsday chat lines; the toast still shows. | open |
+| A friend's character card (Friends tab) | Under the tiles: "<rank>, a.k.a. <our title> · N honorable kills · PvP N this week", or "PvP Virgin"; nothing for a friend on an older addon. | open |
+
 ### CF-56 Goals tracked and shared
 `/cf doomsday` prints today's and this week's goals with progress, swaps, the streak and this week's points.
 

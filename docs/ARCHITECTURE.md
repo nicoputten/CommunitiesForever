@@ -54,6 +54,7 @@ CommunitiesForever/
       Play.lua               play sessions in the feed: continue within 5 minutes, heartbeat end (CF-53)
       Goals.lua              own Doomsday goals: realm offset fallbacks, the reset setting, facts per day and week,
                              the situation for swaps, done marks, cleaning and merging received goals (CF-56)
+      DoomsdayView.lua       what the Doomsday tab, its chat lines and the character card's PvP line show (CF-57)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
@@ -85,6 +86,7 @@ CommunitiesForever/
       RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      DoomsdayAlerts.lua     Doomsday chat lines (goals done, bonus kills, the crown, swaps) and the crown toast (CF-57)
       RunAlerts.lua          run reminders and start (15 s checks while runs exist), chat lines with links (CF-48)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
@@ -115,6 +117,8 @@ CommunitiesForever/
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
       RunDialogs.lua         Ask now, Plan a run, Answer and the reload prompt, one kit dialog (CF-47)
+      DoomsdayTab.lua        the Doomsday tab: Today and Week (CF-57a; Board, Ladder, Feats in CF-57b)
+      CrownToast.lua         "First to finish today!" under the minimap, fading in and sliding with Ambient effects (CF-57)
       RunToasts.lua          the reminder and Starting now notes under the minimap, 20 s (CF-48)
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
@@ -182,6 +186,8 @@ global = {
                 openOnLogin = false,                 -- CF-43: open the window after login
                 ambientEffects = true,               -- CF-43: title shimmer and LEVEL UP shine
                 levelUpToast = true,                 -- CF-44: the level-up announcement
+                doomsdayChat = true,                 -- CF-57: Doomsday's chat lines (nil = on)
+                doomsdayReset,                       -- CF-56: the reset setting (runs file or a friend's HELLO)
                 runToasts, runSound,                 -- CF-48: run notes and their chime (nil = on)
                 runLines = { [kind] = false } },     -- CF-48: run chat lines turned off (reminder, answered, starting,
                                                      -- otherChar, ping, updated)

@@ -151,7 +151,7 @@ describe("PvP, duels and deaths (CF-52)", function()
     state.slash.cf("self")
     local found
     for _, line in ipairs(state.printed) do
-      if line:find("PvP: 5 honorable kills, Grunt a.k.a. Accidental Flagger", 1, true) then found = true end
+      if line:find("PvP: 5 honorable kills, Grunt, a.k.a. Accidental Flagger", 1, true) then found = true end
     end
     assert.is_true(found)
   end)

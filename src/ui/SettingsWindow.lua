@@ -83,6 +83,7 @@ local function build()
   ry = ry + toggle(body, "notifications", right, ry)
   ry = ry + toggle(body, "levelUps", right, ry)
   ry = ry + toggle(body, "levelUpToast", right, ry) -- CF-44
+  ly = ly + toggle(body, "doomsdayChat", left, ly) -- CF-57
   y = math.max(ly, ry) + 12
 
   -- CF-48: Planned runs: the notes and chime | the chat lines per kind.

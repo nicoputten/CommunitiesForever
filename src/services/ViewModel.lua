@@ -19,6 +19,12 @@ function ViewModel.build(addon)
     selfGuid = player.guid,
   })
   view.selfName = player.name
+  -- CF-57: what the card needs for this week's PvP points (the schedule, the community's names).
+  local community = {}
+  for _, m in pairs(ns.MemberTracker.members() or {}) do
+    if m.name then community[m.name] = true end
+  end
+  view.doomsday = { schedule = ns.DoomsdayTracker.schedule(), community = community }
   if ns.Debug.enabled() then ns.Debug.decorate(view, player.guid, GetServerTime()) end -- hidden /cf debugon, view only
   return view
 end

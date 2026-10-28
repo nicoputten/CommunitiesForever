@@ -48,7 +48,8 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 - If the killer's name is readable, propose stories for a Wanted poster (the enemy who killed us most this week, a bounty on them) and a revenge kill (killing your killer within 10 minutes).
 
 ### CF-57 Doomsday tab, chat lines and the toast
-After CF-56. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built with the kit (pools, `Kit.scrollArea`, `Kit.toast`), as the other tabs.
+After CF-56. Split in two (Nico, 2026-10-29): **CF-57a** the tab with Today and Week, the chat lines, the toast, the setting and the card's PvP line (PR #TBD); **CF-57b** Board, Ladder and Feats (with sprees). Feats: the addon remembers locally when it first saw each one (`self.feats[guid][key] = time`), newest first from then on; feats a character already had show under "Earlier" (Nico).
+Decided in CF-57a: swap lines come when the day turns while you play or with the first goal done that day, never at login; chat lines only on a character in the selected community. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built with the kit (pools, `Kit.scrollArea`, `Kit.toast`), as the other tabs.
 - A tab **Doomsday** after Dungeons, with:
   - **Today:** your 3 PvE dailies, the Hunt and the Skirmish, with progress ("7/10") or a check with its time, the time to the reset, the swap mark with the original in its tooltip, and the Duel slot (who you dueled, who's still open). Plus today's points (PvE and PvP), a kill summary ("9 kills: 4 near level, 2 solo, 1 above"), the streak, and who has the crown.
   - **Week:** the 3 PvE weeklies and the Weekly bounty with progress (for the bounty, what's still needed: "Paladin, Priest, Hunter"), this week's points per track and per character, the streak.
