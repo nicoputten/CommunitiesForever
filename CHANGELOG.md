@@ -20,6 +20,11 @@ tagging; the release stops if the tag has no section.
   ready, on another character or offline, with Invite, Whisper, Invite everyone ready and Discord pings for
   whoever is missing. Chat lines for reminders, answers, starts and more; each kind can be turned off in
   the settings.
+- **Runs v2: level fit and roles, as on the website.** Answering a run in game: every character of yours
+  with how it fits ("fits", "+3 over", "carry · +12", "4 below"), then a role your class can play (Tank,
+  Healer, Damage). A character 6 or more levels below can only answer Maybe. Plan a run asks your role too.
+  A run's slots show each sign-up's role and fit, reserves are listed under them, and "Close" and "fits
+  damage" use the same rule.
 - Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
   "community member".
 

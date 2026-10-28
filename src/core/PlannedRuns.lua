@@ -18,6 +18,7 @@ PlannedRuns.MAX_REMINDER = 1440  -- minutes
 PlannedRuns.MAX_TIME = 4102444800 -- 2100-01-01 UTC: any later timestamp is broken data
 PlannedRuns.MAX_UTC_OFFSET = 14 * 3600
 PlannedRuns.MAX_RECEIVED = 200   -- CF-47: ids of game items the site has (Pending.confirm)
+PlannedRuns.MAX_FIT = 24         -- CF-49: an answer's fit label ("carry \194\183 +12")
 
 PlannedRuns.STATES = { open = true, full = true, started = true, cancelled = true }
 PlannedRuns.ANSWERS = { ["in"] = true, maybe = true, cant = true }
@@ -87,6 +88,8 @@ local function answer(raw)
   a.role = oneOf(PlannedRuns.ROLES, raw.role)
   a.source = oneOf(PlannedRuns.SOURCES, raw.source)
   a.at = time(raw.at)
+  a.fit = text(raw.fit, PlannedRuns.MAX_FIT) -- CF-49 (web WEB-47): the site's levelFit label
+  a.reserve = raw.reserve == true or nil      -- CF-49: an I'm in waiting for a full role (sent as maybe)
   return a
 end
 
@@ -207,7 +210,6 @@ end
 -- ===== The Dungeons tab (CF-46) =====
 
 PlannedRuns.KEEP_STARTED = 2 * 3600 -- a started run stays listed this long after its start
-PlannedRuns.CLOSE_LEVELS = 5        -- "Close": characters at most this many levels outside the range
 
 -- Runs to show, soonest first: not cancelled, not started more than KEEP_STARTED ago.
 function PlannedRuns.upcoming(data, now)
@@ -259,8 +261,9 @@ end
   dungeon: its level range (nil when unknown).
   { { role, answer = answer | nil, char = candidate | nil, maybe = true | nil, missing = true | nil } }
 "I'm in" answers fill the slot of their role (the site's role, else the role the addon knows, else damage),
-then free damage slots, then any; "maybe" answers fill what is left. An empty tank or healer slot is missing
-when nobody in range who hasn't said no plays that role, else open. ]]
+then free damage slots, then any; "maybe" answers fill what is left. A reserve (CF-49) takes no slot
+(PlannedRuns.reserves). An empty tank or healer slot is missing when nobody in range who hasn't said no plays
+that role, else open. ]]
 function PlannedRuns.slots(run, candidates, dungeon)
   local byGuid = {}
   for _, c in ipairs(candidates or {}) do
@@ -282,7 +285,7 @@ function PlannedRuns.slots(run, candidates, dungeon)
   end
   for _, kind in ipairs({ "in", "maybe" }) do
     for _, a in ipairs(run.answers or {}) do
-      if a.answer == kind then place(a, kind == "maybe") end
+      if a.answer == kind and not a.reserve then place(a, kind == "maybe") end
     end
   end
   local declined = {}
@@ -305,26 +308,54 @@ function PlannedRuns.slots(run, candidates, dungeon)
   return slots
 end
 
---[[ One of your characters in range for a free tank, healer or damage slot ("Grom Ashfeller fits tank"),
-when you haven't answered: candidate, role; or nil. The character you are on first. ]]
+-- CF-49: reserves, oldest first: I'm in answers waiting for a full role (the site sends them as maybe).
+function PlannedRuns.reserves(run)
+  local list = {}
+  for _, a in ipairs(run.answers or {}) do
+    if a.reserve then list[#list + 1] = a end
+  end
+  return list
+end
+
+--[[ CF-49: how an answer's character fits the run: { kind, label } by levelFit when the addon knows the
+character's level (fresher than the file), else the site's fit text (kind nil), else nil. ]]
+function PlannedRuns.fitOf(a, char, dungeon)
+  if dungeon and char and type(char.level) == "number" then
+    return PlannedRuns.levelFit(char.level, dungeon.min, dungeon.max)
+  end
+  if a and a.fit then return { label = a.fit } end
+  return nil
+end
+
+--[[ One of your characters for a free tank, healer or damage slot ("Grom Ashfeller fits tank"), when you
+haven't answered: candidate, role; or nil. CF-49: the character is suggested by levelFit (fits or a few over)
+and its class can play the free role, its own role first. The character you are on first. ]]
 function PlannedRuns.youFit(run, candidates, dungeon, me, selfGuid)
   if PlannedRuns.yourAnswer(run, me) or PlannedRuns.isOrganiser(run, me) then return nil end
+  if not dungeon then return nil end
   local free = {}
   for _, slot in ipairs(PlannedRuns.slots(run, candidates, dungeon)) do
     if not slot.answer then free[slot.role] = true end
   end
-  local best
-  for _, c in ipairs(candidates or {}) do
-    if c.own and inRange(dungeon, c.level) and free[c.role or "dps"] then
-      if not best or c.guid == selfGuid then best = c end
+  local function roleFor(c)
+    local own = c.role or "dps"
+    if free[own] and PlannedRuns.canPlay(c.classFile, own) then return own end
+    for _, r in ipairs(PlannedRuns.rolesFor(c.classFile)) do
+      if free[r] then return r end
     end
+    return nil
   end
-  if best then return best, best.role or "dps" end
+  local best, bestRole
+  for _, c in ipairs(candidates or {}) do
+    local role = c.own and PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max).suggested and roleFor(c)
+    if role and (not best or c.guid == selfGuid) then best, bestRole = c, role end
+  end
+  if best then return best, bestRole end
   return nil
 end
 
---[[ Characters just outside the dungeon's range, not answered yet: { { char, short = n } | { char, over = n } },
-your own first, then the smallest gap. ]]
+--[[ Characters not suggested for the run that may still join it (CF-49, levelFit: 1-5 below or a carry),
+not answered yet: { { char, fit } }, your own first, then low before carries, then the smallest gap. ]]
 function PlannedRuns.close(run, candidates, dungeon)
   local answered, list = {}, {}
   for _, a in ipairs(run.answers or {}) do
@@ -333,20 +364,86 @@ function PlannedRuns.close(run, candidates, dungeon)
   if not dungeon then return list end
   for _, c in ipairs(candidates or {}) do
     if not answered[c.guid] and type(c.level) == "number" then
-      if c.level < dungeon.min and dungeon.min - c.level <= PlannedRuns.CLOSE_LEVELS then
-        list[#list + 1] = { char = c, short = dungeon.min - c.level }
-      elseif c.level > dungeon.max and c.level - dungeon.max <= PlannedRuns.CLOSE_LEVELS then
-        list[#list + 1] = { char = c, over = c.level - dungeon.max }
+      local fit = PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max)
+      if fit.canPick and not fit.suggested then
+        local gap = c.level < dungeon.min and dungeon.min - c.level or c.level - dungeon.max
+        list[#list + 1] = { char = c, fit = fit, gap = gap }
       end
     end
   end
   table.sort(list, function(a, b)
     if (a.char.own == true) ~= (b.char.own == true) then return a.char.own == true end
-    local ga, gb = a.short or a.over, b.short or b.over
-    if ga ~= gb then return ga < gb end
+    if a.fit.kind ~= b.fit.kind then return a.fit.kind == "low" end
+    if a.gap ~= b.gap then return a.gap < b.gap end
     return tostring(a.char.name) < tostring(b.char.name)
   end)
   return list
+end
+
+-- ===== Level fit and roles (CF-49, the web's WEB-47) =====
+
+PlannedRuns.CARRY_FROM = 10 -- levels above the range from which a character carries the group
+PlannedRuns.LOW_UNTIL = 5   -- levels below the range a character may still join; more is Maybe only
+
+--[[ How a level fits min-max, one rule with the site and Discord:
+  { kind = "fits"|"over"|"carry"|"low"|"tooLow", label, canPick, suggested, note }
+canPick: may answer I'm in with it (tooLow: Maybe only); suggested: offered as "could fill". An unknown level
+counts as too low. ]]
+function PlannedRuns.levelFit(level, min, max)
+  if type(level) ~= "number" then
+    return { kind = "tooLow", label = "level unknown", canPick = false, suggested = false }
+  end
+  if level > max then
+    local over = level - max
+    if over >= PlannedRuns.CARRY_FROM then
+      return { kind = "carry", label = "carry \194\183 +" .. over, canPick = true, suggested = false,
+               note = "Little XP for you here." }
+    end
+    return { kind = "over", label = "+" .. over .. " over", canPick = true, suggested = true }
+  end
+  if level < min then
+    local below = min - level
+    if below <= PlannedRuns.LOW_UNTIL then
+      return { kind = "low", label = below .. " below", canPick = true, suggested = false,
+               note = "This will be tough." }
+    end
+    return { kind = "tooLow", label = below .. " below", canPick = false, suggested = false }
+  end
+  return { kind = "fits", label = "fits", canPick = true, suggested = true }
+end
+
+PlannedRuns.CLASS_ROLES = {
+  WARRIOR = { "tank", "dps" },
+  PALADIN = { "tank", "heal", "dps" },
+  DRUID = { "tank", "heal", "dps" },
+  PRIEST = { "heal", "dps" },
+  SHAMAN = { "heal", "dps" },
+  MAGE = { "dps" },
+  WARLOCK = { "dps" },
+  HUNTER = { "dps" },
+  ROGUE = { "dps" },
+}
+
+-- The roles a class can fill (tank, heal, dps; a new list each time); all three for an unknown class.
+function PlannedRuns.rolesFor(classFile)
+  local roles = PlannedRuns.CLASS_ROLES[classFile] or { "tank", "heal", "dps" }
+  local copy = {}
+  for i, r in ipairs(roles) do copy[i] = r end
+  return copy
+end
+
+-- True when the class can fill the role.
+function PlannedRuns.canPlay(classFile, role)
+  for _, r in ipairs(PlannedRuns.rolesFor(classFile)) do
+    if r == role then return true end
+  end
+  return false
+end
+
+-- The role to start on for a character: its own (the addon's) when the class can play it, else the first.
+function PlannedRuns.defaultRole(classFile, role)
+  if role and PlannedRuns.canPlay(classFile, role) then return role end
+  return PlannedRuns.rolesFor(classFile)[1]
 end
 
 -- ===== Times (local time; dateFn: the game's date, os.date in tests) =====

@@ -38,6 +38,18 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-49 Runs v2: level fit and roles
+Use the CF-46 test file. Give one run a dungeon well above your character (e.g. `dungeon = "smarm"` at level 20) and add answers with `role`, `fit` and `reserve`: `{ name = "Cy Example", answer = "in", role = "dps", fit = "carry \194\183 +12" }`, `{ name = "Bo Stone", answer = "maybe", role = "heal", reserve = true }`. `/reload` after each edit.
+
+| Step | Expected | Status |
+|---|---|---|
+| A run in range, "Answer" | Your characters with "fits", "+N over", "carry · +N" or "N below", fits first. Under them "ROLE" with only the roles the class can play (Warrior Tank and Damage, Mage only Damage), starting on the character's role. A carry shows "Little XP for you here.", 1–5 below "This will be tough." | open |
+| Healer, Save answer | `pending` in the saved file (after `/reload`) has the answer with `role = "heal"`. With the organiser online with this build: their slot shows you as Healer. | open |
+| The run 12+ levels above you, "Answer", pick the character | "6+ levels below: Maybe only" in orange, I'm in greyed out, the answer switched to Maybe. | open |
+| "Plan a run" | A ROLE row under Lead as; another Lead as character changes the roles; the plan's `role` in `pending` is the one picked. | open |
+| The run with Cy and Bo in the Dungeons tab | Cy's slot says "carry · +12" in orange; Bo has no slot; "Reserve: Bo Stone (Healer)" under the slots. A character of yours 1–5 below or a carry is in "Close: … (your alt, 4 below)". | open |
+| A Runs.lua from before (no role, fit, reserve) | The tab looks as with CF-46. | open |
+
 ### CF-48 Reminder, start time and chat lines
 Compare with `docs/design/runs-2026-10/run-start.html`. Use the CF-46 test file with runs a few minutes ahead (e.g. `startsAt = $($t + 35 * 60)` with `reminderMinutes = 30`), and a friend with this build online for the invite steps (V69, V48).
 

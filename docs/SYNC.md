@@ -196,7 +196,8 @@ the sender's character offline until its next HELLO.
                         "answers": [ { "battleTag": "Ada#1001", "name": "Ada Lovewell", "answer": "in", "role": "tank" } ] } ] } }
 ```
 
-`runs` has the shape of `CF_RUNS` (ARCHITECTURE "Planned runs file"). A HELLO whose `ru` is older than ours
+`runs` has the shape of `CF_RUNS` (ARCHITECTURE "Planned runs file"), since CF-49 with the optional `fit`
+and `reserve` per answer (older addons drop them and show a reserve as Maybe). A HELLO whose `ru` is older than ours
 gets `RUNS`; newer gets `RUNREQ`, answered with `RUNS`. Each at most once per target and updatedAt per 60 s.
 The receiver checks the runs like the file (`PlannedRuns.validate`) and keeps them when their `updatedAt` is
 newer than its own and at most 5 minutes ahead of server time; then it sends a HELLO with the new `ru`. Over

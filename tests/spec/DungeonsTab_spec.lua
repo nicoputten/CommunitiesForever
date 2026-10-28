@@ -158,6 +158,20 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(row("dm").meta:GetText():find("1 run", 1, true)) -- the dungeon shows its run
   end)
 
+  it("shows each sign-up's fit and lists reserves without a slot (CF-49)", function()
+    local data = sampleRuns()
+    local answers = data.runs[1].answers
+    answers[#answers + 1] = { name = "Cy Example", answer = "in", role = "dps", fit = "carry \194\183 +12",
+                              source = "site" }
+    answers[#answers + 1] = { name = "Bo Stone", answer = "maybe", role = "heal", reserve = true, source = "site" }
+    load(20, data)
+    open()
+    local all = text()
+    assert.is_truthy(all:find("\nCy Example\nDPS \194\183 Cy Example\ncarry \194\183 +12\n", 1, true))
+    assert.is_truthy(all:find("\nReserve: Bo Stone (Healer)\n", 1, true))
+    assert.is_falsy(all:find("\nBo Stone\n", 1, true)) -- no slot
+  end)
+
   it("shows a run: slots from the answers, the note, the link to copy (CF-46)", function()
     load(20, sampleRuns())
     open()
