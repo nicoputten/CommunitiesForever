@@ -26,8 +26,81 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V65 | Does `ColorPickerFrame:SetupColorPickerAndShow` (with `swatchFunc`, `cancelFunc`) and `ColorPickerFrame:GetColorRGB` open and report the colour (CF-43: chat colour)? | See the CF-43 steps: clicking the colour square opens Blizzard's colour picker; the community chat changes colour while picking; Cancel puts the old one back. | open |
 | V66 | Do `Settings.RegisterCanvasLayoutCategory(frame, name)` and `Settings.RegisterAddOnCategory(category)` add the page under Options › AddOns (CF-43)? | Esc → Options → AddOns: a "CommunitiesForever" entry with the line and an "Open settings" button that opens the settings window. | open |
 
+| V67 | Is a Lua file in the addon folder that changed on disk re-read on `/reload`, and does a file the TOC lists but that was missing at game start load on `/reload` or only after a restart? (CF-45: the uploader rewrites `Data\Runs.lua` while the game runs) | Copy the new `tools/FriendProbe`, start the game, `/fp reloadfile`: `V67 ReloadProbe.lua mark A \| ReloadProbeLate.lua not loaded`. With the game still running, in PowerShell (your game folder in the first line): `$fp = "<game folder>\Interface\AddOns\FriendProbe"`, then `Set-Content "$fp\ReloadProbe.lua" 'FriendProbeReloadMark = "B"'` and `Set-Content "$fp\ReloadProbeLate.lua" 'FriendProbeLateMark = "late"'`. In game `/reload`, `/fp reloadfile`: is the mark `B` (changed file re-read), and is the late file `late` or `not loaded`? Then exit the game, start it again, `/fp reloadfile` once more. Afterwards `Remove-Item "$fp\ReloadProbeLate.lua"`. | open |
+| V68 | May an addon call `C_UI.Reload()` or `ReloadUI()` from a button click? (CF-47: "Reload now to post on Discord") | `/fp reload`, click `C_UI.Reload()`: the UI reloads and the log shows `V68 reloaded by C_UI.Reload`. Then `/fp reload` again and click `ReloadUI()`. If nothing reloads, the log shows `did not reload within 2 s` and any `ADDON_ACTION_BLOCKED` line; `/reload` by hand and send the log. | open |
+| V69 | Can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), the first invite making a party? (CF-48: Invite everyone ready) | With at least two friends online in Forever and you not in a group: `/fp inviteall`, click `Invite all N`. Do all friends get an invite (also the second, while the first hasn't accepted yet)? Let them accept, wait 10 s (`V69 after 10 s: in group N`), `/reload` and send the log (the `V69 C_PartyInfo.InviteUnit` lines and `INVITE EVENT` lines). | open |
+| V70 | Do `C_ChatInfo.InChatMessagingLockdown()` and `IsEncounterInProgress()` exist, and are they true during a boss fight? (CF-46: runs are never sent during encounters, keystones or PvP matches) | Inside a dungeon, during a boss fight: `/run print(C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown(), IsEncounterInProgress and IsEncounterInProgress())`, and once more outside the fight. Expected `true true` in the fight, `false false` outside (`nil` means the function is missing: then only battlegrounds count). | open |
+
+| V71 | Does `time({ year, month, day, hour, min })` exist and give the UTC seconds of a local date and time? (CF-47: Plan a run turns your PC-clock time into UTC) | `/run print(time({ year = 2026, month = 11, day = 6, hour = 20, min = 30 }), GetServerTime())`: a number close to the server time (differing by the days and hours to that date). `nil` or an error: Plan a run says it can't convert the time. | open |
+
+| V72 | Does `ChatFrameUtil.OpenChat("/w <name> <text>")` (or `ChatFrame_OpenChat`) open the chat input with the whisper and text filled in? (CF-48: Whisper on the start panel) | On the CF-48 start panel, click Whisper on a friend who is on another character. Expected: the chat input opens as a whisper to that character with "You're on … Switch to …?" filled in, not sent yet. If it opens empty (or not at all), say which. | open |
+
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-49 Runs v2: level fit and roles
+Use the CF-46 test file. Give one run a dungeon well above your character (e.g. `dungeon = "smarm"` at level 20) and add answers with `role`, `fit` and `reserve`: `{ name = "Cy Example", answer = "in", role = "dps", fit = "carry \194\183 +12" }`, `{ name = "Bo Stone", answer = "maybe", role = "heal", reserve = true }`. `/reload` after each edit.
+
+| Step | Expected | Status |
+|---|---|---|
+| A run in range, "Answer" | Your characters with "fits", "+N over", "carry · +N" or "N below", fits first. Under them "ROLE" with only the roles the class can play (Warrior Tank and Damage, Mage only Damage), starting on the character's role. A carry shows "Little XP for you here.", 1–5 below "This will be tough." | open |
+| Healer, Save answer | `pending` in the saved file (after `/reload`) has the answer with `role = "heal"`. With the organiser online with this build: their slot shows you as Healer. | open |
+| The run 12+ levels above you, "Answer", pick the character | "6+ levels below: Maybe only" in orange, I'm in greyed out, the answer switched to Maybe. | open |
+| "Plan a run" | A ROLE row under Lead as; another Lead as character changes the roles; the plan's `role` in `pending` is the one picked. | open |
+| The run with Cy and Bo in the Dungeons tab | Cy's slot says "carry · +12" in orange; Bo has no slot; "Reserve: Bo Stone (Healer)" under the slots. A character of yours 1–5 below or a carry is in "Close: … (your alt, 4 below)". | open |
+| A Runs.lua from before (no role, fit, reserve) | The tab looks as with CF-46. | open |
+
+### CF-48 Reminder, start time and chat lines
+Compare with `docs/design/runs-2026-10/run-start.html`. Use the CF-46 test file with runs a few minutes ahead (e.g. `startsAt = $($t + 35 * 60)` with `reminderMinutes = 30`), and a friend with this build online for the invite steps (V69, V48).
+
+| Step | Expected | Status |
+|---|---|---|
+| A run you're in, at its reminder time | A note under the minimap: "IN 30 MINUTES", the dungeon and time, "You're in as … <organiser> invites at start. N in.", Open and Close; it goes after 20 s. A soft chime. A chat line "… starts in 30 min (20:30). You're in as …. [Open]"; Open shows the run in the Dungeons tab. | open |
+| Settings → Planned runs / Run chat lines | Run reminders off: no note. Reminder chime off: no sound. Each chat line kind off: that line is gone. | open |
+| A run you organise, at start time | The start panel opens by itself: "<dungeon> · starting now", "you organise · N in · N maybe", each friend with name, role, answer and state (ready · online on this character / online, but on <char> (level) / offline / already grouped / can't · answered on Discord). | open |
+| Invite, Invite everyone ready (N) | Each ready "I'm in" friend gets an invite (V69: several in a row); friends already in your group are skipped. | open |
+| A friend on another character | A chat line "… is online on <char>, signed up as <char>. [Whisper] [Invite <char>]"; Whisper opens the whisper with the text filled in (V72); Invite <char> instead invites that character. | open |
+| Ping on Discord, Ping everyone missing | "ping queued · after /reload" on the row; a chat line "Discord ping for … queued. It reaches Discord after /reload. [Reload now]"; Reload now on the panel. After the upload the site posts the ping (WEB-43). | open |
+| A run someone else organises, at start time | A note "STARTING NOW", "Waiting for <organiser>'s invite", Request invite (V48: `RequestInviteFromUnit`); a chat line with [Request invite]. The run card has Request invite from 5 minutes before the start. With the organiser offline, the panel says whom to whisper instead. | open |
+| A friend answers your run in game, or on Discord (a newer Runs.lua) | "<friend> is in for <dungeon> (answered in game)." / "(answered on Discord)." Runs from a friend's addon: "Runs updated at <time>. Type /reload for newer." | open |
+
+### CF-47 Ask now, plan a run, sign up
+Compare with `docs/design/runs-2026-10/run-dialogs.html`. The answer steps need the CF-46 test file (with a run someone else organises) and ideally that friend online with this build.
+
+| Step | Expected | Status |
+|---|---|---|
+| Dungeons tab, a dungeon in range, "Ask now" | A dialog "Ask now": the dungeon with its range and "now", "You go as <character> <level> · <role>", "WHISPERED NOW · ONLINE AND FIT" with the friends who get it, "Not asked: …" with why (above/below the range, offline), a note field, "Also post on Discord" with its help line, Cancel and Ask now. | open |
+| Type a note, tick Also post on Discord, Ask now | Friends get the ask with your note in quotes (CF-27 chat line). Then "Post on Discord?" with "Reload now to post on Discord", the text about saving, Later and Reload now. | open |
+| Reload now (V68) | The UI reloads. Without the API: the line "Type /reload to post it now." | open |
+| "Plan a run" on a dungeon | Dungeon and Lead as dropdowns, the days Today and the next six (the picked one highlighted), Time "20:00" with "your PC clock · friends see their own time", a note, Cancel and Plan run. "Reaches the site and Discord after /reload." | open |
+| Pick tomorrow, 21:30, Plan run (V71) | The reload prompt; the run shows in the Runs list at once with "reaches Discord after /reload". A time like "soon": "Type the time as 20:30."; today 00:00: "That time has passed." | open |
+| A run someone else organises, "Answer" | "Answer": the dungeon, "Thu 21:00 · 20:00 for <organiser>" (their time, when the site sent their offset), I'm in / Maybe / Can't, "PICK MY CHARACTER" with your characters and fits / too high / too low, "reaches Discord after /reload", Save answer. Can't hides the characters. | open |
+| Maybe, a character, Save answer | The row says "you: maybe as <character>  reaches Discord after /reload". With the organiser online with this build: their Dungeons tab shows you in the run within seconds (`/cf sync debug`: `RUNANSWER`). | open |
+| `/reload`, then let the uploader upload (after UP-12 and WEB-43) | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` list with your plan, ask and answer. After the site has them and the next Runs.lua lists them under `received`, the "reaches Discord" labels go. | open |
+| Ask now with Discord, Later, wait 11 minutes, log out | The ask is gone from `pending` in the saved file (not posted). | open |
+
+### CF-46 Dungeons tab with runs
+Compare with `docs/design/runs-2026-10/dungeons-runs.html`. Until the uploader writes runs (UP-12), make a test file by hand. In PowerShell, with your game folder and a character name of yours in the first two lines (a run in 2 hours and one tomorrow, you organise the first):
+`$addon = "<game folder>\Interface\AddOns\CommunitiesForever"`, `$me = "<your character name>"`, `$t = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()`, then
+`Set-Content "$addon\Data\Runs.lua" "CF_RUNS = { updatedAt = $t, reminderMinutes = 30, runs = { { id = 'r1', dungeon = 'dm', startsAt = $($t + 7200), source = 'site', note = 'Bring water', url = 'https://example.com/runs/r1', organiser = { name = '$me', battleTag = '<your BattleTag>' }, answers = { { battleTag = '<your BattleTag>', name = '$me', answer = 'in', role = 'dps' }, { name = 'Ada Example', answer = 'maybe', source = 'discord' } } }, { id = 'r2', dungeon = 'wc', startsAt = $($t + 26 * 3600), source = 'discord', organiser = { name = 'Ada Example' }, answers = { { name = 'Ada Example', answer = 'in', role = 'tank' } } } } }"`.
+Afterwards put the empty file back: `Set-Content "$addon\Data\Runs.lua" "CF_RUNS = nil"`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Write the test file, `/reload` (V67), `/cf`, Dungeons tab | The tab badge says 2. Left "RUNS": The Deadmines with "Today <time>" in a warm colour and "you organise    1 in · 1 maybe"; Wailing Caverns "Tomorrow <time>", "Ada Example" and "<character> fits damage" in green (when you are in range). Below them "Runs updated at <time> · /reload for newer", then the dungeons in range; The Deadmines with "1 run". | open |
+| Click The Deadmines run | Name large, "Today <time> · in 1 h 59 min", "17–26 · planned on the website", the note in quotes. "Group" with five slots: Tank "nobody in range" (or open), Healer, your character outlined gold with "organiser", Ada Example dimmed with "maybe". "At <time>": "You'll get a reminder at <time − 30 min>. At start, Invite all invites everyone who's in and online." and a greyed "Invite all · from <time>". "Edit or cancel": the link in a box (click, Ctrl+C copies; typing does not change it). | open |
+| Click the Wailing Caverns run | "planned on Discord", "Organised by Ada Example · 1 in", Ada Example as tank with "organiser"; no Invite all. | open |
+| A friend with this build online, you have the test file, they don't | Within a few seconds their Dungeons tab shows the same runs (`/cf sync debug` shows `RUNS`). After their `/reload` the runs are still there (stored). | open |
+| Put the empty file back, `/reload` | The runs stay (stored from before) until a newer list arrives; "No runs planned" only when none are upcoming. | open |
+| Inside a battleground with a friend logging in | No `RUNS` while you are in the match (`/cf sync debug`); it goes out within 30 s after you leave. | open |
+
+### CF-45 Runs file and checks
+Nothing shows yet: the Dungeons tab reads the runs from CF-46 on. This checks that the empty file ships and loads.
+
+| Step | Expected | Status |
+|---|---|---|
+| Install the release (CurseForge app or `tools\build.ps1 -AddOnsPath "<game folder>\Interface\AddOns"`) | `Interface\AddOns\CommunitiesForever\Data\Runs.lua` exists and contains `CF_RUNS = nil`. | open |
+| Log in, `/reload` | No Lua error; the addon works as before. | open |
 
 ### CF-44 Level-up announcement
 Needs a friend with the addon who levels up while you are online (or `/cf debugon` is not enough: the debug friend never levels).
@@ -63,12 +136,12 @@ Compare with `docs/design/revamp-2026-10/dungeons.html`. Best on a character in 
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Dungeons tab | Left column: "PLANNED" (when a run is in the calendar within 3 days; name, "Mon 20:00" in green, "N going · you", a faint green tint), then "IN RANGE FOR <character> (<level>)": per dungeon the name in gold, the range "17–24" right, "N friends" and "x / y quests" (green when you have all); the note about typical ranges at the bottom. | open |
+| `/cf`, Dungeons tab | Left column: "RUNS" (CF-46), then "IN RANGE FOR <character> (<level>)": per dungeon the name in gold, the range "17–24" right, "N friends" and "x / y quests" (green when you have all); the note about typical ranges at the bottom. | open |
 | Log on an alt in another level range, open the tab | The list follows that character; your first character shows under "Alternatives for you" where it fits. | open |
-| Click a dungeon | Gold bar on the row. Card: the name large, "levels 17–26 · Westfall"; planned runs of it in green; "Suggested group" as five slots: Tank, Healer, three DPS with portrait, "<name> <level>" in class colour, "role · person"; your slot outlined gold; a missing tank or healer in orange "nobody in range"; free slots "+ open". | open |
+| Click a dungeon | Gold bar on the row. Card: the name large, "levels 17–26 · Westfall"; "Suggested group" as five slots: Tank, Healer, three DPS with portrait, "<name> <level>" in class colour, "role · person"; your slot outlined gold; a missing tank or healer in orange "nobody in range"; free slots "+ open". | open |
 | Ask who's up for it | The gold button with "Sends a chat line to friends with the addon"; clicking asks (CF-27) and the line turns into "Asked who's up for it · ..." with the answers. | open |
 | Also in range | Others in range not in the group, one line each. | open |
-| Quests and Plan a run | Left "Quests" with "x / y in your log", a green check on quests in your log, who else has them; right the event title in a dark box (click: selected, Ctrl+C copies; typing does not change it) and "Open calendar". | open |
+| Quests | Left "Quests" with "x / y in your log", a green check on quests in your log, who else has them. | open |
 | Footer | Left "Synced with <name> <time>", right "Group asks wait until combat ends". | open |
 | Long card or list, small window | Both scroll with the mouse wheel (V62). | open |
 

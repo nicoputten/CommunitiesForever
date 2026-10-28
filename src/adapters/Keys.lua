@@ -16,7 +16,7 @@ local function propagate(frame, on)
   if not inCombat() then frame:SetPropagateKeyboardInput(on) end
 end
 
--- frame: a Blizzard frame (an AceGUI widget's .frame); close(): hides the window. Returns true when set
+-- frame: a Blizzard frame (a kit window or dialog); close(): hides the window. Returns true when set
 -- up; false when the API is missing or in combat (call again on the next show).
 function Keys.closeOnEscape(frame, close)
   if not (frame and frame.EnableKeyboard and frame.SetPropagateKeyboardInput and frame.SetScript) then

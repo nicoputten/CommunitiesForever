@@ -3,4 +3,6 @@
 ## Notes: API probe for the friend roster addon (Forever beta)
 ## SavedVariables: FriendProbeDB
 
+ReloadProbe.lua
+ReloadProbeLate.lua
 FriendProbe.lua

@@ -5,6 +5,29 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v0.6.0-beta1 (2026-10-28)
+- **Planned runs in the Dungeons tab.** Runs planned on the website (brought into the game by the
+  CommunitiesForever uploader) or shared by a friend's addon are listed on top: when, who organises, who's in,
+  your answer and which of your characters fits. A run shows its five slots, who answered on Discord, who is
+  close in level and the link to edit it on the website. The in-game calendar is no longer used.
+- **Ask now, Plan a run and answering runs in game.** Ask now shows who gets whispered and who doesn't (and
+  why), takes a note and can post the ask on Discord too. Plan a run picks the dungeon, your character, a day
+  and a time on your clock. Answer a run with I'm in, Maybe or Can't and the character you bring; the
+  organiser's addon gets it at once. What has to reach the website waits for your next /reload ("reaches
+  Discord after /reload"), and a prompt offers to reload right away.
+- **Run reminders and the start of a run.** A note under the minimap (with a soft chime) before a run you're
+  in, and "Starting now" with Request invite at its start. The organiser gets a start panel showing who is
+  ready, on another character or offline, with Invite, Whisper, Invite everyone ready and Discord pings for
+  whoever is missing. Chat lines for reminders, answers, starts and more; each kind can be turned off in
+  the settings.
+- **Runs v2: level fit and roles, as on the website.** Answering a run in game: every character of yours
+  with how it fits ("fits", "+3 over", "carry · +12", "4 below"), then a role your class can play (Tank,
+  Healer, Damage). A character 6 or more levels below can only answer Maybe. Plan a run asks your role too.
+  A run's slots show each sign-up's role and fit, reserves are listed under them, and "Close" and "fits
+  damage" use the same rule.
+- Fix: the card of a community member not linked to a friend said "played by Unlinked"; it now says
+  "community member".
+
 ## v0.5.0-beta1 (2026-10-27)
 - **New look, part 1: the window.** A new frame: dark panel with a gold border, the community name and who
   is online in the title, new tabs and a footer. Every tab, the settings and the setup now share this look.

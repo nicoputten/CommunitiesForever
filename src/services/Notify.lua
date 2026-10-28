@@ -28,11 +28,7 @@ local function notify(battleTag)
   local person = linkedPerson(battleTag)
   local online = ns.Sync.online()[battleTag] -- CF-28: also community peers
   if not person or not online then return end
-  local className = online.className
-  if not className and online.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
-    local info = C_CreatureInfo.GetClassInfo(online.classID)
-    className = info and info.className
-  end
+  local className = online.className or select(2, ns.Classes.info(nil, online.classID))
 
   lastNotified[battleTag] = now
   addonRef:Print(ns.Format.loginNotice(person.displayName,
@@ -56,11 +52,7 @@ local function announceLevelUp(battleTag, up)
       local name = row.name or up.name
       if chat then addonRef:Print(ns.Format.levelUpNotice(person.displayName, name, up.level)) end
       if toast then
-        local classFile = row.classFile
-        if not classFile and row.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then -- verified V21
-          local info = C_CreatureInfo.GetClassInfo(row.classID)
-          classFile = info and info.classFile
-        end
+        local classFile = ns.Classes.info(row.classFile, row.classID)
         ns.LevelUpToast.announce({ displayName = person.displayName, name = name, classFile = classFile,
                                    level = up.level })
       end

@@ -21,7 +21,7 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
 2. `src/adapters/*` are thin WoW API wrappers with no business logic.
 3. **Never invent WoW APIs.** If an API is not listed as verified in `docs/API-FINDINGS.md`, guard it with an existence check (`if C_Foo and C_Foo.Bar then`) and add it to `VERIFY.md` with a manual test step.
 4. GUID is the character key. Never parse or split character names.
-5. Globals: only the addon table `CommunitiesForever`, SavedVariables `CommunitiesForeverDB`, what slash commands require (`SLASH_*`, `SlashCmdList`), and the key binding names `Bindings.xml` requires (`BINDING_HEADER_*`, `BINDING_NAME_*`).
+5. Globals: only the addon table `CommunitiesForever`, SavedVariables `CommunitiesForeverDB`, the planned runs data `CF_RUNS` (set by `Data\Runs.lua`, CF-45), what slash commands require (`SLASH_*`, `SlashCmdList`), and the key binding names `Bindings.xml` requires (`BINDING_HEADER_*`, `BINDING_NAME_*`).
 6. English strings, hardcoded. No localization system.
 7. No dependencies beyond those listed in `docs/ARCHITECTURE.md` without asking.
 8. **Backwards compatible data layer (upgrade pattern).** Every change to what the addon stores (SavedVariables) or sends (messages) must keep working with data from earlier versions, because friends update on different days. Ask "what does an older version send or have stored, and what does it do with ours?" at every such change, and say the answer in the PR. See `docs/ARCHITECTURE.md` "Compatibility":
@@ -29,6 +29,7 @@ A World of Warcraft addon for a small friend group playing **World of Warcraft: 
    - Messages: only add optional fields and new message types within a `pv`; never change an existing field's meaning or type. A breaking change bumps `Protocol.VERSION` with a step in `Protocol.UPGRADES` that brings the old message to the new shape.
    - Code reading stored or received data handles missing fields (nil) everywhere.
    - Released steps and captured fixtures are never edited. `tests/spec/Compat_spec.lua` must keep passing on the fixtures of every earlier release.
+9. **Nothing private, ever.** Treat everything committed as public forever, history included: code, docs, fixtures, screenshots, commit messages, PR texts. Even while a repo is private, so it can go public any time. Never commit secrets (tokens, keys, passwords, `.env` files, webhook URLs), real BattleTags, Discord IDs or usernames, real SavedVariables, names of real people beyond what Nico agreed to, IP addresses, NAS details or local paths with user names. Tests and docs use made-up values (`Name#1234`, `Ada#1001`). When in doubt, ask Nico before committing. If something private lands anyway, stop and tell Nico; rewriting history is his call. (`tests/spec/Release_spec.lua` also guards the released files.)
 
 ## Commands
 - One-time toolchain: `tools\setup-lua.ps1` (project-local Lua 5.1 in `.lua\`, gitignored). Put `.lua\bin` on PATH first: `$env:PATH = "$PWD\.lua\bin;$env:PATH"`

@@ -35,14 +35,14 @@ function Kit.button(parent, text, onClick, kind)
   if b.kind == "primary" then
     bg:SetColorTexture(Theme.color("gold"))
   elseif b.kind == "normal" then
-    bg:SetColorTexture(0.831, 0.686, 0.416, 0.12)
+    bg:SetColorTexture(Theme.color("gold", 0.12))
   else
     bg:SetColorTexture(0, 0, 0, 0)
   end
   b.edges = Kit.edges(b, b.kind == "ghost" and "divider" or "border")
   local hover = b:CreateTexture(nil, "HIGHLIGHT")
   hover:SetAllPoints()
-  hover:SetColorTexture(1, 1, 1, 0.06)
+  hover:SetColorTexture(Theme.color("white", 0.06))
   b.label = Theme.text(b, "button", b.kind == "primary" and "outline" or "goldPale")
   b.label:SetPoint("CENTER")
   b:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
@@ -76,7 +76,7 @@ function Kit.iconButton(parent, texture, onClick)
   b.icon = icon
   local hover = b:CreateTexture(nil, "HIGHLIGHT")
   hover:SetAllPoints()
-  hover:SetColorTexture(1, 1, 1, 0.06)
+  hover:SetColorTexture(Theme.color("white", 0.06))
   b:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
   return b
 end
@@ -161,7 +161,7 @@ function Kit.skillBar(parent, height)
   local track = Theme.fill(bar, "track", "BACKGROUND")
   track:SetAllPoints()
   local cap = bar:CreateTexture(nil, "BORDER")
-  cap:SetColorTexture(0.831, 0.686, 0.416, 0.16)
+  cap:SetColorTexture(Theme.color("gold", 0.16))
   cap:SetPoint("TOPLEFT")
   cap:SetPoint("BOTTOMLEFT")
   local fill = Theme.fill(bar, "gold", "ARTWORK")
@@ -184,7 +184,7 @@ function Kit.skillBar(parent, height)
     self.tickFractions = ticks or {}
     for i = #self.ticks + 1, #self.tickFractions do
       local t = self:CreateTexture(nil, "OVERLAY")
-      t:SetColorTexture(0.027, 0.047, 0.082, 0.9)
+      t:SetColorTexture(Theme.color("tick"))
       t:SetWidth(1)
       self.ticks[i] = t
     end
@@ -521,6 +521,34 @@ end
 function Kit.release(p)
   for i = 1, #p.items do p.items[i]:Hide() end
   p.used = 0
+end
+
+-- Places a pooled text (from a Kit.textHolder pool) at x, y below the parent's top left. color: a colour name
+-- or { r, g, b }; justify: "LEFT" (default), "RIGHT" or "CENTER". Returns the holder.
+function Kit.placeText(pool, parent, x, y, width, text, color, justify)
+  local holder = Kit.take(pool, parent)
+  holder:SetPoint("TOPLEFT", x, -y)
+  holder.text:SetWidth(width or 0)
+  holder.text:SetJustifyH(justify or "LEFT")
+  holder.text:SetText(text or "")
+  if type(color) == "table" then
+    holder.text:SetTextColor(color[1], color[2], color[3], 1)
+  else
+    holder.text:SetTextColor(Theme.color(color or "text"))
+  end
+  return holder
+end
+
+-- A section title in pale gold, and optionally a note after it ("Talents  17 / 0 / 0"). Returns the y below.
+Kit.SECTION_HEIGHT = 24
+
+function Kit.section(titlePool, notePool, parent, x, y, width, title, note, noteColor)
+  local h = Kit.placeText(titlePool, parent, x, y, width, title, "goldLight")
+  if note then
+    local w = h.text.GetStringWidth and h.text:GetStringWidth() or 100
+    Kit.placeText(notePool, parent, x + w + 10, y + 3, width - w - 10, note, noteColor or "muted")
+  end
+  return y + Kit.SECTION_HEIGHT
 end
 
 -- A factory for pooled texts: a tiny frame holding one FontString (holder.text) in a text role.

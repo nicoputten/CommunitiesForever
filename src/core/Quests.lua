@@ -104,13 +104,5 @@ function Quests.sharedAcross(friendChars, ownChars)
   return Quests.shared(merged, ownChars)
 end
 
--- True if the friend's character shares at least one dungeon quest with any of your characters.
-function Quests.sharesDungeon(friendQuests, ownChars)
-  for _, area in ipairs((Quests.shared(friendQuests, ownChars))) do
-    if area.dungeon then return true end
-  end
-  return false
-end
-
 ns.Quests = Quests
 return Quests

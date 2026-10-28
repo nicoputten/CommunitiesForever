@@ -42,18 +42,9 @@ local function settings() return addonRef.db.global.settings end
 
 local function selfGuid() return ns.SelfInfo.read().guid end
 
--- The settings option with this key (top level or in the Community chat group).
-local function option(key)
-  local args = ns.Settings.options().args
-  return args[key] or args.chat.args[key]
-end
+local function option(key) return ns.Settings.option(key) end
 
-local function hex(color)
-  return string.format("%02x%02x%02x", math.floor(color.r * 255 + 0.5), math.floor(color.g * 255 + 0.5),
-    math.floor(color.b * 255 + 0.5))
-end
-
-local function gold(text) return "|cfff0d08e" .. text .. "|r" end
+local function gold(text) return Theme.code("goldLight") .. text .. "|r" end
 
 -- ===== Drawing helpers =====
 
@@ -150,7 +141,7 @@ end
 function STEP_BODIES.chat()
   local color = ns.Chat.color(settings())
   text("Community chat in its own color and its own chat tab, so you never miss it.")
-  text(string.format("|cff%s[%s] Alice Example: anyone up for Deadmines?|r", hex(color),
+  text(string.format("%s[%s] Alice Example: anyone up for Deadmines?|r", Theme.rgbCode(color.r, color.g, color.b),
     ns.CommunityChat.tabName()), "body", "text")
   if ns.CommunityChat.tab() then
     text("This character has a " .. ns.CommunityChat.tabName() .. " chat tab.", "body", "goldLight")
@@ -259,7 +250,7 @@ local function tile(parent)
   t:SetHeight(100)
   local bg = t:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints()
-  bg:SetColorTexture(1, 1, 1, 0.03)
+  bg:SetColorTexture(Theme.color("white", 0.03))
   t.edges = Kit.edges(t, "divider")
   t.title = Theme.text(t, "group", "goldLight")
   t.title:SetPoint("TOPLEFT", 12, -12)

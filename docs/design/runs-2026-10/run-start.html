@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Addon run start</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F0A}
+a{color:#D4AF6A}a:hover{color:#F0D08E}
+.win{position:absolute;background:rgba(9,15,27,.96);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 0 0 1px #02050A,inset 0 1px 0 rgba(240,208,142,.18),0 24px 60px rgba(0,0,0,.7);display:flex;flex-direction:column;font-family:Inter,sans-serif;color:#E6E1D6}
+.orn{position:absolute;width:8px;height:8px;background:#D4AF6A;transform:rotate(45deg);box-shadow:0 0 0 2px #02050A}
+.title{height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;background:linear-gradient(180deg,rgba(212,175,106,.10),rgba(212,175,106,0));border-bottom:1px solid rgba(212,175,106,.25)}
+.x{width:26px;height:26px;border-radius:6px;border:1px solid rgba(212,175,106,.35);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tabs{height:36px;flex:none;display:flex;gap:4px;padding:0 12px;border-bottom:1px solid rgba(212,175,106,.18)}
+.tab{display:flex;align-items:center;gap:6px;padding:0 14px;font:15px 'Marcellus SC',serif;letter-spacing:.05em;color:#8E98A8}
+.tab.on{color:#F3DFAE;box-shadow:inset 0 -2px 0 #D4AF6A;background:linear-gradient(0deg,rgba(212,175,106,.12),rgba(212,175,106,0))}
+.badge{min-width:16px;height:16px;border-radius:8px;background:#D4AF6A;color:#0B0F14;font:600 10px/16px Inter,sans-serif;text-align:center;padding:0 3px;box-sizing:border-box}
+.lh{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#7E8898;padding:12px 12px 4px}
+.dr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:6px 12px;font-size:13px}
+.dr .n{font:14px 'Marcellus',serif;color:#F0D08E}
+.dr .m{grid-column:1/-1;font-size:11px;color:#8E98A8;display:flex;gap:10px}
+.dr.sel{background:rgba(212,175,106,.13);box-shadow:inset 3px 0 0 #D4AF6A}
+.sec{font:15px 'Marcellus SC',serif;letter-spacing:.07em;color:#F0D08E;margin:0}
+.slot{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:8px;border:1px solid rgba(212,175,106,.2);background:rgba(255,255,255,.03);font-size:11px;color:#AEB6C3;text-align:center}
+.slot.empty{border-style:dashed;color:#7E8898}
+.slot.miss{border-color:rgba(224,138,74,.5);color:#F0A774;border-style:dashed}
+.disc{width:26px;height:26px;border-radius:50%;font:600 9px/26px Inter,sans-serif;text-align:center;color:#0B0F14}
+.mr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.btn{min-height:30px;padding:0 14px;border-radius:6px;border:1px solid rgba(212,175,106,.5);background:linear-gradient(180deg,rgba(212,175,106,.25),rgba(212,175,106,.08));color:#F3DFAE;font:600 12px Inter,sans-serif;cursor:pointer}
+.btn.pri{background:linear-gradient(180deg,#E2C07A,#C59B52);color:#0B0F14;border-color:#F0D08E}
+
+.pane{background:rgba(9,15,27,.97);border:1px solid rgba(212,175,106,.6);box-shadow:inset 0 0 0 1px #02050A,inset 0 1px 0 rgba(240,208,142,.18),0 24px 60px rgba(0,0,0,.7);font-family:Inter,sans-serif;color:#E6E1D6;position:relative}
+.cap{position:absolute;font:13px 'Marcellus SC',serif;letter-spacing:.08em;color:#F0D08E;background:rgba(5,9,16,.85);padding:4px 10px;border-radius:6px;border:1px solid rgba(212,175,106,.3)}
+.cb{width:16px;height:16px;border-radius:3px;border:1px solid #D4AF6A;background:#070D17;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.cb.on{background:linear-gradient(180deg,#E2C07A,#C59B52)}
+.inp{height:30px;padding:0 10px;border-radius:6px;background:#070D17;border:1px solid rgba(212,175,106,.35);font-size:12px;line-height:30px;color:#E6E1D6;box-sizing:border-box}
+.seg{display:flex;border:1px solid rgba(212,175,106,.4);border-radius:6px;overflow:hidden}
+.seg span{padding:0 12px;height:28px;line-height:28px;font-size:12px;color:#AEB6C3;border-right:1px solid rgba(212,175,106,.25)}
+.seg span:last-child{border-right:0}
+.seg .on{background:rgba(212,175,106,.22);color:#F3DFAE;font-weight:600}
+.age{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#AEB6C3;padding:3px 8px;border-radius:999px;background:rgba(127,178,229,.1);border:1px solid rgba(127,178,229,.3)}
+.q{font-size:11px;color:#F0A774;display:inline-flex;align-items:center;gap:5px}
+.st{font-size:11px;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.s-on{background:rgba(127,217,154,.14);color:#9BE3B0}
+.s-off{background:rgba(174,182,195,.1);color:#8E98A8}
+.s-may{background:rgba(212,175,106,.16);color:#F0D08E}
+.s-dc{background:rgba(140,149,245,.16);color:#B9BEFA}
+.s-grp{background:rgba(63,199,235,.14);color:#8FE3F7}
+.fr{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.chat{font:13px/1.55 'Inter',sans-serif;text-shadow:0 1px 1px #000}
+.wa{color:#C69B6D}.pa{color:#F48CBA}.hu{color:#AAD372}.ro{color:#FFF468}.pr{color:#FFFFFF}.sh{color:#4DA3FF}.ma{color:#3FC7EB}.wl{color:#A9AAF5}.drc{color:#FF9A45}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1080px; overflow: hidden; background: radial-gradient(ellipse at 60% 70%, #2B3322 0%, #1A2116 40%, #0B0F0A 85%); font-family: Inter, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)"></div>
+  <div style="position: absolute; left: 40px; top: 28px; right: 40px; display: flex; align-items: baseline; gap: 16px"><h1 style="margin: 0; font: 30px 'Marcellus SC', serif; letter-spacing: .05em; color: #F3DFAE">Reminder, start time and chat</h1><span style="font-size: 13px; color: #AEB6C3">Only for friends who signed up and are online with the addon.</span></div>
+
+  <span class="cap" style="left: 40px; top: 96px">1 · reminder toast · 20:00</span>
+  <section class="pane" style="position: absolute; left: 40px; top: 130px; width: 380px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; border-radius: 4px">
+    <span style="width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #1E2E48, #0A1322); border: 1px solid #D4AF6A; display: flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg></span>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #F6C29C">In 30 minutes</div>
+      <div style="font: 18px 'Marcellus', serif; color: #F3EBDA">Scarlet Monastery: Armory · 20:30</div>
+      <div style="font-size: 12px; color: #AEB6C3">You're in as <span class="pr">Lia Thornwhisper</span>. Nico invites at start. 3 in · tank open.</div>
+      <div style="display: flex; gap: 8px; margin-top: 4px"><button class="btn">Open</button></div>
+    </div>
+    <button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button>
+  </section>
+  <div style="position: absolute; left: 40px; top: 312px; width: 380px; font-size: 11px; color: #7E8898; line-height: 1.5">Slides in under the minimap, stays 20 s, soft chime (off in settings). Just a heads-up: no answer buttons here.</div>
+
+  <span class="cap" style="left: 40px; top: 380px">2 · Starting now toast · 20:30</span>
+  <section class="pane" style="position: absolute; left: 40px; top: 414px; width: 380px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; border-radius: 4px; border-color: #9BE3B0">
+    <div style="flex: 1"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #9BE3B0">Starting now</div><div style="font: 17px 'Marcellus', serif; color: #F3EBDA">Scarlet Monastery: Armory</div><div style="font-size: 12px; color: #AEB6C3">Waiting for Nico's invite</div></div>
+    <button class="btn pri">Request invite</button>
+  </section>
+
+  <span class="cap" style="left: 40px; top: 548px">4 · start-time panel · everyone else</span>
+  <section class="win" style="left: 40px; top: 582px; width: 380px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title" style="height: 40px"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 16px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE; flex: 1">Scarlet Monastery: Armory · now</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <div style="padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="font-size: 12px; color: #AEB6C3">Nico organises on <span class="wl">Ves Doombringer</span> · <span class="st s-on">online</span></div>
+      <div>
+        <div class="fr"><span class="disc" style="background: #8788EE; color: #0B0F14">VD</span><span><span class="wl">Ves Doombringer</span> <span style="color: #8E98A8">· Nico · organiser</span></span><span></span><span class="st s-on">online</span></div>
+        <div class="fr" style="border-bottom: 0"><span class="disc" style="background: #FFFFFF; color: #0B0F14">LT</span><span><span class="pr">Lia Thornwhisper</span> <span style="color: #8E98A8">· you</span></span><span></span><span class="st s-on">invite pending</span></div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center"><button class="btn pri">Request invite</button><span style="font-size: 11px; color: #7E8898">Sends Nico a request in game</span></div>
+      <div style="padding: 10px 12px; border-radius: 6px; background: rgba(240,167,116,0.08); border: 1px solid rgba(240,167,116,0.35); font-size: 12px; color: #F6D6BD; line-height: 1.5">Nico offline? The panel says so and suggests whispering the next person in the group.</div>
+    </div>
+  </section>
+
+  <span class="cap" style="left: 470px; top: 96px">3 · start-time panel · organiser: who's where, and what to do about it</span>
+  <section class="win" style="left: 470px; top: 130px; width: 930px">
+    <span class="orn" style="left: -4px; top: -4px"></span><span class="orn" style="right: -4px; top: -4px"></span><span class="orn" style="left: -4px; bottom: -4px"></span><span class="orn" style="right: -4px; bottom: -4px"></span>
+    <div class="title" style="height: 40px"><svg width="20" height="20" viewBox="0 0 26 26" fill="#121B2A" stroke="#F0D08E" stroke-width="1.8" aria-hidden="true"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span style="font: 16px 'Marcellus SC', serif; letter-spacing: .07em; color: #F3DFAE; flex: 1">Scarlet Monastery: Armory · starting now</span><span style="font-size: 12px; color: #AEB6C3; margin-right: 8px">you organise · 3 in · 2 maybe</span><button class="x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#F0D08E" stroke-width="1.6"><path d="M1 1l8 8M9 1L1 9"></path></svg></button></div>
+    <div style="padding: 10px 18px 16px; display: flex; flex-direction: column; gap: 10px">
+      <div>
+        <div style="display: grid; grid-template-columns: 26px 230px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px"><span class="disc" style="background: #FFFFFF; color: #0B0F14">LT</span><span><span class="pr">Lia Thornwhisper</span><br><span style="color: #8E98A8">Femke · healer · in</span></span><span><span class="st s-on">ready</span> <span style="color: #AEB6C3; margin-left: 6px">online on this character</span></span><span style="display: flex; gap: 6px"><button class="btn" style="min-height: 26px; padding: 0 10px; font-size: 11px">Invite</button></span></div>
+        <div style="display: grid; grid-template-columns: 26px 230px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px"><span class="disc" style="background: #FFF468; color: #0B0F14">BE</span><span><span class="ro">Bob Example</span><br><span style="color: #8E98A8">Bob · damage · in</span></span><span><span class="st s-may">other character</span> <span style="color: #AEB6C3; margin-left: 6px">online, but on <span class="sh">Tok Ironhide</span> (33 Shaman)</span></span><span style="display: flex; gap: 6px"><button class="btn" style="min-height: 26px; padding: 0 10px; font-size: 11px">Whisper Bob</button><button class="btn" style="min-height: 26px; padding: 0 10px; font-size: 11px">Invite Tok Ironhide instead</button></span></div>
+        <div style="display: grid; grid-template-columns: 26px 230px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px"><span class="disc" style="background: #2A3446; color: #F0D08E">J</span><span><span class="hu">Jorrit</span><br><span style="color: #8E98A8">maybe · no character in range yet</span></span><span><span class="st s-off">offline</span> <span style="color: #AEB6C3; margin-left: 6px">not in game · last seen 2 days ago</span></span><span style="display: flex; gap: 6px"><button class="btn" style="min-height: 26px; padding: 0 10px; font-size: 11px">Ping on Discord</button></span></div>
+        <div style="display: grid; grid-template-columns: 26px 230px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; opacity: .55; font-size: 12px"><span class="disc" style="background: #3FC7EB; color: #0B0F14">MS</span><span><span class="ma">Mira</span><br><span style="color: #8E98A8">can't</span></span><span><span class="st s-dc">can't</span> <span style="color: #AEB6C3; margin-left: 6px">answered on Discord</span></span><span style="display: flex; gap: 6px"></span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px">
+        <div style="padding: 10px 12px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,106,0.2); font-size: 12px; color: #AEB6C3; line-height: 1.5"><b style="color: #F3EBDA; font-weight: 600">Whisper Bob</b> sends a Battle.net whisper you can edit first:<br><span style="color: #00FFF6">“You're on Tok Ironhide. Switch to Bob Example? We're starting the Armory.”</span></div>
+        <div style="padding: 10px 12px; border-radius: 6px; background: rgba(140,149,245,0.08); border: 1px solid rgba(140,149,245,0.3); font-size: 12px; color: #AEB6C3; line-height: 1.5"><b style="color: #F3EBDA; font-weight: 600">Ping on Discord</b> tags Jorrit in #doombringers-runs: “Hey Jorrit, Ves Doombringer, Lia Thornwhisper and Bob Example are waiting for you.” <span class="q">reaches Discord after /reload</span></div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; padding-top: 8px; border-top: 1px solid rgba(212,175,106,0.18)">
+        <button class="btn pri">Invite everyone ready (1)</button><button class="btn">Ping everyone missing on Discord</button><button class="btn">Reload now</button>
+        <span style="flex: 1"></span><span class="age">Runs updated at 20:12</span>
+      </div>
+      <div style="font-size: 11px; color: #7E8898; line-height: 1.5">Opens by itself at start time (or from the Dungeons tab). States come from Battle.net presence and addon sync: who's online, on which character, already grouped. The “Starting now” group message is always posted on Discord by the site at 20:30, no reload needed; pings for missing friends go out ~15 s after a /reload.</div>
+    </div>
+  </section>
+
+  <span class="cap" style="left: 470px; top: 640px">5 · chat lines (addon chat style)</span>
+  <section style="position: absolute; left: 470px; top: 674px; width: 930px; padding: 14px 16px; background: rgba(0,0,0,0.35); border-radius: 4px" class="chat">
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span style="color: #F6C29C">Scarlet Monastery: Armory starts in 30 min (20:30).</span> You're in as <span class="pr">Lia Thornwhisper</span>. <span style="color: #71D5FF">[Open]</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span class="ro">Bob Example</span> is in for Scarlet Monastery: Armory <span style="color: #8E98A8">(answered in game)</span>.</div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> Mira can't make Scarlet Monastery: Armory <span style="color: #B9BEFA">(answered on Discord)</span>.</div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> <span style="color: #9BE3B0">Scarlet Monastery: Armory is starting now.</span> Invites go out from <span class="wl">Ves Doombringer</span>. <span style="color: #71D5FF">[Request invite]</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> Bob is online on <span class="sh">Tok Ironhide</span>, signed up as <span class="ro">Bob Example</span>. <span style="color: #71D5FF">[Whisper]</span> <span style="color: #71D5FF">[Invite Tok Ironhide]</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> Discord ping for Jorrit queued. <span style="color: #F0A774">It reaches Discord after /reload.</span> <span style="color: #71D5FF">[Reload now]</span></div>
+    <div><span style="color: #D4AF6A">[Doombringers]</span> Runs updated at 20:12. <span style="color: #8E98A8">Type /reload for newer.</span></div>
+    <div style="color: #FFFF00">Ves Doombringer invites you to a group.</div>
+  </section>
+  <div style="position: absolute; left: 470px; top: 940px; width: 930px; font-size: 11px; color: #7E8898; line-height: 1.5">Chat lines use the addon's own prefix colour and class colours for names; clickable parts are hyperlinks (<code style="color: #F3DFAE">|H</code> links) handled by the addon. Lines can be turned off per type in settings.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

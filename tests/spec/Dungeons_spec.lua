@@ -165,10 +165,6 @@ describe("Dungeons (CF-24)", function()
       local dm = entryFor(Dungeons.overview(Dungeons.candidates(v), "G-ME"), "dm")
       assert.are.equal(5, #Dungeons.suggest(dm))
     end)
-
-    it("uses the dungeon name as event title", function()
-      assert.are.equal("The Deadmines", Dungeons.eventTitle(Dungeons.get("dm")))
-    end)
   end)
 
   describe("Group Finder list (V46)", function()
@@ -272,56 +268,10 @@ describe("Dungeons (CF-24)", function()
     end)
   end)
 
-  describe("calendar events", function()
-    local NOW = { year = 2026, month = 10, monthDay = 18, weekday = 1, hour = 12, minute = 0 }
-    local function at(day, hour)
-      return { year = 2026, month = 10, monthDay = day, weekday = 7, hour = hour, minute = 0 }
-    end
-
-    it("matches events on the dungeon name, \"The\" optional, soonest first", function()
-      local dm = Dungeons.get("dm")
-      local events = {
-        { title = "Deadmines run", calendarType = "COMMUNITY_EVENT", startTime = at(25, 20) },
-        { title = "The Deadmines", calendarType = "PLAYER", startTime = at(24, 19) },
-        { title = "VC farm", calendarType = "PLAYER", startTime = at(24, 19) }, -- no short names
-        { title = "Darkmoon Faire", calendarType = "HOLIDAY", startTime = at(20, 0) },
-        { title = "Deadmines yesterday", calendarType = "PLAYER", startTime = at(17, 20) },
-        { title = "Wailing Caverns", calendarType = "PLAYER", startTime = at(26, 20) },
-      }
-      local found = Dungeons.events(events, dm, NOW)
-      assert.are.same({ "The Deadmines", "Deadmines run" }, { found[1].title, found[2].title })
-      assert.are.equal(2, #found)
-    end)
-
-    it("picks the longest dungeon name in a title", function()
-      assert.are.equal("smcath", Dungeons.dungeonOf("Scarlet Monastery Cathedral tonight").id)
-      assert.are.equal("ubrs", Dungeons.dungeonOf("Upper Blackrock Spire").id)
-      assert.is_nil(Dungeons.dungeonOf("Raid night"))
-    end)
-
-    it("lists runs planned in the next 3 days, also across a month end", function()
-      local now = { year = 2026, month = 10, monthDay = 30, weekday = 6, hour = 12, minute = 0 }
-      local events = {
-        { title = "Deadmines", startTime = { year = 2026, month = 11, monthDay = 2, weekday = 2, hour = 11 } },
-        { title = "Stratholme", startTime = { year = 2026, month = 11, monthDay = 2, weekday = 2, hour = 13 } },
-        { title = "Wailing Caverns", startTime = { year = 2026, month = 10, monthDay = 31, weekday = 7, hour = 20 } },
-        { title = "Raid night", startTime = { year = 2026, month = 10, monthDay = 31, weekday = 7, hour = 20 } },
-      }
-      local planned = Dungeons.planned(events, now)
-      assert.are.same({ "wc", "dm" }, { planned[1].dungeon.id, planned[2].dungeon.id })
-      assert.are.equal(2, #planned) -- Stratholme is 3 days and 1 hour away
-      assert.are.equal("Sat 20:00", Dungeons.shortTime(planned[1].event.startTime))
-    end)
-
-    it("counts signed up, accepted and confirmed; tentative apart", function()
-      assert.are.same({ 3, 1 }, { Dungeons.signUps({ 6, 3, 1, 8, 2, 0, 7 }) })
-      assert.are.same({ 0, 0 }, { Dungeons.signUps(nil) })
-    end)
-
-    it("words the event time and your sign-up", function()
-      assert.are.equal("Sat 25 Oct, 20:00", Dungeons.eventTime(at(25, 20)))
-      assert.are.equal("you signed up", Dungeons.signUp(6))
-      assert.is_nil(Dungeons.signUp(nil))
-    end)
+  it("finds the dungeon a text names, the longest name first", function()
+    assert.are.equal("dm", Dungeons.dungeonOf("Deadmines run").id)
+    assert.are.equal("smcath", Dungeons.dungeonOf("Scarlet Monastery Cathedral tonight").id)
+    assert.are.equal("ubrs", Dungeons.dungeonOf("Upper Blackrock Spire").id)
+    assert.is_nil(Dungeons.dungeonOf("Raid night"))
   end)
 end)

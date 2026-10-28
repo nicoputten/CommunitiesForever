@@ -22,6 +22,7 @@ CommunitiesForever/
   CommunitiesForever.toc     ## Interface: 16001
   .pkgmeta  embeds.xml  .luacheckrc  .busted  LICENSE (MIT)
   Libs/                      packager externals, gitignored
+  Data/Runs.lua              planned runs, written by the uploader (UP-12); ships empty (CF-45)
   src/
     Core.lua                 AceAddon init, wiring, internal event bus
     core/                    PURE Lua, unit tested
@@ -41,11 +42,15 @@ CommunitiesForever/
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
       Queue.lua              first-in, first-out list with a limit (CF-44: level-up announcements)
       GroupAsk.lua           "who's up for it?": recipients, throttle, expiry, cleaning, answer summary (CF-27)
-      Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion, calendar matching (CF-24)
+      Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
+      PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
+                             newer wins, community wire without BattleTags, slots, your answer, times (CF-46)
+      Pending.lua            what has to reach the website: plans, answers, asks, pings; ids, expiry, confirm (CF-47)
+      RunStart.lua           run reminder and start due times, who is where at start, invite and ping lists (CF-48)
       Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
@@ -59,13 +64,17 @@ CommunitiesForever/
       Party.lua              invite request / invite by name / via Battle.net from a click (CF-27, guarded)
       GroupFinder.lua        the Group Finder's dungeon activities with level ranges (C_LFGList, CF-24)
       QuestieData.lua        dungeon quests from the optional QuestieDB addon, completed quests (CF-24, guarded)
-      Calendar.lua           C_Calendar event list (this month and next), ToggleCalendar (CF-24, guarded)
-      Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded)
+      Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded),
+                             whether addon messages may be restricted now (CF-46, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
+      Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
+      Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
+      RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      RunAlerts.lua          run reminders and start (15 s checks while runs exist), chat lines with links (CF-48)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
-      Planner.lua            calendar events for the Dungeons tab, sign-ups of planned runs (OpenEvent queue) (CF-24)
+      Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
@@ -88,6 +97,9 @@ CommunitiesForever/
       Setup.lua              onboarding wizard and Community tab prompt (CF-26; kit dialogs since CF-43)
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
+      RunDialogs.lua         Ask now, Plan a run, Answer and the reload prompt, one kit dialog (CF-47)
+      RunToasts.lua          the reminder and Starting now notes under the minimap, 20 s (CF-48)
+      StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
@@ -125,19 +137,19 @@ wrote them; `Compat_spec` feeds them to the current code (messages delivered in 
 saved file loaded at login) and fails when an older version's data no longer works.
 
 ## Libraries
-Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, AceConfig-3.0, AceConfigDialog-3.0, AceGUI-3.0 (required by AceConfigDialog), LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
+Embedded via `.pkgmeta` externals: LibStub, CallbackHandler-1.0, AceAddon-3.0, AceDB-3.0, AceEvent-3.0, AceConsole-3.0, LibSerialize, LibDeflate, LibDataBroker-1.1, LibDBIcon-1.0. Verify the external URLs when writing `.pkgmeta`. LibSerialize and LibDeflate are pure Lua and can be loaded directly in busted tests.
 
 Fonts (E13 revamp, decided 2026-10-27): **Marcellus SC**, **Marcellus** and **Inter**, bundled in `media/fonts/` (SIL Open Font License, which allows bundling; the license files ship with them). The game font is the fallback for non-Latin clients.
 
 Optional, not embedded (CF-24): the **QuestieDB** addon (comes with Questie; `## OptionalDeps: QuestieDB`). When it is installed with contract 3 or later, the Dungeons tab reads every dungeon's quests from its public API (`LibQuestieDB`, `QuestDB`) at runtime; nothing of its data ships with this addon (it has no license). Without it, dungeon quests come from the community's quest logs.
 
-UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), drawn from `Settings.options()`, whose get/set functions are the one place a setting is read and written (the setup uses them too); Options › AddOns has a page with a button that opens it (`Settings.RegisterCanvasLayoutCategory`, unverified). The setup wizard and the Community tab prompt are kit dialogs too (`Kit.dialog`). AceGUI and AceConfig are no longer used by the addon's code (still embedded). Ambient effects (`Kit.shine`: the title shimmer and the LEVEL UP shine) follow `settings.ambientEffects` through `Kit.ambient`. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). The Friends tab (CF-40, `src/ui/FriendsTab.lua`) is native too: a list of people with their characters on the left (folding per person), the card of the selected person or character on the right, both scrolled by `Kit.scrollArea` (plain ScrollFrame, our own thin thumb; no ScrollBox); frames come from pools and are reused on each render. The Activity tab (CF-41, `src/ui/ActivityTab.lua`) draws `Feed.days` filtered by `Feed.filter` (chips All, Level-ups, Dungeons, Together; whole entries) from `Feed.pieces` (a level change as the LEVEL UP chip, questing as zone pills). Pools (`Kit.pool`, `Kit.take`, `Kit.release`, `Kit.textHolder`) are shared by the tabs. The Dungeons tab (CF-42, `src/ui/DungeonsTab.lua`) lists planned runs and the dungeons in range of the character you are on (`Dungeons.overview` with its GUID), and shows the suggested group as five slots (`Dungeons.slots`: tank, healer, three damage; missing and open slots), your alternatives and the others in range (`Dungeons.outside`), the quests and the event title to copy (a native EditBox that keeps its text). The window has no AceGUI any more. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
+UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), drawn from `Settings.options()`, whose get/set functions are the one place a setting is read and written (the setup uses them too); Options › AddOns has a page with a button that opens it (`Settings.RegisterCanvasLayoutCategory`, unverified). The setup wizard and the Community tab prompt are kit dialogs too (`Kit.dialog`). AceGUI and AceConfig were removed after the revamp (the UI is the kit on native frames). Ambient effects (`Kit.shine`: the title shimmer and the LEVEL UP shine) follow `settings.ambientEffects` through `Kit.ambient`. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). The Friends tab (CF-40, `src/ui/FriendsTab.lua`) is native too: a list of people with their characters on the left (folding per person), the card of the selected person or character on the right, both scrolled by `Kit.scrollArea` (plain ScrollFrame, our own thin thumb; no ScrollBox); frames come from pools and are reused on each render. The Activity tab (CF-41, `src/ui/ActivityTab.lua`) draws `Feed.days` filtered by `Feed.filter` (chips All, Level-ups, Dungeons, Together; whole entries) from `Feed.pieces` (a level change as the LEVEL UP chip, questing as zone pills). Pools (`Kit.pool`, `Kit.take`, `Kit.release`, `Kit.textHolder`) are shared by the tabs. The Dungeons tab (CF-42, `src/ui/DungeonsTab.lua`) lists planned runs (CF-46: from `Planner`, with a run's five slots filled from its answers by `PlannedRuns.slots`, and its website link to copy) and the dungeons in range of the character you are on (`Dungeons.overview` with its GUID), and shows the suggested group as five slots (`Dungeons.slots`: tank, healer, three damage; missing and open slots), your alternatives and the others in range (`Dungeons.outside`) and the quests. CF-46 removed the calendar parts (event matching, sign-up reading, the event title and Open calendar). The window has no AceGUI any more. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
 
 ## Data model
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
-  schemaVersion = 1,
+  schemaVersion = 2,                                 -- 2: CF-47 pending
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
@@ -153,7 +165,10 @@ global = {
                 dungeonTree = {},                    -- CF-24: Dungeons tab selection and list width
                 openOnLogin = false,                 -- CF-43: open the window after login
                 ambientEffects = true,               -- CF-43: title shimmer and LEVEL UP shine
-                levelUpToast = true },               -- CF-44: the level-up announcement
+                levelUpToast = true,                 -- CF-44: the level-up announcement
+                runToasts, runSound,                 -- CF-48: run notes and their chime (nil = on)
+                runLines = { [kind] = false } },     -- CF-48: run chat lines turned off (reminder, answered, starting,
+                                                     -- otherChar, ping, updated)
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed },                       -- CF-22: activity feed, last 7 realm days
@@ -164,6 +179,10 @@ global = {
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
+  plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
+                                                     -- "Planned runs file"; checked again when loaded
+  pending   = { Item },                              -- CF-47: plans, answers, asks to post, pings (core/Pending.lua;
+                                                     -- sample tests/fixtures/pending.lua, read by the site)
 }
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
@@ -195,6 +214,56 @@ Char = {
 - Link conflict (two BattleTags claim one GUID): presence wins.
 - Professions keyed by `skillLine` ID (locale-independent), from `GetProfessionInfo`.
 
+## Planned runs file
+CF-45 (epic E14). The website owns planned runs; the uploader (UP-12) fetches the upcoming ones
+(`GET /api/uploader/v1/runs`, web WEB-44) and writes them into `Interface\AddOns\CommunitiesForever\Data\Runs.lua`.
+The TOC lists the file, so the game runs it at login and `/reload` (a file missing at game start loads only after
+a restart, V67, so the addon ships it empty: `CF_RUNS = nil`). The game never talks to the internet.
+
+The file is Lua data only, one global (CLAUDE.md rule 5), times in UTC seconds:
+```lua
+CF_RUNS = {
+  v = 1,                          -- format; a newer one is ignored ("update the addon"); missing = 1
+  updatedAt = 1793120000,         -- when the site produced the list ("Runs updated at 17:34")
+  reminderMinutes = 30,           -- site setting (WEB-39): the in-game reminder before a run (CF-48)
+  received = { "k3f9c0a7e21b-1793120000-1", ... }, -- CF-47: ids of game items (global.pending) the site has, at most 200
+  runs = {                        -- upcoming runs, at most 50
+    {
+      id = "r-102",               -- the site's run id (letters, digits, _ - : .)
+      dungeon = "smlib",          -- dungeon id of core/Dungeons.lua (rfc, wc, dm, ..., smlib, smarm, ...)
+      startsAt = 1793210400,
+      state = "open",             -- open | full | started | cancelled
+      source = "site",            -- where it was planned: site | discord | game (CF-46)
+      note = "Bring water",       -- at most 200 characters
+      url = "https://...",        -- the run on the site, to copy ("Edit or cancel on the website"); https only
+      organiser = { battleTag = "Ada#1001", guid = "Player-...", name = "Ada Lovewell",
+                    utcOffset = 3600 },   -- seconds east of UTC at the start ("20:30 for Ada")
+      answers = {                 -- at most 40
+        { battleTag = "Ada#1001", guid = "Player-...", name = "Ada Lovewell",
+          answer = "in",          -- in | maybe | cant
+          role = "tank",          -- tank | heal | dps: the role picked for this run (web WEB-47)
+          source = "discord",     -- site | discord | game
+          at = 1793100000,
+          fit = "carry · +12",    -- CF-49, optional: the site's levelFit label (at most 24 characters)
+          reserve = true },       -- CF-49, optional: an I'm in waiting for a full role; sent as answer = "maybe"
+      },
+    },
+  },
+}
+```
+- Untrusted like received sync data: `PlannedRuns.validate` keeps only the fields above with the right types,
+  removes `|` and control characters from text, caps counts (50 runs, 40 answers) and lengths (names 48, notes
+  200, ids 64, links 200) and never walks past a cap. A run without `id`, `dungeon` or `startsAt` is dropped,
+  as is a second run with the same id; a wrong optional field becomes nil. A person needs at least one of
+  `battleTag`, `guid`, `name`.
+- CF-49 (Runs v2, web WEB-47): `PlannedRuns.levelFit(level, min, max)` and `PlannedRuns.rolesFor(classFile)`
+  give the same fit kinds and labels and class roles as the site. The addon computes a sign-up's fit from the
+  character's level when it knows it, else shows the file's `fit`. A reserve takes no slot. Older addons read
+  a reserve as Maybe and ignore `fit`; without `role`, `fit` and `reserve` this addon behaves as before.
+- Compatibility: the uploader only adds optional fields within `v = 1` (older addons drop unknown fields); a
+  breaking change writes `v = 2`, which older addons ignore. The file is not SavedVariables: the addon never
+  writes it, and an addon update replaces it with the empty one until the uploader writes it again.
+
 ## Sync protocol
 Full wire reference (every message and field, when they are sent, sizes): `docs/SYNC.md`.
 - Prefix `CommForever`. Payload: LibSerialize -> LibDeflate compress -> `EncodeForWoWAddonChannel`.
@@ -205,7 +274,9 @@ Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
 - `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22), `false` when it is off (CF-28: so relays pass "stopped sharing" on); `removed` only in relayed copies (dropped characters with the time they were dropped).
-- `ASK {id, dungeon = {id, name, min, max}, from, char, at}` (CF-27): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
+- `RUNS {runs}` and `RUNREQ {}` (CF-46): planned runs (the shape of `CF_RUNS`). HELLO carries `ru`, the updatedAt of the sender's runs (0: none); a peer with older runs gets `RUNS`, a peer with newer ones gets `RUNREQ`. The receiver checks them with `PlannedRuns.validate` and keeps them only when newer (at most 5 minutes ahead of server time). Over the community BattleTags are left out. Never sent while `Instance.messagingRestricted()` (an encounter, a keystone, a PvP match): tried again 30 s later. Older clients send no `ru` and get nothing; they ignore `ru` and the new types.
+- `RUNANSWER {run, answer, guid, name, role}` (CF-47): your answer to a run, sent at once to its organiser when they are online (Battle.net by BattleTag, community by the organiser's character). The organiser shows it (in memory) until the site's runs have it; it is also a pending item that reaches the site after `/reload`. Ignored unless the receiver organises that run.
+- `ASK {id, dungeon = {id, name, min, max}, from, char, at, note}` (CF-27; `note` optional, CF-47): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
 - `ANSWER {id, answer = "join"|"later"|"no", from, char}` (CF-27): back to the asker; `char` is the answerer's current character (for the invite). Clients without CF-27 ignore both (unknown `t`).
 
 Accept rule (Merge.lua):

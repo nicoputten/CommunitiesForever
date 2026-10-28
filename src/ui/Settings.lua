@@ -81,6 +81,12 @@ function Settings.chatGroup()
   }
 end
 
+-- The option with this key: top level or in the Community chat group (the settings window and the setup).
+function Settings.option(key)
+  local args = Settings.options().args
+  return args[key] or args.chat.args[key]
+end
+
 -- Options table. Data comes from services only.
 function Settings.options()
   local options = {
@@ -168,6 +174,25 @@ function Settings.options()
         get = function() return ns.db.global.settings.levelUpToast ~= false end,
         set = function(_, value) ns.db.global.settings.levelUpToast = value end,
       },
+      -- CF-48: planned runs: the reminder and Starting now notes, their chime, and the chat lines per type.
+      runToasts = {
+        type = "toggle",
+        order = 5.2,
+        width = "full",
+        name = "Run reminders",
+        help = "A note under the minimap before a run you're in, and at its start",
+        get = function() return ns.db.global.settings.runToasts ~= false end,
+        set = function(_, value) ns.db.global.settings.runToasts = value end,
+      },
+      runSound = {
+        type = "toggle",
+        order = 5.3,
+        width = "full",
+        name = "Reminder chime",
+        help = "A soft sound with the run reminder",
+        get = function() return ns.db.global.settings.runSound ~= false end,
+        set = function(_, value) ns.db.global.settings.runSound = value end,
+      },
       shareActivity = {
         type = "toggle",
         order = 5.5,
@@ -224,7 +249,37 @@ function Settings.options()
   }
   options.args.roles = Settings.rolesGroup()
   options.args.chat = Settings.chatGroup()
+  -- CF-48: one switch per kind of planned-run chat line (settings.runLines[kind] = false when off).
+  for i, line in ipairs(Settings.RUN_LINES) do
+    options.args["runLine_" .. line.kind] = {
+      type = "toggle",
+      order = 7 + i / 10,
+      width = "full",
+      name = line.name,
+      get = function() return Settings.runLine(line.kind) end,
+      set = function(_, value)
+        local s = ns.db.global.settings
+        s.runLines = s.runLines or {}
+        if value then s.runLines[line.kind] = nil else s.runLines[line.kind] = false end
+      end,
+    }
+  end
   return options
+end
+
+-- CF-48: the planned-run chat lines that can be turned off.
+Settings.RUN_LINES = {
+  { kind = "reminder", name = "Run starts soon" },
+  { kind = "answered", name = "Someone answered your run" },
+  { kind = "starting", name = "Run starting now" },
+  { kind = "otherChar", name = "Friend on another character" },
+  { kind = "ping", name = "Discord ping queued" },
+  { kind = "updated", name = "Runs updated" },
+}
+
+function Settings.runLine(kind)
+  local lines = ns.db.global.settings.runLines
+  return not (type(lines) == "table" and lines[kind] == false)
 end
 
 -- CF-43: the page under Options › AddOns: a line and a button that opens the settings window.

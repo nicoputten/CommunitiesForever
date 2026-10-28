@@ -22,18 +22,11 @@ local pools
 
 -- ===== Helpers =====
 
-local function hex(r, g, b)
-  local function byte(v) return math.floor((v or 0) * 255 + 0.5) end
-  return string.format("|cff%02x%02x%02x", byte(r), byte(g), byte(b))
-end
-
-local function colorText(text, r, g, b) return hex(r, g, b) .. tostring(text) .. "|r" end
-
-local function gold(text) return colorText(text, Theme.color("goldLight")) end
-local function dim(text) return colorText(text, Theme.color("textDim")) end
+local function gold(text) return Theme.code("goldLight") .. tostring(text) .. "|r" end
+local function dim(text) return Theme.code("textDim") .. tostring(text) .. "|r" end
 
 local function charText(char)
-  return colorText(char and char.name or "?", Kit.classColor(char and char.classFile))
+  return Theme.rgbCode(Kit.classColor(char and char.classFile)) .. tostring(char and char.name or "?") .. "|r"
 end
 
 -- "20:40": the local time of the entry's last change. `date` is the game's (unverified, V63).
@@ -77,7 +70,7 @@ local function filterChip(parent, def)
   function c:SetActive(on)
     self.active = on and true or false
     if self.active then
-      self.bg:SetColorTexture(0.831, 0.686, 0.416, 0.16)
+      self.bg:SetColorTexture(Theme.color("gold", 0.16))
       for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color("gold")) end
       self.text:SetTextColor(Theme.color("heading"))
     else
@@ -108,7 +101,7 @@ local function pill(parent)
   p:SetHeight(18)
   local bg = p:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints()
-  bg:SetColorTexture(1, 1, 1, 0.05)
+  bg:SetColorTexture(Theme.color("white", 0.05))
   p.text = Theme.text(p, "tiny", "textDim")
   p.text:SetPoint("CENTER")
   return p
@@ -137,15 +130,7 @@ local function portrait(parent) return Kit.portrait(parent, Theme.SIZES.portrait
 
 -- ===== Drawing =====
 
-local function placeText(poolName, parent, x, y, text, colorName, width, justify)
-  local holder = Kit.take(pools[poolName], parent)
-  holder:SetPoint("TOPLEFT", x, -y)
-  holder.text:SetWidth(width or 0)
-  holder.text:SetJustifyH(justify or "LEFT")
-  holder.text:SetText(text or "")
-  holder.text:SetTextColor(Theme.color(colorName or "text"))
-  return holder
-end
+local placeText = Kit.placeText
 
 local function textWidth(fs)
   return fs.GetStringWidth and fs:GetStringWidth() or 0
@@ -227,15 +212,15 @@ local function entry(parent, dayValue, l, y, width)
         "characters"))
     end
   end
-  placeText("body", parent, textX, y + 10, who, "textDim", textWidthMax)
-  placeText("tiny", parent, width - PAD - TIME_WIDTH, y + 12, clock(l.at), "faint", TIME_WIDTH, "RIGHT")
+  placeText(pools.body, parent, textX, y + 10, textWidthMax, who, "textDim")
+  placeText(pools.tiny, parent, width - PAD - TIME_WIDTH, y + 12, TIME_WIDTH, clock(l.at), "faint", "RIGHT")
   local h = 10 + 19
   h = h + flow(parent, l.pieces or {}, textX, y + h, textWidthMax)
 
   if l.extraChars > 0 then
     if expanded[key] then
       for _, other in ipairs(l.others) do
-        placeText("small", parent, textX, y + h + 2, dim("on ") .. charText(other.char), "textDim", textWidthMax)
+        placeText(pools.small, parent, textX, y + h + 2, textWidthMax, dim("on ") .. charText(other.char), "textDim")
         h = h + 19
         h = h + flow(parent, other.pieces or {}, textX + 14, y + h, textWidthMax - 14)
       end
@@ -256,12 +241,12 @@ local function entry(parent, dayValue, l, y, width)
   local sep = Kit.take(pools.lines, parent)
   sep:SetPoint("TOPLEFT", PAD, -(y + h - 1))
   sep:SetPoint("RIGHT", parent, "RIGHT", -PAD, 0)
-  sep.fill:SetColorTexture(1, 1, 1, 0.05)
+  sep.fill:SetColorTexture(Theme.color("white", 0.05))
   return h
 end
 
 local function dayHeader(parent, label, y, width)
-  placeText("day", parent, PAD, y + 14, label, "goldLight", width - 2 * PAD)
+  placeText(pools.day, parent, PAD, y + 14, width - 2 * PAD, label, "goldLight")
   local sep = Kit.take(pools.lines, parent)
   sep:SetPoint("TOPLEFT", PAD, -(y + 38))
   sep:SetPoint("RIGHT", parent, "RIGHT", -PAD, 0)
@@ -332,14 +317,15 @@ function ActivityTab.render(view, empty)
   local days = ns.Feed.filter(all, filter)
   lastRender = days
   if empty then
-    placeText("body", parent, PAD, y + 14, empty, "textDim", width - 2 * PAD)
+    placeText(pools.body, parent, PAD, y + 14, width - 2 * PAD, empty, "textDim")
     y = y + 40
   elseif #all == 0 then
-    placeText("body", parent, PAD, y + 14, "No activity yet. Levels, quests, professions, dungeons and "
+    placeText(pools.body, parent, PAD, y + 14, width - 2 * PAD, "No activity yet. Levels, quests, professions, "
+      .. "dungeons and "
       .. "battlegrounds of you and your friends show up here.", "textDim", width - 2 * PAD)
     y = y + 50
   elseif #days == 0 then
-    placeText("body", parent, PAD, y + 14, "Nothing of this kind in the last 7 days.", "textDim", width - 2 * PAD)
+    placeText(pools.body, parent, PAD, y + 14, width - 2 * PAD, "Nothing of this kind in the last 7 days.", "textDim")
     y = y + 40
   end
   for _, day in ipairs(days) do
@@ -349,7 +335,8 @@ function ActivityTab.render(view, empty)
     end
   end
   if not empty and not ns.FeedTracker.shared() then
-    placeText("small", parent, PAD, y + 14, "You don't share your activity: friends don't see your lines "
+    placeText(pools.small, parent, PAD, y + 14, width - 2 * PAD, "You don't share your activity: friends don't "
+      .. "see your lines "
       .. "(/cf settings).", "faint", width - 2 * PAD)
     y = y + 34
   end

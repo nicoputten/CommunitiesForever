@@ -18,7 +18,7 @@ describe("Snapshot", function()
         { name = "Mining", rank = 64, max = 150, skillLine = 186 },
         { name = "Cooking", rank = 2, max = 75, skillLine = 185 },
       },
-      battleTag = "Vestras#2858",
+      battleTag = "Vestras#1000",
     }
     for k, v in pairs(overrides or {}) do base[k] = v end
     for _, k in ipairs(without or {}) do base[k] = nil end
@@ -179,14 +179,14 @@ describe("Snapshot", function()
       Snapshot.apply(record, info(), 5000)
       record.battleTag = nil
       assert.is_false(Snapshot.apply(record, info(), 6000))
-      assert.are.equal("Vestras#2858", record.battleTag)
+      assert.are.equal("Vestras#1000", record.battleTag)
     end)
 
     it("keeps a known battleTag when BNet is unavailable", function()
       local record = emptyRecord()
       Snapshot.apply(record, info(), 5000)
       Snapshot.apply(record, info({ level = 12 }, { "battleTag" }), 6000)
-      assert.are.equal("Vestras#2858", record.battleTag)
+      assert.are.equal("Vestras#1000", record.battleTag)
     end)
 
     it("keeps lastPlayed when a character is re-stored", function()
@@ -199,7 +199,7 @@ describe("Snapshot", function()
 
     it("ignores info without a GUID", function()
       local record = emptyRecord()
-      assert.is_false(Snapshot.apply(record, { battleTag = "Vestras#2858" }, 5000))
+      assert.is_false(Snapshot.apply(record, { battleTag = "Vestras#1000" }, 5000))
       assert.are.same({}, record.chars)
       assert.are.equal(0, record.version)
     end)

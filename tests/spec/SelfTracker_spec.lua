@@ -34,7 +34,7 @@ describe("SelfTracker", function()
     assert.are.equal(1, char.ilvl)
     assert.are.same({ name = "Mining", rank = 64, max = 150 }, char.professions[186])
     assert.are.equal(1000, self_().version)
-    assert.are.equal("Vestras#2858", self_().battleTag)
+    assert.are.equal("Vestras#1000", self_().battleTag)
     assert.are.equal(1, updates())
   end)
 

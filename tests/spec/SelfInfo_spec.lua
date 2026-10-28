@@ -26,7 +26,7 @@ describe("SelfInfo", function()
       assert.are.equal(11, info.level)
       assert.are.equal("Horde", info.faction)
       assert.are.equal("Classic Beta PvP", info.realm)
-      assert.are.equal("Vestras#2858", info.battleTag)
+      assert.are.equal("Vestras#1000", info.battleTag)
     end)
 
     it("reads the full name even when UnitName splits first and last name (V9)", function()

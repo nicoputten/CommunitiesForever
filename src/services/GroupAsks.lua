@@ -43,8 +43,8 @@ function GroupAsks.canAsk()
 end
 
 -- Asks who's up for the dungeon. Returns the number of friends asked (0: nobody to ask), or nil and the
--- seconds to wait when you asked too recently.
-function GroupAsks.ask(dungeon)
+-- seconds to wait when you asked too recently. note (CF-47): optional, shown with the ask.
+function GroupAsks.ask(dungeon, note)
   local ok, wait = GroupAsks.canAsk()
   if not ok then
     say(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
@@ -59,7 +59,7 @@ function GroupAsks.ask(dungeon)
   counter = counter + 1
   local t = now()
   local id = string.format("%d%d", t, counter)
-  local message = ns.GroupAsk.message(id, dungeon, ownName(), ns.SelfInfo.read().name, t)
+  local message = ns.GroupAsk.message(id, dungeon, ownName(), ns.SelfInfo.read().name, t, note)
   local names = {}
   for i, r in ipairs(recipients) do
     ns.Messenger.send(r.gameAccountID, message)
@@ -81,7 +81,7 @@ local function onAsk(message, battleTag, gameAccountID)
   received[ask.id] = ask
   local d = ask.dungeon
   say(string.format("%s%s|r asks: %s now? %s(%d-%d)|r", GOLD, tostring(ask.from or battleTag), d.name, GREY,
-    d.min, d.max))
+    d.min, d.max) .. (ask.note and (" \226\128\156" .. ask.note .. "\226\128\157") or ""))
   local chars = ns.GroupAsk.charsInRange(own().chars, d.min, d.max)
   if #chars > 0 then
     local list = {}

@@ -7,6 +7,9 @@
 --                           record (want = its key) when its known version is newer.
 --   RECORD {...}            answer to REQ: own record (all own characters) or a stored one (relay).
 --   BYE   {}                (CF-28, community) on logout, best effort: the sender is offline.
+--   RUNS  {runs}            (CF-46) planned runs, to a peer whose HELLO showed an older ru (runs updatedAt).
+--   RUNREQ {}               (CF-46) asks a peer whose HELLO showed a newer ru for its runs.
+--   RUNANSWER {run, answer, guid, name, role}  (CF-47) your answer to a run, to its organiser when online.
 -- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua): BattleTags only
 -- travel over Battle.net.
 local _, ns = ...
@@ -31,11 +34,13 @@ Sync.NEWER_RELEASE_NOTICE = "A newer version of CommunitiesForever is available 
   .. "app or WowUp."
 
 local HELLO_DEBOUNCE = 5
+local RUNS_RETRY = 30 -- CF-46: seconds until runs held back by an encounter or PvP match are tried again
 local DEDUPE_SECONDS = 60
 local IN_GAME = { [1] = true, [4] = true, [5] = true } -- community presence Online, Away, Busy
 
 local addonRef, helloDebounced
-local lastHello, lastReq, noticeShown
+local lastHello, lastReq, lastRuns, noticeShown
+local runsRetry = {} -- CF-46: target -> true while a retry timer is waiting
 local releaseNoticeShown -- CF-35: once per session
 local peers = {}   -- CF-28: community peers met by HELLO: name -> { guid, key, at }
 local offline = {} -- CF-28: guid -> true after a BYE or a failed whisper (until the next HELLO)
@@ -90,8 +95,10 @@ local function helloFor(community)
   -- av (CF-35): our addon version; ch (CF-31): our channel. Older clients ignore both (rule 8). The channel
   -- is part of the signature: once it is ready, a new HELLO tells everyone (the 60 s dedupe would not).
   local ch = community and ns.SyncChannel.index() and ns.SyncChannel.name() or nil
-  return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch },
-         helloSignature(own().version, known) .. ";" .. tostring(ch)
+  -- ru (CF-46): updatedAt of our planned runs (0: none); older clients ignore it.
+  local ru = ns.Planner.updatedAt()
+  return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch, ru = ru },
+         helloSignature(own().version, known) .. ";" .. tostring(ch) .. ";" .. tostring(ru)
 end
 
 local function sendHello(target, force)
@@ -154,6 +161,26 @@ local function request(target, want, version)
   if recentlySent(lastReq, key, version) then return end
   remember(lastReq, key, version)
   ns.Messenger.send(target, { t = "REQ", bt = ownWireKey(target), want = want })
+end
+
+-- CF-46: our planned runs to a peer, at most once per updatedAt per 60 s. Never during an encounter or a PvP
+-- match (Midnight's addon message restrictions): tried again RUNS_RETRY seconds later.
+local function sendRuns(target)
+  local runs = ns.Planner.outgoing(isCommunity(target))
+  if not runs then return end
+  if ns.Instance.messagingRestricted() then
+    if not runsRetry[target] then
+      runsRetry[target] = true
+      C_Timer.NewTimer(RUNS_RETRY, function()
+        runsRetry[target] = nil
+        sendRuns(target)
+      end)
+    end
+    return
+  end
+  if recentlySent(lastRuns, target, runs.updatedAt) then return end
+  remember(lastRuns, target, runs.updatedAt)
+  ns.Messenger.send(target, { t = "RUNS", runs = runs })
 end
 
 local function storedVersion(key)
@@ -221,6 +248,16 @@ function handlers.HELLO(message, senderKey, target, guid)
   if not releaseNoticeShown and ns.Version.isNewer(addonRef.version, message.av) then
     releaseNoticeShown = true
     addonRef:Print(string.format(Sync.NEWER_RELEASE_NOTICE, message.av))
+  end
+  -- CF-46: planned runs, the newer updatedAt wins. A HELLO without ru is from a version without runs.
+  if type(message.ru) == "number" then
+    local ours = ns.Planner.updatedAt()
+    if message.ru < ours then
+      sendRuns(target)
+    elseif message.ru > ours and not recentlySent(lastRuns, "req:" .. tostring(target), message.ru) then
+      remember(lastRuns, "req:" .. tostring(target), message.ru)
+      ns.Messenger.send(target, { t = "RUNREQ" })
+    end
   end
   local person = global().people[key]
   -- The owner's record also replaces a relayed copy with a higher version.
@@ -314,6 +351,20 @@ function handlers.BYE(_, _, target, guid)
   if guid then peerGone(target) end
 end
 
+-- CF-46: planned runs from a peer (checked like the runs file); newer ones replace ours and are announced.
+function handlers.RUNS(message)
+  if ns.Planner.receive(message.runs) then helloDebounced() end
+end
+
+function handlers.RUNREQ(_, _, target)
+  sendRuns(target)
+end
+
+-- CF-47: a friend answered a run you organise, in game.
+function handlers.RUNANSWER(message, senderKey)
+  ns.Planner.answerReceived(message, senderKey)
+end
+
 local function retryWaiting()
   if next(ns.MemberTracker.members()) == nil then return end
   local waiting = waitingForMembers
@@ -333,6 +384,7 @@ end
 function Sync.start(addon)
   addonRef = addon
   lastHello, lastReq, noticeShown, waitingForMembers, peers, offline = {}, {}, false, {}, {}, {}
+  lastRuns, runsRetry = {}, {}
   releaseNoticeShown = false
   helloDebounced = ns.Timer.debounce(HELLO_DEBOUNCE, function() broadcastHello(false) end)
   ensureAccountId()
@@ -373,6 +425,23 @@ function Sync.start(addon)
   end)
 
   broadcastHello(false)
+end
+
+-- CF-47: your answer (a Pending item) to the run's organiser, when they are online (Battle.net friend by
+-- BattleTag, or a community peer on the organiser's character). Returns true when sent.
+function Sync.sendRunAnswer(run, item)
+  local organiser = run.organiser
+  if not organiser or ns.Instance.messagingRestricted() then return false end
+  for key, presence in pairs(Sync.online()) do
+    local target = presence.gameAccountID or presence.target
+    if target and ((organiser.battleTag and key == organiser.battleTag)
+        or (organiser.guid and presence.guid == organiser.guid)) then
+      ns.Messenger.send(target, { t = "RUNANSWER", run = run.id, answer = item.answer, guid = item.guid,
+                                  name = item.name, role = item.role })
+      return true
+    end
+  end
+  return false
 end
 
 -- The own record changed outside SelfTracker (e.g. invite link, CF-21): HELLO after the debounce.

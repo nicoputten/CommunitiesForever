@@ -10,6 +10,7 @@ exclude_files = { "Libs/", ".lua/", "dist/", "tests/fixtures/v*/" } -- fixtures:
 local addonGlobals = {
   "CommunitiesForever",
   "CommunitiesForeverDB",
+  "CF_RUNS", -- CF-45: set by Data\Runs.lua (written by the uploader), cleared by adapters/RunsFile.lua
   "SlashCmdList",
   "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE", -- CF-32 (Bindings.xml)
 }
@@ -27,26 +28,28 @@ stds.wow = {
     "LibStub",
     -- C_ namespaces
     "C_AddOns", "C_BattleNet", "C_ChatInfo", "C_Club", "C_EventUtils", "C_Timer", "C_ClassTalents", "C_Traits",
-    "C_QuestLog", "C_Texture", "C_DateAndTime", "C_Calendar", "C_LFGList",
+    "C_QuestLog", "C_Texture", "C_DateAndTime", "C_LFGList",
     "GetClubTicketLink",
     -- client and unit info
     "GetBuildInfo", "GetServerTime", "GetTime", "GetRealmName", "GetNormalizedRealmName", "date",
     "UnitGUID", "UnitName", "GetUnitName", "UnitLevel", "UnitClassBase", "UnitRace", "UnitFactionGroup",
     "GetProfessions", "GetProfessionInfo", "GetAverageItemLevel",
     "InCombatLockdown",
-    "ToggleCalendar", -- CF-24
     "EventRegistry", "SetItemRef", "hooksecurefunc", "C_PartyInfo", "BNInviteFriend", -- CF-27
     "ChatFrameUtil", "ChatFrame_AddMessageEventFilter", "ERR_CHAT_PLAYER_NOT_FOUND_S", -- CF-28
     "MenuUtil", "ChatFrame_SendTell", -- CF-37
     "JoinTemporaryChannel", "JoinChannelByName", "LeaveChannelByName", -- CF-31
     "LibQuestieDB", "QuestDB", -- CF-24: the optional QuestieDB addon (read only)
     "GetInstanceInfo", "GetNumGroupMembers", "IsInRaid", "GetBattlefieldWinner", "GetBattlefieldArenaFaction", "GetRealZoneText", -- CF-23
+    "IsEncounterInProgress", -- CF-46 (V70)
     -- Battle.net
     "BNGetInfo", "BNGetNumFriends", "BNSendGameData", "BNET_CLIENT_WOW",
     -- UI
     "CreateFrame", "UIParent", "GameTooltip", "TooltipDataProcessor", "C_CreatureInfo",
     "CreateColor", "GetLocale", "C_ClassColor", "CLASS_ICON_TCOORDS", -- CF-39 kit
     "ColorPickerFrame", -- CF-43
+    "C_UI", "ReloadUI", "time", -- CF-47 (V68, V71)
+    "MinimapCluster", "ChatFrame_OpenChat", -- CF-48 (V72)
     "issecretvalue",
     "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",

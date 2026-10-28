@@ -15,13 +15,10 @@ describe("keybinding and Esc (CF-32)", function()
     addon:OnEnable()
   end
 
-  -- CF-39: the kit window, wrapped like an AceGUI widget ({ frame }) so press() fits both.
-  local function windowFrame()
-    return { frame = ns.MainFrame.window() }
-  end
+  local function windowFrame() return ns.MainFrame.window() end -- CF-39: the kit window
 
-  local function press(widget, key)
-    widget.frame.scripts.OnKeyDown(widget.frame, key)
+  local function press(frame, key)
+    frame.scripts.OnKeyDown(frame, key)
   end
 
   after_each(function()
@@ -42,15 +39,15 @@ describe("keybinding and Esc (CF-32)", function()
     load()
     ns.MainFrame.toggle()
     local w = windowFrame()
-    assert.is_true(w.frame.keyboard)
+    assert.is_true(w.keyboard)
     press(w, "W")
-    assert.is_true(w.frame.propagate)
+    assert.is_true(w.propagate)
     assert.is_true(ns.MainFrame.isShown())
     press(w, "ESCAPE")
-    assert.is_false(w.frame.propagate) -- the game menu does not open as well
+    assert.is_false(w.propagate) -- the game menu does not open as well
     assert.is_false(ns.MainFrame.isShown())
     wowapi.runTimers(state)
-    assert.is_true(w.frame.propagate) -- keys pass on again for the next show
+    assert.is_true(w.propagate) -- keys pass on again for the next show
   end)
 
   it("changes nothing in combat and sets Esc up on the next show", function()
@@ -58,11 +55,11 @@ describe("keybinding and Esc (CF-32)", function()
     state.inCombat = true
     ns.MainFrame.toggle()
     local w = windowFrame()
-    assert.is_nil(w.frame.keyboard)
+    assert.is_nil(w.keyboard)
     ns.MainFrame.toggle()
     state.inCombat = false
     ns.MainFrame.toggle()
-    assert.is_true(w.frame.keyboard)
+    assert.is_true(w.keyboard)
     state.inCombat = true
     press(w, "ESCAPE") -- in combat: falls through to the game menu, window stays
     assert.is_true(ns.MainFrame.isShown())
@@ -71,7 +68,7 @@ describe("keybinding and Esc (CF-32)", function()
   it("closes the setup on Esc", function()
     load()
     addon:OnSlashCommand("setup")
-    press({ frame = ns.Setup.wizard() }, "ESCAPE") -- CF-43: a kit dialog
+    press(ns.Setup.wizard(), "ESCAPE") -- CF-43: a kit dialog
     assert.is_false(ns.Setup.isShown())
   end)
 end)

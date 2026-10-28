@@ -16,11 +16,7 @@ local controls = {}    -- option key -> control (checkbox, input, select)
 local refreshers = {}  -- functions that show the current values
 local rolePool, roleRows
 
--- The option with this key (top level or in the Community chat group).
-local function option(key)
-  local args = ns.Settings.options().args
-  return args[key] or args.chat.args[key]
-end
+local function option(key) return ns.Settings.option(key) end
 
 local function label(parent, x, y, text, role, colorName)
   local fs = Theme.text(parent, role or "label", colorName or "faint")
@@ -88,6 +84,15 @@ local function build()
   ry = ry + toggle(body, "notifications", right, ry)
   ry = ry + toggle(body, "levelUps", right, ry)
   ry = ry + toggle(body, "levelUpToast", right, ry) -- CF-44
+  y = math.max(ly, ry) + 12
+
+  -- CF-48: Planned runs: the notes and chime | the chat lines per kind.
+  ly, ry = section(body, left, y, "Planned runs"), section(body, right, y, "Run chat lines")
+  ly = ly + toggle(body, "runToasts", left, ly)
+  ly = ly + toggle(body, "runSound", left, ly)
+  for _, line in ipairs(ns.Settings.RUN_LINES) do
+    ry = ry + toggle(body, "runLine_" .. line.kind, right, ry)
+  end
   y = math.max(ly, ry) + 12
 
   -- Community chat | Interface.

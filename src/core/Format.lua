@@ -22,7 +22,7 @@ end
 Format.UNLINKED = "~unlinked" -- BattleTags never start with "~"
 Format.SELF = "~self"
 
--- Separator AceGUI TreeGroup uses between path parts ("parent\001child").
+-- Separator between path parts (the AceGUI tree's, so stored selections keep working) ("parent\001child").
 local PATH_SEPARATOR = "\001"
 
 -- "just now", "5 min ago", "3 h ago", "2 d ago"; "never" without a timestamp.
@@ -109,7 +109,7 @@ local function personTitle(person)
   return person.isSelf and (person.displayName .. " (you)") or person.displayName
 end
 
---[[ Tree for AceGUI TreeGroup. Each node:
+--[[ The Friends list (CF-40): people and their characters. Each node:
   { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online } } }
 People first (Linker order), then an "Unlinked" group when there are unlinked characters.
 The UI turns name/classFile into colored text.
@@ -132,7 +132,6 @@ function Format.tree(view)
       if not person.isSelf then _, shared = ns.Quests.shared(c.quests, own) end
       children[#children + 1] = { value = c.guid, name = c.name, classFile = c.classFile, classID = c.classID,
                                   level = c.level, online = c.online, outside = c.outside or false,
-                                  sharedDungeon = not person.isSelf and ns.Quests.sharesDungeon(c.quests, own),
                                   shared = shared } -- CF-40: quests shared with you (friends' characters only)
     end
     nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
@@ -284,7 +283,8 @@ end
 -- CF-40: the line under a character's name: "played by <owner>" (or "your character") and where they are:
 -- "online in <zone>", "offline, last seen in <zone> 2 h ago".
 local function characterSubtitle(row, owner, own, now)
-  local parts = { own and "your character" or ("played by " .. tostring(owner)) }
+  -- owner nil: an Unlinked character (a community member not linked to a friend).
+  local parts = { own and "your character" or (owner and ("played by " .. tostring(owner)) or "community member") }
   if row.online then
     parts[#parts + 1] = row.zone and row.zone ~= "" and ("online in " .. row.zone) or "online"
   else
@@ -313,34 +313,19 @@ local function characterTiles(row, talents)
 end
 
 local function characterDetail(row, owner, now, own, sharedWith, showAllQuests)
-  local where
-  if row.online then
-    where = row.zone and row.zone ~= "" and ("Online in " .. row.zone) or "Online"
-  elseif row.lastZone then
-    where = string.format("Offline - last %s in %s", own and "played" or "seen", row.lastZone)
-  else
-    where = "Offline"
-  end
+  local talents = Format.talentSummary(row)
   return {
     kind = "character",
     guid = row.guid,
     name = row.name,
     classFile = row.classFile,
     classID = row.classID,
-    owner = owner,
-    status = where,
     outside = row.outside or false,
     online = row.online,
-    stats = {
-      { label = "Level", value = tostring(row.level or "?") },
-      { label = "Item level", value = row.ilvl and tostring(row.ilvl) or "-" },
-      { label = own and "Last played" or "Last seen", value = Format.seen(row, now) },
-    },
     professions = Format.professionGroups(row.professions),
-    talents = Format.talentSummary(row),
-    -- CF-40: the revamped card.
-    subtitle = characterSubtitle(row, owner, own, now),
-    tiles = characterTiles(row, Format.talentSummary(row)),
+    talents = talents,
+    subtitle = characterSubtitle(row, owner, own, now), -- CF-40
+    tiles = characterTiles(row, talents),
     talentBars = Format.talentBars(row),
     -- CF-19: only on a friend's characters (nil on your own and on Unlinked characters).
     sharedQuests = sharedWith and Format.sharedQuests(row, sharedWith, showAllQuests) or nil,
@@ -355,9 +340,11 @@ end
     characters = { { guid, name, classFile, classID, level, seen } },
     sharedQuests }                     -- CF-19: see personSharedQuests; nil on your own card
   { kind = "unlinked", characters = ... }                        -- same character entries
-  { kind = "character", guid, name, classFile, classID, owner, status, online, stats,
+  { kind = "character", guid, name, classFile, classID, outside, online,
     professions = { { title, list } },   -- see professionGroups
-    talents, sharedQuests }              -- talentSummary; sharedQuests (CF-19) only on a friend's character
+    talents,                             -- talentSummary
+    subtitle, tiles, talentBars,         -- CF-40: the line under the name, Level/Item level/Role, tree bars
+    sharedQuests }                       -- CF-19: only on a friend's character
 showAllQuests: list every shared quest instead of the first MAX_QUEST_LINES.
 ]]
 function Format.detail(view, path, now, showAllQuests)
@@ -379,7 +366,7 @@ function Format.detail(view, path, now, showAllQuests)
     for _, row in ipairs(rows) do
       if row.guid == guid then
         local friend = person and not person.isSelf
-        return characterDetail(row, person and person.displayName or "Unlinked", now, person and person.isSelf,
+        return characterDetail(row, person and person.displayName, now, person and person.isSelf,
                                friend and ownRows(view) or nil, showAllQuests)
       end
     end
