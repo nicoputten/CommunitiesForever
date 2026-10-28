@@ -68,6 +68,35 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 
 **Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
 
+## The algorithm, exactly (CF-55)
+Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
+
+**Pool version 1** (`Doomsday.POOL_VERSION = 1`):
+- PvE dailies and weeklies: the goals with Data **now**.
+- Skirmish: `p.frontLine`, `p.loneWolf`, `p.untouchable`. Bounty: `b.zone25`, `b.kills50`, `b.spree10`, `b.duels3`, `b.days5`. These need only the kill's time, zone and `solo`, and deaths.
+- **No Hunt** yet: the slot is empty until the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `p.ranked`, `b.allClasses`, `b.allRaces`, `b.ranked5`, `b.hunt3` where their fields are readable, and the goals marked 52, 53, 56 whose APIs are verified.
+- Pool order is the order of the tables in this file.
+
+**Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
+
+**The draw, never twice in a row.** It runs forward from the **epoch**, day `20761` (the Doomsday day that starts on Wednesday 2026-11-04, launch), and week `2966` (the week holding it). Each day excludes the previous day's draw (before swaps); the epoch day and any day before it exclude nothing. Weeks the same.
+- **PvE dailies:** for slot 1, 2, 3: the candidates are the pool's goals, in pool order, whose category isn't taken yet and that weren't in the previous day's dailies; slot k takes `candidates[pick(n, 10 + k, #candidates)]`. If no candidate is left, the previous day's goals are allowed again (categories still differ).
+- **Skirmish, Bounty:** `available = pool without the previous draw` (the whole pool when that leaves nothing); `available[pick(n, salt, #available)]`.
+- **PvE weeklies:** as the dailies without categories: slot k takes `candidates[pick(week, 20 + k, #candidates)]` from the pool minus the goals already chosen and minus last week's.
+- **The Hunt** (once in the pool): per hunting faction, the 20 combinations in list order minus the previous day's combination (none on the epoch), `available[pick(n, 1, #available)]`.
+- **Zone of the day / week:** `band.zones[pick(n, 4, #zones)]` / `pick(week, 5, #zones)`, the band by level (20–29, 30–44, 45–54, 55–60); below 20 there is none.
+
+**Swaps.** Per friend, from a **situation** summed over that friend's characters: `chars`, `below60`, `altBelow60` (characters below 60 other than the highest one), `highest`, `highestToday` (the highest level that played that day), and the booleans `ilvlReadable`, `dungeonInRange`, `hasProfession`, `hasFishing`, `hasCraftingProfession`, `professionBelow300`, `friendQuestLog`. **A missing field never swaps** (unknown counts as "can do").
+- "Only one character below 60" (`d.altLevel`, `w.altLevels2`) is read as `altBelow60 = 0`: no character below 60 besides the highest one.
+- `p.frontLine` can't be done when the highest level that played today (else the highest) is below 20; its zone comes from that level.
+- The replacement: the fallbacks in order (`w.cap`: `w.skill25`, then `w.quests50`), skipping ones already in the set or that can't be done; then the next goals in pool order after the original, wrapping around, with the same skips. Slots are swapped in set order (dailies, then the Skirmish; weeklies, then the Bounty), so an earlier swap takes its replacement first. If nothing fits, the original stays.
+
+**Kills.** A friend's kills are taken in time order. The "4th or later kill of the same victim name" counts per track (world, battleground) and Doomsday day; a kill without a name never counts as a repeat. A skull is 3 whatever your level; without your level (or the victim's) a kill is "level unknown" (1). Solo adds 1 only to a kill worth more than 0. Battleground kills score the same way on their own track.
+
+**The Duel slot.** Per pair of friends and Doomsday day, the earliest record of each side. Both records: the winner per both, else disputed (nobody scores). One record: as recorded. Only opponents that are another friend's community character count (not strangers, not your own alts).
+
+**Crown:** the first to cross out by the time of the last of the 3 PvE dailies; equal times go to the lower friend key (BattleTag). **Streak:** today counts once a goal is done; a today without one yet doesn't break the run to yesterday. **Ladder:** PvE ties on goals done, then the name; PvP ties on goals done, then counted kills, then the name; movement = last week's rank minus this week's ("new" when not ranked last week).
+
 ## The crown, crossing out, the streak
 - **Crossed out:** a friend's name is struck through on the board once all 3 **PvE** dailies are done. The PvP goals don't count for that, so a PvE-only friend can finish.
 - **The crown:** the first friend to finish all 3 PvE dailies that day, by the time the addon recorded. **No points** (version B): the race is for fun, the points are about playing. The crown holds until the next reset.

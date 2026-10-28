@@ -45,6 +45,8 @@ CommunitiesForever/
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
+      Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
+                             progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);

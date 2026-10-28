@@ -17,6 +17,7 @@ src\core\Queue.lua
 src\core\Version.lua
 src\core\Filter.lua
 src\core\Feed.lua
+src\core\Doomsday.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
