@@ -476,6 +476,15 @@ function wowapi.install(opts)
       GetFriendGameAccountInfo = function(i, j)
         return deepCopy(state.friends[i].gameAccounts[j])
       end,
+      -- Any game account by ID, also of a friend who appears offline (state.gameAccountsByID).
+      GetGameAccountInfoByID = function(id)
+        return state.gameAccountsByID and deepCopy(state.gameAccountsByID[id]) or nil
+      end,
+      -- The Battle.net account of a character (state.accountsByGuid: { [guid] = battleTag }).
+      GetAccountInfoByGUID = function(guid)
+        local bt = state.accountsByGuid and state.accountsByGuid[guid]
+        return bt and { battleTag = bt } or nil
+      end,
     },
     TooltipDataProcessor = {
       AddTooltipPostCall = function(dataType, callback)

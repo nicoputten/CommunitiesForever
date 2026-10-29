@@ -75,11 +75,53 @@ function Friends.changes(previous, current)
 end
 
 -- Writes presence[guid] = { battleTag, lastSeen } for every Forever character online in the snapshot.
--- A GUID seen under a different BattleTag is reassigned (latest observation wins).
+-- A GUID seen under a different BattleTag is reassigned (latest observation wins). A hidden friend's character
+-- (snap.hiddenCharacters, they appear offline) gets its BattleTag for linking, but its lastSeen is not moved:
+-- the window must not tell that they are on.
 function Friends.recordPresence(presence, snap, now)
   for guid, bt in pairs(snap.characters) do
     presence[guid] = { battleTag = bt, lastSeen = now }
   end
+  for guid, bt in pairs(snap.hiddenCharacters or {}) do
+    local before = presence[guid]
+    presence[guid] = { battleTag = bt, lastSeen = before and before.battleTag == bt and before.lastSeen or nil }
+  end
+end
+
+--[[ A friend who appears offline but sends us addon data (Battle.net "Appear offline"; BNSendGameData still
+works): who it is, from what the game tells about the sending game account and what we know already.
+  info: C_BattleNet.GetGameAccountInfoByID(senderID) or nil ({ clientProgram, wowProjectID, playerGuid, ... });
+  accountBattleTag: C_BattleNet.GetAccountInfoByGUID(playerGuid).battleTag or nil;
+  friends: { [battleTag] = true }; presence: db.global.presence ({ [guid] = { battleTag } });
+  people: db.global.people ({ [battleTag] = { chars = { [guid] = ... } } }).
+Returns battleTag, guid; or nil when it isn't a Battle.net friend in this game (project) or can't be told. ]]
+function Friends.resolveHidden(info, accountBattleTag, friends, presence, people, wowClient, projectID)
+  if type(info) ~= "table" then return nil end
+  if info.clientProgram ~= nil and info.clientProgram ~= wowClient then return nil end
+  if info.wowProjectID ~= nil and info.wowProjectID ~= projectID then return nil end
+  local guid = type(info.playerGuid) == "string" and info.playerGuid or nil
+  local bt = type(accountBattleTag) == "string" and accountBattleTag or nil
+  if not bt and guid then
+    local p = presence and presence[guid]
+    bt = p and p.battleTag or nil
+    if not bt then
+      for tag, person in pairs(people or {}) do
+        if not bt and type(person) == "table" and type(person.chars) == "table" and person.chars[guid] then bt = tag end
+      end
+    end
+  end
+  if not (bt and friends and friends[bt]) then return nil end
+  return bt, guid
+end
+
+-- Adds a hidden friend's game account to a snapshot (in place): they can be sent to and their messages are
+-- accepted (gameAccounts), their character links (hiddenCharacters), but they are not online (no `online`
+-- entry: no "came online", shown offline). Skipped when the account is in the snapshot already.
+function Friends.addHidden(snap, gameAccountID, battleTag, guid)
+  if not (snap and gameAccountID and battleTag) or snap.gameAccounts[gameAccountID] then return end
+  snap.gameAccounts[gameAccountID] = battleTag
+  snap.hiddenCharacters = snap.hiddenCharacters or {}
+  if guid then snap.hiddenCharacters[guid] = battleTag end
 end
 
 ns.Friends = Friends

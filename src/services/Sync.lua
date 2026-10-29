@@ -402,6 +402,10 @@ function Sync.start(addon)
     retryWaiting()
     helloDebounced() -- CF-28: members who came online get a HELLO (the dedupe skips the others)
   end)
+  -- A friend who appears offline sent us data: greet back so both sides sync (never a "came online" line).
+  events:RegisterMessage(ns.PresenceTracker.HIDDEN_FOUND, function(_, _, gameAccountID)
+    sendHello(gameAccountID, true)
+  end)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag)
     for gameAccountID, bt in pairs(ns.PresenceTracker.gameAccounts()) do
       if bt == battleTag then sendHello(gameAccountID, true) end
@@ -467,7 +471,9 @@ function Sync.online()
   for bt, presence in pairs(ns.PresenceTracker.online()) do result[bt] = presence end
   local members = ns.MemberTracker.members()
   for name, peer in pairs(peers) do
-    if not result[peer.key] and not offline[peer.guid] then
+    -- A friend who appears offline on Battle.net stays offline here too (privacy), even when they greet us over
+    -- the community: sync and linking only.
+    if not result[peer.key] and not offline[peer.guid] and not ns.PresenceTracker.isHidden(peer.key) then
       local member = members[peer.guid] or {}
       result[peer.key] = { guid = peer.guid, name = name, level = member.level, classID = member.classID,
                            target = name }

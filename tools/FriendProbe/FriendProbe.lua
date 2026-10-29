@@ -850,9 +850,31 @@ ns.tests = {
 }
 ns.log = log
 
+-- V87: Battle.net "Appear offline". Data from a friend whose WoW game account isn't in the friend list (they
+-- appear offline): does it still arrive, and does the game still tell who sent it?
+local bnFrame = CreateFrame("Frame")
+pcall(bnFrame.RegisterEvent, bnFrame, "BN_CHAT_MSG_ADDON")
+bnFrame:SetScript("OnEvent", function(_, _, prefix, _, _, senderID)
+  if not ns.running() or type(senderID) ~= "number" then return end
+  for _, f in ipairs(OnlineFriends()) do
+    if f.gameAccountID == senderID then return end -- a visible friend: nothing to learn
+  end
+  local byID = C_BattleNet and C_BattleNet.GetGameAccountInfoByID
+  local info = byID and select(2, pcall(byID, senderID))
+  local guid = type(info) == "table" and info.playerGuid or nil
+  local account = guid and C_BattleNet.GetAccountInfoByGUID and select(2, pcall(C_BattleNet.GetAccountInfoByGUID, guid))
+  local bt = type(account) == "table" and account.battleTag or nil
+  local detail = string.format("from hidden game account %s (prefix %s): GetGameAccountInfoByID %s, playerGuid %s, "
+    .. "wowProjectID %s, GetAccountInfoByGUID battleTag %s", S(senderID), S(prefix),
+    type(info) == "table" and "ok" or "nil", guid and "yes" or "no", S(type(info) == "table" and info.wowProjectID),
+    bt and "yes" or "no")
+  log("V87 " .. detail)
+  result("V87", guid and bt and "pass" or "fail", detail)
+end)
+
 -- Every event handler runs guarded: a secret value or a missing API in an instance (Midnight, Retail dry runs) is
 -- logged, never shown as a Lua error.
-for _, frame in ipairs({ feedFrame, inviteFrame, commFrame, pvpFrame, loader }) do
+for _, frame in ipairs({ feedFrame, inviteFrame, commFrame, pvpFrame, bnFrame, loader }) do
   local handler = frame:GetScript("OnEvent")
   frame:SetScript("OnEvent", function(...)
     local ok, err = pcall(handler, ...)
