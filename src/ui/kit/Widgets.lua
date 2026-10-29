@@ -489,12 +489,14 @@ end
 
 --[[ Ambient effects (CF-43): a bright streak that slides across `region` every `period` seconds, on a
 frame that clips it. Kit.ambient() says whether effects are on (set by the addon from the settings); the
-streak plays only then. AnimationGroup is unverified on Forever (VERIFY.md V64): without it nothing moves.
+streak plays only then. The animation group belongs to the streak texture: a group on `frame` would slide the
+whole frame (on Retail the title bar moved as a dark block, API-FINDINGS "Retail dry runs"). AnimationGroup is
+unverified on Forever (VERIFY.md V64): without it nothing moves.
 Returns the shine object with :Refresh() (follows Kit.ambient) or nil. ]]
 Kit.ambient = function() return true end
 
 function Kit.shine(frame, region, period)
-  if not (frame.CreateAnimationGroup and frame.CreateTexture) then return nil end
+  if not frame.CreateTexture then return nil end
   if frame.SetClipsChildren then frame:SetClipsChildren(true) end
   local streak = frame:CreateTexture(nil, "OVERLAY", nil, 6)
   streak:SetTexture(Theme.TEXTURES.shine)
@@ -502,7 +504,7 @@ function Kit.shine(frame, region, period)
   streak:SetSize(48, 18)
   streak:SetPoint("CENTER", region or frame, "LEFT", -30, 0)
   streak:Hide()
-  local group = frame:CreateAnimationGroup()
+  local group = streak.CreateAnimationGroup and streak:CreateAnimationGroup()
   if not group then return nil end
   local move = group:CreateAnimation("Translation")
   if not move then return nil end
