@@ -161,16 +161,17 @@ describe("Run dialogs (CF-47)", function()
     assert.are.equal(0, #pending())
   end)
 
-  it("answers a run: pending, shown in the row, sent to the organiser, cleared when the site has it", function()
+  -- CF-63b (board CF63Answer): answering is inline under the group; every click saves at once.
+  local IN, CANT = "I\226\128\153m in", "Can\226\128\153t"
+  local function tap(label) ns.DungeonsTab.buttons()[label]:RunScript("OnClick") end
+  local function detailText() return plain(table.concat(ns.DungeonsTab.texts(), "\n")) end
+
+  it("answers a run inline: pending, shown in the row, sent to the organiser, cleared when the site has it", function()
     load(runs())
     open("run:r2")
-    ns.DungeonsTab.buttons()["change"]:RunScript("OnClick") -- CF-62: "change" opens the answer dialog
-    local all = dialogText()
-    assert.is_truthy(all:find("\nWailing Caverns\n", 1, true))
-    assert.is_truthy(all:find(" for Garraka Doombringer\n", 1, true)) -- the organiser's own time
-    assert.is_truthy(all:find("Ves Doombringer 20 \194\183 damage | fits", 1, true))
-    click("Maybe")
-    click("Save answer")
+    assert.is_truthy(detailText():find("\nYour answer\nNot answered yet\n", 1, true))
+    assert.is_truthy(detailText():find("Ves Doombringer  20  fits", 1, true)) -- the character you go as
+    tap("Maybe")
     local item = pending()[1]
     assert.are.same({ "answer", "r2", "maybe", VES }, { item.kind, item.run, item.answer, item.guid })
     local answers = ofType("RUNANSWER")
@@ -179,34 +180,54 @@ describe("Run dialogs (CF-47)", function()
     assert.are.same({ "r2", "maybe", VES }, { answers[1].message.run, answers[1].message.answer,
                                               answers[1].message.guid })
     settle()
-    -- CF-62: the run's detail shows your answer highlighted and that it waits for the next upload.
-    local function detailText() return plain(table.concat(ns.DungeonsTab.texts(), "\n")) end
+    -- The run's detail shows your answer highlighted and a clock until the next upload.
     assert.are.equal("primary", ns.DungeonsTab.buttons()["Maybe"].kind)
-    assert.is_falsy(detailText():find("after /reload", 1, true)) -- CF-63: no text line, a clock
-    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Reaches the website with your next upload",
+    assert.is_truthy(detailText():find("\nYour answer\nYou said maybe\n", 1, true))
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Saved. Reaches the website with your next upload.",
       1, true))
+    -- Can't hides the character, the roles and the note.
+    tap(CANT) -- replaces the pending answer (one per run)
+    assert.are.equal(1, #pending())
+    assert.are.equal("cant", pending()[1].answer)
+    assert.is_nil(pending()[1].guid)
+    assert.is_truthy(detailText():find("\nYou can\226\128\153t make it", 1, true))
+    assert.is_nil(ns.DungeonsTab.buttons().character)
     -- The site has it: a newer runs list confirms the id.
     local newer = runs()
-    newer.updatedAt, newer.received = NOW, { item.id }
-    newer.runs[2].answers[2] = { guid = VES, answer = "maybe", source = "game" }
+    newer.updatedAt, newer.received = NOW, { pending()[1].id }
+    newer.runs[2].answers[2] = { guid = VES, answer = "cant", source = "game" }
     assert.is_true(ns.Planner.receive(newer))
     assert.are.equal(0, #pending())
-    settle()
-    assert.is_falsy(detailText():find("reaches Discord", 1, true))
   end)
 
   -- CF-49: the role is picked apart from the character, from the roles its class can play.
-  it("answers with a role the class can play, and plans as one", function()
+  it("answers with a role the class can play, with its slot, and a note; plans as one", function()
     load(runs())
     open("run:r2")
-    ns.DungeonsTab.buttons()["change"]:RunScript("OnClick") -- CF-62: "change" opens the answer dialog
-    assert.is_truthy(dialogText():find("\nROLE\n", 1, true))
-    local buttons = ns.RunDialogs.buttons()
+    local buttons = ns.DungeonsTab.buttons()
     assert.is_truthy(buttons["Tank"] and buttons["Healer"] and buttons["Damage"]) -- a paladin plays all three
-    click("Healer")
-    click("Save answer")
-    assert.are.equal("heal", pending()[1].role)
+    local all = detailText()
+    assert.is_truthy(all:find("\nHealer \194\183 full\n", 1, true)) -- Garraka heals
+    assert.is_truthy(all:find("\nTank \194\183 open\n", 1, true))
+    assert.are.equal("Healer is full \194\183 you join as reserve.", buttons["Healer"].tooltip)
+    tap("Healer") -- before answering: kept, not saved
+    assert.are.equal(0, #pending())
+    tap(IN)
+    assert.are.same({ "in", "heal" }, { pending()[1].answer, pending()[1].role })
     assert.are.equal("heal", ofType("RUNANSWER")[1].message.role)
+    settle()
+    assert.is_truthy(detailText():find("\nYou\226\128\153re on reserve\n", 1, true)) -- the healer slot is taken
+    -- Changing the role saves at once; so does the note (on Enter or when the box loses focus).
+    tap("Tank")
+    assert.are.same({ "in", "tank" }, { pending()[1].answer, pending()[1].role })
+    settle()
+    local note = ns.RunAnswer.block().note
+    note:SetText("Bringing water")
+    note:RunScript("OnEditFocusLost")
+    assert.are.same({ "in", "tank", "Bringing water" }, { pending()[1].answer, pending()[1].role, pending()[1].note })
+    assert.are.equal("Bringing water", ofType("RUNANSWER")[3].message.note)
+    settle()
+    assert.is_truthy(detailText():find("\n14/80", 1, true))
 
     open("dm")
     ns.DungeonsTab.buttons()["Plan a run\226\128\166"]:RunScript("OnClick")
@@ -216,17 +237,13 @@ describe("Run dialogs (CF-47)", function()
     assert.are.equal("tank", pending()[2].role)
   end)
 
-  it("lets a character 6+ levels below answer I'm in, with the tough note (CF-50)", function()
+  it("lets a character 6+ levels below answer I'm in, its fit in the dropdown (CF-50)", function()
     local data = runs()
     data.runs[2].dungeon = "smarm" -- 32-42: Ves at 20 is 12 below
     load(data)
     open("run:r2")
-    ns.DungeonsTab.buttons()["change"]:RunScript("OnClick") -- CF-62: "change" opens the answer dialog
-    assert.is_truthy(dialogText():find("Ves Doombringer 20 \194\183 damage | 12 below", 1, true))
-    ns.RunDialogs.rows()[1]:RunScript("OnClick")
-    assert.is_truthy(dialogText():find("This will be tough.", 1, true))
-    assert.is_not_false(ns.RunDialogs.buttons()["I'm in"].enabled)
-    click("Save answer")
+    assert.is_truthy(detailText():find("Ves Doombringer  20  12 below", 1, true))
+    tap(IN)
     assert.are.equal("in", pending()[1].answer)
   end)
 

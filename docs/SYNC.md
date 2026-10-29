@@ -234,8 +234,11 @@ the community every `battleTag` is left out. Not sent during an encounter, a key
 
 ```json
 { "t": "RUNANSWER", "pv": 1, "run": "r-102", "answer": "maybe", "guid": "Player-1-0000AAAA", "name": "Ada Lovewell",
-  "role": "heal" }
+  "role": "heal", "note": "Bringing water" }
 ```
+
+`note` (CF-63, optional, up to 80 characters): a note to the organiser, shown in the member's tooltip. Older
+versions don't send it and ignore it.
 
 Sent once, right after you answer a run in game, to the run's organiser when they are online (a Battle.net
 friend by BattleTag, or a community peer on the organiser's character). The organiser keeps it in memory and

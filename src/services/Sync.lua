@@ -9,7 +9,8 @@
 --   BYE   {}                (CF-28, community) on logout, best effort: the sender is offline.
 --   RUNS  {runs}            (CF-46) planned runs, to a peer whose HELLO showed an older ru (runs updatedAt).
 --   RUNREQ {}               (CF-46) asks a peer whose HELLO showed a newer ru for its runs.
---   RUNANSWER {run, answer, guid, name, role}  (CF-47) your answer to a run, to its organiser when online.
+--   RUNANSWER {run, answer, guid, name, role, note}  (CF-47; note CF-63, optional) your answer to a run, to its
+--     organiser when online.
 -- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua): BattleTags only
 -- travel over Battle.net.
 local _, ns = ...
@@ -447,7 +448,7 @@ function Sync.sendRunAnswer(run, item)
     if target and ((organiser.battleTag and key == organiser.battleTag)
         or (organiser.guid and presence.guid == organiser.guid)) then
       ns.Messenger.send(target, { t = "RUNANSWER", run = run.id, answer = item.answer, guid = item.guid,
-                                  name = item.name, role = item.role })
+                                  name = item.name, role = item.role, note = item.note }) -- CF-63: note optional
       return true
     end
   end

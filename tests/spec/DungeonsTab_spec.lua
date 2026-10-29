@@ -217,12 +217,50 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("planned on Discord", 1, true))
     assert.is_truthy(all:find("\nDiscord\n", 1, true))
     assert.is_truthy(all:find("\nYour answer\n", 1, true))
-    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Shared with online friends now", 1, true))
-    assert.is_truthy(ns.DungeonsTab.buttons()["I'm in"] and ns.DungeonsTab.buttons()["Maybe"]
-      and ns.DungeonsTab.buttons()["Can't"])
+    assert.is_truthy(ns.DungeonsTab.buttons()["I\226\128\153m in"] and ns.DungeonsTab.buttons()["Maybe"]
+      and ns.DungeonsTab.buttons()["Can\226\128\153t"])
     assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Sjaakovich\n", 1, true)) -- online, fits
     assert.is_truthy(ns.DungeonsTab.buttons()["Whisper:1"])
     assert.is_truthy(all:find("\nOn the website\n", 1, true))
+  end)
+
+  -- CF-63b (board CF63Group): a member's tooltip and right-click menu; an open slot's Ask and menu.
+  it("shows a member's tooltip and menu, and asks for an open slot with the run's note", function()
+    load(20, sampleRuns())
+    open()
+    local garraka, slot
+    for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+      if (g.name:GetText() or ""):find("Garraka", 1, true) then garraka = g end
+      if (g.name:GetText() or ""):find("Damage \194\183 open", 1, true) then slot = g end
+    end
+    assert.are.equal("Garraka Doombringer", garraka.tipLines[1])
+    assert.are.equal("Level 20 \194\183 fits \194\183 Healer", garraka.tipLines[2])
+    assert.are.equal("Answered in game", garraka.tipLines[3])
+    garraka:RunScript("OnMouseUp", "RightButton")
+    local menu = state.menus[#state.menus]
+    assert.are.equal("Garraka Doombringer", menu.title)
+    assert.are.same({ "Whisper", "Invite \194\183 from " .. os.date("%H:%M", NOW + 9600 - 900), "Show in Friends" },
+      { menu.buttons[1].text, menu.buttons[2].text, menu.buttons[3].text })
+    assert.is_false(menu.buttons[2].enabled) -- invites open 15 minutes before the start
+    assert.is_true(menu.buttons[3].enabled)
+    menu.buttons[3].fn()
+    -- Show in Friends: the Friends tab on Garraka (Sjaak's card, his character).
+    assert.are.equal(ns.Format.path("Sjaakovich#2232", GARRAKA), addon.db.global.settings.tree.selected)
+    ns.MainFrame.selectTab("dungeons")
+    -- Your own row has no menu.
+    for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+      if (g.info:GetText() or ""):find("you", 1, true) then assert.is_nil(g.menu) end
+    end
+    -- The open slot: Ask now for this run fills the Ask dialog's note; a click opens Whisper / Ask / Invite.
+    assert.is_true(slot.ask.shown)
+    slot.ask:RunScript("OnClick")
+    assert.are.equal("For The Deadmines " .. os.date("%H:%M", NOW + 9600) .. " \194\183 need Damage",
+      ns.RunDialogs.widgets().note:GetText())
+    slot:RunScript("OnMouseUp", "LeftButton")
+    menu = state.menus[#state.menus]
+    assert.are.equal("Damage \194\183 open", menu.title)
+    assert.are.same({ "Whisper", "Ask now for this run" }, { menu.buttons[1].text, menu.buttons[2].text })
+    assert.is_false(menu.buttons[1].enabled) -- nobody else online fits
   end)
 
   it("opens Invite all 15 minutes before the start, and Invite instead of Whisper (CF-62)", function()

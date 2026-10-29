@@ -17,7 +17,7 @@ Pending.KINDS = { plan = true, answer = true, ask = true, ping = true, askAnswer
 
 --[[ Item shapes (also the saved file's, read by the site; sample in tests/fixtures/pending.lua):
   plan   { id, kind = "plan", at, dungeon, startsAt, guid, name, role, note }      -- you lead as guid/name
-  answer { id, kind = "answer", at, run, answer = "in"|"maybe"|"cant", guid, name, role }
+  answer { id, kind = "answer", at, run, answer = "in"|"maybe"|"cant", guid, name, role, note } -- CF-63: note ≤ 80
   ask    { id, kind = "ask", at, dungeon, guid, name, role, note }                 -- "Also post on Discord"
          CF-51: a friend's ask carried for the site keeps the asker's id, at, guid, name, role and adds battleTag
   ping   { id, kind = "ping", at, run, battleTag, guid, name }                     -- CF-48: who to ping
@@ -94,14 +94,15 @@ function Pending.ofKind(list, kind)
   return out
 end
 
--- A note as typed: no escape sequences or line breaks, at most MAX_NOTE characters; nil when empty.
-function Pending.note(text)
+-- A note as typed: no escape sequences or line breaks, at most max (default MAX_NOTE) characters; nil when empty.
+function Pending.note(text, max)
+  max = max or Pending.MAX_NOTE
   if type(text) ~= "string" then return nil end
   text = text:gsub("|", ""):gsub("%c", " "):gsub("%s+", " "):match("^%s*(.-)%s*$")
   if text == "" then return nil end
   local chars = {}
   for char in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
-    if #chars == Pending.MAX_NOTE then break end
+    if #chars == max then break end
     chars[#chars + 1] = char
   end
   return table.concat(chars)
