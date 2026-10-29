@@ -38,27 +38,6 @@ local function check() return Theme.bundledFonts() and "\226\156\147" or "done" 
 
 -- ===== Factories =====
 
-local function chip(parent, def)
-  local c = CreateFrame("Button", nil, parent)
-  c:SetHeight(24)
-  c.bg = c:CreateTexture(nil, "BACKGROUND")
-  c.bg:SetAllPoints()
-  c.edges = Kit.edges(c, "divider")
-  c.text = Theme.text(c, "small", "textDim")
-  c.text:SetPoint("CENTER")
-  c.text:SetText(def.text)
-  c.value = def.value
-  c:SetWidth(math.max(54, (c.text.GetStringWidth and c.text:GetStringWidth() or 40) + 22))
-  function c:SetActive(on)
-    self.active = on and true or false
-    if on then self.bg:SetColorTexture(Theme.color("gold", 0.16)) else self.bg:SetColorTexture(0, 0, 0, 0) end
-    for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color(on and "gold" or "divider")) end
-    self.text:SetTextColor(Theme.color(on and "heading" or "textDim"))
-  end
-  c:SetScript("OnClick", function(self) DoomsdayTab.select(self.value) end)
-  return c
-end
-
 -- A progress bar: a faint track and a gold fill.
 local function bar(parent)
   local b = CreateFrame("Frame", nil, parent)
@@ -380,7 +359,7 @@ function DoomsdayTab.create(parent, h)
   chips = {}
   local previous
   for _, def in ipairs(DoomsdayTab.VIEWS) do
-    local c = chip(chipsBar, def)
+    local c = Kit.chip(chipsBar, def, DoomsdayTab.select, 54)
     if previous then c:SetPoint("LEFT", previous, "RIGHT", 6, 0) else c:SetPoint("LEFT") end
     chips[def.value] = c
     previous = c

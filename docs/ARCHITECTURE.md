@@ -36,7 +36,9 @@ CommunitiesForever/
       Outbox.lua             outgoing chunk queue with send-rate limit
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
-      Format.lua             view model -> tree nodes, detail cards, last seen, empty states
+      Format.lua             view model -> tree nodes, last seen, footers, empty states, menus, tooltips
+      Card.lua               the Friends tab's card models: person, character (tiles, professions, talents, shared
+                             quests, the PvP line), Unlinked (split from Format in CF-59)
       Clubs.lua              selectable communities, stored-selection status
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
