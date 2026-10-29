@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+
+## v1.0.0 (2026-10-29)
 - **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window
   again (they could open behind it).
 - **Ask now:** "Also post on Discord" is back and ticked by default; untick it to ask only friends in game.
@@ -16,15 +18,15 @@ tagging; the release stops if the tag has no section.
   "Not synced yet"), with what that means on hover.
 - **Dungeons, no planning in the game:** "Ask now" is the way in game; plan runs for later on the website or with the
   bot's /plan. Runs planned there still show here, and you answer them as before.
-- **Fixed, Ask now:** it always works now: friends with the addon who are online get it, and it is always posted on
-  Discord (after a /reload). It no longer refuses when nobody in range is online.
+- **Fixed, Ask now:** it always works now: friends with the addon who are online get it, and with "Also post on
+  Discord" ticked it is posted on Discord (after a /reload). It no longer refuses when nobody in range is online.
 - **Fixed, Dungeons:** class icons show for friends' characters too (no more empty circles); one "Ask now for this
   run" per run instead of one on every open slot; the "In range for" dropdown has a proper arrow.
 - **Post on Discord?:** shorter, with the details on hover, and it opens on the window.
 - **Sync debug lines:** `/cf sync debug` lasts until the next /reload or login and is no longer saved; anyone who
   had it on sees no more "[sync]" lines after updating.
 
-## v0.10.0-beta1 (2026-10-30)
+## v0.10.0-beta1 (2026-10-29)
 - **Fixed, Dungeons:** a website run shows the dungeon's name ("Scarlet Monastery: Graveyard") and level range instead
   of its id, and "In range" and "Online now, fits" work on Retail too.
 - **Dungeons, a run:** the dungeon's full name, its level range and zone, and a countdown that updates every minute
