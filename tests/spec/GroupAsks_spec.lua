@@ -235,7 +235,7 @@ describe("Who's up for it? (CF-27)", function()
       return false
     end
     ns.DungeonsTab.select("dm")
-    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick") -- CF-47: the Ask now dialog
+    ns.DungeonsTab.buttons()["Ask now\226\128\166"]:RunScript("OnClick") -- CF-47: the Ask now dialog
     ns.RunDialogs.buttons()["Ask now"]:RunScript("OnClick")
     assert.are.equal(1, #sent)
     deliver({ t = "ANSWER", id = sent[1].message.id, answer = "later" })

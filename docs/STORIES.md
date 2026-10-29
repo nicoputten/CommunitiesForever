@@ -73,6 +73,13 @@ Nico's brief and boards: `docs/design/addon-v2-2026-10/` (`BRIEF.md`; `AG02Dunge
 - The empty state.
 - The in-range dungeons as the new board shows them.
 
+**Approved deviations from the boards (Nico, 2026-10-29):**
+- Solid 1 px borders where a board shows dashed ones (the Friends empty box, open group slots): the kit has no dashed line.
+- An extra "Offline · N" group in the Friends list, so synced friends who are offline stay listed.
+- In a run, "change" opens the existing answer dialog rather than a small menu.
+- No "Discord already pinged everyone who answered" line: the addon can't tell whether the ping went out.
+- Class icons as the kit's round class portraits (`Kit.portrait`), not the `classicon-*` atlas.
+
 Done when: the brief's "Done when" (`BRIEF.md`) is met for the tabs in each PR. `busted` and `luacheck` pass. Every newly used API is guarded and has a `VERIFY.md` step (atlases via `C_Texture.GetAtlasInfo` with the coloured-square fallback, `ChatFrame_SendTell`).
 
 Compatibility (rule 8): answers already travel and are stored (CF-47). The new `Data\Runs.lua` fields are optional. Any new stored field is optional, with nil handled.
