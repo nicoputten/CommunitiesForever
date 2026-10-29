@@ -13,14 +13,21 @@ local PAD = 20
 local ROW = 44
 local SLOT_HEIGHT = 100
 local SLOT_GAP = 8
-local SOON = 12 * 3600 -- runs starting within this many seconds get the warm colour
 local ROLE_NAMES = { tank = "Tank", heal = "Healer", dps = "DPS" }
-local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
-local ANSWER_WORDS = { ["in"] = "you: I'm in", maybe = "you: maybe", cant = "you: can't" }
 local PENDING = "reaches Discord after /reload" -- CF-47: waiting for the next save and upload
 local SOURCE_WORDS = { site = "planned on the website", discord = "planned on Discord", game = "planned in game" }
 local DOT = " \194\183 "
 local ASK_TIP = "Whispers online friends who fit; can post on Discord too. Waits until combat ends." -- CF-61
+-- CF-62 (board AG02Dungeons): sizes and the explanations that live in tooltips.
+local LIST_WIDTH = 290
+local RUN_ROW = 50
+local GROUP_ROW = 38
+local ONLINE_WIDTH = 250
+local ONLINE_ROW = 34
+local ROLE_LABEL = { tank = "Tank", heal = "Healer", dps = "Damage" }
+local ROSTER_TIP = "From the community roster: online members whose current character fits the level range."
+local ANSWER_TIP = "Shared with online friends now; the website gets it with your next upload."
+local INVITE_TIP = "Invite all invites everyone who is in and online."
 local PLAN_TEXT = "Pick a day and time; friends see their own time. Reaches the site and Discord after /reload. "
   .. "Runs planned on the website show here after your uploader fetched them and you /reload."
 
@@ -99,22 +106,6 @@ local function countsText(run)
   return text
 end
 
--- The second part of a run row: your answer, a character of yours that fits, or the counts.
-local function runStatus(run, candidates, me)
-  if run.pending then return colored(PENDING, "faint") end -- CF-47: your plan, not on the site yet
-  local mine = ns.PlannedRuns.yourAnswer(run, me)
-  if mine and not ns.PlannedRuns.isOrganiser(run, me) then
-    local text = ANSWER_WORDS[mine.answer]
-    if mine.answer ~= "cant" and mine.name then text = text .. " as " .. mine.name end
-    text = colored(text, mine.answer == "cant" and "muted" or "goldLight")
-    if mine.pending then text = text .. "  " .. colored(PENDING, "faint") end
-    return text
-  end
-  local fit, role = ns.PlannedRuns.youFit(run, candidates, dungeonOf(run), me, ns.SelfInfo.read().guid)
-  if fit then return colored(fit.name .. " fits " .. ROLE_WORDS[role], "onlineText") end
-  return countsText(run)
-end
-
 -- Every dungeon's area IDs, to read QuestieDB once for all of them.
 local function allAreaIds()
   local ids = {}
@@ -159,6 +150,74 @@ local function listRow(parent)
   r.meta:SetPoint("BOTTOMLEFT", 12, 7)
   r:SetScript("OnClick", function(self) DungeonsTab.select(self.value) end)
   return r
+end
+
+-- CF-62: a run row (50 px): the short name and the time; five role pips, "2 in · 1 maybe", the organiser.
+local function runRow(parent)
+  local r = Kit.listRow(parent)
+  r:SetHeight(RUN_ROW)
+  r.name = Theme.text(r, "group", "goldLight")
+  r.name:SetPoint("TOPLEFT", 12, -8)
+  r.right = Theme.text(r, "small", "textDim")
+  r.right:SetPoint("TOPRIGHT", -12, -9)
+  r.pips = {}
+  for i = 1, 5 do
+    local p = r:CreateTexture(nil, "ARTWORK")
+    p:SetSize(14, 6)
+    p:SetPoint("BOTTOMLEFT", 12 + (i - 1) * 17, 12)
+    r.pips[i] = p
+  end
+  r.meta = Theme.text(r, "tiny", "muted")
+  r.meta:SetPoint("BOTTOMLEFT", 12 + 5 * 17 + 6, 9)
+  r.who = Theme.text(r, "tiny", "muted")
+  r.who:SetPoint("BOTTOMRIGHT", -12, 9)
+  r:SetScript("OnClick", function(self) DungeonsTab.select(self.value) end)
+  return r
+end
+
+-- CF-62: a 38 px row of a run's group: role icon, class icon, the full name, "level · friend", the status.
+local function groupRow(parent)
+  local g = CreateFrame("Frame", nil, parent)
+  g:SetHeight(GROUP_ROW)
+  g.bg = Theme.fill(g, "white", "BACKGROUND")
+  g.bg:SetAllPoints()
+  g.edges = Kit.edges(g, "divider")
+  g.role = Kit.roleIcon(g, 20)
+  g.role:SetPoint("LEFT", 10, 0)
+  g.portrait = Kit.portrait(g, 20)
+  g.portrait:SetPoint("LEFT", 38, 0)
+  g.name = Theme.text(g, "body", "text")
+  g.name:SetPoint("LEFT", 66, 0)
+  g.info = Theme.text(g, "small", "muted")
+  g.info:SetPoint("LEFT", g.name, "RIGHT", 8, 0)
+  g.status = Theme.text(g, "small", "muted")
+  g.status:SetPoint("RIGHT", -12, 0)
+  g:SetScript("OnEnter", function(self)
+    if not (self.tip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  g:SetScript("OnLeave", function(self) if self.tip and GameTooltip then GameTooltip:Hide() end end)
+  return g
+end
+
+-- CF-62: a 34 px row of "Online now, fits": class icon, name, level, "friend · zone", Whisper or Invite.
+local function onlineRow(parent)
+  local o = CreateFrame("Frame", nil, parent)
+  o:SetHeight(ONLINE_ROW)
+  o.portrait = Kit.portrait(o, 20)
+  o.portrait:SetPoint("LEFT", 0, 0)
+  o.name = Theme.text(o, "small", "text")
+  o.name:SetPoint("TOPLEFT", 28, -4)
+  o.level = Theme.text(o, "tiny", "muted")
+  o.level:SetPoint("LEFT", o.name, "RIGHT", 6, 0)
+  o.info = Theme.text(o, "tiny", "muted")
+  o.info:SetPoint("BOTTOMLEFT", 28, 4)
+  o.button = Kit.button(o, "", nil)
+  o.button:SetPoint("RIGHT", 0, 0)
+  if o.button.SetMotionScriptsWhileDisabled then o.button:SetMotionScriptsWhileDisabled(true) end
+  return o
 end
 
 -- A slot of a group: portrait (or "?" / "+" / an initial), name and level, role and who, a state line.
@@ -217,6 +276,9 @@ end
 local function renderList(runs, overview, me, candidates)
   Kit.release(pools.rows)
   Kit.release(pools.listText)
+  Kit.release(pools.runRows)
+  Kit.release(pools.listTitle)
+  Kit.release(pools.listButtons)
   rows = {}
   local parent = list.child
   local width = math.max(200, (list:GetWidth() or 0) - 6)
@@ -242,23 +304,51 @@ local function renderList(runs, overview, me, candidates)
     y = y + ROW
   end
 
-  -- CF-46: the runs, and how old they are (never pretending to be live).
-  label("Runs")
+  -- CF-62: "Runs" with Ask now…; the runs grouped Tonight, Tomorrow, This week, Later; role pips per row.
+  placeText(pools.listTitle, parent, 12, y + 6, width - 24, "Runs", "goldLight")
+  local ask = Kit.take(pools.listButtons, parent)
+  ask:SetLabel("Ask now\226\128\166")
+  ask:SetEnabled(true)
+  ask:SetPoint("TOPRIGHT", parent, "TOPLEFT", width - 8, -(y + 4))
+  ask:SetScript("OnClick", function() DungeonsTab.askNow() end)
+  ask.tooltip = ASK_TIP
+  y = y + 36
+  local lastBucket
   for _, run in ipairs(runs) do
-    local soon = run.startsAt - now() < SOON
-    row("run:" .. run.id, dungeonName(run), when(run.startsAt), soon and "soon" or "textDim",
-      organiserText(run, candidates, me) .. "    " .. runStatus(run, candidates, me))
+    local bucket = date and ns.PlannedRuns.bucket(run.startsAt, now(), date) or ""
+    if bucket ~= lastBucket then
+      placeText(pools.listText, parent, 12, y + 8, width - 24, bucket, "faint")
+      y = y + 26
+      lastBucket = bucket
+    end
+    local r = Kit.take(pools.runRows, parent)
+    r:SetPoint("TOPLEFT", 0, -y)
+    r:SetPoint("RIGHT", parent, "RIGHT")
+    r.value = "run:" .. run.id
+    r.name:SetText(ns.PlannedRuns.shortName(dungeonName(run)))
+    r.right:SetText(date and ns.PlannedRuns.rowTime(run.startsAt, now(), date) or "")
+    local pipSlots = ns.PlannedRuns.slots(run, candidates, dungeonOf(run))
+    for k, p in ipairs(r.pips) do
+      local slot = pipSlots[k]
+      if slot and slot.answer then
+        p:SetColorTexture(Theme.color(slot.role or "dps"))
+      else
+        p:SetColorTexture(Theme.color("track"))
+      end
+    end
+    r.meta:SetText(run.pending and colored(PENDING, "faint") or countsText(run))
+    local organiser = organiserText(run, candidates, me)
+    r.who:SetText(organiser)
+    r.who:SetTextColor(Theme.color(organiser == "you organise" and "goldLight" or "muted"))
+    r:SetSelected(r.value == selected)
+    rows[#rows + 1] = { value = r.value, frame = r }
+    y = y + RUN_ROW
   end
   if #runs == 0 then
-    placeText(pools.listText, parent, 12, y + 2, width - 24, "No runs planned. Plan one on the website.", "muted")
-    y = y + 22
-  end
-  local data = ns.Planner.data()
-  if data then
-    local at = when(data.updatedAt):gsub("^Today ", "")
-    placeText(pools.listText, parent, 12, y + 4, width - 24, "Runs updated " .. (at ~= "" and ("at " .. at .. DOT)
-      or "") .. "/reload for newer", "textDim")
-    y = y + 24
+    placeText(pools.listText, parent, 12, y + 2, width - 24, "No runs planned", "text")
+    placeText(pools.listText, parent, 12, y + 18, width - 24, "Plan one on the website, or ask who is up for "
+      .. "something right now.", "muted")
+    y = y + 40
   end
 
   local runsPer = {}
@@ -281,6 +371,14 @@ local function renderList(runs, overview, me, candidates)
         "goldLight") end
       row(entry.dungeon.id, entry.dungeon.name, range(entry.dungeon), "muted", meta)
     end
+  end
+  -- CF-62: how old the runs are, one muted line at the bottom of the list.
+  local data = ns.Planner.data()
+  if data and date then
+    local at = when(data.updatedAt):gsub("^Today ", "")
+    placeText(pools.listText, parent, 12, y + 10, width - 24, string.format("Runs from the website, %s. Type /reload "
+      .. "after an upload for newer.", at), "faint")
+    y = y + 40
   end
   y = y + 12
   parent:SetHeight(y)
@@ -321,70 +419,6 @@ local function slots(parent, entry, group, y, width)
       s.name:SetText(ROLE_NAMES[slot.role])
       s.info:SetText(slot.missing and "nobody in range" or "open")
       s.info:SetTextColor(Theme.color(slot.missing and "warning" or "faint"))
-      edge(s, slot.missing and "missing" or "divider")
-    end
-  end
-  return y + SLOT_HEIGHT + 10
-end
-
--- CF-46: the five slots of a run, filled from the answers.
-local function runSlots(parent, run, candidates, me, y, width)
-  local w = math.floor((width - 4 * SLOT_GAP) / 5)
-  local organiser = run.organiser
-  for i, slot in ipairs(ns.PlannedRuns.slots(run, candidates, dungeonOf(run))) do
-    local s = Kit.take(pools.slots, parent)
-    s:SetPoint("TOPLEFT", PAD + (i - 1) * (w + SLOT_GAP), -y)
-    s:SetWidth(w)
-    s:SetAlpha(slot.maybe and 0.75 or 1)
-    local a, c = slot.answer, slot.char
-    if a then
-      local mine = (a.guid and me.guids[a.guid]) or (a.battleTag and a.battleTag == me.battleTag)
-      if c then
-        s.portrait:Show()
-        s.mark:SetText("")
-        s.portrait:SetClass(c.classFile)
-        s.portrait:SetOnline(c.online)
-        s.name:SetText(classColored(c, ns.Format.truncate(c.name, 14) .. " " .. tostring(c.level)))
-      else
-        s.portrait:Hide()
-        local name = a.name or tagName(a.battleTag) or "?"
-        s.mark:SetText(name:match("^[%z\1-\127\194-\244][\128-\191]*") or "?")
-        s.mark:SetTextColor(Theme.color("textDim"))
-        s.name:SetText(ns.Format.truncate(name, 14))
-        s.name:SetTextColor(Theme.color("text"))
-      end
-      local info = { ROLE_NAMES[a.role or (c and c.role) or "dps"] }
-      info[#info + 1] = personName(a, candidates, me)
-      s.info:SetText(table.concat(info, DOT))
-      s.info:SetTextColor(Theme.color("textDim"))
-      local state, stateColor
-      if organiser and ((a.guid and a.guid == organiser.guid) or (a.battleTag and a.battleTag == organiser.battleTag))
-      then
-        state, stateColor = "organiser", "onlineText"
-      elseif slot.maybe then
-        state, stateColor = "maybe", "goldLight"
-      elseif a.source == "discord" then
-        state, stateColor = "answered on Discord", "discord"
-      elseif c and c.online then
-        state, stateColor = "online", "onlineText"
-      end
-      -- CF-49: how the level fits when it isn't "fits": a carry in the warning colour, others muted.
-      local fit = not state and ns.PlannedRuns.fitOf(a, c, dungeonOf(run))
-      if fit and fit.label ~= "fits" then
-        state, stateColor = fit.label, fit.kind == "carry" and "warning" or "muted"
-      end
-      s.status:SetText(state or "")
-      s.status:SetTextColor(Theme.color(stateColor or "muted"))
-      edge(s, mine and "gold" or "divider")
-    else
-      s.portrait:Hide()
-      s.mark:SetText(slot.missing and "?" or "+")
-      s.mark:SetTextColor(Theme.color(slot.missing and "warning" or "faint"))
-      s.name:SetText(ROLE_NAMES[slot.role])
-      s.name:SetTextColor(Theme.color("text"))
-      s.info:SetText(slot.missing and "nobody in range" or "open")
-      s.info:SetTextColor(Theme.color(slot.missing and "warning" or "faint"))
-      s.status:SetText("")
       edge(s, slot.missing and "missing" or "divider")
     end
   end
@@ -482,129 +516,311 @@ local function planColumn(parent, dungeon, x, y, width)
 end
 
 local function clearDetail()
-  for _, name in ipairs({ "name", "section", "small", "tiny", "slots", "quests", "buttons", "primary" }) do
+  for _, name in ipairs({ "name", "section", "small", "tiny", "slots", "quests", "buttons", "primary", "groupRows",
+                          "onlineRows", "infos", "links" }) do
     Kit.release(pools[name])
   end
   linkBox:Hide()
 end
 
--- CF-46: one planned run.
+-- CF-62: who is online in the community and fits the run's range, not in its group (MemberTracker, re-drawn on
+-- CLUB_MEMBER_PRESENCE_UPDATED and CLUB_MEMBER_UPDATED through MemberTracker.UPDATED).
+local function onlineFits(dungeon, excluded, candidates)
+  local friendOf = {}
+  for _, c in ipairs(candidates) do
+    if c.guid then friendOf[c.guid] = c.own and "you" or c.displayName end
+  end
+  local out = {}
+  if not dungeon then return out end
+  local myGuid = ns.SelfInfo.read().guid
+  for guid, m in pairs(ns.MemberTracker.members()) do
+    local online = m.presence and m.presence ~= 0 and m.presence ~= 3 -- Offline (0) and Away-offline (3) aside
+    if online and guid ~= myGuid and not excluded[guid] and type(m.level) == "number"
+        and m.level >= dungeon.min and m.level <= dungeon.max then
+      local info = ns.Classes and ns.Classes.info and ns.Classes.info(nil, m.classID)
+      out[#out + 1] = { guid = guid, name = m.name, level = m.level, zone = m.zone, friend = friendOf[guid],
+                        classFile = info and info.file }
+    end
+  end
+  table.sort(out, function(a, b) return tostring(a.name) < tostring(b.name) end)
+  return out
+end
+
+local function whisper(name)
+  if ChatFrame_SendTell then
+    pcall(ChatFrame_SendTell, name)
+  elseif ChatFrameUtil and ChatFrameUtil.OpenChat then
+    pcall(ChatFrameUtil.OpenChat, "/w " .. name .. " ")
+  end
+end
+
+-- One run (CF-46; CF-62 board AG02Dungeons A to C).
 local function renderRun(run, me, candidates)
   local parent = detail.child
-  local width = math.max(420, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local width = math.max(560, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local leftWidth = width - ONLINE_WIDTH - 24
+  local rightX = PAD + leftWidth + 24
   local y = PAD - 4
   local dungeon = dungeonOf(run)
+  local open = ns.PlannedRuns.inviteOpen(run, now())
+  -- Title: the dungeon (never the typed note), then its range.
   local title = placeText(pools.name, parent, PAD, y, width, dungeonName(run), "heading")
   local tw = title.text.GetStringWidth and title.text:GetStringWidth() or 200
-  local soon = run.startsAt - now() < SOON
-  local timing = placeText(pools.small, parent, PAD + tw + 12, y + 10, width - tw - 12,
-    when(run.startsAt) .. DOT .. ns.PlannedRuns.untilText(run.startsAt, now()), soon and "soon" or "textDim")
+  if dungeon then placeText(pools.small, parent, PAD + tw + 12, y + 10, 160, "level " .. range(dungeon), "muted") end
+  y = y + 34
   local sub = {}
-  if dungeon then sub[#sub + 1] = range(dungeon) end
-  sub[#sub + 1] = SOURCE_WORDS[run.source]
+  local lead
+  if open then
+    lead = colored("Starting now" .. DOT .. clock(run.startsAt), "warning")
+  else
+    lead = when(run.startsAt) .. DOT .. ns.PlannedRuns.untilText(run.startsAt, now())
+  end
+  if SOURCE_WORDS[run.source] then sub[#sub + 1] = SOURCE_WORDS[run.source] end
   if run.state == "full" then sub[#sub + 1] = "full" end
-  if #sub > 0 then
-    local ww = timing.text.GetStringWidth and timing.text:GetStringWidth() or 150
-    placeText(pools.small, parent, PAD + tw + ww + 24, y + 10, math.max(60, width - tw - ww - 24),
-      table.concat(sub, DOT), "muted")
-  end
-  y = y + 40
-  if run.note then
-    placeText(pools.small, parent, PAD, y, width, "\226\128\156" .. run.note .. "\226\128\157", "textDim")
-    y = y + 26
-  end
-  local organiser = personName(run.organiser, candidates, me)
-  if organiser and organiser ~= "you" then
-    placeText(pools.tiny, parent, PAD, y, width, "Organised by " .. organiser .. DOT .. countsText(run), "muted")
-    y = y + 20
-  end
-  -- CF-47: your answer (or plan) until the site has it; answering in game.
+  if run.note then sub[#sub + 1] = "note: \226\128\156" .. run.note .. "\226\128\157" end
+  placeText(pools.small, parent, PAD, y, width, lead .. (#sub > 0 and (DOT .. table.concat(sub, DOT)) or ""),
+    "textDim")
+  y = y + 26
   local mineNow = ns.PlannedRuns.yourAnswer(run, me)
   if run.pending or (mineNow and mineNow.pending) then
-    placeText(pools.tiny, parent, PAD, y, width, PENDING, "faint")
-    y = y + 20
-  end
-  if not run.pending and not ns.PlannedRuns.isOrganiser(run, me) then
-    local b = Kit.take(pools.primary, parent)
-    b:SetLabel(mineNow and "Change answer" or "Answer")
-    b:SetEnabled(true)
-    b:SetScript("OnClick", function() ns.RunDialogs.answer(run) end)
-    b:SetPoint("TOPLEFT", PAD, -y)
-    y = y + 38
+    placeText(pools.tiny, parent, PAD, y, leftWidth, PENDING, "faint")
+    y = y + 18
   end
 
-  y = section(parent, PAD, y + 4, width, "Group", countsText(run))
-  y = runSlots(parent, run, candidates, me, y, width)
-  -- CF-49: reserves wait for a full role; they take no slot.
+  -- Group: five full-width rows.
+  local slotList = ns.PlannedRuns.slots(run, candidates, dungeon)
+  local openCount, inGroup = 0, {}
+  for _, slot in ipairs(slotList) do
+    if not slot.answer then openCount = openCount + 1 end
+    if slot.answer and slot.answer.guid then inGroup[slot.answer.guid] = true end
+  end
+  for _, a in ipairs(run.answers or {}) do
+    if a.guid then inGroup[a.guid] = true end
+  end
+  local fits = onlineFits(dungeon, inGroup, candidates)
+  local yes, maybe = ns.PlannedRuns.counts(run)
+  local counts = yes .. " in" .. (maybe > 0 and (DOT .. maybe .. " maybe") or "") ..
+    (openCount > 0 and (DOT .. openCount .. " open") or "")
+  local top = y
+  y = section(parent, PAD, y, leftWidth, "Group", counts)
+  local organiser = run.organiser
+  local ctx = open and ns.RunAlerts.context() or nil
+  local states = {}
+  if ctx then
+    for _, st in ipairs(ns.RunStart.states(run, ns.Planner.me(), ctx)) do
+      states[st.answer] = st
+    end
+  end
+  local fitNames = {}
+  for i, f in ipairs(fits) do
+    if i > 8 then break end
+    fitNames[#fitNames + 1] = f.name .. " " .. f.level
+  end
+  for _, slot in ipairs(slotList) do
+    local g = Kit.take(pools.groupRows, parent)
+    g:SetPoint("TOPLEFT", PAD, -y)
+    g:SetWidth(leftWidth)
+    g.tip = nil
+    local a, c = slot.answer, slot.char
+    if a then
+      g.bg:SetColorTexture(Theme.color("white", 0.03))
+      g.role:SetRole(a.role or (c and c.role) or slot.role)
+      g.portrait:Show()
+      g.portrait:SetClass(c and c.classFile or nil)
+      g.portrait:SetOnline(c and c.online)
+      local name = (c and c.name) or a.name or tagName(a.battleTag) or "?"
+      g.name:SetText(c and classColored(c, name) or name)
+      local level = c and c.level
+      g.info:SetText((level and (level .. DOT) or "") .. tostring(personName(a, candidates, me) or ""))
+      local state, color
+      local st = states[a]
+      if organiser and ((a.guid and a.guid == organiser.guid) or (a.battleTag and a.battleTag == organiser.battleTag))
+      then
+        state, color = "organiser", "onlineText"
+      elseif open and st and (st.state == "ready" or st.state == "other" or st.state == "grouped") then
+        local zone = st.presence and st.presence.zone
+        state, color = (slot.maybe and "maybe" .. DOT or "") .. "online" .. (zone and (DOT .. zone) or ""),
+          slot.maybe and "warning" or "onlineText"
+      elseif open and st and st.state == "offline" then
+        state, color = (slot.maybe and "maybe" .. DOT or "") .. "offline", slot.maybe and "warning" or "muted"
+      elseif slot.maybe then
+        state, color = "maybe", "warning"
+      elseif a.source == "discord" then
+        state, color = "answered on Discord", "swap"
+      end
+      -- CF-49: how the level fits when it isn't "fits": a carry in the warning colour, others muted.
+      local fit = not state and ns.PlannedRuns.fitOf(a, c, dungeon)
+      if fit and fit.label ~= "fits" then state, color = fit.label, fit.kind == "carry" and "warning" or "muted" end
+      g.status:SetText(state or "")
+      g.status:SetTextColor(Theme.color(color or "muted"))
+    else
+      g.bg:SetColorTexture(Theme.color("white", 0))
+      g.role:SetRole(slot.role, true)
+      g.portrait:Hide()
+      g.name:SetText(colored(ROLE_LABEL[slot.role] .. DOT .. (slot.missing and "nobody in range" or "open"),
+        slot.missing and "warning" or "faint"))
+      g.info:SetText("")
+      if #fits > 0 and not slot.missing then
+        g.status:SetText(#fits .. " online fit")
+        g.status:SetTextColor(Theme.color("swap"))
+        g.tip = table.concat(fitNames, "\n")
+      else
+        g.status:SetText("")
+      end
+    end
+    y = y + GROUP_ROW + 4
+  end
   local reserves = {}
   for _, a in ipairs(ns.PlannedRuns.reserves(run)) do
     local who = a.name or tagName(a.battleTag) or "?"
-    reserves[#reserves + 1] = who .. (a.role and (" (" .. ROLE_NAMES[a.role] .. ")") or "")
+    local parts = {}
+    if a.role then parts[#parts + 1] = ROLE_LABEL[a.role] end
+    local friend = personName(a, candidates, me)
+    if friend and friend ~= who then parts[#parts + 1] = friend end
+    reserves[#reserves + 1] = who .. (#parts > 0 and (" (" .. table.concat(parts, ", ") .. ")") or "")
   end
   if #reserves > 0 then
-    placeText(pools.tiny, parent, PAD, y, width, "Reserve: " .. table.concat(reserves, ", "), "muted")
-    y = y + 20
-  end
-  local close = {}
-  for i, entry in ipairs(ns.PlannedRuns.close(run, candidates, dungeon)) do
-    if i > 3 then break end
-    local c = entry.char
-    local whose = c.own and "your alt" or (c.displayName or "member")
-    close[#close + 1] = classColored(c, c.name) .. " " .. c.level .. " (" .. whose .. ", " .. entry.fit.label .. ")"
-  end
-  if #close > 0 then
-    placeText(pools.tiny, parent, PAD, y, width, "Close: " .. table.concat(close, ", "), "muted")
-    y = y + 20
+    placeText(pools.small, parent, PAD, y + 2, leftWidth, "Reserve: " .. table.concat(reserves, ", "), "muted")
+    y = y + 22
   end
 
-  local half = math.floor((width - 22) / 2)
-  local top = y + 12
-  -- Left: at start time. CF-48: from 5 minutes before the start, Invite all opens the start panel; everyone
-  -- else can request an invite.
-  local started = now() >= run.startsAt - 300
-  local left = section(parent, PAD, top, half, "At " .. clock(run.startsAt))
+  -- The action area, below a divider.
+  y = y + 10
   local isOrganiser = ns.PlannedRuns.isOrganiser(run, me)
-  local mine = ns.PlannedRuns.yourAnswer(run, me)
-  local lines = {}
   local data = ns.Planner.data()
-  if data and data.reminderMinutes and (isOrganiser or (mine and mine.answer ~= "cant")) then
-    lines[#lines + 1] = "You'll get a reminder at " .. clock(run.startsAt - data.reminderMinutes * 60) .. "."
-  end
-  lines[#lines + 1] = isOrganiser and "At start, Invite all invites everyone who's in and online."
-    or "At start, the organiser invites everyone who's in."
-  placeText(pools.small, parent, PAD, left, half, table.concat(lines, " "), "textDim")
-  left = left + 40
   if isOrganiser then
+    y = section(parent, PAD, y, leftWidth, open and "Start" or ("At " .. clock(run.startsAt)))
+    local ready = {}
+    if ctx then ready = ns.RunStart.readyToInvite(ns.RunStart.states(run, ns.Planner.me(), ctx)) end
     local b = Kit.take(pools.primary, parent)
-    b:SetLabel(started and "Invite all" or ("Invite all" .. DOT .. "from " .. clock(run.startsAt)))
-    b:SetEnabled(started)
-    b:SetScript("OnClick", function() ns.StartPanel.open(run.id) end)
-    b:SetPoint("TOPLEFT", PAD, -left)
-    left = left + 36
-  elseif started and mine and mine.answer ~= "cant" then
-    local b = Kit.take(pools.buttons, parent)
-    b:SetLabel("Request invite")
-    b:SetEnabled(true)
-    b:SetScript("OnClick", function() ns.StartPanel.open(run.id) end)
-    b:SetPoint("TOPLEFT", PAD, -left)
-    left = left + 36
+    b:SetLabel(open and ("Invite all" .. DOT .. #ready .. " online")
+      or ("Invite all" .. DOT .. "opens " .. clock(run.startsAt - ns.PlannedRuns.INVITE_LEAD)))
+    b:SetEnabled(open and #ready > 0)
+    b:SetHeight(32)
+    if b.SetMotionScriptsWhileDisabled then b:SetMotionScriptsWhileDisabled(true) end
+    b.tooltip = INVITE_TIP -- also while disabled
+    b:SetScript("OnClick", function() ns.RunAlerts.inviteReady(run) end)
+    b:SetPoint("TOPLEFT", PAD, -y)
+    local bx = PAD + (b:GetWidth() or 180) + 10
+    if open and ctx then
+      for _, st in ipairs(ns.RunStart.states(run, ns.Planner.me(), ctx)) do
+        if st.state == "other" then
+          local w = Kit.take(pools.buttons, parent)
+          w:SetLabel("Whisper " .. tostring(personName(st.answer, candidates, me)))
+          w:SetEnabled(true)
+          w:SetScript("OnClick", function() ns.RunAlerts.whisperSwitch(run, st) end)
+          w:SetPoint("TOPLEFT", bx, -(y + 3))
+          break
+        end
+      end
+    end
+    y = y + 40
+    if not open and data and data.reminderMinutes and date then
+      placeText(pools.small, parent, PAD, y, leftWidth,
+        "Reminder at " .. clock(run.startsAt - data.reminderMinutes * 60), "textDim")
+      y = y + 20
+    elseif open and ctx then
+      local offline = {}
+      for _, st in ipairs(ns.RunStart.missing(ns.RunStart.states(run, ns.Planner.me(), ctx))) do
+        local who = st.answer.name or personName(st.answer, candidates, me) or "?"
+        offline[#offline + 1] = who .. (st.answer.answer == "maybe" and " (maybe)" or "")
+      end
+      if #offline > 0 then
+        placeText(pools.small, parent, PAD, y, leftWidth, table.concat(offline, ", ") ..
+          (#offline == 1 and " is offline." or " are offline."), "textDim")
+        y = y + 20
+      end
+    end
+  elseif not run.pending then
+    -- Your answer: three toggles, then the character and role you go as ("change" opens the answer dialog).
+    local heading = placeText(pools.section, parent, PAD, y, leftWidth, "Your answer", "goldLight")
+    local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 90
+    local info = Kit.take(pools.infos, parent)
+    info:SetPoint("TOPLEFT", PAD + hw + 8, -(y + 3))
+    info.tip = ANSWER_TIP
+    y = y + 26
+    local x = PAD
+    local current = mineNow and mineNow.answer
+    local me0 = ns.SelfInfo.read()
+    local char = { guid = me0.guid, name = me0.name, level = me0.level, classFile = me0.classFile,
+                   role = (mineNow and mineNow.role) or ns.SelfInfo.role and ns.SelfInfo.role() or "dps" }
+    for _, def in ipairs({ { "in", "I'm in" }, { "maybe", "Maybe" }, { "cant", "Can't" } }) do
+      local b = Kit.take(def[1] == current and pools.primary or pools.buttons, parent)
+      b:SetLabel(def[2])
+      b:SetEnabled(true)
+      b:SetScript("OnClick", function()
+        ns.Planner.answer(run, def[1], def[1] ~= "cant" and char or nil)
+        helpers.render()
+      end)
+      b:SetPoint("TOPLEFT", x, -y)
+      x = x + (b:GetWidth() or 80) + 8
+    end
+    y = y + 36
+    local asWho = mineNow and mineNow.name or char.name
+    placeText(pools.small, parent, PAD, y, leftWidth, "As " .. tostring(asWho) .. DOT ..
+      (ROLE_LABEL[(mineNow and mineNow.role) or char.role] or "Damage") .. DOT, "textDim")
+    local change = Kit.take(pools.links, parent)
+    change:SetPoint("TOPLEFT", PAD + 220, -(y - 2))
+    change.text:SetText("change")
+    change:SetScript("OnClick", function() ns.RunDialogs.answer(run) end)
+    y = y + 22
   end
-  -- Right: edit or cancel on the website.
-  local x = PAD + half + 22
-  local right = section(parent, x, top, half, "Edit or cancel")
-  placeText(pools.small, parent, x, right, half, run.url and "On the website. Copy the link:" or "On the website.",
-    "textDim")
-  right = right + 22
+
+  -- Right column: Online now, fits, then Edit or cancel.
+  local ry = top
+  if dungeon then
+    local heading = placeText(pools.section, parent, rightX, ry, ONLINE_WIDTH,
+      "Online now, fits " .. range(dungeon), "goldLight")
+    local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 180
+    local info = Kit.take(pools.infos, parent)
+    info:SetPoint("TOPLEFT", rightX + hw + 8, -(ry + 3))
+    info.tip = ROSTER_TIP
+    placeText(pools.small, parent, rightX, ry + 2, ONLINE_WIDTH, tostring(#fits), "faint", "RIGHT")
+    ry = ry + 28
+    if #fits == 0 then
+      placeText(pools.small, parent, rightX, ry, ONLINE_WIDTH, "Nobody online fits right now.", "muted")
+      ry = ry + 22
+    end
+    local combat = InCombatLockdown and InCombatLockdown()
+    for _, f in ipairs(fits) do
+      local o = Kit.take(pools.onlineRows, parent)
+      o:SetPoint("TOPLEFT", rightX, -ry)
+      o:SetWidth(ONLINE_WIDTH)
+      o.portrait:SetClass(f.classFile)
+      o.portrait:SetOnline(true)
+      o.name:SetText(f.classFile and classColored(f, f.name) or tostring(f.name))
+      o.level:SetText(tostring(f.level))
+      o.info:SetText(table.concat({ f.friend or "community", f.zone }, DOT))
+      if open then
+        o.button:SetLabel("Invite")
+        o.button:SetEnabled(not combat)
+        o.button.tooltip = combat and "Not in combat" or nil
+        o.button:SetScript("OnClick", function()
+          if not (InCombatLockdown and InCombatLockdown()) then ns.Party.invite(f.name) end
+        end)
+      else
+        o.button:SetLabel("Whisper")
+        o.button:SetEnabled(true)
+        o.button.tooltip = nil
+        o.button:SetScript("OnClick", function() whisper(f.name) end)
+      end
+      ry = ry + ONLINE_ROW
+    end
+    ry = ry + 12
+  end
+  ry = section(parent, rightX, ry, ONLINE_WIDTH, isOrganiser and "Edit or cancel" or "On the website")
   if run.url then
     linkBox:ClearAllPoints()
     linkBox:SetParent(parent)
-    linkBox:SetPoint("TOPLEFT", x, -right)
-    linkBox:SetWidth(half)
+    linkBox:SetPoint("TOPLEFT", rightX, -ry)
+    linkBox:SetWidth(228)
     linkBox:SetText(run.url)
     linkBox:Show()
-    right = right + 36
+    ry = ry + 34
+    placeText(pools.tiny, parent, rightX, ry, ONLINE_WIDTH, "Click, then Ctrl+C to copy.", "faint")
+    ry = ry + 20
   end
-  parent:SetHeight(math.max(left, right) + PAD)
+  parent:SetHeight(math.max(y, ry) + PAD)
   detail:Update()
 end
 
@@ -683,7 +899,7 @@ function DungeonsTab.create(parent, h)
   local column = CreateFrame("Frame", nil, root)
   column:SetPoint("TOPLEFT")
   column:SetPoint("BOTTOMLEFT")
-  column:SetWidth(Theme.SIZES.listWidth)
+  column:SetWidth(LIST_WIDTH) -- CF-62
   local columnBg = Theme.fill(column, "list", "BACKGROUND")
   columnBg:SetAllPoints()
   local columnLine = Theme.fill(column, "divider", "BORDER")
@@ -726,6 +942,16 @@ function DungeonsTab.create(parent, h)
     small = Kit.pool(Kit.textHolder("small")), tiny = Kit.pool(Kit.textHolder("tiny")),
     slots = Kit.pool(slotFrame), quests = Kit.pool(questRow), buttons = Kit.pool(button),
     primary = Kit.pool(primary),
+    -- CF-62
+    runRows = Kit.pool(runRow), listTitle = Kit.pool(Kit.textHolder("section")), listButtons = Kit.pool(button),
+    groupRows = Kit.pool(groupRow), onlineRows = Kit.pool(onlineRow), infos = Kit.pool(Kit.info),
+    links = Kit.pool(function(p)
+      local b = CreateFrame("Button", nil, p)
+      b:SetSize(60, 18)
+      b.text = Theme.text(b, "small", "goldLight")
+      b.text:SetPoint("LEFT")
+      return b
+    end),
   }
   return root
 end
@@ -794,6 +1020,18 @@ function DungeonsTab.render(view, messageText)
   end
 end
 
+-- CF-62: "Ask now…" on the list: the selected run's dungeon, else the selected or first dungeon in range.
+function DungeonsTab.askNow()
+  local selected = entries[status().selected]
+  local dungeon = selected and (selected.run and dungeonOf(selected.run) or selected.dungeon)
+  if not dungeon then
+    for _, e in pairs(entries) do
+      if e.dungeon and e.fits then dungeon = e.dungeon break end
+    end
+  end
+  if dungeon then ns.RunDialogs.askNow(dungeon) end
+end
+
 function DungeonsTab.reset()
   root, entries, rows = nil, {}, {}
 end
@@ -804,15 +1042,15 @@ function DungeonsTab.linkBox() return linkBox end
 
 function DungeonsTab.texts()
   local out = {}
-  for _, name in ipairs({ "listText", "name", "section", "small", "tiny" }) do
+  for _, name in ipairs({ "listTitle", "listText", "name", "section", "small", "tiny" }) do
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do out[#out + 1] = p.items[i].text:GetText() end
   end
-  for _, name in ipairs({ "rows", "slots", "quests" }) do
+  for _, name in ipairs({ "rows", "runRows", "slots", "groupRows", "onlineRows", "quests" }) do
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do
       local item = p.items[i]
-      for _, key in ipairs({ "name", "right", "meta", "info", "status", "mark", "who" }) do
+      for _, key in ipairs({ "name", "right", "meta", "info", "status", "mark", "who", "level" }) do
         local fs = item[key]
         if type(fs) == "table" and fs.GetText and fs:GetText() and fs:GetText() ~= "" then
           out[#out + 1] = fs:GetText()
@@ -825,9 +1063,14 @@ end
 
 function DungeonsTab.buttons()
   local out = {}
-  for _, name in ipairs({ "buttons", "primary" }) do
+  for _, name in ipairs({ "buttons", "primary", "listButtons" }) do
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do out[p.items[i].label:GetText()] = p.items[i] end
+  end
+  for i = 1, pools and pools.links.used or 0 do out[pools.links.items[i].text:GetText()] = pools.links.items[i] end
+  for i = 1, pools and pools.onlineRows.used or 0 do
+    local b = pools.onlineRows.items[i].button
+    out[b.label:GetText() .. ":" .. i] = b
   end
   return out
 end
@@ -835,6 +1078,24 @@ end
 function DungeonsTab.questRows()
   local out = {}
   for i = 1, pools and pools.quests.used or 0 do out[i] = pools.quests.items[i] end
+  return out
+end
+
+function DungeonsTab.groupRows()
+  local out = {}
+  for i = 1, pools and pools.groupRows.used or 0 do out[i] = pools.groupRows.items[i] end
+  return out
+end
+
+function DungeonsTab.tips()
+  local out = {}
+  for i = 1, pools and pools.infos.used or 0 do out[#out + 1] = pools.infos.items[i].tip end
+  for _, name in ipairs({ "primary", "groupRows" }) do
+    for i = 1, pools and pools[name].used or 0 do
+      local t = pools[name].items[i].tooltip or pools[name].items[i].tip
+      if t then out[#out + 1] = t end
+    end
+  end
   return out
 end
 

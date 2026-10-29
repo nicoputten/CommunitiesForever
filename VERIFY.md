@@ -34,6 +34,18 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-62d1 Dungeons tab: runs (board AG02Dungeons)
+New APIs (guarded): the role icon atlases `UI-LFG-RoleIcon-Tank`, `-Healer`, `-DPS` through `C_Texture.GetAtlasInfo` (without them a coloured square), `ChatFrame_SendTell(name)` for Whisper (else `ChatFrameUtil.OpenChat`), `Button:SetMotionScriptsWhileDisabled` (the tooltip on a disabled Invite all).
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Dungeons with a few runs | The list is 290 px: "Runs" with "Ask now…" on the right; runs under "Today"/"Tonight", "Tomorrow", "This week", "Later"; each row: short name ("SM: Graveyard") and time ("20:30" or "Fri 20:00"), five role pips (filled in role colour when taken), "2 in · 1 maybe", the organiser ("you organise" in gold). At the bottom: "Runs from the website, <time>. Type /reload after an upload for newer." | open |
+| `/dump C_Texture.GetAtlasInfo("UI-LFG-RoleIcon-Tank")` | A table (then the role icons are Blizzard's); `nil` means the coloured squares are used. | open |
+| Open your own run before the start | Title: the dungeon's full name and "level 26–36"; under it "Tonight 20:30 · in 3 h 10 m · planned on the website · note: “…”". Five 38 px group rows with role icon, class icon, the full name (never cut at 1080 × 720), "level · friend", and the status (organiser green, answered on Discord blue, maybe orange). An open slot: dimmed role icon, "Damage · open", "N online fit" in blue (hover: who). "Reserve: …" under them. | open |
+| Same run, right column | "Online now, fits 26–36" with an ⓘ (hover: "From the community roster: …") and the count; one row per online member in range who isn't in the group, with Whisper (opens the chat box with /w). "Nobody online fits right now." when none. Below: "Edit or cancel", the link box (click selects it), "Click, then Ctrl+C to copy." | open |
+| A community member logs in or out | "Online now, fits" changes within a second. | open |
+| Your run, 15 minutes before the start | "Starting now · 20:30" in orange; "Invite all · N online" enabled (hover: "Invite all invites everyone who is in and online."; also while disabled before). Before that, disabled "Invite all · opens 20:15" and "Reminder at 20:00". Online now shows Invite (out of combat; in combat disabled with "Not in combat"). | open |
+| Someone else's run | "Your answer" with an ⓘ (hover: "Shared with online friends now; …"), I'm in / Maybe / Can't (yours highlighted), "As <character> · <role> · change" (change opens the answer dialog). The answer reaches the organiser's addon within seconds and survives /reload. "On the website" above the link. | open |
+
 ### CF-62c Friends tab (board AG03Tabs)
 | Step | Expected | Status |
 |---|---|---|

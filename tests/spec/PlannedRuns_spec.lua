@@ -386,4 +386,26 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
     assert.are.same({ name = "Ada", chars = {} }, friends[2])
     assert.are.same({}, PlannedRuns.friends(nil))
   end)
+  it("groups and times runs for the Dungeons list (CF-62)", function()
+    local function clock(fmt, t)
+      assert(fmt == "*t")
+      local day = math.floor(t / 86400)
+      local secs = t % 86400
+      return { year = 2026, month = 11, day = 4 + day, hour = math.floor(secs / 3600), min = math.floor(secs / 60) % 60,
+               wday = (3 + day) % 7 + 1 }
+    end
+    local now = 10 * 3600 -- Wed 4 Nov 10:00 in the fake clock
+    assert.are.equal("Today", PlannedRuns.bucket(now + 3600, now, clock))
+    assert.are.equal("Tonight", PlannedRuns.bucket(20 * 3600, now, clock))
+    assert.are.equal("Tomorrow", PlannedRuns.bucket(86400 + 20 * 3600, now, clock))
+    assert.are.equal("This week", PlannedRuns.bucket(3 * 86400, now, clock))
+    assert.are.equal("Later", PlannedRuns.bucket(9 * 86400, now, clock))
+    assert.are.equal("20:30", PlannedRuns.rowTime(20 * 3600 + 1800, now, clock))
+    assert.are.equal("Fri 20:00", PlannedRuns.rowTime(2 * 86400 + 20 * 3600, now, clock))
+    assert.are.equal("SM: Graveyard", PlannedRuns.shortName("Scarlet Monastery: Graveyard"))
+    assert.are.equal("Razorfen Kraul", PlannedRuns.shortName("Razorfen Kraul"))
+    local run = { startsAt = 5000 }
+    assert.is_false(PlannedRuns.inviteOpen(run, 5000 - 901))
+    assert.is_true(PlannedRuns.inviteOpen(run, 5000 - 900))
+  end)
 end)

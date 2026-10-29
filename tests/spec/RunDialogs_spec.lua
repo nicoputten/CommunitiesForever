@@ -162,7 +162,7 @@ describe("Run dialogs (CF-47)", function()
   it("answers a run: pending, shown in the row, sent to the organiser, cleared when the site has it", function()
     load(runs())
     open("run:r2")
-    ns.DungeonsTab.buttons()["Answer"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["change"]:RunScript("OnClick") -- CF-62: "change" opens the answer dialog
     local all = dialogText()
     assert.is_truthy(all:find("\nWailing Caverns\n", 1, true))
     assert.is_truthy(all:find(" for Garraka Doombringer\n", 1, true)) -- the organiser's own time
@@ -177,8 +177,10 @@ describe("Run dialogs (CF-47)", function()
     assert.are.same({ "r2", "maybe", VES }, { answers[1].message.run, answers[1].message.answer,
                                               answers[1].message.guid })
     settle()
-    local meta = plain(row("run:r2").meta:GetText())
-    assert.is_truthy(meta:find("you: maybe as Ves Doombringer  reaches Discord after /reload", 1, true))
+    -- CF-62: the run's detail shows your answer highlighted and that it waits for the next upload.
+    local function detailText() return plain(table.concat(ns.DungeonsTab.texts(), "\n")) end
+    assert.are.equal("primary", ns.DungeonsTab.buttons()["Maybe"].kind)
+    assert.is_truthy(detailText():find("reaches Discord after /reload", 1, true))
     -- The site has it: a newer runs list confirms the id.
     local newer = runs()
     newer.updatedAt, newer.received = NOW, { item.id }
@@ -186,15 +188,14 @@ describe("Run dialogs (CF-47)", function()
     assert.is_true(ns.Planner.receive(newer))
     assert.are.equal(0, #pending())
     settle()
-    meta = plain(row("run:r2").meta:GetText())
-    assert.is_falsy(meta:find("reaches Discord", 1, true))
+    assert.is_falsy(detailText():find("reaches Discord", 1, true))
   end)
 
   -- CF-49: the role is picked apart from the character, from the roles its class can play.
   it("answers with a role the class can play, and plans as one", function()
     load(runs())
     open("run:r2")
-    ns.DungeonsTab.buttons()["Answer"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["change"]:RunScript("OnClick") -- CF-62: "change" opens the answer dialog
     assert.is_truthy(dialogText():find("\nROLE\n", 1, true))
     local buttons = ns.RunDialogs.buttons()
     assert.is_truthy(buttons["Tank"] and buttons["Healer"] and buttons["Damage"]) -- a paladin plays all three
@@ -216,7 +217,7 @@ describe("Run dialogs (CF-47)", function()
     data.runs[2].dungeon = "smarm" -- 32-42: Ves at 20 is 12 below
     load(data)
     open("run:r2")
-    ns.DungeonsTab.buttons()["Answer"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["change"]:RunScript("OnClick") -- CF-62: "change" opens the answer dialog
     assert.is_truthy(dialogText():find("Ves Doombringer 20 \194\183 damage | 12 below", 1, true))
     ns.RunDialogs.rows()[1]:RunScript("OnClick")
     assert.is_truthy(dialogText():find("This will be tough.", 1, true))
