@@ -21,16 +21,30 @@ describe("FriendProbe launch checklist (CF-60)", function()
     return open
   end
 
-  it("has one item per open API question of VERIFY.md, and none for answered ones", function()
+  it("has one item per open API question of VERIFY.md; done items are closed there (CF-61)", function()
     local ns, open = checklist(), openQuestions()
     local ids = {}
     for _, item in ipairs(ns.items) do
       assert.is_nil(ids[item.id], "twice: " .. item.id)
       ids[item.id] = true
-      if item.id:match("^V%d") then assert.is_true(open[item.id] == true, item.id .. " is not open in VERIFY.md") end
+      if item.id:match("^V%d") and item.done then
+        assert.is_nil(open[item.id], item.id .. " is done but still open in VERIFY.md")
+      elseif item.id:match("^V%d") then
+        assert.is_true(open[item.id] == true, item.id .. " is not open in VERIFY.md")
+      end
     end
     for id in pairs(open) do assert.is_true(ids[id] == true, id .. " (open in VERIFY.md) has no checklist item") end
     assert.is_true(next(open) ~= nil)
+  end)
+
+  it("ticks what Nico checked on Retail 12.1.5 and leaves the rest open (CF-61)", function()
+    local done = {}
+    for _, item in ipairs(checklist().items) do
+      if item.done then done[#done + 1] = item.id end
+    end
+    table.sort(done)
+    assert.are.same({ "V50b", "V54", "V55", "V61", "V63", "V68", "V71", "V77", "V78", "V80", "V81", "V82", "V83",
+                      "V86" }, done)
   end)
 
   it("lists in the TOC only files that exist", function()

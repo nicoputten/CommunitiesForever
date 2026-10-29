@@ -19,6 +19,7 @@ local function forOtherClient(item)
 end
 
 local function stateText(item)
+  if item.done then return LABELS.pass, "done (" .. item.done .. ")" end -- CF-61
   if forOtherClient(item) then return "|cff707070Forever only|r", item.note or "" end
   local r = resultOf(item.id)
   if not r then return "|cff909090open|r", (item.how or "") .. (item.note and ("  " .. item.note) or "") end
@@ -33,12 +34,17 @@ function ns.report()
     out[#out + 1] = ""
     out[#out + 1] = s .. ". " .. title
     for _, item in ipairs(ns.items) do
-      if item.session == s then
+      if item.session == s and not item.done then
         local r = resultOf(item.id)
         out[#out + 1] = string.format("  %-12s %-6s %s%s", item.id, r and r.status or "open",
           r and (r.detail or "") or "", r and r.char and (" [" .. r.char .. " " .. (r.at or "") .. "]") or "")
       end
     end
+  end
+  out[#out + 1] = ""
+  out[#out + 1] = "Done"
+  for _, item in ipairs(ns.items) do
+    if item.done then out[#out + 1] = string.format("  %-12s done (%s)", item.id, item.done) end
   end
   return table.concat(out, "\n")
 end
@@ -70,6 +76,36 @@ local function showReport()
   reportFrame.box:HighlightText()
 end
 
+local function itemRow(item, y)
+  local status = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  status:SetPoint("TOPLEFT", 0, -y)
+  status:SetWidth(64)
+  status:SetJustifyH("LEFT")
+  local name = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  name:SetPoint("TOPLEFT", 68, -y)
+  name:SetWidth(470)
+  name:SetJustifyH("LEFT")
+  local grey = forOtherClient(item)
+  name:SetText((grey and "|cff707070" or "") .. item.id .. ": " .. item.title
+    .. (item.friend and "  (needs a friend)" or "") .. (grey and "|r" or ""))
+  local detail = content:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  detail:SetPoint("TOPLEFT", 68, -(y + 16))
+  detail:SetWidth(470)
+  detail:SetJustifyH("LEFT")
+  lines[item.id] = { status = status, detail = detail, item = item }
+  if not item.auto and not grey and not item.done then
+    for i, answer in ipairs({ "Yes", "No" }) do
+      local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+      b:SetSize(48, 20)
+      b:SetPoint("TOPLEFT", 550 + (i - 1) * 54, -y)
+      b:SetText(answer)
+      b:SetScript("OnClick", function() ns.result(item.id, answer == "Yes" and "yes" or "no", "marked by hand") end)
+    end
+  end
+  y = y + 40
+  return y
+end
+
 local function create()
   window = CreateFrame("Frame", "FriendProbeChecklist", UIParent, "BasicFrameTemplateWithInset")
   window:SetSize(720, 580)
@@ -99,36 +135,17 @@ local function create()
     h:SetText(s .. ". " .. sessionTitle)
     y = y + 26
     for _, item in ipairs(ns.items) do
-      if item.session == s then
-        local status = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        status:SetPoint("TOPLEFT", 0, -y)
-        status:SetWidth(64)
-        status:SetJustifyH("LEFT")
-        local name = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        name:SetPoint("TOPLEFT", 68, -y)
-        name:SetWidth(470)
-        name:SetJustifyH("LEFT")
-        local grey = forOtherClient(item)
-        name:SetText((grey and "|cff707070" or "") .. item.id .. ": " .. item.title
-          .. (item.friend and "  (needs a friend)" or "") .. (grey and "|r" or ""))
-        local detail = content:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        detail:SetPoint("TOPLEFT", 68, -(y + 16))
-        detail:SetWidth(470)
-        detail:SetJustifyH("LEFT")
-        lines[item.id] = { status = status, detail = detail, item = item }
-        if not item.auto and not grey then
-          for i, answer in ipairs({ "Yes", "No" }) do
-            local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
-            b:SetSize(48, 20)
-            b:SetPoint("TOPLEFT", 550 + (i - 1) * 54, -y)
-            b:SetText(answer)
-            b:SetScript("OnClick", function() ns.result(item.id, answer == "Yes" and "yes" or "no", "marked by hand") end)
-          end
-        end
-        y = y + 40
-      end
+      if item.session == s and not item.done then y = itemRow(item, y) end
     end
     y = y + 6
+  end
+  -- CF-61: the items answered elsewhere, ticked, at the bottom.
+  local done = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+  done:SetPoint("TOPLEFT", 0, -y)
+  done:SetText("Done")
+  y = y + 26
+  for _, item in ipairs(ns.items) do
+    if item.done then y = itemRow(item, y) end
   end
   content:SetHeight(y)
 

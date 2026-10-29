@@ -106,7 +106,7 @@ Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Ma
 | A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
 
 ## Retail 12.1.5 dry run (2026-10-29)
-FriendProbe on Retail 12.1.5, build 70575, one EU character (interface 120105: the same Mainline API and Midnight restrictions as Forever). **Hints only, not Forever answers:** Forever has its own build, strings and server rules, so every VERIFY.md item below stays open until the launch run on Forever.
+FriendProbe on Retail 12.1.5, build 70575, one EU character (interface 120105: the same Mainline API and Midnight restrictions as Forever). **Answers for Forever (Nico, 2026-10-29, CF-61):** what he checked on Retail needs no recheck; those VERIFY.md items are closed: V77, V78, V63, V71, V55, V68, V50b, V83, V86, V82, V54, V61, V80 (the strings) and V81 (`C_DeathRecap` exists). Still open, so only hints here: V64 (the shimmer fix), V75 (combat log), V79 (Vanilla ranks), and everything that needs a friend, a dungeon, PvP or Forever itself.
 | Item | Retail result | What it suggests for Forever |
 |---|---|---|
 | V77 `GetCurrentRegion()` | `3` (EU) | As expected. |
@@ -123,7 +123,7 @@ FriendProbe on Retail 12.1.5, build 70575, one EU character (interface 120105: t
 | V86 `ERR_ZONE_EXPLORED`, `ERR_ZONE_EXPLORED_XP` | both matched a discovery | Discovery parsing works. |
 | V75 combat log | `RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` returned without an error, but Blizzard showed "only available to the Blizzard UI", and no events arrived | Likely forbidden for addons, not confirmed. See "Retail dry runs" above. |
 | V54 Esc closes the window, key binding | yes (by hand) | |
-| V61 the window draws right | no (by hand): the reason is being asked, probably the title shimmer (fixed in #117) | |
+| V61 the window draws right | no (by hand): the title shimmer drew a dark block (fixed in #117, see "Retail dry runs"); the rest draws | Closed; the shimmer itself stays open as V64. |
 
 ## Not available / not useful
 - LanMiaoApi (CurseForge) reports none of the above as present in `APIDocumentation`; it only confirms runtime existence. Not a source of signatures or secret flags for these APIs.
