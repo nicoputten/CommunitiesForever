@@ -154,11 +154,18 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       ns.DoomsdayTab.chips().board:RunScript("OnClick")
       local t = texts()
       assert.is_truthy(t:find("\nFRIEND\n", 1, true))
-      assert.is_truthy(t:find("\n10 QUESTS\n", 1, true))
-      assert.is_truthy(t:find("Mira  crown", 1, true))
-      assert.is_truthy(t:find("\n0/10\n", 1, true)) -- your own progress
+      assert.is_truthy(t:find("\n10 QUESTS\n", 1, true)) -- the goal's shortLabel
+      assert.is_truthy(t:find("\nPOINTS\n", 1, true))
+      assert.is_falsy(t:find("STREAK", 1, true)) -- CF-61c: the streak is in the name's tooltip
+      assert.is_truthy(t:find("\nMira\n", 1, true))
+      assert.is_truthy(t:find("\n%d%d:%d%d  crown\n")) -- the finish time and the crown after the name
+      assert.is_falsy(t:find("0/10", 1, true)) -- a check or a box, the progress in the tooltip
+      assert.is_truthy(t:find("\nPvE 15 \194\183 PvP 6\n", 1, true))
       assert.is_truthy(t:find("\nno Doomsday data yet\n", 1, true)) -- Tok, an older addon
-      assert.is_truthy(t:find("\n6\n", 1, true)) -- Mira's streak
+      local tips = table.concat(ns.DoomsdayTab.tips(), "\n|\n")
+      assert.is_truthy(tips:find("Finish 10 quests\n0/10", 1, true)) -- your own progress
+      assert.is_truthy(tips:find("Finish 10 quests\nDone at ", 1, true)) -- Mira's
+      assert.is_truthy(tips:find("Streak 6 days\nAll three PvE dailies done at ", 1, true))
       local board = ns.DoomsdayBoard.board()
       local mira
       for _, row in ipairs(board.rows) do
