@@ -34,8 +34,7 @@ local function link(text, fn)
 end
 
 local function dungeonName(run)
-  local d = ns.Dungeons.get(run.dungeon)
-  return d and d.name or tostring(run.dungeon)
+  return ns.Dungeons.runName(run) -- CF-63
 end
 
 local function clock(at)

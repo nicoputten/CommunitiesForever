@@ -71,10 +71,7 @@ end
 
 local function dungeonOf(run) return ns.Dungeons.get(run.dungeon) end
 
-local function dungeonName(run)
-  local d = dungeonOf(run)
-  return d and d.name or run.dungeon
-end
+local function dungeonName(run) return ns.Dungeons.runName(run) end -- CF-63: never the raw id
 
 -- The BattleTag's name part (before "#"), as display names fall back to (ARCHITECTURE "Data model").
 local function tagName(battleTag)

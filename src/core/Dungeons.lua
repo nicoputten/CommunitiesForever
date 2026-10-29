@@ -6,6 +6,7 @@ local _, ns = ...
 local Dungeons = {}
 
 Dungeons.GROUP_SIZE = 5
+Dungeons.MAX_LEVEL = 60 -- CF-63: Forever's level cap
 
 --[[ Vanilla dungeons with their usual level ranges. areas: quest log headers (CF-19) of the dungeon's
 quests; Scarlet Monastery and Dire Maul share one header over their wings. areaIds: AreaTable IDs, the
@@ -31,12 +32,16 @@ Dungeons.STATIC = {
   { id = "rfk", activities = { 804 }, name = "Razorfen Kraul", min = 29, max = 38, areaIds = { 491, 1717 },
     areas = { "Razorfen Kraul" } },
   { id = "smgy", activities = { 805 }, name = "Scarlet Monastery Graveyard", min = 26, max = 36, areaIds = { 796 },
+    title = "Scarlet Monastery: Graveyard",
     areas = { "Scarlet Monastery" } },
   { id = "smlib", activities = { 829 }, name = "Scarlet Monastery Library", min = 29, max = 39, areaIds = { 796 },
+    title = "Scarlet Monastery: Library",
     areas = { "Scarlet Monastery" } },
   { id = "smarm", activities = { 827 }, name = "Scarlet Monastery Armory", min = 32, max = 42, areaIds = { 796 },
+    title = "Scarlet Monastery: Armory",
     areas = { "Scarlet Monastery" } },
   { id = "smcath", activities = { 828 }, name = "Scarlet Monastery Cathedral", min = 35, max = 45, areaIds = { 796 },
+    title = "Scarlet Monastery: Cathedral",
     areas = { "Scarlet Monastery" } },
   { id = "rfd", activities = { 806 }, name = "Razorfen Downs", min = 37, max = 46, areaIds = { 722 },
     areas = { "Razorfen Downs" } },
@@ -108,24 +113,45 @@ function Dungeons.applyGroupFinder(activities)
     if min and max and min <= max then copy.min, copy.max = min, max end
     if offered then list[#list + 1] = copy end
   end
+  local unknown = {}
   for _, a in ipairs(activities) do
+    -- CF-63: above the level cap it can't be a Forever dungeon (Retail's Group Finder offers those).
     if not linked[a.activityID] and type(a.name) == "string" and type(a.min) == "number" and type(a.max) == "number"
-       and a.min > 0 and a.max >= a.min then
-      list[#list + 1] = { id = "lfg" .. a.activityID, activities = { a.activityID }, name = a.name, min = a.min,
-                          max = a.max, areaIds = {}, areas = { a.name } }
+       and a.min > 0 and a.max >= a.min and a.max <= Dungeons.MAX_LEVEL then
+      unknown[#unknown + 1] = { id = "lfg" .. a.activityID, activities = { a.activityID }, name = a.name, min = a.min,
+                                max = a.max, areaIds = {}, areas = { a.name } }
     end
   end
+  -- CF-63: the Group Finder offers none of the known dungeons (Retail, whose dungeons have other activity IDs):
+  -- keep the static list, with the new ones it does offer.
+  if next(linked) == nil then
+    list = {}
+    for _, d in ipairs(Dungeons.STATIC) do list[#list + 1] = d end
+  end
+  for _, d in ipairs(unknown) do list[#list + 1] = d end
   Dungeons.LIST = list
   return list
 end
 
 local function byId()
   local map = {}
+  for _, d in ipairs(Dungeons.STATIC) do map[d.id] = d end
   for _, d in ipairs(Dungeons.LIST) do map[d.id] = d end
   return map
 end
 
+-- A dungeon by id: what the Group Finder offers (its ranges), else the static list (CF-63: a run for a dungeon the
+-- Group Finder doesn't offer, e.g. on Retail, still has its name and range).
 function Dungeons.get(id) return byId()[id] end
+
+-- CF-63: a run's dungeon as players read it: "Scarlet Monastery: Graveyard"; for an id the addon doesn't know, the
+-- name the site sent (run.dungeonName); never the raw id.
+function Dungeons.runName(run)
+  local d = type(run) == "table" and Dungeons.get(run.dungeon)
+  if d then return d.title or d.name end
+  local name = type(run) == "table" and run.dungeonName
+  return type(name) == "string" and name ~= "" and name or "A dungeon"
+end
 
 --[[ CF-61: why the tab has no dungeon for the character you are on. name, level: that character; inCommunity: it is
 in the selected community (outside it the overview has no candidate for it). ]]

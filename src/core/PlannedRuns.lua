@@ -119,6 +119,7 @@ local function cleanRun(raw)
   r.state = oneOf(PlannedRuns.STATES, raw.state)
   r.source = oneOf(PlannedRuns.SOURCES, raw.source) -- CF-46: where it was planned
   r.note = text(raw.note, PlannedRuns.MAX_NOTE)
+  r.dungeonName = text(raw.dungeonName, 60) -- CF-63: the site's name, for an id the addon doesn't know
   r.url = url(raw.url)
   r.organiser = person(raw.organiser)
   if r.organiser and type(raw.organiser) == "table" then
