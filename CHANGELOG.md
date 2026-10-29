@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Feats:** the list shows what your characters earned while the addon was watching; what they already had is one
+  "Already had" line (hover for the details). A mount only counts from level 40, an epic mount from 60.
 - **A cleaner Doomsday Board:** short column titles, a check mark or an empty box per goal (hover for the
   progress, the time and a swap), the finish time next to a crossed-out name, and one points column.
 - **Tidier windows:** the notes explaining how the addon works are gone from the tabs and footers. What a button

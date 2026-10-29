@@ -190,15 +190,19 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       assert.is_truthy(t:find("Week resets", 1, true))
     end)
 
-    it("lists your characters' feats, Earlier at the first sight", function()
+    it("lists the feats earned while watched; what a character already had folds into one line", function()
       setup()
       ns.DoomsdayTab.chips().feats:RunScript("OnClick")
       local t = texts()
-      assert.is_truthy(t:find("Level 10", 1, true))
-      assert.is_truthy(t:find("Reached level 10 \194\183 earlier", 1, true))
+      -- CF-61: one "Already had" line, the details on hover.
+      assert.is_truthy(t:find("Already had: Level 10", 1, true))
+      assert.is_falsy(t:find("earlier", 1, true))
+      assert.is_truthy(table.concat(ns.DoomsdayTab.tips(), "\n"):find("Level 10 \194\183 Reached level 10", 1, true))
       wowapi.fireEvent(state, "PLAYER_LEVEL_UP", 20)
       local feats = addon.db.global.self.feats[state.player.guid]
       assert.are.equal(state.serverTime, feats["level:20"].at)
+      ns.DoomsdayTab.chips().feats:RunScript("OnClick")
+      assert.is_truthy(texts():find("Level 20  \194\183 Reached level 20 \194\183 ", 1, true)) -- earned: listed
     end)
   end)
 end)
