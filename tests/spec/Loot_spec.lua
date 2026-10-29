@@ -32,6 +32,18 @@ describe("Loot and Play (CF-53)", function()
         Loot.parse("You create: " .. link(14342, "Mooncloth") .. ".", FORMATS))
     end)
 
+    it("reads the quality of newer links (|cnIQ<n>:, Retail 12.1.5) for items not cached yet", function()
+      local epicLink = "|cnIQ4:|Hitem:12784::::::::60:::::|h[Arcanite Reaper]|h|r"
+      local item = Loot.parse("You receive loot: " .. epicLink .. ".", FORMATS)
+      assert.are.same({ source = "looted", id = 12784, name = "Arcanite Reaper", count = 1, linkQuality = 4 }, item)
+      assert.are.same({ { kind = "epic", id = 12784, name = "Arcanite Reaper", level = 60 } },
+        Loot.events(item, nil, nil, 60))
+      local blue = Loot.parse("You receive item: |cnIQ3:|Hitem:2589::::::::60:::::|h[Linen Cloth]|h|rx2.", FORMATS)
+      assert.are.same({ { kind = "rare", count = 2 } }, Loot.events(blue, nil, "", 60))
+      -- The game's own quality, once cached, still wins.
+      assert.are.same({}, Loot.events(blue, 2, "", 60))
+    end)
+
     it("ignores other players' loot and other messages", function()
       assert.is_nil(Loot.parse("Bob Example receives loot: " .. link(2589, "Linen Cloth") .. ".", FORMATS))
       assert.is_nil(Loot.parse("You receive loot: nothing.", FORMATS))
