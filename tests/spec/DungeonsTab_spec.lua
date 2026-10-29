@@ -111,7 +111,11 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nSuggested group\n", 1, true))
     assert.is_falsy(all:find("Also in range", 1, true)) -- nobody else
     assert.is_falsy(all:find("Ranges are typical levels", 1, true)) -- CF-61: no designer notes
-    assert.is_truthy(all:find("\nRUNS\nNo runs planned. Plan one on the website.\n", 1, true)) -- CF-46
+    -- CF-62: "Runs" with Ask now…, and the empty list's two lines.
+    assert.is_truthy(all:find("\nRuns\n", 1, true))
+    assert.is_truthy(all:find("\nNo runs planned\nPlan one on the website, or ask who is up for something right "
+      .. "now.\n", 1, true))
+    assert.is_truthy(ns.DungeonsTab.buttons()["Ask now\226\128\166"])
     assert.is_true(row("dm").selected)
     -- Five slots: you in one of them, outlined gold; nobody tanks or heals.
     local slots = ns.DungeonsTab.slots()
@@ -146,16 +150,17 @@ describe("Dungeons tab (CF-24)", function()
     assert.are.same({ "run:r1", "run:r2", "dm", "wc" }, values())
     assert.are.equal(2, ns.MainFrame.tabs().buttons.dungeons.badgeCount)
     local r1, r2 = row("run:r1"), row("run:r2")
+    -- CF-62: the short name and the time; role pips, the counts, who organises.
     assert.are.equal("The Deadmines", r1.name:GetText())
-    assert.are.equal(whenText(NOW + 9600), r1.right:GetText())
-    assert.are.same({ ns.Theme.color("soon") }, r1.right.textColor) -- within 12 hours
-    assert.is_truthy(r1.meta:GetText():find("^you organise    2 in \194\183 1 maybe$"))
-    assert.is_truthy(r2.meta:GetText():find("^Ada    ", 1, false))
-    -- The Wailing Caverns run has free damage slots: Ves fits.
-    assert.is_truthy(r2.meta:GetText():find("Ves Doombringer fits damage", 1, true))
+    assert.are.equal(os.date("%H:%M", NOW + 9600), r1.right:GetText())
+    assert.are.equal("2 in \194\183 1 maybe", r1.meta:GetText())
+    assert.are.equal("you organise", r1.who:GetText())
+    assert.are.equal("Ada", r2.who:GetText())
+    assert.are.equal(5, #r1.pips)
     local all = text()
-    assert.is_truthy(all:find("\nRuns updated at " .. os.date("%H:%M", NOW - 600) .. " \194\183 /reload for newer\n",
-      1, true) or all:find("\nRuns updated at " .. whenText(NOW - 600) .. " \194\183 /reload for newer\n", 1, true))
+    assert.is_truthy(all:find("\nTonight\n", 1, true) or all:find("\nToday\n", 1, true))
+    assert.is_truthy(all:find("\nRuns from the website, ", 1, true))
+    assert.is_truthy(all:find("Type /reload after an upload for newer.\n", 1, true))
     assert.is_truthy(row("dm").meta:GetText():find("1 run", 1, true)) -- the dungeon shows its run
   end)
 
@@ -168,7 +173,7 @@ describe("Dungeons tab (CF-24)", function()
     load(20, data)
     open()
     local all = text()
-    assert.is_truthy(all:find("\nCy Example\nDPS \194\183 Cy Example\ncarry \194\183 +12\n", 1, true))
+    assert.is_truthy(all:find("\nCy Example\nCy Example\ncarry \194\183 +12\n", 1, true)) -- CF-62: a group row
     assert.is_truthy(all:find("\nReserve: Bo Stone (Healer)\n", 1, true))
     assert.is_falsy(all:find("\nBo Stone\n", 1, true)) -- no slot
   end)
@@ -177,26 +182,60 @@ describe("Dungeons tab (CF-24)", function()
     load(20, sampleRuns())
     open()
     local all = text()
+    -- CF-62: the dungeon as the title, its range, the subtitle with the note.
     assert.is_truthy(all:find("\nThe Deadmines\n", 1, true))
-    assert.is_truthy(all:find(whenText(NOW + 9600) .. " \194\183 in 2 h 40 min", 1, true))
-    assert.is_truthy(all:find("17" .. DASH .. "26 \194\183 planned on the website", 1, true))
-    assert.is_truthy(all:find("\226\128\156Bring water\226\128\157", 1, true))
-    -- Tank: nobody plays one in range; healer Garraka; Ves and the maybe from Discord in damage slots.
-    assert.is_truthy(all:find("\nTank\nnobody in range\n", 1, true))
-    assert.is_truthy(all:find("\nHealer \194\183 Sjaakovich\nonline\n", 1, true))
-    assert.is_truthy(all:find("\nDPS \194\183 you\norganiser\n", 1, true))
-    assert.is_truthy(all:find("\nAda Lovewell\nDPS \194\183 Ada\nmaybe\n", 1, true))
-    assert.are.equal(0.75, ns.DungeonsTab.slots()[4].alpha)
-    assert.is_truthy(all:find("You'll get a reminder at " .. os.date("%H:%M", NOW + 9600 - 1800) .. ".", 1, true))
-    local invite = ns.DungeonsTab.buttons()["Invite all \194\183 from " .. os.date("%H:%M", NOW + 9600)]
-    assert.is_false(invite.enabled) -- CF-48 builds it
+    assert.is_truthy(all:find("\nlevel 17" .. DASH .. "26\n", 1, true))
+    assert.is_truthy(all:find(whenText(NOW + 9600) .. " \194\183 in 2 h 40 min \194\183 planned on the website "
+      .. "\194\183 note: \226\128\156Bring water\226\128\157", 1, true))
+    -- Five group rows: nobody tanks; the healer Garraka; Ves organises; Ada maybe; an open damage slot.
+    assert.are.equal(5, #ns.DungeonsTab.groupRows())
+    assert.is_truthy(all:find("\nTank \194\183 nobody in range\n", 1, true))
+    assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Sjaakovich\n", 1, true))
+    assert.is_truthy(all:find("\nVes Doombringer\n20 \194\183 you\norganiser\n", 1, true))
+    assert.is_truthy(all:find("\nAda Lovewell\nAda\nmaybe\n", 1, true))
+    assert.is_truthy(all:find("\nDamage \194\183 open\n", 1, true))
+    assert.is_truthy(all:find("\n2 in \194\183 1 maybe \194\183 2 open\n", 1, true))
+    -- The organiser before the start: Invite all opens 15 minutes early, with its tooltip; the reminder.
+    assert.is_truthy(all:find("\nAt " .. os.date("%H:%M", NOW + 9600) .. "\n", 1, true))
+    local invite = ns.DungeonsTab.buttons()["Invite all \194\183 opens " .. os.date("%H:%M", NOW + 9600 - 900)]
+    assert.is_false(invite.enabled)
+    assert.are.equal("Invite all invites everyone who is in and online.", invite.tooltip)
+    assert.is_truthy(all:find("\nReminder at " .. os.date("%H:%M", NOW + 9600 - 1800) .. "\n", 1, true))
+    -- Online now, fits: nobody else online in range here; its explanation in the ⓘ.
+    assert.is_truthy(all:find("\nNobody online fits right now.\n", 1, true))
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("From the community roster", 1, true))
+    assert.is_truthy(all:find("\nEdit or cancel\n", 1, true))
     assert.are.equal("https://example.com/runs/r1", ns.DungeonsTab.linkBox():GetText())
+    assert.is_truthy(all:find("\nClick, then Ctrl+C to copy.\n", 1, true))
+    -- Someone else's run: your answer, Online now with Whisper, "On the website".
     select("run:r2")
     all = text()
     assert.is_truthy(all:find("planned on Discord", 1, true))
     assert.is_truthy(all:find("\nanswered on Discord\n", 1, true))
-    assert.is_truthy(all:find("Organised by Ada \194\183 2 in", 1, true))
-    assert.is_nil(ns.DungeonsTab.buttons()["Invite all \194\183 from " .. os.date("%H:%M", NOW + 26 * 3600)])
+    assert.is_truthy(all:find("\nYour answer\n", 1, true))
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Shared with online friends now", 1, true))
+    assert.is_truthy(ns.DungeonsTab.buttons()["I'm in"] and ns.DungeonsTab.buttons()["Maybe"]
+      and ns.DungeonsTab.buttons()["Can't"])
+    assert.is_truthy(all:find("\nGarraka Doombringer\nSjaakovich \194\183 Orgrimmar\n", 1, true)) -- online, fits
+    assert.is_truthy(ns.DungeonsTab.buttons()["Whisper:1"])
+    assert.is_truthy(all:find("\nOn the website\n", 1, true))
+  end)
+
+  it("opens Invite all 15 minutes before the start, and Invite instead of Whisper (CF-62)", function()
+    load(20, sampleRuns())
+    state.serverTime = NOW + 9600 - 600 -- 10 minutes before The Deadmines
+    open()
+    local all = text()
+    assert.is_truthy(all:find("\nStarting now \194\183 " .. os.date("%H:%M", NOW + 9600), 1, true))
+    assert.is_truthy(all:find("\nStart\n", 1, true))
+    local invite
+    for label, b in pairs(ns.DungeonsTab.buttons()) do
+      if label:find("^Invite all \194\183 %d+ online$") then invite = b end
+    end
+    assert.is_not_nil(invite)
+    assert.are.equal("Invite all invites everyone who is in and online.", invite.tooltip)
+    select("run:r2") -- tomorrow: still Whisper there
+    assert.is_truthy(ns.DungeonsTab.buttons()["Whisper:1"])
   end)
 
   it("keeps the link to copy when typed over", function()
@@ -213,7 +252,8 @@ describe("Dungeons tab (CF-24)", function()
     runs.runs[2].answers[3] = { guid = VES, answer = "maybe" }
     load(20, sampleRuns(NOW - 3600), runs) -- stored is newer than the file
     open()
-    assert.is_truthy(row("run:r2").meta:GetText():find("you: maybe", 1, true))
+    select("run:r2")
+    assert.are.equal("primary", ns.DungeonsTab.buttons()["Maybe"].kind) -- CF-62: your answer, highlighted
     assert.are.equal(NOW - 60, addon.db.global.plannedRuns.updatedAt)
   end)
 

@@ -46,6 +46,35 @@ function Kit.info(parent)
   return f
 end
 
+-- CF-62: Blizzard role icons by atlas, guarded (unverified on Forever, VERIFY.md CF-62d): without the atlas a
+-- coloured square in the role's colour. icon:SetRole(role, dim): dim for an open slot.
+local ROLE_ATLAS = { tank = "UI-LFG-RoleIcon-Tank", heal = "UI-LFG-RoleIcon-Healer", dps = "UI-LFG-RoleIcon-DPS" }
+local atlasKnown = {}
+function Kit.hasAtlas(name)
+  if atlasKnown[name] == nil then
+    local ok, info = pcall(function() return C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(name) end)
+    atlasKnown[name] = ok and info ~= nil and true or false
+  end
+  return atlasKnown[name]
+end
+
+function Kit.roleIcon(parent, size)
+  local t = parent:CreateTexture(nil, "ARTWORK")
+  t:SetSize(size, size)
+  function t:SetRole(role, dim)
+    role = ROLE_ATLAS[role] and role or "dps"
+    if Kit.hasAtlas(ROLE_ATLAS[role]) and self.SetAtlas then
+      self:SetAtlas(ROLE_ATLAS[role])
+      self:SetVertexColor(1, 1, 1, 1)
+    else
+      self:SetColorTexture(Theme.color(role))
+    end
+    if self.SetDesaturated then self:SetDesaturated(dim and true or false) end
+    self:SetAlpha(dim and 0.45 or 1)
+  end
+  return t
+end
+
 -- Button with the gold look. kind: "normal", "primary" or "ghost". onClick(button).
 function Kit.button(parent, text, onClick, kind)
   local b = CreateFrame("Button", nil, parent)

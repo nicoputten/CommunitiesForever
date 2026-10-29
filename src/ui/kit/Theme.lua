@@ -41,7 +41,10 @@ Theme.COLORS = {
   discord = hex("B9BEFA"),          -- CF-46: "answered on Discord"
   pve = hex("7FD99A"),              -- CF-62: the PvE track (Doomsday)
   pvp = hex("E0625A"),              -- CF-62: the PvP track (Doomsday)
-  swap = hex("9DB4FF"),             -- CF-62: the "swapped" marker
+  swap = hex("9DB4FF"),             -- CF-62: the "swapped" marker; "N online fit"
+  tank = hex("5B8DD6"),             -- CF-62: role icon fallbacks (a coloured square when the atlas is missing)
+  heal = hex("7FD99A"),
+  dps = hex("E0625A"),
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).
