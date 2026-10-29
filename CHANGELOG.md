@@ -18,6 +18,11 @@ tagging; the release stops if the tag has no section.
 - **Dungeons, the group:** hover a member for their level fit, role, where and when they answered and where they
   are online; right-click for Whisper, Invite (from 15 minutes before the start) and Show in Friends. An open slot
   has "Ask now for this run", and its menu whispers the first friend who fits with a ready-made line.
+- **Dungeons, the list:** chips to show All runs, My runs, Open slots or the ones In range; "In range for" lets you
+  pick any of your characters; "Show all dungeons" lists the others too, with how your characters fit one out of
+  range.
+- **Dungeons, planning:** "Plan a run…" opens right in the dungeon: tonight, tomorrow or the day after at 20:00 your
+  time (or another time), your best character for it (an alt when you're out of range), its role and a note.
 
 ## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them

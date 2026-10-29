@@ -759,6 +759,33 @@ function PlannedRuns.memberLines(a, char, dungeon, presence, now, dateFn)
   return lines
 end
 
+-- CF-63c (board CF63List): the list's filter chips, in order. "all" is the default.
+PlannedRuns.FILTERS = { { value = "all", text = "All" }, { value = "mine", text = "My runs" },
+                        { value = "open", text = "Open slots" }, { value = "range", text = "In range" } }
+
+--[[ CF-63c: the runs a filter chip keeps. kind: "all" | "mine" (you organise it or answered I'm in or Maybe) |
+"open" (a slot nobody has) | "range" (its dungeon fits level). ctx = { me, candidates, dungeonOf(run), level }. ]]
+function PlannedRuns.filterRuns(runs, kind, ctx)
+  if kind ~= "mine" and kind ~= "open" and kind ~= "range" then return runs end
+  local out = {}
+  for _, run in ipairs(runs or {}) do
+    local keep
+    local dungeon = ctx.dungeonOf and ctx.dungeonOf(run)
+    if kind == "mine" then
+      local mine = PlannedRuns.yourAnswer(run, ctx.me)
+      keep = PlannedRuns.isOrganiser(run, ctx.me) or (mine ~= nil and mine.answer ~= "cant")
+    elseif kind == "open" then
+      for _, slot in ipairs(PlannedRuns.slots(run, ctx.candidates, dungeon)) do
+        if not slot.answer then keep = true end
+      end
+    else
+      keep = inRange(dungeon, ctx.level)
+    end
+    if keep then out[#out + 1] = run end
+  end
+  return out
+end
+
 PlannedRuns.PLAN_HOUR = 20       -- CF-63c: the planning chips' time, your clock
 PlannedRuns.PLAN_MIN_LEAD = 3600 -- "Tonight" only while it is at least this far away
 

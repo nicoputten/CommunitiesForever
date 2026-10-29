@@ -155,6 +155,15 @@ end
 
 --[[ CF-61: why the tab has no dungeon for the character you are on. name, level: that character; inCommunity: it is
 in the selected community (outside it the overview has no candidate for it). ]]
+-- CF-63c: the dungeon with the lowest level range (the one to look forward to at a low level), or nil.
+function Dungeons.first()
+  local first
+  for _, d in ipairs(Dungeons.LIST) do
+    if not first or d.min < first.min then first = d end
+  end
+  return first
+end
+
 function Dungeons.emptyText(name, level, inCommunity)
   name = tostring(name or "This character")
   if not inCommunity then
