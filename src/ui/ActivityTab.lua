@@ -12,7 +12,6 @@ local AVATAR = 44           -- the portrait column
 local ROW_GAP = 6           -- between the pieces of a line
 local ROW_HEIGHT = 20       -- one row of pieces
 local TIME_WIDTH = 48
-local NOTE = "Friends with CommunitiesForever share their activity."
 
 local root, chipsBar, scroll, chips
 local helpers -- from MainFrame: settings(), render()
@@ -307,7 +306,6 @@ function ActivityTab.render(view, empty)
   scroll:Update()
 end
 
-ActivityTab.NOTE = NOTE
 
 -- For the specs: the drawn days, the chips, and every visible text in the feed (grouped by kind).
 function ActivityTab.days() return lastRender end

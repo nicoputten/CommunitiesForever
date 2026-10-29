@@ -7,9 +7,7 @@ local ADDON_NAME, ns = ...
 local MainFrame = {}
 
 local REFRESH_DEBOUNCE = 0.2
-local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 
-local GROUP_ASK_NOTE = "Group asks wait until combat ends" -- CF-42
 
 local addonRef, events, frame, refreshDebounced
 local tabs -- CF-39: the kit's tab row
@@ -152,19 +150,19 @@ local TABS = {
   { value = "friends", text = "Friends", module = function() return ns.FriendsTab end, -- CF-40
     helpers = function() return friendsHelpers() end,
     footer = function(empty)
-      return not empty and ns.Format.friendsFooter(view, GetServerTime()) or "", FOOTER_HINT
+      return not empty and ns.Format.friendsFooter(view, GetServerTime()) or "", ""
     end },
   { value = "activity", text = "Activity", module = function() return ns.ActivityTab end, -- CF-22, CF-41
     helpers = function() return { settings = settings, render = MainFrame.render } end,
-    footer = function() return ns.ActivityTab.NOTE, string.format("Keeps %d days", ns.Feed.KEEP_DAYS) end },
+    footer = function() return "", string.format("Keeps %d days", ns.Feed.KEEP_DAYS) end },
   { value = "dungeons", text = "Dungeons", module = function() return ns.DungeonsTab end, -- CF-24, CF-42: a badge
     helpers = function()
       return { settings = settings, render = MainFrame.render, print = function(text) addonRef:Print(text) end }
     end,
-    footer = function(empty) return synced(empty), GROUP_ASK_NOTE end },
+    footer = function(empty) return synced(empty), "" end },
   { value = "doomsday", text = "Doomsday", module = function() return ns.DoomsdayTab end, -- CF-57
     helpers = function() return { settings = settings, render = MainFrame.render } end,
-    footer = function(empty) return synced(empty), ns.DoomsdayTab.NOTE end },
+    footer = function(empty) return synced(empty), "" end },
 }
 
 -- The tab definition of a value (the first, Friends, for an unknown one).

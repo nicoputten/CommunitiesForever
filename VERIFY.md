@@ -38,21 +38,30 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-61b No designer notes; one reset label per view
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, every tab (Friends, Activity, Dungeons, Doomsday with all five chips) and the settings | No notes about how the addon, the rules or the site work: none of "Suggestions, never rules", "Live for friends online…", "* = swapped goal…", "Any of your characters counts.", "This week only…", "no kills yet · Rank title…", "Runs come from the website…", "/cf to open · drag the title to move", "Group asks wait until combat ends". | open |
+| Doomsday › Today and Board | Top right of the view: "New goals in 5 h 58 m" (your time to the reset). Nothing next to the chips. | open |
+| Doomsday › Week and Ladder | Top right: "Week resets Sun 19:00 · in 3 d 5 h". | open |
+| Board: hover a crossed-out name | "All three PvE dailies done". | open |
+| Dungeons: hover Ask now | "Whispers online friends who fit; can post on Discord too. Waits until combat ends." | open |
+
 ### CF-58 Drop "Share my activity"
 | Step | Expected | Status |
 |---|---|---|
 | `/cf settings` | Sharing has only "Receive group asks"; no "Share my activity". `/cf setup`: the step is called "Notifications" with three switches and the minimap one. | open |
 | A friend on this build, you on a released version with "Share my activity" off | The friend still sees your activity from before (nothing is wiped); new activity of yours doesn't reach them until you update. | open |
-| Both on this build | Each sees the other's activity; the Activity tab footer says "Friends with CommunitiesForever share their activity." | open |
+| Both on this build | Each sees the other's activity; the Activity tab footer says "Keeps 7 days" on the right and nothing on the left. | open |
 
 ### CF-57b Doomsday tab: Board, Ladder and Feats
 Compare with `docs/design/doomsday-2026-10/DD08AddonBoard.dc.html`. Best with two friends on this build.
 
 | Step | Expected | Status |
 |---|---|---|
-| Doomsday › Board | One row per friend: you first, then friends with Doomsday data, then the rest ("no Doomsday data yet"); a column per goal of today with the time a friend finished it, your own progress ("3/10"), a "*" on a swapped goal (hover: the original); a line through the name of a friend who did all 3 PvE dailies; "crown" after the first one; streak; today's "PvE · PvP". | open |
+| Doomsday › Board | One row per friend: you first, then friends with Doomsday data, then the rest ("no Doomsday data yet"); a column per goal of today with the time a friend finished it, your own progress ("3/10"), a "*" on a swapped goal (hover: the original); a line through the name of a friend who did all 3 PvE dailies (hover: "All three PvE dailies done"); "crown" after the first one; streak; today's "PvE · PvP". "New goals in …" top right; no notes under the board. | open |
 | Doomsday › Ladder | PvE and PvP apart, each ranked this week with points and movement against last week ("+2", "new"); clicking a row shows the characters. A friend who never killed anyone: "PvP Virgin · not ranked". Your PvP: rank and title, kills this week and the zone with most, duels won–lost, each battleground won–lost with its points. | open |
-| Doomsday › Feats | Your characters with their feats, newest first; what they had before the update says "earlier". The next honorable-kill feat with "412 / 1,000"; a character without kills: "no kills yet · Rank title: Conscientious Objector until the first kill." | open |
+| Doomsday › Feats | Your characters with their feats, newest first; what they had before the update says "earlier". The next honorable-kill feat with "412 / 1,000"; a character without kills: no kill line. | open |
 | Level up | A new feat "Level N" with today's date. | open |
 | Activity tab, a day with 5 (or 10) kills in a row without dying | "a spree of 5" (or 10) on that line. | open |
 
@@ -61,9 +70,9 @@ Compare with `docs/design/doomsday-2026-10/DD07AddonToday.dc.html`.
 
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, the new tab **Doomsday** after Dungeons | Chips Today and Week, "resets in …" on the right. Today: "Today · <day> · N of 5 done", one row per goal (DAILY, HUNT once it's on, SKIRMISH) with "3/10" and a gold bar, or "✓ 20:14" in your own clock time; the DUEL row with whom you dueled ("won vs Bob") and who's still open; "PvE 10 · PvP 9", the kill summary, the streak, who has the crown. Footer: "Synced with …" and "Suggestions, never rules · all-time totals on the site". | open |
+| `/cf`, the new tab **Doomsday** after Dungeons | Chips Today and Week, nothing on their right. Today: "Today · <day> · N of 5 done" with "New goals in …" on the right, one row per goal (DAILY, HUNT once it's on, SKIRMISH) with "3/10" and a gold bar, or "✓ 20:14" in your own clock time; the DUEL row with whom you dueled ("won vs Bob") and who's still open; "PvE 10 · PvP 9", the kill summary, the streak, who has the crown. Footer: "Synced with …" only. | open |
 | Hover a goal marked "(swapped)" | A tooltip "Instead of: <the original goal>". | open |
-| Week | "This week · 15 points each", "week resets <weekday> <time> · in N d N h", the weeklies and the Bounty (for "every enemy class": "Still needed for the bounty: …"), this week's points, your characters with their level and PvP points, the streak. | open |
+| Week | "This week", "Week resets <weekday> <time> · in N d N h", the weeklies and the Bounty (for "every enemy class": "Still needed for the bounty: …"), this week's points, your characters with their level and PvP points, the streak. | open |
 | Finish a daily | Chat: "Daily done: <goal> (+5 PvE, N of 3 today)". A weekly: "Weekly done: … (+15 PvE)". | open |
 | A kill on a player 3+ levels above you, solo | Chat: "Kill: +2 PvP · 3 levels above you, and solo (+1)". A kill worth 1 point says nothing. | open |
 | Finish all 3 PvE dailies first in the group | Under the minimap: "First to finish today!", "All three dailies done at <time>", "The crown is yours until <reset time>. Others have been told, gently." It fades in and slides with Ambient effects on, just appears with them off. | open |
@@ -259,7 +268,7 @@ Compare with `docs/design/revamp-2026-10/dungeons.html`. Best on a character in 
 | Ask who's up for it | The gold button with "Sends a chat line to friends with the addon"; clicking asks (CF-27) and the line turns into "Asked who's up for it · ..." with the answers. | open |
 | Also in range | Others in range not in the group, one line each. | open |
 | Quests | Left "Quests" with "x / y in your log", a green check on quests in your log, who else has them. | open |
-| Footer | Left "Synced with <name> <time>", right "Group asks wait until combat ends". | open |
+| Footer | Left "Synced with <name> <time>", nothing on the right. Hover Ask now: what it does, and that it waits until combat ends. | open |
 | Long card or list, small window | Both scroll with the mouse wheel (V62). | open |
 
 ### CF-41 Activity tab in the new look
@@ -273,7 +282,7 @@ Compare with `docs/design/revamp-2026-10/activity.html`. Best with a friend who 
 | A friend with activity on two characters | "and 1 more character", "Show all (N)" opens the other character's pieces under "on <character>"; "Show less" folds it. | open |
 | Each chip | Level-ups: only entries with a level change (whole entries); Dungeons: entries with a dungeon, raid or battleground; Together: the together entries. No match: "Nothing of this kind in the last 7 days." | open |
 | Close and open the window | The chips start at All again. | open |
-| Footer | Left "Friends with CommunitiesForever share their activity.", right "Keeps 7 days". Friends tab: its own footer again. | open |
+| Footer | Left empty, right "Keeps 7 days". Friends tab: its own footer again. | open |
 | Many entries | The feed scrolls with the mouse wheel (V62). | open |
 
 ### CF-40 Friends tab in the new look
@@ -292,7 +301,7 @@ Compare with `docs/design/revamp-2026-10/friends.html`. Needs a friend with the 
 | Whisper, Invite on an online friend's character | Opens a whisper to that character / invites them. On an offline character and your own: both buttons dimmed and doing nothing. | open |
 | Right-click a person or character in the list (CF-37) | The menu opens above the window, as before. | open |
 | Many people, or a small window | The list and the card scroll with the mouse wheel; a thin gold bar on the right shows where you are (V62). | open |
-| Footer | Left "Synced with <name> <time> · N characters from M friends", right "/cf to open · drag the title to move". | open |
+| Footer | Left "Synced with <name> <time> · N characters from M friends", nothing on the right. | open |
 | Activity, Dungeons, back to Friends | The other tabs look as before; Friends comes back with the same selection and search text. | open |
 
 ### CF-39 Kit and window shell
@@ -303,7 +312,7 @@ Compare with `docs/design/revamp-2026-10/friends.html` (the window around the co
 | `/cf` (after the update) | The new window, 880 × 600, centred: dark navy panel, thin gold border with small gold diamonds on the corners, a soft shadow. | open |
 | Title bar | Shield emblem, the community name in a serif small-caps font, "CommunitiesForever" small and grey, "● N online" in green, a gear and a close button (V61: fonts, glow). | open |
 | Tabs | Friends, Activity, Dungeons in the serif font; the active one pale gold with a gold underline; Dungeons with a round gold badge when runs are planned. Clicking switches; the old tab content works as before. | open |
-| Footer | "/cf to open · drag the title to move" in small grey text. | open |
+| Footer | No hint text on the right. | open |
 | Drag the title, resize from the bottom-right corner, `/reload` | Position and size are kept; it does not get smaller than 700 × 480. | open |
 | Gear button | The settings open. Close button and Esc close the window. | open |
 | Right-click a character (CF-37) | The menu still opens above the window. | open |

@@ -46,6 +46,14 @@ function Kit.button(parent, text, onClick, kind)
   b.label = Theme.text(b, "button", b.kind == "primary" and "outline" or "goldPale")
   b.label:SetPoint("CENTER")
   b:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
+  -- CF-61: b.tooltip (optional) shows on hover (guarded).
+  b:SetScript("OnEnter", function(self)
+    if not (self.tooltip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function(self) if self.tooltip and GameTooltip then GameTooltip:Hide() end end)
   function b:SetLabel(label)
     self.label:SetText(label)
     local width = self.label.GetStringWidth and self.label:GetStringWidth() or 0
@@ -543,6 +551,7 @@ function Kit.take(p, parent)
   end
   item:Show()
   item:ClearAllPoints()
+  item.tooltip = nil -- CF-61: a reused button doesn't keep another one's tooltip
   return item
 end
 

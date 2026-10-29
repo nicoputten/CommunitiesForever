@@ -29,7 +29,7 @@ Everything counts per friend (BattleTag): any of your characters counts, and pro
   - `reset`: the reset in force, seconds after realm midnight. The site sends a new reset only from the reset it takes effect at, so the addon applies it as given.
   - `changedAt`: when that reset took effect; 0 while it was never changed.
   - `offset`: the realm zone's UTC offset now, in seconds east; `offsetUntil`: the server time of its next change; `offsetAfter`: the offset from then on. Both are left out when the zone has no change within 400 days.
-- Screens show the time left: "resets in 3 h 12 m".
+- Screens show the time left: "New goals in 3 h 12 m" for the day, "Week resets Sun 19:00 · in 3 d 5 h" for the week (CF-61).
 
 ## Goals
 Every Doomsday day each friend gets:
