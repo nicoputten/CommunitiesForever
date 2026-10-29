@@ -258,7 +258,7 @@ describe("Dungeons tab (CF-24)", function()
     -- The open slot: Ask now for this run fills the Ask dialog's note; a click opens Whisper / Ask / Invite.
     assert.is_true(slot.ask.shown)
     slot.ask:RunScript("OnClick")
-    assert.are.equal("For The Deadmines " .. os.date("%H:%M", NOW + 9600) .. " \194\183 need Damage",
+    assert.are.equal("For The Deadmines " .. os.date("%H:%M", NOW + 9600) .. " \194\183 need damage",
       ns.RunDialogs.widgets().note:GetText())
     slot:RunScript("OnMouseUp", "LeftButton")
     menu = state.menus[#state.menus]

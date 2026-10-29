@@ -92,6 +92,7 @@ Theme.TEXT = {
   button = { "bold", 12, "GameFontHighlightSmall" },
   badge = { "bold", 10, "GameFontHighlightSmall" },
   chip = { "bold", 11, "GameFontHighlightSmall" }, -- CF-41: the LEVEL UP chip
+  banner = { "display", 28, "GameFontNormalHuge" }, -- CF-63d: the run banner's dungeon
 }
 
 -- Clients whose letters the bundled fonts do not have use the game font throughout.

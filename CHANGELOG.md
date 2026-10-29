@@ -20,6 +20,9 @@ tagging; the release stops if the tag has no section.
   has "Ask now for this run", and its menu whispers the first friend who fits with a ready-made line.
 - **Doomsday, goal boxes:** the Board and Today draw a real box per goal: a gold check when done, a small blue corner
   for a swapped goal, the details on hover (progress or when it was done, the original goal, when goals reset).
+- **Run reminders:** a banner at the top of the screen, like LEVEL UP, 30 minutes before a run you're in, when
+  invites open 15 minutes before (the organiser gets Invite all) and at the start; a click opens the run. It waits
+  while you're in combat or a battleground. It replaces the note under the minimap.
 - **Dungeons, the list:** chips to show All runs, My runs, Open slots or the ones In range; "In range for" lets you
   pick any of your characters; "Show all dungeons" lists the others too, with how your characters fit one out of
   range.
