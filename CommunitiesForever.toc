@@ -12,11 +12,21 @@ embeds.xml
 
 Data\Runs.lua
 
+src\core\Calendar.lua
+src\core\Text.lua
 src\core\Store.lua
 src\core\Queue.lua
 src\core\Version.lua
 src\core\Filter.lua
+src\core\GameText.lua
+src\core\Pvp.lua
+src\core\Loot.lua
+src\core\Feats.lua
+src\core\Play.lua
 src\core\Feed.lua
+src\core\Doomsday.lua
+src\core\Goals.lua
+src\core\DoomsdayView.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
@@ -39,7 +49,9 @@ src\core\Linker.lua
 src\core\Protocol.lua
 src\core\Outbox.lua
 src\core\Format.lua
+src\core\Card.lua
 
+src\adapters\Safe.lua
 src\adapters\Events.lua
 src\adapters\Timer.lua
 src\adapters\Keys.lua
@@ -58,9 +70,16 @@ src\adapters\Channels.lua
 src\adapters\Transport.lua
 src\adapters\Panels.lua
 src\adapters\Classes.lua
+src\adapters\PvpInfo.lua
+src\adapters\LootInfo.lua
+src\adapters\GoalEvents.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua
+src\services\PvpTracker.lua
+src\services\PlayTracker.lua
+src\services\DoomsdayTracker.lua
+src\services\DoomsdayBoard.lua
 src\services\SelfTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua
@@ -77,6 +96,7 @@ src\services\Notify.lua
 src\services\Planner.lua
 src\services\GroupAsks.lua
 src\services\RunAlerts.lua
+src\services\DoomsdayAlerts.lua
 
 src\ui\kit\Theme.lua
 src\ui\kit\Widgets.lua
@@ -84,8 +104,10 @@ src\ui\kit\Window.lua
 src\ui\Settings.lua
 src\ui\SettingsWindow.lua
 src\ui\DungeonsTab.lua
+src\ui\DoomsdayTab.lua
 src\ui\RunDialogs.lua
 src\ui\RunToasts.lua
+src\ui\CrownToast.lua
 src\ui\StartPanel.lua
 src\ui\FriendsTab.lua
 src\ui\ActivityTab.lua

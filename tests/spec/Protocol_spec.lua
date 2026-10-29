@@ -27,7 +27,7 @@ describe("Protocol", function()
   end
 
   before_each(function()
-    Protocol = helpers.loadAddonFile("src/core/Protocol.lua", {})
+    Protocol = helpers.loadAddonFile("src/core/Protocol.lua", helpers.coreNs())
     codec = Protocol.codec(helpers.lib("LibSerialize"), helpers.lib("LibDeflate"))
   end)
 

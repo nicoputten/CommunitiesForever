@@ -89,6 +89,8 @@ local function charRow(guid, member, record, presence, location, source)
     professions = record.professions,
     talents = record.talents,         -- CF-18
     quests = record.quests,           -- CF-19
+    pvp = record.pvp,                 -- CF-52, shown on the card (CF-57)
+    factionName = record.faction,     -- CF-57: "Horde" / "Alliance", for the official rank name
     role = record.role,
     roleOverride = record.roleOverride,
     realm = record.realm,

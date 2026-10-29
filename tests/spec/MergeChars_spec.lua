@@ -5,8 +5,9 @@ describe("per-character merge (CF-28)", function()
   local OWNER, RELAY = "Ann#1", "Ben#2"
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Feed.lua", ns)
+    helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
   end)
 
@@ -145,14 +146,13 @@ describe("per-character merge (CF-28)", function()
       assert.are.same({ Elwynn = 1 }, f[DAY - 1].G1.quests)
     end)
 
-    it("drops the feed when the owner stops sharing, also through a relay", function()
+    it("keeps the feed when a released client relays `feed = false` (CF-58: nothing sent)", function()
       local people = {}
       Merge.store(people, record(10, {}, { feed = feed({ G1 = { name = "A", at = 500, quests = { X = 1 } } }) }), 600,
         OWNER)
       Merge.store(people, record(11, {}, { feed = false }), 700, RELAY)
-      assert.is_nil(people[OWNER].feed)
-      assert.is_true(people[OWNER].feedOff)
-      assert.is_false(Merge.relayRecord(people, OWNER).feed)
+      assert.are.same({ X = 1 }, people[OWNER].feed[DAY].G1.quests)
+      assert.are.same(people[OWNER].feed, Merge.relayRecord(people, OWNER).feed)
     end)
 
     it("keeps the feed when a relayed record has none (unknown)", function()
@@ -163,18 +163,13 @@ describe("per-character merge (CF-28)", function()
       assert.is_not_nil(people[OWNER].feed)
     end)
 
-    -- Test 3: "stopped sharing" from a relayed record that is not newer must not wipe stored activity.
-    it("keeps the stored feed when an older relayed record says it is not shared", function()
+    it("keeps the stored feed when the owner's own record says `feed = false` (CF-58)", function()
       local people = {}
       Merge.store(people, record(10, {}, { feed = feed({ G1 = { name = "A", at = 500, quests = { X = 1 } } }) }), 600,
         OWNER)
-      Merge.store(people, record(9, {}, { feed = false }), 700, RELAY)
+      Merge.store(people, record(11, {}, { feed = false }), 700, OWNER)
       assert.are.same({ X = 1 }, people[OWNER].feed[DAY].G1.quests)
       assert.is_nil(people[OWNER].feedOff)
-      -- A newer relayed record that says so does drop it.
-      Merge.store(people, record(11, {}, { feed = false }), 800, RELAY)
-      assert.is_nil(people[OWNER].feed)
-      assert.is_true(people[OWNER].feedOff)
     end)
 
     it("ignores relayed activity entries timestamped in the future", function()
@@ -188,7 +183,7 @@ describe("per-character merge (CF-28)", function()
 
     it("drops old days relative to the newest day", function()
       local merged = (function()
-        local ns = {}
+        local ns = helpers.coreNs()
         local Feed = helpers.loadAddonFile("src/core/Feed.lua", ns)
         return Feed.merge({ [DAY - 10] = { G1 = { at = 1 } } }, { [DAY] = { G1 = { at = 2 } } })
       end)()

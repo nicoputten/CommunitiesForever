@@ -8,12 +8,7 @@ describe("MainFrame", function()
   local GARRAKA = "Player-4619-01789956"
 
   local function load(storedClubId)
-    state = wowapi.install()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = storedClubId
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ clubId = storedClubId or false }) -- nil: no community
   end
 
   local function frame() return ns.MainFrame.window() end -- CF-39: the kit window
@@ -256,13 +251,9 @@ describe("MainFrame", function()
     end)
 
     it("says nobody is online when nobody is", function()
-      state = wowapi.install()
-      state.friends = {}
-      ns = helpers.loadAddon()
-      addon = state.addon
-      addon:OnInitialize()
-      addon.db.global.settings.clubId = "23125681"
-      addon:OnEnable()
+      state, ns, addon = helpers.client({ setup = function(s)
+        s.friends = {}
+      end })
       assert.are.equal(ns.Format.NOBODY_ONLINE, tooltip()[2][1])
     end)
 

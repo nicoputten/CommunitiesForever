@@ -4,7 +4,7 @@ describe("Queue (CF-44)", function()
   local Queue
 
   before_each(function()
-    Queue = helpers.loadAddonFile("src/core/Queue.lua", {})
+    Queue = helpers.loadAddonFile("src/core/Queue.lua", helpers.coreNs())
   end)
 
   it("gives items back in order and nil when empty", function()

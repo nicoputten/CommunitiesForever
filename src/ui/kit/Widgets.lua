@@ -321,6 +321,32 @@ function Kit.toast(parent, opts)
   return t
 end
 
+--[[ Filter chip (CF-41; shared with the Doomsday tab in CF-59): a pill with a thin border; the active one gold.
+def = { value, text }; onClick(value). chip:SetActive(on). ]]
+function Kit.chip(parent, def, onClick, minWidth)
+  local c = CreateFrame("Button", nil, parent)
+  c:SetHeight(24)
+  c.bg = c:CreateTexture(nil, "BACKGROUND")
+  c.bg:SetAllPoints()
+  c.edges = Kit.edges(c, "divider")
+  c.text = Theme.text(c, "small", "textDim")
+  c.text:SetPoint("CENTER")
+  c.text:SetText(def.text)
+  c.value = def.value
+  c:SetWidth(math.max(minWidth or 44, (c.text.GetStringWidth and c.text:GetStringWidth() or 40) + 22))
+  local hover = c:CreateTexture(nil, "HIGHLIGHT")
+  hover:SetAllPoints()
+  hover:SetColorTexture(Theme.color("hover"))
+  function c:SetActive(on)
+    self.active = on and true or false
+    if self.active then self.bg:SetColorTexture(Theme.color("gold", 0.16)) else self.bg:SetColorTexture(0, 0, 0, 0) end
+    for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color(self.active and "gold" or "divider")) end
+    self.text:SetTextColor(Theme.color(self.active and "heading" or "textDim"))
+  end
+  c:SetScript("OnClick", function(self) onClick(self.value) end)
+  return c
+end
+
 --[[ Scroll area (CF-40): a ScrollFrame with a child frame for the content, scrolled by the mouse wheel, and a
 thin gold thumb on the right while the content is taller than the area. Plain ScrollFrame API, no templates
 (decided over ScrollBox, which is unverified). area.child is where content goes; call area:Update() after

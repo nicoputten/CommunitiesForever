@@ -1,5 +1,5 @@
 -- Describe: stable, human-readable text for records (used by /cf self for testing).
--- Pure Lua, no WoW globals.
+-- Pure Lua, no WoW globals. Requires ns.Pvp (CF-52) for the PvP line, ns.Doomsday (CF-56) for /cf doomsday.
 local _, ns = ...
 
 local Describe = {}
@@ -42,6 +42,14 @@ function Describe.selfRecord(record, now)
       profs[#profs + 1] = string.format("%s %s/%s [%d]", tostring(p.name), tostring(p.rank), tostring(p.max), skillLine)
     end
     lines[#lines + 1] = "  " .. (#profs > 0 and table.concat(profs, ", ") or "no professions")
+    local pvp = c.pvp
+    if pvp then -- CF-52
+      local rank = ns.Pvp.rankText(pvp, c.faction)
+      lines[#lines + 1] = string.format("  PvP: %s honorable kills, %s, this week %s kills and %s honor; "
+        .. "%s deaths, duels %s won %s lost", tostring(pvp.hk or "?"), rank or "rank unknown",
+        tostring(pvp.weekKills or "?"), tostring(pvp.weekHonor or "?"), tostring(pvp.deaths or 0),
+        tostring(pvp.duelsWon or 0), tostring(pvp.duelsLost or 0))
+    end
     if c.talents then
       local split = {}
       for _, t in ipairs(c.talents) do split[#split + 1] = string.format("%s %d", tostring(t.name), t.points or 0) end
@@ -127,6 +135,39 @@ function Describe.view(view, now)
       lines[#lines + 1] = "  " .. describeRow(row, now)
     end
   end
+  return lines
+end
+
+local SOURCES = { game = "realm clock", site = "the site's time zone", cet = "CET/CEST, no realm clock" }
+
+local function goalLines(lines, title, entry, progress, clock)
+  lines[#lines + 1] = title
+  for _, id in ipairs(entry.set or {}) do
+    local goal = ns.Doomsday.goal(id)
+    local text = id == "hunt" and "The Hunt" or (goal and goal.text) or ("a goal from a newer version (" .. id .. ")")
+    local p = progress[id] or {}
+    local state
+    if entry.done and entry.done[id] then
+      state = "done " .. clock(entry.done[id])
+    else
+      state = string.format("%s/%s", tostring(p.value or 0), tostring(p.target or "?"))
+    end
+    local original = entry.swapped and entry.swapped[id]
+    local instead = original and ns.Doomsday.goal(original)
+    lines[#lines + 1] = string.format("  %s: %s%s", text, state,
+      original and (" (instead of: " .. (instead and instead.text or original) .. ")") or "")
+  end
+end
+
+--[[ CF-56: /cf doomsday. state: DoomsdayTracker.state(); clock(t): a server time as the player's clock ("20:14"). ]]
+function Describe.doomsday(state, clock)
+  if not state then return { "Doomsday is not ready yet." } end
+  local lines = { string.format("Doomsday %s, resets in %s (day %d, week %d, %s)", state.label,
+    ns.Doomsday.duration(state.resetsIn), state.day, state.week, SOURCES[state.source] or tostring(state.source)) }
+  goalLines(lines, "Today:", state.today, state.progress, clock)
+  goalLines(lines, "This week:", state.thisWeek, state.weekProgress, clock)
+  lines[#lines + 1] = string.format("Streak %d (best %d). This week: PvE %d, PvP %d (kills and goals; duels on "
+    .. "the site).", state.streak, state.best, state.points.pve, state.points.pvp)
   return lines
 end
 

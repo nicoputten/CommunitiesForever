@@ -174,6 +174,18 @@ function Settings.options()
         get = function() return ns.db.global.settings.levelUpToast ~= false end,
         set = function(_, value) ns.db.global.settings.levelUpToast = value end,
       },
+      -- CF-57: Doomsday's chat lines (goals done, bonus kills, the crown, swaps).
+      doomsdayChat = {
+        type = "toggle",
+        order = 5.15,
+        width = "full",
+        name = "Doomsday in chat",
+        desc = "Chat lines when you finish a Doomsday goal, a kill is worth bonus points, someone takes the crown "
+          .. "or a goal is swapped for you.",
+        help = "Goals done, bonus kills, the crown",
+        get = function() return ns.db.global.settings.doomsdayChat ~= false end,
+        set = function(_, value) ns.db.global.settings.doomsdayChat = value end,
+      },
       -- CF-48: planned runs: the reminder and Starting now notes, their chime, and the chat lines per type.
       runToasts = {
         type = "toggle",
@@ -192,17 +204,6 @@ function Settings.options()
         help = "A soft sound with the run reminder",
         get = function() return ns.db.global.settings.runSound ~= false end,
         set = function(_, value) ns.db.global.settings.runSound = value end,
-      },
-      shareActivity = {
-        type = "toggle",
-        order = 5.5,
-        width = "full",
-        name = "Share my activity",
-        desc = "Friends see what you did in their Activity tab (levels, quests, professions). "
-          .. "Off: only you see your activity.",
-        help = "Levels, zones and dungeons you ran",
-        get = function() return ns.FeedTracker.shared() end,
-        set = function(_, value) ns.FeedTracker.setShared(value) end,
       },
       groupAsks = {
         type = "toggle",

@@ -40,9 +40,116 @@ One run answers most of them: copy `tools/FriendProbe` into `Interface\AddOns` (
 | V76 | Are `IsInGroup()` and the `GetInstanceInfo()` type right at the moment of a kill (`solo`, `bg`)? (CF-55) | Same `/fp pvp` run: each `V73 honor` line is followed by `group true/false, instance <type>`. Check that it matches (grouped or not, `pvp` only in the battleground). | open |
 | V77 | Does `GetCurrentRegion()` exist and give 3 in Europe? (CF-54: logged for reference only) | `/fp start`: the `V77 region` line. Expected `3` on an EU realm (`missing` means only the region is unknown; Doomsday does not depend on it). | open |
 | V78 | Does `GetGameTime()` give the realm clock (hours, minutes), so that its difference with `GetServerTime()` gives the realm offset from UTC? (CF-55: the Doomsday day resets at 19:00 realm time) | `/fp start`: the `V78 realm time` line shows `GetGameTime()`, `date("!%H:%M", GetServerTime())` and the offset. Expected: the realm hour as shown on the game clock and an offset of +1 or +2 hours on an EU realm. `missing` or a wrong hour: Doomsday falls back to the PC clock (say which). | open |
+| V79 | Do `GetPVPLifetimeStats`, `UnitPVPRank` with `GetPVPRankInfo(rankID, "player")`, `GetPVPThisWeekStats` and `GetStatistic(60)` (total deaths) exist and give numbers, and does `PLAYER_PVP_KILLS_CHANGED` fire on an honorable kill? (CF-52) | `/run print(GetPVPLifetimeStats and GetPVPLifetimeStats(), UnitPVPRank and UnitPVPRank("player"))`, `/run print(GetPVPRankInfo and GetPVPRankInfo(UnitPVPRank("player"), "player"))`, `/run print(GetPVPThisWeekStats and GetPVPThisWeekStats(), GetStatistic and GetStatistic(60))`. Expected numbers (a rank name and number for a ranked character; `nil` means missing: send which). Then see the CF-52 steps. | open |
+| V80 | Do `DUEL_WINNER_KNOCKOUT` and `DUEL_WINNER_RETREAT` match the duel lines in chat (`CHAT_MSG_SYSTEM`), with the winner as the first argument in both? (CF-52) | `/run print(DUEL_WINNER_KNOCKOUT, "/", DUEL_WINNER_RETREAT)`. Expected (enUS) `%1$s has defeated %2$s in a duel / %2$s has fled from %1$s in a duel`. Then the CF-52 duel steps: a win, a loss and fleeing the duel area. | open |
+| V81 | Where can the cause of a death come from? (CF-52) Can an addon register `COMBAT_LOG_EVENT_UNFILTERED` (see also V75); do `MIRROR_TIMER_START`/`MIRROR_TIMER_STOP` fire with `BREATH` and `EXHAUSTION`; does `C_DeathRecap.GetRecapEvents()` without an id give the latest death's events (`event`, `environmentalType`, `sourceGUID`, `timestamp`)? | `/run print(C_DeathRecap and C_DeathRecap.GetRecapEvents)`. After a death: `/dump C_DeathRecap.GetRecapEvents()`. Then the CF-52 death steps: the `/cf self` deaths and the saved file's `deaths` causes. If the combat log is blocked, a Lua error may show once at login (send it). | open |
+| V82 | How can an addon read the riding skill? (CF-53) Vanilla has one per race (skill lines 148, 149, 150, 152, 533, 553, 554, 713). Does `C_TradeSkillUI.GetProfessionInfoBySkillLineID(<line>)` give `skillLevel` for it, do `C_SpellBook.IsSpellKnown`/`IsSpellKnown` know 33388/33391, or do `GetNumSkillLines`/`GetSkillLineInfo` exist? And does `C_Timer.NewTicker` exist (the session heartbeat)? | On a character with riding (level 40+): `/dump C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID(149)` (your race's line: Orc 149, Tauren 713, Troll 533, Undead 554, Human 148, Dwarf 152, Night Elf 150, Gnome 553), then `/run print(IsSpellKnown and IsSpellKnown(33388), GetNumSkillLines, C_Timer.NewTicker)`. After `/reload`, the saved file's `self.chars[<guid>].riding`: 75 (0 without riding, missing = unreadable). | open |
+| V83 | Do `CHAT_MSG_LOOT` and the strings `LOOT_ITEM_SELF`, `LOOT_ITEM_SELF_MULTIPLE`, `LOOT_ITEM_PUSHED_SELF`, `LOOT_ITEM_CREATED_SELF` (and their `_MULTIPLE`) match your own loot, quest rewards and crafted items? Do `C_Item.GetItemQualityByID`, `C_Item.GetItemInfoInstant`, `GetMoney` and `PLAYER_MONEY` work? Are the watch-list item IDs right on Forever? (CF-53) | `/run print(LOOT_ITEM_SELF, LOOT_ITEM_PUSHED_SELF, LOOT_ITEM_CREATED_SELF, GetMoney())`. Expected `You receive loot: %s.`, `You receive item: %s.`, `You create: %s.` and your copper. For the watch list: `/run for _, id in ipairs({12784,12360,14342,15063,15062,19807,19970,19979}) do print(id, C_Item.GetItemNameByID and C_Item.GetItemNameByID(id)) end`: Arcanite Reaper, Arcanite Bar, Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings, Speckled Tastyfish, Arcanite Fishing Pole, Hook of the Master Angler (a `nil` may just be uncached: run it twice). | open |
+| V84 | Do `LOOT_OPENED`, `IsFishingLoot()` and `GetNumLootItems()` work for fishing? (CF-56: `d.fish20`) | Fish once: `/run print(IsFishingLoot, GetNumLootItems)` shows two functions; after a catch, `/cf doomsday` with `/dump CommunitiesForeverDB.global.self.doomsday` after `/reload` shows `fish` up by the items looted. | open |
+| V85 | Do `TRADE_SHOW` with `UnitGUID("NPC")`, `TRADE_PLAYER_ITEM_CHANGED` with `GetTradePlayerItemLink(slot)` and `UI_INFO_MESSAGE` with `ERR_TRADE_COMPLETE` tell a completed trade, its partner and what you gave? (CF-56: `d.trade`, `w.craftTrade`) | Trade an item you crafted to a friend's community character; after `/reload` this week's facts have `trades = 1` and `craftTrade = 1`. A cancelled trade adds nothing. | open |
+| V86 | Do discoveries come as `UI_INFO_MESSAGE` or `CHAT_MSG_SYSTEM` matching `ERR_ZONE_EXPLORED` / `ERR_ZONE_EXPLORED_XP`? (CF-56: `w.discover5`) | `/run print(ERR_ZONE_EXPLORED, ERR_ZONE_EXPLORED_XP)`, then discover a new place: `discoveries` goes up by 1 in this week's facts. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-58 Drop "Share my activity"
+| Step | Expected | Status |
+|---|---|---|
+| `/cf settings` | Sharing has only "Receive group asks"; no "Share my activity". `/cf setup`: the step is called "Notifications" with three switches and the minimap one. | open |
+| A friend on this build, you on a released version with "Share my activity" off | The friend still sees your activity from before (nothing is wiped); new activity of yours doesn't reach them until you update. | open |
+| Both on this build | Each sees the other's activity; the Activity tab footer says "Friends with CommunitiesForever share their activity." | open |
+
+### CF-57b Doomsday tab: Board, Ladder and Feats
+Compare with `docs/design/doomsday-2026-10/DD08AddonBoard.dc.html`. Best with two friends on this build.
+
+| Step | Expected | Status |
+|---|---|---|
+| Doomsday › Board | One row per friend: you first, then friends with Doomsday data, then the rest ("no Doomsday data yet"); a column per goal of today with the time a friend finished it, your own progress ("3/10"), a "*" on a swapped goal (hover: the original); a line through the name of a friend who did all 3 PvE dailies; "crown" after the first one; streak; today's "PvE · PvP". | open |
+| Doomsday › Ladder | PvE and PvP apart, each ranked this week with points and movement against last week ("+2", "new"); clicking a row shows the characters. A friend who never killed anyone: "PvP Virgin · not ranked". Your PvP: rank and title, kills this week and the zone with most, duels won–lost, each battleground won–lost with its points. | open |
+| Doomsday › Feats | Your characters with their feats, newest first; what they had before the update says "earlier". The next honorable-kill feat with "412 / 1,000"; a character without kills: "no kills yet · Rank title: Conscientious Objector until the first kill." | open |
+| Level up | A new feat "Level N" with today's date. | open |
+| Activity tab, a day with 5 (or 10) kills in a row without dying | "a spree of 5" (or 10) on that line. | open |
+
+### CF-57a Doomsday tab: Today, Week, chat lines and the toast
+Compare with `docs/design/doomsday-2026-10/DD07AddonToday.dc.html`.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, the new tab **Doomsday** after Dungeons | Chips Today and Week, "resets in …" on the right. Today: "Today · <day> · N of 5 done", one row per goal (DAILY, HUNT once it's on, SKIRMISH) with "3/10" and a gold bar, or "✓ 20:14" in your own clock time; the DUEL row with whom you dueled ("won vs Bob") and who's still open; "PvE 10 · PvP 9", the kill summary, the streak, who has the crown. Footer: "Synced with …" and "Suggestions, never rules · all-time totals on the site". | open |
+| Hover a goal marked "(swapped)" | A tooltip "Instead of: <the original goal>". | open |
+| Week | "This week · 15 points each", "week resets <weekday> <time> · in N d N h", the weeklies and the Bounty (for "every enemy class": "Still needed for the bounty: …"), this week's points, your characters with their level and PvP points, the streak. | open |
+| Finish a daily | Chat: "Daily done: <goal> (+5 PvE, N of 3 today)". A weekly: "Weekly done: … (+15 PvE)". | open |
+| A kill on a player 3+ levels above you, solo | Chat: "Kill: +2 PvP · 3 levels above you, and solo (+1)". A kill worth 1 point says nothing. | open |
+| Finish all 3 PvE dailies first in the group | Under the minimap: "First to finish today!", "All three dailies done at <time>", "The crown is yours until <reset time>. Others have been told, gently." It fades in and slides with Ambient effects on, just appears with them off. | open |
+| A friend finished first (after their record syncs) | Chat: "<friend> finished Doomsday first today. You're at N of 5." Once a day. | open |
+| The day turns at the reset while you play, with a swapped goal | Chat: "Swapped for you: "<original>" → "<new>"". Not at login. | open |
+| Settings → Doomsday in chat off | No Doomsday chat lines; the toast still shows. | open |
+| A friend's character card (Friends tab) | Under the tiles: "<rank>, a.k.a. <our title> · N honorable kills · PvP N this week", or "PvP Virgin"; nothing for a friend on an older addon. | open |
+
+### CF-56 Goals tracked and shared
+`/cf doomsday` prints today's and this week's goals with progress, swaps, the streak and this week's points.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf doomsday` | "Doomsday <weekday day month>, resets in …", the source (`realm clock`, `the site's time zone` or `CET/CEST`), today's 3 PvE dailies and the Skirmish, this week's 3 weeklies and the Bounty, with progress. | open |
+| A day with "Finish 10 quests": 6 quests on one character, 4 on another | After the 10th: "Finish 10 quests: done <time>" in your own clock time. | open |
+| A swapped goal (e.g. a character without professions) | "(instead of: …)" after the replacement. | open |
+| Wait past 19:00 realm time (or the site's reset) | `/cf doomsday` shows the next day with new goals; Sunday's reset also starts a new week. | open |
+| Two accounts: A finishes a goal | Within about a minute B's saved file has `people[<A's BattleTag>].goals.days[<day>].done`. | open |
+| A full run of The Deadmines (all 7 bosses) in a week with "Clear every boss of a dungeon" | The weekly is done. Note the boss count `/cf activity` shows for Scarlet Monastery wings, Blackrock Spire, Dire Maul, Stratholme, Scholomance, Blackfathom Deeps and Sunken Temple, for their counts. | open |
+| A friend in Thailand (or a PC clock set to another zone) | The same day and goals as everyone; clock times in their own time. | open |
+
+### CF-55b Raw kills in the record
+After CF-54's run (V73, V74, V76). One PvP-flagged character with this build; enemy nameplates on. After the steps `/reload` and look at `self.feed[<today>][<guid>].pvpKills`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Target an enemy player, then get the honorable kill on them, solo | An entry with `name`, `lvl` (or `-1` for a skull), `class`, `race`, `rank` (when ranked), `myLvl`, `solo = true`, the zone and time. | open |
+| A kill on a player you never targeted or saw a nameplate of | An entry with `name` (and `rank`) only. | open |
+| A kill in a group | No `solo`. | open |
+| A kill in a battleground | `bg = true`, the battleground as zone. | open |
+| If no honor message comes for a kill (the counter rose) | An entry without `name` about 3 s later. | open |
+
+### CF-54 FriendProbe: kills, victims and realm time (at launch, from 2026-11-05)
+One run answers V73 to V78 (and V79 to V83 of CF-52/CF-53). Copy the new `tools/FriendProbe` into `Interface\AddOns` (replace the old one), on a PvP-flagged character of level 20 or more.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/fp start` | The log has `V77 region`, `V78 realm time ... offset +60 min` (or +120 in summer time) and the `V79`–`V83` lines. | open |
+| `/fp pvp`, enemy nameplates on | `V75 combat log: registered` or `blocked: ...`. | open |
+| Target, mouse over and look at enemy players, one with a skull | A `V74 unit` line per player (name, level, class, race, rank, GUID); `secret` or `missing` answers V74. | open |
+| An honorable kill solo, one in a group, one in a battleground | Per kill `V73 honor` (all arguments, the parsed victim and rank, whether the victim was seen before and how), `V76 at the kill: group ..., instance ...`, and `V73 PLAYER_PVP_KILLS_CHANGED` with the counters. | open |
+| Die once to an enemy player, once by falling, once by drowning | `V75 killed by ...` (the killer's name, if the combat log is allowed), `V81` mirror timer and recap lines, `V79 total deaths`. | open |
+| Duel a friend; loot a blue item; buy something | `V80 system ... in a duel`, `V83 CHAT_MSG_LOOT ...`, `V83 PLAYER_MONEY`. | open |
+| `/reload`, send `WTF\Account\<account>\SavedVariables\FriendProbe.lua` | Claude Code moves the answers to `docs/API-FINDINGS.md`, decides which victim fields CF-55b fills and the next pool version (the Hunt stays or becomes a second Skirmish), and proposes the Wanted poster and revenge-kill stories if the killer's name is readable. | open |
+
+### CF-53 Loot, gold, play sessions and groups in the record
+One character with this build. After the steps `/reload` and look at `self.feed[<today>][<guid>]` in the saved file (`CommunitiesForeverDB`).
+
+| Step | Expected | Status |
+|---|---|---|
+| Loot a blue item, take a blue quest reward, loot a grey and a green | `loot.rare = 2`; nothing for the grey and green. | open |
+| Loot (or win the roll for) a purple item | `loot.epic` has `{ id, name, slot = "INVTYPE_...", level }` with your level at that moment. | open |
+| A friend in your group loots a blue | Nothing in your `loot`. | open |
+| Tailor: create Mooncloth (or any watch-list item you can) | `notable = { [14342] = 1 }`. Crafting an item off the watch list adds nothing. | open |
+| Sell something to a vendor, buy something | `gold.gained` and `gold.spent` in copper match. | open |
+| Log in, play 10 minutes, `/reload`, play 10 more, log out | One session in `sessions`: `from` at the login, `to` at the logout (20+ minutes). | open |
+| Log in again after 10 minutes away | A second session. | open |
+| Group with a friend's community character, then with a stranger | `groups` has the friend's character GUID only. | open |
+| Learn riding (level 40) | `self.chars[<guid>].riding = 75`; friends see it after the next sync. | open |
+
+### CF-52 PvP, duels and deaths in the record
+One character with this build, flagged for PvP. `/cf self` shows a `PvP:` line under the character. After the steps `/reload` and look at `CommunitiesForeverDB` in the saved file: `self.chars[<guid>].pvp` and `self.feed[<today>][<guid>]`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, `/cf self` | `PvP: <lifetime honorable kills>, <rank name> a.k.a. <our title>` (or `rank 0 a.k.a. Conscientious Objector`), this week's kills and honor as the honor tab shows them. `?` means the counter was not readable (V79). | open |
+| Get two honorable kills in one zone, one in another | The feed entry has `kills = { [zone] = 2, [other zone] = 1 }`; `/cf self` shows the lifetime count 3 higher. | open |
+| Duel a friend and win; duel again and lose; duel once more and run out of the duel area | `duels` has three entries `{ t, won, vs }` with `won = true`, `false`, `false` and the friend's full name; `pvp.duelsWon = 1`, `pvp.duelsLost = 2`. A duel between two other players nearby adds nothing. | open |
+| Die by falling, by drowning (stay under water), to a monster and to an enemy player | `deaths` has one entry each with `cause` `fall`, `drown`, `creature`, `player`. Without the combat log (V81) `fall` and `creature`/`player` show as `other`, drowning still as `drown`. `pvp.deaths` counts up. | open |
+| A friend with this build: after a minute | The friend's saved file has your `chars[<guid>].pvp` and the feed's `kills`, `deaths`, `duels` under `people[<your BattleTag>]`. | open |
+| Gain a PvP rank (when the weekly ranking comes) | `/cf self` shows the new rank and title; friends get it within seconds (not after 60 s). | open |
+| Warsong Gulch, Arathi Basin and Alterac Valley, once each is open: finish a match | The feed's `runs` has the battleground with `kind = "pvp"` and `won` true or false (CF-23). | open |
 
 ### CF-51 Carry friends' asks
 Two accounts with this build, Battle.net friends, both in the community: A (asks) and B (carries). The site on WEB-53.
@@ -153,7 +260,7 @@ Compare with `docs/design/revamp-2026-10/settings-setup.html`.
 | Ambient effects | On: a slow light streak across the window title and across LEVEL UP chips in Activity (V64). Off: none. | open |
 | Esc → Options → AddOns → CommunitiesForever | The line and "Open settings", which opens the window (V66). | open |
 | `/cf setup` | A 600 × 460 window: progress bars and "Step 1 of 6 · Welcome → Community → ...", "Who is who in your community", three tiles (Friends, Activity, Dungeons). Skip setup (left of Next) and Back. | open |
-| Through the steps | Community: the dropdown; Your name: the field (saved on Next); Community chat: Not now and Create chat tab in the Next spot; Sharing and notifications: four switches; Done: Finish. Each switch matches the settings window. | open |
+| Through the steps | Community: the dropdown; Your name: the field (saved on Next); Community chat: Not now and Create chat tab in the Next spot; Notifications: four switches; Done: Finish. Each switch matches the settings window. | open |
 | Another character after the setup | The Community tab prompt in the new look: one gold button; closing is no. | open |
 
 ### CF-42 Dungeons tab in the new look
@@ -181,7 +288,7 @@ Compare with `docs/design/revamp-2026-10/activity.html`. Best with a friend who 
 | A friend with activity on two characters | "and 1 more character", "Show all (N)" opens the other character's pieces under "on <character>"; "Show less" folds it. | open |
 | Each chip | Level-ups: only entries with a level change (whole entries); Dungeons: entries with a dungeon, raid or battleground; Together: the together entries. No match: "Nothing of this kind in the last 7 days." | open |
 | Close and open the window | The chips start at All again. | open |
-| Footer | Left "Activity is shared only by friends who turned on "Share my activity".", right "Keeps 7 days". Friends tab: its own footer again. | open |
+| Footer | Left "Friends with CommunitiesForever share their activity.", right "Keeps 7 days". Friends tab: its own footer again. | open |
 | Many entries | The feed scrolls with the mouse wheel (V62). | open |
 
 ### CF-40 Friends tab in the new look
@@ -287,8 +394,8 @@ character in no community.
 | Step | Expected | Status |
 |---|---|---|
 | On a character without a Community chat tab: `/cf setup`, Next until "Community chat" | The buttons read Back, Not now, Create chat tab (where Next was). | open |
-| Click **Create chat tab** | A Community chat tab appears and the setup is on "Notifications and sharing". Back: the chat step says "This character has a Community chat tab" with Skip and Next. | open |
-| Close the new tab, `/cf setup` again to the chat step, click **Not now** | No tab is created; the setup goes on to "Notifications and sharing". | open |
+| Click **Create chat tab** | A Community chat tab appears and the setup is on "Notifications". Back: the chat step says "This character has a Community chat tab" with Skip and Next. | open |
+| Close the new tab, `/cf setup` again to the chat step, click **Not now** | No tab is created; the setup goes on to "Notifications". | open |
 
 ### CF-02 part 2: release on tag
 | Step | Expected | Status |
@@ -329,7 +436,6 @@ Unit tested in depth (older copies, levels, deleted characters, activity). In ga
 |---|---|---|
 | A friend with this build levels up, turns in a quest and trains a profession rank | You see the new level, the level-up line, the quest in Shared quests and the activity line as before. | open |
 | `/reload` on both sides | Nothing goes back to older data (level, quests, activity). | open |
-| Friend unticks "Share my activity" | Their activity lines disappear for you after the next sync, as before. | open |
 
 ### CF-27 Who's up for it?
 Needs a friend running this build, online in Forever, with a character in range of a dungeon you also fit (an alt counts). Run V47 and V48 first if you can.

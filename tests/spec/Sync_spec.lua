@@ -54,10 +54,12 @@ describe("Sync", function()
     return found
   end
 
-  -- Delivers a message as if Sjaak's client sent it.
+  -- Delivers a message as if Sjaak's client sent it (each with its own message id, CF-59: no random ids).
+  local sentBySjaak = 0
   local function fromSjaak(message, gameAccountID)
     local encoded = codec:encode(message)
-    for _, chunk in ipairs(ns.Protocol.chunk(encoded, "s" .. tostring(math.random(1, 1e9)))) do
+    sentBySjaak = sentBySjaak + 1
+    for _, chunk in ipairs(ns.Protocol.chunk(encoded, "s" .. sentBySjaak)) do
       wowapi.fireEvent(state, "BN_CHAT_MSG_ADDON", "CommForever", chunk, "WHISPER", gameAccountID or SJAAK_GA)
     end
     settle()
@@ -310,7 +312,7 @@ describe("Sync", function()
       assert.are.equal("Bram", bram.displayName)
       assert.are.equal("record", bram.chars[1].linkSource)
       assert.are.equal("Sjaakovich", bram.viaName)
-      local detail = ns.Format.detail(view, BRAM, 3000 + 3 * 3600)
+      local detail = ns.Card.detail(view, BRAM, 3000 + 3 * 3600)
       assert.are.equal("Updated 3 h ago via Sjaakovich", detail.source)
     end)
 

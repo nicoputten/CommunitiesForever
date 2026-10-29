@@ -54,7 +54,7 @@ describe("settings window (CF-43)", function()
     load()
     ns.Settings.open()
     local args = ns.Settings.options().args
-    for _, key in ipairs({ "shareActivity", "groupAsks", "notifications", "levelUps", "alert", "sound",
+    for _, key in ipairs({ "groupAsks", "notifications", "levelUps", "alert", "sound",
                            "keepGeneral", "openOnLogin", "ambientEffects" }) do
       local opt = args[key] or args.chat.args[key]
       local box = control(key)

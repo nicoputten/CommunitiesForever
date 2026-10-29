@@ -5,7 +5,7 @@ local _, ns = ...
 
 local RunsFile = {}
 
-local read, runs, reason = false, nil, nil
+local read, runs, reason, doomsday = false, nil, nil, nil
 
 -- The checked runs, or nil and the reason (see PlannedRuns.validate; "unreadable" when checking failed).
 function RunsFile.read()
@@ -13,6 +13,9 @@ function RunsFile.read()
     read = true
     local raw = CF_RUNS
     CF_RUNS = nil
+    -- CF-56: the reset setting (checked by Goals); a table that errors when read gives none.
+    local okDoomsday, value = pcall(function() return type(raw) == "table" and raw.doomsday or nil end)
+    doomsday = okDoomsday and value or nil
     local ok, result, why = pcall(ns.PlannedRuns.validate, raw)
     if ok then
       runs, reason = result, why
@@ -21,6 +24,12 @@ function RunsFile.read()
     end
   end
   return runs, reason
+end
+
+-- CF-56: the file's raw `doomsday` table ({ reset, changedAt, offset, offsetUntil, offsetAfter }), or nil.
+function RunsFile.doomsday()
+  RunsFile.read()
+  return doomsday
 end
 
 ns.RunsFile = RunsFile

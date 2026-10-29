@@ -32,12 +32,15 @@ function addon:OnEnable()
   ns.SelfInfo.watch(self)
   ns.FeedTracker.start(self) -- before SelfTracker: its first refresh may record feed events
   ns.SelfTracker.start(self)
+  ns.PvpTracker.start(self) -- CF-52: after SelfTracker (keeps chars[guid].pvp of the stored character)
   ns.Community.watch(self)
   ns.CommunitySelection.start(self)
   ns.CommunityChat.start(self) -- CF-25: community chat color, alerts, Community tab
   ns.SyncChannel.start(self) -- CF-31: the hidden channel HELLO and BYE are broadcast on
   ns.MemberTracker.start(self)
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
+  ns.PlayTracker.start(self) -- CF-53: after ActivityTracker (instance events) and MemberTracker (groups)
+  ns.DoomsdayTracker.start(self) -- CF-56: after the trackers whose feed events count; before Sync (HELLO dd)
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)
@@ -52,6 +55,8 @@ function addon:OnEnable()
   ns.ChatLinks.watch(self) -- CF-27: clickable chat links
   ns.GroupAsks.start(self) -- CF-27: "Who's up for it?"
   ns.RunAlerts.start(self) -- CF-48: run reminders, start time, chat lines
+  ns.DoomsdayBoard.start(self) -- CF-57b: Board, Ladder, Feats (feats remembered from the first sight)
+  ns.DoomsdayAlerts.start(self) -- CF-57: Doomsday chat lines and the crown toast (after Sync: PEOPLE_UPDATED)
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
 end
 
@@ -161,6 +166,10 @@ local COMMANDS = {
       local s = ns.Messenger.stats()
       self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed.",
         s.sent, s.received, s.dropped, s.queued, s.resent, s.missed))
+    end },
+  { name = "doomsday", help = { "/cf doomsday - today's and this week's Doomsday goals, streak and points" },
+    run = function(self)
+      printLines(self, ns.Describe.doomsday(ns.DoomsdayTracker.state(), function(t) return date("%H:%M", t) end))
     end },
   { name = "activity", help = { "/cf activity - show the dungeon, raid or battleground run in progress",
                                 "/cf activity debug - print instance events for the activity feed (on/off)" },

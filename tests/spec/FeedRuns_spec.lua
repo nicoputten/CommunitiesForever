@@ -9,7 +9,7 @@ describe("Feed runs (CF-23)", function()
   local THIRD = { guid = "G-TH", name = "Cid Example", classFile = "ROGUE" }
 
   before_each(function()
-    Feed = helpers.loadAddonFile("src/core/Feed.lua", {})
+    Feed = helpers.loadAddonFile("src/core/Feed.lua", helpers.coreNs())
   end)
 
   local function run(name, kind, extra)

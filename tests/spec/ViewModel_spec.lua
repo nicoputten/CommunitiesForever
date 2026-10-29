@@ -5,12 +5,7 @@ describe("ViewModel", function()
   local state, ns, addon
 
   local function load(storedClubId)
-    state = wowapi.install()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = storedClubId
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ clubId = storedClubId or false }) -- nil: no community
   end
 
   after_each(function()

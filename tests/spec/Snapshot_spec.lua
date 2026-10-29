@@ -30,7 +30,7 @@ describe("Snapshot", function()
   end
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Merge.lua", ns)
     Snapshot = helpers.loadAddonFile("src/core/Snapshot.lua", ns)
   end)

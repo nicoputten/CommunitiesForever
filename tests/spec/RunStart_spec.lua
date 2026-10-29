@@ -7,7 +7,7 @@ describe("RunStart (CF-48)", function()
   local ME = { battleTag = "Me#1000", guids = { ["G-ME"] = true } }
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     PlannedRuns = helpers.loadAddonFile("src/core/PlannedRuns.lua", ns)
     RunStart = helpers.loadAddonFile("src/core/RunStart.lua", ns)
   end)

@@ -4,7 +4,7 @@ describe("Protocol reliable delivery (CF-28)", function()
   local Protocol
 
   before_each(function()
-    Protocol = helpers.loadAddonFile("src/core/Protocol.lua", {})
+    Protocol = helpers.loadAddonFile("src/core/Protocol.lua", helpers.coreNs())
   end)
 
   local function noise(n)

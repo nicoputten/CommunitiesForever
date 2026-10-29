@@ -17,5 +17,13 @@ function Timer.debounce(seconds, fn)
   end
 end
 
+-- Runs fn every `seconds` (CF-53). C_Timer.NewTicker is unverified on Forever (VERIFY.md V82): without it
+-- nothing repeats. Returns true when it runs.
+function Timer.every(seconds, fn)
+  if not (C_Timer and C_Timer.NewTicker) then return false end
+  C_Timer.NewTicker(seconds, fn)
+  return true
+end
+
 ns.Timer = Timer
 return Timer

@@ -7,17 +7,13 @@ describe("activity feed (CF-22)", function()
   local myGuid, friendTag, friendGuid
 
   local function load()
-    state = wowapi.install()
-    state.questLog = {
-      { isHeader = true, title = "Westfall" },
-      { questID = 101, title = "Quest A" },
-      { questID = 102, title = "Quest B" },
-    }
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = function(s)
+      s.questLog = {
+        { isHeader = true, title = "Westfall" },
+        { questID = 101, title = "Quest A" },
+        { questID = 102, title = "Quest B" },
+      }
+    end })
     -- The mock's first community member is the player, the second an online Battle.net friend.
     myGuid = state.clubMembers["23125681"][1].guid
     friendGuid = state.clubMembers["23125681"][2].guid
@@ -81,16 +77,12 @@ describe("activity feed (CF-22)", function()
     assert.are.equal(after, addon.db.global.self.version)
   end)
 
-  it("sends the feed with the record unless sharing is off", function()
+  it("always sends the feed with the record (CF-58: no sharing setting)", function()
     load()
+    addon.db.global.settings.shareActivity = false -- stored by a released version: ignored
     wowapi.fireEvent(state, "QUEST_TURNED_IN", 101, 500, 0)
-    assert.is_truthy(ns.Merge.outgoingRecord(addon.db.global.self, ns.FeedTracker.shared()).feed)
-    local before = addon.db.global.self.version
-    state.serverTime = 3000
-    ns.Settings.options().args.shareActivity.set({}, false)
-    assert.is_true(addon.db.global.self.version > before) -- friends get the record without the feed
-    assert.is_false(ns.Merge.outgoingRecord(addon.db.global.self, ns.FeedTracker.shared()).feed) -- CF-28
-    assert.is_truthy(addon.db.global.self.feed) -- still kept for your own window
+    assert.is_truthy(ns.Merge.outgoingRecord(addon.db.global.self).feed)
+    assert.is_nil(ns.Settings.options().args.shareActivity)
   end)
 
   it("shows one entry per person per day in the Activity tab, expandable (CF-41)", function()
@@ -128,7 +120,7 @@ describe("activity feed (CF-22)", function()
 
     -- The footer: who shares, how long it keeps.
     local window = ns.MainFrame.window()
-    assert.is_truthy(window.footerText.text:find("Share my activity", 1, true))
+    assert.are.equal("Friends with CommunitiesForever share their activity.", window.footerText.text)
     assert.are.equal("Keeps 7 days", window.footerRightText.text)
 
     ns.MainFrame.selectTab("friends")

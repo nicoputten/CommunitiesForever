@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -494,3 +494,173 @@ Decided with Nico (2026-10-28): an ask with "Also post on Discord" reached the s
 - Your in-game answer to a posted ask is also kept as a Pending `askAnswer` item (`ask`, `answer` in/maybe/cant, guid, name, role), one per ask, pruned with the ask's 10 minutes.
 - Rule 8: no stored reshape (a new Pending kind, optional fields on a Pending ask and on ASK); `Compat_spec` stays green. An older site would take a carried ask as the carrier's own, so the site's WEB-53 goes live first. Busted and luacheck run locally (no Actions minutes).
 - Done (PR #87): `GroupAsk.message` / `cleanAsk` (the post fields), `GroupAsk.peers`, `Pending` (`askAnswer`, once by id), `Planner.carry` and `Planner.askAnswer`, `GroupAsks` (send to every peer when posted, carry, the silent case, keep your answer), the Ask now dialog makes the Discord item first. VERIFY.md "CF-51".
+
+## E15 Doomsday
+
+### CF-52 PvP, duels and deaths in the record
+- Per character (`chars.*.pvp`): lifetime honorable kills, current PvP rank (number and title), and this week's honor, if readable. Candidates: `GetPVPLifetimeStats`, `UnitPVPRank`/`GetPVPRankInfo`, `GetPVPThisWeekStats`. Updated on `PLAYER_PVP_KILLS_CHANGED` and at login.
+- Per feed day and character:
+  - `kills = { [zone] = n }`: honorable kills by zone (the zone where the kill counter rose)
+  - `deaths = { { t, zone, cause } }`, where `t` is the time and `cause` is one of `fall`, `fire` (a campfire or other fire damage), `lava`, `drown`, `fatigue`, `player`, `creature` or `other`. Candidates: `ENVIRONMENTAL_DAMAGE` subevents in the combat log just before `PLAYER_DEAD`, or `C_DeathRecap`. Under the Midnight restrictions the combat log may be unavailable: then `cause` is `other`.
+  - `duels = { { t, won, vs } }` where `vs` is the opponent's full character name as the game gives it (never split, rule 4). The winner comes from the `DUEL_WINNER_KNOCKOUT`/`DUEL_WINNER_RETREAT` system message, matched through the game's own format string, never hardcoded English.
+- Battleground results are already in `runs` (`kind`, `won`, CF-23). Check that they are filled for Warsong Gulch, Arathi Basin and Alterac Valley once those are open.
+- Sizes are capped like the rest of the feed (at most 50 deaths and 50 duels per day and character), and received data is cleaned (SYNC.md).
+- `/cf self` shows the PvP line (kills, rank) for the current character.
+- Tests: the pure parts (cause from the last environmental damage, duel result from a formatted message, caps, merge of the new fields) with busted. `SYNC.md` and `ARCHITECTURE.md` updated. A fixture for the new fields.
+- Decided with Nico (2026-10-28): the death cause is layered (combat log if an addon may register it, else the latest death recap, else a breath/exhaustion mirror timer, else `other`); every duel is recorded, against anyone (Doomsday and the site keep the ones against another friend); lifetime counters `deaths`, `duelsWon`, `duelsLost` in `chars.*.pvp` for the feats (the feed keeps only 7 days); counters ride the feed's 60 s bump, a new rank bumps right away.
+- Rule 8: optional fields only within `pv` 1, no migration. `Feed.merge` keeps the stored entry on an equal `at`, so a copy relayed by an older client (which drops the new feed fields) can't wipe them.
+- Done (PR #93): `src/core/Pvp.lua` (titles, death cause, format-string parsing, duel result, counters, cleaning), `src/adapters/PvpInfo.lua` (guarded, V79 to V81), `src/services/PvpTracker.lua`, the feed's `kills`, `deaths`, `duels`, `/cf self` PvP line. VERIFY.md "CF-52".
+
+### CF-53 Loot, mounts, gold and play sessions in the record
+- Per feed day and character:
+  - `loot = { rare = n, epic = { { id, name, slot, level }, ... } }`: rare (blue) and epic (purple) items received. Each epic carries its item id, its name as the loot link shows it, its equip slot as the game's `INVTYPE_*` token (nil for non-equippable items) and the character's level when it was looted, for the site's "first epic" feat. Candidate: `CHAT_MSG_LOOT` for your own loot, quality and equip slot from `C_Item.GetItemQualityByID` / `C_Item.GetItemInfo`.
+  - `notable = { [itemID] = n }`: items from a fixed watch list that you looted or created that day, for the profession feats. The watch list is a pure table in `src/core` (changing it needs an addon release); each entry says whether looting, creating or both count:
+    - created: Arcanite Reaper, Arcanite Bar (the first Arcanite transmute), Mooncloth, Devilsaur Gauntlets, Devilsaur Leggings
+    - looted (including quest rewards): Speckled Tastyfish (joined the Stranglethorn Fishing Extravaganza), Arcanite Fishing Pole and Hook of the Master Angler (the Extravaganza prize, so the winner)
+
+    Item IDs are looked up from an item database when building, never guessed, and checked at launch with FriendProbe (`VERIFY.md`). Created items: candidate the `You create:` loot message (`LOOT_ITEM_CREATED_SELF` format string) on `CHAT_MSG_LOOT`, or `CHAT_MSG_TRADESKILLS`; verify which one fires on Forever.
+  - `gold = { gained, spent }` in copper: what came in and went out that day, from `PLAYER_MONEY` deltas. Never shown as an amount: the site only compares.
+  - `sessions = { { from, to } }`: login to logout times (server time), for night owl, early bird and the longest session.
+  - `groups = { [guid] = true }`: community characters you were in a group with that day, for "social butterfly" and "biggest group night".
+- Per character: `riding` (the riding skill rank, 0, 75 or 150), from the skill lines (as professions are read). This gives the mount feats.
+- Profession feats that need no new data (the site derives them from `professions` and the feed's `ranks`): the first fishing catch, the flavour titles on Cooking, First Aid and Fishing 300, and "Jack of all trades".
+- Caps and cleaning as in CF-52. Tests, docs and a fixture as in CF-52.
+- Decided with Nico (2026-10-28): sessions get a 5-minute heartbeat and a login within 5 minutes of the last `to` continues the session (so `/reload` doesn't split it); `rare`/`epic` count looted items and quest rewards, not crafted, traded or mailed ones; riding is read guarded in order: the race's riding skill line by ID (Vanilla has one per race, the shared spells 33388/33391 don't exist in Classic data), the shared riding spells, the Classic skill list.
+- Watch-list item IDs checked on Wowhead Classic (2026-10-28): Arcanite Reaper 12784, Arcanite Bar 12360, Mooncloth 14342, Devilsaur Gauntlets 15063, Devilsaur Leggings 15062, Speckled Tastyfish 19807, Arcanite Fishing Pole 19970, Hook of the Master Angler 19979.
+- Rule 8: optional fields only within `pv` 1 (`chars.*.riding`, the feed's `loot`, `notable`, `gold`, `sessions`, `groups`), no migration. A session's start and end don't bump the version on their own.
+- Done (PR #95): `src/core/GameText.lua` (format strings and item links, moved from `Pvp`), `src/core/Loot.lua`, `src/core/Play.lua`, `src/adapters/LootInfo.lua`, the riding read in `SelfInfo`, `Timer.every`, `src/services/PlayTracker.lua`. VERIFY.md "CF-53" and V82, V83.
+
+### CF-55 Raw kills and the Doomsday core
+After CF-52; its victim fields are filled once CF-54 has answered.
+
+Split in two PRs (Nico, 2026-10-28): **CF-55a** the core (`src/core/Doomsday.lua`) and the golden file, done first so the site's WEB-58 can start (PR #97); **CF-55b** recording `pvpKills`, the victim cache, cleaning, the sync-size check, feats and sprees. The exact algorithm is in `DOOMSDAY.md` "The algorithm, exactly". Feats and sprees moved to 55b.
+- Per feed day and character, `pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } }`, one entry per honorable kill:
+  - `name`: the victim's full name as the game gives it (never split)
+  - `lvl`: the victim's level, `-1` for a skull; `myLvl`: your level at the kill
+  - `class`, `race`: tokens (`WARLOCK`, `Human`); `rank`: the victim's PvP rank number
+  - `solo`: true when not in a group; `bg`: true inside a battleground
+  - Each victim field only when CF-54 found it readable. They come from the honor message or from a short-lived cache by full name, filled from target, mouseover and nameplates (at most 200 names, 10 minutes). Otherwise nil.
+- At most 100 entries per day and character. CF-52's `kills = { [zone] = n }` keeps counting every kill, also past the cap.
+- `src/core/Doomsday.lua` (pure, rule 1) implements `docs/DOOMSDAY.md`:
+  - the schedule: realm offset, day number and week number from the reset setting (default 19:00, `Runs.lua` value when known)
+  - the draw: the PvE pools, the Hunt, the Skirmish, the Weekly bounty, `POOL_VERSION`, swaps and fallbacks
+  - goal progress from facts per Doomsday day and week
+  - points per track, kill points, the Duel slot, crossing out, the crown and the streak
+  - the week's ladder as data (per track, the split per character, PvP details without Elo, the battleground block, PvP Virgin)
+  - the feats the addon can derive from records (the same thresholds as the site, without "First in the group")
+  - sprees (5 and 10 kills without dying) as feed badges, not points
+- `tests/fixtures/doomsday-cases.json`, the golden cases shared with the site. They cover:
+  - every kill band, a skull, an unknown level, solo, a community victim, the 4th kill of the same victim, battleground kills going to the block
+  - the schedule at 19:00 and at another reset time, around midnight and the reset, including the week turning on Sunday
+  - the draws for fixed days and weeks (3 categories, no repeats in a row), the swaps
+  - every goal done and not done, progress adding up over two characters
+  - a duel recorded by both sides, and a disputed one
+  - the crown, crossing out, the streak over a missed day
+  - a goal left out because its field is unknown
+
+  `tests/spec/Doomsday_spec.lua` reads it with a small JSON reader in the test helpers (no new dependency) and checks `Doomsday` against it.
+- Caps and cleaning of received `pvpKills` as for other feed fields (`SYNC.md`): numbers checked, strings stripped of `|`, unknown tokens dropped.
+- Check the sync size of a week with 100 kills on each of 7 days (a test on `Serialize`). If it is over what CF-28 sends comfortably, lower the cap and note it in `DOOMSDAY.md`.
+- `ARCHITECTURE.md` and `SYNC.md` updated. A fixture with `pvpKills`, and `Compat_spec` passes on earlier fixtures.
+- Decided with Nico (2026-10-28): each `pvpKills` entry comes from the honor message (`COMBATLOG_HONORGAIN`: victim name and rank name, the rank number from the game's rank names), the other victim fields from a 10-minute cache of enemy players seen as target, mouseover or nameplate; a counter rise without an honor message within 3 s adds an entry without a victim. Feats and sprees moved to CF-57.
+- Sync size: a week at the cap (7 × 100 kills) encodes to about 6.3 KB, under 8 KB (a test): 2 Battle.net parts or ~28 community parts. The cap stays at 100.
+- Rule 8: a new optional feed field within `pv` 1; older clients drop it in `Feed.clean`, and since CF-52 their relayed copies can't wipe it.
+- Done: CF-55a (PR #97), CF-55b (PR #99): `Pvp.remember`/`recall`/`victim`/`killEntry`, `PvpInfo.enemy`/`rankNumbers`/`solo`, the tracker's honor-message kills and counter fallback, `Feed` `pvpKills` with cleaning. VERIFY.md "CF-55b".
+
+### CF-58 Drop "Share my activity"
+Decided with Nico (2026-10-28): there is no sharing toggle. A friend who doesn't want to share uninstalls the addon. This makes the feed, Doomsday's `goals` (CF-56) and their relaying simpler.
+- The setting **Share my activity** goes: from Settings (the Sharing group keeps "Receive group asks"), from onboarding step 5, from `Store` defaults and from `FeedTracker`. A stored `settings.shareActivity` is ignored (and may be cleared); no migration needed.
+- `Merge.outgoingRecord` always sends `feed` (and, after CF-56, `goals`). The addon never sends `false` for either.
+- **Receiving** (rule 8): released clients may still send or relay `feed = false`. It now means "nothing sent": the stored feed of that friend stays, as for a record without `feed`. The same holds for `goals = false`.
+- The Activity tab's footer loses "Activity is shared only by friends who turned on Share my activity".
+- `docs/SYNC.md` (RECORD fields, merge rule), `docs/ARCHITECTURE.md` (settings, RECORD) and `docs/DOOMSDAY.md` (if it mentions sharing) updated.
+- Tests (busted): `outgoingRecord` without the setting; a received `feed = false` keeps the stored feed; `Compat_spec` passes on earlier fixtures.
+- The site does the same on its side (web WEB-55): `false` from released clients means nothing sent.
+- Done (PR #100): `Merge.outgoingRecord` without the setting; a received `feed = false` keeps the stored feed, also from the owner, and is never relayed as `false` (`feedOff` is gone); the setting left Settings, the settings window, the setup ("Notifications") and `Store` defaults; the Activity tab footer reads "Friends with CommunitiesForever share their activity." A stored `settings.shareActivity` stays and is ignored. `docs/DOOMSDAY.md` never mentioned sharing.
+
+### CF-56 Goals tracked and shared
+After CF-55.
+- A service (`src/services/DoomsdayTracker.lua`) keeps the facts per Doomsday day and week, summed over your own characters:
+  - quests per zone, levels, runs with bosses and companions
+  - profession ranks and learned professions, logins per character, item level
+  - kills, deaths and duels from CF-52/CF-55; groups, loot and sessions from CF-53
+  - "Since the first login today/this week" values (level, item level, profession ranks per character) are a base taken the first time a character is seen in that day or week.
+  
+  It marks a goal done with its time as soon as the facts reach the target (`Doomsday` decides).
+- New local trackers for the goals marked 56 in `DOOMSDAY.md`, not sent on their own (only "done" is shared), all guarded with `VERIFY.md` steps:
+  - **Fishing:** items looted from fishing. Candidates: `LOOT_READY`/`LOOT_OPENED` with `IsFishingLoot()`, `GetNumLootItems`.
+  - **Trades:** a completed trade and its partner. Candidates:
+    - `TRADE_SHOW` with `UnitGUID("NPC")` for the partner
+    - `TRADE_PLAYER_ITEM_CHANGED`/`GetTradePlayerItemLink` for what you give
+    - completion from `UI_INFO_MESSAGE` with `ERR_TRADE_COMPLETE`, matched through the game's own string
+  - **Crafted items:** from `CHAT_MSG_LOOT`, matched through the game's `LOOT_ITEM_CREATED_SELF` format string.
+  - **Discoveries:** from `UI_INFO_MESSAGE` or `CHAT_MSG_SYSTEM`, matched through `ERR_ZONE_EXPLORED`/`ERR_ZONE_EXPLORED_XP`.
+  
+  Each of these goals joins the pool (a `POOL_VERSION` bump) only once its API is verified.
+- Stored: `self.goals = { days = { [n] = { set, swapped = { [id] = originalId }, done = { [id] = at }, at } }, weeks = { [week] = { ... } }, streak = { n, last }, best }`. 14 days and 2 weeks are kept: the addon keeps no all-time totals (Nico: the site and the bot have them). New optional data, so no migration; code reading it handles nil.
+- RECORD gets the optional field `goals` (rule 8, within `pv` 1): the last 7 Doomsday days and the current and previous week (`set`, `swapped`, `done`, `at`), `streak`, `best`, `pool` (the pool version) and `reset` (the reset setting the addon used).
+  - It is always sent: there is no "Share my activity" (CF-58).
+  - A completion bumps the version through the feed's debounce (at most once per 60 s).
+- **Receiving:**
+  - Per day and per week, the newer `at` wins.
+  - Cleaned and capped: ids at most 24 characters, at most 5 per day and 4 per week (see below), 7 days and 2 weeks, numbers ≥ 0.
+  - Ids the client doesn't know (a newer pool) are kept, counted, and shown as "a goal from a newer version".
+- The reset setting from `Runs.lua` (`CF_RUNS.doomsday`) is passed on in HELLO as the optional `dd = { reset, changedAt }`. The newest `changedAt` wins and is stored (`settings.doomsdayReset`), so friends without the uploader get it too.
+- **Compatibility:** older clients ignore `goals` and `dd`, and drop them when relaying. A relayed record without `goals` is nil = unknown, so the stored one stays.
+- `/cf doomsday` prints today's and this week's goals with progress, the swaps, the streak and this week's points (`Describe`).
+- `docs/SYNC.md` (field table, caps, merge rule) and `docs/ARCHITECTURE.md` (data model) updated. A fixture with `goals` for the next release's capture. `Compat_spec` passes.
+- Tests (busted): progress per goal over two characters, the day rolling over at the reset, the week on Sunday, the merge of `goals`, the setting's newest-wins rule.
+- **Manual (`VERIFY.md`):**
+  - Finish 10 quests on two characters and see the daily done.
+  - The day rolls over at 19:00 realm time.
+  - Two accounts: A's completion shows on B within a minute.
+- Decided with Nico (2026-10-28):
+  - Facts are counted live per Doomsday day and week from the feed events and snapshots, and stored locally (`self.doomsday`, never sent). Progress starts on the day of the update.
+  - The day boundary is realm time for everyone (friends in the Netherlands, the UK and Thailand): `GetGameTime`, else the site's offset in `CF_RUNS.doomsday` (shape agreed with the web engine, web PR #108), else CET/CEST. Clock times shown are the player's own.
+  - Caps: 5 goal ids per day, 4 per week (as the site).
+  - `w.fullClear` uses a boss count per dungeon from the game's DungeonEncounter table (Classic Era); multi-wing dungeons and ones with optional or Season of Discovery bosses get counts after launch.
+- CF-58 folded in: `goals` is always sent; `false` or missing = nothing sent.
+- Rule 8: optional RECORD field `goals` and HELLO field `dd` within `pv` 1; older clients ignore and drop them. New optional stored data (`self.goals`, `self.doomsday`, `settings.doomsdayReset`, `people.*.goals`); no migration.
+- Done (PR #101): `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `src/adapters/GoalEvents.lua`, `SelfInfo.gameTime`, `RunsFile.doomsday`, `Merge` (outgoing, merge, relay of `goals`), HELLO `dd`, `/cf doomsday` (`Describe.doomsday`). VERIFY.md "CF-56", V84 to V86.
+
+### CF-57 Doomsday tab, chat lines and the toast
+After CF-56. Split in two (Nico, 2026-10-29): **CF-57a** the tab with Today and Week, the chat lines, the toast, the setting and the card's PvP line (PR #102); **CF-57b** Board, Ladder and Feats (with sprees). Feats: the addon remembers locally when it first saw each one (`self.feats[guid][key] = time`), newest first from then on; feats a character already had show under "Earlier" (Nico).
+Decided in CF-57a: swap lines come when the day turns while you play or with the first goal done that day, never at login; chat lines only on a character in the selected community. As the boards `DD07AddonToday` and `DD08AddonBoard` show, built with the kit (pools, `Kit.scrollArea`, `Kit.toast`), as the other tabs.
+- A tab **Doomsday** after Dungeons, with:
+  - **Today:** your 3 PvE dailies, the Hunt and the Skirmish, with progress ("7/10") or a check with its time, the time to the reset, the swap mark with the original in its tooltip, and the Duel slot (who you dueled, who's still open). Plus today's points (PvE and PvP), a kill summary ("9 kills: 4 near level, 2 solo, 1 above"), the streak, and who has the crown.
+  - **Week:** the 3 PvE weeklies and the Weekly bounty with progress (for the bounty, what's still needed: "Paladin, Priest, Hunter"), this week's points per track and per character, the streak.
+  - **Board:** every friend's goals today, from synced `goals`. A finished goal is checked and struck through with its time, and a friend is crossed out when all 3 PvE dailies are done. The crown, streaks, today's and this week's points.
+  - **Ladder:** this week only, PvE and PvP side by side, each with its own ranking. Rows expand to characters. PvP Virgin is shown, not ranked. "All-time totals on the site."
+  - **Feats:** your characters' feats as far as the addon can derive them, newest first.
+  - The "everything done" state ("Doomsday done. Go touch grass.") and "Synced with Mira 3 min ago".
+- Chat lines in the addon's chat style, as on the board:
+  - a daily done
+  - the Hunt done
+  - a kill worth bonus points
+  - someone else took the crown
+  - a goal swapped for you
+  
+  A setting **Doomsday in chat** (on by default).
+- A **toast** "First to finish today!" when you take the crown: a gold glow, fading in over 400 ms and sliding 12 px, that just appears when "Ambient effects" is off.
+- The character card gets a PvP line: lifetime honorable kills, rank with our title ("Stone Guard, a.k.a. Mailbox Menace"), this week's PvP points, or **PvP Virgin**.
+- Friends without Doomsday data show "no Doomsday data yet", never 0.
+- **Feats and sprees** (moved here from CF-55, Nico 2026-10-28): the feats the addon can derive from the records it holds (the site's thresholds, web WEB-56, without "First in the group") and spree badges (5 and 10 kills without dying) in the feed, both in `src/core/Doomsday.lua`.
+- Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts, feats, sprees) with busted. Manual steps in `VERIFY.md`.
+- Decided in CF-57b: the Board's columns follow your own set of the day (a friend's swapped goal stays in its slot, with "*"); points per friend come from their synced `goals`, the kills in their feed and the Duel slot of everyone's records; the Ladder's movement compares with last week from the data at hand (the last 7 feed days and last week's goals); the battleground block comes from the feed's runs and battleground kills (DOOMSDAY.md wins over the board's "battlegrounds on the site"). Feats: the site's kinds, thresholds and titles (web feats.ts), without "First in the group" and without the group's mount count.
+- Done: CF-57a (PR #102), CF-57b (PR #103): `src/core/Feats.lua`, `DoomsdayView.score`, `DoomsdayTracker.board/ladder/feats`, the Board, Ladder and Feats views, `Feed.spree` and the spree piece. VERIFY.md "CF-57a", "CF-57b".
+
+## E16 Release preparation
+
+### CF-59 Clean-up before the Doomsday release
+Agreed with Nico (2026-10-29): a clean-up of the addon before the release that brings Doomsday (E15) to friends. One or more PRs; nothing a friend sees changes except fixes.
+- **Dependencies:** the `.pkgmeta` externals (Ace3 parts, LibSerialize, LibDeflate, LibDataBroker, LibDBIcon, ...) and the local toolchain (`tools/setup-lua.ps1`: Lua, busted, luacheck) move to their newest releases where newer ones exist. `tools/fetch-libs.ps1` and its `embeds.xml` check still pass. A major version only when `busted` and `luacheck` pass with it. No new dependencies (rule 7).
+- **Technical debt:** a list of what to refactor, each with effort and risk, goes to Nico first; only what he picks is built. Rule 1 (pure core) and rule 8 (no change to stored or sent formats unless compatible) hold throughout.
+- **Docs:**
+  - every finished story moves to `docs/STORIES-COMPLETED.md` (CF-52 to CF-58 at least); `docs/STORIES.md` keeps open stories only, with a correct build order
+  - `docs/ARCHITECTURE.md`, `docs/SYNC.md`, `docs/DOOMSDAY.md`, `docs/API-FINDINGS.md` and the README describe the code as it is
+  - `VERIFY.md` holds open items only
+  - `CHANGELOG.md` `## Unreleased` reads as the release notes of the Doomsday release: one entry per feature, in plain words, newest feature first
+- **Dead code, leftovers and CI:** unused functions, fields, settings, test helpers and files go; flaky tests are fixed, not rerun.
+- **Left alone:** branches (the orchestrator cleans them up at the end) and PR #63 (CF-38, waits for launch).
+- `busted` and `luacheck` pass; `Compat_spec` passes on every earlier release's fixtures.
+- Done (PRs #104 to #108): dependencies were already at their newest (no change); Nico picked all seven refactors (the Safe adapter helper, Calendar and Text, DoomsdayBoard split from DoomsdayTracker, the cached Doomsday state, Card split from Format, Kit.chip and the MainFrame tab table, helpers.client for specs); deterministic test ids, two unused functions removed, no flaky tests found (`busted --shuffle`); the Doomsday release notes, a README, the stories' build order.

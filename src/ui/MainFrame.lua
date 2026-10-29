@@ -7,8 +7,6 @@ local ADDON_NAME, ns = ...
 local MainFrame = {}
 
 local REFRESH_DEBOUNCE = 0.2
-local TABS = { { value = "friends", text = "Friends" }, { value = "activity", text = "Activity" }, -- CF-22
-               { value = "dungeons", text = "Dungeons" } } -- CF-24: a badge counts planned runs
 local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 
 local GROUP_ASK_NOTE = "Group asks wait until combat ends" -- CF-42
@@ -49,15 +47,7 @@ function MainFrame.render()
     characterName = view.selfName,
   })
   updateFooter(empty)
-  if activeTab == "activity" then
-    ns.ActivityTab.render(view, empty)
-    return
-  end
-  if activeTab == "dungeons" then
-    ns.DungeonsTab.render(view, empty)
-    return
-  end
-  ns.FriendsTab.render(view, empty)
+  MainFrame.tab(activeTab).module().render(view, empty)
 end
 
 -- CF-37: what a menu item does.
@@ -153,22 +143,42 @@ local function updateTitle()
   frame.statusText:SetText(online > 0 and string.format("\226\151\143 %d online", online) or "")
 end
 
--- The footer per tab: CF-40 the sync state, CF-41 who shares and how long the feed keeps, CF-42 the sync
--- state and when group asks wait.
+local function synced(empty) return empty and "" or ns.Format.syncedText(view, GetServerTime()) end
+
+--[[ The tabs, in order (CF-59: one table instead of an if-chain per place). module(): the tab's file (create,
+show, hide, render); helpers(): what create gets; footer(empty): the left and right footer texts (CF-40 the sync
+state, CF-41 who shares and how long the feed keeps, CF-42 the sync state and when group asks wait). ]]
+local TABS = {
+  { value = "friends", text = "Friends", module = function() return ns.FriendsTab end, -- CF-40
+    helpers = function() return friendsHelpers() end,
+    footer = function(empty)
+      return not empty and ns.Format.friendsFooter(view, GetServerTime()) or "", FOOTER_HINT
+    end },
+  { value = "activity", text = "Activity", module = function() return ns.ActivityTab end, -- CF-22, CF-41
+    helpers = function() return { settings = settings, render = MainFrame.render } end,
+    footer = function() return ns.ActivityTab.NOTE, string.format("Keeps %d days", ns.Feed.KEEP_DAYS) end },
+  { value = "dungeons", text = "Dungeons", module = function() return ns.DungeonsTab end, -- CF-24, CF-42: a badge
+    helpers = function()
+      return { settings = settings, render = MainFrame.render, print = function(text) addonRef:Print(text) end }
+    end,
+    footer = function(empty) return synced(empty), GROUP_ASK_NOTE end },
+  { value = "doomsday", text = "Doomsday", module = function() return ns.DoomsdayTab end, -- CF-57
+    helpers = function() return { settings = settings, render = MainFrame.render } end,
+    footer = function(empty) return synced(empty), ns.DoomsdayTab.NOTE end },
+}
+
+-- The tab definition of a value (the first, Friends, for an unknown one).
+function MainFrame.tab(value)
+  for _, t in ipairs(TABS) do
+    if t.value == value then return t end
+  end
+  return TABS[1]
+end
+
 function updateFooter(empty)
-  if activeTab == "activity" then
-    frame.footerText:SetText(ns.ActivityTab.NOTE)
-    frame.footerRightText:SetText(string.format("Keeps %d days", ns.Feed.KEEP_DAYS))
-    return
-  end
-  if activeTab == "dungeons" then
-    frame.footerText:SetText(empty and "" or ns.Format.syncedText(view, GetServerTime()))
-    frame.footerRightText:SetText(GROUP_ASK_NOTE)
-    return
-  end
-  frame.footerText:SetText(activeTab == "friends" and not empty and ns.Format.friendsFooter(view, GetServerTime())
-    or "")
-  frame.footerRightText:SetText(FOOTER_HINT)
+  local left, right = MainFrame.tab(activeTab).footer(empty)
+  frame.footerText:SetText(left)
+  frame.footerRightText:SetText(right)
 end
 
 local function create()
@@ -180,6 +190,7 @@ local function create()
     onClose = function()
       MainFrame.setFilter("")
       ns.ActivityTab.reset()
+      ns.DoomsdayTab.reset() -- CF-57: Today again next time
     end,
     onSettings = function() ns.Settings.open() end,
     onResize = function()
@@ -188,10 +199,7 @@ local function create()
   })
   tabs = ns.Kit.tabs(frame.tabBar, TABS, function(value) MainFrame.selectTab(value) end)
 
-  ns.FriendsTab.create(frame.content, friendsHelpers()) -- CF-40
-  ns.ActivityTab.create(frame.content, { settings = settings, render = MainFrame.render }) -- CF-41
-  ns.DungeonsTab.create(frame.content, { settings = settings, render = MainFrame.render, -- CF-42
-                                         print = function(text) addonRef:Print(text) end })
+  for _, t in ipairs(TABS) do t.module().create(frame.content, t.helpers()) end
   MainFrame.selectTab(activeTab)
 end
 
@@ -203,14 +211,14 @@ function MainFrame.updateTabs()
   updateTitle()
 end
 
--- Shows a tab ("friends", "activity" or "dungeons").
+-- Shows a tab ("friends", "activity", "dungeons" or "doomsday").
 function MainFrame.selectTab(value)
   if not frame then return end
-  activeTab = value
+  activeTab = MainFrame.tab(value).value
   MainFrame.updateTabs()
-  if value == "friends" then ns.FriendsTab.show() else ns.FriendsTab.hide() end
-  if value == "activity" then ns.ActivityTab.show() else ns.ActivityTab.hide() end
-  if value == "dungeons" then ns.DungeonsTab.show() else ns.DungeonsTab.hide() end
+  for _, t in ipairs(TABS) do
+    if t.value == activeTab then t.module().show() else t.module().hide() end
+  end
   if view then MainFrame.render() end
 end
 
@@ -263,6 +271,7 @@ local function refreshMessages()
     ns.Planner.UPDATED, -- CF-46: planned runs from a friend
     ns.GroupAsks.CHANGED, -- CF-27: your ask and its answers
     ns.Sync.PEERS_CHANGED, -- CF-28: community members coming online or leaving
+    ns.DoomsdayTracker.CHANGED, -- CF-57: a Doomsday goal done
   }
 end
 

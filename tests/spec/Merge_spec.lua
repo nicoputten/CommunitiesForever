@@ -12,8 +12,9 @@ describe("Merge", function()
   end
 
   before_each(function()
-    local ns = {}
+    local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Feed.lua", ns)
+    helpers.loadAddonFile("src/core/Pvp.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
   end)
 
@@ -222,14 +223,13 @@ describe("Merge", function()
   describe("activity feed (CF-22)", function()
     local FEED = { [20744] = { ["G-1"] = { name = "Alice Example", quests = { Westfall = 2 } } } }
 
-    it("sends the feed unless sharing is off", function()
+    it("always sends the feed (CF-58)", function()
       local own = { battleTag = "X#1", version = 1, chars = {}, feed = FEED }
       assert.are.equal(FEED, Merge.outgoingRecord(own).feed)
-      assert.are.equal(FEED, Merge.outgoingRecord(own, true).feed)
-      assert.is_false(Merge.outgoingRecord(own, false).feed) -- CF-28: "not shared" passes through relays
+      assert.are.equal(FEED, Merge.outgoingRecord(own, false).feed) -- an old caller's argument is ignored
     end)
 
-    it("stores a cleaned feed, drops it when the owner stops sharing, and relays it", function()
+    it("stores a cleaned feed, drops it when the owner sends none, and relays it", function()
       local people = {}
       Merge.store(people, { bt = "X#1", version = 2, chars = {},
         feed = { [20744] = { ["G-1"] = { name = "Al|cffice", quests = { Westfall = 2 }, junk = true } } } }, 10, "X#1")

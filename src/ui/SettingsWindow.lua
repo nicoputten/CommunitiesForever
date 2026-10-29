@@ -79,11 +79,11 @@ local function build()
 
   -- Sharing | Notifications.
   local ly, ry = section(body, left, y, "Sharing"), section(body, right, y, "Notifications")
-  ly = ly + toggle(body, "shareActivity", left, ly)
   ly = ly + toggle(body, "groupAsks", left, ly)
   ry = ry + toggle(body, "notifications", right, ry)
   ry = ry + toggle(body, "levelUps", right, ry)
   ry = ry + toggle(body, "levelUpToast", right, ry) -- CF-44
+  ly = ly + toggle(body, "doomsdayChat", left, ly) -- CF-57
   y = math.max(ly, ry) + 12
 
   -- CF-48: Planned runs: the notes and chime | the chat lines per kind.

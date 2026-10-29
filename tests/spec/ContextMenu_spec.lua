@@ -7,7 +7,7 @@ describe("right-click menu (CF-37)", function()
     local Format
 
     before_each(function()
-      local ns = {}
+      local ns = helpers.coreNs()
       helpers.loadAddonFile("src/core/Quests.lua", ns)
       Format = helpers.loadAddonFile("src/core/Format.lua", ns)
     end)

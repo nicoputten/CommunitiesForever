@@ -13,7 +13,7 @@ local lines -- { [guid] = text }, rebuilt lazily after a change
 -- cannot be used as table keys. issecretvalue is unverified (VERIFY.md V28): without it, pcall guards.
 local function usableGuid(guid)
   if type(guid) ~= "string" then return false end
-  if issecretvalue and issecretvalue(guid) then return false end
+  if ns.Safe.secret(guid) then return false end
   return true
 end
 

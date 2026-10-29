@@ -239,7 +239,7 @@ describe("Run dialogs (CF-47)", function()
   end)
 
   it("migrates saved data from schema 1 with an empty pending list (rule 8)", function()
-    local Store = helpers.loadAddonFile("src/core/Store.lua", {})
+    local Store = helpers.loadAddonFile("src/core/Store.lua", helpers.coreNs())
     local global = Store.init({ schemaVersion = 1, people = { x = {} } })
     assert.are.same({}, global.pending)
     assert.are.same({ x = {} }, global.people)

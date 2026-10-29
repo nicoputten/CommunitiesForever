@@ -6,12 +6,7 @@ describe("community chat (CF-25)", function()
   local CHANNEL = "Community:23125681:1"
 
   local function load()
-    state = wowapi.install()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client()
     myGuid = state.clubMembers["23125681"][1].guid
     friendGuid = state.clubMembers["23125681"][2].guid
   end
@@ -39,13 +34,9 @@ describe("community chat (CF-25)", function()
   end)
 
   it("waits for the channel when the client has not joined it yet", function()
-    state = wowapi.install()
-    state.chatChannels = {}
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = function(s)
+      s.chatChannels = {}
+    end })
     assert.is_nil(state.chatColors.CHANNEL6)
     state.chatChannels[CHANNEL] = 6
     wowapi.runTimers(state)

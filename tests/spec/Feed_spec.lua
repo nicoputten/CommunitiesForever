@@ -7,7 +7,7 @@ describe("Feed (CF-22)", function()
   local ALT = { guid = "G-B", name = "Bob Example", classFile = "WARRIOR" }
 
   before_each(function()
-    Feed = helpers.loadAddonFile("src/core/Feed.lua", {})
+    Feed = helpers.loadAddonFile("src/core/Feed.lua", helpers.coreNs())
   end)
 
   local function prof(name, rank, max) return { name = name, rank = rank, max = max } end

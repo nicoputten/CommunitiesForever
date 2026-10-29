@@ -4,7 +4,7 @@ describe("Dungeons (CF-24)", function()
   local Dungeons
 
   before_each(function()
-    Dungeons = helpers.loadAddonFile("src/core/Dungeons.lua", {})
+    Dungeons = helpers.loadAddonFile("src/core/Dungeons.lua", helpers.coreNs())
   end)
 
   local function row(guid, name, level, extra)

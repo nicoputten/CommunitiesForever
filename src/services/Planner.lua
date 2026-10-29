@@ -204,14 +204,6 @@ function Planner.ping(run, answer)
                  name = answer.name })
 end
 
--- True while an item (or your answer to a run) waits for the next /reload or upload.
-function Planner.isPending(id)
-  for _, item in ipairs(pending()) do
-    if item.id == id then return true end
-  end
-  return false
-end
-
 function Planner.pending() return pending() end
 
 -- CF-47: an answer a friend sent you over sync (untrusted). Kept only when you organise that run.

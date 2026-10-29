@@ -10,13 +10,7 @@ describe("Tooltip (CF-14)", function()
   local STRANGER = "Player-4619-0000STRA"
 
   local function load(setup)
-    state = wowapi.install()
-    if setup then setup(state) end
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = CLUB
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = setup, clubId = CLUB })
   end
 
   local function texts(added)

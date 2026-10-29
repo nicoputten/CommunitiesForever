@@ -12,7 +12,7 @@ local AVATAR = 44           -- the portrait column
 local ROW_GAP = 6           -- between the pieces of a line
 local ROW_HEIGHT = 20       -- one row of pieces
 local TIME_WIDTH = 48
-local NOTE = "Activity is shared only by friends who turned on \"Share my activity\"."
+local NOTE = "Friends with CommunitiesForever share their activity."
 
 local root, chipsBar, scroll, chips
 local helpers -- from MainFrame: settings(), render()
@@ -51,37 +51,6 @@ local function members(view)
 end
 
 -- ===== Factories =====
-
--- Filter chip: a rounded-looking pill with a thin border; the active one gold.
-local function filterChip(parent, def)
-  local c = CreateFrame("Button", nil, parent)
-  c:SetHeight(24)
-  c.bg = c:CreateTexture(nil, "BACKGROUND")
-  c.bg:SetAllPoints()
-  c.edges = Kit.edges(c, "divider")
-  c.text = Theme.text(c, "small", "textDim")
-  c.text:SetPoint("CENTER")
-  c.text:SetText(def.text)
-  c.value = def.value
-  c:SetWidth(math.max(44, (c.text.GetStringWidth and c.text:GetStringWidth() or 40) + 22))
-  local hover = c:CreateTexture(nil, "HIGHLIGHT")
-  hover:SetAllPoints()
-  hover:SetColorTexture(Theme.color("hover"))
-  function c:SetActive(on)
-    self.active = on and true or false
-    if self.active then
-      self.bg:SetColorTexture(Theme.color("gold", 0.16))
-      for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color("gold")) end
-      self.text:SetTextColor(Theme.color("heading"))
-    else
-      self.bg:SetColorTexture(0, 0, 0, 0)
-      for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color("divider")) end
-      self.text:SetTextColor(Theme.color("textDim"))
-    end
-  end
-  c:SetScript("OnClick", function(self) ActivityTab.setFilter(self.value) end)
-  return c
-end
 
 -- The LEVEL UP chip: gold with dark text, and a slow shine while Ambient effects are on (CF-43).
 local function levelChip(parent)
@@ -270,7 +239,7 @@ function ActivityTab.create(parent, h)
   chips = {}
   local previous
   for _, def in ipairs(ns.Feed.FILTERS) do
-    local c = filterChip(chipsBar, def)
+    local c = Kit.chip(chipsBar, def, ActivityTab.setFilter)
     if previous then c:SetPoint("LEFT", previous, "RIGHT", 6, 0) else c:SetPoint("LEFT") end
     chips[def.value] = c
     previous = c
@@ -333,12 +302,6 @@ function ActivityTab.render(view, empty)
     for _, l in ipairs(day.lines) do
       y = y + entry(parent, day.day, l, y, width)
     end
-  end
-  if not empty and not ns.FeedTracker.shared() then
-    placeText(pools.small, parent, PAD, y + 14, width - 2 * PAD, "You don't share your activity: friends don't "
-      .. "see your lines "
-      .. "(/cf settings).", "faint", width - 2 * PAD)
-    y = y + 34
   end
   parent:SetHeight(y + 10)
   scroll:Update()

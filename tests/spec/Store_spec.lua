@@ -4,11 +4,11 @@ describe("Store", function()
   local Store
 
   before_each(function()
-    Store = helpers.loadAddonFile("src/core/Store.lua", {})
+    Store = helpers.loadAddonFile("src/core/Store.lua", helpers.coreNs())
   end)
 
   it("registers itself on the private addon table", function()
-    local ns = {}
+    local ns = helpers.coreNs()
     local loaded = helpers.loadAddonFile("src/core/Store.lua", ns)
     assert.are.equal(loaded, ns.Store)
   end)
@@ -17,7 +17,7 @@ describe("Store", function()
     it("matches the data model sections", function()
       local global = Store.defaults().global
       assert.are.same({ notifications = true, minimap = {}, window = {}, tree = {}, sendInterval = 0.2,
-                        shareActivity = true, chatAlert = true, chatSound = false, chatKeepGeneral = true,
+                        chatAlert = true, chatSound = false, chatKeepGeneral = true,
                         chatTab = {}, openOnLogin = false, ambientEffects = true, levelUpToast = true },
         global.settings)
       assert.are.same({ version = 0, chars = {} }, global.self)

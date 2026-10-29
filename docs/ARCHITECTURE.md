@@ -26,6 +26,8 @@ CommunitiesForever/
   src/
     Core.lua                 AceAddon init, wiring, internal event bus
     core/                    PURE Lua, unit tested
+      Calendar.lua           day numbers and calendar dates, weekday and month names (CF-59)
+      Text.lua               small text helpers: thousands separators (CF-59)
       Store.lua              schema, defaults, migrations
       Merge.lua              record accept rules, version rules
       Identity.lua           account IDs and person keys on the community wire ("aid:<id>"), key mapping (CF-28)
@@ -34,7 +36,9 @@ CommunitiesForever/
       Outbox.lua             outgoing chunk queue with send-rate limit
       Snapshot.lua           build and compare character snapshots
       Describe.lua           stable text output for debug commands (/cf self)
-      Format.lua             view model -> tree nodes, detail cards, last seen, empty states
+      Format.lua             view model -> tree nodes, last seen, footers, empty states, menus, tooltips
+      Card.lua               the Friends tab's card models: person, character (tiles, professions, talents, shared
+                             quests, the PvP line), Unlinked (split from Format in CF-59)
       Clubs.lua              selectable communities, stored-selection status
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
@@ -45,6 +49,17 @@ CommunitiesForever/
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
+      Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
+                             progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
+      Pvp.lua                PvP counters, death cause, duel result from the game's format strings, rank titles,
+                             cleaning of received PvP data (CF-52); victim cache, honor message, kill entry (CF-55b)
+      GameText.lua           the game's own messages through its format strings, item links (CF-52, CF-53)
+      Loot.lua               loot messages, rare and epic items, the watch list of notable items, gold (CF-53)
+      Play.lua               play sessions in the feed: continue within 5 minutes, heartbeat end (CF-53)
+      Feats.lua              the own characters' feats with the site's thresholds and titles, first-seen times (CF-57b)
+      Goals.lua              own Doomsday goals: realm offset fallbacks, the reset setting, facts per day and week,
+                             the situation for swaps, done marks, cleaning and merging received goals (CF-56)
+      DoomsdayView.lua       what the Doomsday tab, its chat lines and the character card's PvP line show (CF-57)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
@@ -54,9 +69,10 @@ CommunitiesForever/
       Chat.lua               community chat: color, which messages alert, which tabs flash, tab name (CF-25)
       Friends.lua            BNet presence snapshot, online/switch/offline diff, presence links
     adapters/                WoW API wrappers only
+      Safe.lua               secret values (issecretvalue) and guarded calls, shared by the adapters (CF-59)
       Events.lua             guarded event registration (C_EventUtils.IsEventValid)
-      Timer.lua              C_Timer debounce
-      SelfInfo.lua           Unit*, GetProfessions, item level
+      Timer.lua              C_Timer debounce, repeating ticker (CF-53, guarded)
+      SelfInfo.lua           Unit*, GetProfessions, item level, riding skill (CF-53, guarded)
       Community.lua          C_Club (club list, members, club and member events)
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
@@ -69,12 +85,22 @@ CommunitiesForever/
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
+      PvpInfo.lua            PvP counters and rank, death statistic and recap, duel/honor format strings, PvP and
+                             death events, combat log damage to the player when allowed (CF-52, guarded)
+      LootInfo.lua           loot strings, item quality and slot (C_Item), money, loot and money events (CF-53, guarded)
+      GoalEvents.lua         fishing loot, trades, discoveries for goals that wait for data (CF-56, guarded)
       RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
+      DoomsdayAlerts.lua     Doomsday chat lines (goals done, bonus kills, the crown, swaps) and the crown toast (CF-57)
       RunAlerts.lua          run reminders and start (15 s checks while runs exist), chat lines with links (CF-48)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
+      PvpTracker.lua         chars[guid].pvp, kills by zone, deaths with their cause, duels into the feed (CF-52)
+      PlayTracker.lua        loot, notable items, gold, sessions and groups into the feed (CF-53)
+      DoomsdayTracker.lua    facts from feed events and snapshots, goals done, reset setting (file, HELLO), the
+                             cached state the tab and /cf doomsday show (CF-56, CF-59)
+      DoomsdayBoard.lua      the Board, Ladder and Feats data; the own feats' first-seen times (CF-57b, CF-59)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
@@ -98,6 +124,8 @@ CommunitiesForever/
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
       RunDialogs.lua         Ask now, Plan a run, Answer and the reload prompt, one kit dialog (CF-47)
+      DoomsdayTab.lua        the Doomsday tab: Today and Week (CF-57a), Board, Ladder and Feats (CF-57b)
+      CrownToast.lua         "First to finish today!" under the minimap, fading in and sliding with Ambient effects (CF-57)
       RunToasts.lua          the reminder and Starting now notes under the minimap, 20 s (CF-48)
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
@@ -154,7 +182,6 @@ global = {
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
-                shareActivity = true,                -- CF-22: send the activity feed to friends
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
                 chatAlert = true, chatSound = false, chatKeepGeneral = true,
                 chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
@@ -166,16 +193,24 @@ global = {
                 openOnLogin = false,                 -- CF-43: open the window after login
                 ambientEffects = true,               -- CF-43: title shimmer and LEVEL UP shine
                 levelUpToast = true,                 -- CF-44: the level-up announcement
+                doomsdayChat = true,                 -- CF-57: Doomsday's chat lines (nil = on)
+                doomsdayReset,                       -- CF-56: the reset setting (runs file or a friend's HELLO)
                 runToasts, runSound,                 -- CF-48: run notes and their chime (nil = on)
                 runLines = { [kind] = false } },     -- CF-48: run chat lines turned off (reminder, answered, starting,
                                                      -- otherChar, ping, updated)
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
-                feed = Feed },                       -- CF-22: activity feed, last 7 realm days
+                feed = Feed,                         -- CF-22: activity feed, last 7 realm days
+                goals = { days = { [n] = Goal }, weeks = { [w] = Goal }, streak = { n, last }, best },
+                                                     -- CF-56: own Doomsday goals, 14 days and 2 weeks, sent
+                doomsday = { days = { [n] = Facts }, weeks = { [w] = Facts }, chars = { [guid] = { death, level } } },
+                feats = { [guid] = { [key] = { at, title, detail } } } }, -- CF-57b: own feats, first seen (0 = earlier), local
+                                                     -- CF-56: the facts behind them (core/Goals.lua), local only
   people    = { [battleTag] = { displayName, version, receivedAt,
                                 chars = { [guid] = Char }, via, invite, feed,      -- via: relayed by (CF-20); invite (CF-21); feed (CF-22)
-                                removed = { [guid] = time }, feedOff,              -- CF-28: dropped characters; feed not shared
-                                aid } },                                           -- CF-28: account ID (community key)
+                                removed = { [guid] = time },                       -- CF-28: dropped characters
+                                aid,                                               -- CF-28: account ID (community key)
+                                goals } },                                         -- CF-56: their Doomsday goals
   presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
@@ -193,7 +228,14 @@ Run = { name, kind = "party"|"raid"|"pvp", instanceID, day, startedAt, lastAt,
 Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                               quests = { [zone] = count }, ranks = { [profession] = rank },
                               learned = { [profession] = true },
-                              runs = { { name, kind, bosses, won, with = { guid, ... } } } } } }  -- CF-23
+                              runs = { { name, kind, bosses, won, with = { guid, ... } } },     -- CF-23
+                              kills = { [zone] = count },                                       -- CF-52
+                              deaths = { { t, zone, cause } }, duels = { { t, won, vs } },       -- CF-52
+                              loot = { rare, epic = { { id, name, slot, level } } },             -- CF-53
+                              notable = { [itemID] = n }, gold = { gained, spent },              -- CF-53
+                              sessions = { { from, to } }, groups = { [guid] = true },          -- CF-53
+                              pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank,     -- CF-55b
+                                             solo, bg } } } } }
 
 Char = {
   guid, name, classFile, raceID, level, faction, realm,
@@ -202,7 +244,10 @@ Char = {
   talents = { { name, points } x3 }, mainTree,       -- CF-18: points per Vanilla tree, tree with most points
   autoRole, roleOverride, role,                      -- CF-18: guessed, player override, effective (tank/heal/dps)
   quests = { [questID] = { title, area, dungeon } },  -- CF-19: quest log, names only, no progress; area = log header
-  updatedAt,                                         -- last synced-field change
+  riding,                                            -- CF-53: riding skill 0, 75 or 150; nil = unknown
+  pvp = { hk, rank, rankName, weekKills, weekHonor,  -- CF-52: kept by PvpTracker (not part of Snapshot.equal);
+          deaths, duelsWon, duelsLost },             -- lifetime counters counted by the addon; nil = unknown
+  updatedAt,                                         -- last synced-field change (CF-52: also a pvp change)
   lastPlayed,                                        -- own chars: login/logout time (not compared, no bump)
 }
 ```
@@ -273,7 +318,7 @@ Full wire reference (every message and field, when they are sent, sizes): `docs/
 Messages:
 - `HELLO {bt, ver}`: on login/reload, when a friend starts Forever, after own record changes (debounced 5 s). The same version goes to the same peer at most once per 60 s; a newer version always goes out (decided in CF-11, so changes arrive in ~10 s). `/cf sync` forces one. CF-20: also carries `known = { [battleTag] = version }` of the records the sender can relay (people with a character in its community); a HELLO is repeated when the version or `known` changed, and after accepting a new record.
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
-- `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` only when "Share my activity" is on (CF-22), `false` when it is off (CF-28: so relays pass "stopped sharing" on); `removed` only in relayed copies (dropped characters with the time they were dropped).
+- `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` always (CF-58: no sharing setting; a received `false` from a released client means nothing was sent and keeps the stored feed); `removed` only in relayed copies (dropped characters with the time they were dropped).
 - `RUNS {runs}` and `RUNREQ {}` (CF-46): planned runs (the shape of `CF_RUNS`). HELLO carries `ru`, the updatedAt of the sender's runs (0: none); a peer with older runs gets `RUNS`, a peer with newer ones gets `RUNREQ`. The receiver checks them with `PlannedRuns.validate` and keeps them only when newer (at most 5 minutes ahead of server time). Over the community BattleTags are left out. Never sent while `Instance.messagingRestricted()` (an encounter, a keystone, a PvP match): tried again 30 s later. Older clients send no `ru` and get nothing; they ignore `ru` and the new types.
 - `RUNANSWER {run, answer, guid, name, role}` (CF-47): your answer to a run, sent at once to its organiser when they are online (Battle.net by BattleTag, community by the organiser's character). The organiser shows it (in memory) until the site's runs have it; it is also a pending item that reaches the site after `/reload`. Ignored unless the receiver organises that run.
 - `ASK {id, dungeon = {id, name, min, max}, from, char, at, note}` (CF-27; `note` optional, CF-47): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
