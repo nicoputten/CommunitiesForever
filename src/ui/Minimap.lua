@@ -1,9 +1,11 @@
 -- Minimap: LibDataBroker launcher + LibDBIcon button. Left-click: window, right-click: settings.
+-- CF-66: the icon is the designer's gold shield (media/textures/mapicon.tga); LibDBIcon draws its own ring. On
+-- clients with the addon compartment (Retail; LibDBIcon checks) the addon is listed there too while the button shows.
 local ADDON_NAME, ns = ...
 
 local Minimap = {}
 
-local ICON = "Interface\\Icons\\INV_Misc_GroupNeedMore"
+local function icon() return ns.Theme.TEXTURES.mapIcon end
 
 local addonRef
 
@@ -33,7 +35,7 @@ function Minimap.start(addon)
   local launcher = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
     type = "launcher",
     text = ADDON_NAME,
-    icon = ICON,
+    icon = icon(),
     OnClick = function(_, button)
       if button == "RightButton" then
         ns.Settings.open()
@@ -62,11 +64,18 @@ end
 
 -- Shows or hides the button per the setting and the passive state.
 function Minimap.apply()
-  local icon = LibStub("LibDBIcon-1.0")
-  if Minimap.isShown() and not ns.CommunitySelection.passive() then
-    icon:Show(ADDON_NAME)
+  local dbIcon = LibStub("LibDBIcon-1.0")
+  local shown = Minimap.isShown() and not ns.CommunitySelection.passive()
+  if shown then
+    dbIcon:Show(ADDON_NAME)
   else
-    icon:Hide(ADDON_NAME)
+    dbIcon:Hide(ADDON_NAME)
+  end
+  -- CF-66: in the addon compartment with the button (LibDBIcon does nothing where there is no compartment).
+  if shown and dbIcon.AddButtonToCompartment then
+    dbIcon:AddButtonToCompartment(ADDON_NAME)
+  elseif not shown and dbIcon.RemoveButtonFromCompartment then
+    dbIcon:RemoveButtonFromCompartment(ADDON_NAME)
   end
 end
 

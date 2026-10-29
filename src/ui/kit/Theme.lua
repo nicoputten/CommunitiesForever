@@ -138,6 +138,7 @@ Theme.TEXTURES = {
   shadow = MEDIA .. "textures\\shadow.tga",
   arrow = MEDIA .. "textures\\arrow.tga", -- CF-40: fold arrow
   quest = MEDIA .. "textures\\quest.tga", -- CF-40: shared-quest count
+  mapIcon = MEDIA .. "textures\\mapicon.tga", -- CF-66: the minimap button's shield (the designer's CF_MapIcon)
 }
 
 -- Sizes (px at UI scale 1) from the design.

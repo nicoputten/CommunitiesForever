@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -926,3 +926,12 @@ From Nico's retail test of develop 524ff44 with the uploader in `--retail` mode.
 4. "Unlinked: Ikrasse-Kazzak 18" is expected: a community member no synced record claims by GUID. The website's
    friends list in Runs.lua has names and realms but no GUIDs, and names are never matched (rule 4); linking it
    would need the site to send each character's GUID.
+
+## CF-66 The minimap button's shield (Nico, 2026-10-31)
+The designer's icon set (64 × 64 32-bit TGAs with alpha): the shield alone (`CF_MapIcon`) and a full round button
+with its own ring in normal, highlight, pushed and alert versions. The minimap button uses the shield alone
+(`media/textures/mapicon.tga`), since LibDBIcon draws its own ring; the same icon is the TOC's `IconTexture` and the
+addon compartment's entry (LibDBIcon, only where the compartment exists), which follows the button's shown state.
+Not done: the alert look while a run starts within 30 minutes. The alert image is a full button with its own ring,
+so inside LibDBIcon's ring it would show two; a clean alert needs a shield-only variant with the red dot. No world
+map button (not asked).

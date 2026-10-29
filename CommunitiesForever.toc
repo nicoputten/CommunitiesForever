@@ -5,6 +5,7 @@
 ## Version: @project-version@
 ## X-Curse-Project-ID: 1752013
 ## X-Wago-ID: b6XyqbKp
+## IconTexture: Interface\AddOns\CommunitiesForever\media\textures\mapicon
 ## SavedVariables: CommunitiesForeverDB
 ## OptionalDeps: QuestieDB
 
