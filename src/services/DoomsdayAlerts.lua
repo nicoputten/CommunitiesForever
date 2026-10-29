@@ -53,13 +53,15 @@ local function crown(state)
   if c.mine then
     ns.CrownToast.show({
       title = "First to finish today!",
-      line = "All three dailies done at " .. (date and c.at and date("%H:%M", c.at) or "?"),
+      line = "All three dailies done at " .. (date and c.at and ns.DoomsdayView.timeText(c.at, state.dayStart, date)
+        or "?"),
       flavour = string.format("The crown is yours until %s. Others have been told, gently.",
-        date and date("%H:%M", ns.Doomsday.dayStart(state.day + 1, ns.DoomsdayTracker.schedule().offset,
-          state.reset)) or "the reset"),
+        date and ns.DoomsdayView.timeText(ns.Doomsday.dayStart(state.day + 1, ns.DoomsdayTracker.schedule().offset,
+          state.reset), state.dayStart, date) or "the reset"),
     }, settings().ambientEffects ~= false)
   else
-    local done, total = ns.DoomsdayView.doneCount(ns.DoomsdayView.rows(state.today, state.progress, state.hunts))
+    local done, total = ns.DoomsdayView.doneCount(ns.DoomsdayView.rows(state.today, state.progress, state.hunts),
+      #state.duels.done > 0)
     say(ns.DoomsdayView.crownLine(c.name, done, total))
   end
 end

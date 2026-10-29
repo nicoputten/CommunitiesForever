@@ -118,13 +118,13 @@ describe("activity feed (CF-22)", function()
     click("Show less")
     assert.is_falsy(activityText():find("Friend Alt", 1, true))
 
-    -- The footer: who shares, how long it keeps.
+    -- The footer: how long it keeps (CF-61: no note on who shares).
     local window = ns.MainFrame.window()
-    assert.are.equal("Friends with CommunitiesForever share their activity.", window.footerText.text)
+    assert.are.equal("", window.footerText.text)
     assert.are.equal("Keeps 7 days", window.footerRightText.text)
 
     ns.MainFrame.selectTab("friends")
-    assert.is_truthy(window.footerRightText.text:find("/cf to open", 1, true))
+    assert.are.equal("", window.footerRightText.text)
   end)
 
   it("filters with the chips, whole entries, and starts at All after closing (CF-41)", function()

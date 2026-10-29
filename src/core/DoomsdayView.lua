@@ -66,13 +66,42 @@ function DoomsdayView.rows(entry, progress, hunts)
   return rows
 end
 
--- "3 of 5 done".
-function DoomsdayView.doneCount(rows)
+-- "3 of 5 done". CF-61: with duelDone given (true or false), the Duel slot counts too (done after the first duel);
+-- it still never counts for crossing out or the streak.
+function DoomsdayView.doneCount(rows, duelDone)
   local done = 0
   for _, r in ipairs(rows) do
     if r.done then done = done + 1 end
   end
-  return done, #rows
+  if duelDone == nil then return done, #rows end
+  return done + (duelDone and 1 or 0), #rows + 1
+end
+
+-- ===== Day labels and times (CF-61, in the player's own clock: Nico, 2026-10-29) =====
+
+-- The part of the day an hour (0-23) falls in.
+function DoomsdayView.partOfDay(hour)
+  if hour >= 5 and hour <= 11 then return "morning" end
+  if hour >= 12 and hour <= 16 then return "afternoon" end
+  if hour >= 17 and hour <= 22 then return "evening" end
+  return "night"
+end
+
+-- "Wed evening": the weekday and the part of the day the Doomsday day starts on. startAt: its start (server time);
+-- dateFn: the game's date (local clock). nil when the clock can't tell (a time before 1970).
+function DoomsdayView.dayLabel(startAt, dateFn)
+  local weekday, hour = dateFn("%a", startAt), tonumber(dateFn("%H", startAt))
+  if not (weekday and hour) then return nil end
+  return weekday .. " " .. DoomsdayView.partOfDay(hour)
+end
+
+-- "20:14", or "Wed 00:04" for a time on a later date than the day's start (after midnight). Without startAt the
+-- weekday is always there (a time in the week).
+function DoomsdayView.timeText(at, startAt, dateFn)
+  if not at then return "" end
+  local day = dateFn("%Y-%m-%d", at)
+  if startAt and day == dateFn("%Y-%m-%d", startAt) then return dateFn("%H:%M", at) or "" end
+  return dateFn("%a %H:%M", at) or ""
 end
 
 --[[ "9 kills: 4 near level, 2 solo, 1 above" from scored kills (Doomsday.scoreKills), the PvP track only.
@@ -223,27 +252,19 @@ end
 
 -- ===== Board and Ladder (CF-57b; board DD08AddonBoard) =====
 
--- Column labels of the Board (the goal's short name).
-local SHORT = {
-  ["d.quests10"] = "10 quests", ["d.quests20"] = "20 quests", ["d.zone5"] = "5 in a zone", ["d.zones3"] = "3 zones",
-  ["d.shared3"] = "Shared quests", ["d.level"] = "Level up", ["d.altLevel"] = "Alt level", ["d.ilvl"] = "Item level",
-  ["d.cleanLevel"] = "Clean level", ["d.dungeon"] = "Dungeon", ["d.dungeonFriend"] = "Dungeon w/ friend",
-  ["d.bosses3"] = "3 bosses", ["d.skill5"] = "5 skill points", ["d.secondary"] = "Cooking / FA / Fishing",
-  ["d.fish20"] = "20 fish", ["d.chars2"] = "2 characters", ["d.groupFriend"] = "Group up", ["d.trade"] = "Trade",
-  ["d.rare"] = "Rare loot", ["d.earlyBird"] = "Early bird", ["p.frontLine"] = "Front line", ["p.punchUp"] = "Punch up",
-  ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouchable", ["p.variety"] = "Variety", ["p.ranked"] = "Ranked",
-  hunt = "Hunt",
-}
-
+-- Column labels of the Board: the goal's shortLabel (CF-61, at most 10 characters, as on the site).
 function DoomsdayView.short(id)
-  return SHORT[id] or (ns.Doomsday.goal(id) and ns.Doomsday.goal(id).text) or "Newer goal"
+  if id == "hunt" then return "Hunt" end
+  local g = ns.Doomsday.goal(id)
+  return g and (g.shortLabel or g.text) or "Newer goal"
 end
 
 --[[ One friend's points and counts for a day and a week from their synced data:
 d = { goals = { days, weeks, streak }, feed, chars, schedule, community, day, week }.
 Returns { day = entry, today = { pve, pvp }, week = { pve, pvp }, goals (done this week), kills (counted PvP this
-week), perChar = { [guid] = pvp points this week }, killedEver, streak, killsByZone, bg = { [name] = { won, lost,
-points } } }. Duel points are the caller's (they need everyone's records). ]]
+week), perChar = { [guid] = pvp points this week }, killedEver (CF-61: any honorable kill or PvP point ever, duels
+included: not a PvP Virgin), streak, killsByZone, bg = { [name] = { won, lost, points } } }. Duel points are the
+caller's (they need everyone's records). ]]
 function DoomsdayView.score(d)
   local D = ns.Doomsday
   local goals = type(d.goals) == "table" and d.goals or {}
@@ -283,7 +304,7 @@ function DoomsdayView.score(d)
     end
   end
   for _, c in pairs(d.chars or {}) do
-    if c.pvp and (c.pvp.hk or 0) > 0 then r.killedEver = true end
+    if c.pvp and not ns.Pvp.virgin(c.pvp) then r.killedEver = true end
   end
   if #kills > 0 then r.killedEver = true end
   for _, s in ipairs(D.scoreKills(kills, d.schedule, d.community)) do
@@ -327,16 +348,17 @@ end
 -- ===== The character card (CF-57) =====
 
 --[[ The PvP line of a character: "Stone Guard, a.k.a. Mailbox Menace · 1,234 honorable kills · PvP 40 this
-week", "PvP Virgin" for a character that never killed anyone, nil without PvP data (an older addon). ]]
+week", "No rank yet · 3 kills", "PvP Virgin" for a character without any PvP point (CF-61: duels count), nil without
+PvP data (an older addon). ]]
 function DoomsdayView.pvpLine(pvp, faction, weekPoints)
   if type(pvp) ~= "table" then return nil end
-  if (pvp.hk or 0) == 0 and (weekPoints or 0) == 0 then
+  if ns.Pvp.virgin(pvp) and (weekPoints or 0) == 0 then
     return pvp.hk == 0 and "PvP Virgin" or nil
   end
   local parts = {}
-  local rank = ns.Pvp.rankText(pvp, faction)
+  local rank = ns.Pvp.rankText(pvp, faction, false)
   if rank then parts[#parts + 1] = rank end
-  if pvp.hk then parts[#parts + 1] = DoomsdayView.thousands(pvp.hk) .. " honorable kills" end
+  if pvp.hk and pvp.rank ~= 0 then parts[#parts + 1] = DoomsdayView.thousands(pvp.hk) .. " honorable kills" end
   if weekPoints and weekPoints > 0 then parts[#parts + 1] = "PvP " .. weekPoints .. " this week" end
   return #parts > 0 and table.concat(parts, " \194\183 ") or nil
 end

@@ -59,6 +59,7 @@ local function scores(day, week, schedule)
     s.today.pvp = s.today.pvp + (dayDuels[p.key] or 0)
     s.week.pvp = s.week.pvp + (weekDuels[p.key] and weekDuels[p.key].points or 0)
     s.duels = weekDuels[p.key] or { points = 0, won = 0, lost = 0 }
+    if s.week.pvp > 0 or s.today.pvp > 0 then s.killedEver = true end -- CF-61: any PvP point ends the Virgin
     s.key, s.name, s.isSelf, s.chars, s.hasGoals = p.key, p.name, p.isSelf, p.chars, type(p.goals) == "table"
     list[#list + 1] = s
   end
@@ -66,7 +67,8 @@ local function scores(day, week, schedule)
 end
 
 --[[ The Board: every friend's goals today. { day, columns = { { id, short } }, rows = { { key, name, isSelf,
-status = "ok"|"noData", cells = { { done, at, value, target, instead } }, crossed, crown, streak, today, week } },
+status = "ok"|"noData", cells = { { id, done, at, value, target, instead } }, crossed, finishedAt, crown, streak, today,
+week } },
 crown = key } (sorted: you first, then crossed out, then by name). ]]
 function DoomsdayBoard.board()
   if not addonRef then return nil end
@@ -89,6 +91,7 @@ function DoomsdayBoard.board()
                          instead = entry.swapped and entry.swapped[id] and ns.DoomsdayView.goalText(entry.swapped[id]) }
       end
       row.crossed = ns.Doomsday.crossedOut(entry.set, entry.done)
+      row.finishedAt = row.crossed and ns.Doomsday.finishedAt(entry.set, entry.done) or nil -- CF-61
       crownList[#crownList + 1] = { friend = s.key, set = entry.set, done = entry.done }
     end
     rows[#rows + 1] = row

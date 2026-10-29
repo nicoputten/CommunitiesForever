@@ -6,6 +6,16 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday rules:** a duel ends "PvP Virgin" too; without a PvP rank you read "No rank yet · N kills"; the Duel
+  slot counts in "N of M done"; the day is named by its start ("Wed evening"), and times after midnight show their
+  weekday. All times in your own clock.
+- **Feats:** the list shows what your characters earned while the addon was watching; what they already had is one
+  "Already had" line (hover for the details). A mount only counts from level 40, an epic mount from 60.
+- **A cleaner Doomsday Board:** short column titles, a check mark or an empty box per goal (hover for the
+  progress, the time and a swap), the finish time next to a crossed-out name, and one points column.
+- **Tidier windows:** the notes explaining how the addon works are gone from the tabs and footers. What a button
+  does shows when you hover it (Ask now). Doomsday shows "New goals in …" on Today and Board and "Week resets …"
+  on Week and Ladder.
 - **Fixed:** the light streak across the window title no longer drags a dark block over the title, and LEVEL UP
   chips stay put while their shine plays (Ambient effects).
 - **Fixed:** the setup's step line fits the window (it shows the current and the next step), the settings'
@@ -13,6 +23,8 @@ tagging; the release stops if the tag has no section.
 - **An alt outside the community:** the window opens once by itself on how to join (when a friend shared the invite
   link), and right after joining you're offered the Community chat tab, in a tidier dialog with Create tab and
   Not now.
+- **Fixed:** blue and purple loot is counted on clients whose item links carry the quality instead of a colour,
+  also for items the game has not cached yet.
 
 ## v0.8.0-beta1 (2026-10-29)
 - **Doomsday.** Every day three PvE dailies and a PvP Skirmish, every week three weeklies and a Bounty: the same

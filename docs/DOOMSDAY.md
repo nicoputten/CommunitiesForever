@@ -13,15 +13,15 @@ Product rule: **recommend, never restrict.** Goals are suggestions with points, 
 - **PvE:** quests, levels, dungeons, professions, playing together.
 - **PvP:** kills, duels, the Hunt.
 
-The two are always shown side by side ("PvE 85 · PvP 240"), **never added together**, and each has its own ranking. A friend who never does PvP is never ranked against gankers: a friend with no kill on any character, ever, is a **PvP Virgin** and is not ranked on the PvP ladder.
+The two are always shown side by side ("PvE 85 · PvP 240"), **never added together**, and each has its own ranking. A friend who never does PvP is never ranked against gankers: a friend with no PvP point (duel points included) and no honorable kill on any character, ever, is a **PvP Virgin** and is not ranked on the PvP ladder. Any PvP point or any kill ends it (Nico, live test 2026-10-29).
 
 ## Per friend
 Everything counts per friend (BattleTag): any of your characters counts, and progress adds up across characters (6 quests on one, 4 on another = 10). "Another friend" means a character of a different BattleTag, as the `with` lists of runs already use; your own alts don't count as a friend.
 
 ## Schedule
-- A **Doomsday day** runs from the reset time to the next one. The default reset is **19:00 realm time**, a group setting (Nico, 2026-10-28: "make it a changeable setting"). A day is named after the date on which it starts ("Doomsday · Tue 28 Oct" runs Tue 19:00 to Wed 19:00).
+- A **Doomsday day** runs from the reset time to the next one. The default reset is **19:00 realm time**, a group setting (Nico, 2026-10-28: "make it a changeable setting"). A day is named after its start: the weekday plus the part of the day of the reset hour, 05–11 "morning", 12–16 "afternoon", 17–22 "evening", 23–04 "night" ("Doomsday · Tue evening", the span "Tue 19:00 → Wed 19:00"). Times after midnight carry their weekday ("done Wed 00:04"); the countdown reads "resets Wed 19:00 · in 6 h 51 m" (Nico, live test 2026-10-29).
 - **Realm time** is the game's clock (`GetGameTime`, unverified: V78). The addon gets the realm's offset from UTC as the difference between `GetGameTime()` and `GetServerTime()`, rounded to 15 minutes, so daylight saving follows the realm. The site has the realm's IANA time zone as a setting (default `Europe/Paris` for EU realms).
-- **Everyone has the same day** (Nico, 2026-10-28: friends play from the Netherlands, the UK and Thailand). The day boundary is always realm time, never the PC's. Without `GetGameTime` the addon takes the offset the site sends (`offset`, `offsetUntil`, `offsetAfter` below), and without that CET/CEST (the EU summer-time dates). **Clock times shown** ("done 20:14", the reset) are each player's own PC time; "resets in 3 h 12 m" is the same for all.
+- **Everyone has the same day** (Nico, 2026-10-28: friends play from the Netherlands, the UK and Thailand). The day boundary is always realm time, never the PC's. Without `GetGameTime` the addon takes the offset the site sends (`offset`, `offsetUntil`, `offsetAfter` below), and without that CET/CEST (the EU summer-time dates). **Clock times shown** ("done Wed 00:04", the reset, the span, the day's name) are stored as server time (UTC) and shown in each player's own time: the addon uses the PC clock, the site the viewer's time zone (Nico, 2026-10-29: "save UTC but display local time"). Only the bot, which posts one message for everyone, uses realm time. "resets in 3 h 12 m" is the same for all.
 - **Day number:** `n = floor((serverTime + realmOffset - resetSeconds) / 86400)`, where `resetSeconds` is the reset time in seconds after midnight (19:00 = 68400). Day 0 started on Thursday 1970-01-01.
 - **Week:** a Doomsday week starts on **Sunday** at the reset time. `week = floor((n + 4) / 7)`: day 3 (Sunday 1970-01-04) starts week 1. Not tied to the game's weekly reset or its honor week.
 - **The setting:** the reset time lives on the site (the Discord page, admin: hours and minutes in realm time). It reaches the addon through `Data\Runs.lua`, written by the uploader, and from there through HELLO (`dd`) to friends without the uploader: the newest `changedAt` wins. Without it, the addon uses 19:00. A change takes effect from the next reset, never in the middle of a day. Agreed with the site (web PR #108), every field optional:
@@ -29,7 +29,7 @@ Everything counts per friend (BattleTag): any of your characters counts, and pro
   - `reset`: the reset in force, seconds after realm midnight. The site sends a new reset only from the reset it takes effect at, so the addon applies it as given.
   - `changedAt`: when that reset took effect; 0 while it was never changed.
   - `offset`: the realm zone's UTC offset now, in seconds east; `offsetUntil`: the server time of its next change; `offsetAfter`: the offset from then on. Both are left out when the zone has no change within 400 days.
-- Screens show the time left: "resets in 3 h 12 m".
+- Screens show the time left: "New goals in 3 h 12 m" for the day, "Week resets Sun 19:00 · in 3 d 5 h" for the week (CF-61).
 
 ## Goals
 Every Doomsday day each friend gets:
@@ -72,6 +72,66 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 - Ids are never reused or renamed. A retired goal keeps its id in the catalogue, marked retired.
 
 **Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The facts behind it are counted live per Doomsday day and week and stay on the player's computer (CF-56, Nico 2026-10-28); progress starts on the day the update is installed. A day's set holds at most 5 ids (3 PvE dailies, the Skirmish, the Hunt as `hunt`), a week's 4 (3 PvE weeklies, the Bounty). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
+
+## Short labels (CF-61)
+Each goal's column title on the addon's Board and the site's and bot's boards: at most 10 characters, the same everywhere (`Doomsday.SHORT_LABELS`). The Hunt is "Hunt". A new goal gets its label in the same change.
+| Goal | Short label |
+|---|---|
+| `d.quests10` | 10 quests |
+| `d.quests20` | 20 quests |
+| `d.zone5` | 5 in zone |
+| `d.zones3` | 3 zones |
+| `d.shared3` | 3 shared |
+| `d.level` | Level |
+| `d.altLevel` | Alt level |
+| `d.ilvl` | Item level |
+| `d.cleanLevel` | Clean lvl |
+| `d.dungeon` | Dungeon |
+| `d.dungeonFriend` | Group run |
+| `d.bosses3` | 3 bosses |
+| `d.skill5` | Skills |
+| `d.secondary` | Secondary |
+| `d.fish20` | 20 fish |
+| `d.chars2` | 2 chars |
+| `d.groupFriend` | Group up |
+| `d.trade` | Trade |
+| `d.rare` | Rare loot |
+| `d.earlyBird` | Early bird |
+| `w.days3` | 3 days |
+| `w.days5` | 5 days |
+| `w.chars3` | 3 chars |
+| `w.levels3` | 3 levels |
+| `w.altLevels2` | Alt 2 lvls |
+| `w.quests50` | 50 quests |
+| `w.zones5` | 5 zones |
+| `w.dungeons3` | 3 dungeons |
+| `w.dungeonsDiff3` | 3 distinct |
+| `w.dungeonFriends2` | Trio run |
+| `w.fullClear` | Full clear |
+| `w.skill25` | 25 skill |
+| `w.cap` | Skill cap |
+| `w.newProf` | New prof |
+| `w.ilvl3` | Item lvl+3 |
+| `w.friends3` | 3 friends |
+| `w.rare5` | 5 rares |
+| `w.session2h` | 2h session |
+| `w.discover5` | Discover 5 |
+| `w.craftTrade` | Craft gift |
+| `p.frontLine` | Front line |
+| `p.punchUp` | Punch up |
+| `p.loneWolf` | Lone wolf |
+| `p.untouchable` | Untouched |
+| `p.variety` | Variety |
+| `p.ranked` | Ranked |
+| `b.zone25` | Zone 25 |
+| `b.allClasses` | Classes |
+| `b.allRaces` | Races |
+| `b.ranked5` | 5 ranked |
+| `b.kills50` | 50 kills |
+| `b.spree10` | Spree 10 |
+| `b.hunt3` | 3 hunts |
+| `b.duels3` | 3 duels |
+| `b.days5` | Kill days |
 
 ## The algorithm, exactly (CF-55)
 Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
@@ -208,7 +268,8 @@ Data: **now** = the addon records it today. **52**, **53**, **56** = trackers fr
 - Your first duel with each friend that day: a win +3, a loss +1.
 - It counts when the opponent's full name is another friend's community character.
 - Both clients record the same duel, so a pair's duel counts once. When the two records disagree about the winner, the duel counts for neither.
-- The Duel slot is not a goal: it never counts toward crossing out or the streak.
+- The Duel slot is not a goal for crossing out or the streak: it never counts toward them.
+- It does count in "N of M done": M is exactly the goals on the grid (the 3 PvE dailies, the Hunt and the Skirmish, and the Duel slot), and the Duel slot is done after its first duel (live test 2026-10-29).
 
 ### Weekly bounty pool
 `pick(week, 3, #pool)`:
@@ -248,7 +309,7 @@ One-time achievements per character, posted once in Discord as **"Feat unlocked"
   - duel wins (10, 50, 100)
   - the first win in each battleground
   - 100 deaths
-- **Gear:** the first epic, mount and epic mount.
+- **Gear:** the first epic, mount and epic mount. A mount counts only from level 40 and an epic mount from level 60 (CF-61: Retail clients report riding at any level).
 - **Professions:**
   - the first catch
   - Head Chef, Field Medic and Fish Whisperer
@@ -262,7 +323,7 @@ The site decides feats; the addon shows the feats it can derive from records it 
 
 | Rank | Horde / Alliance | Our title |
 |---|---|---|
-| 0 | none | Conscientious Objector (shown, never posted) |
+| 0 | none | Conscientious Objector while a PvP Virgin (shown, never posted); otherwise "No rank yet · N kills" |
 | 1 | Scout / Private | Fresh Meat |
 | 2 | Grunt / Corporal | Accidental Flagger |
 | 3 | Sergeant / Sergeant | Lowbie Botherer |
