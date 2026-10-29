@@ -85,7 +85,7 @@ describe("kit and window shell (CF-39)", function()
       assert.are.equal("Forever Friends", window.titleText.text)
       assert.are.equal("CommunitiesForever", window.subtitleText.text)
       assert.are.equal("\226\151\143 1 online", window.statusText.text) -- the mock's Battle.net friend
-      assert.is_truthy(window.footerRightText.text:find("drag the title to move", 1, true)) -- CF-40: on the right
+      assert.are.equal("", window.footerRightText.text) -- CF-61: no "/cf to open · drag the title" hint
       assert.are.equal("DIALOG", window:GetFrameStrata())
       assert.are.same({ 880, 600 }, { window.width, window.height })
     end)

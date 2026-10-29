@@ -166,8 +166,8 @@ function Describe.doomsday(state, clock)
     ns.Doomsday.duration(state.resetsIn), state.day, state.week, SOURCES[state.source] or tostring(state.source)) }
   goalLines(lines, "Today:", state.today, state.progress, clock)
   goalLines(lines, "This week:", state.thisWeek, state.weekProgress, clock)
-  lines[#lines + 1] = string.format("Streak %d (best %d). This week: PvE %d, PvP %d (kills and goals; duels on "
-    .. "the site).", state.streak, state.best, state.points.pve, state.points.pvp)
+  lines[#lines + 1] = string.format("Streak %d (best %d). This week: PvE %d, PvP %d.", state.streak, state.best,
+    state.points.pve, state.points.pvp)
   return lines
 end
 

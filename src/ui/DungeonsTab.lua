@@ -20,9 +20,7 @@ local ANSWER_WORDS = { ["in"] = "you: I'm in", maybe = "you: maybe", cant = "you
 local PENDING = "reaches Discord after /reload" -- CF-47: waiting for the next save and upload
 local SOURCE_WORDS = { site = "planned on the website", discord = "planned on Discord", game = "planned in game" }
 local DOT = " \194\183 "
-local NOTE = "Runs come from the website through your uploader, or from a friend's addon. Ranges are typical "
-  .. "levels; the list follows the character you're on."
-local ASK_NOTE = "Whispers online friends who fit; can post on Discord too"
+local ASK_TIP = "Whispers online friends who fit; can post on Discord too. Waits until combat ends." -- CF-61
 local PLAN_TEXT = "Pick a day and time; friends see their own time. Reaches the site and Discord after /reload. "
   .. "Runs planned on the website show here after your uploader fetched them and you /reload."
 
@@ -284,9 +282,7 @@ local function renderList(runs, overview, me, candidates)
       row(entry.dungeon.id, entry.dungeon.name, range(entry.dungeon), "muted", meta)
     end
   end
-  local note = placeText(pools.listText, parent, 12, y + 10, width - 24, NOTE, "faint")
-  note.text:SetTextColor(Theme.color("faint"))
-  y = y + 60
+  y = y + 12
   parent:SetHeight(y)
   list:Update()
 end
@@ -420,7 +416,7 @@ local function askBlock(parent, entry, y, width)
   b:SetEnabled(true)
   b:SetScript("OnClick", function() ns.RunDialogs.askNow(entry.dungeon) end) -- CF-47
   b:SetPoint("TOPLEFT", PAD, -y)
-  placeText(pools.tiny, parent, PAD + (b:GetWidth() or 140) + 10, y + 7, width, ASK_NOTE, "faint")
+  b.tooltip = ASK_TIP -- CF-61: was a note next to the button
   return y + 36
 end
 

@@ -110,7 +110,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\n1 friend\n", 1, true))
     assert.is_truthy(all:find("\nSuggested group\n", 1, true))
     assert.is_falsy(all:find("Also in range", 1, true)) -- nobody else
-    assert.is_truthy(all:find("Ranges are typical levels; the list follows the character you're on.\n", 1, true))
+    assert.is_falsy(all:find("Ranges are typical levels", 1, true)) -- CF-61: no designer notes
     assert.is_truthy(all:find("\nRUNS\nNo runs planned. Plan one on the website.\n", 1, true)) -- CF-46
     assert.is_true(row("dm").selected)
     -- Five slots: you in one of them, outlined gold; nobody tanks or heals.
@@ -122,9 +122,10 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(ns.DungeonsTab.buttons()["Plan a run"]) -- CF-46: no calendar event title; CF-47: the dialog
     assert.is_nil(ns.DungeonsTab.buttons()["Open calendar"])
     assert.is_truthy(ns.DungeonsTab.buttons()["Ask now"]) -- CF-47: opens the dialog
-    assert.is_truthy(all:find("\nWhispers online friends who fit; can post on Discord too\n", 1, true))
-    -- The footer: sync state and when group asks wait.
-    assert.are.equal("Group asks wait until combat ends", ns.MainFrame.window().footerRightText.text)
+    -- CF-61: what Ask now does is its tooltip, not a note next to it or in the footer.
+    assert.is_truthy(ns.DungeonsTab.buttons()["Ask now"].tooltip:find("Whispers online friends who fit", 1, true))
+    assert.is_falsy(all:find("Whispers online friends", 1, true))
+    assert.are.equal("", ns.MainFrame.window().footerRightText.text)
   end)
 
   it("names your other characters in range as alternatives", function()

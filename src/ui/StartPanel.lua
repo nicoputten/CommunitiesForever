@@ -152,8 +152,8 @@ local function drawOrganiser(run, ctx)
   end
   local data = ns.Planner.data()
   if data and date then
-    text("tiny", PAD, bottom + 40, WIDTH - 2 * PAD, "Runs updated at " .. ns.PlannedRuns.clock(data.updatedAt, date)
-      .. DOT .. "pings go out about 15 s after a /reload", "faint")
+    text("tiny", PAD, bottom + 40, WIDTH - 2 * PAD, "Runs updated at " .. ns.PlannedRuns.clock(data.updatedAt, date),
+      "faint")
   end
 end
 

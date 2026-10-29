@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Tidier windows:** the notes explaining how the addon works are gone from the tabs and footers. What a button
+  does shows when you hover it (Ask now). Doomsday shows "New goals in …" on Today and Board and "Week resets …"
+  on Week and Ladder.
 - **Fixed:** the light streak across the window title no longer drags a dark block over the title, and LEVEL UP
   chips stay put while their shine plays (Ambient effects).
 
