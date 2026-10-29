@@ -73,25 +73,6 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 
 **Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The facts behind it are counted live per Doomsday day and week and stay on the player's computer (CF-56, Nico 2026-10-28); progress starts on the day the update is installed. A day's set holds at most 5 ids (3 PvE dailies, the Skirmish, the Hunt as `hunt`), a week's 4 (3 PvE weeklies, the Bounty). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
 
-**Short labels:** every daily goal has a short label (at most 10 characters) for a column header where the full text doesn't fit, such as the bot's board image (live test 2026-10-29):
-
-| Id | Short label | Id | Short label |
-|---|---|---|---|
-| `d.quests10` | 10 quests | `d.secondary` | Secondary |
-| `d.quests20` | 20 quests | `d.fish20` | 20 fish |
-| `d.zone5` | One zone | `d.chars2` | 2 chars |
-| `d.zones3` | 3 zones | `d.groupFriend` | Group up |
-| `d.shared3` | Share 3 | `d.trade` | Trade |
-| `d.level` | Level | `d.rare` | Rare loot |
-| `d.altLevel` | Alt level | `d.earlyBird` | Early bird |
-| `d.ilvl` | Item level | the Hunt | Hunt |
-| `d.cleanLevel` | Safe level | `p.frontLine` | Front line |
-| `d.dungeon` | Dungeon | `p.punchUp` | Punch up |
-| `d.dungeonFriend` | Group run | `p.loneWolf` | Lone wolf |
-| `d.bosses3` | 3 bosses | `p.untouchable` | Untouched |
-| `d.skill5` | Skills | `p.variety` | Variety |
-| | | `p.ranked` | Ranked |
-
 ## The algorithm, exactly (CF-55)
 Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
 
