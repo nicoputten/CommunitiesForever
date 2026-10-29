@@ -114,17 +114,27 @@ describe("settings window (CF-43)", function()
     load()
     local playing = false
     local frame = _G.CreateFrame("Frame")
-    frame.CreateAnimationGroup = function()
-      return {
-        CreateAnimation = function() return { SetDuration = function() end, SetStartDelay = function() end,
-                                              SetOffset = function() end } end,
-        SetLooping = function() end,
-        Play = function() playing = true end,
-        Stop = function() playing = false end,
-        IsPlaying = function() return playing end,
-      }
+    -- Retail dry run: a group on the frame slid the whole title bar. Only the streak texture may move.
+    frame.CreateAnimationGroup = function() error("the shine must not animate its frame") end
+    local createTexture = frame.CreateTexture
+    local owner
+    frame.CreateTexture = function(self, ...)
+      local texture = createTexture(self, ...)
+      texture.CreateAnimationGroup = function(t)
+        owner = t
+        return {
+          CreateAnimation = function() return { SetDuration = function() end, SetStartDelay = function() end,
+                                                SetOffset = function() end } end,
+          SetLooping = function() end,
+          Play = function() playing = true end,
+          Stop = function() playing = false end,
+          IsPlaying = function() return playing end,
+        }
+      end
+      return texture
     end
     local shine = ns.Kit.shine(frame, frame, 5)
+    assert.are.equal(shine.streak, owner)
     assert.is_true(playing)
     ns.Settings.options().args.ambientEffects.set({}, false)
     shine:Refresh()

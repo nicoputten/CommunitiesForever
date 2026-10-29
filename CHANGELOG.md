@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** the light streak across the window title no longer drags a dark block over the title, and LEVEL UP
+  chips stay put while their shine plays (Ambient effects).
 
 ## v0.8.0-beta1 (2026-10-29)
 - **Doomsday.** Every day three PvE dailies and a PvP Skirmish, every week three weeklies and a Bounty: the same
