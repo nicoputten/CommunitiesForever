@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** the Dungeons tab on a character outside the community says it isn't in the community yet, instead of
+  that its level fits no dungeon.
 - **Doomsday rules:** a duel ends "PvP Virgin" too; without a PvP rank you read "No rank yet · N kills"; the Duel
   slot counts in "N of M done"; the day is named by its start ("Wed evening"), and times after midnight show their
   weekday. All times in your own clock.
