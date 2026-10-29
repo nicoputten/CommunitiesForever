@@ -123,13 +123,20 @@ describe("settings window (CF-43)", function()
     frame.CreateAnimationGroup = function() error("the shine must not animate its frame") end
     local createTexture = frame.CreateTexture
     local owner
+    local anims = {}
     frame.CreateTexture = function(self, ...)
       local texture = createTexture(self, ...)
       texture.CreateAnimationGroup = function(t)
         owner = t
         return {
-          CreateAnimation = function() return { SetDuration = function() end, SetStartDelay = function() end,
-                                                SetOffset = function() end } end,
+          CreateAnimation = function(_, kind)
+            local anim = { kind = kind, set = {} }
+            for _, m in ipairs({ "SetDuration", "SetStartDelay", "SetOffset", "SetFromAlpha", "SetToAlpha" }) do
+              anim[m] = function(a, v) a.set[m] = v end
+            end
+            anims[#anims + 1] = anim
+            return anim
+          end,
           SetLooping = function() end,
           Play = function() playing = true end,
           Stop = function() playing = false end,
@@ -141,6 +148,10 @@ describe("settings window (CF-43)", function()
     local shine = ns.Kit.shine(frame, frame, 5)
     assert.are.equal(shine.streak, owner)
     assert.is_true(playing)
+    -- CF-62: invisible between passes: alpha 0, held at 1 only while it moves.
+    assert.are.equal(0, shine.streak.alpha)
+    assert.are.equal("Alpha", anims[2].kind)
+    assert.are.same({ 1, 1, 5 }, { anims[2].set.SetFromAlpha, anims[2].set.SetToAlpha, anims[2].set.SetStartDelay })
     ns.Settings.options().args.ambientEffects.set({}, false)
     shine:Refresh()
     assert.is_false(playing)

@@ -582,7 +582,17 @@ function Kit.shine(frame, region, period)
   group:SetLooping("REPEAT")
   move:SetDuration(1.4)
   move:SetStartDelay(period or 6)
-  local shine = { streak = streak, group = group, move = move, region = region or frame }
+  -- CF-62: invisible between passes (it waited at its start, a white strip behind the title's shield): alpha 0, and
+  -- an Alpha animation holds it at 1 only while it moves. Without Alpha animations it stays as before.
+  local fade = group:CreateAnimation("Alpha")
+  if fade and fade.SetFromAlpha then
+    streak:SetAlpha(0)
+    fade:SetFromAlpha(1)
+    fade:SetToAlpha(1)
+    fade:SetDuration(1.4)
+    fade:SetStartDelay(period or 6)
+  end
+  local shine = { streak = streak, group = group, move = move, fade = fade, region = region or frame }
   function shine:Refresh()
     local width = (self.region.GetWidth and self.region:GetWidth() or 0) + 60
     self.move:SetOffset(width, 0)
