@@ -185,6 +185,28 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     assert.is_nil(ns.Setup.plan())
   end)
 
+  it("opens the window once on how to join for an alt outside the community, then offers the chat tab (CF-61)",
+    function()
+      load(function(global)
+        global.settings.onboarded, global.settings.onboardedVersion = true, 1
+        global.settings.clubId = "4242" -- not one of this character's communities
+        global.people["Bram#2002"] = { version = 1, chars = {},
+          invite = { code = "abc123", clubId = "4242", setAt = 600, setByName = "Bram" } }
+      end)
+      wowapi.runTimers(state)
+      assert.is_true(ns.MainFrame.isShown())
+      assert.is_true(settings().joinPrompt[guid()])
+      assert.is_false(ns.Setup.promptShown())
+      ns.MainFrame.toggle()
+      ns.Setup.check()
+      assert.is_false(ns.MainFrame.isShown()) -- once per character
+
+      -- The alt joins with the link: the Community chat tab is offered right away.
+      table.insert(state.clubs, { clubId = "4242", name = "Doom Friends", clubType = 1 })
+      wowapi.fireEvent(state, "CLUB_ADDED", "4242")
+      assert.is_true(ns.Setup.promptShown())
+    end)
+
   it("creates the tab again after it was closed", function()
     load()
     wowapi.runTimers(state)

@@ -188,12 +188,12 @@ local function go(delta)
   render()
 end
 
--- "Step 2 of 6 · Welcome → Community → ..." (the arrow needs the bundled font).
+-- "Step 2 of 6 · Community → Sharing" (CF-61: the current and the next step; the arrow needs the bundled font).
 local function progressText()
   local titles = {}
   for i, step in ipairs(steps) do titles[i] = step.title end
   local arrow = Theme.bundledFonts() and " \226\134\146 " or " \194\183 "
-  return ns.Onboarding.progress(index, #steps) .. " \194\183 " .. table.concat(titles, arrow)
+  return ns.Onboarding.progressLine(index, titles, arrow)
 end
 
 -- The buttons at the bottom: Back on the left; on the right Skip setup and Next, Not now and Create chat
@@ -365,10 +365,12 @@ end
 function Setup.plan()
   if ns.CommunitySelection.passive() then return nil end -- no community yet: nothing to set up
   local guid = selfGuid()
+  local inCommunity = ns.CommunitySelection.active() and true or false
   return ns.Onboarding.plan(settings(), {
     guid = guid,
     hasTab = (guid and settings().chatTab and settings().chatTab[guid]) or ns.CommunityChat.tab() ~= nil,
-    inCommunity = ns.CommunitySelection.active() and true or false,
+    inCommunity = inCommunity,
+    joinable = not inCommunity and ns.CommunitySelection.selected() ~= nil and ns.Invites.current() ~= nil,
   })
 end
 
@@ -379,11 +381,19 @@ function Setup.check()
     Setup.open(plan.steps)
   elseif plan.kind == "chatPrompt" then
     Setup.openPrompt()
+  elseif plan.kind == "join" then
+    -- CF-61: an alt outside the community: the window once, on the Friends tab's how-to-join steps.
+    ns.Onboarding.joinShown(settings(), selfGuid())
+    if not ns.MainFrame.isShown() then ns.MainFrame.toggle() end
+    ns.MainFrame.selectTab("friends")
   end
 end
 
 -- After login: the setup or the prompt when due; else CF-43's Open on login (not while passive).
+local loginChecked -- CF-61: joining a community before the login check is left to that check
+
 local function afterLogin()
+  loginChecked = true
   Setup.check()
   if Setup.isShown() or Setup.promptShown() then return end
   if settings().openOnLogin and not ns.CommunitySelection.passive() and not ns.MainFrame.isShown() then
@@ -396,8 +406,15 @@ function Setup.start(addon)
   C_Timer.NewTimer(Setup.LOGIN_DELAY, afterLogin)
   -- Joined a community while playing: the setup opens right away (unless it is open already).
   -- Own AceEvent object: AceEvent keeps one handler per object and message.
-  LibStub("AceEvent-3.0"):Embed({}):RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
+  local events = LibStub("AceEvent-3.0"):Embed({})
+  events:RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
     if not passive and not Setup.isShown() then Setup.check() end
+  end)
+  -- CF-61: this character joined the selected community (an alt, with the invite link): the chat tab prompt.
+  events:RegisterMessage(ns.CommunitySelection.CHANGED, function()
+    if loginChecked and ns.CommunitySelection.active() and not Setup.isShown() and not Setup.promptShown() then
+      Setup.check()
+    end
   end)
 end
 
