@@ -59,6 +59,7 @@ local function scores(day, week, schedule)
     s.today.pvp = s.today.pvp + (dayDuels[p.key] or 0)
     s.week.pvp = s.week.pvp + (weekDuels[p.key] and weekDuels[p.key].points or 0)
     s.duels = weekDuels[p.key] or { points = 0, won = 0, lost = 0 }
+    if s.week.pvp > 0 or s.today.pvp > 0 then s.killedEver = true end -- CF-61: any PvP point ends the Virgin
     s.key, s.name, s.isSelf, s.chars, s.hasGoals = p.key, p.name, p.isSelf, p.chars, type(p.goals) == "table"
     list[#list + 1] = s
   end

@@ -140,11 +140,23 @@ Pvp.RANK_NAMES = {
                "Grand Marshal" },
 }
 
--- "Stone Guard, a.k.a. Mailbox Menace" (CF-57: the card's wording), "rank 0, a.k.a. Conscientious Objector", or
--- nil without a rank. The game's name first, else the official one for the faction.
-function Pvp.rankText(pvp, faction)
+-- CF-61: never a PvP point: no honorable kill and no duel (a duel always gives a point, disputed ones aside).
+function Pvp.virgin(pvp)
+  if type(pvp) ~= "table" then return false end
+  return (pvp.hk or 0) == 0 and (pvp.duelsWon or 0) == 0 and (pvp.duelsLost or 0) == 0
+end
+
+-- "Stone Guard, a.k.a. Mailbox Menace" (CF-57: the card's wording), or nil without a rank. The game's name first,
+-- else the official one for the faction. Rank 0 (CF-61): "rank 0, a.k.a. Conscientious Objector" only for a PvP
+-- Virgin, else "No rank yet · N kills". virgin: the person's (all characters); default Pvp.virgin(pvp).
+function Pvp.rankText(pvp, faction, virgin)
   local rank = type(pvp) == "table" and pvp.rank
   if type(rank) ~= "number" or not Pvp.TITLES[rank] then return nil end
+  if virgin == nil then virgin = Pvp.virgin(pvp) end
+  if rank == 0 and not virgin then
+    return string.format("No rank yet \194\183 %s %s", ns.Text.thousands(pvp.hk or 0), (pvp.hk or 0) == 1 and "kill"
+      or "kills")
+  end
   local name = rank > 0 and (pvp.rankName or (Pvp.RANK_NAMES[faction or ""] or {})[rank]) or nil
   return string.format("%s, a.k.a. %s", name or ("rank " .. rank), Pvp.TITLES[rank])
 end

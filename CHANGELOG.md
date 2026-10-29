@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday rules:** a duel ends "PvP Virgin" too; without a PvP rank you read "No rank yet · N kills"; the Duel
+  slot counts in "N of M done"; the day is named by its start ("Wed evening"), and times after midnight show their
+  weekday. All times in your own clock.
 - **Feats:** the list shows what your characters earned while the addon was watching; what they already had is one
   "Already had" line (hover for the details). A mount only counts from level 40, an epic mount from 60.
 - **A cleaner Doomsday Board:** short column titles, a check mark or an empty box per goal (hover for the
