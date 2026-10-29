@@ -5,6 +5,8 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+
 ## v1.0.0 (2026-10-29)
 - **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window
   again (they could open behind it).
