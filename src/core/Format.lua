@@ -105,9 +105,12 @@ local function groupValue(person)
   return person.battleTag or Format.SELF
 end
 
+-- CF-62: "You" for yourself (no BattleTag or display name of your own in the window).
 local function personTitle(person)
-  return person.isSelf and (person.displayName .. " (you)") or person.displayName
+  return person.isSelf and "You" or person.displayName
 end
+
+Format.SITE = "site:" -- CF-62: the list value prefix of a friend known only from the website
 
 --[[ The Friends list (CF-40): people and their characters. Each node:
   { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online } } }
@@ -122,10 +125,12 @@ local function ownRows(view)
   return {}
 end
 
-function Format.tree(view)
-  local nodes = {}
+function Format.tree(view, siteFriends)
+  local online, offline = {}, {}
   local own = ownRows(view)
+  local synced = {}
   for _, person in ipairs(view.people) do
+    if person.displayName then synced[person.displayName:lower()] = true end
     local children = {}
     for _, c in ipairs(person.chars) do
       local _, shared = nil, nil
@@ -134,9 +139,22 @@ function Format.tree(view)
                                   level = c.level, online = c.online, outside = c.outside or false,
                                   shared = shared } -- CF-40: quests shared with you (friends' characters only)
     end
-    nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
-                          isSelf = person.isSelf, usesAddon = person.usesAddon, count = #children,
-                          children = children }
+    -- CF-62: grouped "Online" then "Offline" (you count as online), keeping the Linker order within.
+    local isOnline = person.online or person.isSelf or false
+    local list = isOnline and online or offline
+    list[#list + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
+                        isSelf = person.isSelf, usesAddon = person.usesAddon, count = #children,
+                        children = children, section = isOnline and "online" or "offline" }
+  end
+  local nodes = {}
+  for _, n in ipairs(online) do nodes[#nodes + 1] = n end
+  for _, n in ipairs(offline) do nodes[#nodes + 1] = n end
+  -- CF-62: friends the website knows who haven't synced: "Not synced yet", "from the website".
+  for _, f in ipairs(siteFriends or {}) do
+    if not synced[f.name:lower()] then
+      nodes[#nodes + 1] = { value = Format.SITE .. f.name, text = f.name, website = true, count = #f.chars,
+                            children = {}, section = "website", sub = "from the website" }
+    end
   end
   if #view.unlinked > 0 then
     local children = {}
@@ -144,9 +162,16 @@ function Format.tree(view)
       children[#children + 1] = { value = c.guid, name = c.name, classID = c.classID, level = c.level,
                                   online = c.online }
     end
-    nodes[#nodes + 1] = { value = Format.UNLINKED, text = "Unlinked", unlinked = true, children = children }
+    nodes[#nodes + 1] = { value = Format.UNLINKED, text = "Unlinked", unlinked = true, children = children,
+                          section = "unlinked" }
   end
   return nodes
+end
+
+-- CF-62: the list's section headers: "Online · 2", "Offline · 1", "Not synced yet · 6" (nil for Unlinked).
+function Format.sectionTitle(section, count)
+  local titles = { online = "Online", offline = "Offline", website = "Not synced yet" }
+  return titles[section] and string.format("%s \194\183 %d", titles[section], count) or nil
 end
 
 -- CF-62: friends whose record arrived this session (since `since`, server time), and the newest arrival.

@@ -34,6 +34,14 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-62c Friends tab (board AG03Tabs)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Friends | The list has headers "Online · N", "Offline · N" and, with a site upload that knows friends who haven't synced, "Not synced yet · N" with each friend's name and "from the website". Your own entry reads "You". No BattleTag anywhere. | open |
+| Your own card | Title "You", "Online on <character> · <zone>" in green. Each character as a bordered card: class icon, name in class colour with the realm dim after it, "· Level N · <role>", "online" or "played … ago" on the right, a level bar in class colour, the zone, and the professions ("Mining 240 · …") or "no professions yet". | open |
+| No friend synced yet | Under your characters a bordered box: "Friends appear here when they are online with the addon at the same time as you, or after the website sync. N friends are known from the website and fill in after your next /reload following an upload." | open |
+| Click a "from the website" friend | Their name, "from the website", and their characters as cards with realm, class, level and "seen … ago". | open |
+
 ### CF-62c Footer and Activity (board AG03Tabs)
 | Step | Expected | Status |
 |---|---|---|
