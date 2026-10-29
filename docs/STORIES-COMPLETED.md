@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -687,3 +687,63 @@ Agreed with Nico (2026-10-29). Ships before launch (Nov 4) as the FriendProbe zi
 Definition of done as usual; `busted` and `luacheck` pass; `VERIFY.md` gets the FriendProbe run steps.
 - Added on the orchestrator's request: a Retail dry run (the same Mainline API and Midnight restrictions). Items Retail can answer carry `retail`; on Retail the rest show "Forever only"; results are kept per client so a Retail answer never closes a Forever item; every event handler runs guarded.
 - Done (PRs #112, #113): `tools/FriendProbe` (Checklist.lua, FriendProbe.lua, Window.lua), `tools/build-probe.ps1`, `tests/spec/ProbeChecklist_spec.lua`; answered probes removed. CommunitiesForever unchanged.
+
+## CF-61 Retail dry-run fixes (decided with Nico, 2026-10-29)
+Bugs from Nico's dry run on Retail 12.1.5 (`docs/API-FINDINGS.md` "Retail 12.1.5 dry run"), fixed as one story in four PRs. Bug 1 shipped first as its own PR (#119).
+
+**1. Loot quality from new links (PR #119).** Item links that carry the quality (`|cnIQ<n>:`) instead of a colour count blues and purples also before the game has cached the item. The game's own quality still wins once known.
+
+**CF-61a: small fixes**
+- 2. Setup wizard: the step line ("Step 1 of 6 · Welcome → Community → … → Done") stays inside the window. It shows the step number with the current and the next step only.
+- 3. Settings window: each description wraps to its own column's width, and its row grows with it. Nothing runs under the other column or past the window edge.
+- 4. Settings footer: the version shows one `v` ("v0.8.0-beta1", not "vv0.8.0-beta1").
+- 5. An alt that isn't in the selected community:
+  - On the first login of that character, the window opens once by itself on the join explanation with the invite link. This is remembered per character, like the chat-tab prompt.
+  - As soon as it joins (also while playing), the Community chat tab prompt is offered.
+- 10. The Community tab prompt: sized to its content, one short line ("A tab with only your community's chat."), and Create tab and Not now as kit buttons on the right.
+
+**CF-61b: no designer notes in the UI; one reset label per view**
+- 6. Every tab, dialog, footer and chat line is checked for board notes, legends and design rationale. Each one is removed, or moved into a tooltip where a player needs it. The PR lists every removed or moved string. Examples:
+  - "Live for friends online with the addon; others update after their upload."
+  - "* = swapped goal (hover for the original). Crossed out: all three PvE dailies done."
+  - the footer "Suggestions, never rules · all-time totals on the site"
+  - "Any of your characters counts."
+  - "This week only. All-time totals, Elo and battleground history live on the site and in Discord."
+  - "no kills yet · Rank title: Conscientious Objector until the first kill."
+- 8. Reset labels:
+  - Today and Board show only "New goals in 5 h 58 m".
+  - Week and Ladder show only "Week resets Sun 19:00 · in 3 d 5 h".
+  - The generic line in the tab bar goes.
+
+**CF-61c: a cleaner Board** (confirmed with Nico)
+- Friend column:
+  - the name, struck through when all three PvE dailies are done, with the finish time, and the crown
+  - the streak in the name's tooltip; there is no streak column
+- One column per goal:
+  - each with a short title: `shortLabel` per goal in `Doomsday.GOALS`, at most 10 characters, the same as on the site (agreed with the web engine, listed in `docs/DOOMSDAY.md`)
+  - a gold ✓ when done (the time in the tooltip), or an empty box □ (the progress, e.g. "3/10", in the tooltip)
+  - a swapped goal gets a small dot with an "Instead of: …" tooltip
+- One points column, "PvE 15 · PvP 11" (never added together).
+
+**CF-61d: Feats, and the rule updates**
+- 9. Feats tab:
+  - Only feats earned while the addon watched the character are listed.
+  - Feats it already had when the addon first saw it fold into one line, "Already had: Level 10, Level 20, …", with the details in a tooltip.
+  - A mount feat needs level 40 (an epic mount needs 60). Below that it is never recorded, and stored ones are hidden.
+- The web engine's `docs/DOOMSDAY.md` rule updates, in chat lines and tabs, once they are in:
+  - PvP Virgin: any PvP point ends it, duel points included.
+  - Rank title: "No rank yet · N kills".
+  - Goal count: the Duel slot counts.
+  - Day label by reset: "Wed evening", and times after midnight with the weekday.
+
+**FriendProbe** (Nico's decision: what he checked on Retail needs no recheck on Forever)
+- Done from the Retail run:
+  - V77, V78, V63, V71, V55, V68, V50b, V83, V86, V82, V54, V61 and V80 (the strings)
+  - V81 (`C_DeathRecap` exists)
+- These show in the probe as "done (retail 12.1.5)", out of the open list. They are closed in `VERIFY.md`, and their answers move into `API-FINDINGS.md` as answers.
+- Still open: V64 (the shimmer fix), V75 (combat log), V79 (Vanilla ranks), and everything that needs a friend, a dungeon, PvP or Forever only.
+- The probe zip is rebuilt.
+
+Compatibility (rule 8): no stored data or messages change, except that mount feats below level 40 are hidden when read (they are not deleted).
+- Done (2026-10-29): bug 1 in #119; CF-61a (bugs 2 to 5 and 10) in #121; CF-61b (bugs 6 and 8) in #122, with a second pass in #130; CF-61c (bug 7) in #123; CF-61d (bug 9) in #124; the rule updates in #127, with `docs/DOOMSDAY.md` in #126; bug 11 (the Dungeons message for an alt outside the community) in #128; the FriendProbe part in #125.
+- Added while building: the addon never registers the combat log (#129, Nico: Blizzard's banner on Retail 12.1.5; death causes from the death recap and mirror timers). Times are stored as server time (UTC) and shown in the player's own clock, chat lines included (Nico, 2026-10-29).

@@ -4,66 +4,7 @@ Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order:
-1. Now: CF-61 (retail dry-run fixes), in four PRs (a to d) plus a FriendProbe PR.
-2. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
-
-## CF-61 Retail dry-run fixes (decided with Nico, 2026-10-29)
-Bugs from Nico's dry run on Retail 12.1.5 (`docs/API-FINDINGS.md` "Retail 12.1.5 dry run"), fixed as one story in four PRs. Bug 1 shipped first as its own PR (#119).
-
-**1. Loot quality from new links (PR #119).** Item links that carry the quality (`|cnIQ<n>:`) instead of a colour count blues and purples also before the game has cached the item. The game's own quality still wins once known.
-
-**CF-61a: small fixes**
-- 2. Setup wizard: the step line ("Step 1 of 6 · Welcome → Community → … → Done") stays inside the window. It shows the step number with the current and the next step only.
-- 3. Settings window: each description wraps to its own column's width, and its row grows with it. Nothing runs under the other column or past the window edge.
-- 4. Settings footer: the version shows one `v` ("v0.8.0-beta1", not "vv0.8.0-beta1").
-- 5. An alt that isn't in the selected community:
-  - On the first login of that character, the window opens once by itself on the join explanation with the invite link. This is remembered per character, like the chat-tab prompt.
-  - As soon as it joins (also while playing), the Community chat tab prompt is offered.
-- 10. The Community tab prompt: sized to its content, one short line ("A tab with only your community's chat."), and Create tab and Not now as kit buttons on the right.
-
-**CF-61b: no designer notes in the UI; one reset label per view**
-- 6. Every tab, dialog, footer and chat line is checked for board notes, legends and design rationale. Each one is removed, or moved into a tooltip where a player needs it. The PR lists every removed or moved string. Examples:
-  - "Live for friends online with the addon; others update after their upload."
-  - "* = swapped goal (hover for the original). Crossed out: all three PvE dailies done."
-  - the footer "Suggestions, never rules · all-time totals on the site"
-  - "Any of your characters counts."
-  - "This week only. All-time totals, Elo and battleground history live on the site and in Discord."
-  - "no kills yet · Rank title: Conscientious Objector until the first kill."
-- 8. Reset labels:
-  - Today and Board show only "New goals in 5 h 58 m".
-  - Week and Ladder show only "Week resets Sun 19:00 · in 3 d 5 h".
-  - The generic line in the tab bar goes.
-
-**CF-61c: a cleaner Board** (confirmed with Nico)
-- Friend column:
-  - the name, struck through when all three PvE dailies are done, with the finish time, and the crown
-  - the streak in the name's tooltip; there is no streak column
-- One column per goal:
-  - each with a short title: `shortLabel` per goal in `Doomsday.GOALS`, at most 10 characters, the same as on the site (agreed with the web engine, listed in `docs/DOOMSDAY.md`)
-  - a gold ✓ when done (the time in the tooltip), or an empty box □ (the progress, e.g. "3/10", in the tooltip)
-  - a swapped goal gets a small dot with an "Instead of: …" tooltip
-- One points column, "PvE 15 · PvP 11" (never added together).
-
-**CF-61d: Feats, and the rule updates**
-- 9. Feats tab:
-  - Only feats earned while the addon watched the character are listed.
-  - Feats it already had when the addon first saw it fold into one line, "Already had: Level 10, Level 20, …", with the details in a tooltip.
-  - A mount feat needs level 40 (an epic mount needs 60). Below that it is never recorded, and stored ones are hidden.
-- The web engine's `docs/DOOMSDAY.md` rule updates, in chat lines and tabs, once they are in:
-  - PvP Virgin: any PvP point ends it, duel points included.
-  - Rank title: "No rank yet · N kills".
-  - Goal count: the Duel slot counts.
-  - Day label by reset: "Wed evening", and times after midnight with the weekday.
-
-**FriendProbe** (Nico's decision: what he checked on Retail needs no recheck on Forever)
-- Done from the Retail run:
-  - V77, V78, V63, V71, V55, V68, V50b, V83, V86, V82, V54, V61 and V80 (the strings)
-  - V81 (`C_DeathRecap` exists)
-- These show in the probe as "done (retail 12.1.5)", out of the open list. They are closed in `VERIFY.md`, and their answers move into `API-FINDINGS.md` as answers.
-- Still open: V64 (the shimmer fix), V75 (combat log), V79 (Vanilla ranks), and everything that needs a friend, a dungeon, PvP or Forever only.
-- The probe zip is rebuilt.
-
-Compatibility (rule 8): no stored data or messages change, except that mount feats below level 40 are hidden when read (they are not deleted).
+1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).
