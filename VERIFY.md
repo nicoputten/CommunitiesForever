@@ -38,6 +38,12 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-61 bug 11: Dungeons tab without a dungeon
+| Step | Expected | Status |
+|---|---|---|
+| Log in on an alt outside the selected community, `/cf`, Dungeons | "<name> isn't in the community yet. Join it from the Friends tab with a friend's invite link." (not the level sentence) | open |
+| A character in the community below level 13 | "<name> is not in a dungeon's level range yet. The first one, Ragefire Chasm, starts at level 13." | open |
+
 ### CF-61b No designer notes; one reset label per view
 | Step | Expected | Status |
 |---|---|---|
