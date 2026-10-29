@@ -94,6 +94,36 @@ This brief redesigns the in-game window of the CommunitiesForever addon ("Doombr
   - "Plan a run on the website and it shows up here after your next upload, or use Ask now to see who is up for a dungeon right now."
   - Buttons: **Ask now…** (gold) and **Copy website link** (selects the site URL in an EditBox).
 
+## 1b. Dungeons in range (`AG05InRange`). Keep everything the current tab has.
+
+The v2 Dungeons tab keeps the "dungeons in range" part of today's tab. Nothing is dropped. It moves into the same layout:
+
+- **Left list, two parts, under the header "Dungeons" + "Ask now…":**
+  - **Planned:** the compact run rows from section 1.
+  - **In range for `<your character>` (`<level>`):**
+    - every dungeon whose range fits the character you're logged in on, using the existing range table
+    - each row (about 44 px): the name, the range on the right, then "N fit · X/Y quests"
+    - a gold "1 run" tag when a run is planned for that dungeon
+    - the line "Ranges are typical levels; the list follows the character you're on." becomes the ⓘ tooltip on this heading
+- **Picking a dungeon** shows (right side):
+  - **Title:** the dungeon, then "level 22–30 · `<zone>`". If a run exists, a button on the right, "1 run planned · Fri 20:00 ›", selects that run.
+  - **Suggested group** (the existing suggestion logic, drawn as the same 38 px rows as the run group):
+    - one character per friend, the best fit per role
+    - a role nobody can fill: dashed row "Healer · nobody in range", with "close: `<name>` `<level>`" on the right
+    - an open slot: "N online fit"
+    - under the rows: "Your other characters in range: …"
+  - **Online now, fits `<range>`:** the same list as in section 1, filtered by this dungeon's range.
+  - **Quests** (QuestieDB, your faction), heading "Quests · 2 of 3 in your log · 1 done":
+    - a green check: the quest is in your log, with "`<friend>` has it too" from sync data
+    - a gold "!": not picked up yet, with "pick up: `<NPC>` · `<zone>`"
+    - struck through and grey: done (`C_QuestLog.IsQuestFlaggedCompleted`), with "done on `<character>`" for your alts
+    - no QuestieDB loaded: the heading says "Quests · needs Questie", and the list is hidden
+  - **Go:** two buttons:
+    - **"Ask now for `<dungeon>`"** opens the existing Ask now dialog with the dungeon filled in
+    - **"Plan a run…"** opens the existing in-game plan dialog with the dungeon filled in
+    - one muted line under them: "A planned run reaches the website and Discord with your next upload."
+- **What opens first:** the next run where you're in. With no run, the first dungeon in range. The empty state (board D) only shows when there are no runs **and** no dungeons in range, e.g. at level 1–12.
+
 ## 2. Doomsday tab (`AG03Tabs`, left top)
 
 - **Header:** "Today · Wed evening · 1 of 5 done". The count matches the goals shown. On the right: "New goals Thu 19:00 · in 4 h 28 m" in orange.
@@ -153,6 +183,28 @@ This brief redesigns the in-game window of the CommunitiesForever addon ("Doombr
   - left list 290 px
   - rows 34–40 px
   - buttons 28 px high, 32 for the main action
+
+## Decisions after review (these override the sections above)
+
+1. **Explanatory lines.** Show only status and hints on screen; everything else goes into an ⓘ GameTooltip on a small icon button next to the nearest heading.
+   - **Keep visible:**
+     - "Runs from the website, Wed 22:30. Type /reload after an upload for newer."
+     - "Click, then Ctrl+C to copy."
+     - the empty states: "Nothing planned yet…", "Nobody online fits right now.", the Friends empty box
+     - the short status "Reminder at 20:00"
+   - **Move into a tooltip:**
+     - "From the community roster: …" goes on the "Online now, fits" heading.
+     - "Shared with online friends now; the website gets it with your next upload." goes on "Your answer".
+     - "⇄ swapped: … Goals are suggestions; skip any." goes on the goals heading. The ⇄ marker keeps its own tooltip naming the original goal.
+     - "Live for friends online with the addon; others after their upload." goes on "Friends today".
+     - "That's all for today. Friends' activity arrives when…" goes on the "Today" heading in Activity.
+     - "Invite all invites everyone who is in and online." becomes the tooltip of the Invite all button. It shows when the button is disabled too.
+2. **Friends known from the website: option (a).**
+   - The site adds a short friends list to the data the uploader writes into the game, next to the runs. The uploader passes it through unchanged.
+   - Contents: display name, plus per character the name, realm, class, level, and last-seen date. No BattleTags, no Discord IDs.
+   - The addon reads it on load and fills "Not synced yet · N" with "from the website" and the data date. Friends who sync live replace their entry.
+   - Site work: one small change to the export. Addon work: read and merge it.
+3. **The title-bar shimmer** (bug #1) and the "white strip behind the shield" are the same issue. Fix it once.
 
 ## Done when
 
