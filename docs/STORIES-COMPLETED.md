@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -648,3 +648,19 @@ Decided in CF-57a: swap lines come when the day turns while you play or with the
 - Tests: the pure parts (rows, sorting, crossing out, the crown, reset times, chat texts, feats, sprees) with busted. Manual steps in `VERIFY.md`.
 - Decided in CF-57b: the Board's columns follow your own set of the day (a friend's swapped goal stays in its slot, with "*"); points per friend come from their synced `goals`, the kills in their feed and the Duel slot of everyone's records; the Ladder's movement compares with last week from the data at hand (the last 7 feed days and last week's goals); the battleground block comes from the feed's runs and battleground kills (DOOMSDAY.md wins over the board's "battlegrounds on the site"). Feats: the site's kinds, thresholds and titles (web feats.ts), without "First in the group" and without the group's mount count.
 - Done: CF-57a (PR #102), CF-57b (PR #103): `src/core/Feats.lua`, `DoomsdayView.score`, `DoomsdayTracker.board/ladder/feats`, the Board, Ladder and Feats views, `Feed.spree` and the spree piece. VERIFY.md "CF-57a", "CF-57b".
+
+## E16 Release preparation
+
+### CF-59 Clean-up before the Doomsday release
+Agreed with Nico (2026-10-29): a clean-up of the addon before the release that brings Doomsday (E15) to friends. One or more PRs; nothing a friend sees changes except fixes.
+- **Dependencies:** the `.pkgmeta` externals (Ace3 parts, LibSerialize, LibDeflate, LibDataBroker, LibDBIcon, ...) and the local toolchain (`tools/setup-lua.ps1`: Lua, busted, luacheck) move to their newest releases where newer ones exist. `tools/fetch-libs.ps1` and its `embeds.xml` check still pass. A major version only when `busted` and `luacheck` pass with it. No new dependencies (rule 7).
+- **Technical debt:** a list of what to refactor, each with effort and risk, goes to Nico first; only what he picks is built. Rule 1 (pure core) and rule 8 (no change to stored or sent formats unless compatible) hold throughout.
+- **Docs:**
+  - every finished story moves to `docs/STORIES-COMPLETED.md` (CF-52 to CF-58 at least); `docs/STORIES.md` keeps open stories only, with a correct build order
+  - `docs/ARCHITECTURE.md`, `docs/SYNC.md`, `docs/DOOMSDAY.md`, `docs/API-FINDINGS.md` and the README describe the code as it is
+  - `VERIFY.md` holds open items only
+  - `CHANGELOG.md` `## Unreleased` reads as the release notes of the Doomsday release: one entry per feature, in plain words, newest feature first
+- **Dead code, leftovers and CI:** unused functions, fields, settings, test helpers and files go; flaky tests are fixed, not rerun.
+- **Left alone:** branches (the orchestrator cleans them up at the end) and PR #63 (CF-38, waits for launch).
+- `busted` and `luacheck` pass; `Compat_spec` passes on every earlier release's fixtures.
+- Done (PRs #104 to #108): dependencies were already at their newest (no change); Nico picked all seven refactors (the Safe adapter helper, Calendar and Text, DoomsdayBoard split from DoomsdayTracker, the cached Doomsday state, Card split from Format, Kit.chip and the MainFrame tab table, helpers.client for specs); deterministic test ids, two unused functions removed, no flaky tests found (`busted --shuffle`); the Doomsday release notes, a README, the stories' build order.
