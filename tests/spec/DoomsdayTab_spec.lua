@@ -173,7 +173,18 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       assert.is_truthy(t:find("\nno Doomsday data yet\n", 1, true)) -- Tok, an older addon
       local tips = table.concat(ns.DoomsdayTab.tips(), "\n|\n")
       assert.is_truthy(tips:find("Finish 10 quests\n0/10", 1, true)) -- your own progress
-      assert.is_truthy(tips:find("Finish 10 quests\nDone at ", 1, true)) -- Mira's
+      assert.is_truthy(tips:find("Finish 10 quests\nMira \194\183 done ", 1, true)) -- Mira's
+      assert.is_truthy(tips:find("\194\183 resets ", 1, true)) -- CF-63: when the goals reset
+      -- CF-63 (board CF63DoomBoard): drawn 15 px boxes, no text characters; Mira's are all done.
+      local done, open = 0, 0
+      for _, b in ipairs(ns.DoomsdayTab.goalBoxes()) do
+        assert.are.equal(15, b.width)
+        if b.done then done = done + 1 else open = open + 1 end
+        assert.are.equal(b.done, b.check.shown)
+      end
+      assert.is_true(done > 0 and open > 0)
+      assert.is_falsy(t:find("\226\150\161", 1, true)) -- no box character
+      assert.is_falsy(t:find("\226\156\147", 1, true)) -- no check character
       assert.is_truthy(tips:find("Streak 6 days\nAll three PvE dailies done at ", 1, true))
       local board = ns.DoomsdayBoard.board()
       local mira

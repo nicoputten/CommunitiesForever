@@ -69,6 +69,13 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Answer Can’t, or be a reserve | No banners for that run. | open |
 | Settings: Run reminders off | No banners (the chat lines follow their own settings). Ambient effects off: the banner appears and disappears without fading. | open |
 
+### CF-63e Doomsday goal boxes (boards CF63DoomBoard, CF63DoomToday)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday, Board | Every goal cell is a drawn 15 px box centred in its column: open a dark box with a dim gold edge, done a gold edge with a gold check. No "☐", "✓" or stray "·". Compare with `docs/design/cf-63-2026-10/CF63DoomBoard.dc.html`. If the check is a plain white tick instead of Blizzard's checkmark, the atlas `common-icon-checkmark` is missing: note it. | open |
+| A swapped goal (yours or a friend's) | A small blue corner top right of its box. Hover: "Run a dungeon with a friend", "Swapped for you · original: …", "Not done yet · resets Thu 19:00". A friend's done box: "<goal>", "Mira · done Thu 00:14 · resets …". | open |
+| Doomsday, Today | The same box before each goal (no more green square); a swapped goal shows the blue corner and the word "swapped"; hovering the box or the title shows the same tooltip. | open |
+
 ### CF-63a Dungeons tab: dungeon names, in range on Retail, the run detail (board CF63RunDetail)
 | Step | Expected | Status |
 |---|---|---|
