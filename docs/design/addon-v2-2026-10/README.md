@@ -7,6 +7,7 @@ Design references for the in-game window v2, made with Claude Design on 2026-10-
 | `AG01Audit.dc.html` | The window as it was on 29 Oct, with numbered issues. Its four screenshots are **not** in the repo: they showed a real BattleTag and a friend's account name. The full board is kept locally. |
 | `AG02Dungeons.dc.html` | The Dungeons tab v2: run list with role pips, the detail with five group rows, "Online now, fits", the action area (organiser before and at the start, a member's answer), Edit or cancel, and the empty state |
 | `AG03Tabs.dc.html` | Doomsday (Today with check boxes, stat boxes, the Friends today mini board), Friends (character cards) and Activity (character first, the end of the day) |
+| `AG05InRange.dc.html` | The Dungeons tab v2 for dungeons in range: Planned and In range in the left list, the suggested group as rows, quests (QuestieDB), Ask now and Plan a run per dungeon (added 2026-10-29; AG02 and AG04 were updated with it) |
 | `AG04Kit.dc.html` | What an addon frame can really draw: square corners, 1 px borders, two-colour gradients, atlases with fallbacks, no blur, no shadows, no letter-spacing |
 
 Where a board shows an explanatory line, the rule "player-facing copy only" applies (`docs/STORIES.md`, CF-62): only the lines Nico confirmed stay, and the rest go in a tooltip or nowhere.
