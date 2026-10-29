@@ -105,5 +105,25 @@ Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Ma
 | `frame:CreateAnimationGroup()` with a `Translation` (Ambient effects, V64) | Animates the frame itself: the whole title bar slid across as a dark block every few seconds, the streak's bright edge riding along (CF-43 bug). The shine now creates the group on its streak texture (`texture:CreateAnimationGroup()`), so only the streak moves. The texture (white, alpha in the file) with `SetBlendMode("ADD")` was fine. |
 | A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
 
+## Retail 12.1.5 dry run (2026-10-29)
+FriendProbe on Retail 12.1.5, build 70575, one EU character (interface 120105: the same Mainline API and Midnight restrictions as Forever). **Hints only, not Forever answers:** Forever has its own build, strings and server rules, so every VERIFY.md item below stays open until the launch run on Forever.
+| Item | Retail result | What it suggests for Forever |
+|---|---|---|
+| V77 `GetCurrentRegion()` | `3` (EU) | As expected. |
+| V78 `GetGameTime()` | Realm clock 12:31 against UTC 11:31: offset +60 min (CET) | The realm offset from `GetGameTime` and `GetServerTime` works as CF-55 assumes. |
+| V63 `date("%H:%M")`, V71 `time({...})` | pass | Local clock and date-to-seconds work. |
+| V68 `C_UI.Reload()` from a click | pass: the UI reloaded | A button may reload the UI. |
+| V55 `GameTooltip:AddDoubleLine` | exists | Two-column minimap tooltip works. |
+| V50b self-whisper burst | 30 of 30 arrived. A 256-byte whisper arrives as 255 bytes | Whispers are capped at 255 bytes, which matches `Protocol.COMMUNITY_CHUNK = 255`. |
+| V79 PvP counters | `GetPVPLifetimeStats()` gives `0, 0`; `UnitPVPRank`, `GetPVPThisWeekStats`, `GetPVPRankInfo` missing; `GetStatistic(60)` (total deaths) gives `31` | Retail has no Vanilla rank system, so the missing rank functions say nothing about Forever. Deaths from `GetStatistic(60)` work. |
+| V80 `DUEL_WINNER_KNOCKOUT`, `DUEL_WINNER_RETREAT` | exist: `"%1$s has defeated %2$s in a duel"` and `"%2$s has fled from %1$s in a duel"` | Positional arguments: the winner is `%1$s` in both, also when it comes second in the text. `GameText.parse` already handles `%n$s` (GameText spec); no duel was fought, so a real match is not confirmed. |
+| V81 `C_DeathRecap.GetRecapEvents` | exists | A cause source when the combat log is not allowed. |
+| V82 riding | `IsSpellKnown(33388)` false, `IsSpellKnown(33391)` true; `GetNumSkillLines` missing | Riding from spells works; the skill-line fallback doesn't exist on this API. |
+| V83 loot strings and items | `LOOT_ITEM_*` strings as expected; `LOOT_ITEM_PUSHED_SELF` matched a real item. Item links use a new colour prefix `|cnIQ1:` (quality in the prefix, not `|cffRRGGBB`); parsing `|Hitem:` still works. `GetItemInfo` is empty until the item is cached (names arrived on a later login). The watch-list IDs exist: 12784, 12360, 14342, 15063, 15062, 19807, 19970, 19979 | **Item info loads asynchronously:** code must not rely on `GetItemInfo` at loot time. The watch list keys on the item ID from the link, and the slot comes from `C_Item.GetItemInfoInstant`; both are fine. **The quality fallback is at risk:** `Loot.parse` reads the link colour `|cffRRGGBB` when `C_Item.GetItemQualityByID` is nil (not cached). With `|cnIQ<n>:` links that fallback finds nothing, so a rare or epic looted before it is cached would be missed. Check the Forever link format at launch (V83). |
+| V86 `ERR_ZONE_EXPLORED`, `ERR_ZONE_EXPLORED_XP` | both matched a discovery | Discovery parsing works. |
+| V75 combat log | `RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` returned without an error, but Blizzard showed "only available to the Blizzard UI", and no events arrived | Likely forbidden for addons, not confirmed. See "Retail dry runs" above. |
+| V54 Esc closes the window, key binding | yes (by hand) | |
+| V61 the window draws right | no (by hand): the reason is being asked, probably the title shimmer (fixed in #117) | |
+
 ## Not available / not useful
 - LanMiaoApi (CurseForge) reports none of the above as present in `APIDocumentation`; it only confirms runtime existence. Not a source of signatures or secret flags for these APIs.
