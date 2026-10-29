@@ -180,8 +180,11 @@ describe("Dungeons (CF-24)", function()
       Dungeons.applyGroupFinder(ACTIVITIES)
       assert.are.same({ 20, 30 }, { Dungeons.get("sfk").min, Dungeons.get("sfk").max })
       assert.are.same({ 54, 60 }, { Dungeons.get("dme").min, Dungeons.get("dme").max }) -- wings: lowest min
-      assert.is_nil(Dungeons.get("dm")) -- not offered by the Group Finder: not listed (feedback)
-      assert.is_nil(Dungeons.get("stocks"))
+      local listed = {}
+      for _, d in ipairs(Dungeons.LIST) do listed[d.id] = true end
+      assert.is_nil(listed.dm) -- not offered by the Group Finder: not listed (feedback)
+      assert.is_nil(listed.stocks)
+      assert.are.equal("The Deadmines", Dungeons.get("dm").name) -- CF-63: a run for it still finds it
       local new = Dungeons.get("lfg1981")
       assert.are.equal("Excavation Site: Wetlands", new.name)
       assert.are.same({ 26, 33 }, { new.min, new.max })
@@ -190,6 +193,21 @@ describe("Dungeons (CF-24)", function()
       assert.are.equal(22, Dungeons.STATIC[4].min) -- the static table itself is untouched
       assert.are.equal("lfg1981", Dungeons.dungeonOf("Excavation Site: Wetlands run").id)
     end)
+
+    it("keeps the static list when the Group Finder offers none of it (Retail), with new ones up to 60 (CF-63)",
+      function()
+        Dungeons.applyGroupFinder({
+          { activityID = 9001, name = "A Retail Dungeon", min = 70, max = 80 },
+          { activityID = 1981, name = "Excavation Site: Wetlands", min = 26, max = 33 },
+        })
+        local listed = {}
+        for _, d in ipairs(Dungeons.LIST) do listed[d.id] = true end
+        assert.is_true(listed.smgy and listed.dm and listed.lfg1981)
+        assert.is_nil(listed.lfg9001)
+        assert.are.equal("Scarlet Monastery: Graveyard", Dungeons.runName({ dungeon = "smgy" }))
+        assert.are.equal("Hall of Thanes", Dungeons.runName({ dungeon = "lfg1984", dungeonName = "Hall of Thanes" }))
+        assert.are.equal("A dungeon", Dungeons.runName({ dungeon = "zzz" }))
+      end)
 
     it("keeps the static list without Group Finder data", function()
       Dungeons.applyGroupFinder(ACTIVITIES)

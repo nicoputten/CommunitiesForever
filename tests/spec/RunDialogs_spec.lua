@@ -115,7 +115,9 @@ describe("Run dialogs (CF-47)", function()
     -- The run shows in the list, marked as not on the site yet.
     settle()
     assert.are.equal("The Deadmines", row("run:" .. item.id).name:GetText())
-    assert.is_truthy(row("run:" .. item.id).meta:GetText():find("reaches Discord after /reload", 1, true))
+    local clock = row("run:" .. item.id).clock -- CF-63: a clock icon, its tooltip says when
+    assert.is_true(clock:IsShown())
+    assert.is_truthy(clock.tip:find("Reaches the website with your next upload", 1, true))
     -- The reload prompt.
     assert.is_truthy(dialogText():find("\nReload now to post on Discord\n", 1, true))
     local reloaded = false
@@ -180,7 +182,9 @@ describe("Run dialogs (CF-47)", function()
     -- CF-62: the run's detail shows your answer highlighted and that it waits for the next upload.
     local function detailText() return plain(table.concat(ns.DungeonsTab.texts(), "\n")) end
     assert.are.equal("primary", ns.DungeonsTab.buttons()["Maybe"].kind)
-    assert.is_truthy(detailText():find("reaches Discord after /reload", 1, true))
+    assert.is_falsy(detailText():find("after /reload", 1, true)) -- CF-63: no text line, a clock
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Reaches the website with your next upload",
+      1, true))
     -- The site has it: a newer runs list confirms the id.
     local newer = runs()
     newer.updatedAt, newer.received = NOW, { item.id }

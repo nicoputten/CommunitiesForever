@@ -405,9 +405,8 @@ function RunDialogs.drawAnswer(options)
   local showRole = state.answer ~= "cant" and state.char ~= nil
   local note = state.answer ~= "cant" and state.fit and state.fit.note
   begin("Answer", 160 + 28 * #options + 80 + (showRole and 56 or 0) + (note and 20 or 0))
-  local dungeon = ns.Dungeons.get(run.dungeon)
   local y = 16
-  text("name", y, dungeon and dungeon.name or run.dungeon, "goldLight")
+  text("name", y, ns.Dungeons.runName(run), "goldLight")
   local when = date and ns.PlannedRuns.whenText(run.startsAt, now(), date) or ""
   local theirs = date and run.organiser and ns.PlannedRuns.theirClock(run.startsAt, run.organiser.utcOffset, date)
   local who = run.organiser and (run.organiser.name or run.organiser.battleTag)
