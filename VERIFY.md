@@ -33,6 +33,18 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-63c Dungeons tab: the list, in range, planning (board CF63List)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Dungeons | Under "Dungeons  Ask now…" the chips All, My runs, Open slots, In range (All on). Compare with `docs/design/cf-63-2026-10/CF63List.dc.html`. | open |
+| Click My runs, Open slots, In range | Planned shows only the runs you organise or are in or maybe; runs with a free slot; runs whose dungeon fits the character "In range for" follows. A chip that hides all says "No runs here". | open |
+| Close the window and open it again | The chips are back on All. | open |
+| "In range for  Ves Doombringer (23) ▾" | Click it: your characters "Name (level)", highest first; pick an alt: the list and its dungeons follow that character until the next login. Hover: "Ranges are typical levels; …". One line per dungeon: "Wailing Caverns   17–24 · 3 fit". | open |
+| Tick "Show all dungeons" | "Other dungeons" lists the rest, greyed. Pick one out of range: under the title "Ves Doombringer 23: too low · Valen Duskward 58: fits" (your alt, when one fits). | open |
+| A dungeon with nobody else online | "Suggested group ⓘ" (hover: "Friends’ and your characters whose level fits, online or not.") with full-width rows; "Online now, fits" says "Nobody else online fits"; then Quests, Ask now and Plan a run…. | open |
+| Plan a run… | A "Plan a run" box beside Online now: chips "Tonight 20:00" (only while 20:00 is an hour away), "Tomorrow 20:00", "<weekday> 20:00", "Other time…" (opens the old Plan dialog); your best character for the dungeon (an alt when you're out of range) with its fit; its roles; Note; Plan and Cancel. Plan: the run shows in Planned with a pocket watch, and the reload prompt opens. The time is 20:00 on your PC's clock. | open |
+| A character below level 13 with no run you're in | Left: "No dungeon fits yet"; right, centred: "No dungeon fits yet", "First one: Ragefire Chasm at level 13", "Show all dungeons", "Pick another character". | open |
+
 ### CF-63b Dungeons tab: answering inline, group rows (boards CF63Answer, CF63Group)
 | Step | Expected | Status |
 |---|---|---|

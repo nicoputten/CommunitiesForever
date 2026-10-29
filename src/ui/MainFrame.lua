@@ -192,6 +192,7 @@ local function create()
       MainFrame.setFilter("")
       ns.ActivityTab.reset()
       ns.DoomsdayTab.reset() -- CF-57: Today again next time
+      ns.DungeonsTab.closed() -- CF-63c: the chips at All, no plan box open
     end,
     onSettings = function() ns.Settings.open() end,
     onResize = function()

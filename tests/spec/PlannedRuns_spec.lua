@@ -486,6 +486,28 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
         PlannedRuns.memberLines({ name = "Bo", answer = "maybe", source = "discord" }, nil, SMGY, nil, AT, os.date))
     end)
 
+    it("filters runs by the chips: mine, open slots, in range (CF-63c)", function()
+      local runs = {
+        { id = "lead", dungeon = "dm", organiser = { battleTag = "Me#1000" }, answers = {} },
+        { id = "in", dungeon = "smgy", answers = { { guid = "G-ME", answer = "in" } } },
+        { id = "cant", dungeon = "dm", answers = { { guid = "G-ME", answer = "cant" } } },
+        { id = "full", dungeon = "smgy", answers = {
+          { guid = "A", answer = "in", role = "tank" }, { guid = "B", answer = "in", role = "heal" },
+          { guid = "C", answer = "in" }, { guid = "D", answer = "in" }, { guid = "E", answer = "in" } } },
+      }
+      local dungeons = { dm = { min = 17, max = 26 }, smgy = SMGY }
+      local ctx = { me = ME, candidates = {}, dungeonOf = function(run) return dungeons[run.dungeon] end, level = 30 }
+      local function ids(kind)
+        local out = {}
+        for i, run in ipairs(PlannedRuns.filterRuns(runs, kind, ctx)) do out[i] = run.id end
+        return out
+      end
+      assert.are.same({ "lead", "in", "cant", "full" }, ids("all"))
+      assert.are.same({ "lead", "in" }, ids("mine"))
+      assert.are.same({ "lead", "in", "cant" }, ids("open"))
+      assert.are.same({ "in", "full" }, ids("range"))
+    end)
+
     it("names the first role a run needs", function()
       assert.are.equal("tank", PlannedRuns.neededRole({ answers = {} }, {}, SMGY))
       assert.are.equal("heal", PlannedRuns.neededRole({ answers = { { answer = "in", role = "tank" } } }, {}, SMGY))
