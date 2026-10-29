@@ -74,7 +74,11 @@ describe("Onboarding (CF-26)", function()
     assert.are.equal("Step 4 of 6", Onboarding.progress(4, 6))
     -- CF-61: only the current and the next step, so the line fits the window.
     local titles = { "Welcome", "Community", "Sharing", "Chat", "Roles", "Done" }
-    assert.are.equal("Step 2 of 6 9483 Community > Sharing", Onboarding.progressLine(2, titles, " > "))
-    assert.are.equal("Step 6 of 6 9483 Done", Onboarding.progressLine(6, titles, " > "))
+    assert.are.equal("Step 2 of 6 \194\183 Community > Sharing", Onboarding.progressLine(2, titles, " > "))
+    assert.are.equal("Step 6 of 6 \194\183 Done", Onboarding.progressLine(6, titles, " > "))
+    -- CF-62: the separator is a real middle dot (the game showed "▯94▯83" from control bytes).
+    local line = Onboarding.progressLine(1, titles)
+    assert.is_truthy(line:find("\194\183", 1, true))
+    assert.is_nil(line:find("[%z\1-\31]"))
   end)
 end)

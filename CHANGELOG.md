@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday Today, redone:** a check box per goal, a short bar only for goals you count up, the points per goal in
+  PvE green or PvP red, "⇄ swapped" with the original on hover, boxes for today, this week and your streak, and
+  "Friends today" next to it.
 - **Fixed:** the light streak across the window title no longer waits as a white strip behind the shield between
   passes; the LEVEL UP shine likewise.
 - **Tidier setup:** the last explanatory notes are gone from the setup, the settings and the chat-tab chat line.
