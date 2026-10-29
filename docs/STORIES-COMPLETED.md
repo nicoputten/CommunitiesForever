@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -664,3 +664,26 @@ Agreed with Nico (2026-10-29): a clean-up of the addon before the release that b
 - **Left alone:** branches (the orchestrator cleans them up at the end) and PR #63 (CF-38, waits for launch).
 - `busted` and `luacheck` pass; `Compat_spec` passes on every earlier release's fixtures.
 - Done (PRs #104 to #108): dependencies were already at their newest (no change); Nico picked all seven refactors (the Safe adapter helper, Calendar and Text, DoomsdayBoard split from DoomsdayTracker, the cached Doomsday state, Card split from Format, Kit.chip and the MainFrame tab table, helpers.client for specs); deterministic test ids, two unused functions removed, no flaky tests found (`busted --shuffle`); the Doomsday release notes, a README, the stories' build order.
+
+### CF-60 Launch checklist
+Agreed with Nico (2026-10-29). Ships before launch (Nov 4) as the FriendProbe zip. **CommunitiesForever does not change** (Nico: only the probe goes quiet).
+
+**FriendProbe becomes the launch checklist** (its own addon, `tools/FriendProbe`, not part of CommunitiesForever):
+- Shared as a zip: `tools\build-probe.ps1` builds `dist\FriendProbe.zip`. Friends unzip it into `Interface\AddOns`, play as usual and send Nico `WTF\Account\<account>\SavedVariables\FriendProbe.lua`.
+- **Automatic for two weeks:** from the first login until 2026-11-18 it logs by itself, then stops. No command needed.
+- **Silent:** no chat output during play, ever. Everything goes to its SavedVariables (`FriendProbeDB`): ticks, values seen, errors, capped (at most 2,000 log lines, oldest dropped).
+- **`/fp` opens the checklist window:** the open `VERIFY.md` API questions (V8 to V86) and the per-story manual steps, grouped into six play sessions:
+  1. First login alone: V78, V77, V61, V62, V64, V65, V66, V63, V71, V67, V68, V54, V55, and the Doomsday tab.
+  2. With a friend: V59, V50b, V52, V53, V48, V69, V47, V72, V85, V80, V8, and the Board.
+  3. Questing: V83, V86, dailies, feats.
+  4. A dungeon: V70, the run log (V35 events), boss counts.
+  5. World PvP: V73, V74, V75, V76, V79, V81.
+  6. Later in the week: V84, V82, V35b, V51.
+- **Automatic checkmarks** where the probe can judge it itself (API present, event fired, value sane, string parsed): green, or red with what went wrong. Others get Yes / No buttons. Items that need two people say "needs a friend"; each friend's file adds their results.
+- **Test buttons** for the checks that need a click (reload, chat link, invite-all), as the old `/fp invite`, `/fp reload`, `/fp inviteall` did.
+- **A "Copy report" button** shows the results as text to copy, as a fallback.
+- **One table, kept in step with VERIFY.md:** `tools/FriendProbe/Checklist.lua` is pure data (id, session, title, how it's checked: an automatic check's name or "manual", "needs a friend"). A busted spec reads `VERIFY.md` and fails when an open V-item has no entry, or an entry has no open V-item.
+
+Definition of done as usual; `busted` and `luacheck` pass; `VERIFY.md` gets the FriendProbe run steps.
+- Added on the orchestrator's request: a Retail dry run (the same Mainline API and Midnight restrictions). Items Retail can answer carry `retail`; on Retail the rest show "Forever only"; results are kept per client so a Retail answer never closes a Forever item; every event handler runs guarded.
+- Done (PRs #112, #113): `tools/FriendProbe` (Checklist.lua, FriendProbe.lua, Window.lua), `tools/build-probe.ps1`, `tests/spec/ProbeChecklist_spec.lua`; answered probes removed. CommunitiesForever unchanged.
