@@ -120,6 +120,19 @@ function Kit.checkbox(parent, label, help, checked, onChange)
     end
   end
   function c:GetChecked() return self.checked end
+  -- CF-61: wraps the label and help to `width` (the switch included) and grows the row to fit them.
+  function c:Fit(width)
+    self:SetWidth(width)
+    local height = 0
+    for _, fs in ipairs({ self.text, self.help }) do
+      fs:SetWidth(width - 24)
+      fs:SetJustifyH("LEFT")
+      if fs.SetWordWrap then fs:SetWordWrap(true) end
+      local h = fs.GetStringHeight and fs:GetStringHeight()
+      height = height + (type(h) == "number" and h > 0 and h or 12) + 2
+    end
+    self:SetHeight(math.max(self.help and 34 or 22, math.ceil(height) + 4))
+  end
   c:SetScript("OnClick", function(self)
     self:SetChecked(not self.checked)
     if onChange then onChange(self.checked) end

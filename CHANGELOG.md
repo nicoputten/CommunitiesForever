@@ -8,6 +8,8 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **Fixed:** no more Blizzard warning that the addon uses something "only available to the Blizzard UI": the addon
   no longer reads the combat log. What killed you now comes from the death recap.
+- **Fixed:** the Dungeons tab on a character outside the community says it isn't in the community yet, instead of
+  that its level fits no dungeon.
 - **Doomsday rules:** a duel ends "PvP Virgin" too; without a PvP rank you read "No rank yet · N kills"; the Duel
   slot counts in "N of M done"; the day is named by its start ("Wed evening"), and times after midnight show their
   weekday. All times in your own clock.
@@ -20,6 +22,11 @@ tagging; the release stops if the tag has no section.
   on Week and Ladder.
 - **Fixed:** the light streak across the window title no longer drags a dark block over the title, and LEVEL UP
   chips stay put while their shine plays (Ambient effects).
+- **Fixed:** the setup's step line fits the window (it shows the current and the next step), the settings'
+  descriptions wrap inside their column, and the settings footer shows the version with one "v".
+- **An alt outside the community:** the window opens once by itself on how to join (when a friend shared the invite
+  link), and right after joining you're offered the Community chat tab, in a tidier dialog with Create tab and
+  Not now.
 - **Fixed:** blue and purple loot is counted on clients whose item links carry the quality instead of a colour,
   also for items the game has not cached yet.
 

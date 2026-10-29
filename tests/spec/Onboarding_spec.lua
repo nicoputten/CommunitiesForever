@@ -61,7 +61,20 @@ describe("Onboarding (CF-26)", function()
     assert.are.same(ALL, ids(Onboarding.steps()))
   end)
 
+  it("opens how to join once for a character outside the community with an invite link (CF-61)", function()
+    local settings = { onboarded = true, onboardedVersion = Onboarding.VERSION }
+    local alt = { guid = "G-ALT", hasTab = false, inCommunity = false, joinable = true }
+    assert.are.same({ kind = "join" }, Onboarding.plan(settings, alt))
+    Onboarding.joinShown(settings, "G-ALT")
+    assert.is_nil(Onboarding.plan(settings, alt))
+    assert.is_nil(Onboarding.plan(settings, { guid = "G-OTHER", inCommunity = false, joinable = false }))
+  end)
+
   it("words the progress", function()
     assert.are.equal("Step 4 of 6", Onboarding.progress(4, 6))
+    -- CF-61: only the current and the next step, so the line fits the window.
+    local titles = { "Welcome", "Community", "Sharing", "Chat", "Roles", "Done" }
+    assert.are.equal("Step 2 of 6 9483 Community > Sharing", Onboarding.progressLine(2, titles, " > "))
+    assert.are.equal("Step 6 of 6 9483 Done", Onboarding.progressLine(6, titles, " > "))
   end)
 end)
