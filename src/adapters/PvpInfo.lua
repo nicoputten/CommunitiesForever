@@ -114,22 +114,10 @@ local EVENTS = {
 local UNIT_EVENTS = { PLAYER_TARGET_CHANGED = "target", UPDATE_MOUSEOVER_UNIT = "mouseover",
                       NAME_PLATE_UNIT_ADDED = false }
 
--- Damage the player takes, from the combat log. Under the Midnight restrictions an addon may not be
--- allowed to register it: then it is skipped (pcall), and deaths fall back to timers or "other".
-local function watchCombatLog(addon)
-  if not CombatLogGetCurrentEventInfo or not ns.Events.isValid("COMBAT_LOG_EVENT_UNFILTERED") then return false end
-  local ok = pcall(addon.RegisterEvent, addon, "COMBAT_LOG_EVENT_UNFILTERED", function()
-    local values = { pcall(CombatLogGetCurrentEventInfo) }
-    if not values[1] then return end
-    local subevent, sourceGUID, sourceFlags, destGUID = values[3], values[5], values[7], values[9]
-    if readable(destGUID) == nil or destGUID ~= UnitGUID("player") then return end
-    addon:SendMessage(PvpInfo.CHANGED, "damage", readable(subevent), readable(values[13]), readable(sourceFlags),
-      readable(sourceGUID))
-  end)
-  return ok
-end
-
--- Translates the events into PvpInfo.CHANGED messages. Returns whether the combat log could be watched.
+-- Translates the events into PvpInfo.CHANGED messages. Returns false: the combat log is never registered (CF-61,
+-- Nico 2026-10-29). On Retail 12.1.5 registering it shows Blizzard's "only available to the Blizzard UI ... disable
+-- this addon" banner, even inside pcall (API-FINDINGS "Retail dry runs"); Forever is unknown (V75). Death causes come
+-- from the death recap and mirror timers instead.
 function PvpInfo.watch(addon)
   for event, reason in pairs(EVENTS) do
     ns.Events.register(addon, event, function(_, ...)
@@ -141,7 +129,7 @@ function PvpInfo.watch(addon)
       addon:SendMessage(PvpInfo.CHANGED, "unit", unit or token)
     end)
   end
-  return watchCombatLog(addon)
+  return false
 end
 
 ns.PvpInfo = PvpInfo

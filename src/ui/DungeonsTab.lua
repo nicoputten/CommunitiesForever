@@ -782,8 +782,8 @@ function DungeonsTab.render(view, messageText)
   me.guids, me.battleTag = who.guids, who.battleTag
   renderList(runs, overview, me, candidates)
   if not st.selected then
-    renderDetail(nil, me, string.format("%s is not in a dungeon's level range yet. The first one, Ragefire "
-      .. "Chasm, starts at level 13.", tostring(me.name)), runs, candidates)
+    renderDetail(nil, me, ns.Dungeons.emptyText(me.name, me.level, ns.CommunitySelection.active() ~= nil), runs,
+      candidates)
     return
   end
   local entry = entries[st.selected]

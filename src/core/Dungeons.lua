@@ -127,6 +127,24 @@ end
 
 function Dungeons.get(id) return byId()[id] end
 
+--[[ CF-61: why the tab has no dungeon for the character you are on. name, level: that character; inCommunity: it is
+in the selected community (outside it the overview has no candidate for it). ]]
+function Dungeons.emptyText(name, level, inCommunity)
+  name = tostring(name or "This character")
+  if not inCommunity then
+    return name .. " isn't in the community yet. Join it from the Friends tab with a friend's invite link."
+  end
+  local first
+  for _, d in ipairs(Dungeons.LIST) do
+    if not first or d.min < first.min then first = d end
+  end
+  if first and (type(level) ~= "number" or level < first.min) then
+    return string.format("%s is not in a dungeon's level range yet. The first one, %s, starts at level %d.", name,
+      first.name, first.min)
+  end
+  return string.format("No dungeon fits level %s.", tostring(level))
+end
+
 local function inRange(dungeon, level)
   return type(level) == "number" and level >= dungeon.min and level <= dungeon.max
 end

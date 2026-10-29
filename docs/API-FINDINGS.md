@@ -101,7 +101,7 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.
 | API | Result |
 |---|---|
-| `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` | Blocked for addons (V75 retail: fail). Blizzard shows its popup "... only available to the Blizzard UI. You can disable this addon and reload the UI.", also when the call is inside `pcall`. FriendProbe now only tries it from a button; CommunitiesForever must never register it automatically. |
+| `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` | Blocked for addons (V75 retail: fail). Blizzard shows its popup "... only available to the Blizzard UI. You can disable this addon and reload the UI.", also when the call is inside `pcall`. FriendProbe now only tries it from a button; CommunitiesForever never registers it (CF-61, Nico 2026-10-29: death causes from the death recap and mirror timers). |
 | `frame:CreateAnimationGroup()` with a `Translation` (Ambient effects, V64) | Animates the frame itself: the whole title bar slid across as a dark block every few seconds, the streak's bright edge riding along (CF-43 bug). The shine now creates the group on its streak texture (`texture:CreateAnimationGroup()`), so only the streak moves. The texture (white, alpha in the file) with `SetBlendMode("ADD")` was fine. |
 | A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
 
