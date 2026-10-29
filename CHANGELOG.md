@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+
+## v0.10.0-beta1 (2026-10-30)
 - **Fixed, Dungeons:** a website run shows the dungeon's name ("Scarlet Monastery: Graveyard") and level range instead
   of its id, and "In range" and "Online now, fits" work on Retail too.
 - **Dungeons, a run:** the dungeon's full name, its level range and zone, and a countdown that updates every minute
