@@ -18,14 +18,16 @@ Messenger.UNSUPPORTED = "CF_MESSAGE_UNSUPPORTED"     -- (pv, senderBattleTag): a
 local addonRef, codec, outbox, reassembler, pumpTimer, sentStore, missTimer
 local msgPrefix, msgCounter = "", 0
 local stats = { sent = 0, received = 0, dropped = 0, resent = 0, missed = 0 }
+local debugging = false -- CF-64: /cf sync debug, for this session only
 
--- /cf sync debug (settings.syncDebug): one chat line per part, miss, resend and complete message.
+-- /cf sync debug: one chat line per part, miss, resend and complete message. CF-64 (Nico): not saved, off at every
+-- login and /reload (it was settings.syncDebug).
 function Messenger.debugOn()
-  return addonRef ~= nil and addonRef.db.global.settings.syncDebug == true
+  return addonRef ~= nil and debugging
 end
 
 function Messenger.setDebug(on)
-  addonRef.db.global.settings.syncDebug = on or nil
+  debugging = on and true or false
 end
 
 local function trace(text, ...)
@@ -213,6 +215,10 @@ end
 
 function Messenger.start(addon)
   addonRef = addon
+  -- CF-64: sync debug is off at each start; the flag earlier versions saved is dropped (rule 8: an older version
+  -- only reads its own flag, and nothing else uses it).
+  debugging = false
+  addon.db.global.settings.syncDebug = nil
   codec = ns.Protocol.codec(LibStub("LibSerialize"), LibStub("LibDeflate"))
   outbox = ns.Outbox.new(addon.db.global.settings.sendInterval)
   reassembler = ns.Protocol.reassembler()

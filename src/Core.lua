@@ -150,7 +150,8 @@ local COMMANDS = {
     run = function(self, argument)
       if argument == "debug" then -- CF-28: trace parts, missing parts and resends
         ns.Messenger.setDebug(not ns.Messenger.debugOn())
-        self:Print(ns.Messenger.debugOn() and "Sync debug on: message parts, missing parts and resends are printed."
+        self:Print(ns.Messenger.debugOn() and "Sync debug on until /reload: message parts, missing parts and resends "
+          .. "are printed."
           or "Sync debug off.")
         return
       end

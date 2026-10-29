@@ -13,6 +13,8 @@ tagging; the release stops if the tag has no section.
 - **Fixed, Dungeons:** class icons show for friends' characters too (no more empty circles); one "Ask now for this
   run" per run instead of one on every open slot; the "In range for" dropdown has a proper arrow.
 - **Post on Discord?:** shorter, with the details on hover, and it opens on the window.
+- **Sync debug lines:** `/cf sync debug` lasts until the next /reload or login and is no longer saved; anyone who
+  had it on sees no more "[sync]" lines after updating.
 
 ## v0.10.0-beta1 (2026-10-30)
 - **Fixed, Dungeons:** a website run shows the dungeon's name ("Scarlet Monastery: Graveyard") and level range instead

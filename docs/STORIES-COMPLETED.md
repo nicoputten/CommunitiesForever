@@ -895,5 +895,8 @@ Fixes from the test:
 - D. Ask now refused ("Nobody with CommunitiesForever is online …") and was greyed out. An ask is always possible:
   to friends in game when any are online, always to Discord through the uploader.
 - E. The reload prompt: short player copy with the details in an ⓘ, centred on the window.
+- Sync debug (Nico, reversing "leave it"): `/cf sync debug` is for the session only, off at every login and
+  /reload; the flag earlier versions saved (`settings.syncDebug`) is dropped at load. Only `[sync]` and
+  `[activity]` print debug lines, both behind their toggle.
 - F. Runs.lua is read again on every /reload (a TOC file, V67) and taken when it is newer; an old "Runs from" means
   the uploader didn't write a newer file (no ask made, see D, or the file went to another WoW folder).
