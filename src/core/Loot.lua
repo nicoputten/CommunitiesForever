@@ -58,7 +58,8 @@ function Loot.parse(message, formats)
 end
 
 --[[ Feed events (Feed.add) for a parsed loot message. quality: the game's item quality (nil: from the link's
-colour or its |cnIQ quality, for items not cached yet); slot: the INVTYPE_* token (nil or "" for items you can't equip); level: the character's level.
+colour or its |cnIQ quality, for items not cached yet); slot: the INVTYPE_* token (nil or "" for items you can't
+equip); level: the character's level.
 Rare and epic count only looted items and quest rewards; the watch list follows Loot.WATCH. ]]
 function Loot.events(item, quality, slot, level)
   local events = {}
