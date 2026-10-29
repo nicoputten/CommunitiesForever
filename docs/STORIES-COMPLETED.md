@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -878,3 +878,25 @@ inline), #151 (d: banners; "We need damage." wording), #152 (the Doomsday goal b
 designer's three choices: Today shows "swapped" with the blue corner; banners wait during combat and battlegrounds
 and one due after the start is dropped; a full role makes you reserve, the tooltip says so.
 
+## CF-64 Retail test of v0.10.0-beta1 (decided with Nico, 2026-10-31)
+**Decision: no planning in the game.** In the game it's always "Ask now"; planning for later happens on the website or
+with the bot (/plan). "Plan a run…", the inline planning (PlanInline) and the plan dialog are gone; viewing planned
+runs, answering them and the banners stay. Stored and received plan data stays readable (rule 8): a pending `plan`
+item an older version saved is still shown and still goes to the site with the next upload.
+
+Fixes from the test:
+- A. The "In range for" dropdown showed "Sekaru (11) ▯": the fonts have no ▾. It's a dropdown with a texture arrow
+  now; a spec keeps ▾, ⇄ and ☐ (missing from every bundled font) out of the source.
+- B. Group and suggested-group rows showed an empty circle for friends' characters. The class comes from the
+  candidate, the synced records or the community roster (`Online now, fits` read `Classes.info` wrongly); unknown:
+  no icon.
+- C. "Ask now for this run" was on every open slot. One per run, on the group's header line; the open slots keep
+  their menu.
+- D. Ask now refused ("Nobody with CommunitiesForever is online …") and was greyed out. An ask is always possible:
+  to friends in game when any are online, always to Discord through the uploader.
+- E. The reload prompt: short player copy with the details in an ⓘ, centred on the window.
+- Sync debug (Nico, reversing "leave it"): `/cf sync debug` is for the session only, off at every login and
+  /reload; the flag earlier versions saved (`settings.syncDebug`) is dropped at load. Only `[sync]` and
+  `[activity]` print debug lines, both behind their toggle.
+- F. Runs.lua is read again on every /reload (a TOC file, V67) and taken when it is newer; an old "Runs from" means
+  the uploader didn't write a newer file (no ask made, see D, or the file went to another WoW folder).

@@ -30,7 +30,6 @@ local RUNS_TIP = "Runs from the website. Type /reload after an upload for newer.
 local LINK_TIP = "Copy with Ctrl+C. Edit or cancel happens on the website."
 local INVITE_TIP = "Invite all invites everyone who is in and online."
 local RANGE_TIP = "Ranges are typical levels; the list follows the character you're on."
-local PLAN_TIP = "A planned run reaches the website and Discord with your next upload."
 local root, list, detail
 local helpers -- from MainFrame: settings(), render(), print(text)
 local entries = {} -- row value -> overview entry, or { run = run } for "run:<id>"
@@ -155,6 +154,29 @@ local function listRow(parent)
   return r
 end
 
+-- CF-63c: a filter chip: a thin border, gold when on (was PlanInline's, which CF-64 removed).
+local function chip(parent)
+  local c = CreateFrame("Button", nil, parent)
+  c:SetHeight(28)
+  c.bg = Theme.fill(c, "gold", "BACKGROUND")
+  c.bg:SetAllPoints()
+  c.edges = Kit.edges(c, "divider")
+  c.text = Theme.text(c, "small", "textDim")
+  c.text:SetPoint("CENTER")
+  local hover = c:CreateTexture(nil, "HIGHLIGHT")
+  hover:SetAllPoints()
+  hover:SetColorTexture(Theme.color("hover"))
+  function c:SetChip(label, on)
+    self.text:SetText(label)
+    self.text:SetTextColor(Theme.color(on and "goldPale" or "textDim"))
+    self.bg:SetAlpha(on and 0.14 or 0)
+    for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color(on and "gold" or "divider")) end
+    self.on = on
+    self:SetWidth(math.ceil(self.text:GetStringWidth() or 60) + 20)
+  end
+  return c
+end
+
 -- CF-63c: a check box with its label (Show all dungeons).
 local function checkRow(parent)
   local b = CreateFrame("Button", nil, parent)
@@ -240,10 +262,6 @@ local function groupRow(parent)
   for _, fs in ipairs({ g.name, g.info, g.status, g.online }) do
     if fs.SetWordWrap then fs:SetWordWrap(false) end -- CF-63: cut with "...", never a second line
   end
-  g.ask = Kit.button(g, "Ask now for this run", nil) -- CF-63b: on an open slot
-  g.ask:SetHeight(24)
-  g.ask:SetPoint("RIGHT", -8, 0)
-  g.ask:Hide()
   g:EnableMouse(true)
   -- CF-63b: the hover tooltip, its first line the name (tipLines), or one text (tip).
   g:SetScript("OnEnter", function(self)
@@ -392,6 +410,7 @@ local function renderList(runs, overview, me, candidates, rangeChar)
   Kit.release(pools.listInfos)
   Kit.release(pools.chips)
   Kit.release(pools.checks)
+  Kit.release(pools.selects)
   rows = {}
   local parent = list.child
   local width = math.max(200, (list:GetWidth() or 0) - 6)
@@ -494,12 +513,20 @@ local function renderList(runs, overview, me, candidates, rangeChar)
   y = y + 8
   local label = placeText(pools.listText, parent, 12, y + 6, 90, "In range for", "faint")
   local lw = label.text.GetStringWidth and label.text:GetStringWidth() or 70
-  local pick = Kit.take(pools.listButtons, parent)
-  pick:SetLabel(string.format("%s (%s) \226\150\190", tostring(rangeChar.name), tostring(rangeChar.level or "?")))
-  pick:SetEnabled(true)
+  -- CF-64: a dropdown with a texture arrow (the fonts have no down-pointing triangle).
+  local pick = Kit.take(pools.selects, parent)
+  local choices = {}
+  for i, c in ipairs(rangeOptions) do
+    choices[i] = { value = c.guid, text = string.format("%s (%s)", tostring(c.name), tostring(c.level or "?")) }
+  end
+  if #choices == 0 then
+    choices[1] = { value = rangeChar.guid,
+                   text = string.format("%s (%s)", tostring(rangeChar.name), tostring(rangeChar.level or "?")) }
+  end
+  pick:SetChoices(nil, choices, rangeChar.guid)
   pick:SetHeight(24)
+  pick:SetWidth(math.min(width - lw - 30, math.ceil(pick.text:GetStringWidth() or 120) + 40))
   pick:SetPoint("TOPLEFT", 12 + lw + 6, -(y + 1))
-  pick:SetScript("OnClick", rangeMenu)
   pick.tooltip = RANGE_TIP
   y = y + 30
   local all = Kit.take(pools.checks, parent)
@@ -580,7 +607,6 @@ local function clearDetail()
   end
   linkBox:Hide()
   if ns.RunAnswer then ns.RunAnswer.hide() end
-  if ns.PlanInline then ns.PlanInline.hide() end
 end
 
 -- CF-62: who is online in the community and fits the run's range, not in its group (MemberTracker, re-drawn on
@@ -597,13 +623,43 @@ local function onlineFits(dungeon, excluded, candidates)
     local online = m.presence and m.presence ~= 0 and m.presence ~= 3 -- Offline (0) and Away-offline (3) aside
     if online and guid ~= myGuid and not excluded[guid] and type(m.level) == "number"
         and m.level >= dungeon.min and m.level <= dungeon.max then
-      local info = ns.Classes and ns.Classes.info and ns.Classes.info(nil, m.classID)
+      -- CF-64: Classes.info returns the class file itself (it was read as a table, so no icon showed).
+      local file = ns.Classes.info(nil, m.classID)
       out[#out + 1] = { guid = guid, name = m.name, level = m.level, zone = m.zone, friend = friendOf[guid],
-                        classFile = info and info.file }
+                        classFile = file }
     end
   end
   table.sort(out, function(a, b) return tostring(a.name) < tostring(b.name) end)
   return out
+end
+
+-- CF-64: a character's class file for its icon: the candidate's, else its synced record's, else the community
+-- roster's classID; nil when unknown (then no icon, not an empty ring).
+local function classFor(guid, c)
+  local file = c and (c.classFile or (c.classID and (ns.Classes.info(nil, c.classID))))
+  if file or not guid then return file end
+  local global = ns.db and ns.db.global
+  local own = global and global.self and global.self.chars and global.self.chars[guid]
+  if own and (own.classFile or own.classID) then return own.classFile or (ns.Classes.info(nil, own.classID)) end
+  for _, person in pairs(global and global.people or {}) do
+    local rec = type(person) == "table" and type(person.chars) == "table" and person.chars[guid]
+    if type(rec) == "table" and (rec.classFile or rec.classID) then
+      return rec.classFile or (ns.Classes.info(nil, rec.classID))
+    end
+  end
+  local m = ns.MemberTracker.members()[guid]
+  return m and m.classID and (ns.Classes.info(nil, m.classID)) or nil
+end
+
+-- Shows the class icon, or hides it when the class is unknown.
+local function setPortrait(portrait, file, online)
+  if file then
+    portrait:Show()
+    portrait:SetClass(file)
+    portrait:SetOnline(online)
+  else
+    portrait:Hide()
+  end
 end
 
 local function whisper(name)
@@ -782,7 +838,18 @@ local function renderRun(run, me, candidates)
   local yes, maybe = ns.PlannedRuns.counts(run)
   local counts = yes .. " in" .. (maybe > 0 and (DOT .. maybe .. " maybe") or "") ..
     (openCount > 0 and (DOT .. openCount .. " open") or "")
+  local groupTop = y
   y = section(parent, PAD, y, width, "Group", counts)
+  -- CF-64: one "Ask now for this run" for the run (was on every open slot), at the right of the header.
+  local needed = ns.PlannedRuns.neededRole(run, candidates, dungeon)
+  if needed and dungeon then
+    local ask = Kit.take(pools.buttons, parent)
+    ask:SetLabel("Ask now for this run")
+    ask:SetEnabled(true)
+    ask:SetHeight(24)
+    ask:SetScript("OnClick", function() askForRun(run, needed) end)
+    ask:SetPoint("TOPRIGHT", parent, "TOPLEFT", PAD + width, -(groupTop - 2))
+  end
   local organiser = run.organiser
   local ctx = open and ns.RunAlerts.context() or nil
   local states = {}
@@ -801,7 +868,6 @@ local function renderRun(run, me, candidates)
     g:SetPoint("TOPLEFT", PAD, -y)
     g:SetWidth(width)
     g.tip, g.tipLines, g.menu, g.menuOnClick = nil, nil, nil, nil
-    g.ask:Hide()
     g.online:SetText("")
     local a, c = slot.answer, slot.char
     local mine = a and personName(a, candidates, me) == "you"
@@ -809,11 +875,10 @@ local function renderRun(run, me, candidates)
     if a then
       g.bg:SetColorTexture(Theme.color(mine and "gold" or "white", mine and 0.07 or 0.03))
       g.role:SetRole(a.role or (c and c.role) or slot.role)
-      g.portrait:Show()
-      g.portrait:SetClass(c and c.classFile or nil)
-      g.portrait:SetOnline(c and c.online)
+      local file = classFor(a.guid, c)
+      setPortrait(g.portrait, file, c and c.online)
       local name = (c and c.name) or a.name or tagName(a.battleTag) or "?"
-      g.name:SetText(c and classColored(c, name) or name)
+      g.name:SetText(file and classColored({ classFile = file }, name) or name)
       local level = c and c.level
       g.info:SetText((level and (level .. DOT) or "") .. tostring(personName(a, candidates, me) or ""))
       local st = states[a]
@@ -859,9 +924,7 @@ local function renderRun(run, me, candidates)
       g.info:SetText("")
       g.status:SetText("")
       if not slot.missing then
-        -- CF-63b (board CF63Group E): Ask now for this run on the row; a click opens Whisper / Ask / Invite.
-        g.ask:Show()
-        g.ask:SetScript("OnClick", function() askForRun(run, slot.role) end)
+        -- CF-63b (board CF63Group E): a click opens Whisper / Ask now for this run / Invite.
         g.menu, g.menuOnClick = function(owner) openSlotMenu(owner, run, slot.role, fits, open) end, true
         if #fits > 0 then g.tip = table.concat(fitNames, "\n") end
       end
@@ -1032,8 +1095,7 @@ local function renderNoFit()
 end
 
 -- A dungeon (CF-62, board AG05; CF-63c board CF63List F to H): title, range and zone; for a dungeon out of range
--- how your characters fit; the suggested group as rows; Online now, fits beside Plan a run (inline); the quests;
--- Ask now and Plan a run….
+-- how your characters fit; the suggested group as rows; Online now, fits; the quests; Ask now.
 local function renderDetail(entry, messageText, runs, candidates, rangeChar)
   if not entry then return renderEmpty(messageText) end
   local parent = detail.child
@@ -1093,17 +1155,15 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
     g:SetPoint("TOPLEFT", PAD, -y)
     g:SetWidth(width)
     g.tip, g.tipLines, g.menu, g.menuOnClick = nil, nil, nil, nil
-    g.ask:Hide()
     g.online:SetText("")
     local c = slot.char
     rowEdges(g, false)
     if c then
       g.bg:SetColorTexture(Theme.color("white", 0.03))
       g.role:SetRole(c.role or slot.role)
-      g.portrait:Show()
-      g.portrait:SetClass(c.classFile)
-      g.portrait:SetOnline(c.online)
-      g.name:SetText(classColored(c, c.name))
+      local file = classFor(c.guid, c)
+      setPortrait(g.portrait, file, c.online)
+      g.name:SetText(file and classColored({ classFile = file }, c.name) or tostring(c.name))
       g.info:SetText(tostring(c.level) .. DOT .. (c.own and "you" or tostring(c.displayName or "member")))
       if c.online then g.online:SetText("online") end
       g.status:SetText("")
@@ -1120,17 +1180,9 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
     y = y + GROUP_ROW + 5
   end
 
-  -- Online now, fits (left) beside Plan a run (right, inline, when open).
+  -- Online now, fits.
   y = divider(parent, y + 6, width) + 12
-  local planning = ns.PlanInline.isOpen(dungeon)
-  local leftWidth = planning and (width - ns.PlanInline.WIDTH - 24) or width
-  local ly = onlineList(parent, PAD, y, leftWidth, fits, dungeon, false)
-  local ry = y
-  if planning then
-    ry = ry + ns.PlanInline.render(parent, dungeon, candidates, rangeChar.guid, PAD + leftWidth + 24, y,
-      function() helpers.render() end)
-  end
-  y = math.max(ly, ry) + 6
+  y = onlineList(parent, PAD, y, width, fits, dungeon, false) + 6
 
   -- Quests: QuestieDB for this dungeon and your faction; else what people in range have in their logs.
   local info = questInfo(entry)
@@ -1181,7 +1233,8 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
     end
   end
 
-  -- Ask now and Plan a run… (the plan opens inline; what a plan does is the button's tooltip).
+  -- Ask now (CF-64: planning for later happens on the website or with the bot's /plan, Nico 2026-10-31). An ask is
+  -- always possible: friends in game get it when any are online, Discord always (through the uploader).
   y = y + 12
   local ask = ns.GroupAsks.current()
   if ask and ask.dungeon.id == dungeon.id then
@@ -1190,22 +1243,11 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
     local okAsk, wait = ns.GroupAsks.canAsk()
     local a = Kit.take(pools.primary, parent)
     a:SetLabel("Ask now")
-    a:SetEnabled(okAsk and entry.fits)
+    a:SetEnabled(okAsk == true)
     a.tooltip = okAsk and ASK_TIP or string.format("You can ask again in %d min.", math.ceil((wait or 0) / 60))
     if a.SetMotionScriptsWhileDisabled then a:SetMotionScriptsWhileDisabled(true) end
     a:SetScript("OnClick", function() ns.RunDialogs.askNow(dungeon) end)
     a:SetPoint("TOPLEFT", PAD, -y)
-    if not planning then
-      local p = Kit.take(pools.buttons, parent)
-      p:SetLabel("Plan a run\226\128\166")
-      p:SetEnabled(true)
-      p.tooltip = PLAN_TIP
-      p:SetScript("OnClick", function()
-        ns.PlanInline.open(dungeon)
-        helpers.render()
-      end)
-      p:SetPoint("LEFT", a, "RIGHT", 10, 0)
-    end
     y = y + 40
   end
   parent:SetHeight(y + PAD)
@@ -1269,7 +1311,14 @@ function DungeonsTab.create(parent, h)
     runRows = Kit.pool(runRow), listTitle = Kit.pool(Kit.textHolder("section")), listButtons = Kit.pool(button),
     groupRows = Kit.pool(groupRow), onlineRows = Kit.pool(onlineRow), infos = Kit.pool(Kit.info),
     listInfos = Kit.pool(Kit.info), clocks = Kit.pool(Kit.clock), -- CF-63
-    chips = Kit.pool(function(p) return ns.PlanInline.chip(p) end), checks = Kit.pool(checkRow),
+    chips = Kit.pool(chip), checks = Kit.pool(checkRow),
+    selects = Kit.pool(function(p) -- CF-64: the In range dropdown
+      return Kit.select(p, function(guid)
+        rangeGuid = guid
+        status().selected = nil
+        helpers.render()
+      end)
+    end),
     dividers = Kit.pool(function(p)
       local f = CreateFrame("Frame", nil, p)
       local t = Theme.fill(f, "divider", "BORDER")
@@ -1304,7 +1353,6 @@ function DungeonsTab.hide() if root then root:Hide() end end
 -- CF-63c: the window closed: the chips start at All next time, and no plan box is open.
 function DungeonsTab.closed()
   filter = "all"
-  if ns.PlanInline then ns.PlanInline.close() end
 end
 
 function DungeonsTab.select(value)
@@ -1392,21 +1440,15 @@ function DungeonsTab.render(view, messageText)
   end
   local entry = entries[st.selected]
   if entry.run then
-    ns.PlanInline.close()
     renderRun(entry.run, me, candidates)
   else
-    if not ns.PlanInline.isOpen(entry.dungeon) then ns.PlanInline.close() end
     renderDetail(entry, nil, runs, candidates, rangeChar)
   end
 end
 
--- CF-62: whether Ask now… has a dungeon to ask for.
+-- CF-62: whether Ask now… has a dungeon to ask for (CF-64: any dungeon the game knows; an ask is always possible).
 function DungeonsTab.canAsk()
-  for _, e in pairs(entries) do
-    if e.dungeon and e.fits then return true end
-    if e.run and dungeonOf(e.run) then return true end
-  end
-  return false
+  return #ns.Dungeons.LIST > 0
 end
 
 -- CF-62: "Ask now…" on the list: the selected run's dungeon, else the selected or first dungeon in range.
@@ -1418,6 +1460,7 @@ function DungeonsTab.askNow()
       if e.dungeon and e.fits then dungeon = e.dungeon break end
     end
   end
+  dungeon = dungeon or ns.Dungeons.first() -- CF-64: an ask is always possible
   if dungeon then ns.RunDialogs.askNow(dungeon) end
 end
 
@@ -1448,13 +1491,12 @@ function DungeonsTab.texts()
     end
   end
   for _, t in ipairs(ns.RunAnswer and ns.RunAnswer.texts() or {}) do out[#out + 1] = t end -- CF-63b
-  for _, t in ipairs(ns.PlanInline and ns.PlanInline.texts() or {}) do out[#out + 1] = t end -- CF-63c
   return out
 end
 
 function DungeonsTab.buttons()
   local out = ns.RunAnswer and ns.RunAnswer.buttons() or {} -- CF-63b
-  for label, b in pairs(ns.PlanInline and ns.PlanInline.buttons() or {}) do out[label] = b end -- CF-63c
+  for i = 1, pools and pools.selects.used or 0 do out["select:" .. i] = pools.selects.items[i] end -- CF-64
   for i = 1, pools and pools.chips.used or 0 do out["chip:" .. pools.chips.items[i].value] = pools.chips.items[i] end
   for i = 1, pools and pools.checks.used or 0 do
     out[pools.checks.items[i].text:GetText()] = pools.checks.items[i]
@@ -1488,7 +1530,7 @@ function DungeonsTab.tips()
   for _, name in ipairs({ "infos", "listInfos", "clocks" }) do
     for i = 1, pools and pools[name].used or 0 do out[#out + 1] = pools[name].items[i].tip end
   end
-  for _, name in ipairs({ "primary", "buttons", "groupRows", "listButtons" }) do
+  for _, name in ipairs({ "primary", "buttons", "groupRows", "listButtons", "selects" }) do
     for i = 1, pools and pools[name].used or 0 do
       local t = pools[name].items[i].tooltip or pools[name].items[i].tip
       if t then out[#out + 1] = t end

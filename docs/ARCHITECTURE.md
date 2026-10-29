@@ -123,10 +123,11 @@ CommunitiesForever/
       Setup.lua              onboarding wizard and Community tab prompt (CF-26; kit dialogs since CF-43)
       Settings.lua           the options (get/set, one source of truth) and the Options › AddOns page (CF-43)
       SettingsWindow.lua     the settings window (CF-43): two columns of sections drawn from the options
-      RunDialogs.lua         Ask now, Plan a run, Answer and the reload prompt, one kit dialog (CF-47)
+      RunDialogs.lua         Ask now and the reload prompt, one kit dialog (CF-47; no planning in game since CF-64)
+      RunAnswer.lua          a run's "Your answer" block, answering inline (CF-63b)
       DoomsdayTab.lua        the Doomsday tab: Today and Week (CF-57a), Board, Ladder and Feats (CF-57b)
       CrownToast.lua         "First to finish today!" under the minimap, fading in and sliding with Ambient effects (CF-57)
-      RunToasts.lua          the reminder and Starting now notes under the minimap, 20 s (CF-48)
+      RunBanner.lua          the run banners at the top of the screen, 30 and 15 min before and at the start (CF-63d)
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)

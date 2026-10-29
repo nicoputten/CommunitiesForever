@@ -580,6 +580,14 @@ function Kit.select(parent, onChange)
     end
     self.text:SetText(shown)
   end
+  -- CF-64: sel.tooltip (optional) shows on hover.
+  b:SetScript("OnEnter", function(self)
+    if not (self.tooltip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function(self) if self.tooltip and GameTooltip then GameTooltip:Hide() end end)
   b:SetScript("OnClick", function(self)
     local items = {}
     for i, c in ipairs(self.list or {}) do items[i] = { label = c.text, enabled = true, value = c.value } end

@@ -53,24 +53,21 @@ function GroupAsks.canAsk()
   return ns.GroupAsk.canAsk(lastAskAt, now())
 end
 
--- Asks who's up for the dungeon. Returns the number of friends asked (0: nobody to ask), or nil and the
+-- Asks who's up for the dungeon. Returns the number of friends in range asked (0: none online), or nil and the
 -- seconds to wait when you asked too recently. note (CF-47): optional, shown with the ask.
--- post (CF-51, optional): your Pending ask item { id, guid, role } when it is also posted on Discord: the ask then
--- goes to every friend with the addon, so their files carry it to the site too (only those in range are asked).
+-- post (CF-51): your Pending ask item { id, guid, role }, posted on Discord: the ask goes to every friend with the
+-- addon, so their files carry it to the site too (only those in range are asked). CF-64 (Nico): an ask is always
+-- possible and always goes to Discord: without a post (/cf ask) it makes one.
 function GroupAsks.ask(dungeon, note, post)
   local ok, wait = GroupAsks.canAsk()
   if not ok then
     say(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
     return nil, wait
   end
+  post = post or ns.Planner.askOnDiscord(dungeon.id, ownChar(), note)
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), addonRef.db.global.people,
     own().battleTag)
-  local targets = post and ns.GroupAsk.peers(ns.Sync.online(), addonRef.db.global.people, own().battleTag)
-    or recipients
-  if #targets == 0 then
-    say("Nobody with CommunitiesForever is online with a character in range of " .. dungeon.name .. ".")
-    return 0
-  end
+  local targets = ns.GroupAsk.peers(ns.Sync.online(), addonRef.db.global.people, own().battleTag)
   counter = counter + 1
   local t = now()
   local id = string.format("%d%d", t, counter)
@@ -79,14 +76,14 @@ function GroupAsks.ask(dungeon, note, post)
   for _, r in ipairs(targets) do ns.Messenger.send(r.gameAccountID, message) end
   local names = {}
   for i, r in ipairs(recipients) do names[i] = tostring(r.displayName or r.battleTag) end
-  if #recipients == 0 then
-    say("Nobody with CommunitiesForever is online with a character in range of " .. dungeon.name .. ".")
-    lastAskAt = t
-    return 0
-  end
   mine = { id = id, dungeon = dungeon, at = t, recipients = recipients, answers = {} }
   lastAskAt = t
-  say(string.format("Asked %s who's up for %s.", table.concat(names, ", "), dungeon.name))
+  if #recipients > 0 then
+    say(string.format("Asked %s who's up for %s. It's on Discord after your next /reload.", table.concat(names, ", "),
+      dungeon.name))
+  else
+    say(string.format("Your ask for %s is on Discord after your next /reload.", dungeon.name))
+  end
   addonRef:SendMessage(GroupAsks.CHANGED)
   return #recipients
 end
