@@ -43,8 +43,8 @@ describe("FriendProbe launch checklist (CF-60)", function()
       if item.done then done[#done + 1] = item.id end
     end
     table.sort(done)
-    assert.are.same({ "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68", "V71", "V77", "V78",
-                      "V80", "V81", "V82", "V83", "V86" }, done)
+    assert.are.same({ "V47", "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68", "V71", "V77",
+                      "V78", "V80", "V81", "V82", "V83", "V86" }, done)
   end)
 
   it("lists in the TOC only files that exist", function()
