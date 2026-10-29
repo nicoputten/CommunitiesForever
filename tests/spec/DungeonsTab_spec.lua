@@ -325,6 +325,17 @@ describe("Dungeons tab (CF-24)", function()
   it("explains when the character you are on is in no dungeon's level range", function()
     load(11)
     open()
-    assert.is_truthy(text():find("Ves Doombringer is not in a dungeon's level range yet", 1, true))
+    assert.is_truthy(text():find("Ves Doombringer is not in a dungeon's level range yet. The first one, Ragefire "
+      .. "Chasm, starts at level 13.", 1, true))
+  end)
+
+  it("says why there's no dungeon: outside the community, too low or past every range (CF-61)", function()
+    load(20)
+    local D = ns.Dungeons
+    assert.are.equal("Seqari isn't in the community yet. Join it from the Friends tab with a friend's invite link.",
+      D.emptyText("Seqari", 57, false))
+    assert.are.equal("Seqari is not in a dungeon's level range yet. The first one, Ragefire Chasm, starts at "
+      .. "level 13.", D.emptyText("Seqari", 9, true))
+    assert.are.equal("No dungeon fits level 75.", D.emptyText("Seqari", 75, true))
   end)
 end)
