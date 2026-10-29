@@ -106,6 +106,8 @@ Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Ma
 | V47 a click on an addon chat link (FriendProbe run 2, build 70575, 29 Oct) | pass: "link click reached the addon via SetItemRef hook". Closed (Nico: checked on Retail counts as done). |
 | V74 enemy player fields | Level, class and race are readable by mouseover. Still open for Forever: enemy target and nameplates, `NAME_PLATE_UNIT_ADDED`, the PvP rank. |
 | V79 PvP counters | `GetPVPLifetimeStats()` works (`0, 0` on a character without kills); `GetStatistic(60)` gives total deaths (`31`). The Vanilla rank API (`UnitPVPRank`, `GetPVPRankInfo`, `GetPVPThisWeekStats`) is missing on Retail, as expected: still open for Forever. |
+| V72 `ChatFrameUtil.OpenChat("/w <name> <text>")` (Whisper on the start panel) | yes (Nico, by hand): the chat input opens as a whisper with the text filled in, not sent. Closed. |
+| V59 the hidden sync channel, sending | `JoinTemporaryChannel` plus `SendAddonMessage(prefix, text, "CHANNEL", index)` sends: `/cf sync debug` printed "[sync] to the community channel: HELLO …". Receiving on another client is still open (V59). |
 | A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
 
 ## Retail 12.1.5 dry run (2026-10-29)
