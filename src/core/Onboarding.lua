@@ -99,8 +99,8 @@ end
 -- CF-61: the wizard's step line: "Step 2 of 6 · Community → Sharing", the current step and the next one only (all
 -- titles ran past the window's edge). The last step: "Step 6 of 6 · Done". titles: the step titles in order.
 function Onboarding.progressLine(index, titles, arrow)
-  local line = Onboarding.progress(index, #titles) .. " 9483 " .. tostring(titles[index] or "")
-  if titles[index + 1] then line = line .. (arrow or " 9483 ") .. titles[index + 1] end
+  local line = Onboarding.progress(index, #titles) .. " \194\183 " .. tostring(titles[index] or "")
+  if titles[index + 1] then line = line .. (arrow or " \194\183 ") .. titles[index + 1] end
   return line
 end
 

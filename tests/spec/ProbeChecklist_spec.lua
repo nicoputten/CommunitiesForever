@@ -43,8 +43,8 @@ describe("FriendProbe launch checklist (CF-60)", function()
       if item.done then done[#done + 1] = item.id end
     end
     table.sort(done)
-    assert.are.same({ "V50b", "V54", "V55", "V61", "V63", "V68", "V71", "V77", "V78", "V80", "V81", "V82", "V83",
-                      "V86" }, done)
+    assert.are.same({ "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68", "V71", "V77", "V78",
+                      "V80", "V81", "V82", "V83", "V86" }, done)
   end)
 
   it("lists in the TOC only files that exist", function()
@@ -164,6 +164,17 @@ describe("FriendProbe launch checklist (CF-60)", function()
           wowapi.uninstall()
         end
       end
+    end)
+
+    it("shows what a test button found on its row (CF-62: V67 only logged)", function()
+      local ns = login(1793300000)
+      for _, t in ipairs(ns.tests) do
+        if t.text:find("file reload", 1, true) then t.run() end
+      end
+      local r = ns.results().V67
+      assert.are.equal("info", r.status) -- not changed yet (the mock doesn't load ReloadProbe.lua)
+      assert.is_truthy(r.detail:find("ReloadProbe.lua mark", 1, true))
+      assert.are.same({}, printed)
     end)
 
     it("stops by itself after 18 Nov", function()
