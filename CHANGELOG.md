@@ -6,6 +6,13 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Dungeons, no planning in the game:** "Ask now" is the way in game; plan runs for later on the website or with the
+  bot's /plan. Runs planned there still show here, and you answer them as before.
+- **Fixed, Ask now:** it always works now: friends with the addon who are online get it, and it is always posted on
+  Discord (after a /reload). It no longer refuses when nobody in range is online.
+- **Fixed, Dungeons:** class icons show for friends' characters too (no more empty circles); one "Ask now for this
+  run" per run instead of one on every open slot; the "In range for" dropdown has a proper arrow.
+- **Post on Discord?:** shorter, with the details on hover, and it opens on the window.
 
 ## v0.10.0-beta1 (2026-10-30)
 - **Fixed, Dungeons:** a website run shows the dungeon's name ("Scarlet Monastery: Graveyard") and level range instead

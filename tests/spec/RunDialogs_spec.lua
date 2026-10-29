@@ -92,71 +92,46 @@ describe("Run dialogs (CF-47)", function()
     _G.CF_RUNS, _G.time, _G.ReloadUI, _G.C_UI = nil, nil, nil, nil
   end)
 
-  it("plans a run: a pending item, shown at once, then the reload prompt reloads", function()
+  -- CF-64 (Nico): no planning in the game; the reload prompt is short, its detail in an ⓘ, and sits on the window.
+  it("has no Plan a run; the reload prompt is short and reloads", function()
     load(nil)
     open("dm")
-    ns.DungeonsTab.buttons()["Plan a run\226\128\166"]:RunScript("OnClick") -- CF-63c: inline; Other time… opens it
-    ns.DungeonsTab.buttons()["Other time\226\128\166"]:RunScript("OnClick")
+    assert.is_nil(ns.DungeonsTab.buttons()["Plan a run\226\128\166"])
+    assert.is_nil(ns.RunDialogs.plan)
+    ns.RunDialogs.reloadPrompt()
     local all = dialogText()
-    assert.is_truthy(all:find("\nDUNGEON\n", 1, true) and all:find("\nLEAD AS\n", 1, true))
-    assert.is_truthy(all:find("your PC clock \194\183 friends see their own time", 1, true))
-    assert.is_truthy(all:find("Reaches the site and Discord after /reload. You'll be asked next.", 1, true))
-    assert.are.equal("dm", ns.RunDialogs.widgets().dungeon.value)
-    local days = ns.PlannedRuns.dayChoices(NOW, os.date)
-    click(days[2].label) -- tomorrow
-    local w = ns.RunDialogs.widgets()
-    w.time:SetText("21:30")
-    w.note:SetText("Bring water")
-    click("Plan run")
-    local item = pending()[1]
-    assert.are.equal("plan", item.kind)
-    assert.are.same({ "dm", VES, "Bring water" }, { item.dungeon, item.guid, item.note })
-    assert.are.equal(os.time({ year = days[2].year, month = days[2].month, day = days[2].day, hour = 21, min = 30,
-                               sec = 0 }), item.startsAt)
-    -- The run shows in the list, marked as not on the site yet.
-    settle()
-    assert.are.equal("The Deadmines", row("run:" .. item.id).name:GetText())
-    local clock = row("run:" .. item.id).clock -- CF-63: a clock icon, its tooltip says when
-    assert.is_true(clock:IsShown())
-    assert.is_truthy(clock.tip:find("Reaches the website with your next upload", 1, true))
-    -- The reload prompt.
-    assert.is_truthy(dialogText():find("\nReload now to post on Discord\n", 1, true))
+    assert.is_truthy(all:find("\nReload to post it on Discord\nFriends in game got it already.", 1, true))
+    assert.is_truthy(table.concat(ns.RunDialogs.tips(), "\n"):find("The game saves only on a reload or logout", 1,
+      true))
+    local frame, window = ns.RunDialogs.frame(), ns.MainFrame.window()
+    assert.are.same({ "CENTER", window }, { frame.points[1][1], frame.points[1][2] })
     local reloaded = false
     _G.ReloadUI = function() reloaded = true end
     click("Reload now")
     assert.is_true(reloaded)
   end)
 
-  it("says what is wrong with the time, and how to reload without the API", function()
+  it("says how to reload without the API", function()
     load(nil)
     open("dm")
-    ns.DungeonsTab.buttons()["Plan a run\226\128\166"]:RunScript("OnClick") -- CF-63c: inline; Other time… opens it
-    ns.DungeonsTab.buttons()["Other time\226\128\166"]:RunScript("OnClick")
-    ns.RunDialogs.widgets().time:SetText("soon")
-    click("Plan run")
-    assert.is_truthy(dialogText():find("Type the time as 20:30.", 1, true))
-    ns.RunDialogs.widgets().time:SetText("00:00") -- today, already past
-    click("Plan run")
-    assert.is_truthy(dialogText():find("That time has passed.", 1, true))
-    assert.are.equal(0, #pending())
     ns.RunDialogs.reloadPrompt()
     state.printed = {}
     click("Reload now")
     assert.is_truthy(state.printed[1]:find("Type /reload to post it now.", 1, true))
   end)
 
-  it("asks now, also for Discord; an ask older than 10 minutes is dropped when the game saves", function()
+  it("asks now, always for Discord too; an ask older than 10 minutes is dropped when the game saves", function()
     load(nil)
     open("dm")
     ns.DungeonsTab.buttons()["Ask now\226\128\166"]:RunScript("OnClick")
     local all = dialogText()
     assert.is_truthy(all:find("\nYou go as Ves Doombringer 20 \194\183 damage\n", 1, true))
     assert.is_truthy(all:find("\nWHISPERED NOW \194\183 ONLINE AND FIT\n", 1, true))
-    ns.RunDialogs.widgets().discord:RunScript("OnClick")
     ns.RunDialogs.widgets().note:SetText("Defias quests")
     click("Ask now")
     assert.are.same({ "ask", "dm", "Defias quests" }, { pending()[1].kind, pending()[1].dungeon, pending()[1].note })
-    assert.is_truthy(dialogText():find("Reload now to post on Discord", 1, true))
+    assert.are.equal(1, #pending()) -- one Discord ask (GroupAsks makes none of its own then)
+    assert.is_truthy(dialogText():find("Reload to post it on Discord", 1, true))
     click("Later")
     state.serverTime = NOW + 601
     wowapi.fireEvent(state, "PLAYER_LOGOUT")
@@ -203,7 +178,7 @@ describe("Run dialogs (CF-47)", function()
   end)
 
   -- CF-49: the role is picked apart from the character, from the roles its class can play.
-  it("answers with a role the class can play, with its slot, and a note; plans as one", function()
+  it("answers with a role the class can play, with its slot, and a note", function()
     load(runs())
     open("run:r2")
     local buttons = ns.DungeonsTab.buttons()
@@ -230,14 +205,6 @@ describe("Run dialogs (CF-47)", function()
     assert.are.equal("Bringing water", ofType("RUNANSWER")[3].message.note)
     settle()
     assert.is_truthy(detailText():find("\n14/80", 1, true))
-
-    open("dm")
-    ns.DungeonsTab.buttons()["Plan a run\226\128\166"]:RunScript("OnClick") -- CF-63c: inline; Other time… opens it
-    ns.DungeonsTab.buttons()["Other time\226\128\166"]:RunScript("OnClick")
-    click("Tank")
-    ns.RunDialogs.widgets().time:SetText("23:30")
-    click("Plan run")
-    assert.are.equal("tank", pending()[2].role)
   end)
 
   it("lets a character 6+ levels below answer I'm in, its fit in the dropdown (CF-50)", function()

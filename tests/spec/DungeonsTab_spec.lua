@@ -108,7 +108,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nNo runs planned\nPlan one on the website, or ask who is up for something right "
       .. "now.\n", 1, true))
     assert.is_truthy(all:find("\nIn range for\n", 1, true)) -- CF-63c: and a dropdown of your characters
-    assert.is_truthy(ns.DungeonsTab.buttons()["Ves Doombringer (20) \226\150\190"])
+    assert.are.equal("Ves Doombringer (20)", ns.DungeonsTab.buttons()["select:1"].text:GetText()) -- CF-64
     assert.are.equal("17" .. DASH .. "26 \194\183 2 fit", row("dm").right:GetText())
     assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Ranges are typical levels", 1, true))
     assert.are.equal("17" .. DASH .. "24 \194\183 2 fit", row("wc").right:GetText()) -- one line per dungeon
@@ -127,8 +127,7 @@ describe("Dungeons tab (CF-24)", function()
       .. "level fits, online or not.", 1, true)) -- CF-63c: the ⓘ on Suggested group
     local askFor = ns.DungeonsTab.buttons()["Ask now"] -- CF-63c board CF63List
     assert.is_truthy(askFor.tooltip:find("Whispers online friends who fit", 1, true)) -- CF-61: its tooltip
-    local plan = ns.DungeonsTab.buttons()["Plan a run\226\128\166"]
-    assert.are.equal("A planned run reaches the website and Discord with your next upload.", plan.tooltip)
+    assert.is_nil(ns.DungeonsTab.buttons()["Plan a run\226\128\166"]) -- CF-64: no planning in the game
     assert.is_truthy(ns.DungeonsTab.buttons()["Ask now\226\128\166"])
     assert.is_falsy(all:find("Whispers online friends", 1, true))
     assert.is_falsy(all:find("reaches the website and Discord", 1, true)) -- in the tooltip only
@@ -143,11 +142,11 @@ describe("Dungeons tab (CF-24)", function()
                                    level = 22, presence = 3, clubType = 1 }
     wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
     open()
-    ns.DungeonsTab.buttons()["Ves Doombringer (20) \226\150\190"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["select:1"]:RunScript("OnClick")
     local menu = state.menus[#state.menus]
     assert.are.same({ "Alt Example (22)", "Ves Doombringer (20)" }, { menu.buttons[1].text, menu.buttons[2].text })
     menu.buttons[1].fn()
-    assert.is_truthy(ns.DungeonsTab.buttons()["Alt Example (22) \226\150\190"])
+    assert.are.equal("Alt Example (22)", ns.DungeonsTab.buttons()["select:1"].text:GetText())
   end)
 
   it("lists runs from the runs file on top, with who organises and the answers, and counts them (CF-46)", function()
@@ -255,10 +254,16 @@ describe("Dungeons tab (CF-24)", function()
     for _, g in ipairs(ns.DungeonsTab.groupRows()) do
       if (g.info:GetText() or ""):find("you", 1, true) then assert.is_nil(g.menu) end
     end
-    -- The open slot: Ask now for this run fills the Ask dialog's note; a click opens Whisper / Ask / Invite.
-    assert.is_true(slot.ask.shown)
-    slot.ask:RunScript("OnClick")
-    assert.are.equal("For The Deadmines " .. os.date("%H:%M", NOW + 9600) .. " \194\183 need damage",
+    -- CF-64: one "Ask now for this run" for the run; it fills the Ask dialog's note. A click on an open slot opens
+    -- Whisper / Ask / Invite.
+    local asks = 0
+    for label in pairs(ns.DungeonsTab.buttons()) do
+      if label == "Ask now for this run" then asks = asks + 1 end
+    end
+    assert.are.equal(1, asks)
+    ns.DungeonsTab.buttons()["Ask now for this run"]:RunScript("OnClick")
+    -- The run's first open role: the tank.
+    assert.are.equal("For The Deadmines " .. os.date("%H:%M", NOW + 9600) .. " \194\183 need a tank",
       ns.RunDialogs.widgets().note:GetText())
     slot:RunScript("OnMouseUp", "LeftButton")
     menu = state.menus[#state.menus]
@@ -289,7 +294,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_true(ns.DungeonsTab.buttons()["chip:all"].on)
   end)
 
-  it("shows all dungeons, says how your characters fit one out of range, and plans it inline for 20:00", function()
+  it("shows all dungeons and says how your characters fit one out of range; asking stays possible", function()
     load(20, sampleRuns())
     open()
     assert.is_nil(row("smgy"))
@@ -299,18 +304,27 @@ describe("Dungeons tab (CF-24)", function()
     local all = text()
     assert.is_truthy(all:find("\nScarlet Monastery Graveyard\n", 1, true))
     assert.is_truthy(all:find("\nVes Doombringer 20: too low\n", 1, true))
-    ns.DungeonsTab.buttons()["Plan a run\226\128\166"]:RunScript("OnClick")
-    local buttons = ns.DungeonsTab.buttons()
-    assert.is_truthy(buttons["Other time\226\128\166"])
-    local chips = ns.PlannedRuns.planChips(NOW, os.date, ns.Panels.localTime)
-    assert.are.equal(3, #chips)
-    assert.is_truthy(buttons[chips[1].label].on) -- the first evening is picked
-    assert.is_truthy(text():find("\nPlan a run\n", 1, true))
-    buttons[chips[2].label]:RunScript("OnClick")
-    ns.DungeonsTab.buttons().Plan:RunScript("OnClick")
-    local plan = addon.db.global.pending[1]
-    assert.are.same({ "plan", "smgy", VES, chips[2].startsAt }, { plan.kind, plan.dungeon, plan.guid, plan.startsAt })
-    assert.are.equal(20, os.date("*t", plan.startsAt).hour)
+    assert.is_true(ns.DungeonsTab.buttons()["Ask now"].enabled) -- CF-64: out of range too
+    assert.is_nil(ns.DungeonsTab.buttons()["Plan a run\226\128\166"])
+  end)
+
+  -- CF-64: a group member's class icon comes from synced records or the community roster too; unknown: no ring.
+  it("shows a member's class icon from the records, and none when the class is unknown", function()
+    local runs = sampleRuns()
+    runs.runs[1].answers[4] = { guid = "Player-1-0000BBBB", name = "Bo Example", answer = "in", role = "dps",
+                                source = "site" }
+    load(20, runs)
+    addon.db.global.people["Bo#2002"] = { displayName = "Bo", version = 3,
+      chars = { ["Player-1-0000BBBB"] = { name = "Bo Example", classFile = "PRIEST", level = 20 } } }
+    open()
+    local bo, ada
+    for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+      if (g.name:GetText() or ""):find("Bo Example", 1, true) then bo = g end
+      if (g.name:GetText() or ""):find("Ada Lovewell", 1, true) then ada = g end
+    end
+    assert.are.equal("PRIEST", bo.portrait.classFile)
+    assert.is_true(bo.portrait.shown)
+    assert.is_false(ada.portrait.shown) -- a Discord answer without a character: no empty ring
   end)
 
   it("says no dungeon fits yet, and the first one, below its level (CF-63c)", function()
@@ -412,7 +426,7 @@ describe("Dungeons tab (CF-24)", function()
         minLevelSuggestion = 70, maxLevelSuggestion = 80, maxNumPlayers = 5, difficultyID = 1, isPvpActivity = false }
       open()
       -- "In range for" shows, also with nobody else online.
-      assert.is_truthy(ns.DungeonsTab.buttons()["Ves Doombringer (30) \226\150\190"])
+      assert.are.equal("Ves Doombringer (30)", ns.DungeonsTab.buttons()["select:1"].text:GetText())
       assert.is_truthy(row("smgy"))
       assert.is_nil(row("lfg9001"))
       -- The run: the dungeon's name and range, never the raw id.
@@ -551,7 +565,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(text():find("\nNothing planned yet\n", 1, true))
     assert.is_truthy(text():find("Ves Doombringer is not in a dungeon's level range yet. The first one, Ragefire "
       .. "Chasm, starts at level 13.", 1, true))
-    assert.is_false(ns.DungeonsTab.buttons()["Ask now\226\128\166"].enabled) -- no dungeon to ask for
+    assert.is_true(ns.DungeonsTab.buttons()["Ask now\226\128\166"].enabled) -- CF-64: an ask is always possible
   end)
 
   it("says why there's no dungeon: outside the community, too low or past every range (CF-61)", function()

@@ -51,18 +51,22 @@ describe("Who's up for it? (CF-27)", function()
       local m = sent[1].message
       assert.are.equal("ASK", m.t)
       assert.are.same({ id = "dm", name = "The Deadmines", min = 17, max = 26 }, m.dungeon)
-      assert.is_truthy(printed():find("Asked Ben who's up for The Deadmines.", 1, true))
+      assert.is_truthy(printed():find("Asked Ben who's up for The Deadmines. It's on Discord after your next /reload.",
+        1, true))
+      assert.are.equal("ask", addon.db.global.pending[1].kind) -- CF-64: always posted on Discord too
       assert.is_nil(ns.GroupAsks.ask(ns.Dungeons.get("wc")))
       assert.are.equal(1, #sent)
       state.serverTime = state.serverTime + 180
       assert.are.equal(1, ns.GroupAsks.ask(ns.Dungeons.get("wc")))
     end)
 
-    it("says so when nobody can be asked", function()
+    it("still asks when nobody online is in range: it goes to Discord (CF-64)", function()
       load()
       assert.are.equal(0, ns.GroupAsks.ask(ns.Dungeons.get("strat")))
-      assert.are.equal(0, #sent)
-      assert.is_truthy(printed():find("Nobody with CommunitiesForever is online", 1, true))
+      assert.is_falsy(printed():find("Nobody with CommunitiesForever", 1, true))
+      assert.is_truthy(printed():find("Your ask for Stratholme is on Discord after your next /reload.", 1, true))
+      assert.are.same({ "ask", "strat" }, { addon.db.global.pending[1].kind, addon.db.global.pending[1].dungeon })
+      assert.is_truthy(ns.GroupAsks.current())
     end)
 
     it("collects answers, offers an invite link and invites on click", function()
@@ -177,11 +181,12 @@ describe("Who's up for it? (CF-27)", function()
       assert.are.equal(1, #sent)
       local m = sent[1].message
       assert.are.same({ true, "kme-1-1", state.player.guid, "dps" }, { m.post, m.item, m.guid, m.role })
-      -- Without "Also post on Discord" an out-of-range friend isn't asked.
+      -- CF-64: /cf ask posts too, so it reaches the out-of-range friend as well (to carry it to the site).
       state.serverTime = state.serverTime + 180
       sent = {}
       assert.are.equal(0, ns.GroupAsks.ask(ns.Dungeons.get("dm")))
-      assert.are.equal(0, #sent)
+      assert.are.equal(1, #sent)
+      assert.is_true(sent[1].message.post)
     end)
 
     it("carries a friend's posted ask once, with the asker's id, and asks you when you fit", function()
