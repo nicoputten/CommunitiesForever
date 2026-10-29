@@ -18,6 +18,8 @@ tagging; the release stops if the tag has no section.
 - **Dungeons, the group:** hover a member for their level fit, role, where and when they answered and where they
   are online; right-click for Whisper, Invite (from 15 minutes before the start) and Show in Friends. An open slot
   has "Ask now for this run", and its menu whispers the first friend who fits with a ready-made line.
+- **Doomsday, goal boxes:** the Board and Today draw a real box per goal: a gold check when done, a small blue corner
+  for a swapped goal, the details on hover (progress or when it was done, the original goal, when goals reset).
 
 ## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them

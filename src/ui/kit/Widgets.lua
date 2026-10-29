@@ -61,6 +61,40 @@ function Kit.clock(parent)
   return f
 end
 
+-- CF-63 (boards CF63DoomBoard, CF63DoomToday): a 15 px goal box: a dim gold edge when open, gold with a gold check
+-- when done; a 5 px blue corner top right for a swapped goal. The check is the atlas common-icon-checkmark, guarded
+-- (unverified on Forever, VERIFY.md CF-63e); without it the addon's own check. box:SetGoal(done, swapped).
+local CHECK_ATLAS = "common-icon-checkmark"
+Kit.GOAL_BOX = 15
+function Kit.goalBox(parent)
+  local b = CreateFrame("Frame", nil, parent)
+  b:SetSize(Kit.GOAL_BOX, Kit.GOAL_BOX)
+  b.fill = Theme.fill(b, "goalFill", "BACKGROUND")
+  b.fill:SetAllPoints()
+  b.edges = Kit.edges(b, "goalEdge")
+  b.check = b:CreateTexture(nil, "ARTWORK")
+  b.check:SetPoint("TOPLEFT", 1, -1)
+  b.check:SetPoint("BOTTOMRIGHT", -1, 1)
+  if Kit.hasAtlas(CHECK_ATLAS) and b.check.SetAtlas then
+    b.check:SetAtlas(CHECK_ATLAS)
+  else
+    b.check:SetTexture(Theme.TEXTURES.check)
+  end
+  b.check:SetVertexColor(0.94, 0.82, 0.56)
+  b.corner = b:CreateTexture(nil, "OVERLAY")
+  b.corner:SetSize(5, 5)
+  b.corner:SetPoint("TOPRIGHT")
+  b.corner:SetColorTexture(Theme.color("swap"))
+  function b:SetGoal(done, swapped)
+    self.done, self.swapped = done and true or false, swapped and true or false
+    self.fill:SetColorTexture(Theme.color(self.done and "goalDone" or "goalFill"))
+    for _, e in ipairs(self.edges) do e:SetColorTexture(Theme.color(self.done and "gold" or "goalEdge")) end
+    self.check:SetShown(self.done)
+    self.corner:SetShown(self.swapped)
+  end
+  return b
+end
+
 -- CF-62: Blizzard role icons by atlas, guarded (unverified on Forever, VERIFY.md CF-62d): without the atlas a
 -- coloured square in the role's colour. icon:SetRole(role, dim): dim for an open slot.
 local ROLE_ATLAS = { tank = "UI-LFG-RoleIcon-Tank", heal = "UI-LFG-RoleIcon-Healer", dps = "UI-LFG-RoleIcon-DPS" }
