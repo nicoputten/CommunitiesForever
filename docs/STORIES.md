@@ -4,7 +4,7 @@ Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order:
-1. CF-60 (launch checklist, quiet chat) now: it ships before launch (Nov 4).
+1. CF-60 (launch checklist in FriendProbe) now: it ships before launch (Nov 4).
 3. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
@@ -39,8 +39,8 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 
 ## E16 Release preparation
 
-### CF-60 Launch checklist and quiet chat
-Agreed with Nico (2026-10-29). Ships before launch (Nov 4): the FriendProbe zip and a small CommunitiesForever release.
+### CF-60 Launch checklist
+Agreed with Nico (2026-10-29). Ships before launch (Nov 4) as the FriendProbe zip. **CommunitiesForever does not change** (Nico: only the probe goes quiet).
 
 **FriendProbe becomes the launch checklist** (its own addon, `tools/FriendProbe`, not part of CommunitiesForever):
 - Shared as a zip: `tools\build-probe.ps1` builds `dist\FriendProbe.zip`. Friends unzip it into `Interface\AddOns`, play as usual and send Nico `WTF\Account\<account>\SavedVariables\FriendProbe.lua`.
@@ -58,11 +58,4 @@ Agreed with Nico (2026-10-29). Ships before launch (Nov 4): the FriendProbe zip 
 - **A "Copy report" button** shows the results as text to copy, as a fallback.
 - **One table, kept in step with VERIFY.md:** `tools/FriendProbe/Checklist.lua` is pure data (id, session, title, how it's checked: an automatic check's name or "manual", "needs a friend"). A busted spec reads `VERIFY.md` and fails when an open V-item has no entry, or an entry has no open V-item.
 
-**CommunitiesForever: no chat lines by default** (Nico: all off):
-- Every chat line a friend sees during play is off by default and can be switched on in Settings: friend online, level-ups, Doomsday, run lines, group asks, and the version notices (a new setting).
-- Existing friends' settings go to off once: a `Store.MIGRATIONS` step (rule 8; `SCHEMA_VERSION` bump). Later changes are kept.
-- Replies to what a player does themselves stay: `/cf` commands, and feedback on a click (such as "Type /reload to post it now.").
-- The sync and activity debug traces stay behind their debug commands, off by default.
-- No change to messages.
-
-Definition of done as usual; `busted` and `luacheck` pass; `Compat_spec` passes; `VERIFY.md` gets the FriendProbe run steps and the CF-60 steps.
+Definition of done as usual; `busted` and `luacheck` pass; `VERIFY.md` gets the FriendProbe run steps.
