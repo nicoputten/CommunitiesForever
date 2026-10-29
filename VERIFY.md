@@ -54,6 +54,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | A character below level 40 with riding (Retail dry run) | No "Mount" feat, also not in "Already had". | open |
 | Gain a level | "Level N · Reached level N · <date>" appears in the list. | open |
 
+### CF-61e Doomsday rule updates: PvP Virgin, rank 0, the Duel slot, day labels in your clock
+Times are stored as server times (UTC seconds) and shown in your PC's clock (Nico, 2026-10-29).
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday › Today | "Today · Wed evening · N of 6 done" (the weekday and part of the day the Doomsday day starts on, in your clock; 3 PvE, Hunt if on, Skirmish, Duel). The Duel slot counts as done after your first duel today. | open |
+| Finish a goal after midnight (your clock) | Its time reads "Wed 00:04" with the weekday; before midnight just "23:41". The Week view always shows the weekday. | open |
+| Take the crown | The toast: "All three dailies done at <time>" and "The crown is yours until Thu 19:00" in your clock. | open |
+| A friend with only a duel (no kills) | No "PvP Virgin" on their card, the Ladder ranks them in PvP. Their rank-0 card line reads "No rank yet · 0 kills". | open |
+| A character with kills but no rank | "No rank yet · N kills" on the card and under Your PvP; "Conscientious Objector" only for someone without any PvP point. | open |
+
 ### CF-58 Drop "Share my activity"
 | Step | Expected | Status |
 |---|---|---|

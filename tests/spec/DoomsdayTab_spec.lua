@@ -48,7 +48,9 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     ns.MainFrame.selectTab("doomsday")
     assert.are.equal("doomsday", ns.MainFrame.tabs().active)
     local t = texts()
-    assert.is_truthy(t:find("\nToday \194\183 " .. D.label(n) .. " \194\183 0 of 4 done\n", 1, true))
+    -- CF-61: "Wed evening" in your own clock, and the Duel slot counts in "N of M done".
+    local label = ns.DoomsdayView.dayLabel(D.dayStart(n, CET, RESET), os.date) or D.label(n)
+    assert.is_truthy(t:find("\nToday \194\183 " .. label .. " \194\183 0 of 5 done\n", 1, true))
     assert.is_truthy(t:find("\nFinish 10 quests\n", 1, true))
     assert.is_truthy(t:find("\n0/10\n", 1, true))
     assert.is_truthy(t:find("\nFirst duel with each friend\n", 1, true))
@@ -108,7 +110,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     local goals = { days = { [n] = { set = set, done = done, at = start + 10 } }, weeks = {} }
     addon.db.global.people[bt] = { displayName = "Mira", version = 1, chars = {}, goals = goals }
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
-    assert.is_true(printed("Mira finished Doomsday first today. You're at 0 of 4."))
+    assert.is_true(printed("Mira finished Doomsday first today. You're at 0 of 5.")) -- CF-61: with the Duel slot
     assert.are.equal(0, #ns.CrownToast.shown())
   end)
 

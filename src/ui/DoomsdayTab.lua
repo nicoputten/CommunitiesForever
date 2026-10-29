@@ -27,10 +27,12 @@ local placeText = Kit.placeText
 local function gold(text) return Theme.code("goldLight") .. tostring(text) .. "|r" end
 local function dim(text) return Theme.code("textDim") .. tostring(text) .. "|r" end
 
--- "10:42" in your own clock.
+local dayStartAt -- CF-61: the start of the shown day (Today, Board); nil in the week's views
+
+-- "10:42" in your own clock; "Wed 00:04" after midnight or in the week's views (CF-61).
 local function clock(at)
   if not at or not date then return "" end
-  return date("%H:%M", at)
+  return ns.DoomsdayView.timeText(at, dayStartAt, date)
 end
 
 local function check() return Theme.bundledFonts() and "\226\156\147" or "done" end
@@ -127,7 +129,7 @@ end
 
 local function today(parent, state, width)
   local rows = ns.DoomsdayView.rows(state.today, state.progress, state.hunts)
-  local done, total = ns.DoomsdayView.doneCount(rows)
+  local done, total = ns.DoomsdayView.doneCount(rows, #state.duels.done > 0) -- CF-61: the Duel slot counts
   local points = ns.DoomsdayView.todayPoints(state)
   local y = 0
   if total > 0 and done == total then
@@ -322,7 +324,9 @@ local function ladder(parent, width)
     for _, c in pairs(me.chars or {}) do
       if c.pvp and c.pvp.rank and (not best or c.pvp.rank > best.pvp.rank) then best = c end
     end
-    local rank = best and ns.Pvp.rankText(best.pvp, best.faction)
+    local virgin = false
+    for _, key in ipairs(l.virgins) do virgin = virgin or key == me.key end
+    local rank = best and ns.Pvp.rankText(best.pvp, best.faction, virgin)
     if rank then y = y + textLine(parent, rank, y, width, "goldLight") end
     local zone = ns.DoomsdayView.topZone(me.killsByZone)
     local kills = string.format("%d kills this week", me.kills) .. (zone and (" \194\183 most in " .. zone) or "")
@@ -421,6 +425,7 @@ function DoomsdayTab.render(_, empty)
   local parent = scroll.child
   local width = math.max(400, scroll:GetWidth() or 0)
   local state = not empty and ns.DoomsdayTracker.state() or nil
+  dayStartAt = state and (current == "today" or current == "board") and state.dayStart or nil
   local y
   if empty then
     placeText(pools.body, parent, PAD, 14, width - 2 * PAD, empty, "textDim")

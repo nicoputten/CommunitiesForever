@@ -77,12 +77,44 @@ describe("DoomsdayView (CF-57)", function()
       V.swapLine("Gain a level on an alt", "Finish 10 quests"))
   end)
 
+  it("names the day by its start and shows times after midnight with the weekday (CF-61, your clock)", function()
+    assert.are.equal("morning", V.partOfDay(5))
+    assert.are.equal("afternoon", V.partOfDay(12))
+    assert.are.equal("evening", V.partOfDay(19))
+    assert.are.equal("night", V.partOfDay(23))
+    assert.are.equal("night", V.partOfDay(4))
+    -- A fake clock: hours since t = 0 on "Tue" before 24 and "Wed" after.
+    local function clock(fmt, t)
+      local h, m = math.floor(t / 3600) % 24, math.floor(t / 60) % 60
+      local day = t < 86400 and "Tue" or "Wed"
+      if fmt == "%a" then return day end
+      if fmt == "%H" then return string.format("%02d", h) end
+      if fmt == "%H:%M" then return string.format("%02d:%02d", h, m) end
+      if fmt == "%a %H:%M" then return string.format("%s %02d:%02d", day, h, m) end
+      if fmt == "%Y-%m-%d" then return day end
+    end
+    local start = 19 * 3600
+    assert.are.equal("Tue evening", V.dayLabel(start, clock))
+    assert.are.equal("20:14", V.timeText(start + 3600 + 14 * 60, start, clock))
+    assert.are.equal("Wed 00:04", V.timeText(86400 + 4 * 60, start, clock))
+    assert.are.equal("Tue 20:14", V.timeText(start + 3600 + 14 * 60, nil, clock)) -- a time in the week
+    assert.is_nil(V.dayLabel(start, function() return nil end))
+  end)
+
+  it("counts the Duel slot in N of M done once asked to (CF-61)", function()
+    local rows = { { done = true }, { done = false }, { done = true } }
+    assert.are.same({ 2, 3 }, { V.doneCount(rows) })
+    assert.are.same({ 2, 4 }, { V.doneCount(rows, false) })
+    assert.are.same({ 3, 4 }, { V.doneCount(rows, true) })
+  end)
+
   it("writes the character card's PvP line", function()
     assert.are.equal("Stone Guard, a.k.a. Mailbox Menace \194\183 1,234 honorable kills \194\183 PvP 40 this week",
       V.pvpLine({ hk = 1234, rank = 6 }, "Horde", 40))
-    assert.are.equal("rank 0, a.k.a. Conscientious Objector \194\183 3 honorable kills",
-      V.pvpLine({ hk = 3, rank = 0 }, "Alliance", 0))
+    -- CF-61: rank 0 is "No rank yet · N kills" once there is any PvP point; a duel ends the PvP Virgin.
+    assert.are.equal("No rank yet \194\183 3 kills", V.pvpLine({ hk = 3, rank = 0 }, "Alliance", 0))
     assert.are.equal("PvP Virgin", V.pvpLine({ hk = 0, rank = 0 }, "Horde", 0))
+    assert.are.equal("No rank yet \194\183 0 kills", V.pvpLine({ hk = 0, rank = 0, duelsLost = 1 }, "Horde", 0))
     assert.is_nil(V.pvpLine(nil, "Horde", 0))
     assert.is_nil(V.pvpLine({ deaths = 3 }, "Horde", 0)) -- counters unknown: nothing to say
     assert.are.equal("1,000,000", V.thousands(1000000))
