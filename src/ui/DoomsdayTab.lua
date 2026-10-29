@@ -344,12 +344,25 @@ local function feats(parent, width)
   local y = header(parent, "Feats \194\183 your characters", 0, width)
   for _, c in ipairs(ns.DoomsdayBoard.feats()) do
     local name = Theme.rgbCode(Kit.classColor(c.classFile)) .. tostring(c.name) .. "|r"
-    local count = string.format("  \194\183 %d %s", #c.feats, #c.feats == 1 and "feat" or "feats")
+    local earned, earlier = ns.Feats.split(c.feats)
+    local count = string.format("  \194\183 %d %s", #earned, #earned == 1 and "feat" or "feats")
     y = y + textLine(parent, name .. dim(count), y + 6, width, "text", pools.body) + 4
-    for _, f in ipairs(c.feats) do
-      local when = f.at > 0 and date and date("%d %b", f.at) or "earlier"
+    -- CF-61: only feats earned while the addon watched; what the character already had folds into one line.
+    for _, f in ipairs(earned) do
+      local when = date and date("%d %b", f.at) or ""
       local detail = string.format("  \194\183 %s%s", f.detail and (f.detail .. " \194\183 ") or "", when)
       y = y + textLine(parent, gold(f.title) .. dim(detail), y, width, "text")
+    end
+    if #earlier > 0 then
+      local titles, tips = {}, {}
+      for _, f in ipairs(earlier) do
+        titles[#titles + 1] = f.title
+        tips[#tips + 1] = f.title .. (f.detail and (" \194\183 " .. f.detail) or "")
+      end
+      placeText(pools.small, parent, PAD, y, width - 2 * PAD, dim("Already had: " .. table.concat(titles, ", ")),
+        "textDim")
+      hover(parent, PAD, y - 2, width - 2 * PAD, table.concat(tips, "\n"))
+      y = y + 22
     end
     local nextTitle, progress = ns.Feats.nextKills(c.pvp and c.pvp.hk)
     if nextTitle and (c.pvp and c.pvp.hk or 0) > 0 then

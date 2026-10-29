@@ -58,6 +58,26 @@ describe("Feats, scores and sprees (CF-57b)", function()
     assert.are.same({}, Feats.derive({ level = 9 }, {}))
   end)
 
+  it("gives a mount only from level 40 and an epic mount from 60, and hides older ones below (CF-61)", function()
+    local function has(list, key) return find(list, key) ~= nil end
+    local low = Feats.derive({ level = 12, riding = 150 }, {})
+    assert.is_false(has(low, "mount"))
+    assert.is_false(has(low, "epicMount"))
+    local mid = Feats.derive({ level = 45, riding = 150 }, {})
+    assert.is_true(has(mid, "mount"))
+    assert.is_false(has(mid, "epicMount"))
+    local stored = { mount = { at = 0, title = "Mount", detail = "at level 12" },
+                     epicMount = { at = 5, title = "Epic mount", detail = "at level 60" },
+                     ["level:10"] = { at = 0, title = "Level 10", detail = "Reached level 10" } }
+    assert.are.same({ "epicMount", "level:10" }, keys(Feats.list(stored)))
+  end)
+
+  it("splits earned feats from those a character already had (CF-61)", function()
+    local earned, earlier = Feats.split({ { key = "a", at = 20 }, { key = "b", at = 0 }, { key = "c", at = 10 } })
+    assert.are.same({ "a", "c" }, keys(earned))
+    assert.are.same({ "b" }, keys(earlier))
+  end)
+
   it("remembers when it first saw a feat: Earlier at the first sight, never removed", function()
     local store = {}
     assert.are.same({}, Feats.remember(store, { { key = "level:10", title = "Level 10" } }, 100))

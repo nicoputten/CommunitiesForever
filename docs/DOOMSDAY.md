@@ -308,7 +308,7 @@ One-time achievements per character, posted once in Discord as **"Feat unlocked"
   - duel wins (10, 50, 100)
   - the first win in each battleground
   - 100 deaths
-- **Gear:** the first epic, mount and epic mount.
+- **Gear:** the first epic, mount and epic mount. A mount counts only from level 40 and an epic mount from level 60 (CF-61: Retail clients report riding at any level).
 - **Professions:**
   - the first catch
   - Head Chef, Field Medic and Fish Whisperer

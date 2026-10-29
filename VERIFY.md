@@ -61,6 +61,13 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Board: hover a crossed-out name | "All three PvE dailies done". | open |
 | Dungeons: hover Ask now | "Whispers online friends who fit; can post on Discord too. Waits until combat ends." | open |
 
+### CF-61d Feats: earned while watched, "Already had", no early mounts
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday › Feats on a character the addon knew before this version | Under the character, only feats with a date (earned while the addon watched). What it had at the first sight is one dim line "Already had: Level 10, Level 20, …"; hovering it lists each with its detail. The count after the name counts only the earned ones. | open |
+| A character below level 40 with riding (Retail dry run) | No "Mount" feat, also not in "Already had". | open |
+| Gain a level | "Level N · Reached level N · <date>" appears in the list. | open |
+
 ### CF-58 Drop "Share my activity"
 | Step | Expected | Status |
 |---|---|---|
