@@ -256,7 +256,7 @@ One-time achievements per character, posted once in Discord as **"Feat unlocked"
   - the watch-list items: Arcanite Reaper, the Arcanite transmute, Mooncloth, Devilsaur, and the Fishing Extravaganza joined and won
 - **First in the group:** a badge on a feat nobody in the group had before.
 
-The site decides feats; the addon shows the feats it can derive from records it holds (the same thresholds), without "First in the group".
+The site decides feats; the addon shows the feats it can derive from records it holds (the same kinds, thresholds and titles as the site's `feats.ts`), without "First in the group" and without the group's mount count. It remembers locally when it first saw each feat, so the Feats view lists them newest first; what a character had when the addon first saw it shows as "earlier" (CF-57b).
 
 **PvP rank titles:** the official rank per faction, then "a.k.a." our title, the same for both factions:
 

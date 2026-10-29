@@ -3,11 +3,9 @@
 Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.md`.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
-Build order: CF-38 (recipes) waits for the V60 check at launch (its story is in PR #63).
-CF-49 after the web's WEB-47 (Runs v2 data) is merged.
-E15 Doomsday: CF-52 and CF-53 now, CF-54 at launch, then CF-55, CF-56, CF-57 (see E15).
-
-## E14 Planned runs (continued)
+Build order:
+1. CF-59 (clean-up before the Doomsday release) now.
+2. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).
@@ -19,19 +17,11 @@ Boards in `docs/design/doomsday-2026-10/`:
 
 The site's and the bot's boards are in their repos. Where a board and `DOOMSDAY.md` disagree, `DOOMSDAY.md` wins: the reset is 19:00 (a setting), goals are computed (not delivered through `Runs.lua`), and the crown gives no points.
 
-None of the new APIs are verified on Forever. Each is guarded (rule 3), gets a FriendProbe check and a `VERIFY.md` step (V73 to V78), and is checked at launch (from 2026-11-05). A guarded API that is missing leaves its field out (nil). A goal that needs it stays out of the pool, and the site shows no card or feat for it.
+None of the new APIs are verified on Forever. Each is guarded (rule 3), gets a FriendProbe check and a `VERIFY.md` step (V73 to V86), and is checked at launch (from 2026-11-05). A guarded API that is missing leaves its field out (nil). A goal that needs it stays out of the pool, and the site shows no card or feat for it.
 
 Compatibility (rule 8): only new optional fields in `chars.*`, feed entries and RECORD, within `pv` 1. Older clients ignore them, relay what they keep, and a relayed record without them changes nothing (nil = unknown). New stored fields are optional (nil-safe), so no migration unless a field changes meaning. Friends on an older addon show "no Doomsday data yet", never 0 points as if known.
 
-Order:
-1. CF-52 and CF-53 (data) now, guarded.
-2. CF-54 (probe) at launch.
-3. CF-55 (raw kills and the rules core) after CF-52, with its fields filled once CF-54 has answered.
-4. CF-56 (goals tracked and shared) after CF-55.
-5. CF-57 (the tab) after CF-56.
-6. CF-58 (drop "Share my activity") any time, best before CF-56.
-
-The site's WEB-58 needs CF-55's golden file.
+Status (2026-10-29): CF-52, CF-53, CF-55 (a and b), CF-56, CF-57 (a and b) and CF-58 are done (`docs/STORIES-COMPLETED.md`). Open: CF-54, the probe run at launch, which decides the victim fields, the Hunt and the next pool version (`DOOMSDAY.md` "The algorithm, exactly"). The unverified APIs are V73 to V86 in `VERIFY.md`.
 
 ### CF-54 FriendProbe: what Forever tells about a kill, and realm time
 Probe written (PR #98): `/fp pvp` and the V77/V78 and V79–V83 lines in `/fp start`. The story stays open until the launch run is in `API-FINDINGS.md` (`VERIFY.md` "CF-54").
