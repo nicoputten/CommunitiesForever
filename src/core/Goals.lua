@@ -38,7 +38,7 @@ local function lastSunday(year, month)
   local days = month == 2 and ((year % 4 == 0 and (year % 100 ~= 0 or year % 400 == 0)) and 29 or 28)
     or ((month == 4 or month == 6 or month == 9 or month == 11) and 30 or 31)
   local n = ns.Doomsday.dayNumberOf(year, month, days)
-  return days - (n + 4) % 7 -- (n + 4) % 7 is the weekday, 0 = Sunday
+  return days - ns.Calendar.weekday(n)
 end
 
 -- CET/CEST (Europe/Paris) at a server time: +2 h from the last Sunday of March 01:00 UTC to the last Sunday of

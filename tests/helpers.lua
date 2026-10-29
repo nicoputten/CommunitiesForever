@@ -40,6 +40,22 @@ function helpers.loadAddon()
   return ns
 end
 
+--[[ CF-59: one logged-in client against the WoW mock, as most specs need it. Returns state, ns, addon.
+opts = { install = options for wowapi.install, setup = function(state) before the addon's files load,
+         clubId = the selected community ("23125681", the mock's; false: none) } ]]
+function helpers.client(opts)
+  local wowapi = require("mocks.wowapi")
+  opts = opts or {}
+  local state = wowapi.install(opts.install)
+  if opts.setup then opts.setup(state) end
+  local ns = helpers.loadAddon()
+  local addon = state.addon
+  addon:OnInitialize()
+  if opts.clubId ~= false then addon.db.global.settings.clubId = opts.clubId or "23125681" end
+  addon:OnEnable()
+  return state, ns, addon
+end
+
 -- CF-40: the native Friends tab (src/ui/FriendsTab.lua) as the specs see it.
 function helpers.friendsTab(ns)
   local tab = {}

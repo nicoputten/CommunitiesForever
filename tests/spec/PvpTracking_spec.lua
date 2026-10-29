@@ -7,13 +7,9 @@ describe("PvP, duels and deaths (CF-52)", function()
   local ME = "Ves Doombringer" -- the mock player
 
   local function load(opts, pvp)
-    state = wowapi.install(opts)
-    state.pvp = pvp
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ install = opts, setup = function(s)
+      s.pvp = pvp
+    end })
     myGuid = state.player.guid
   end
 

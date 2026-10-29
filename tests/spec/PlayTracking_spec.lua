@@ -6,13 +6,7 @@ describe("loot, gold, sessions and groups (CF-53)", function()
   local TODAY = 20744 -- mock realm date 2026-10-18
 
   local function load(setup)
-    state = wowapi.install()
-    if setup then setup(state) end
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ setup = setup })
     myGuid = state.player.guid
   end
 

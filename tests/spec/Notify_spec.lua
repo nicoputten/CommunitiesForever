@@ -9,14 +9,10 @@ describe("Notify (CF-15)", function()
 
   -- Sjaak starts offline, so coming online is a real change (not the login baseline).
   local function load(setup)
-    state = wowapi.install()
-    state.friends[1].gameAccounts[1].isOnline = false
-    if setup then setup(state) end
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = CLUB
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ clubId = CLUB, setup = function(s)
+      s.friends[1].gameAccounts[1].isOnline = false
+      if setup then setup(s) end
+    end })
     -- Garraka was seen online before (presence link), so Sjaak is linked in the community.
     addon.db.global.presence["Player-4619-01789956"] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
     state.printed = {}
@@ -80,12 +76,7 @@ describe("Notify (CF-15)", function()
   end)
 
   it("stays quiet for friends already online at login", function()
-    state = wowapi.install()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = CLUB
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ clubId = CLUB })
     assert.are.same({}, state.printed)
   end)
 

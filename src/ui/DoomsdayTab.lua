@@ -21,7 +21,6 @@ local root, chipsBar, resetText, scroll, chips
 local helpers -- from MainFrame: settings(), render()
 local current = "today"
 local pools
-local lastTexts = {}
 local expanded = {} -- CF-57b: Ladder rows showing their characters (track:key), while the window is open
 
 local placeText = Kit.placeText
@@ -417,7 +416,6 @@ function DoomsdayTab.render(_, empty)
   end
   parent:SetHeight(y + 10)
   scroll:Update()
-  lastTexts = DoomsdayTab.texts()
 end
 
 -- For the specs: every visible text, the chips.
@@ -436,7 +434,6 @@ function DoomsdayTab.texts()
 end
 
 function DoomsdayTab.chips() return chips end
-function DoomsdayTab.lastTexts() return lastTexts end
 function DoomsdayTab.resetLabel() return resetText and resetText:GetText() end
 function DoomsdayTab.reset()
   current = "today"

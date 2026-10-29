@@ -68,7 +68,7 @@ Doomsday.dayNumberOf = ns.Calendar.dayNumber
 -- "Tue 28 Oct": the day's name (the realm date it starts on).
 function Doomsday.label(n)
   local _, month, day = civil(n)
-  return string.format("%s %d %s", WEEKDAYS[(n + 4) % 7 + 1], day, MONTHS[month])
+  return string.format("%s %d %s", WEEKDAYS[ns.Calendar.weekday(n) + 1], day, MONTHS[month])
 end
 
 -- "3 h 12 m", "12 m", "0 m".

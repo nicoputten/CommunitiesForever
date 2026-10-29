@@ -11,13 +11,9 @@ describe("dungeon, raid and battleground runs (CF-23)", function()
   local OUTSIDE = { name = "Eastern Kingdoms", type = "none", instanceID = 0 }
 
   local function load()
-    state = wowapi.install()
-    state.serverTime = 10000
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = CLUB
-    addon:OnEnable()
+    state, ns, addon = helpers.client({ clubId = CLUB, setup = function(s)
+      s.serverTime = 10000
+    end })
     -- The mock's first community member is the player, the second an online Battle.net friend.
     myGuid = state.clubMembers[CLUB][1].guid
     friendGuid = state.clubMembers[CLUB][2].guid

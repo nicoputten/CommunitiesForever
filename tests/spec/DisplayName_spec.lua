@@ -5,12 +5,7 @@ describe("own display name (CF-04)", function()
   local state, ns, addon
 
   local function load()
-    state = wowapi.install()
-    ns = helpers.loadAddon()
-    addon = state.addon
-    addon:OnInitialize()
-    addon.db.global.settings.clubId = "23125681"
-    addon:OnEnable()
+    state, ns, addon = helpers.client()
   end
 
   local function option()
