@@ -218,6 +218,8 @@ local function OnLink(source, link)
   elseif action == "bnet" then
     LogCall("BNInviteFriend " .. S(t.gameAccountID), BNInviteFriend, t.gameAccountID)
   end
+  -- CF-62: what was tried shows on the V48 row (only the log had it); Yes/No says whether it worked.
+  result("V48", "info", "tried " .. action .. " on " .. S(t.name) .. "; did they get the invite?")
 end
 
 local linksHooked = false
@@ -303,8 +305,12 @@ end
 -- VERIFY.md step changes it on disk while the game runs. ReloadProbeLate.lua is not in the shipped TOC (a missing
 -- file listed there shows a Lua warning at every login): the step adds the file and its TOC line by hand.
 local function ReloadFile()
-  log("V67 ReloadProbe.lua mark", S(FriendProbeReloadMark), "| ReloadProbeLate.lua",
-    FriendProbeLateMark and S(FriendProbeLateMark) or "not loaded")
+  local mark, late = S(FriendProbeReloadMark), FriendProbeLateMark and S(FriendProbeLateMark) or "not loaded"
+  log("V67 ReloadProbe.lua mark", mark, "| ReloadProbeLate.lua", late)
+  -- CF-62: the result shows on the V67 row (it only went to the log).
+  local detail = "ReloadProbe.lua mark " .. mark .. ", ReloadProbeLate.lua " .. late
+  result("V67", mark == "B" and "pass" or "info", mark == "B" and detail
+    or (detail .. ": change the file as VERIFY.md V67 says, /reload, test again"))
 end
 
 -- V68: may an addon reload the UI from a button click? The click is remembered in FriendProbeDB; after
@@ -349,7 +355,12 @@ local function InviteAll()
       for _, t in ipairs(friends) do
         LogCall("V69 C_PartyInfo.InviteUnit " .. S(t.name), C_PartyInfo and C_PartyInfo.InviteUnit, t.name)
       end
-      C_Timer.After(10, function() log("V69 after 10 s: in group", S(GetNumGroupMembers())) end)
+      C_Timer.After(10, function()
+        local n = GetNumGroupMembers and GetNumGroupMembers() or 0
+        log("V69 after 10 s: in group", S(n))
+        -- CF-62: on the V69 row too.
+        result("V69", n > 1 and "info" or "fail", "invited " .. #friends .. ", " .. S(n) .. " in the group after 10 s")
+      end)
     end },
   })
   log("V69 click Invite all (you not in a group); friends accept; /reload and send the log")
