@@ -12,6 +12,12 @@ tagging; the release stops if the tag has no section.
   ("Starting now" at the start). The group rows use the full width and show who is online; below your answer, "Online
   now, fits" sits next to the website link. A run waiting for your next upload shows a small clock (hover for when it
   reaches the website).
+- **Dungeons, answering:** answer a run right under its group, also for runs planned on the website or Discord:
+  I’m in, Maybe or Can’t, the character you go as (any of yours, with how its level fits), your role (with whether
+  that slot is open or full) and a note to the organiser. Every click saves at once. The answer dialog is gone.
+- **Dungeons, the group:** hover a member for their level fit, role, where and when they answered and where they
+  are online; right-click for Whisper, Invite (from 15 minutes before the start) and Show in Friends. An open slot
+  has "Ask now for this run", and its menu whispers the first friend who fits with a ready-made line.
 
 ## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them

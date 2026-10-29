@@ -464,6 +464,28 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
       assert.are.equal(1, #PlannedRuns.roleChoices(run, {}, SMGY, "MAGE", ME))
     end)
 
+    it("says what your answer is, reserve when your role is full (CF-63b)", function()
+      assert.are.equal("none", PlannedRuns.answerState(nil, false))
+      assert.are.equal("in", PlannedRuns.answerState({ answer = "in" }, false))
+      assert.are.equal("reserve", PlannedRuns.answerState({ answer = "in" }, true))
+      assert.are.equal("reserve", PlannedRuns.answerState({ answer = "in", reserve = true }, false))
+      assert.are.equal("maybe", PlannedRuns.answerState({ answer = "maybe" }, true))
+      assert.are.equal("You\226\128\153re on reserve", PlannedRuns.ANSWER_STATES.reserve)
+    end)
+
+    it("writes a group member's tooltip lines (CF-63b)", function()
+      local a = { name = "Jo Goldmane", answer = "in", role = "tank", source = "site",
+                  at = os.time({ year = 2026, month = 11, day = 2, hour = 21, min = 12, sec = 0 }), note = "late" }
+      local lines = PlannedRuns.memberLines(a, { name = "Jo Goldmane", level = 30 }, SMGY,
+        { name = "Jo Goldmane", zone = "Undercity" }, AT, os.date)
+      assert.are.same({ "Jo Goldmane", "Level 30" .. DOT .. "fits" .. DOT .. "Tank",
+        "Answered on the website, Mon 21:12", "\226\128\156late\226\128\157",
+        "Online on Jo Goldmane" .. DOT .. "Undercity" },
+        lines)
+      assert.are.same({ "Bo", "Answered on Discord" },
+        PlannedRuns.memberLines({ name = "Bo", answer = "maybe", source = "discord" }, nil, SMGY, nil, AT, os.date))
+    end)
+
     it("names the first role a run needs", function()
       assert.are.equal("tank", PlannedRuns.neededRole({ answers = {} }, {}, SMGY))
       assert.are.equal("heal", PlannedRuns.neededRole({ answers = { { answer = "in", role = "tank" } } }, {}, SMGY))
@@ -477,7 +499,7 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
         PlannedRuns.whisperText(today, name, "heal", AT, os.date))
       assert.are.equal("Up for SM: Graveyard at 20:30?", PlannedRuns.whisperText(today, name, nil, AT, os.date))
       assert.is_truthy(PlannedRuns.whisperText(monday, "The Deadmines", "dps", AT, os.date)
-        :find("^Up for The Deadmines on Mon 18:30%? We need a damage dealer%.$"))
+        :find("^Up for The Deadmines on Mon 18:30%? We need a Damage%.$"))
       assert.are.equal("For SM: Graveyard 20:30" .. DOT .. "need Healer",
         PlannedRuns.askNote(today, name, "heal", AT, os.date))
       assert.are.equal("For SM: Graveyard 20:30", PlannedRuns.askNote(today, name, nil, AT, os.date))

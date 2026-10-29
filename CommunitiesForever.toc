@@ -103,6 +103,7 @@ src\ui\kit\Widgets.lua
 src\ui\kit\Window.lua
 src\ui\Settings.lua
 src\ui\SettingsWindow.lua
+src\ui\RunAnswer.lua
 src\ui\DungeonsTab.lua
 src\ui\DoomsdayTab.lua
 src\ui\RunDialogs.lua

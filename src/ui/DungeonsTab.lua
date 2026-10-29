@@ -28,7 +28,6 @@ local ROLE_LABEL = { tank = "Tank", heal = "Healer", dps = "Damage" }
 local ROSTER_TIP = "Online members whose current character fits %s." -- CF-63 board CF63RunDetail
 local RUNS_TIP = "Runs from the website. Type /reload after an upload for newer."
 local LINK_TIP = "Copy with Ctrl+C. Edit or cancel happens on the website."
-local ANSWER_TIP = "Shared with online friends now; the website gets it with your next upload."
 local INVITE_TIP = "Invite all invites everyone who is in and online."
 local RANGE_TIP = "Ranges are typical levels; the list follows the character you're on."
 local PLAN_TIP = "A planned run reaches the website and Discord with your next upload."
@@ -39,6 +38,7 @@ local rows = {}    -- visible list rows: { value, frame }
 local pools
 local linkBox -- the run's website link to copy
 local ticking -- CF-63: the minute ticker runs
+local askForRun, memberMenu, openSlotMenu -- CF-63b, defined with renderRun
 
 -- ===== Helpers =====
 
@@ -210,13 +210,27 @@ local function groupRow(parent)
   for _, fs in ipairs({ g.name, g.info, g.status, g.online }) do
     if fs.SetWordWrap then fs:SetWordWrap(false) end -- CF-63: cut with "...", never a second line
   end
+  g.ask = Kit.button(g, "Ask now for this run", nil) -- CF-63b: on an open slot
+  g.ask:SetHeight(24)
+  g.ask:SetPoint("RIGHT", -8, 0)
+  g.ask:Hide()
+  g:EnableMouse(true)
+  -- CF-63b: the hover tooltip, its first line the name (tipLines), or one text (tip).
   g:SetScript("OnEnter", function(self)
-    if not (self.tip and GameTooltip) then return end
+    if not GameTooltip or not (self.tip or self.tipLines) then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(self.tip, nil, nil, nil, nil, true)
+    if self.tipLines then
+      GameTooltip:SetText(self.tipLines[1], nil, nil, nil, nil, true)
+      for i = 2, #self.tipLines do GameTooltip:AddLine(self.tipLines[i], Theme.color("textDim")) end
+    else
+      GameTooltip:SetText(self.tip, nil, nil, nil, nil, true)
+    end
     GameTooltip:Show()
   end)
-  g:SetScript("OnLeave", function(self) if self.tip and GameTooltip then GameTooltip:Hide() end end)
+  g:SetScript("OnLeave", function(self) if (self.tip or self.tipLines) and GameTooltip then GameTooltip:Hide() end end)
+  g:SetScript("OnMouseUp", function(self, mouse)
+    if self.menu and (mouse == "RightButton" or self.menuOnClick) then self.menu(self) end
+  end)
   return g
 end
 
@@ -484,6 +498,7 @@ local function clearDetail()
     Kit.release(pools[name])
   end
   linkBox:Hide()
+  if ns.RunAnswer then ns.RunAnswer.hide() end
 end
 
 -- CF-62: who is online in the community and fits the run's range, not in its group (MemberTracker, re-drawn on
@@ -559,6 +574,68 @@ local function onlineList(parent, x, y, width, fits, dungeon, open)
     y = y + ONLINE_ROW
   end
   return y + 4
+end
+
+-- CF-63b: "Invite" from 15 minutes before the start, "Invite · from 20:15" before.
+local function inviteLabel(run, open)
+  if open then return "Invite" end
+  return "Invite" .. DOT .. "from " .. clock(run.startsAt - ns.PlannedRuns.INVITE_LEAD)
+end
+
+-- CF-63b (board CF63Group E): asks friends now for the run's dungeon with the note "For SM: Graveyard 20:30 · need
+-- Healer"; the Ask dialog opens with it filled in (you can add Discord there).
+askForRun = function(run, role)
+  local dungeon = dungeonOf(run)
+  if not dungeon then return end
+  local note = date and ns.PlannedRuns.askNote(run, dungeonName(run), role, now(), date) or nil
+  ns.RunDialogs.askNow(dungeon, note)
+end
+
+-- CF-63b (board CF63Group D): a member's right-click menu: Whisper, Invite, Show in Friends.
+memberMenu = function(owner, run, a, c, who, open)
+  local combat = InCombatLockdown and InCombatLockdown()
+  local path
+  if c and c.key and c.guid then
+    local group = c.key == "self" and ns.Format.SELF or c.key:find("^member:") and ns.Format.UNLINKED or c.key
+    path = ns.Format.path(group, c.guid)
+  end
+  local items = {
+    { label = "Whisper", enabled = who ~= nil, action = "whisper" },
+    { label = inviteLabel(run, open), enabled = open and not combat and who ~= nil, action = "invite" },
+    { label = "Show in Friends", enabled = path ~= nil, action = "friends" },
+  }
+  ns.ContextMenu.open(owner, { title = (c and c.name) or a.name or who, items = items }, function(item)
+    if item.action == "whisper" then
+      ns.ContextMenu.whisper(who)
+    elseif item.action == "invite" then
+      if not (InCombatLockdown and InCombatLockdown()) then ns.Party.invite(who) end
+    elseif item.action == "friends" then
+      ns.MainFrame.selectTab("friends")
+      ns.FriendsTab.select(path)
+    end
+  end)
+end
+
+-- CF-63b (board CF63Group E): an open slot's menu: Whisper <the first who fits> with the prefilled text, Ask now for
+-- this run, Invite.
+openSlotMenu = function(owner, run, role, fits, open)
+  local first = fits[1]
+  local combat = InCombatLockdown and InCombatLockdown()
+  local items = {
+    { label = first and ("Whisper " .. first.name) or "Whisper", enabled = first ~= nil, action = "whisper" },
+    { label = "Ask now for this run", enabled = dungeonOf(run) ~= nil, action = "ask" },
+    { label = inviteLabel(run, open), enabled = first ~= nil and open and not combat, action = "invite" },
+  }
+  ns.ContextMenu.open(owner, { title = ROLE_LABEL[role] .. DOT .. "open", items = items }, function(item)
+    if item.action == "whisper" then
+      local text = date and ns.PlannedRuns.whisperText(run, dungeonName(run), role, now(), date) or ""
+      ns.ContextMenu.whisperText(first.name, text)
+    elseif item.action == "ask" then
+      askForRun(run, role)
+    elseif item.action == "invite" then
+      if not (InCombatLockdown and InCombatLockdown()) then ns.Party.invite(first.name) end
+    end
+  end)
 end
 
 -- A 1 px divider across the detail at y.
@@ -641,7 +718,8 @@ local function renderRun(run, me, candidates)
     local g = Kit.take(pools.groupRows, parent)
     g:SetPoint("TOPLEFT", PAD, -y)
     g:SetWidth(width)
-    g.tip = nil
+    g.tip, g.tipLines, g.menu, g.menuOnClick = nil, nil, nil, nil
+    g.ask:Hide()
     g.online:SetText("")
     local a, c = slot.answer, slot.char
     local mine = a and personName(a, candidates, me) == "you"
@@ -683,6 +761,13 @@ local function renderRun(run, me, candidates)
       if fit and fit.label ~= "fits" then state, color = fit.label, fit.kind == "carry" and "warning" or "muted" end
       g.status:SetText(state or "")
       g.status:SetTextColor(Theme.color(color or "muted"))
+      -- CF-63b (board CF63Group C, D): the hover tooltip and the right-click menu.
+      local presence = st and st.presence or (online and c and { name = c.name }) or nil
+      g.tipLines = ns.PlannedRuns.memberLines(a, c, dungeon, presence, now(), date)
+      if not mine then
+        local who = (presence and presence.name) or name
+        g.menu = function(owner) memberMenu(owner, run, a, c, who, open) end
+      end
     else
       g.bg:SetColorTexture(Theme.color("white", 0.015))
       g.role:SetRole(slot.role, true)
@@ -690,12 +775,13 @@ local function renderRun(run, me, candidates)
       g.name:SetText(colored(ROLE_LABEL[slot.role] .. DOT .. (slot.missing and "nobody fits" or "open"),
         slot.missing and "warning" or "muted"))
       g.info:SetText("")
-      if #fits > 0 and not slot.missing then
-        g.status:SetText(#fits .. " online fit")
-        g.status:SetTextColor(Theme.color("swap"))
-        g.tip = table.concat(fitNames, "\n")
-      else
-        g.status:SetText("")
+      g.status:SetText("")
+      if not slot.missing then
+        -- CF-63b (board CF63Group E): Ask now for this run on the row; a click opens Whisper / Ask / Invite.
+        g.ask:Show()
+        g.ask:SetScript("OnClick", function() askForRun(run, slot.role) end)
+        g.menu, g.menuOnClick = function(owner) openSlotMenu(owner, run, slot.role, fits, open) end, true
+        if #fits > 0 then g.tip = table.concat(fitNames, "\n") end
       end
     end
     fitGroupRow(g, width)
@@ -763,38 +849,8 @@ local function renderRun(run, me, candidates)
       end
     end
   elseif not run.pending then
-    -- Your answer: three toggles, then the character and role you go as ("change" opens the answer dialog).
-    local heading = placeText(pools.section, parent, PAD, y, width, "Your answer", "goldLight")
-    local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 90
-    local info = Kit.take(pools.infos, parent)
-    info:SetPoint("TOPLEFT", PAD + hw + 8, -(y + 3))
-    info.tip = ANSWER_TIP
-    y = y + 26
-    local x = PAD
-    local current = mineNow and mineNow.answer
-    local me0 = ns.SelfInfo.read()
-    local char = { guid = me0.guid, name = me0.name, level = me0.level, classFile = me0.classFile,
-                   role = (mineNow and mineNow.role) or ns.SelfInfo.role and ns.SelfInfo.role() or "dps" }
-    for _, def in ipairs({ { "in", "I'm in" }, { "maybe", "Maybe" }, { "cant", "Can't" } }) do
-      local b = Kit.take(def[1] == current and pools.primary or pools.buttons, parent)
-      b:SetLabel(def[2])
-      b:SetEnabled(true)
-      b:SetScript("OnClick", function()
-        ns.Planner.answer(run, def[1], def[1] ~= "cant" and char or nil)
-        helpers.render()
-      end)
-      b:SetPoint("TOPLEFT", x, -y)
-      x = x + (b:GetWidth() or 80) + 8
-    end
-    y = y + 36
-    local asWho = mineNow and mineNow.name or char.name
-    placeText(pools.small, parent, PAD, y, width, "As " .. tostring(asWho) .. DOT ..
-      (ROLE_LABEL[(mineNow and mineNow.role) or char.role] or "Damage") .. DOT, "textDim")
-    local change = Kit.take(pools.links, parent)
-    change:SetPoint("TOPLEFT", PAD + 220, -(y - 2))
-    change.text:SetText("change")
-    change:SetScript("OnClick", function() ns.RunDialogs.answer(run) end)
-    y = y + 22
+    -- CF-63b (board CF63Answer): answering inline, every click saves.
+    y = y + ns.RunAnswer.render(parent, run, me, candidates, PAD, y, width, function() helpers.render() end)
   end
 
   -- One row: Online now, fits (left); Edit or cancel or On the website (right, 236 px).
@@ -1263,11 +1319,12 @@ function DungeonsTab.texts()
       end
     end
   end
+  for _, t in ipairs(ns.RunAnswer and ns.RunAnswer.texts() or {}) do out[#out + 1] = t end -- CF-63b
   return out
 end
 
 function DungeonsTab.buttons()
-  local out = {}
+  local out = ns.RunAnswer and ns.RunAnswer.buttons() or {} -- CF-63b
   for _, name in ipairs({ "buttons", "primary", "listButtons" }) do
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do out[p.items[i].label:GetText()] = p.items[i] end
@@ -1303,6 +1360,7 @@ function DungeonsTab.tips()
       if t then out[#out + 1] = t end
     end
   end
+  for _, t in ipairs(ns.RunAnswer and ns.RunAnswer.tips() or {}) do out[#out + 1] = t end -- CF-63b
   return out
 end
 

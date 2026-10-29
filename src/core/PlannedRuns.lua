@@ -90,6 +90,7 @@ local function answer(raw)
   a.at = time(raw.at)
   a.fit = text(raw.fit, PlannedRuns.MAX_FIT) -- CF-49 (web WEB-47): the site's levelFit label
   a.reserve = raw.reserve == true or nil      -- CF-49: an I'm in waiting for a full role (sent as maybe)
+  a.note = text(raw.note, PlannedRuns.MAX_ANSWER_NOTE) -- CF-63: a note to the organiser (optional)
   return a
 end
 
@@ -688,7 +689,7 @@ local function atText(run, now, dateFn)
   return (t:find(" ", 1, true) and "on " or "at ") .. t
 end
 
-local NEED = { tank = "a Tank", heal = "a Healer", dps = "a damage dealer" }
+local NEED = { tank = "a Tank", heal = "a Healer", dps = "a Damage" } -- CF-63 board CF63Group
 
 --[[ CF-63b: the whisper prefilled to fill a slot (the player sends it): "Up for SM: Graveyard at 20:30? We need a
 Healer." name: the dungeon's name (Dungeons.runName); role: the slot's, or nil. ]]
@@ -704,6 +705,58 @@ function PlannedRuns.askNote(run, name, role, now, dateFn)
     PlannedRuns.rowTime(run.startsAt, now, dateFn))
   if PlannedRuns.ROLE_NAMES[role] then out = out .. " \194\183 need " .. PlannedRuns.ROLE_NAMES[role] end
   return out
+end
+
+PlannedRuns.MAX_ANSWER_NOTE = 80 -- CF-63: the note to the organiser on an answer
+
+--[[ CF-63b: what your answer is, for the "Your answer" line: "none" | "in" | "maybe" | "cant" | "reserve".
+mine: your answer (yourAnswer) or nil; roleFull: true when the role you picked is full without you (an I'm in then
+waits as reserve; the site decides in the end, a.reserve). ]]
+function PlannedRuns.answerState(mine, roleFull)
+  if not mine then return "none" end
+  if mine.answer == "in" and (mine.reserve or roleFull) then return "reserve" end
+  return mine.answer
+end
+
+PlannedRuns.ANSWER_STATES = { none = "Not answered yet", ["in"] = "You\226\128\153re in", maybe = "You said maybe",
+                              cant = "You can\226\128\153t make it", reserve = "You\226\128\153re on reserve" }
+
+local SOURCE_AT = { site = "on the website", discord = "on Discord", game = "in game" }
+
+-- "Today 21:12", "Yesterday 21:12", "Mon 21:12" (the last 6 days), "Mon 5 Nov 21:12": a time in the past.
+function PlannedRuns.pastText(at, now, dateFn)
+  local t, n = dateFn("*t", at), dateFn("*t", now)
+  local clock = string.format("%02d:%02d", t.hour, t.min)
+  local diff = days(n) - days(t)
+  if diff == 0 then return "Today " .. clock end
+  if diff == 1 then return "Yesterday " .. clock end
+  if diff > 1 and diff < 7 then return WEEKDAYS[t.wday] .. " " .. clock end
+  return string.format("%s %d %s %s", WEEKDAYS[t.wday], t.day, MONTHS[t.month], clock)
+end
+
+--[[ CF-63b: the hover tooltip of a group member (board CF63Group C), its lines:
+  name; "Level 30 · fits · Tank"; "Answered on the website, Mon 21:12"; "Online on <character> · <zone>".
+a: the answer; char: the candidate (or nil); dungeon (or nil); presence: { name, zone } when online, else nil. ]]
+function PlannedRuns.memberLines(a, char, dungeon, presence, now, dateFn)
+  local lines = { tostring((char and char.name) or a.name or "?") }
+  local parts = {}
+  local level = char and char.level
+  if type(level) == "number" then parts[#parts + 1] = "Level " .. level end
+  local fit = PlannedRuns.fitOf(a, char, dungeon)
+  if fit and fit.label then parts[#parts + 1] = fit.label end
+  local role = a.role or (char and char.role)
+  if PlannedRuns.ROLE_NAMES[role] then parts[#parts + 1] = PlannedRuns.ROLE_NAMES[role] end
+  if #parts > 0 then lines[#lines + 1] = table.concat(parts, " \194\183 ") end
+  local where = SOURCE_AT[a.source]
+  if where then
+    local at = type(a.at) == "number" and dateFn and (", " .. PlannedRuns.pastText(a.at, now, dateFn)) or ""
+    lines[#lines + 1] = "Answered " .. where .. at
+  end
+  if a.note then lines[#lines + 1] = "\226\128\156" .. a.note .. "\226\128\157" end
+  if presence and presence.name then
+    lines[#lines + 1] = "Online on " .. presence.name .. (presence.zone and (" \194\183 " .. presence.zone) or "")
+  end
+  return lines
 end
 
 PlannedRuns.PLAN_HOUR = 20       -- CF-63c: the planning chips' time, your clock

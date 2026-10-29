@@ -33,6 +33,19 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-63b Dungeons tab: answering inline, group rows (boards CF63Answer, CF63Group)
+| Step | Expected | Status |
+|---|---|---|
+| A run someone else organises (website, Discord or game), not answered yet | Under the group: "Your answer  Not answered yet"; I’m in / Maybe / Can’t; a dropdown with your character ("Vesgar Bloodhoof  31  fits"); the roles your class plays ("Healer · open", "Damage · full"); "Note to the organiser" with "0/80". Compare with `docs/design/cf-63-2026-10/CF63Answer.dc.html`. | open |
+| Click I’m in | Saved at once (no Save button): "You’re in", I’m in highlighted, a pocket watch next to it (hover: "Saved. Reaches the website with your next upload."); your own group row shows your character and role. A friend organising it and online sees your row change within seconds. | open |
+| Open the dropdown | All your characters, each with its fit ("31 · fits", "23 · 3 below", "48 · carry · +12"). Pick another: saved at once, the role toggles follow its class. | open |
+| Hover a full role, then click it | Tooltip "Damage is full · you join as reserve."; after the click "You’re on reserve". | open |
+| Type a note, press Enter (or click elsewhere) | Saved; the counter shows the length ("14/80"); at most 80 characters fit. After `/reload` and the upload the website and Discord show the note on your answer. | open |
+| Click Can’t | "You can’t make it"; the dropdown, roles and note disappear. | open |
+| Hover a member's row | Tooltip: the character; "Level 30 · fits · Tank"; "Answered on the website, Mon 21:12" (or Discord, in game); their note in quotes if any; "Online on <character> · <zone>" when online. | open |
+| Right-click a member's row | Menu with their name: Whisper (opens a whisper), "Invite · from 20:15" (greyed until 15 minutes before the start, and in combat), Show in Friends (opens the Friends tab on their character). Your own row has no menu. | open |
+| An open slot | "Damage · open" with "Ask now for this run" on the right: it opens Ask now with the note "For SM: Graveyard 20:30 · need Damage". Click the row: a menu "Damage · open" with "Whisper <the first who fits>" (opens the chat box with "Up for SM: Graveyard at 20:30? We need a Damage." filled in; you press Enter), Ask now for this run, "Invite · from 20:15". | open |
+
 ### CF-63a Dungeons tab: dungeon names, in range on Retail, the run detail (board CF63RunDetail)
 | Step | Expected | Status |
 |---|---|---|
