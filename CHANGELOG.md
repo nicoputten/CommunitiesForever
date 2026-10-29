@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+
+## v0.8.0-beta1 (2026-10-29)
 - **Doomsday.** Every day three PvE dailies and a PvP Skirmish, every week three weeklies and a Bounty: the same
   goals for the whole group, resetting at 19:00 realm time, and suggestions, never rules. Progress counts over all
   your characters and is shared with friends and the website as you play.
