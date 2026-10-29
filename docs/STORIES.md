@@ -19,6 +19,7 @@ Bugs from Nico's dry run on Retail 12.1.5 (`docs/API-FINDINGS.md` "Retail 12.1.5
 - 5. An alt that isn't in the selected community:
   - On the first login of that character, the window opens once by itself on the join explanation with the invite link. This is remembered per character, like the chat-tab prompt.
   - As soon as it joins (also while playing), the Community chat tab prompt is offered.
+- 10. The Community tab prompt: sized to its content, one short line ("A tab with only your community's chat."), and Create tab and Not now as kit buttons on the right.
 
 **CF-61b: no designer notes in the UI; one reset label per view**
 - 6. Every tab, dialog, footer and chat line is checked for board notes, legends and design rationale. Each one is removed, or moved into a tooltip where a player needs it. The PR lists every removed or moved string. Examples:
