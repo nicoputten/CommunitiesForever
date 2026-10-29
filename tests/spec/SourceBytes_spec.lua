@@ -3,7 +3,7 @@
 describe("source files", function()
   local function luaFiles()
     local files = {}
-    local cmd = package.config:sub(1, 1) == "\\" and 'dir /s /b src\\*.lua tools\\*.lua 2>nul'
+    local cmd = package.config:sub(1, 1) == "\\" and 'dir /s /b src\\*.lua tools\\*.lua tests\\*.lua 2>nul'
       or 'find src tools tests -name "*.lua" 2>/dev/null'
     local pipe = io.popen(cmd)
     for line in pipe:lines() do files[#files + 1] = line end
