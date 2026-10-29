@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** no more Blizzard warning that the addon uses something "only available to the Blizzard UI": the addon
+  no longer reads the combat log. What killed you now comes from the death recap.
 - **Doomsday rules:** a duel ends "PvP Virgin" too; without a PvP rank you read "No rank yet · N kills"; the Duel
   slot counts in "N of M done"; the day is named by its start ("Wed evening"), and times after midnight show their
   weekday. All times in your own clock.
