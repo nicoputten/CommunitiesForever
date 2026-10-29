@@ -43,7 +43,7 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 Agreed with Nico (2026-10-29). Ships before launch (Nov 4): the FriendProbe zip and a small CommunitiesForever release.
 
 **FriendProbe becomes the launch checklist** (its own addon, `tools/FriendProbe`, not part of CommunitiesForever):
-- Shared as a zip: `toolsuild-probe.ps1` builds `dist\FriendProbe.zip`. Friends unzip it into `Interface\AddOns`, play as usual and send Nico `WTF\Account\<account>\SavedVariables\FriendProbe.lua`.
+- Shared as a zip: `tools\build-probe.ps1` builds `dist\FriendProbe.zip`. Friends unzip it into `Interface\AddOns`, play as usual and send Nico `WTF\Account\<account>\SavedVariables\FriendProbe.lua`.
 - **Automatic for two weeks:** from the first login until 2026-11-18 it logs by itself, then stops. No command needed.
 - **Silent:** no chat output during play, ever. Everything goes to its SavedVariables (`FriendProbeDB`): ticks, values seen, errors, capped (at most 2,000 log lines, oldest dropped).
 - **`/fp` opens the checklist window:** the open `VERIFY.md` API questions (V8 to V86) and the per-story manual steps, grouped into six play sessions:
