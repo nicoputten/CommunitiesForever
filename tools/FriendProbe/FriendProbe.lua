@@ -29,19 +29,37 @@ local function log(...)
   while #l > MAX_LOG do table.remove(l, 1) end
 end
 
--- A checklist item's result: status "pass" | "fail" | "yes" | "no" | "info", with what was seen. A pass stays (once
--- it worked, the question is answered); later fails are kept as detail. Stored per item with the character and time.
-local function result(id, status, detail)
+-- The client the probe runs on: "forever" (WOW_PROJECT_ID 18), "retail" (1, a dry run before launch) or
+-- "project <n>". Results are kept per client: a Retail answer never closes a Forever item.
+function ns.client()
+  if WOW_PROJECT_ID == 18 then return "forever" end
+  if WOW_PROJECT_ID == 1 then return "retail" end
+  return "project " .. S(WOW_PROJECT_ID)
+end
+
+-- This client's results: { [id] = result }.
+function ns.results()
   FriendProbeDB = FriendProbeDB or {}
   FriendProbeDB.results = FriendProbeDB.results or {}
-  local r = FriendProbeDB.results[id]
+  local client = ns.client()
+  FriendProbeDB.results[client] = FriendProbeDB.results[client] or {}
+  return FriendProbeDB.results[client]
+end
+
+-- A checklist item's result: status "pass" | "fail" | "yes" | "no" | "info", with what was seen. A pass stays (once
+-- it worked, the question is answered); later fails are kept as detail. Stored per client and item, with the
+-- character, the build and the time.
+local function result(id, status, detail)
+  local results = ns.results()
+  local r = results[id]
   if r and r.status == "pass" and status ~= "pass" and status ~= "no" then
     r.later = S(detail)
     return
   end
-  FriendProbeDB.results[id] = { status = status, detail = S(detail):sub(1, 200), at = date("%Y-%m-%d %H:%M"),
-                                char = GetUnitName and S(GetUnitName("player", true)) or "?" }
-  log("RESULT", id, status, S(detail))
+  results[id] = { status = status, detail = S(detail):sub(1, 200), at = date("%Y-%m-%d %H:%M"),
+                  char = GetUnitName and S(GetUnitName("player", true)) or "?",
+                  build = GetBuildInfo and S((select(2, GetBuildInfo()))) or "?" }
+  log("RESULT", ns.client(), id, status, S(detail))
   if ns.refresh then ns.refresh() end
 end
 ns.result = result
@@ -760,7 +778,7 @@ local function StaticChecks()
     V59 = JoinTemporaryChannel ~= nil,
   }
   for id, present in pairs(hints) do
-    local r = FriendProbeDB.results and FriendProbeDB.results[id]
+    local r = ns.results()[id]
     if not (r and (r.status == "yes" or r.status == "no")) then
       result(id, "info", present and "the API is there; check it by eye" or "the API is missing")
     end
@@ -813,6 +831,16 @@ ns.tests = {
   { text = "Test: file reload (V67)", run = function() ReloadFile() end },
 }
 ns.log = log
+
+-- Every event handler runs guarded: a secret value or a missing API in an instance (Midnight, Retail dry runs) is
+-- logged, never shown as a Lua error.
+for _, frame in ipairs({ feedFrame, inviteFrame, commFrame, pvpFrame, loader }) do
+  local handler = frame:GetScript("OnEvent")
+  frame:SetScript("OnEvent", function(...)
+    local ok, err = pcall(handler, ...)
+    if not ok then log("handler error", S((select(2, ...))), S(err)) end
+  end)
+end
 
 -- /fp opens the checklist. /fp whisper <name> (V51) and /fp stop are the only other commands.
 SLASH_FRIENDPROBE1 = "/fp"

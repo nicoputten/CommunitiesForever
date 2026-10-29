@@ -46,9 +46,11 @@ describe("FriendProbe launch checklist (CF-60)", function()
   describe("in the game (the WoW mock)", function()
     local state, printed
 
-    local function login(serverTime)
+    -- project: WOW_PROJECT_ID (18 Forever, the mock's; 1 Retail).
+    local function login(serverTime, project)
       state = wowapi.install()
       state.serverTime = serverTime
+      if project then _G.WOW_PROJECT_ID = project end
       printed = {}
       _G.print = function(...) printed[#printed + 1] = table.concat({ ... }, " ") end
       _G.SlashCmdList = {}
@@ -80,13 +82,35 @@ describe("FriendProbe launch checklist (CF-60)", function()
       assert.are.same({}, printed)
       assert.is_table(_G.FriendProbeDB.log)
       assert.is_true(#_G.FriendProbeDB.log > 0)
-      assert.are.equal("pass", _G.FriendProbeDB.results.V63.status) -- date() works in the mock
+      assert.are.equal("pass", _G.FriendProbeDB.results.forever.V63.status) -- date() works in the mock
       assert.is_true(ns.running())
       local report = ns.report()
       assert.is_truthy(report:find("1. First login alone", 1, true))
       assert.is_truthy(report:find("V78", 1, true))
       ns.toggleWindow() -- opens without errors
       assert.are.same({}, printed)
+    end)
+
+    it("dry-runs on Retail: its own results, Forever-only items greyed, no errors", function()
+      local ns = login(1793300000, 1)
+      assert.are.same({}, printed)
+      assert.are.equal("retail", ns.client())
+      assert.is_table(_G.FriendProbeDB.results.retail.V63)
+      assert.is_nil(_G.FriendProbeDB.results.forever) -- a Retail answer never closes a Forever item
+      assert.is_truthy(ns.report():find("client retail", 1, true))
+      ns.toggleWindow()
+      assert.are.same({}, printed)
+    end)
+
+    it("marks what Retail can answer", function()
+      local items = checklist().items
+      local retail = {}
+      for _, item in ipairs(items) do
+        if item.retail then retail[#retail + 1] = item.id end
+      end
+      table.sort(retail)
+      assert.are.same({ "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67", "V68", "V69",
+                        "V70", "V71", "V72", "V75", "V77", "V78", "V81", "V83", "V84", "V85", "V86" }, retail)
     end)
 
     it("stops by itself after 18 Nov", function()

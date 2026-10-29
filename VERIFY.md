@@ -115,6 +115,7 @@ Answers V73 to V86 and the older open questions in one go. Unzip `FriendProbe.zi
 
 | Step | Expected | Status |
 |---|---|---|
+| Before launch, a dry run on Retail (same Mainline API and Midnight restrictions): copy the probe into Retail's `Interface\AddOns`, tick "Load out of date AddOns" | It loads without a Lua error and stays silent. `/fp` says "on retail"; the items only Forever can answer (Vanilla honor, ranks, riding, battlegrounds, sync with friends) are greyed "Forever only". Retail results are kept apart (`results.retail`): they never close a VERIFY item by themselves. | open |
 | Log in (any character) | Nothing in chat. `/fp` opens the checklist: session 1 shows V78, V77, V63, V71, V55 ticked (OK or FAILED with the reason). | open |
 | Play the six sessions over the week (alone, with a friend, questing, a dungeon, world PvP on a level 20+ character with enemy nameplates on, later in the week) | Items tick by themselves as they happen; mark the others Yes or No in `/fp`. | open |
 | Copy report | A window with the results as text, ready to copy. | open |

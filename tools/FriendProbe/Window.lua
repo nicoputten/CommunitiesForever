@@ -10,19 +10,25 @@ local LABELS = { pass = "|cff40d040OK|r", fail = "|cffff5050FAILED|r", yes = "|c
                  no = "|cffff5050no|r", info = "|cffd8c890check|r" }
 
 local function resultOf(id)
-  return FriendProbeDB and FriendProbeDB.results and FriendProbeDB.results[id]
+  return ns.results()[id]
+end
+
+-- On Retail (a dry run), items only Forever can answer are greyed out.
+local function forOtherClient(item)
+  return ns.client() == "retail" and not item.retail
 end
 
 local function stateText(item)
+  if forOtherClient(item) then return "|cff707070Forever only|r", "" end
   local r = resultOf(item.id)
   if not r then return "|cff909090open|r", item.how or "" end
   return LABELS[r.status] or tostring(r.status), (r.detail or "") .. (r.later and ("  (later: " .. r.later .. ")") or "")
 end
 
--- The results as text, per session (Copy report).
+-- The results as text, per client and session (Copy report).
 function ns.report()
   local out = { "FriendProbe launch checklist" .. (GetUnitName and (" \226\128\148 " .. tostring(GetUnitName("player",
-    true))) or "") }
+    true))) or "") .. " \226\128\148 client " .. ns.client() }
   for s, title in ipairs(ns.sessions) do
     out[#out + 1] = ""
     out[#out + 1] = s .. ". " .. title
@@ -76,7 +82,8 @@ local function create()
   window:SetScript("OnDragStop", window.StopMovingOrSizing)
   local title = window:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   title:SetPoint("TOP", 0, -6)
-  title:SetText("FriendProbe: launch checklist (runs by itself until 18 Nov; send Nico the saved file)")
+  title:SetText("FriendProbe: launch checklist on " .. ns.client()
+    .. " (runs by itself until 18 Nov; send Nico the saved file)")
 
   local scroll = CreateFrame("ScrollFrame", nil, window, "UIPanelScrollFrameTemplate")
   scroll:SetPoint("TOPLEFT", 12, -32)
@@ -101,13 +108,15 @@ local function create()
         name:SetPoint("TOPLEFT", 68, -y)
         name:SetWidth(470)
         name:SetJustifyH("LEFT")
-        name:SetText(item.id .. ": " .. item.title .. (item.friend and "  |cffd8c890(needs a friend)|r" or ""))
+        local grey = forOtherClient(item)
+        name:SetText((grey and "|cff707070" or "") .. item.id .. ": " .. item.title
+          .. (item.friend and "  (needs a friend)" or "") .. (grey and "|r" or ""))
         local detail = content:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
         detail:SetPoint("TOPLEFT", 68, -(y + 16))
         detail:SetWidth(470)
         detail:SetJustifyH("LEFT")
         lines[item.id] = { status = status, detail = detail, item = item }
-        if not item.auto then
+        if not item.auto and not grey then
           for i, answer in ipairs({ "Yes", "No" }) do
             local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
             b:SetSize(48, 20)
