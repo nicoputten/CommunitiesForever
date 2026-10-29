@@ -4,8 +4,54 @@ Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order:
-1. Now: CF-62 (addon v2), in PRs a to d; the Dungeons tab (d) waits for its updated board.
+1. Now: CF-63 (an interactive Dungeons tab), in PRs a to d. (CF-62 is merged; its story moves to the completed list with CF-63's.)
 2. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
+
+## CF-63 An interactive Dungeons tab (decided with Nico, 2026-10-30)
+From Nico's retail test of a website run (SM: Graveyard) and his answers to five rounds of questions. Same rules as CF-62: player-facing copy only (explanations in ⓘ tooltips), every new visible string listed in the PR, specs for the core logic, `VERIFY.md` steps, rule 8.
+
+**Causes found (retail test):**
+- The run showed the raw id "smgy", had no level range, no "online fit" and no "In range" section. One cause: `Dungeons.applyGroupFinder` replaces the dungeon list with what the Group Finder offers, and on Retail that is only retail dungeons (other activity IDs). So `smgy` wasn't in the list. This is not a Midnight restriction. Forever's Group Finder offers the Vanilla dungeons (V46).
+- Role and character couldn't be changed: the answer dialog lists your characters by the dungeon's level range, so with no range found, nothing was listed.
+- The site sends the addon's own ids (`smgy`, `smlib`, `smarm`, `smcath`, `lbrs`, `dme`, `lfg1981` to `lfg1984` for Forever's new dungeons) plus an optional `dungeonName` (`docs/UPLOADER-API.md`). It accepts a game answer with `guid` and `role` for any site run already.
+
+**CF-63a: fixes**
+- A run's dungeon is looked up in the full static list, not only what the Group Finder offers. Without a match the name comes from `dungeonName`, else a readable form of the id; it is never the raw id.
+- When the Group Finder offers none of the known dungeons (Retail), the static list is used.
+- "In range for <character>" always lists the dungeons that fit your level, even when you're the only one online; offline characters can be suggested.
+- Layout: "Edit or cancel" (the link box) moves below the group, so the group rows get the full width. A row's name never runs into its status: names are measured and cut only below the window's normal width; tested with long names at 1080 × 720.
+- An answer or plan waiting for the next upload shows a small clock icon with a tooltip, not a text line.
+
+**CF-63b: answering and the group**
+- Inline, instant answering in a run, also for website and Discord runs. Every click saves, reaches friends online at once, and reaches the site with the next upload.
+  - I'm in / Maybe / Can't.
+  - A character dropdown: all your characters, with their level fit ("fits", "carry · +12", "4 below").
+  - Role toggles for the roles the class can play, each with its slot ("Healer · open", "Damage · full" means reserve).
+  - An optional note to the organiser (up to 80 characters). It needs a web change: an optional `note` on answer items, ignored by older sites.
+- Group rows:
+  - a hover tooltip with the character, level fit, role, when and where they answered (site, Discord, game) and the character they are online on
+  - a right-click menu: Whisper, Invite (from 15 minutes before the start, out of combat), Show in Friends
+  - no organiser moves: everyone sets only their own answer, character and role
+- An open slot and "Online now, fits":
+  - Whisper opens a whisper prefilled "Up for SM: Graveyard at 20:30? We need a Healer." (you send it)
+  - "Ask now for this run" sends an Ask for the run's dungeon with the note "For SM: Graveyard 20:30 · need Healer", to friends with the addon and to Discord through the uploader; the site's ask already has a note
+  - Invite from 15 minutes before the start
+
+**CF-63c: the list and planning**
+- Filter chips: All (the default, reset on close), My runs, Open slots, In range.
+- "In range for <character>" has a dropdown to pick any of your characters (back to the one you're on at each login), and a "Show all dungeons" toggle for the rest.
+- A dungeon out of range still shows who fits and the suggested group. Plan and Ask preselect your character that fits (an alt); when none fits, your character shows its fit ("carry", "too low").
+- Planning inline: chips for the next three evenings at 20:00 your time ("Tonight 20:00" only while it's at least an hour away, "Tomorrow 20:00", "<weekday> 20:00") and "Other time…" (the existing dialog). Your character and role are preselected, with a note field.
+- Countdowns ("in 3 h 10 m", "Starting now") update every minute while the window is open.
+
+**CF-63d: run reminder banners**
+- Banners like the LEVEL UP toast (top centre, gold border, the dungeon, your role, the time; they fade after 10 s; a click opens the run) for everyone who is in or maybe, and the organiser:
+  - 30 minutes before
+  - 15 minutes before ("invites open"; the organiser gets Invite all)
+  - at the start
+- They replace the old reminder (CF-48), so nothing comes twice.
+
+**Web change (for a web worker):** an optional `note` (up to 80 characters, escaped) on game items of kind `answer`, stored with the answer and shown on the site and in Discord. Older sites ignore it.
 
 ## CF-62 Addon v2: Dungeons tab and polish (decided with Nico, 2026-10-29)
 Nico's brief and boards: `docs/design/addon-v2-2026-10/` (`BRIEF.md`; `AG02Dungeons`, `AG03Tabs`, `AG04Kit`; `AG01Audit`, whose screenshots stay local). Build what the boards show with what a frame can draw (`AG04Kit`); where a board can't be built 1:1, ask Nico first. Nico's answers below override the brief.
