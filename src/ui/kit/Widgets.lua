@@ -690,6 +690,13 @@ function Kit.release(p)
   p.used = 0
 end
 
+-- CF-65: like release, but the items stay shown; Kit.sweep(p) after the redraw hides the ones not taken again. A
+-- button that is drawn again is never hidden and shown in between (that drops a click in progress).
+function Kit.recycle(p) p.used = 0 end
+function Kit.sweep(p)
+  for i = p.used + 1, #p.items do p.items[i]:Hide() end
+end
+
 -- Places a pooled text (from a Kit.textHolder pool) at x, y below the parent's top left. color: a colour name
 -- or { r, g, b }; justify: "LEFT" (default), "RIGHT" or "CENTER". Returns the holder.
 function Kit.placeText(pool, parent, x, y, width, text, color, justify)

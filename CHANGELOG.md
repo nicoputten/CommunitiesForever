@@ -9,6 +9,9 @@ tagging; the release stops if the tag has no section.
 - **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window
   again (they could open behind it).
 - **Ask now:** "Also post on Discord" is back and ticked by default; untick it to ask only friends in game.
+- **Fixed, Ask now:** clicks were sometimes lost (the tab redrew its buttons while you clicked) and the button could
+  stay greyed; every Ask now (a dungeon, a run, an open slot, /cf ask) now opens the same dialog, which says when you
+  can ask again. The "Ask now…" above the run list is gone.
 - **Friends:** friends the website knows who haven't synced in game are listed under "From the website" (was
   "Not synced yet"), with what that means on hover.
 - **Dungeons, no planning in the game:** "Ask now" is the way in game; plan runs for later on the website or with the

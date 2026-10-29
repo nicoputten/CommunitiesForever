@@ -191,8 +191,8 @@ local function notAsked(dungeon, recipients)
   return parts
 end
 
--- note (CF-63b, optional): the note to start with ("For SM: Graveyard 20:30 · need a healer").
-function RunDialogs.askNow(dungeon, note)
+-- The Ask dialog for a dungeon; note: the note to start with ("For SM: Graveyard 20:30 · need a healer").
+local function drawAsk(dungeon, note)
   state = { dungeon = dungeon, char = currentChar(), discord = true }
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), ns.db.global.people,
     ns.db.global.self.battleTag)
@@ -229,8 +229,14 @@ function RunDialogs.askNow(dungeon, note)
   discordBox:SetChecked(true)
   discordBox:SetWidth(WIDTH - 2 * PAD)
   place(discordBox, PAD, y)
-  local ok, wait = ns.GroupAsks.canAsk()
-  local main = actions("Ask now", function()
+  -- CF-65: the button is never disabled; within 3 minutes of your last ask it says how long to wait instead.
+  local problem = text("tiny", y + 34, "", "warning")
+  actions("Ask now", function()
+    local ok, wait = ns.GroupAsks.canAsk()
+    if not ok then
+      problem.text:SetText(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
+      return
+    end
     -- CF-65: to friends in game when any are online, and to Discord unless unticked (the Discord ask first, CF-51,
     -- so the whisper carries its id to every friend's file). The note goes into the Discord ask (the pending item).
     local typed = noteBox:GetText()
@@ -238,8 +244,21 @@ function RunDialogs.askNow(dungeon, note)
     ns.GroupAsks.ask(dungeon, ns.Pending.note(typed), post)
     dialog:Hide()
     if post then RunDialogs.reloadPrompt() end
-  end, not ok and string.format("You can ask again in %d min.", math.ceil(wait / 60)) or nil)
-  main:SetEnabled(ok == true)
+  end)
+end
+
+--[[ CF-65: every way to start an ask comes here: a dungeon's Ask now, Ask now for this run, an open slot's menu, the
+empty state's Ask now…, /cf ask <dungeon>. opts = { run, dungeon, role, note } (PlannedRuns.askPrefill decides what
+the dialog opens with). Returns true when the dialog opened. ]]
+function RunDialogs.ask(opts)
+  local me = ns.SelfInfo.read()
+  local prefill = ns.PlannedRuns.askPrefill(opts, {
+    dungeonOf = function(run) return ns.Dungeons.get(run.dungeon) end,
+    runName = ns.Dungeons.runName, list = ns.Dungeons.LIST, level = me.level, now = GetServerTime(), dateFn = date,
+  })
+  if not prefill.dungeon then return false end
+  drawAsk(prefill.dungeon, prefill.note)
+  return true
 end
 
 -- For the specs.

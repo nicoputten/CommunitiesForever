@@ -912,6 +912,15 @@ From Nico's retail test of develop 524ff44 with the uploader in `--retail` mode.
    the `_retail_` folder), the site reads the `ask` item with its note and posts it on Discord when its admin
    setting allows. The site drops an ask uploaded more than 10 minutes after it was made, as does the game when it
    saves later than that.
+2b. Ask now (Nico: "strange behaviour … sometimes not picking up clicks"). What was wrong: every redraw of the
+   Dungeons tab hid all its pooled buttons and showed them again; a redraw between mouse down and up (the minute
+   countdown, roster and presence changes, sync, answers) dropped the click. The buttons were also gated per entry
+   point: greyed for 3 minutes after an ask and only re-enabled by a redraw, and a dungeon you had asked for showed
+   its status instead of the button for 10 minutes. Now redraws recycle pooled frames without hiding them
+   (`Kit.recycle`/`Kit.sweep`); every way in (a dungeon's Ask now, Ask now for this run, an open slot's menu, the empty
+   state, `/cf ask`) calls `RunDialogs.ask`, with `PlannedRuns.askPrefill` deciding the dungeon and note; only the
+   dialog's button checks the 3 minutes, and says so. Nico: the "Ask now…" above the run list served no purpose and
+   is gone.
 3. The Friends group "Not synced yet" is "From the website", with the character count per row; the meaning is in
    the card's ⓘ.
 4. "Unlinked: Ikrasse-Kazzak 18" is expected: a community member no synced record claims by GUID. The website's

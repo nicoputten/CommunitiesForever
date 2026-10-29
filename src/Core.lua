@@ -83,7 +83,7 @@ local function askCommand(self, _, input)
   local name = input:match("^%s*%S+%s+(.-)%s*$") -- the rest of the line: names have spaces
   local dungeon = name and name ~= "" and ns.Dungeons.dungeonOf(name)
   if dungeon then
-    ns.GroupAsks.ask(dungeon)
+    ns.RunDialogs.ask({ dungeon = dungeon }) -- CF-65: the same Ask dialog as every other way in
   elseif name and name ~= "" then
     self:Print("No dungeon called " .. name .. ". Example: /cf ask Deadmines")
   else

@@ -114,7 +114,7 @@ describe("Run dialogs (CF-47)", function()
   it("asks without Discord when unticked (CF-65)", function()
     load(nil)
     open("dm")
-    ns.DungeonsTab.buttons()["Ask now\226\128\166"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick") -- CF-65: the dungeon's Ask now
     ns.RunDialogs.widgets().discord:RunScript("OnClick")
     assert.is_false(ns.RunDialogs.widgets().discord:GetChecked())
     click("Ask now")
@@ -127,13 +127,27 @@ describe("Run dialogs (CF-47)", function()
     load(nil)
     open("dm")
     assert.are.equal("DIALOG", ns.MainFrame.window().strata)
-    ns.DungeonsTab.buttons()["Ask now\226\128\166"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick") -- CF-65: the dungeon's Ask now
     assert.are.equal("FULLSCREEN", ns.RunDialogs.frame().strata) -- Ask now and the reload prompt
     ns.StartPanel.open("r2")
     ns.Settings.open()
     local frames = { ns.StartPanel.frame(), ns.SettingsWindow.window() }
     assert.are.equal(2, #frames)
     for _, f in ipairs(frames) do assert.are.equal("FULLSCREEN", f.strata) end
+  end)
+
+  -- CF-65: within 3 minutes of an ask the button still works and says how long to wait.
+  it("says in the dialog when you can ask again", function()
+    load(nil)
+    open("dm")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick")
+    click("Ask now")
+    click("Later")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick")
+    assert.is_not_false(ns.RunDialogs.buttons()["Ask now"].enabled)
+    click("Ask now")
+    assert.is_truthy(dialogText():find("You can ask again in 3 min.", 1, true))
+    assert.are.equal(1, #pending())
   end)
 
   it("says how to reload without the API", function()
@@ -148,7 +162,7 @@ describe("Run dialogs (CF-47)", function()
   it("asks now, always for Discord too; an ask older than 10 minutes is dropped when the game saves", function()
     load(nil)
     open("dm")
-    ns.DungeonsTab.buttons()["Ask now\226\128\166"]:RunScript("OnClick")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick") -- CF-65: the dungeon's Ask now
     local all = dialogText()
     assert.is_truthy(all:find("\nYou go as Ves Doombringer 20 \194\183 damage\n", 1, true))
     assert.is_truthy(all:find("\nWHISPERED NOW \194\183 ONLINE AND FIT\n", 1, true))
