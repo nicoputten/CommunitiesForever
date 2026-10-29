@@ -689,21 +689,22 @@ local function atText(run, now, dateFn)
   return (t:find(" ", 1, true) and "on " or "at ") .. t
 end
 
-local NEED = { tank = "a Tank", heal = "a Healer", dps = "a Damage" } -- CF-63 board CF63Group
+-- The role in a sentence (lower case; labels keep "Tank", "Healer", "Damage").
+local NEED = { tank = "a tank", heal = "a healer", dps = "damage" }
 
 --[[ CF-63b: the whisper prefilled to fill a slot (the player sends it): "Up for SM: Graveyard at 20:30? We need a
-Healer." name: the dungeon's name (Dungeons.runName); role: the slot's, or nil. ]]
+healer." name: the dungeon's name (Dungeons.runName); role: the slot's, or nil. ]]
 function PlannedRuns.whisperText(run, name, role, now, dateFn)
   local out = string.format("Up for %s %s?", tostring(PlannedRuns.shortName(name)), atText(run, now, dateFn))
   if NEED[role] then out = out .. " We need " .. NEED[role] .. "." end
   return out
 end
 
--- CF-63b: the note of "Ask now for this run": "For SM: Graveyard 20:30 · need Healer" (GroupAsk keeps 120 chars).
+-- CF-63b: the note of "Ask now for this run": "For SM: Graveyard 20:30 · need a healer" (GroupAsk keeps 120 chars).
 function PlannedRuns.askNote(run, name, role, now, dateFn)
   local out = string.format("For %s %s", tostring(PlannedRuns.shortName(name)),
     PlannedRuns.rowTime(run.startsAt, now, dateFn))
-  if PlannedRuns.ROLE_NAMES[role] then out = out .. " \194\183 need " .. PlannedRuns.ROLE_NAMES[role] end
+  if NEED[role] then out = out .. " \194\183 need " .. NEED[role] end
   return out
 end
 

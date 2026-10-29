@@ -56,7 +56,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Click Can’t | "You can’t make it"; the dropdown, roles and note disappear. | open |
 | Hover a member's row | Tooltip: the character; "Level 30 · fits · Tank"; "Answered on the website, Mon 21:12" (or Discord, in game); their note in quotes if any; "Online on <character> · <zone>" when online. | open |
 | Right-click a member's row | Menu with their name: Whisper (opens a whisper), "Invite · from 20:15" (greyed until 15 minutes before the start, and in combat), Show in Friends (opens the Friends tab on their character). Your own row has no menu. | open |
-| An open slot | "Damage · open" with "Ask now for this run" on the right: it opens Ask now with the note "For SM: Graveyard 20:30 · need Damage". Click the row: a menu "Damage · open" with "Whisper <the first who fits>" (opens the chat box with "Up for SM: Graveyard at 20:30? We need a Damage." filled in; you press Enter), Ask now for this run, "Invite · from 20:15". | open |
+| An open slot | "Damage · open" with "Ask now for this run" on the right: it opens Ask now with the note "For SM: Graveyard 20:30 · need damage". Click the row: a menu "Damage · open" with "Whisper <the first who fits>" (opens the chat box with "Up for SM: Graveyard at 20:30? We need damage." filled in; you press Enter), Ask now for this run, "Invite · from 20:15". | open |
 
 ### CF-63d Run reminder banners (board CF63Banners)
 | Step | Expected | Status |

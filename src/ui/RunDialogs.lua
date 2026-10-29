@@ -216,7 +216,7 @@ local function notAsked(dungeon, recipients)
   return parts
 end
 
--- note (CF-63b, optional): the note to start with ("For SM: Graveyard 20:30 · need Healer").
+-- note (CF-63b, optional): the note to start with ("For SM: Graveyard 20:30 · need a healer").
 function RunDialogs.askNow(dungeon, note)
   state = { dungeon = dungeon, discord = false, char = currentChar() }
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), ns.db.global.people,
