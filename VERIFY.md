@@ -38,6 +38,15 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-62b Doomsday Today v2 (board AG03Tabs)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday › Today at 1080 × 720 | Header "Today · Wed evening · N of M done" with an ⓘ after it (hover: what "⇄ swapped" means), "New goals Thu 19:00 · in 4 h 28 m" in orange on the right. | open |
+| The goal rows | Per row: an 18 px box (green with a check when done), the kind in green (Daily) or red (Skirmish, Hunt, Duel), the title (struck through and grey when done), a blue "⇄ swapped" on a swapped goal (hover: "Instead of: …"), "done"/"not yet" for one-step goals or a short 140 px bar with "1/10", and "+5" at the far right in the track colour. | open |
+| The Duel row | "First duel with each friend", "0/N" with the friends online today, and the points earned today ("+4" after a win and a loss, nothing at 0); hover: whom you dueled and "Win +3 · loss +1 · first duel per friend". | open |
+| Under the goals | Three bordered boxes: Today (PvE green · PvP red; hover: the kill summary), This week (the same), Streak ("N days" orange, "best N"). | open |
+| The right column | "Friends today" with an ⓘ (hover: "Live for friends online with the addon; others after their upload."), "PvE · PvP" on the right; one row per friend with Doomsday data and "You"; a 12 px box per goal (green PvE, red PvP when done, dark when open), "PvP Virgin" instead of the PvP boxes for a virgin, the points, a line through the name of who did all dailies, "crown" after the first. | open |
+
 ### CF-61 bug 11: Dungeons tab without a dungeon
 | Step | Expected | Status |
 |---|---|---|
