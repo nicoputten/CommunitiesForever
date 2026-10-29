@@ -56,7 +56,8 @@ describe("MainFrame", function()
     assert.are.equal("Vestras (you)", tab().row("Vestras#1000").name:GetText())
     assert.is_false(tab().row("Vestras#1000").mark.shown) -- no addon mark on your own row
     -- CF-40: the footer: sync state left (CF-61: no hint on the right).
-    assert.is_truthy(frame().footerText.text:find("1 character from 1 friend", 1, true))
+    assert.is_truthy(frame().footerText.text:find("this session", 1, true)) -- CF-62
+    assert.is_truthy(frame().footerText.text:find("of your character", 1, true))
     assert.are.equal("", frame().footerRightText.text)
   end)
 

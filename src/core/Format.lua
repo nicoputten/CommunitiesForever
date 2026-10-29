@@ -149,31 +149,39 @@ function Format.tree(view)
   return nodes
 end
 
--- CF-42: "Synced with <person> 2 min ago" (the newest record that arrived), or "Not synced yet".
-function Format.syncedText(view, now)
-  local newest, newestName
+-- CF-62: friends whose record arrived this session (since `since`, server time), and the newest arrival.
+local function syncedSince(view, since)
+  local count, newest = 0, nil
   for _, person in ipairs(view.people or {}) do
-    if not person.isSelf and person.receivedAt and (not newest or person.receivedAt > newest) then
-      newest, newestName = person.receivedAt, person.displayName
+    local at = person.receivedAt
+    if not person.isSelf and type(at) == "number" and at >= (since or 0) then
+      count = count + 1
+      if not newest or at > newest then newest = at end
     end
   end
-  return newest and string.format("Synced with %s %s", tostring(newestName), Format.ago(newest, now))
-    or "Not synced yet"
+  return count, newest
 end
 
--- CF-40: the Friends tab footer: the sync state (syncedText) and "N characters from M friends" (everyone but
--- you).
-function Format.friendsFooter(view, now)
-  local chars, friends = 0, 0
+--[[ CF-62 (was "Synced with <person> 2 min ago" / "Not synced yet", CF-42): "Synced with 2 friends · 22:41" (the
+newest arrival in your clock), or "Synced with 0 friends · waiting for someone online". since: the session's start;
+clock(t): "22:41". ]]
+function Format.syncedText(view, since, clock)
+  local count, newest = syncedSince(view, since)
+  if count == 0 then return "Synced with 0 friends \194\183 waiting for someone online" end
+  return string.format("Synced with %d friend%s \194\183 %s", count, count == 1 and "" or "s",
+    clock and clock(newest) or "")
+end
+
+-- CF-62: the Friends tab footer: "Synced with 2 friends this session · 3 of your characters" (your own characters,
+-- never "0 characters from 0 friends").
+function Format.friendsFooter(view, since)
+  local count = syncedSince(view, since)
+  local own = 0
   for _, person in ipairs(view.people or {}) do
-    if not person.isSelf then
-      friends = friends + 1
-      chars = chars + #person.chars
-    end
+    if person.isSelf then own = #(person.chars or {}) end
   end
-  local synced = Format.syncedText(view, now)
-  return string.format("%s \194\183 %d character%s from %d friend%s", synced, chars, chars == 1 and "" or "s",
-    friends, friends == 1 and "" or "s")
+  return string.format("Synced with %d friend%s this session \194\183 %d of your character%s", count,
+    count == 1 and "" or "s", own, own == 1 and "" or "s")
 end
 
 function Format.findPerson(view, value)

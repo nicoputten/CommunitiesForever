@@ -207,14 +207,22 @@ describe("Format", function()
       assert.is_nil(Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).talentBars)
     end)
 
-    it("sums up the sync state for the footer", function()
+    it("sums up the sync state for the footer (CF-62: friends synced this session)", function()
       local view = { people = { person(), me() }, unlinked = unlinked }
-      assert.are.equal("Not synced yet \194\183 2 characters from 1 friend", Format.friendsFooter(view, NOW))
+      local start = NOW - 600
+      local function clock(t) return t == NOW - 120 and "22:41" or "?" end
+      local own = #me().chars
+      local ownText = string.format("%d of your character%s", own, own == 1 and "" or "s")
+      local waiting = "Synced with 0 friends \194\183 waiting for someone online"
+      assert.are.equal(waiting, Format.syncedText(view, start, clock))
+      assert.are.equal("Synced with 0 friends this session \194\183 " .. ownText, Format.friendsFooter(view, start))
+      view.people[1].receivedAt = NOW - 900 -- before this session: not counted
+      assert.are.equal(waiting, Format.syncedText(view, start, clock))
       view.people[1].receivedAt = NOW - 120
-      assert.are.equal("Synced with Sjaak 2 min ago \194\183 2 characters from 1 friend",
-        Format.friendsFooter(view, NOW))
-      assert.are.equal("Not synced yet \194\183 0 characters from 0 friends", Format.friendsFooter({}, NOW))
-      assert.are.equal("Synced with Sjaak 2 min ago", Format.syncedText(view, NOW)) -- CF-42: the Dungeons footer
+      assert.are.equal("Synced with 1 friend \194\183 22:41", Format.syncedText(view, start, clock))
+      assert.are.equal("Synced with 1 friend this session \194\183 " .. ownText, Format.friendsFooter(view, start))
+      assert.are.equal("Synced with 0 friends this session \194\183 0 of your characters",
+        Format.friendsFooter({}, start))
     end)
 
     it("counts quests shared with you on friends' characters in the list", function()
