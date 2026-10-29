@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Tidier setup:** the last explanatory notes are gone from the setup, the settings and the chat-tab chat line.
 - **Fixed:** no more Blizzard warning that the addon uses something "only available to the Blizzard UI": the addon
   no longer reads the combat log. What killed you now comes from the death recap.
 - **Fixed:** the Dungeons tab on a character outside the community says it isn't in the community yet, instead of

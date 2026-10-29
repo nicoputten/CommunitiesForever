@@ -104,7 +104,7 @@ function CommunityChat.createTab()
   if guid then settings().chatTab[guid] = true end
   if settings().chatKeepGeneral == false then CommunityChat.setKeepGeneral(false) end
   CommunityChat.applyColor()
-  say(string.format("Created the %s chat tab: it shows only the community chat.", CommunityChat.tabName()))
+  say(string.format("Created the %s chat tab.", CommunityChat.tabName()))
   return true
 end
 
