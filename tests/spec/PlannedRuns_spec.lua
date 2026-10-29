@@ -103,6 +103,15 @@ describe("PlannedRuns (CF-45)", function()
     assert.are.equal(2, #run.answers)
   end)
 
+  it("keeps the site's dungeon name, cleaned and capped (CF-63)", function()
+    local raw = sample()
+    raw.runs[1].dungeonName = "|cffff0000Hall of Thanes|r " .. string.rep("x", 100)
+    local run = PlannedRuns.validate(raw).runs[2]
+    assert.are.equal("cffff0000Hall of Thanesr x", run.dungeonName:sub(1, 26))
+    assert.is_true(#run.dungeonName <= 60)
+    assert.is_nil(PlannedRuns.validate(sample()).runs[1].dungeonName)
+  end)
+
   it("removes escape sequences and control characters from text", function()
     local raw = sample()
     raw.runs[1].note = "|cffff0000Red|r\nline |Hitem:1|h[x]|h  two"

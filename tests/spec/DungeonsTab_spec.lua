@@ -284,6 +284,53 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(text():find("\nneeds Questie\n", 1, true)) -- CF-62: no QuestieDB here
   end)
 
+  -- CF-63: Nico's retail test. The Group Finder offers only Retail dungeons, a website run is for "smgy".
+  it("keeps the static dungeons when the Group Finder offers none of them, and names a website run (CF-63)",
+    function()
+      load(30, { updatedAt = NOW - 600, runs = {
+        { id = "r9", dungeon = "smgy", startsAt = NOW + 3600, state = "open", source = "site",
+          url = "https://example.com/runs/r9",
+          organiser = { battleTag = "Vestras#1000", guid = VES, name = "Ves Doombringer" },
+          answers = {
+            { guid = VES, name = "Ves Doombringer", answer = "in", role = "dps", source = "site" },
+            { battleTag = "Ada#1001", name = "Bartholomew Thunderbrewington", answer = "in",
+              role = "heal", source = "discord" },
+            { battleTag = "Bo#2002", name = "Wilhelmina Featherstonehaugh", answer = "maybe", role = "tank",
+              source = "discord" },
+          } } } })
+      state.lfgActivities[9001] = { fullName = "A Retail Dungeon", shortName = "A Retail Dungeon",
+        minLevelSuggestion = 70, maxLevelSuggestion = 80, maxNumPlayers = 5, difficultyID = 1, isPvpActivity = false }
+      open()
+      local all = text()
+      -- "In range for" shows, also with nobody else online.
+      assert.is_truthy(all:find("\nIn range for Ves Doombringer (30)\n", 1, true))
+      assert.is_truthy(row("smgy"))
+      assert.is_nil(row("lfg9001"))
+      -- The run: the dungeon's name and range, never the raw id.
+      select("run:r9")
+      all = text()
+      assert.is_truthy(all:find("\nScarlet Monastery: Graveyard\n", 1, true))
+      assert.is_truthy(all:find("\nlevel 26" .. DASH .. "36\n", 1, true))
+      assert.is_falsy(all:find("smgy", 1, true))
+      -- Long names never run into the status: name, info and status fit the row side by side.
+      local lastY = 0
+      for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+        local used = 66 + (g.name.width or 0) + 8 + (g.info.width or 0)
+          + ((g.status:GetText() or "") ~= "" and (12 + (g.status.width or 0)) or 0) + 12
+        assert.is_true(used <= g.width, tostring(g.name:GetText()))
+        if (g.name:GetText() or ""):find("Bartholomew", 1, true) then
+          assert.is_true(g.name.width >= g.name:GetStringWidth() - 1) -- the full name at the normal width
+          assert.are.equal("answered on Discord", g.status:GetText())
+        end
+        lastY = math.max(lastY, -g.points[1][3])
+      end
+      -- Edit or cancel: below the group, on the left.
+      local box = ns.DungeonsTab.linkBox()
+      assert.is_true(box.shown)
+      assert.are.equal(20, box.points[1][2])
+      assert.is_true(-box.points[1][3] > lastY)
+    end)
+
   describe("quests (QuestieDB)", function()
     local QUESTS = {
       [201] = { name = "Red Silk Bandanas", zoneOrSort = 1581, questLevel = 17, requiredLevel = 14, requiredRaces = 0,

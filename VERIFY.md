@@ -33,6 +33,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-63a Dungeons tab: dungeon names, in range on Retail, the run layout
+| Step | Expected | Status |
+|---|---|---|
+| Retail 12.1.5 (or Forever), a website run for SM: Graveyard (`smgy`); `/reload` after the upload, `/cf`, Dungeons | The run row says "SM: Graveyard" (never "smgy"); the run's title "Scarlet Monastery: Graveyard" with "level 26–36" next to it. | open |
+| Same, alone online (no friend on) | "In range for <character> (<level>)" lists the dungeons that fit you; on Retail the Vanilla dungeons, no Retail ones. "Online now, fits 26–36" shows on the run. | open |
+| A run for a dungeon the addon doesn't know (if the site has one) | The site's name, else "A dungeon"; never an id. | open |
+| A run with several answers, window at its normal size (1080 × 720) | The group rows span the full width; no name runs into its status ("answered on Discord", "maybe · online · <zone>"); "Edit or cancel" (organiser) or "On the website" with the link box sits below the group and your answer, on the left; "Online now, fits" on the right beside it. | open |
+| Make the window as narrow as it goes | A long name is cut with "..." before it reaches the status; nothing overlaps. | open |
+| Answer a run (I'm in), before `/reload` | A small pocket watch icon after the run row's "N in" and after the run's time line; hover: "Not on the website yet: reaches the website and Discord after /reload." No text line. If the icon is missing (only an empty ring shows), note it: `Interface\Icons\INV_Misc_PocketWatch_01` isn't there. | open |
+
 ### CF-62d2 Dungeons tab: in range and the empty state (board AG05InRange, D)
 | Step | Expected | Status |
 |---|---|---|

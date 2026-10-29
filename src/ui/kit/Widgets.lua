@@ -46,6 +46,21 @@ function Kit.info(parent)
   return f
 end
 
+-- CF-63: a small clock with a tooltip (self.tip): something waits for the next upload. The pocket watch icon is a
+-- game file (unverified on Forever, VERIFY.md CF-63a); without it the ring of Kit.info stays, with no label.
+local CLOCK_ICON = "Interface\\Icons\\INV_Misc_PocketWatch_01"
+function Kit.clock(parent)
+  local f = Kit.info(parent)
+  f.label:SetText("")
+  local icon = f:CreateTexture(nil, "OVERLAY")
+  icon:SetPoint("TOPLEFT", 2, -2)
+  icon:SetPoint("BOTTOMRIGHT", -2, 2)
+  icon:SetTexture(CLOCK_ICON)
+  if icon.SetTexCoord then icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) end
+  f.icon = icon
+  return f
+end
+
 -- CF-62: Blizzard role icons by atlas, guarded (unverified on Forever, VERIFY.md CF-62d): without the atlas a
 -- coloured square in the role's colour. icon:SetRole(role, dim): dim for an open slot.
 local ROLE_ATLAS = { tank = "UI-LFG-RoleIcon-Tank", heal = "UI-LFG-RoleIcon-Healer", dps = "UI-LFG-RoleIcon-DPS" }

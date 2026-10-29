@@ -6,6 +6,10 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed, Dungeons:** a website run shows the dungeon's name ("Scarlet Monastery: Graveyard") and level range instead
+  of its id, and "In range" and "Online now, fits" work on Retail too. The group rows use the full width with the
+  website link below them, long names no longer run into their status, and a run waiting for your next upload shows
+  a small clock (hover for when it reaches the website).
 
 ## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them

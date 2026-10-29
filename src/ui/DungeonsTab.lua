@@ -12,7 +12,8 @@ local Theme, Kit = ns.Theme, ns.Kit
 local PAD = 20
 local ROW = 44
 local SLOT_HEIGHT = 100
-local PENDING = "reaches Discord after /reload" -- CF-47: waiting for the next save and upload
+-- CF-47: waiting for the next save and upload (CF-63: the tooltip of a clock icon)
+local PENDING = "Not on the website yet: reaches the website and Discord after /reload."
 local SOURCE_WORDS = { site = "planned on the website", discord = "planned on Discord", game = "planned in game" }
 local DOT = " \194\183 "
 local ASK_TIP = "Whispers online friends who fit; can post on Discord too. Waits until combat ends." -- CF-61
@@ -165,6 +166,10 @@ local function runRow(parent)
   r.meta:SetPoint("BOTTOMLEFT", 12 + 5 * 17 + 6, 9)
   r.who = Theme.text(r, "tiny", "muted")
   r.who:SetPoint("BOTTOMRIGHT", -12, 9)
+  r.clock = Kit.clock(r) -- CF-63: waits for the next upload
+  r.clock:SetPoint("LEFT", r.meta, "RIGHT", 6, 0)
+  r.clock.tip = PENDING
+  r.clock:Hide()
   r:SetScript("OnClick", function(self) DungeonsTab.select(self.value) end)
   return r
 end
@@ -186,6 +191,10 @@ local function groupRow(parent)
   g.info:SetPoint("LEFT", g.name, "RIGHT", 8, 0)
   g.status = Theme.text(g, "small", "muted")
   g.status:SetPoint("RIGHT", -12, 0)
+  g.status:SetJustifyH("RIGHT")
+  for _, fs in ipairs({ g.name, g.info, g.status }) do
+    if fs.SetWordWrap then fs:SetWordWrap(false) end -- CF-63: cut with "...", never a second line
+  end
   g:SetScript("OnEnter", function(self)
     if not (self.tip and GameTooltip) then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -194,6 +203,25 @@ local function groupRow(parent)
   end)
   g:SetScript("OnLeave", function(self) if self.tip and GameTooltip then GameTooltip:Hide() end end)
   return g
+end
+
+-- CF-63: a group row's name, "level · friend" and status never run into each other: the status keeps up to 40% of
+-- the row, the name what is left after a short info; what doesn't fit is cut ("...").
+local function natural(fs)
+  local t = fs:GetText()
+  if not t or t == "" then return 0 end
+  return math.ceil(fs:GetStringWidth() or 0) + 1
+end
+
+local function fitGroupRow(g, width)
+  for _, fs in ipairs({ g.name, g.info, g.status }) do fs:SetWidth(0) end
+  local statusW = math.min(natural(g.status), math.floor(width * 0.4))
+  if statusW > 0 then g.status:SetWidth(statusW) end
+  local room = width - 66 - 12 - (statusW > 0 and (statusW + 12) or 0)
+  local infoW = natural(g.info)
+  local nameW = math.min(natural(g.name), math.max(80, room - math.min(infoW, 120) - 8))
+  g.name:SetWidth(math.max(1, nameW))
+  g.info:SetWidth(math.max(1, math.min(infoW, room - nameW - 8)))
 end
 
 -- CF-62: a 34 px row of "Online now, fits": class icon, name, level, "friend · zone", Whisper or Invite.
@@ -331,7 +359,8 @@ local function renderList(runs, overview, me, candidates)
         p:SetColorTexture(Theme.color("track"))
       end
     end
-    r.meta:SetText(run.pending and colored(PENDING, "faint") or countsText(run))
+    r.meta:SetText(countsText(run))
+    r.clock:SetShown(run.pending == true)
     local organiser = organiserText(run, candidates, me)
     r.who:SetText(organiser)
     r.who:SetTextColor(Theme.color(organiser == "you organise" and "goldLight" or "muted"))
@@ -417,7 +446,7 @@ end
 
 local function clearDetail()
   for _, name in ipairs({ "name", "section", "small", "tiny", "slots", "quests", "buttons", "primary", "groupRows",
-                          "onlineRows", "infos", "links" }) do
+                          "onlineRows", "infos", "links", "clocks" }) do
     Kit.release(pools[name])
   end
   linkBox:Hide()
@@ -478,14 +507,17 @@ local function renderRun(run, me, candidates)
   if SOURCE_WORDS[run.source] then sub[#sub + 1] = SOURCE_WORDS[run.source] end
   if run.state == "full" then sub[#sub + 1] = "full" end
   if run.note then sub[#sub + 1] = "note: \226\128\156" .. run.note .. "\226\128\157" end
-  placeText(pools.small, parent, PAD, y, width, lead .. (#sub > 0 and (DOT .. table.concat(sub, DOT)) or ""),
-    "textDim")
-  y = y + 26
+  local leadText = placeText(pools.small, parent, PAD, y, width - 24,
+    lead .. (#sub > 0 and (DOT .. table.concat(sub, DOT)) or ""), "textDim")
   local mineNow = ns.PlannedRuns.yourAnswer(run, me)
   if run.pending or (mineNow and mineNow.pending) then
-    placeText(pools.tiny, parent, PAD, y, leftWidth, PENDING, "faint")
-    y = y + 18
+    -- CF-63: a clock after the line, its tooltip says when it reaches the website.
+    local lw = leadText.text.GetStringWidth and leadText.text:GetStringWidth() or 200
+    local clockIcon = Kit.take(pools.clocks, parent)
+    clockIcon:SetPoint("TOPLEFT", PAD + math.min(lw, width - 24) + 8, -(y + 1))
+    clockIcon.tip = PENDING
   end
+  y = y + 26
 
   -- Group: five full-width rows.
   local slotList = ns.PlannedRuns.slots(run, candidates, dungeon)
@@ -501,8 +533,8 @@ local function renderRun(run, me, candidates)
   local yes, maybe = ns.PlannedRuns.counts(run)
   local counts = yes .. " in" .. (maybe > 0 and (DOT .. maybe .. " maybe") or "") ..
     (openCount > 0 and (DOT .. openCount .. " open") or "")
-  local top = y
-  y = section(parent, PAD, y, leftWidth, "Group", counts)
+  -- CF-63: the group gets the full width; the link moves below it.
+  y = section(parent, PAD, y, width, "Group", counts)
   local organiser = run.organiser
   local ctx = open and ns.RunAlerts.context() or nil
   local states = {}
@@ -519,7 +551,7 @@ local function renderRun(run, me, candidates)
   for _, slot in ipairs(slotList) do
     local g = Kit.take(pools.groupRows, parent)
     g:SetPoint("TOPLEFT", PAD, -y)
-    g:SetWidth(leftWidth)
+    g:SetWidth(width)
     g.tip = nil
     local a, c = slot.answer, slot.char
     if a then
@@ -568,6 +600,7 @@ local function renderRun(run, me, candidates)
         g.status:SetText("")
       end
     end
+    fitGroupRow(g, width)
     y = y + GROUP_ROW + 4
   end
   local reserves = {}
@@ -580,12 +613,13 @@ local function renderRun(run, me, candidates)
     reserves[#reserves + 1] = who .. (#parts > 0 and (" (" .. table.concat(parts, ", ") .. ")") or "")
   end
   if #reserves > 0 then
-    placeText(pools.small, parent, PAD, y + 2, leftWidth, "Reserve: " .. table.concat(reserves, ", "), "muted")
+    placeText(pools.small, parent, PAD, y + 2, width, "Reserve: " .. table.concat(reserves, ", "), "muted")
     y = y + 22
   end
 
-  -- The action area, below a divider.
+  -- The action area, below a divider; Online now, fits beside it.
   y = y + 10
+  local top = y
   local isOrganiser = ns.PlannedRuns.isOrganiser(run, me)
   local data = ns.Planner.data()
   if isOrganiser then
@@ -666,7 +700,21 @@ local function renderRun(run, me, candidates)
     y = y + 22
   end
 
-  -- Right column: Online now, fits, then Edit or cancel.
+  -- CF-63: Edit or cancel (the website link), below the group and the action area.
+  y = section(parent, PAD, y + 10, leftWidth, isOrganiser and "Edit or cancel" or "On the website")
+  if run.url then
+    linkBox:ClearAllPoints()
+    linkBox:SetParent(parent)
+    linkBox:SetPoint("TOPLEFT", PAD, -y)
+    linkBox:SetWidth(math.min(leftWidth, 360))
+    linkBox:SetText(run.url)
+    linkBox:Show()
+    y = y + 34
+    placeText(pools.tiny, parent, PAD, y, leftWidth, "Click, then Ctrl+C to copy.", "faint")
+    y = y + 20
+  end
+
+  -- Right column: Online now, fits.
   local ry = top
   if dungeon then
     local heading = placeText(pools.section, parent, rightX, ry, ONLINE_WIDTH,
@@ -707,18 +755,6 @@ local function renderRun(run, me, candidates)
       ry = ry + ONLINE_ROW
     end
     ry = ry + 12
-  end
-  ry = section(parent, rightX, ry, ONLINE_WIDTH, isOrganiser and "Edit or cancel" or "On the website")
-  if run.url then
-    linkBox:ClearAllPoints()
-    linkBox:SetParent(parent)
-    linkBox:SetPoint("TOPLEFT", rightX, -ry)
-    linkBox:SetWidth(228)
-    linkBox:SetText(run.url)
-    linkBox:Show()
-    ry = ry + 34
-    placeText(pools.tiny, parent, rightX, ry, ONLINE_WIDTH, "Click, then Ctrl+C to copy.", "faint")
-    ry = ry + 20
   end
   parent:SetHeight(math.max(y, ry) + PAD)
   detail:Update()
@@ -842,6 +878,7 @@ local function renderDetail(entry, me, messageText, runs, candidates)
         g.status:SetText("")
       end
     end
+    fitGroupRow(g, leftWidth)
     y = y + GROUP_ROW + 4
   end
   local alternatives = ns.Dungeons.outside(entry, group)
@@ -1015,7 +1052,7 @@ function DungeonsTab.create(parent, h)
     -- CF-62
     runRows = Kit.pool(runRow), listTitle = Kit.pool(Kit.textHolder("section")), listButtons = Kit.pool(button),
     groupRows = Kit.pool(groupRow), onlineRows = Kit.pool(onlineRow), infos = Kit.pool(Kit.info),
-    listInfos = Kit.pool(Kit.info),
+    listInfos = Kit.pool(Kit.info), clocks = Kit.pool(Kit.clock), -- CF-63
     links = Kit.pool(function(p)
       local b = CreateFrame("Button", nil, p)
       b:SetSize(60, 18)
@@ -1184,7 +1221,7 @@ end
 
 function DungeonsTab.tips()
   local out = {}
-  for _, name in ipairs({ "infos", "listInfos" }) do
+  for _, name in ipairs({ "infos", "listInfos", "clocks" }) do
     for i = 1, pools and pools[name].used or 0 do out[#out + 1] = pools[name].items[i].tip end
   end
   for _, name in ipairs({ "primary", "buttons", "groupRows" }) do
