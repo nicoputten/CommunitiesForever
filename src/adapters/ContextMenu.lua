@@ -7,12 +7,12 @@ local _, ns = ...
 
 local ContextMenu = {}
 
--- model = { title, items = { { label, enabled, ... } } }; onItem(item) runs on a click. Returns true when the
--- menu opened.
+-- model = { title (optional, CF-63), items = { { label, enabled, ... } } }; onItem(item) runs on a click. Returns
+-- true when the menu opened.
 function ContextMenu.open(owner, model, onItem)
   if not (MenuUtil and MenuUtil.CreateContextMenu and owner and model) then return false end
   local ok = pcall(MenuUtil.CreateContextMenu, owner, function(_, root)
-    root:CreateTitle(model.title)
+    if model.title then root:CreateTitle(model.title) end
     for _, item in ipairs(model.items) do
       local element = root:CreateButton(item.label, function() onItem(item) end)
       if not item.enabled and element and element.SetEnabled then element:SetEnabled(false) end

@@ -421,6 +421,7 @@ function wowapi.install(opts)
       GetCurrentCalendarTime = function() return state.calendarTime and deepCopy(state.calendarTime) end,
     },
     date = os.date,
+    time = os.time, -- CF-63c: the game's time() (V71), turns a local date into seconds
     C_Texture = {
       GetAtlasInfo = function(name) return state.atlases[name] and { width = 32, height = 32 } or nil end,
     },

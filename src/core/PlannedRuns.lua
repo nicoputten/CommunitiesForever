@@ -90,6 +90,7 @@ local function answer(raw)
   a.at = time(raw.at)
   a.fit = text(raw.fit, PlannedRuns.MAX_FIT) -- CF-49 (web WEB-47): the site's levelFit label
   a.reserve = raw.reserve == true or nil      -- CF-49: an I'm in waiting for a full role (sent as maybe)
+  a.note = text(raw.note, PlannedRuns.MAX_ANSWER_NOTE) -- CF-63: a note to the organiser (optional)
   return a
 end
 
@@ -119,6 +120,7 @@ local function cleanRun(raw)
   r.state = oneOf(PlannedRuns.STATES, raw.state)
   r.source = oneOf(PlannedRuns.SOURCES, raw.source) -- CF-46: where it was planned
   r.note = text(raw.note, PlannedRuns.MAX_NOTE)
+  r.dungeonName = text(raw.dungeonName, 60) -- CF-63: the site's name, for an id the addon doesn't know
   r.url = url(raw.url)
   r.organiser = person(raw.organiser)
   if r.organiser and type(raw.organiser) == "table" then
@@ -563,7 +565,7 @@ function PlannedRuns.parseClock(typed)
   return h, m
 end
 
--- "in 2 h 40 min", "in 25 min", "in 3 days", "started 10 min ago".
+-- "in 2 h 40 m", "in 25 min", "in 3 days", "started 10 min ago" (CF-63 board CF63RunDetail: "in 3 h 10 m").
 function PlannedRuns.untilText(at, now)
   local seconds = at - now
   if seconds < 0 then
@@ -573,10 +575,19 @@ function PlannedRuns.untilText(at, now)
   if minutes < 60 then return string.format("in %d min", minutes) end
   if minutes < 24 * 60 then
     local h, m = math.floor(minutes / 60), minutes % 60
-    return m > 0 and string.format("in %d h %d min", h, m) or string.format("in %d h", h)
+    return m > 0 and string.format("in %d h %d m", h, m) or string.format("in %d h", h)
   end
   local d = math.floor(minutes / (24 * 60))
   return string.format("in %d day%s", d, d == 1 and "" or "s")
+end
+
+PlannedRuns.STARTING_FOR = 30 * 60 -- CF-63: "Starting now" this long after the start
+
+-- CF-63: a run's countdown: untilText before the start, "Starting now" for STARTING_FOR after it, then "started
+-- N min ago".
+function PlannedRuns.countdown(at, now)
+  if now >= at and now < at + PlannedRuns.STARTING_FOR then return "Starting now" end
+  return PlannedRuns.untilText(at, now)
 end
 
 -- ===== CF-62: what the site knows, for Friends ("Not synced yet") and the Dungeons empty state =====
@@ -613,6 +624,187 @@ function PlannedRuns.friends(raw)
     end
   end
   return out
+end
+
+-- ===== CF-63: an interactive Dungeons tab (logic only; the UI waits for the design boards) =====
+
+local FIT_ORDER = { fits = 1, over = 2, low = 3, carry = 4, tooLow = 5 }
+PlannedRuns.ROLE_NAMES = { tank = "Tank", heal = "Healer", dps = "Damage" }
+
+--[[ CF-63b: your characters for a run's character dropdown, every one (any level may answer, CF-50), each with
+how it fits: { { char, fit } }. Best fit first (fits, over, low, carry, too low), then the character you are on,
+then the highest level. dungeon nil (unknown range): all count as fitting. ]]
+function PlannedRuns.charChoices(candidates, dungeon, selfGuid)
+  local list = {}
+  for _, c in ipairs(candidates or {}) do
+    if c.own then
+      local fit = dungeon and PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max)
+        or { kind = "fits", label = "fits", canPick = true, suggested = true }
+      list[#list + 1] = { char = c, fit = fit }
+    end
+  end
+  table.sort(list, function(a, b)
+    local fa, fb = FIT_ORDER[a.fit.kind] or 9, FIT_ORDER[b.fit.kind] or 9
+    if fa ~= fb then return fa < fb end
+    local sa, sb = a.char.guid == selfGuid, b.char.guid == selfGuid
+    if sa ~= sb then return sa end
+    local la, lb = tonumber(a.char.level) or 0, tonumber(b.char.level) or 0
+    if la ~= lb then return la > lb end
+    return tostring(a.char.name) < tostring(b.char.name)
+  end)
+  return list
+end
+
+--[[ CF-63b: the role toggles for a class in a run, with how full each role's slots are without your own answer:
+{ { role, state = "open" | "full", label = "Healer · open" | "Damage · full" } }, the class's roles in the order
+tank, heal, dps. "full": answering I'm in with it makes you a reserve. ]]
+function PlannedRuns.roleChoices(run, candidates, dungeon, classFile, me)
+  local others = {}
+  for _, a in ipairs(type(run) == "table" and run.answers or {}) do
+    if not (me and isMe(a, me)) then others[#others + 1] = a end
+  end
+  local free = {}
+  for _, slot in ipairs(PlannedRuns.slots({ answers = others }, candidates, dungeon)) do
+    if not slot.answer or slot.maybe then free[slot.role] = true end
+  end
+  local list = {}
+  for _, role in ipairs(PlannedRuns.rolesFor(classFile)) do
+    local state = free[role] and "open" or "full"
+    list[#list + 1] = { role = role, state = state, label = PlannedRuns.ROLE_NAMES[role] .. " \194\183 " .. state }
+  end
+  return list
+end
+
+-- The first role a run still needs, tank before healer before damage: "tank" | "heal" | "dps" | nil.
+function PlannedRuns.neededRole(run, candidates, dungeon)
+  for _, slot in ipairs(PlannedRuns.slots(run, candidates, dungeon)) do
+    if not slot.answer then return slot.role end
+  end
+  return nil
+end
+
+-- A run's time in a sentence: "at 20:30" today, else "on Fri 20:00" (rowTime).
+local function atText(run, now, dateFn)
+  local t = PlannedRuns.rowTime(run.startsAt, now, dateFn)
+  return (t:find(" ", 1, true) and "on " or "at ") .. t
+end
+
+-- The role in a sentence (lower case; labels keep "Tank", "Healer", "Damage").
+local NEED = { tank = "a tank", heal = "a healer", dps = "damage" }
+
+--[[ CF-63b: the whisper prefilled to fill a slot (the player sends it): "Up for SM: Graveyard at 20:30? We need a
+healer." name: the dungeon's name (Dungeons.runName); role: the slot's, or nil. ]]
+function PlannedRuns.whisperText(run, name, role, now, dateFn)
+  local out = string.format("Up for %s %s?", tostring(PlannedRuns.shortName(name)), atText(run, now, dateFn))
+  if NEED[role] then out = out .. " We need " .. NEED[role] .. "." end
+  return out
+end
+
+-- CF-63b: the note of "Ask now for this run": "For SM: Graveyard 20:30 · need a healer" (GroupAsk keeps 120 chars).
+function PlannedRuns.askNote(run, name, role, now, dateFn)
+  local out = string.format("For %s %s", tostring(PlannedRuns.shortName(name)),
+    PlannedRuns.rowTime(run.startsAt, now, dateFn))
+  if NEED[role] then out = out .. " \194\183 need " .. NEED[role] end
+  return out
+end
+
+PlannedRuns.MAX_ANSWER_NOTE = 80 -- CF-63: the note to the organiser on an answer
+
+--[[ CF-63b: what your answer is, for the "Your answer" line: "none" | "in" | "maybe" | "cant" | "reserve".
+mine: your answer (yourAnswer) or nil; roleFull: true when the role you picked is full without you (an I'm in then
+waits as reserve; the site decides in the end, a.reserve). ]]
+function PlannedRuns.answerState(mine, roleFull)
+  if not mine then return "none" end
+  if mine.answer == "in" and (mine.reserve or roleFull) then return "reserve" end
+  return mine.answer
+end
+
+PlannedRuns.ANSWER_STATES = { none = "Not answered yet", ["in"] = "You\226\128\153re in", maybe = "You said maybe",
+                              cant = "You can\226\128\153t make it", reserve = "You\226\128\153re on reserve" }
+
+local SOURCE_AT = { site = "on the website", discord = "on Discord", game = "in game" }
+
+-- "Today 21:12", "Yesterday 21:12", "Mon 21:12" (the last 6 days), "Mon 5 Nov 21:12": a time in the past.
+function PlannedRuns.pastText(at, now, dateFn)
+  local t, n = dateFn("*t", at), dateFn("*t", now)
+  local clock = string.format("%02d:%02d", t.hour, t.min)
+  local diff = days(n) - days(t)
+  if diff == 0 then return "Today " .. clock end
+  if diff == 1 then return "Yesterday " .. clock end
+  if diff > 1 and diff < 7 then return WEEKDAYS[t.wday] .. " " .. clock end
+  return string.format("%s %d %s %s", WEEKDAYS[t.wday], t.day, MONTHS[t.month], clock)
+end
+
+--[[ CF-63b: the hover tooltip of a group member (board CF63Group C), its lines:
+  name; "Level 30 · fits · Tank"; "Answered on the website, Mon 21:12"; "Online on <character> · <zone>".
+a: the answer; char: the candidate (or nil); dungeon (or nil); presence: { name, zone } when online, else nil. ]]
+function PlannedRuns.memberLines(a, char, dungeon, presence, now, dateFn)
+  local lines = { tostring((char and char.name) or a.name or "?") }
+  local parts = {}
+  local level = char and char.level
+  if type(level) == "number" then parts[#parts + 1] = "Level " .. level end
+  local fit = PlannedRuns.fitOf(a, char, dungeon)
+  if fit and fit.label then parts[#parts + 1] = fit.label end
+  local role = a.role or (char and char.role)
+  if PlannedRuns.ROLE_NAMES[role] then parts[#parts + 1] = PlannedRuns.ROLE_NAMES[role] end
+  if #parts > 0 then lines[#lines + 1] = table.concat(parts, " \194\183 ") end
+  local where = SOURCE_AT[a.source]
+  if where then
+    local at = type(a.at) == "number" and dateFn and (", " .. PlannedRuns.pastText(a.at, now, dateFn)) or ""
+    lines[#lines + 1] = "Answered " .. where .. at
+  end
+  if a.note then lines[#lines + 1] = "\226\128\156" .. a.note .. "\226\128\157" end
+  if presence and presence.name then
+    lines[#lines + 1] = "Online on " .. presence.name .. (presence.zone and (" \194\183 " .. presence.zone) or "")
+  end
+  return lines
+end
+
+-- CF-63c (board CF63List): the list's filter chips, in order. "all" is the default.
+PlannedRuns.FILTERS = { { value = "all", text = "All" }, { value = "mine", text = "My runs" },
+                        { value = "open", text = "Open slots" }, { value = "range", text = "In range" } }
+
+--[[ CF-63c: the runs a filter chip keeps. kind: "all" | "mine" (you organise it or answered I'm in or Maybe) |
+"open" (a slot nobody has) | "range" (its dungeon fits level). ctx = { me, candidates, dungeonOf(run), level }. ]]
+function PlannedRuns.filterRuns(runs, kind, ctx)
+  if kind ~= "mine" and kind ~= "open" and kind ~= "range" then return runs end
+  local out = {}
+  for _, run in ipairs(runs or {}) do
+    local keep
+    local dungeon = ctx.dungeonOf and ctx.dungeonOf(run)
+    if kind == "mine" then
+      local mine = PlannedRuns.yourAnswer(run, ctx.me)
+      keep = PlannedRuns.isOrganiser(run, ctx.me) or (mine ~= nil and mine.answer ~= "cant")
+    elseif kind == "open" then
+      for _, slot in ipairs(PlannedRuns.slots(run, ctx.candidates, dungeon)) do
+        if not slot.answer then keep = true end
+      end
+    else
+      keep = inRange(dungeon, ctx.level)
+    end
+    if keep then out[#out + 1] = run end
+  end
+  return out
+end
+
+PlannedRuns.PLAN_HOUR = 20       -- CF-63c: the planning chips' time, your clock
+PlannedRuns.PLAN_MIN_LEAD = 3600 -- "Tonight" only while it is at least this far away
+
+--[[ CF-63c: the planning chips: the next three evenings at PLAN_HOUR:00 your time,
+{ { label = "Tonight 20:00" | "Tomorrow 20:00" | "Fri 20:00", startsAt } }. timeFn: local date table -> server
+seconds (Panels.localTime in game, os.time in tests). Tonight only while it is at least PLAN_MIN_LEAD away. ]]
+function PlannedRuns.planChips(now, dateFn, timeFn)
+  local clock = string.format("%02d:00", PlannedRuns.PLAN_HOUR)
+  local list = {}
+  for i, d in ipairs(PlannedRuns.dayChoices(now, dateFn)) do
+    if #list >= 3 then break end
+    local at = timeFn({ year = d.year, month = d.month, day = d.day, hour = PlannedRuns.PLAN_HOUR, min = 0, sec = 0 })
+    if type(at) == "number" and at - now >= PlannedRuns.PLAN_MIN_LEAD then
+      local day = i == 1 and "Tonight" or i == 2 and "Tomorrow" or d.label
+      list[#list + 1] = { label = day .. " " .. clock, startsAt = at }
+    end
+  end
+  return list
 end
 
 ns.PlannedRuns = PlannedRuns

@@ -107,23 +107,25 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nDungeons\n", 1, true))
     assert.is_truthy(all:find("\nNo runs planned\nPlan one on the website, or ask who is up for something right "
       .. "now.\n", 1, true))
-    assert.is_truthy(all:find("\nIn range for Ves Doombringer (20)\n", 1, true))
+    assert.is_truthy(all:find("\nIn range for\n", 1, true)) -- CF-63c: and a dropdown of your characters
+    assert.is_truthy(ns.DungeonsTab.buttons()["Ves Doombringer (20) \226\150\190"])
+    assert.are.equal("17" .. DASH .. "26 \194\183 2 fit", row("dm").right:GetText())
     assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Ranges are typical levels", 1, true))
-    assert.is_truthy(all:find("\n17" .. DASH .. "24\n", 1, true)) -- the range in the list
-    assert.is_truthy(row("dm").meta:GetText():find("^2 fit"))
+    assert.are.equal("17" .. DASH .. "24 \194\183 2 fit", row("wc").right:GetText()) -- one line per dungeon
     assert.is_true(row("dm").selected)
     -- The detail: title, the suggested group as rows, Online now, Quests, Go.
     assert.is_truthy(all:find("\nThe Deadmines\n", 1, true))
     assert.is_truthy(all:find("\nlevel 17" .. DASH .. "26 \194\183 Westfall\n", 1, true))
     assert.is_truthy(all:find("\nSuggested group\n", 1, true))
     assert.are.equal(5, #ns.DungeonsTab.groupRows())
-    assert.is_truthy(all:find("\nVes Doombringer\n20 \194\183 you\nyou\n", 1, true))
-    assert.is_truthy(all:find("\nTank \194\183 nobody in range\n", 1, true))
+    assert.is_truthy(all:find("\nVes Doombringer\n20 \194\183 you\nonline\n", 1, true))
+    assert.is_truthy(all:find("\nTank \194\183 nobody fits\n", 1, true))
     assert.is_truthy(all:find("\nDamage \194\183 open\n", 1, true))
-    assert.is_truthy(all:find("\nOnline now, fits 17" .. DASH .. "26\n", 1, true))
+    assert.is_truthy(all:find("\nOnline now, fits\n", 1, true))
     assert.is_truthy(all:find("\nQuests\n", 1, true))
-    assert.is_truthy(all:find("\nGo\n", 1, true))
-    local askFor = ns.DungeonsTab.buttons()["Ask now for The Deadmines"]
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Friends\226\128\153 and your characters whose "
+      .. "level fits, online or not.", 1, true)) -- CF-63c: the ⓘ on Suggested group
+    local askFor = ns.DungeonsTab.buttons()["Ask now"] -- CF-63c board CF63List
     assert.is_truthy(askFor.tooltip:find("Whispers online friends who fit", 1, true)) -- CF-61: its tooltip
     local plan = ns.DungeonsTab.buttons()["Plan a run\226\128\166"]
     assert.are.equal("A planned run reaches the website and Discord with your next upload.", plan.tooltip)
@@ -133,7 +135,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.are.equal("", ns.MainFrame.window().footerRightText.text)
   end)
 
-  it("names your other characters in range as alternatives", function()
+  it("lists your characters in the In range dropdown, and follows the one picked (CF-63c)", function()
     load(20)
     addon.db.global.self.chars["Player-1-ALT"] = { guid = "Player-1-ALT", name = "Alt Example", level = 22,
                                                    classFile = "ROGUE" }
@@ -141,8 +143,11 @@ describe("Dungeons tab (CF-24)", function()
                                    level = 22, presence = 3, clubType = 1 }
     wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
     open()
-    assert.is_truthy(text():find("\nYour other characters in range: Alt Example 22\n", 1, true)) -- CF-62
-    assert.is_falsy(text():find("Also in range", 1, true))
+    ns.DungeonsTab.buttons()["Ves Doombringer (20) \226\150\190"]:RunScript("OnClick")
+    local menu = state.menus[#state.menus]
+    assert.are.same({ "Alt Example (22)", "Ves Doombringer (20)" }, { menu.buttons[1].text, menu.buttons[2].text })
+    menu.buttons[1].fn()
+    assert.is_truthy(ns.DungeonsTab.buttons()["Alt Example (22) \226\150\190"])
   end)
 
   it("lists runs from the runs file on top, with who organises and the answers, and counts them (CF-46)", function()
@@ -160,9 +165,9 @@ describe("Dungeons tab (CF-24)", function()
     assert.are.equal(5, #r1.pips)
     local all = text()
     assert.is_truthy(all:find("\nTonight\n", 1, true) or all:find("\nToday\n", 1, true))
-    assert.is_truthy(all:find("\nRuns from the website, ", 1, true))
-    assert.is_truthy(all:find("Type /reload after an upload for newer.\n", 1, true))
-    assert.is_truthy(row("dm").meta:GetText():find("1 run", 1, true)) -- the dungeon shows its run
+    assert.is_truthy(all:find("\nRuns from ", 1, true)) -- CF-63: "Runs from Wed 22:30" with an ⓘ
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Runs from the website. Type /reload after an "
+      .. "upload for newer.", 1, true))
   end)
 
   it("shows each sign-up's fit and lists reserves without a slot (CF-49)", function()
@@ -185,12 +190,12 @@ describe("Dungeons tab (CF-24)", function()
     local all = text()
     -- CF-62: the dungeon as the title, its range, the subtitle with the note.
     assert.is_truthy(all:find("\nThe Deadmines\n", 1, true))
-    assert.is_truthy(all:find("\nlevel 17" .. DASH .. "26\n", 1, true))
-    assert.is_truthy(all:find(whenText(NOW + 9600) .. " \194\183 in 2 h 40 min \194\183 planned on the website "
+    assert.is_truthy(all:find("\nlevel 17" .. DASH .. "26 \194\183 Westfall\n", 1, true))
+    assert.is_truthy(all:find(whenText(NOW + 9600) .. " \194\183 in 2 h 40 m \194\183 planned on the website "
       .. "\194\183 note: \226\128\156Bring water\226\128\157", 1, true))
     -- Five group rows: nobody tanks; the healer Garraka; Ves organises; Ada maybe; an open damage slot.
     assert.are.equal(5, #ns.DungeonsTab.groupRows())
-    assert.is_truthy(all:find("\nTank \194\183 nobody in range\n", 1, true))
+    assert.is_truthy(all:find("\nTank \194\183 nobody fits\n", 1, true))
     assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Sjaakovich\n", 1, true))
     assert.is_truthy(all:find("\nVes Doombringer\n20 \194\183 you\norganiser\n", 1, true))
     assert.is_truthy(all:find("\nAda Lovewell\nAda\nmaybe\n", 1, true))
@@ -203,23 +208,123 @@ describe("Dungeons tab (CF-24)", function()
     assert.are.equal("Invite all invites everyone who is in and online.", invite.tooltip)
     assert.is_truthy(all:find("\nReminder at " .. os.date("%H:%M", NOW + 9600 - 1800) .. "\n", 1, true))
     -- Online now, fits: nobody else online in range here; its explanation in the ⓘ.
-    assert.is_truthy(all:find("\nNobody online fits right now.\n", 1, true))
-    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("From the community roster", 1, true))
+    assert.is_truthy(all:find("\nNobody else online fits\n", 1, true))
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Online members whose current character fits 17"
+      .. DASH .. "26.", 1, true))
     assert.is_truthy(all:find("\nEdit or cancel\n", 1, true))
     assert.are.equal("https://example.com/runs/r1", ns.DungeonsTab.linkBox():GetText())
-    assert.is_truthy(all:find("\nClick, then Ctrl+C to copy.\n", 1, true))
+    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Copy with Ctrl+C. Edit or cancel happens on the "
+      .. "website.", 1, true)) -- CF-63: in the ⓘ, not a line
     -- Someone else's run: your answer, Online now with Whisper, "On the website".
     select("run:r2")
     all = text()
     assert.is_truthy(all:find("planned on Discord", 1, true))
-    assert.is_truthy(all:find("\nanswered on Discord\n", 1, true))
+    assert.is_truthy(all:find("\nDiscord\n", 1, true))
     assert.is_truthy(all:find("\nYour answer\n", 1, true))
-    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Shared with online friends now", 1, true))
-    assert.is_truthy(ns.DungeonsTab.buttons()["I'm in"] and ns.DungeonsTab.buttons()["Maybe"]
-      and ns.DungeonsTab.buttons()["Can't"])
-    assert.is_truthy(all:find("\nGarraka Doombringer\nSjaakovich \194\183 Orgrimmar\n", 1, true)) -- online, fits
+    assert.is_truthy(ns.DungeonsTab.buttons()["I\226\128\153m in"] and ns.DungeonsTab.buttons()["Maybe"]
+      and ns.DungeonsTab.buttons()["Can\226\128\153t"])
+    assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Sjaakovich\n", 1, true)) -- online, fits
     assert.is_truthy(ns.DungeonsTab.buttons()["Whisper:1"])
     assert.is_truthy(all:find("\nOn the website\n", 1, true))
+  end)
+
+  -- CF-63b (board CF63Group): a member's tooltip and right-click menu; an open slot's Ask and menu.
+  it("shows a member's tooltip and menu, and asks for an open slot with the run's note", function()
+    load(20, sampleRuns())
+    open()
+    local garraka, slot
+    for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+      if (g.name:GetText() or ""):find("Garraka", 1, true) then garraka = g end
+      if (g.name:GetText() or ""):find("Damage \194\183 open", 1, true) then slot = g end
+    end
+    assert.are.equal("Garraka Doombringer", garraka.tipLines[1])
+    assert.are.equal("Level 20 \194\183 fits \194\183 Healer", garraka.tipLines[2])
+    assert.are.equal("Answered in game", garraka.tipLines[3])
+    garraka:RunScript("OnMouseUp", "RightButton")
+    local menu = state.menus[#state.menus]
+    assert.are.equal("Garraka Doombringer", menu.title)
+    assert.are.same({ "Whisper", "Invite \194\183 from " .. os.date("%H:%M", NOW + 9600 - 900), "Show in Friends" },
+      { menu.buttons[1].text, menu.buttons[2].text, menu.buttons[3].text })
+    assert.is_false(menu.buttons[2].enabled) -- invites open 15 minutes before the start
+    assert.is_true(menu.buttons[3].enabled)
+    menu.buttons[3].fn()
+    -- Show in Friends: the Friends tab on Garraka (Sjaak's card, his character).
+    assert.are.equal(ns.Format.path("Sjaakovich#2232", GARRAKA), addon.db.global.settings.tree.selected)
+    ns.MainFrame.selectTab("dungeons")
+    -- Your own row has no menu.
+    for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+      if (g.info:GetText() or ""):find("you", 1, true) then assert.is_nil(g.menu) end
+    end
+    -- The open slot: Ask now for this run fills the Ask dialog's note; a click opens Whisper / Ask / Invite.
+    assert.is_true(slot.ask.shown)
+    slot.ask:RunScript("OnClick")
+    assert.are.equal("For The Deadmines " .. os.date("%H:%M", NOW + 9600) .. " \194\183 need damage",
+      ns.RunDialogs.widgets().note:GetText())
+    slot:RunScript("OnMouseUp", "LeftButton")
+    menu = state.menus[#state.menus]
+    assert.are.equal("Damage \194\183 open", menu.title)
+    assert.are.same({ "Whisper", "Ask now for this run" }, { menu.buttons[1].text, menu.buttons[2].text })
+    assert.is_false(menu.buttons[1].enabled) -- nobody else online fits
+  end)
+
+  -- CF-63c (board CF63List): the filter chips, Show all dungeons, a dungeon out of range, planning inline.
+  it("filters the runs by chip, back to All when the window closes", function()
+    load(20, sampleRuns())
+    open()
+    local function runIds()
+      local out = {}
+      for _, value in ipairs(values()) do
+        if value:find("^run:") then out[#out + 1] = value end
+      end
+      return out
+    end
+    assert.are.same({ "run:r1", "run:r2" }, runIds())
+    ns.DungeonsTab.buttons()["chip:mine"]:RunScript("OnClick")
+    assert.are.same({ "run:r1" }, runIds()) -- Ves organises r1 only
+    assert.is_true(ns.DungeonsTab.buttons()["chip:mine"].on)
+    ns.MainFrame.toggle()
+    ns.MainFrame.toggle()
+    ns.MainFrame.selectTab("dungeons")
+    assert.are.same({ "run:r1", "run:r2" }, runIds())
+    assert.is_true(ns.DungeonsTab.buttons()["chip:all"].on)
+  end)
+
+  it("shows all dungeons, says how your characters fit one out of range, and plans it inline for 20:00", function()
+    load(20, sampleRuns())
+    open()
+    assert.is_nil(row("smgy"))
+    ns.DungeonsTab.buttons()["Show all dungeons"]:RunScript("OnClick")
+    assert.is_truthy(text():find("\nOther dungeons\n", 1, true))
+    select("smgy")
+    local all = text()
+    assert.is_truthy(all:find("\nScarlet Monastery Graveyard\n", 1, true))
+    assert.is_truthy(all:find("\nVes Doombringer 20: too low\n", 1, true))
+    ns.DungeonsTab.buttons()["Plan a run\226\128\166"]:RunScript("OnClick")
+    local buttons = ns.DungeonsTab.buttons()
+    assert.is_truthy(buttons["Other time\226\128\166"])
+    local chips = ns.PlannedRuns.planChips(NOW, os.date, ns.Panels.localTime)
+    assert.are.equal(3, #chips)
+    assert.is_truthy(buttons[chips[1].label].on) -- the first evening is picked
+    assert.is_truthy(text():find("\nPlan a run\n", 1, true))
+    buttons[chips[2].label]:RunScript("OnClick")
+    ns.DungeonsTab.buttons().Plan:RunScript("OnClick")
+    local plan = addon.db.global.pending[1]
+    assert.are.same({ "plan", "smgy", VES, chips[2].startsAt }, { plan.kind, plan.dungeon, plan.guid, plan.startsAt })
+    assert.are.equal(20, os.date("*t", plan.startsAt).hour)
+  end)
+
+  it("says no dungeon fits yet, and the first one, below its level (CF-63c)", function()
+    local runs = sampleRuns()
+    runs.runs = { runs.runs[2] } -- a run Ves isn't in
+    load(8, runs)
+    open()
+    local all = text()
+    assert.is_truthy(all:find("\nNo dungeon fits yet\n", 1, true))
+    local first = ns.Dungeons.first()
+    assert.is_truthy(all:find(string.format("\nFirst one: %s at level %d\n", first.name, first.min), 1, true))
+    assert.is_truthy(ns.DungeonsTab.buttons()["Pick another character"])
+    ns.DungeonsTab.buttons()["Show all dungeons"]:RunScript("OnClick")
+    assert.is_truthy(text():find("\nOther dungeons\n", 1, true))
   end)
 
   it("opens Invite all 15 minutes before the start, and Invite instead of Whisper (CF-62)", function()
@@ -227,7 +332,12 @@ describe("Dungeons tab (CF-24)", function()
     state.serverTime = NOW + 9600 - 600 -- 10 minutes before The Deadmines
     open()
     local all = text()
-    assert.is_truthy(all:find("\nStarting now \194\183 " .. os.date("%H:%M", NOW + 9600), 1, true))
+    assert.is_truthy(all:find("\n" .. whenText(NOW + 9600) .. " \194\183 in 10 min", 1, true)) -- CF-63: not yet
+    state.serverTime = NOW + 9600 + 60 -- the start: "Starting now" (for 30 minutes)
+    ns.MainFrame.toggle()
+    ns.MainFrame.toggle()
+    assert.is_truthy(text():find("\nStarting now \194\183 " .. os.date("%H:%M", NOW + 9600), 1, true))
+    state.serverTime = NOW + 9600 - 600
     assert.is_truthy(all:find("\nStart\n", 1, true))
     local invite
     for label, b in pairs(ns.DungeonsTab.buttons()) do
@@ -284,6 +394,55 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(text():find("\nneeds Questie\n", 1, true)) -- CF-62: no QuestieDB here
   end)
 
+  -- CF-63: Nico's retail test. The Group Finder offers only Retail dungeons, a website run is for "smgy".
+  it("keeps the static dungeons when the Group Finder offers none of them, and names a website run (CF-63)",
+    function()
+      load(30, { updatedAt = NOW - 600, runs = {
+        { id = "r9", dungeon = "smgy", startsAt = NOW + 3600, state = "open", source = "site",
+          url = "https://example.com/runs/r9",
+          organiser = { battleTag = "Vestras#1000", guid = VES, name = "Ves Doombringer" },
+          answers = {
+            { guid = VES, name = "Ves Doombringer", answer = "in", role = "dps", source = "site" },
+            { battleTag = "Ada#1001", name = "Bartholomew Thunderbrewington", answer = "in",
+              role = "heal", source = "discord" },
+            { battleTag = "Bo#2002", name = "Wilhelmina Featherstonehaugh", answer = "maybe", role = "tank",
+              source = "discord" },
+          } } } })
+      state.lfgActivities[9001] = { fullName = "A Retail Dungeon", shortName = "A Retail Dungeon",
+        minLevelSuggestion = 70, maxLevelSuggestion = 80, maxNumPlayers = 5, difficultyID = 1, isPvpActivity = false }
+      open()
+      -- "In range for" shows, also with nobody else online.
+      assert.is_truthy(ns.DungeonsTab.buttons()["Ves Doombringer (30) \226\150\190"])
+      assert.is_truthy(row("smgy"))
+      assert.is_nil(row("lfg9001"))
+      -- The run: the dungeon's name and range, never the raw id.
+      assert.are.equal("SM: Graveyard", row("run:r9").name:GetText())
+      assert.are.equal("Scarlet Monastery: Graveyard", row("run:r9").fullName) -- on hover
+      select("run:r9")
+      local all = text()
+      assert.is_truthy(all:find("\nScarlet Monastery: Graveyard\n", 1, true))
+      assert.is_truthy(all:find("\nlevel 26" .. DASH .. "36", 1, true))
+      assert.is_falsy(all:find("smgy", 1, true))
+      -- Long names never run into the status: name, info and status fit the row side by side.
+      local lastY = 0
+      for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+        local onlineW = (g.online:GetText() or "") ~= "" and (g.online:GetStringWidth() + 8) or 0
+        local used = 66 + (g.name.width or 0) + 8 + (g.info.width or 0) + onlineW + 12 + (g.status.width or 0) + 10
+        assert.is_true((g.status.width or 0) >= 64) -- the status column
+        assert.is_true(used <= g.width, tostring(g.name:GetText()))
+        if (g.name:GetText() or ""):find("Bartholomew", 1, true) then
+          assert.is_true(g.name.width >= g.name:GetStringWidth() - 1) -- the full name at the normal width
+          assert.are.equal("Discord", g.status:GetText())
+        end
+        lastY = math.max(lastY, -g.points[1][3])
+      end
+      -- CF-63 board: Edit or cancel / On the website below the group and your answer, in a 236 px column on the right.
+      local box = ns.DungeonsTab.linkBox()
+      assert.is_true(box.shown)
+      assert.are.equal(20 + 520 - 236, box.points[1][2]) -- the 520 px detail of the specs
+      assert.is_true(-box.points[1][3] > lastY)
+    end)
+
   describe("quests (QuestieDB)", function()
     local QUESTS = {
       [201] = { name = "Red Silk Bandanas", zoneOrSort = 1581, questLevel = 17, requiredLevel = 14, requiredRaces = 0,
@@ -320,7 +479,6 @@ describe("Dungeons tab (CF-24)", function()
                          { questID = 203, title = "Collecting Memories" } }
       wowapi.fireEvent(state, "QUEST_LOG_UPDATE")
       open()
-      assert.is_truthy(row("dm").meta:GetText():find("1/2 quests", 1, true))
       local all = text()
       assert.is_truthy(all:find("\n1 of 2 in your log\n", 1, true))
       assert.is_truthy(all:find("\nCollecting Memories\n", 1, true))

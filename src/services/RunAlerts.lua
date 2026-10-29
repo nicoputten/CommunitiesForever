@@ -1,7 +1,8 @@
 -- RunAlerts: what a planned run brings up in game (CF-48; design docs/design/runs-2026-10/run-start.html).
 -- Every RunStart.TICK seconds it checks the runs you organise or answered I'm in or Maybe: at the site's
--- reminder time a note under the minimap (20 s, a soft chime) and a chat line; at start time the organiser
--- gets the start panel, everyone else a "Starting now" note with Request invite. Chat lines (each kind can be
+-- reminder time a chat line; at start time the organiser gets the start panel, everyone else a "Starting now"
+-- line with Request invite. CF-63d: banners at the top of the screen 30 and 15 minutes before and at the start
+-- (RunBanner, a soft chime), held during combat and battlegrounds (RunStart.release). Chat lines (each kind can be
 -- turned off) also say when someone answered your run, a friend is on another character, a Discord ping was
 -- queued and runs arrived from a friend. Clickable parts are addon chat links (V47).
 local _, ns = ...
@@ -10,9 +11,9 @@ local RunAlerts = {}
 
 local addonRef, timer
 local last          -- server time of the last check
+local held = {}     -- CF-63d: banners that came due during combat or a battleground
 local links = {}    -- chat link number -> function
 local linkCount = 0
-local DOT = " \194\183 "
 local ANSWER_LINES = { ["in"] = "%s is in for %s (%s).", maybe = "%s is a maybe for %s (%s).",
                        cant = "%s can't make %s (%s)." }
 local VIA = { game = "answered in game", discord = "answered on Discord", site = "answered on the website" }
@@ -34,8 +35,7 @@ local function link(text, fn)
 end
 
 local function dungeonName(run)
-  local d = ns.Dungeons.get(run.dungeon)
-  return d and d.name or tostring(run.dungeon)
+  return ns.Dungeons.runName(run) -- CF-63
 end
 
 local function clock(at)
@@ -121,17 +121,6 @@ local function reminder(run, organiser)
   local minutes = math.floor((run.startsAt - now()) / 60 + 0.5)
   say("reminder", string.format("%s starts in %d min (%s). %s %s", dungeonName(run), minutes, clock(run.startsAt),
     yours, link("Open", function() ns.MainFrame.showRun(run.id) end)))
-  if settings().runToasts ~= false then
-    local yes = ns.PlannedRuns.counts(run)
-    ns.RunToasts.show({
-      title = string.format("In %d minutes", minutes),
-      heading = dungeonName(run) .. DOT .. clock(run.startsAt),
-      text = yours .. " " .. (organiser and "You invite at start." or (who(run.organiser) .. " invites at start."))
-        .. " " .. yes .. " in.",
-      button = "Open", onClick = function() ns.MainFrame.showRun(run.id) end,
-    })
-    if settings().runSound ~= false then ns.ChatFrames.playSound() end
-  end
 end
 
 local function starting(run, organiser)
@@ -153,24 +142,49 @@ local function starting(run, organiser)
   say("starting", string.format("%s is starting now. Invites go out from %s. %s", dungeonName(run),
     tostring(run.organiser and run.organiser.name or who(run.organiser)),
     link("Request invite", function() RunAlerts.requestInvite(run) end)))
-  if settings().runToasts ~= false then
-    ns.RunToasts.show({
-      title = "Starting now", heading = dungeonName(run),
-      text = "Waiting for " .. who(run.organiser) .. "'s invite",
-      button = "Request invite", onClick = function() RunAlerts.requestInvite(run) end,
-    })
-  end
+end
+
+-- CF-63d: not now: in combat, during an encounter or in a battleground (the banner waits).
+local function busy()
+  if InCombatLockdown and InCombatLockdown() then return true end
+  return ns.Instance.messagingRestricted()
+end
+
+-- CF-63d: a banner for event { kind, run, organiser }: your role, the character you go as, the start.
+local function banner(event)
+  local run = event.run
+  local mine = ns.PlannedRuns.yourAnswer(run, ns.Planner.me())
+  local you = ns.SelfInfo.read()
+  local char = mine and (mine.name or (mine.guid == you.guid and you.name)) or nil
+  ns.RunBanner.show({
+    kind = event.kind, runId = run.id, name = ns.PlannedRuns.shortName(dungeonName(run)),
+    role = mine and mine.role, char = char, at = run.startsAt,
+    onInvite = event.organiser and function() RunAlerts.inviteReady(run) end or nil,
+  })
+  if settings().runSound ~= false then ns.ChatFrames.playSound() end
+end
+
+-- CF-63d: shows the banners held so far, unless still busy.
+local function releaseBanners(t)
+  if #held == 0 or busy() then return end
+  local list = ns.RunStart.release(held, t)
+  held = {}
+  if settings().runToasts == false then return end
+  for _, event in ipairs(list) do banner(event) end
 end
 
 -- Checks what became due since the last check.
 function RunAlerts.check()
   local t = now()
   local data = ns.Planner.data()
-  local due = ns.RunStart.due(ns.Planner.upcoming(), ns.Planner.me(), last, t, data and data.reminderMinutes)
+  local upcoming, me = ns.Planner.upcoming(), ns.Planner.me()
+  local due = ns.RunStart.due(upcoming, me, last, t, data and data.reminderMinutes)
+  for _, event in ipairs(ns.RunStart.banners(upcoming, me, last, t)) do held[#held + 1] = event end
   last = t
   for _, event in ipairs(due) do
     if event.kind == "reminder" then reminder(event.run, event.organiser) else starting(event.run, event.organiser) end
   end
+  releaseBanners(t)
 end
 
 -- Checks every TICK seconds while there are runs to show; idle without any (a list arriving starts it again).
@@ -185,7 +199,7 @@ end
 
 function RunAlerts.start(addon)
   addonRef = addon
-  last, links, linkCount = now(), {}, 0
+  last, links, linkCount, held = now(), {}, 0, {}
   if timer then timer:Cancel() end
   timer = nil
   local events = LibStub("AceEvent-3.0"):Embed({})

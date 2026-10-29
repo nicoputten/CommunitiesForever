@@ -33,6 +33,63 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-63c Dungeons tab: the list, in range, planning (board CF63List)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Dungeons | Under "Dungeons  Ask now…" the chips All, My runs, Open slots, In range (All on). Compare with `docs/design/cf-63-2026-10/CF63List.dc.html`. | open |
+| Click My runs, Open slots, In range | Planned shows only the runs you organise or are in or maybe; runs with a free slot; runs whose dungeon fits the character "In range for" follows. A chip that hides all says "No runs here". | open |
+| Close the window and open it again | The chips are back on All. | open |
+| "In range for  Ves Doombringer (23) ▾" | Click it: your characters "Name (level)", highest first; pick an alt: the list and its dungeons follow that character until the next login. Hover: "Ranges are typical levels; …". One line per dungeon: "Wailing Caverns   17–24 · 3 fit". | open |
+| Tick "Show all dungeons" | "Other dungeons" lists the rest, greyed. Pick one out of range: under the title "Ves Doombringer 23: too low · Valen Duskward 58: fits" (your alt, when one fits). | open |
+| A dungeon with nobody else online | "Suggested group ⓘ" (hover: "Friends’ and your characters whose level fits, online or not.") with full-width rows; "Online now, fits" says "Nobody else online fits"; then Quests, Ask now and Plan a run…. | open |
+| Plan a run… | A "Plan a run" box beside Online now: chips "Tonight 20:00" (only while 20:00 is an hour away), "Tomorrow 20:00", "<weekday> 20:00", "Other time…" (opens the old Plan dialog); your best character for the dungeon (an alt when you're out of range) with its fit; its roles; Note; Plan and Cancel. Plan: the run shows in Planned with a pocket watch, and the reload prompt opens. The time is 20:00 on your PC's clock. | open |
+| A character below level 13 with no run you're in | Left: "No dungeon fits yet"; right, centred: "No dungeon fits yet", "First one: Ragefire Chasm at level 13", "Show all dungeons", "Pick another character". | open |
+
+### CF-63b Dungeons tab: answering inline, group rows (boards CF63Answer, CF63Group)
+| Step | Expected | Status |
+|---|---|---|
+| A run someone else organises (website, Discord or game), not answered yet | Under the group: "Your answer  Not answered yet"; I’m in / Maybe / Can’t; a dropdown with your character ("Vesgar Bloodhoof  31  fits"); the roles your class plays ("Healer · open", "Damage · full"); "Note to the organiser" with "0/80". Compare with `docs/design/cf-63-2026-10/CF63Answer.dc.html`. | open |
+| Click I’m in | Saved at once (no Save button): "You’re in", I’m in highlighted, a pocket watch next to it (hover: "Saved. Reaches the website with your next upload."); your own group row shows your character and role. A friend organising it and online sees your row change within seconds. | open |
+| Open the dropdown | All your characters, each with its fit ("31 · fits", "23 · 3 below", "48 · carry · +12"). Pick another: saved at once, the role toggles follow its class. | open |
+| Hover a full role, then click it | Tooltip "Damage is full · you join as reserve."; after the click "You’re on reserve". | open |
+| Type a note, press Enter (or click elsewhere) | Saved; the counter shows the length ("14/80"); at most 80 characters fit. After `/reload` and the upload the website and Discord show the note on your answer. | open |
+| Click Can’t | "You can’t make it"; the dropdown, roles and note disappear. | open |
+| Hover a member's row | Tooltip: the character; "Level 30 · fits · Tank"; "Answered on the website, Mon 21:12" (or Discord, in game); their note in quotes if any; "Online on <character> · <zone>" when online. | open |
+| Right-click a member's row | Menu with their name: Whisper (opens a whisper), "Invite · from 20:15" (greyed until 15 minutes before the start, and in combat), Show in Friends (opens the Friends tab on their character). Your own row has no menu. | open |
+| An open slot | "Damage · open" with "Ask now for this run" on the right: it opens Ask now with the note "For SM: Graveyard 20:30 · need damage". Click the row: a menu "Damage · open" with "Whisper <the first who fits>" (opens the chat box with "Up for SM: Graveyard at 20:30? We need damage." filled in; you press Enter), Ask now for this run, "Invite · from 20:15". | open |
+
+### CF-63d Run reminder banners (board CF63Banners)
+| Step | Expected | Status |
+|---|---|---|
+| Answer I’m in to a run that starts in 31 minutes (or plan one), wait | At 30 minutes before: a banner top centre, below where LEVEL UP shows: "In 30 minutes", "SM: Graveyard" large, "Healer · Vesgar Bloodhoof · 20:30"; gold lines above and below; it fades in, stays 10 s, fades out. A soft chime. The chat line "… starts in 30 min …" as before. No note under the minimap any more. Compare with `docs/design/cf-63-2026-10/CF63Banners.dc.html`. | open |
+| 15 minutes before | "Invites open". As the organiser also "Invite all" (greyed in combat, tooltip "Not in combat"); clicking it invites everyone in and online. | open |
+| At the start | "Starting now"; the organiser's start panel opens as before. | open |
+| Click a banner | The window opens on that run. | open |
+| Be in combat (or a battleground) when one comes due | No banner until combat ends; then only the latest one for that run, and none from before a start that has passed. | open |
+| Answer Can’t, or be a reserve | No banners for that run. | open |
+| Settings: Run reminders off | No banners (the chat lines follow their own settings). Ambient effects off: the banner appears and disappears without fading. | open |
+
+### CF-63e Doomsday goal boxes (boards CF63DoomBoard, CF63DoomToday)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday, Board | Every goal cell is a drawn 15 px box centred in its column: open a dark box with a dim gold edge, done a gold edge with a gold check. No "☐", "✓" or stray "·". Compare with `docs/design/cf-63-2026-10/CF63DoomBoard.dc.html`. If the check is a plain white tick instead of Blizzard's checkmark, the atlas `common-icon-checkmark` is missing: note it. | open |
+| A swapped goal (yours or a friend's) | A small blue corner top right of its box. Hover: "Run a dungeon with a friend", "Swapped for you · original: …", "Not done yet · resets Thu 19:00". A friend's done box: "<goal>", "Mira · done Thu 00:14 · resets …". | open |
+| Doomsday, Today | The same box before each goal (no more green square); a swapped goal shows the blue corner and the word "swapped"; hovering the box or the title shows the same tooltip. | open |
+
+### CF-63a Dungeons tab: dungeon names, in range on Retail, the run detail (board CF63RunDetail)
+| Step | Expected | Status |
+|---|---|---|
+| Retail 12.1.5 (or Forever), a website run for SM: Graveyard (`smgy`); `/reload` after the upload, `/cf`, Dungeons | The run row says "SM: Graveyard" (hover: "Scarlet Monastery: Graveyard"); never "smgy". | open |
+| Open the run | Three header lines: "Scarlet Monastery: Graveyard"; "level 26–36 · Tirisfal Glades"; "Tomorrow 20:30 · in 1 day · planned on the website" (or "in 3 h 10 m", "in 12 min"). Compare with `docs/design/cf-63-2026-10/CF63RunDetail.dc.html` A. | open |
+| Same, alone online (no friend on) | "In range for <character> (<level>)" lists the dungeons that fit you; on Retail the Vanilla dungeons, no Retail ones. | open |
+| A run for a dungeon the addon doesn't know (if the site has one) | The site's name, else "A dungeon"; never an id. | open |
+| The group, window at its normal size (1080 × 720) | Five 36 px rows across the full width: role, round class icon, name, "level · friend", then a green "online" for members online and the status right-aligned ("organiser", "you", "Discord", "maybe", "3 below"). Your own row has a gold edge. "Damage · open" for an open slot, "Healer · nobody fits" when nobody in range plays it. No name runs into its status. | open |
+| Below the group | A line, "Your answer" (or the organiser's Start / Invite all), a line, then one row: "Online now, fits ⓘ" with one line per member ("Lia Thornwhisper 29 · Lia", Whisper) on the left; "On the website ⓘ" (or "Edit or cancel" when you organise) with the link box on the right. Hover the ⓘs: "Online members whose current character fits 26–36." and "Copy with Ctrl+C. Edit or cancel happens on the website." Nobody: "Nobody else online fits". | open |
+| Make the window as narrow as it goes | A long name is cut with "..." before it reaches "online" or the status; nothing overlaps. | open |
+| Keep the window open on a run across a minute boundary | The countdown changes without clicking ("in 13 min" becomes "in 12 min"). From 15 minutes before the start Invite shows next to Whisper; at the start the line says "Starting now · 20:30" (in orange) for 30 minutes. | open |
+| Answer a run (I'm in), before `/reload` | A small pocket watch icon after the run row's "N in" and after the run's time line; hover: "Saved. Reaches the website with your next upload." No text line. If only an empty ring shows, `Interface\Icons\INV_Misc_PocketWatch_01` isn't there: note it. | open |
+| The bottom of the run list | "Runs from Wed 22:30 ⓘ" (when the runs file was written); hover: "Runs from the website. Type /reload after an upload for newer." | open |
+
 ### CF-62d2 Dungeons tab: in range and the empty state (board AG05InRange, D)
 | Step | Expected | Status |
 |---|---|---|

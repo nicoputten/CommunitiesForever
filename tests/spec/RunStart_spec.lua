@@ -91,4 +91,47 @@ describe("RunStart (CF-48)", function()
       RunStart.switchText("The Deadmines", "Tok Ironhide", "Bob Example"))
     assert.is_truthy(PlannedRuns)
   end)
+
+  it("gives a reserve no banner (CF-63d)", function()
+    local runs = { run("r", NOW + 1800, { { guid = "G-ME", answer = "in", reserve = true } }) }
+    assert.are.equal(0, #RunStart.banners(runs, ME, NOW - 15, NOW))
+  end)
+
+  it("releases held banners after combat: the latest per run, none from before a start that passed (CF-63d)",
+    function()
+      local a = run("a", NOW + 600, {})
+      local b = run("b", NOW - 60, {})
+      local c = run("c", NOW - 3600, {})
+      local held = {
+        { kind = "soon", run = a }, { kind = "invites", run = a }, -- a: invites, the latest
+        { kind = "invites", run = b }, -- b started a minute ago: dropped (its start banner shows instead)
+        { kind = "start", run = c },   -- c started an hour ago: too late
+      }
+      local out = RunStart.release(held, NOW)
+      assert.are.equal(1, #out)
+      assert.are.same({ "invites", "a" }, { out[1].kind, out[1].run.id })
+      held[#held + 1] = { kind = "start", run = b }
+      out = RunStart.release(held, NOW)
+      assert.are.same({ "invites:a", "start:b" }, { out[1].kind .. ":" .. out[1].run.id,
+                                                   out[2].kind .. ":" .. out[2].run.id })
+    end)
+
+  it("shows the banners at 30 and 15 minutes and at the start, the latest one only after a gap (CF-63d)", function()
+    local runs = {
+      run("in", NOW + 1800, { { guid = "G-ME", answer = "in" } }),
+      run("mine", NOW + 900, {}, { battleTag = "Me#1000" }),
+      run("cant", NOW, { { guid = "G-ME", answer = "cant" } }),
+      run("now", NOW, { { battleTag = "Me#1000", answer = "maybe" } }),
+    }
+    local seen = {}
+    for _, e in ipairs(RunStart.banners(runs, ME, NOW - 15, NOW)) do
+      seen[#seen + 1] = e.kind .. ":" .. e.run.id .. (e.organiser and ":organiser" or "")
+    end
+    assert.are.same({ "soon:in", "invites:mine:organiser", "start:now" }, seen)
+    -- Logged in at 20:20 for a 20:30 run after the 30-minute mark passed long ago: only the latest, invites.
+    local late = RunStart.banners({ run("in", NOW + 600, { { guid = "G-ME", answer = "in" } }) }, ME, NOW - 3600, NOW)
+    assert.are.same({ "invites" }, { late[1].kind })
+    assert.are.equal(1, #late)
+    assert.are.equal(0, #RunStart.banners(runs, ME, NOW, NOW)) -- nothing twice
+  end)
 end)

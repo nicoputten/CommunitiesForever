@@ -137,7 +137,7 @@ end
 local SIDE_WIDTH = 270  -- "Friends today"
 local BAR_WIDTH = 140
 local TRACK = { daily = "pve", weekly = "pve", skirmish = "pvp", bounty = "pvp" }
-local SWAP_TIP = "\226\135\132 swapped: your character can't do the original goal (hover for it). Goals are "
+local SWAP_TIP = "Swapped (the blue corner): your character can't do the original goal (hover for it). Goals are "
   .. "suggestions; skip any."
 local FRIENDS_TIP = "Live for friends online with the addon; others after their upload."
 local DUEL_TIP = "Win +3 \194\183 loss +1 \194\183 first duel per friend"
@@ -150,23 +150,35 @@ end
 
 local function colored(name, text) return Theme.code(name) .. tostring(text) .. "|r" end
 
--- An 18 px check box: green with a check when done, an outline when not (read-only).
-local function checkBox(parent)
-  local b = CreateFrame("Frame", nil, parent)
-  b:SetSize(18, 18)
-  b.fill = Theme.fill(b, "track", "BACKGROUND")
-  b.fill:SetAllPoints()
-  b.edges = Kit.edges(b, "divider")
-  b.mark = b:CreateTexture(nil, "ARTWORK")
-  b.mark:SetSize(14, 14)
-  b.mark:SetPoint("CENTER")
-  b.mark:SetTexture(Theme.TEXTURES.check)
-  b.mark:SetVertexColor(Theme.color("outline"))
-  function b:SetDone(done)
-    self.fill:SetColorTexture(Theme.color(done and "pve" or "track"))
-    self.mark:SetShown(done and true or false)
-  end
+-- CF-63: the goal box (Kit.goalBox), on Today and the Board, with its tooltip (box.tip) on hover.
+local function goalBox(parent)
+  local b = Kit.goalBox(parent)
+  b:EnableMouse(true)
+  b:SetScript("OnEnter", function(self)
+    if not (self.tip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function(self) if self.tip and GameTooltip then GameTooltip:Hide() end end)
   return b
+end
+
+-- CF-63 (board CF63DoomBoard): a goal's tooltip: the goal; "Swapped for you · original: …"; "6/10", "Not done yet"
+-- or "done Thu 00:14", whose it is (a friend's name first) and when the goals reset.
+local function goalTip(text, instead, done, at, progress, whose)
+  local lines = { text }
+  if instead then
+    lines[#lines + 1] = string.format("Swapped for %s \194\183 original: %s", whose or "you", instead)
+  end
+  local state = done and ("done " .. clock(at)) or progress or "Not done yet"
+  if whose then state = whose .. " \194\183 " .. state end
+  local resets = ns.DoomsdayTracker.state().dayStart
+  if resets and date then
+    state = state .. " \194\183 resets " .. ns.DoomsdayView.timeText(resets + ns.Doomsday.DAY, nil, date)
+  end
+  lines[#lines + 1] = state
+  return table.concat(lines, "\n")
 end
 
 -- A box with a 1 px border (the stat boxes, the mini board's goal boxes).
@@ -199,12 +211,14 @@ local function textWidth(holder, fallback)
   return type(w) == "number" and w > 0 and w or fallback
 end
 
--- One 40 px goal row: check box, kind, title (struck through when done), "⇄ swapped", progress, points.
+-- One 40 px goal row: goal box, kind, title (struck through when done), "swapped", progress, points.
 local function todayRow(parent, r, y, width)
   local track = r.track
   local cb = Kit.take(pools.checks, parent)
-  cb:SetPoint("TOPLEFT", PAD, -(y + 11))
-  cb:SetDone(r.done)
+  cb:SetPoint("TOPLEFT", PAD + 1, -(y + 12))
+  cb:SetGoal(r.done, r.instead ~= nil)
+  cb.tip = goalTip(r.text, r.instead, r.done, r.at, (r.target or 1) > 1 and string.format("%d/%d", r.value or 0,
+    r.target) or nil)
   placeText(pools.tiny, parent, PAD + 28, y + 13, 62, r.kind, track)
   local titleX = PAD + 92
   local right = PAD + width - 2 * PAD -- the left column's right edge
@@ -217,11 +231,12 @@ local function todayRow(parent, r, y, width)
     strike:SetWidth(tw)
   end
   if r.instead then
-    placeText(pools.small, parent, titleX + tw + 8, y + 13, 90, "\226\135\132 swapped", "swap")
+    -- CF-63 (Nico, 2026-10-30): the word "swapped" stays next to the box's blue corner.
+    placeText(pools.small, parent, titleX + tw + 8, y + 13, 90, "swapped", "swap")
     local h = Kit.take(pools.hovers, parent)
     h:SetPoint("TOPLEFT", titleX, -(y + 8))
     h:SetSize(tw + 96, 22)
-    h.tip = "Instead of: " .. r.instead
+    h.tip = cb.tip
   end
   if r.tip then
     local h = Kit.take(pools.hovers, parent)
@@ -319,7 +334,7 @@ local function today(parent, state, width)
   local title = total > 0 and done == total and "Doomsday done. Go touch grass."
     or string.format("Today \194\183 %s \194\183 %d of %d done", state.label, done, total)
   local y = header(parent, title, 0, width, newGoals(state), "warning")
-  -- The ⓘ after the title holds what "⇄ swapped" means.
+  -- The ⓘ after the title holds what "swapped" means.
   local titleHolder = pools.day.items[pools.day.used]
   infoAt(parent, PAD + math.min(leftWidth - 20, textWidth(titleHolder, 300)) + 8, 16, SWAP_TIP)
   local top = y
@@ -384,20 +399,11 @@ local POINTS_WIDTH = 110
 
 local function points(p) return string.format("PvE %d \194\183 PvP %d", p.pve or 0, p.pvp or 0) end
 
--- CF-61: a goal on the Board: a gold check when done, an empty box when not (the details are in the tooltip).
-local function box() return Theme.bundledFonts() and "\226\150\161" or "o" end
-
-local function cellTip(cell, isSelf)
-  local lines = { ns.DoomsdayView.goalText(cell.id) }
-  if cell.done then
-    lines[#lines + 1] = "Done at " .. clock(cell.at)
-  elseif isSelf and cell.target then
-    lines[#lines + 1] = string.format("%d/%d", cell.value or 0, cell.target)
-  else
-    lines[#lines + 1] = "Not done yet"
-  end
-  if cell.instead then lines[#lines + 1] = "Instead of: " .. cell.instead end
-  return table.concat(lines, "\n")
+-- CF-63: a goal on the Board: the goal box, its details in the tooltip.
+local function cellTip(cell, row)
+  local progress = row.isSelf and cell.target and string.format("%d/%d", cell.value or 0, cell.target) or nil
+  return goalTip(ns.DoomsdayView.goalText(cell.id), cell.instead, cell.done, cell.at, progress,
+    not row.isSelf and row.name or nil)
 end
 
 local function hover(parent, x, y, w, tip)
@@ -408,7 +414,7 @@ local function hover(parent, x, y, w, tip)
 end
 
 -- CF-61c (Nico, 2026-10-29; board DD08AddonBoard): the friend's name, struck through with the finish time when all
--- three PvE dailies are done, and the crown; a check or a box per goal with a dot for a swap; one points column.
+-- three PvE dailies are done, and the crown; a goal box per goal (CF-63: a blue corner for a swap); one points column.
 -- The streak, progress, times and swaps are in the tooltips.
 local function board(parent, width)
   local b = ns.DoomsdayBoard.board()
@@ -444,10 +450,11 @@ local function board(parent, width)
       placeText(pools.small, parent, colX(1), y + 6, colWidth * cols, "no Doomsday data yet", "faint")
     else
       for i, cell in ipairs(row.cells) do
-        local mark = cell.done and gold(check()) or dim(box())
-        if cell.instead then mark = mark .. dim(" \194\183") end -- the swap
-        placeText(pools.small, parent, colX(i), y + 6, colWidth - 6, mark, "muted")
-        hover(parent, colX(i), y, colWidth - 6, cellTip(cell, row.isSelf))
+        -- CF-63 (board CF63DoomBoard): the 15 px box, centred in its column, no text characters.
+        local gb = Kit.take(pools.checks, parent)
+        gb:SetPoint("TOPLEFT", colX(i) + math.floor((colWidth - 6 - Kit.GOAL_BOX) / 2), -(y + 6))
+        gb:SetGoal(cell.done, cell.instead ~= nil)
+        gb.tip = cellTip(cell, row)
       end
     end
     placeText(pools.small, parent, colX(cols + 1), y + 6, POINTS_WIDTH, points(row.today), "muted")
@@ -586,7 +593,7 @@ function DoomsdayTab.create(parent, h)
     day = Kit.pool(Kit.textHolder("day")), body = Kit.pool(Kit.textHolder("body")),
     small = Kit.pool(Kit.textHolder("small")), tiny = Kit.pool(Kit.textHolder("tiny")),
     lines = Kit.pool(line), bars = Kit.pool(bar), hovers = Kit.pool(hoverArea),
-    checks = Kit.pool(checkBox), frames = Kit.pool(frameBox), infos = Kit.pool(Kit.info), -- CF-62
+    checks = Kit.pool(goalBox), frames = Kit.pool(frameBox), infos = Kit.pool(Kit.info), -- CF-62
     rows = Kit.pool(function(p) return CreateFrame("Button", nil, p) end), -- CF-57b: Ladder rows to expand
   }
   return root
@@ -651,9 +658,16 @@ end
 -- For the specs: the hover tooltips on the current view.
 function DoomsdayTab.tips()
   local out = {}
-  for _, name in ipairs({ "hovers", "infos" }) do -- CF-62: the ⓘ icons too
+  for _, name in ipairs({ "hovers", "infos", "checks" }) do -- CF-62: the ⓘ icons too; CF-63: the goal boxes
     for i = 1, pools and pools[name].used or 0 do out[#out + 1] = pools[name].items[i].tip end
   end
+  return out
+end
+
+-- CF-63, for the specs: the goal boxes shown (Today and the Board), in order.
+function DoomsdayTab.goalBoxes()
+  local out = {}
+  for i = 1, pools and pools.checks.used or 0 do out[i] = pools.checks.items[i] end
   return out
 end
 

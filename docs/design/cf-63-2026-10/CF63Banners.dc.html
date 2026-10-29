@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Run reminder banners · CF-63</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;background:#0A140C}
+.game{position:relative;background:radial-gradient(900px 500px at 20% 10%,#2D4A26,#13230F 60%,#0A140C);padding:30px}
+.wf{position:relative;width:1080px;height:720px;box-sizing:border-box;background:rgba(9,15,26,.96);border:1px solid #7C6838;font-family:Inter,sans-serif;color:#DADFE6;display:flex;flex-direction:column}
+.dia{position:absolute;width:10px;height:10px;background:#D4AF6A;transform:rotate(45deg);border:1px solid #3A2E14}
+.tb{height:52px;display:flex;align-items:center;gap:10px;padding:0 12px 0 16px;border-bottom:1px solid #2A3348;background:linear-gradient(180deg,#121B2B,#0B1220)}
+.tb .t{font:21px 'Marcellus SC',serif;color:#F0D08E}
+.tb .s{font-size:12px;color:#8E98A8;margin-top:3px}
+.sq{width:30px;height:30px;border:1px solid #4A5468;background:#141C2A;display:flex;align-items:center;justify-content:center;color:#E6E1D6;font-size:13px}
+.tabs{height:42px;display:flex;border-bottom:1px solid #2A3348}
+.tab{display:flex;align-items:center;gap:7px;padding:0 18px;font:16px 'Marcellus SC',serif;color:#AEB6C3}
+.tab.on{color:#F0D08E;background:rgba(212,175,106,.08);box-shadow:inset 0 -2px 0 #D4AF6A}
+.bdg{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#D4AF6A;color:#0B0F14;font:700 11px/17px Inter,sans-serif;justify-content:center}
+.body{flex:1;display:flex;min-height:0}
+.ft{height:30px;display:flex;align-items:center;gap:8px;padding:0 16px;border-top:1px solid #2A3348;font-size:12px;color:#8E98A8}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 12px;border:1px solid #4A5468;background:#141C2A;color:#E6E1D6;font:13px Inter,sans-serif;white-space:nowrap}
+.btn.gold{border-color:#B8975A;background:#3A2F18;color:#F3DFAE}
+.btn.go{border-color:#D4AF6A;background:#D4AF6A;color:#0B0F14;font-weight:600}
+.btn.off{border-color:#3A3A30;background:#2A2618;color:#7A6E50}
+.btn.on{border-color:#D4AF6A;background:rgba(212,175,106,.14);color:#F3EBDA}
+.h2{font:19px 'Marcellus SC',serif;color:#F0D08E}
+.mut{color:#8E98A8}.dim{color:#6E7888}.ok{color:#7FD99A}.blu{color:#9DB4FF}.warn{color:#F0A774}
+.row{display:flex;align-items:center;gap:10px}
+.edit{height:30px;border:1px solid #4A5468;background:#0B111C;display:flex;align-items:center;padding:0 10px;font-size:13px;color:#E6E1D6}
+.ico{width:20px;height:20px;flex:none;display:inline-flex}
+.bar{height:6px;background:#1B2232;border:1px solid #2A3348;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:#D4AF6A}
+.lab{font:12px Inter,sans-serif;color:#8E98A8}
+.pin{position:absolute;width:26px;height:26px;border-radius:50%;background:#E0625A;color:#fff;font:700 13px/26px Inter,sans-serif;text-align:center;box-shadow:0 0 0 3px rgba(0,0,0,.5)}
+.note{padding:16px 18px;border:1px solid rgba(212,175,106,.3);background:rgba(12,18,30,.9);color:#C9CFD9;font:13.5px/1.55 Inter,sans-serif}
+.note h3{margin:0 0 8px;font:17px 'Marcellus SC',serif;color:#F3DFAE}
+.note b{color:#F3EBDA}
+.note code{font:12px ui-monospace,Menlo,monospace;color:#F3DFAE}
+.li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.li:last-child{border-bottom:0}
+.n{width:22px;height:22px;border-radius:50%;background:#E0625A;color:#fff;font:700 12px/22px Inter,sans-serif;text-align:center}
+.cap{font:12px Inter,sans-serif;color:#D4AF6A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.H1{margin:0;font:38px 'Marcellus SC',serif;letter-spacing:.05em;color:#F3DFAE}
+.SUB{margin:6px 0 0;font-size:15px;color:#8E98A8;line-height:1.5;max-width:1200px}
+
+.chip2{display:inline-flex;align-items:center;height:24px;padding:0 9px;border:1px solid #4A5468;background:#141C2A;color:#C9CFD9;font:12px Inter,sans-serif;white-space:nowrap}
+.chip2.on{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.dd{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border:1px solid #4A5468;background:#0B111C;color:#E6E1D6;font:13px Inter,sans-serif;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid #4A5468}
+.seg span{display:inline-flex;align-items:center;height:28px;padding:0 12px;font:13px Inter,sans-serif;color:#C9CFD9;background:#141C2A;border-right:1px solid #4A5468;white-space:nowrap}
+.seg span:last-child{border-right:0}
+.seg span.on{background:#D4AF6A;color:#0B0F14;font-weight:600}
+.seg span.onm{background:#5A4622;color:#F6C29C;font-weight:600}
+.seg span.onc{background:#3A2026;color:#F59A9C;font-weight:600}
+.tg{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #4A5468;background:#141C2A;font:13px Inter,sans-serif;color:#C9CFD9;white-space:nowrap}
+.tg.on{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.tg i{font-style:normal;color:#8E98A8;font-size:12px}
+.ttp{position:absolute;z-index:5;background:rgba(6,10,18,.97);border:1px solid #5C6A85;padding:8px 10px;font:12.5px/1.45 Inter,sans-serif;color:#C9CFD9;box-shadow:0 6px 18px rgba(0,0,0,.6);white-space:nowrap}
+.ttp b{display:block;font-size:13.5px;color:#FFFFFF;font-weight:600}
+.menu{position:absolute;z-index:6;background:#0B0F14;border:1px solid #5C6A85;padding:4px 0;min-width:170px;font:13px Inter,sans-serif;color:#E6E1D6;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+.menu div{height:24px;display:flex;align-items:center;gap:8px;padding:0 12px;white-space:nowrap}
+.menu div.hd{color:#D4AF6A;font-size:12px}
+.menu div.off{color:#5E6878}
+.menu div.hl{background:rgba(212,175,106,.18)}
+.strings{font:12.5px/1.5 Inter,sans-serif;color:#C9CFD9;padding:16px 18px;border:1px solid rgba(212,175,106,.3);background:rgba(12,18,30,.9);align-self:start}
+.strings h3{margin:0 0 8px;font:16px 'Marcellus SC',serif;color:#F3DFAE}
+.strings ol{margin:0;padding-left:22px;columns:2;column-gap:26px}
+.strings li{padding:1px 0}
+.strings .tl{margin-top:10px;color:#D4AF6A;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+
+</style>
+</helmet>
+<div style="width: 1720px; box-sizing: border-box; padding: 48px 56px 64px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 26px">
+  <div><h1 class="H1">Addon · run reminder banners · CF-63</h1><p class="SUB">New board. 30 minutes before, 15 minutes before (invites open), at the start, and the organiser’s version with Invite all.</p></div><div style="display: grid; grid-template-columns: 1140px 440px; gap: 28px; align-items: start"><div style="display: flex; flex-direction: column; gap: 22px"><div style="display: flex; flex-direction: column; gap: 10px"><div class="cap">30 minutes before</div><div class="game" style="width: 1140px; height: 200px; box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; padding-top: 24px"><div style="position: relative; width: 560px; padding: 14px 0 16px; text-align: center; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(6,10,18,.85) 18%, rgba(6,10,18,.85) 82%, rgba(0,0,0,0))">
+      <div style="position: absolute; left: 10%; right: 10%; top: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="position: absolute; left: 10%; right: 10%; bottom: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="font: 13px Inter, sans-serif; color: #D4AF6A">In 30 minutes</div>
+      <div style="font: 28px 'Marcellus SC', serif; color: #F3DFAE; text-shadow: 0 2px 4px #000">SM: Graveyard</div>
+      <div style="font: 14px Inter, sans-serif; color: #E6E1D6">Healer · Vesgar Bloodhoof · 20:30</div></div></div></div><div style="display: flex; flex-direction: column; gap: 10px"><div class="cap">15 minutes before · invites open</div><div class="game" style="width: 1140px; height: 200px; box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; padding-top: 24px"><div style="position: relative; width: 560px; padding: 14px 0 16px; text-align: center; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(6,10,18,.85) 18%, rgba(6,10,18,.85) 82%, rgba(0,0,0,0))">
+      <div style="position: absolute; left: 10%; right: 10%; top: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="position: absolute; left: 10%; right: 10%; bottom: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="font: 13px Inter, sans-serif; color: #D4AF6A">Invites open</div>
+      <div style="font: 28px 'Marcellus SC', serif; color: #F3DFAE; text-shadow: 0 2px 4px #000">SM: Graveyard</div>
+      <div style="font: 14px Inter, sans-serif; color: #E6E1D6">Healer · Vesgar Bloodhoof · 20:30</div></div></div></div><div style="display: flex; flex-direction: column; gap: 10px"><div class="cap">15 minutes before · organiser</div><div class="game" style="width: 1140px; height: 200px; box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; padding-top: 24px"><div style="position: relative; width: 560px; padding: 14px 0 16px; text-align: center; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(6,10,18,.85) 18%, rgba(6,10,18,.85) 82%, rgba(0,0,0,0))">
+      <div style="position: absolute; left: 10%; right: 10%; top: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="position: absolute; left: 10%; right: 10%; bottom: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="font: 13px Inter, sans-serif; color: #D4AF6A">Invites open</div>
+      <div style="font: 28px 'Marcellus SC', serif; color: #F3DFAE; text-shadow: 0 2px 4px #000">SM: Graveyard</div>
+      <div style="font: 14px Inter, sans-serif; color: #E6E1D6">Healer · Vesgar Bloodhoof · 20:30</div><span class="btn go" style="height: 30px; margin-top: 6px">Invite all</span></div></div></div><div style="display: flex; flex-direction: column; gap: 10px"><div class="cap">At the start</div><div class="game" style="width: 1140px; height: 200px; box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; padding-top: 24px"><div style="position: relative; width: 560px; padding: 14px 0 16px; text-align: center; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(6,10,18,.85) 18%, rgba(6,10,18,.85) 82%, rgba(0,0,0,0))">
+      <div style="position: absolute; left: 10%; right: 10%; top: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="position: absolute; left: 10%; right: 10%; bottom: 0; height: 2px; background: linear-gradient(90deg, rgba(212,175,106,0), #F0D08E, rgba(212,175,106,0))"></div>
+      <div style="font: 13px Inter, sans-serif; color: #D4AF6A">Starting now</div>
+      <div style="font: 28px 'Marcellus SC', serif; color: #F3DFAE; text-shadow: 0 2px 4px #000">SM: Graveyard</div>
+      <div style="font: 14px Inter, sans-serif; color: #E6E1D6">Healer · Vesgar Bloodhoof · 20:30</div></div></div></div></div><div style="display: flex; flex-direction: column; gap: 20px"><div class="strings"><h3>Visible strings · 6</h3><ol><li>In 30 minutes</li><li>SM: Graveyard</li><li>Healer · Vesgar Bloodhoof · 20:30</li><li>Invites open</li><li>Invite all</li><li>Starting now</li></ol><div style="margin-top: 10px; font-size: 11px; color: #6E7888">Window chrome (title, tabs) not listed.</div></div><div class="note"><h3>Rules</h3>
+      <div class="li"><span class="n">1</span><span>Top centre, like the LEVEL UP toast: gold lines above and below, Marcellus SC title. It fades in over 0.3 s, stays 10 s, fades out over 1 s (no motion with reduced motion: just appears and disappears).</span></div>
+      <div class="li"><span class="n">2</span><span>For everyone who is in or maybe, and for the organiser. Can’t and reserve get nothing.</span></div>
+      <div class="li"><span class="n">3</span><span>A click anywhere on it opens the window on that run. The organiser’s Invite all invites everyone in and online, out of combat only (disabled with a tooltip in combat).</span></div>
+      <div class="li"><span class="n">4</span><span>The title uses the short name; the third line is your role, your character and the time.</span></div>
+      <div class="li"><span class="n">5</span><span>Never during an encounter or a battleground: a banner due then waits until combat ends, and is dropped if the run has started by then (the start banner shows instead).</span></div></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1720,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

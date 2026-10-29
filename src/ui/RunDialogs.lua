@@ -1,4 +1,4 @@
--- RunDialogs: Ask now, Plan a run, the answer to a run and the reload prompt (CF-47; design
+-- RunDialogs: Ask now, Plan a run and the reload prompt (CF-47; CF-63b: answering is inline, RunAnswer; design
 -- docs/design/runs-2026-10/run-dialogs.html). One kit dialog, redrawn for each; texts and buttons from pools.
 -- What has to reach the website goes into the pending list (services/Planner.lua) and needs a /reload: the
 -- game saves only then, and the uploader sends the saved file.
@@ -12,8 +12,6 @@ local PAD = 20
 local DOT = " \194\183 "
 local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
 local ROLE_BUTTONS = { tank = "Tank", heal = "Healer", dps = "Damage" }
-local ANSWERS = { { value = "in", text = "I'm in" }, { value = "maybe", text = "Maybe" },
-                  { value = "cant", text = "Can't" } }
 local LATER = "Reaches the site and Discord after /reload. You'll be asked next."
 local DISCORD_HELP = "For friends who aren't playing. Needs a /reload to send; posted about 15 s later."
 local RELOAD_TEXT = "The game only saves when you reload or log out. Your uploader then sends it; it's on Discord "
@@ -79,14 +77,6 @@ local function create()
     buttons = Kit.pool(function(parent) return Kit.button(parent, "", nil) end),
     ghost = Kit.pool(function(parent) return Kit.button(parent, "", nil, "ghost") end),
     primary = Kit.pool(function(parent) return Kit.button(parent, "", nil, "primary") end),
-    rows = Kit.pool(function(parent)
-      local r = Kit.listRow(parent)
-      r.text = Theme.text(r, "small", "text")
-      r.text:SetPoint("LEFT", 12, 0)
-      r.right = Theme.text(r, "tiny", "muted")
-      r.right:SetPoint("RIGHT", -12, 0)
-      return r
-    end),
   }
   noteBox = Kit.input(content, { width = WIDTH - 2 * PAD, maxLetters = ns.Pending.MAX_NOTE })
   timeBox = Kit.input(content, { width = 80, maxLetters = 5 })
@@ -226,7 +216,8 @@ local function notAsked(dungeon, recipients)
   return parts
 end
 
-function RunDialogs.askNow(dungeon)
+-- note (CF-63b, optional): the note to start with ("For SM: Graveyard 20:30 · need a healer").
+function RunDialogs.askNow(dungeon, note)
   state = { dungeon = dungeon, discord = false, char = currentChar() }
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), ns.db.global.people,
     ns.db.global.self.battleTag)
@@ -257,7 +248,7 @@ function RunDialogs.askNow(dungeon)
     y = y + 34
   end
   label(y + 4, "Note (optional)")
-  noteBox:SetValue("")
+  noteBox:SetValue(note or "")
   place(noteBox, PAD, y + 22)
   y = y + 60
   discordBox:SetChecked(false)
@@ -265,10 +256,10 @@ function RunDialogs.askNow(dungeon)
   place(discordBox, PAD, y)
   local ok, wait = ns.GroupAsks.canAsk()
   local main = actions("Ask now", function()
-    local note = noteBox:GetText()
+    local typed = noteBox:GetText()
     -- CF-51: the Discord ask first, so the whisper carries its id to every friend's file.
-    local post = state.discord and ns.Planner.askOnDiscord(dungeon.id, state.char, note) or nil
-    if #recipients > 0 or post then ns.GroupAsks.ask(dungeon, ns.Pending.note(note), post) end
+    local post = state.discord and ns.Planner.askOnDiscord(dungeon.id, state.char, typed) or nil
+    if #recipients > 0 or post then ns.GroupAsks.ask(dungeon, ns.Pending.note(typed), post) end
     dialog:Hide()
     if state.discord then RunDialogs.reloadPrompt() end
   end, not ok and string.format("You can ask again in %d min.", math.ceil(wait / 60)) or nil)
@@ -362,108 +353,6 @@ function RunDialogs.drawPlan()
   end, LATER)
 end
 
--- ===== Answer a run =====
-
--- Your characters for a run with their fit (CF-49 levelFit: "fits", "+3 over", "carry · +12", "4 below"),
--- fits first, then by level.
-local function picks(run)
-  local dungeon = ns.Dungeons.get(run.dungeon)
-  local list = {}
-  for _, c in ipairs(ownChars()) do
-    local fit = dungeon and ns.PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max)
-      or { kind = "fits", label = "fits", canPick = true }
-    list[#list + 1] = { char = c, fit = fit }
-  end
-  table.sort(list, function(a, b)
-    if (a.fit.kind == "fits") ~= (b.fit.kind == "fits") then return a.fit.kind == "fits" end
-    return a.char.level > b.char.level
-  end)
-  return list
-end
-
--- CF-49: picks a character: its role (the addon's when the class can play it). CF-50: any level may say I'm in.
-local function pick(o, role)
-  state.char, state.fit = o.char, o.fit
-  state.role = role and ns.PlannedRuns.canPlay(o.char.classFile, role) and role
-    or ns.PlannedRuns.defaultRole(o.char.classFile, o.char.role)
-end
-
-function RunDialogs.answer(run)
-  local me = ns.Planner.me()
-  local mine = ns.PlannedRuns.yourAnswer(run, me)
-  local options = picks(run)
-  state = { run = run, answer = mine and mine.answer or "in", char = nil }
-  for _, o in ipairs(options) do
-    if mine and o.char.guid == mine.guid then pick(o, mine.role) end
-  end
-  if not state.char and options[1] then pick(options[1]) end
-  RunDialogs.drawAnswer(options)
-end
-
-function RunDialogs.drawAnswer(options)
-  local run = state.run
-  local showRole = state.answer ~= "cant" and state.char ~= nil
-  local note = state.answer ~= "cant" and state.fit and state.fit.note
-  begin("Answer", 160 + 28 * #options + 80 + (showRole and 56 or 0) + (note and 20 or 0))
-  local dungeon = ns.Dungeons.get(run.dungeon)
-  local y = 16
-  text("name", y, dungeon and dungeon.name or run.dungeon, "goldLight")
-  local when = date and ns.PlannedRuns.whenText(run.startsAt, now(), date) or ""
-  local theirs = date and run.organiser and ns.PlannedRuns.theirClock(run.startsAt, run.organiser.utcOffset, date)
-  local who = run.organiser and (run.organiser.name or run.organiser.battleTag)
-  if theirs and who then when = when .. DOT .. theirs .. " for " .. who end
-  text("small", y + 22, when, "muted")
-  y = y + 50
-  local x = PAD
-  for _, a in ipairs(ANSWERS) do
-    local b = button(a.value == state.answer and "buttons" or "ghost", a.text, function()
-      state.answer = a.value
-      RunDialogs.drawAnswer(options)
-    end)
-    b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", x, -y)
-    x = x + (b:GetWidth() or 60) + 4
-  end
-  y = y + 40
-  if state.answer ~= "cant" then
-    label(y, "Pick my character")
-    y = y + 20
-    for _, o in ipairs(options) do
-      local r = Kit.take(pools.rows, dialog.content)
-      r:ClearAllPoints()
-      r:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", PAD, -y)
-      r:SetPoint("RIGHT", dialog.content, "RIGHT", -PAD, 0)
-      r:SetHeight(26)
-      r.text:SetText(charText(o.char))
-      r.right:SetText(o.fit.label)
-      r.right:SetTextColor(Theme.color(o.fit.kind == "fits" and "onlineText"
-        or o.fit.kind == "carry" and "warning" or "muted"))
-      r:SetSelected(state.char ~= nil and state.char.guid == o.char.guid)
-      r:SetScript("OnClick", function()
-        pick(o)
-        RunDialogs.drawAnswer(options)
-      end)
-      y = y + 28
-    end
-    if note then
-      text("tiny", y + 2, note, state.fit.kind == "tooLow" and "warning" or "muted")
-      y = y + 20
-    end
-    if showRole then
-      y = roleRow(y + 6, state.char.classFile, state.role, function(role)
-        state.role = role
-        RunDialogs.drawAnswer(options)
-      end) - 6
-    end
-  end
-  text("tiny", y + 6, "reaches Discord after /reload", "faint")
-  local organiser = run.organiser and (run.organiser.name or run.organiser.battleTag) or "The organiser"
-  actions("Save answer", function()
-    ns.Planner.answer(run, state.answer, state.answer ~= "cant" and withRole(state.char, state.role) or nil)
-    dialog:Hide()
-  end, organiser .. "'s addon gets it right away over addon sync when you're both online.")
-end
-
 -- For the specs.
 function RunDialogs.frame() return dialog end
 function RunDialogs.texts()
@@ -471,9 +360,6 @@ function RunDialogs.texts()
   for _, name in ipairs({ "name", "body", "small", "tiny", "label" }) do
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do out[#out + 1] = p.items[i].text:GetText() end
-  end
-  for i = 1, pools and pools.rows.used or 0 do
-    out[#out + 1] = pools.rows.items[i].text:GetText() .. " | " .. pools.rows.items[i].right:GetText()
   end
   return out
 end
@@ -483,11 +369,6 @@ function RunDialogs.buttons()
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do out[p.items[i].label:GetText()] = p.items[i] end
   end
-  return out
-end
-function RunDialogs.rows()
-  local out = {}
-  for i = 1, pools and pools.rows.used or 0 do out[i] = pools.rows.items[i] end
   return out
 end
 function RunDialogs.widgets()

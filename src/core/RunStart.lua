@@ -36,6 +36,61 @@ function RunStart.due(runs, me, last, now, reminderMinutes)
   return out
 end
 
+--[[ CF-63d: the run banners (they replace the reminder of due): 30 minutes before, 15 minutes before (invites
+open) and at the start, for runs you organise or answered I'm in or Maybe. What became due after `last` up to
+`now`: { { kind = "soon" | "invites" | "start", run, organiser = true|nil } }; per run only the latest one that
+became due (after a gap, no stale banner before the current one). ]]
+RunStart.BANNERS = { { kind = "soon", before = 30 * 60 }, { kind = "invites", before = 15 * 60 },
+                     { kind = "start", before = 0 } }
+
+function RunStart.banners(runs, me, last, now)
+  local out = {}
+  for _, run in ipairs(runs or {}) do
+    local mine = ns.PlannedRuns.yourAnswer(run, me)
+    -- CF-63d board: a reserve gets nothing (only the organiser and who is in or maybe).
+    local reserve = mine and mine.reserve and not ns.PlannedRuns.isOrganiser(run, me)
+    if type(run.startsAt) == "number" and involved(run, me) and not reserve then
+      local latest
+      for _, b in ipairs(RunStart.BANNERS) do
+        local at = run.startsAt - b.before
+        if at > last and at <= now then latest = b.kind end
+      end
+      if latest then
+        out[#out + 1] = { kind = latest, run = run, organiser = ns.PlannedRuns.isOrganiser(run, me) or nil }
+      end
+    end
+  end
+  return out
+end
+
+--[[ CF-63d (Nico 2026-10-30): banners wait during combat and battlegrounds. held: the banners that came due
+meanwhile (RunStart.banners), oldest first. What to show now: per run only the latest; one that came due before the
+start is dropped once the run has started (the start banner shows instead), the start banner once the run started
+more than PlannedRuns.STARTING_FOR ago. ]]
+function RunStart.release(held, now)
+  local latest, order = {}, {}
+  for _, e in ipairs(held or {}) do
+    local id = e.run and e.run.id
+    if id then
+      if not latest[id] then order[#order + 1] = id end
+      latest[id] = e
+    end
+  end
+  local out = {}
+  for _, id in ipairs(order) do
+    local e = latest[id]
+    local startsAt = e.run.startsAt
+    local keep
+    if e.kind == "start" then
+      keep = now < startsAt + ns.PlannedRuns.STARTING_FOR
+    else
+      keep = now < startsAt
+    end
+    if keep then out[#out + 1] = e end
+  end
+  return out
+end
+
 -- Who is online for an answer: key, presence (from Sync.online: { [key] = { guid, name, level, ... } }).
 local function presenceOf(a, ctx)
   local key = a.battleTag or (ctx.keyOf and ctx.keyOf(a))

@@ -5,6 +5,30 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v0.10.0-beta1 (2026-10-30)
+- **Fixed, Dungeons:** a website run shows the dungeon's name ("Scarlet Monastery: Graveyard") and level range instead
+  of its id, and "In range" and "Online now, fits" work on Retail too.
+- **Dungeons, a run:** the dungeon's full name, its level range and zone, and a countdown that updates every minute
+  ("Starting now" at the start). The group rows use the full width and show who is online; below your answer, "Online
+  now, fits" sits next to the website link. A run waiting for your next upload shows a small clock (hover for when it
+  reaches the website).
+- **Dungeons, answering:** answer a run right under its group, also for runs planned on the website or Discord:
+  I’m in, Maybe or Can’t, the character you go as (any of yours, with how its level fits), your role (with whether
+  that slot is open or full) and a note to the organiser. Every click saves at once. The answer dialog is gone.
+- **Dungeons, the group:** hover a member for their level fit, role, where and when they answered and where they
+  are online; right-click for Whisper, Invite (from 15 minutes before the start) and Show in Friends. An open slot
+  has "Ask now for this run", and its menu whispers the first friend who fits with a ready-made line.
+- **Doomsday, goal boxes:** the Board and Today draw a real box per goal: a gold check when done, a small blue corner
+  for a swapped goal, the details on hover (progress or when it was done, the original goal, when goals reset).
+- **Run reminders:** a banner at the top of the screen, like LEVEL UP, 30 minutes before a run you're in, when
+  invites open 15 minutes before (the organiser gets Invite all) and at the start; a click opens the run. It waits
+  while you're in combat or a battleground. It replaces the note under the minimap.
+- **Dungeons, the list:** chips to show All runs, My runs, Open slots or the ones In range; "In range for" lets you
+  pick any of your characters; "Show all dungeons" lists the others too, with how your characters fit one out of
+  range.
+- **Dungeons, planning:** "Plan a run…" opens right in the dungeon: tonight, tomorrow or the day after at 20:00 your
+  time (or another time), your best character for it (an alt when you're out of range), its role and a note.
+
 ## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them
   (not "Unlinked"), while the window keeps showing them as offline. Friends who come online just before you log

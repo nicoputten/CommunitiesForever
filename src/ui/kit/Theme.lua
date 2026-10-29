@@ -45,6 +45,9 @@ Theme.COLORS = {
   tank = hex("5B8DD6"),             -- CF-62: role icon fallbacks (a coloured square when the atlas is missing)
   heal = hex("7FD99A"),
   dps = hex("E0625A"),
+  goalEdge = hex("7C6838"),         -- CF-63: an open goal box's edge (board CF63DoomBoard)
+  goalFill = hex("0B111C"),         -- CF-63: an open goal box
+  goalDone = hex("2A2210"),         -- CF-63: a done goal box
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).
@@ -89,6 +92,7 @@ Theme.TEXT = {
   button = { "bold", 12, "GameFontHighlightSmall" },
   badge = { "bold", 10, "GameFontHighlightSmall" },
   chip = { "bold", 11, "GameFontHighlightSmall" }, -- CF-41: the LEVEL UP chip
+  banner = { "display", 28, "GameFontNormalHuge" }, -- CF-63d: the run banner's dungeon
 }
 
 -- Clients whose letters the bundled fonts do not have use the game font throughout.

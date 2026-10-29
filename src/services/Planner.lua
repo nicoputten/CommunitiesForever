@@ -134,7 +134,7 @@ function Planner.upcoming()
     local mine = ns.Pending.answerFor(pending(), run.id)
     if mine then
       run = withAnswer(run, { guid = mine.guid, name = mine.name, battleTag = me.battleTag, answer = mine.answer,
-                              role = mine.role, source = "game", pending = true }, me)
+                              role = mine.role, note = mine.note, source = "game", pending = true }, me)
     end
     list[i] = run
   end
@@ -173,9 +173,11 @@ function Planner.plan(dungeonId, startsAt, char, note)
 end
 
 -- CF-47: your answer to a run (Sign up in game). Also sent to the organiser's addon when they are online.
-function Planner.answer(run, answer, char)
+-- CF-63: note (optional): a note to the organiser, up to 80 characters.
+function Planner.answer(run, answer, char, note)
   local item = queue({ kind = "answer", run = run.id, answer = answer, guid = char and char.guid,
-                       name = char and char.name, role = char and char.role })
+                       name = char and char.name, role = char and char.role,
+                       note = ns.Pending.note(note, ns.PlannedRuns.MAX_ANSWER_NOTE) })
   ns.Sync.sendRunAnswer(run, item)
   return item
 end
@@ -207,7 +209,7 @@ end
 function Planner.pending() return pending() end
 
 -- CF-47: an answer a friend sent you over sync (untrusted). Kept only when you organise that run.
--- message = { run, answer, guid, name, role }; senderKey: their BattleTag or community key.
+-- message = { run, answer, guid, name, role, note (CF-63, optional) }; senderKey: their BattleTag or community key.
 function Planner.answerReceived(message, senderKey)
   if type(message.run) ~= "string" or not ns.PlannedRuns.ANSWERS[message.answer] then return false end
   local run
@@ -219,7 +221,7 @@ function Planner.answerReceived(message, senderKey)
   local battleTag = type(senderKey) == "string" and senderKey:find("#", 1, true) and senderKey or nil
   local clean = ns.PlannedRuns.validate({ updatedAt = 1, runs = { { id = "x", dungeon = "x", startsAt = 1,
     answers = { { guid = message.guid, name = message.name, answer = message.answer, role = message.role,
-                  battleTag = battleTag } } } } })
+                  note = message.note, battleTag = battleTag } } } } })
   local a = clean and clean.runs[1] and clean.runs[1].answers[1]
   if not a then return false end
   a.source = "game"
