@@ -331,7 +331,8 @@ end
 -- character is not asked again; /cf settings still has the button.
 function Setup.openPrompt()
   if not prompt then
-    prompt = Kit.dialog({ title = ADDON_NAME, width = 420, height = 200, onClose = function()
+    -- CF-61: sized to its content, one short line, Create tab and Not now on the right like other dialogs.
+    prompt = Kit.dialog({ title = ADDON_NAME, width = 400, height = 150, onClose = function()
       local guid = selfGuid()
       if guid then ns.Onboarding.dontAsk(settings(), guid) end
     end })
@@ -341,15 +342,18 @@ function Setup.openPrompt()
     question:SetText("Create a Community tab on this character too?")
     local help = Theme.text(prompt.content, "small", "textDim")
     help:SetPoint("TOPLEFT", question, "BOTTOMLEFT", 0, -8)
-    help:SetWidth(380)
+    help:SetWidth(360)
     help:SetJustifyH("LEFT")
-    help:SetText("Chat tabs are saved per character. The tab shows only the community chat. Close this window "
-      .. "if you don't want one.")
-    prompt.create = Kit.button(prompt.content, "Yes, create a Community tab", function()
+    help:SetText("A tab with only your community's chat.")
+    prompt.create = Kit.button(prompt.content, "Create tab", function()
       ns.CommunityChat.createTab()
       prompt:Hide()
     end, "primary")
-    prompt.create:SetPoint("BOTTOM", 0, 20)
+    prompt.create:SetWidth(math.max(110, prompt.create:GetWidth() or 0))
+    prompt.create:SetPoint("BOTTOMRIGHT", -PAD, 16)
+    prompt.notNow = Kit.button(prompt.content, "Not now", function() prompt:Hide() end, "ghost") -- onClose: not again
+    prompt.notNow:SetWidth(math.max(90, prompt.notNow:GetWidth() or 0))
+    prompt.notNow:SetPoint("RIGHT", prompt.create, "LEFT", -8, 0)
     prompt.texts = { question, help }
   end
   prompt:Show()

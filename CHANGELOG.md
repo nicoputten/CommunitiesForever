@@ -11,7 +11,8 @@ tagging; the release stops if the tag has no section.
 - **Fixed:** the setup's step line fits the window (it shows the current and the next step), the settings'
   descriptions wrap inside their column, and the settings footer shows the version with one "v".
 - **An alt outside the community:** the window opens once by itself on how to join (when a friend shared the invite
-  link), and right after joining you're offered the Community chat tab.
+  link), and right after joining you're offered the Community chat tab, in a tidier dialog with Create tab and
+  Not now.
 
 ## v0.8.0-beta1 (2026-10-29)
 - **Doomsday.** Every day three PvE dailies and a PvP Skirmish, every week three weeklies and a Bounty: the same

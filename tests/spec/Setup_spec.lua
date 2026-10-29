@@ -173,9 +173,19 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
     assert.is_nil(wizard())
     assert.is_true(ns.Setup.promptShown())
     assert.are.equal("Create a Community tab on this character too?", ns.Setup.prompt().texts[1]:GetText())
+    -- CF-61: one short line, and Not now next to Create tab.
+    assert.are.equal("A tab with only your community's chat.", ns.Setup.prompt().texts[2]:GetText())
+    assert.are.equal("Create tab", ns.Setup.prompt().create.label:GetText())
+    assert.are.equal("Not now", ns.Setup.prompt().notNow.label:GetText())
     ns.Setup.prompt():Hide() -- the X
     assert.is_false(ns.Setup.promptShown())
     assert.is_nil(ns.Setup.plan()) -- not asked again
+
+    settings().chatTabPrompt = nil
+    ns.Setup.check()
+    ns.Setup.prompt().notNow:RunScript("OnClick") -- Not now: not asked again either
+    assert.is_false(ns.Setup.promptShown())
+    assert.is_nil(ns.Setup.plan())
 
     settings().chatTabPrompt = nil
     ns.Setup.check()
