@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Footer:** says how many friends synced this session and when ("Synced with 2 friends · 22:41"), or that it's
+  waiting for someone online; on Friends, how many of your characters there are.
+- **Activity:** the character comes first, then the friend; a one-line summary of today next to the filters.
 - **Doomsday Today, redone:** a check box per goal, a short bar only for goals you count up, the points per goal in
   PvE green or PvP red, "⇄ swapped" with the original on hover, boxes for today, this week and your streak, and
   "Friends today" next to it.

@@ -809,5 +809,28 @@ function Feed.filter(days, filter)
   return result
 end
 
+-- CF-62: the Activity tab's one-line summary of a day from Feed.days: "Today: 1 friend active · 1 quest · 0 levels"
+-- (people with a line of their own, you included; quests handed in; levels gained). nil without a day.
+function Feed.summary(day)
+  if not day then return nil end
+  local people, quests, levels = 0, 0, 0
+  local function count(pieces)
+    for _, p in ipairs(pieces or {}) do
+      if p.kind == "questing" then quests = quests + (p.quests or 0) end
+      if p.kind == "level" and p.from and p.to and p.to > p.from then levels = levels + (p.to - p.from) end
+    end
+  end
+  for _, l in ipairs(day.lines or {}) do
+    if not l.shared then
+      people = people + 1
+      count(l.pieces)
+      for _, other in ipairs(l.others or {}) do count(other.pieces) end
+    end
+  end
+  local function n(v, word) return string.format("%d %s%s", v, word, v == 1 and "" or "s") end
+  return string.format("%s: %d friend%s active \194\183 %s \194\183 %s", tostring(day.label), people,
+    people == 1 and "" or "s", n(quests, "quest"), n(levels, "level"))
+end
+
 ns.Feed = Feed
 return Feed

@@ -34,6 +34,13 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-62c Footer and Activity (board AG03Tabs)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf` right after login, no friend online | Footer on Activity, Dungeons and Doomsday: "Synced with 0 friends · waiting for someone online". Friends: "Synced with 0 friends this session · N of your characters" with your own character count. | open |
+| A friend with the addon comes online | Within seconds: "Synced with 1 friend · 22:41" (the time their record arrived, your clock). Records from before this login don't count. | open |
+| Activity | Right of the filter chips: "Today: N friends active · N quests · N levels". Rows read "<character> · <friend>" ("you" for yourself). An ⓘ after "Today" (hover: "That's all for today. Friends' activity arrives when …"). Yesterday and older days below. | open |
+
 ### CF-62b Doomsday Today v2 (board AG03Tabs)
 | Step | Expected | Status |
 |---|---|---|
@@ -313,7 +320,7 @@ Compare with `docs/design/revamp-2026-10/activity.html`. Best with a friend who 
 | Step | Expected | Status |
 |---|---|---|
 | `/cf`, Activity tab | Chips All, Level-ups, Dungeons, Together on top (All gold). Day headers "Today", "Yesterday", then e.g. "Monday 26 Oct" in the serif small caps, a thin gold line under each. | open |
-| An entry | A round class portrait, "<name> on <character>" (name gold, character in class colour), below it a gold LEVEL UP chip "22 → 24" (no animation yet), "questing in" with zone pills and "+N zones", "· N quests done", runs and profession ranks as text; the time right (V63). | open |
+| An entry | A round class portrait, "<character> · <friend>" (CF-62: the character first in class colour, then the friend in grey, "you" for yourself), below it a gold LEVEL UP chip "22 → 24" (no animation yet), "questing in" with zone pills and "+N zones", "· N quests done", runs and profession ranks as text; the time right (V63). | open |
 | Played together | One entry "<you> and <friend> together" with two overlapping portraits and "ran <dungeon>". | open |
 | A friend with activity on two characters | "and 1 more character", "Show all (N)" opens the other character's pieces under "on <character>"; "Show less" folds it. | open |
 | Each chip | Level-ups: only entries with a level change (whole entries); Dungeons: entries with a dungeon, raid or battleground; Together: the together entries. No match: "Nothing of this kind in the last 7 days." | open |
@@ -337,7 +344,7 @@ Compare with `docs/design/revamp-2026-10/friends.html`. Needs a friend with the 
 | Whisper, Invite on an online friend's character | Opens a whisper to that character / invites them. On an offline character and your own: both buttons dimmed and doing nothing. | open |
 | Right-click a person or character in the list (CF-37) | The menu opens above the window, as before. | open |
 | Many people, or a small window | The list and the card scroll with the mouse wheel; a thin gold bar on the right shows where you are (V62). | open |
-| Footer | Left "Synced with <name> <time> · N characters from M friends", nothing on the right. | open |
+| Footer | Left "Synced with N friends this session · M of your characters" (CF-62), nothing on the right. | open |
 | Activity, Dungeons, back to Friends | The other tabs look as before; Friends comes back with the same selection and search text. | open |
 
 ### CF-39 Kit and window shell

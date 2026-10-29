@@ -201,4 +201,16 @@ describe("Feed (CF-22)", function()
       assert.is_true(days[1].lines[1].isSelf)
     end)
   end)
+  it("sums up a day for the Activity tab (CF-62)", function()
+    local day = { label = "Today", lines = {
+      { isSelf = true, pieces = { { kind = "questing", quests = 3 }, { kind = "level", from = 10, to = 12 } },
+        others = { { pieces = { { kind = "questing", quests = 1 } } } } },
+      { pieces = { { kind = "run", text = "ran X" } } },
+      { shared = true, pieces = { { kind = "questing", quests = 9 } } },
+    } }
+    assert.are.equal("Today: 2 friends active \194\183 4 quests \194\183 2 levels", Feed.summary(day))
+    assert.are.equal("Today: 0 friends active \194\183 0 quests \194\183 0 levels",
+      Feed.summary({ label = "Today", lines = {} }))
+    assert.is_nil(Feed.summary(nil))
+  end)
 end)

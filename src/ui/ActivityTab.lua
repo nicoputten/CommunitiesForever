@@ -14,6 +14,7 @@ local ROW_HEIGHT = 20       -- one row of pieces
 local TIME_WIDTH = 48
 
 local root, chipsBar, scroll, chips
+local summaryText -- CF-62
 local helpers -- from MainFrame: settings(), render()
 local filter = "all"   -- the active chip, while the window is open
 local expanded = {}    -- day:key -> true: the other characters shown, until /reload
@@ -174,7 +175,8 @@ local function entry(parent, dayValue, l, y, width)
     for i, name in ipairs(l.names or { l.title }) do names[i] = gold(name) end
     who = (#names == 2 and table.concat(names, dim(" and ")) or table.concat(names, dim(", "))) .. dim(" together")
   else
-    who = gold(l.displayName) .. dim(" on ") .. charText(l.char)
+    -- CF-62: the character first (class colour), then the friend ("you" for yourself).
+    who = charText(l.char) .. dim(" \194\183 " .. (l.isSelf and "you" or tostring(l.displayName)))
     if l.extraChars > 0 then
       who = who .. dim(string.format(" and %d more %s", l.extraChars, l.extraChars == 1 and "character" or
         "characters"))
@@ -213,8 +215,17 @@ local function entry(parent, dayValue, l, y, width)
   return h
 end
 
-local function dayHeader(parent, label, y, width)
-  placeText(pools.day, parent, PAD, y + 14, width - 2 * PAD, label, "goldLight")
+local END_TIP = "That's all for today. Friends' activity arrives when they are online with the addon, or after the "
+  .. "website sync."
+
+local function dayHeader(parent, label, y, width, tip)
+  local h = placeText(pools.day, parent, PAD, y + 14, width - 2 * PAD, label, "goldLight")
+  if tip then -- CF-62: the explanation in an ⓘ after the label
+    local w = h and h.text and h.text.GetStringWidth and h.text:GetStringWidth()
+    local info = Kit.take(pools.infos, parent)
+    info:SetPoint("TOPLEFT", PAD + (type(w) == "number" and w > 0 and w or 60) + 8, -(y + 18))
+    info.tip = tip
+  end
   local sep = Kit.take(pools.lines, parent)
   sep:SetPoint("TOPLEFT", PAD, -(y + 38))
   sep:SetPoint("RIGHT", parent, "RIGHT", -PAD, 0)
@@ -252,8 +263,10 @@ function ActivityTab.create(parent, h)
     day = Kit.pool(Kit.textHolder("day")), body = Kit.pool(Kit.textHolder("body")),
     small = Kit.pool(Kit.textHolder("small")), tiny = Kit.pool(Kit.textHolder("tiny")),
     chips = Kit.pool(levelChip), pills = Kit.pool(pill), lines = Kit.pool(line), links = Kit.pool(link),
-    portraits = Kit.pool(portrait),
+    portraits = Kit.pool(portrait), infos = Kit.pool(Kit.info), -- CF-62
   }
+  summaryText = Theme.text(chipsBar, "small", "faint") -- CF-62: "Today: 1 friend active · 1 quest · 0 levels"
+  summaryText:SetPoint("RIGHT")
   return root
 end
 
@@ -296,8 +309,14 @@ function ActivityTab.render(view, empty)
     placeText(pools.body, parent, PAD, y + 14, width - 2 * PAD, "Nothing of this kind in the last 7 days.", "textDim")
     y = y + 40
   end
+  local today = ns.FeedTracker.today()
+  local todayDay
+  for _, d in ipairs(all) do
+    if d.day == today then todayDay = d end
+  end
+  summaryText:SetText(not empty and ns.Feed.summary(todayDay or { label = "Today", lines = {} }) or "")
   for _, day in ipairs(days) do
-    y = y + dayHeader(parent, day.label, y, width)
+    y = y + dayHeader(parent, day.label, y, width, day.day == today and END_TIP or nil)
     for _, l in ipairs(day.lines) do
       y = y + entry(parent, day.day, l, y, width)
     end
@@ -309,6 +328,12 @@ end
 
 -- For the specs: the drawn days, the chips, and every visible text in the feed (grouped by kind).
 function ActivityTab.days() return lastRender end
+function ActivityTab.summary() return summaryText and summaryText:GetText() end
+function ActivityTab.tips()
+  local out = {}
+  for i = 1, pools and pools.infos.used or 0 do out[#out + 1] = pools.infos.items[i].tip end
+  return out
+end
 function ActivityTab.chips() return chips end
 
 local TEXT_POOLS = { "day", "body", "small", "tiny", "chips", "pills", "links" }

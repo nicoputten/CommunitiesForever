@@ -141,7 +141,10 @@ local function updateTitle()
   frame.statusText:SetText(online > 0 and string.format("\226\151\143 %d online", online) or "")
 end
 
-local function synced(empty) return empty and "" or ns.Format.syncedText(view, GetServerTime()) end
+-- CF-62: the footer counts the friends synced since this session started.
+local sessionStart
+local function clockOf(t) return date and t and date("%H:%M", t) or "" end
+local function synced(empty) return empty and "" or ns.Format.syncedText(view, sessionStart, clockOf) end
 
 --[[ The tabs, in order (CF-59: one table instead of an if-chain per place). module(): the tab's file (create,
 show, hide, render); helpers(): what create gets; footer(empty): the left and right footer texts (CF-40 the sync
@@ -150,7 +153,7 @@ local TABS = {
   { value = "friends", text = "Friends", module = function() return ns.FriendsTab end, -- CF-40
     helpers = function() return friendsHelpers() end,
     footer = function(empty)
-      return not empty and ns.Format.friendsFooter(view, GetServerTime()) or "", ""
+      return not empty and ns.Format.friendsFooter(view, sessionStart) or "", ""
     end },
   { value = "activity", text = "Activity", module = function() return ns.ActivityTab end, -- CF-22, CF-41
     helpers = function() return { settings = settings, render = MainFrame.render } end,
@@ -274,6 +277,7 @@ local function refreshMessages()
 end
 
 function MainFrame.start(addon)
+  sessionStart = GetServerTime() -- CF-62
   addonRef = addon
   frame, view = nil, nil
   filterText, savedGroups = "", nil
