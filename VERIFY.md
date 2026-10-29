@@ -68,6 +68,17 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Answer Can’t, or be a reserve | No banners for that run. | open |
 | Settings: Run reminders off | No banners (the chat lines follow their own settings). Ambient effects off: the banner appears and disappears without fading. | open |
 
+### CF-65 Retail test of build 4: dialogs in front, Post on Discord, From the website
+| Step | Expected | Status |
+|---|---|---|
+| Open `/cf`, click into the window, then open each dialog: Ask now… (list), Ask now (a dungeon), the reload prompt after an ask, the start panel (a run you organise at its start), Settings (gear), the setup wizard and the Community tab prompt | Every one opens **in front of** the CommunitiesForever window, also after clicking the window again first. Dropdowns (In range for, the answer's character) and right-click menus open in front of both. | open |
+| Ask now: the dialog | "Also post on Discord" is there and ticked; its line "For friends who aren't playing; posted after your next /reload." With nobody in range online: "Nobody with the addon is online in range." | open |
+| Note "test123", Ask now (ticked), Reload now, uploader running (`--retail` on Retail) within 10 minutes | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` item `kind = "ask"`, the dungeon (e.g. `ubrs`) and `note = "test123"` until the site confirms it. On the site the ask shows; on Discord it's posted with "test123" when the site's admin setting "Ask now from the game" is on. More than 10 minutes between the ask and the upload: the site drops it (expired). | open |
+| Untick "Also post on Discord", Ask now | Only friends online in range get it; no reload prompt, nothing in `pending`. Nobody in range: "Nobody with CommunitiesForever is online in range of <dungeon>, and it isn't posted on Discord." | open |
+| Every way to start an ask, each clicked several times, also right when the minute countdown ticks over and while a friend logs in or out (the tab redraws then): a dungeon's "Ask now"; "Ask now for this run" (on the Group line); click an open slot, then its menu's "Ask now for this run"; the empty state's "Ask now…" (a character with no run and no dungeon); `/cf ask Deadmines` | Every click opens the same Ask dialog, in front of the window: the dungeon (the run's, the one clicked, else one that fits you), "You go as …", the note filled in for a run ("For SM: Graveyard 20:30 · need a healer"), "Also post on Discord" ticked. No click is lost. There is no "Ask now…" above the run list any more. | open |
+| Right after an ask, Ask now again | The button is never greyed; the dialog opens, and its Ask now says "You can ask again in 3 min." until the 3 minutes are over. The dungeon you asked for shows "Asked who's up for it · …" above its Ask now. | open |
+| Friends tab with friends the website knows who haven't synced | Header "From the website · N"; each row shows their character count. Click one: "From the website" with an ⓘ (hover: "Not synced in game yet: their characters as the website last saw them. …"), then their characters. | open |
+
 ### CF-64 Retail test of v0.10.0-beta1: no planning in game, fixes
 | Step | Expected | Status |
 |---|---|---|
@@ -76,7 +87,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | "In range for" | A dropdown in the input look with a gold arrow drawn as a texture, "Sekaru (11)" and no "▯". Click it: your characters; hover: "Ranges are typical levels; …". | open |
 | A run with friends' characters (synced, in the community roster, or answered on the website) | Each group row and suggested-group row shows that character's round class icon. A Discord answer without a character shows no icon and no empty ring. | open |
 | A run with open slots | One "Ask now for this run" at the right of the "Group" line (not on each open slot), also at the narrowest window. It opens Ask now with "For <dungeon> <time> · need a tank" (the first open role). A click on an open slot still opens Whisper / Ask now for this run / Invite. | open |
-| Ask now with nobody with the addon online in range | No "Nobody with CommunitiesForever …" line. Chat: "Your ask for <dungeon> is on Discord after your next /reload." The dialog said "Nobody online in range: it goes to Discord." | open |
+| Ask now with nobody with the addon online in range, "Also post on Discord" ticked | Chat: "Your ask for <dungeon> is on Discord after your next /reload." The dialog said "Nobody with the addon is online in range." | open |
 | After Ask now | "Post on Discord?" centred on the CommunitiesForever window: "Reload to post it on Discord" with an ⓘ (hover: the details), "Friends in game got it already.", Reload now / Later. | open |
 | Reload now, let the uploader upload | The ask is on Discord within a minute; after the next `/reload` the list footer "Runs from …" shows the new time. If it stays old, check the uploader writes `Data\Runs.lua` into the Forever install's `Interface\AddOns\CommunitiesForever` (not `_retail_`). | open |
 
@@ -126,7 +137,7 @@ New APIs (guarded): the role icon atlases `UI-LFG-RoleIcon-Tank`, `-Healer`, `-D
 ### CF-62c Friends tab (board AG03Tabs)
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Friends | The list has headers "Online · N", "Offline · N" and, with a site upload that knows friends who haven't synced, "Not synced yet · N" with each friend's name and "from the website". Your own entry reads "You". No BattleTag anywhere. | open |
+| `/cf`, Friends | The list has headers "Online · N", "Offline · N" and, with a site upload that knows friends who haven't synced, "From the website · N" with each friend's name and "from the website". Your own entry reads "You". No BattleTag anywhere. | open |
 | Your own card | Title "You", "Online on <character> · <zone>" in green. Each character as a bordered card: class icon, name in class colour with the realm dim after it, "· Level N · <role>", "online" or "played … ago" on the right, a level bar in class colour, the zone, and the professions ("Mining 240 · …") or "no professions yet". | open |
 | No friend synced yet | Under your characters a bordered box: "Friends appear here when they are online with the addon at the same time as you, or after the website sync. N friends are known from the website and fill in after your next /reload following an upload." | open |
 | Click a "from the website" friend | Their name, "from the website", and their characters as cards with realm, class, level and "seen … ago". | open |
@@ -290,7 +301,7 @@ Two accounts with this build, Battle.net friends, both in the community: A (asks
 
 | Step | Expected | Status |
 |---|---|---|
-| A: Ask now for a dungeon B has no character in range of (every ask is posted since CF-64) | B gets no "asks: … now?" line; after B's `/reload`, B's saved file has a `pending` item `kind = "ask"` with A's item id (as in A's file), A's guid and BattleTag. | open |
+| A: Ask now for a dungeon B has no character in range of with "Also post on Discord" ticked | B gets no "asks: … now?" line; after B's `/reload`, B's saved file has a `pending` item `kind = "ask"` with A's item id (as in A's file), A's guid and BattleTag. | open |
 | B uploads (the uploader app) before A reloads | The ask shows on Discord as A's ask, once; after A's upload too, still one post. B's next runs fetch lists the id under `received` and B's `pending` loses it. | open |
 | A: Ask now for a dungeon B fits, posted on Discord; B: [Join] | B's `pending` gets the ask and an `askAnswer` (`answer = "in"`); after B's upload the Discord post lists B as In. | open |
 | B waits 11 minutes before `/reload` | The carried ask and the answer are pruned, nothing reaches the site. | open |
@@ -335,7 +346,7 @@ Compare with `docs/design/runs-2026-10/run-dialogs.html`. The answer steps need 
 | Step | Expected | Status |
 |---|---|---|
 | Dungeons tab, a dungeon in range, "Ask now" | A dialog "Ask now": the dungeon with its range and "now", "You go as <character> <level> · <role>", "WHISPERED NOW · ONLINE AND FIT" with the friends who get it, "Not asked: …" with why (above/below the range, offline), a note field, "Also post on Discord" with its help line, Cancel and Ask now. | open |
-| Type a note, Ask now | Friends online get the ask with your note in quotes (CF-27 chat line); it is always posted on Discord too (CF-64). Then "Post on Discord?" with "Reload to post it on Discord" and an ⓘ, on the main window. | open |
+| Type a note, keep "Also post on Discord" ticked (CF-65: on by default), Ask now | Friends online get the ask with your note in quotes (CF-27 chat line). Then "Post on Discord?" with "Reload to post it on Discord" and an ⓘ, on the main window. Unticked: no Discord ask and no reload prompt. | open |
 | Reload now (V68) | The UI reloads. Without the API: the line "Type /reload to post it now." | open |
 | `/reload`, then let the uploader upload (after UP-12 and WEB-43) | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` list with your ask and answer. After the site has them and the next Runs.lua lists them under `received`, the "reaches Discord" labels go. | open |
 | Ask now, Later, wait 11 minutes, log out | The ask is gone from `pending` in the saved file (not posted). | open |

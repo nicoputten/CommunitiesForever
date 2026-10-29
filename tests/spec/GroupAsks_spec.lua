@@ -60,6 +60,17 @@ describe("Who's up for it? (CF-27)", function()
       assert.are.equal(1, ns.GroupAsks.ask(ns.Dungeons.get("wc")))
     end)
 
+    it("asks friends only, without a post, when Discord is unticked (CF-65)", function()
+      load()
+      assert.are.equal(1, ns.GroupAsks.ask(ns.Dungeons.get("dm"), nil, false))
+      assert.are.equal(1, #sent)
+      assert.is_nil(sent[1].message.post)
+      assert.are.equal(0, #(addon.db.global.pending or {}))
+      state.serverTime = state.serverTime + 180
+      assert.are.equal(0, ns.GroupAsks.ask(ns.Dungeons.get("strat"), nil, false))
+      assert.is_truthy(printed():find("and it isn't posted on Discord.", 1, true))
+    end)
+
     it("still asks when nobody online is in range: it goes to Discord (CF-64)", function()
       load()
       assert.are.equal(0, ns.GroupAsks.ask(ns.Dungeons.get("strat")))
@@ -92,9 +103,11 @@ describe("Who's up for it? (CF-27)", function()
       assert.is_nil(next(ns.GroupAsks.current().answers))
     end)
 
-    it("asks with /cf ask and the full dungeon name", function()
+    it("asks with /cf ask and the full dungeon name, through the Ask dialog (CF-65)", function()
       load()
       addon:OnSlashCommand("ask The Deadmines")
+      assert.are.equal(0, #sent) -- the dialog opened, nothing sent yet
+      ns.RunDialogs.buttons()["Ask now"]:RunScript("OnClick")
       assert.are.equal("The Deadmines", sent[1].message.dungeon.name)
       addon:OnSlashCommand("ask")
       assert.is_truthy(printed():find("The Deadmines: joining ; later ; no ; waiting Ben.", 1, true))
@@ -240,12 +253,13 @@ describe("Who's up for it? (CF-27)", function()
       return false
     end
     ns.DungeonsTab.select("dm")
-    ns.DungeonsTab.buttons()["Ask now\226\128\166"]:RunScript("OnClick") -- CF-47: the Ask now dialog
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick") -- CF-65: the dungeon's Ask now opens the dialog
     ns.RunDialogs.buttons()["Ask now"]:RunScript("OnClick")
     assert.are.equal(1, #sent)
     deliver({ t = "ANSWER", id = sent[1].message.id, answer = "later" })
     for _ = 1, 10 do wowapi.runTimers(state) end
     assert.is_true(hasText("Asked who's up for it"))
     assert.is_true(hasText("later: Ben"))
+    assert.is_true(ns.DungeonsTab.buttons()["Ask now"].enabled) -- CF-65: still there, never greyed
   end)
 end)

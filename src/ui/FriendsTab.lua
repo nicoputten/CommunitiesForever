@@ -27,6 +27,8 @@ local pool, take, release, textFactory = Kit.pool, Kit.take, Kit.release, Kit.te
 local listPools, cardPools
 
 local placeText = Kit.placeText
+local WEBSITE_TIP = "Not synced in game yet: their characters as the website last saw them. They fill in once "
+  .. "you're both online with the addon, or after an upload."
 
 -- ===== Helpers =====
 
@@ -107,7 +109,7 @@ local function renderList(selected)
   rows = {}
   local parent = list.child
   local y = 2
-  -- CF-62: "Online · N", "Offline · N", "Not synced yet · N" above their people.
+  -- CF-62: "Online · N", "Offline · N", "From the website · N" above their people.
   local perSection = {}
   for _, node in ipairs(nodes) do
     if node.section then perSection[node.section] = (perSection[node.section] or 0) + 1 end
@@ -527,7 +529,12 @@ function renderCard.website(parent, d, width, path)
   local y = PAD - 4
   placeText(cardPools.name, parent, PAD, y, width, d.title, "heading")
   y = y + LINE.name + 4
-  placeText(cardPools.body, parent, PAD, y + 4, width, d.status, "textDim")
+  local statusLine = placeText(cardPools.body, parent, PAD, y + 4, width, d.status, "textDim")
+  -- CF-65: what "From the website" means, in an ⓘ.
+  local sw = statusLine.text.GetStringWidth and statusLine.text:GetStringWidth() or 120
+  local info = take(cardPools.infos, parent)
+  info:SetPoint("TOPLEFT", PAD + sw + 6, -(y + 5))
+  info.tip = WEBSITE_TIP
   y = section(parent, PAD, y + LINE.body + 14, width, "Characters")
   return characterLines(parent, d.characters, path, y, width)
 end
@@ -621,6 +628,7 @@ function FriendsTab.create(parent, h)
     buttons = pool(buttonFactory), bars = pool(barFactory), tiles = pool(tileFactory),
     portraits = pool(portraitFactory), links = pool(linkFactory), charLines = pool(charLineFactory),
     charCards = pool(charCardFactory), -- CF-62
+    infos = pool(Kit.info), -- CF-65
     boxes = pool(function(p)
       local f = CreateFrame("Frame", nil, p)
       f.edges = Kit.edges(f, "divider")
@@ -716,6 +724,13 @@ function FriendsTab.cardButtons()
     local b = cardPools.buttons.items[i]
     out[b.label:GetText()] = b
   end
+  return out
+end
+
+-- CF-65: the card's ⓘ tooltips.
+function FriendsTab.cardTips()
+  local out = {}
+  for i = 1, cardPools and cardPools.infos.used or 0 do out[i] = cardPools.infos.items[i].tip end
   return out
 end
 

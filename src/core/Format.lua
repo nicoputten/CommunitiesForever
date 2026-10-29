@@ -149,11 +149,11 @@ function Format.tree(view, siteFriends)
   local nodes = {}
   for _, n in ipairs(online) do nodes[#nodes + 1] = n end
   for _, n in ipairs(offline) do nodes[#nodes + 1] = n end
-  -- CF-62: friends the website knows who haven't synced: "Not synced yet", "from the website".
+  -- CF-62: friends the website knows who haven't synced (CF-65: under "From the website", their character count).
   for _, f in ipairs(siteFriends or {}) do
     if not synced[f.name:lower()] then
       nodes[#nodes + 1] = { value = Format.SITE .. f.name, text = f.name, website = true, count = #f.chars,
-                            children = {}, section = "website", sub = "from the website" }
+                            children = {}, section = "website" }
     end
   end
   if #view.unlinked > 0 then
@@ -168,9 +168,10 @@ function Format.tree(view, siteFriends)
   return nodes
 end
 
--- CF-62: the list's section headers: "Online · 2", "Offline · 1", "Not synced yet · 6" (nil for Unlinked).
+-- CF-62: the list's section headers: "Online · 2", "Offline · 1", "From the website · 6" (CF-65, was "Not synced
+-- yet"; nil for Unlinked).
 function Format.sectionTitle(section, count)
-  local titles = { online = "Online", offline = "Offline", website = "Not synced yet" }
+  local titles = { online = "Online", offline = "Offline", website = "From the website" }
   return titles[section] and string.format("%s \194\183 %d", titles[section], count) or nil
 end
 

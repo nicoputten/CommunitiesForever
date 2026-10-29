@@ -435,6 +435,28 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
       assert.are.equal(1, #PlannedRuns.roleChoices(run, {}, SMGY, "MAGE", ME))
     end)
 
+    it("decides what the Ask dialog opens with, for every way in (CF-65)", function()
+      local dm, wc = { id = "dm", name = "The Deadmines", min = 17, max = 26 }, { id = "wc", min = 15, max = 25 }
+      local rfc = { id = "rfc", min = 13, max = 18 }
+      local list = { dm, wc, rfc }
+      local ctx = { dungeonOf = function(run) return run.dungeon == "smgy" and SMGY or nil end,
+                    runName = function() return "Scarlet Monastery: Graveyard" end, list = list, level = 20, now = AT,
+                    dateFn = os.date }
+      local run = { dungeon = "smgy", startsAt = AT + 7200 }
+      -- Ask now for this run / an open slot: the run's dungeon and its note.
+      local p = PlannedRuns.askPrefill({ run = run, role = "heal" }, ctx)
+      assert.are.equal(SMGY, p.dungeon)
+      assert.are.equal("For SM: Graveyard 20:30" .. DOT .. "need a healer", p.note)
+      -- A dungeon's Ask now, /cf ask <dungeon>: that dungeon, no note.
+      p = PlannedRuns.askPrefill({ dungeon = wc }, ctx)
+      assert.are.same({ wc, nil }, { p.dungeon, p.note })
+      -- The empty state: the first that fits your level, else the lowest.
+      assert.are.equal(dm, PlannedRuns.askPrefill({}, ctx).dungeon)
+      ctx.level = 8
+      assert.are.equal(rfc, PlannedRuns.askPrefill(nil, ctx).dungeon)
+      assert.is_nil(PlannedRuns.askPrefill({}, { list = {} }).dungeon)
+    end)
+
     it("says what your answer is, reserve when your role is full (CF-63b)", function()
       assert.are.equal("none", PlannedRuns.answerState(nil, false))
       assert.are.equal("in", PlannedRuns.answerState({ answer = "in" }, false))

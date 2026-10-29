@@ -402,15 +402,15 @@ end
 
 -- rangeChar: the character "In range for" follows ({ guid, name, level }).
 local function renderList(runs, overview, me, candidates, rangeChar)
-  Kit.release(pools.rows)
-  Kit.release(pools.listText)
-  Kit.release(pools.runRows)
-  Kit.release(pools.listTitle)
-  Kit.release(pools.listButtons)
-  Kit.release(pools.listInfos)
-  Kit.release(pools.chips)
-  Kit.release(pools.checks)
-  Kit.release(pools.selects)
+  Kit.recycle(pools.rows)
+  Kit.recycle(pools.listText)
+  Kit.recycle(pools.runRows)
+  Kit.recycle(pools.listTitle)
+  Kit.recycle(pools.listButtons)
+  Kit.recycle(pools.listInfos)
+  Kit.recycle(pools.chips)
+  Kit.recycle(pools.checks)
+  Kit.recycle(pools.selects)
   rows = {}
   local parent = list.child
   local width = math.max(200, (list:GetWidth() or 0) - 6)
@@ -430,15 +430,9 @@ local function renderList(runs, overview, me, candidates, rangeChar)
     y = y + ROW
   end
 
-  -- CF-62: "Dungeons" with Ask now…; CF-63c: the filter chips; the runs grouped Tonight, Tomorrow, This week,
-  -- Later; role pips per row.
+  -- CF-62: "Dungeons"; CF-63c: the filter chips; the runs grouped Tonight, Tomorrow, This week, Later; role pips per
+  -- row. CF-65 (Nico): no "Ask now…" here; asks start from a dungeon, a run or /cf ask.
   placeText(pools.listTitle, parent, 12, y + 6, width - 24, "Dungeons", "goldLight") -- CF-62 (board AG05)
-  local ask = Kit.take(pools.listButtons, parent)
-  ask:SetLabel("Ask now\226\128\166")
-  ask:SetEnabled(DungeonsTab.canAsk())
-  ask:SetPoint("TOPRIGHT", parent, "TOPLEFT", width - 8, -(y + 4))
-  ask:SetScript("OnClick", function() DungeonsTab.askNow() end)
-  ask.tooltip = ASK_TIP
   y = y + 36
   local cx = 12
   for _, def in ipairs(ns.PlannedRuns.FILTERS) do
@@ -571,42 +565,36 @@ local function renderList(runs, overview, me, candidates, rangeChar)
   list:Update()
 end
 
--- CF-27: ask friends who's up for it now, or how your ask stands.
-local function askBlock(parent, entry, y, width)
+-- CF-27: how your ask for this dungeon stands (CF-65: next to Ask now, which stays).
+local function askStatus(parent, y, width)
   local ask = ns.GroupAsks.current()
-  if ask and ask.dungeon.id == entry.dungeon.id then
-    local s = ns.GroupAsk.summary(ask)
-    local parts = {}
-    if #s.join > 0 then parts[#parts + 1] = colored("joining: " .. table.concat(s.join, ", "), "onlineText") end
-    if #s.later > 0 then parts[#parts + 1] = "later: " .. table.concat(s.later, ", ") end
-    if #s.no > 0 then parts[#parts + 1] = colored("not now: " .. table.concat(s.no, ", "), "muted") end
-    if #s.waiting > 0 then parts[#parts + 1] = colored("waiting: " .. table.concat(s.waiting, ", "), "muted") end
-    placeText(pools.small, parent, PAD, y + 4, width, "Asked who's up for it" .. DOT .. table.concat(parts, DOT),
-      "text")
-    return y + 26
-  end
-  local ok, wait = ns.GroupAsks.canAsk()
-  if not ok then
-    placeText(pools.small, parent, PAD, y + 4, width, string.format("You can ask again in %d min.",
-      math.ceil(wait / 60)), "muted")
-    return y + 26
-  end
-  local b = Kit.take(pools.primary, parent)
-  b:SetLabel("Ask now")
-  b:SetEnabled(true)
-  b:SetScript("OnClick", function() ns.RunDialogs.askNow(entry.dungeon) end) -- CF-47
-  b:SetPoint("TOPLEFT", PAD, -y)
-  b.tooltip = ASK_TIP -- CF-61: was a note next to the button
-  return y + 36
+  local s = ns.GroupAsk.summary(ask)
+  local parts = {}
+  if #s.join > 0 then parts[#parts + 1] = colored("joining: " .. table.concat(s.join, ", "), "onlineText") end
+  if #s.later > 0 then parts[#parts + 1] = "later: " .. table.concat(s.later, ", ") end
+  if #s.no > 0 then parts[#parts + 1] = colored("not now: " .. table.concat(s.no, ", "), "muted") end
+  if #s.waiting > 0 then parts[#parts + 1] = colored("waiting: " .. table.concat(s.waiting, ", "), "muted") end
+  placeText(pools.small, parent, PAD, y + 4, width, "Asked who's up for it" .. (#parts > 0 and (DOT ..
+    table.concat(parts, DOT)) or ""), "text")
+  return y + 26
 end
 
+-- CF-65: a redraw takes the pooled frames again without hiding them first (Kit.recycle), and hides only what it
+-- didn't use afterwards (sweep). Hiding and showing a button between mouse down and up drops the click, and the
+-- tab redraws often (the countdown every minute, roster and presence changes, sync, answers).
+local answerDrawn, linkPlaced
 local function clearDetail()
   for _, name in ipairs({ "name", "section", "small", "tiny", "slots", "quests", "buttons", "primary", "groupRows",
                           "onlineRows", "infos", "links", "clocks", "dividers" }) do
-    Kit.release(pools[name])
+    Kit.recycle(pools[name])
   end
-  linkBox:Hide()
-  if ns.RunAnswer then ns.RunAnswer.hide() end
+  answerDrawn, linkPlaced = false, false
+end
+
+local function sweep()
+  for _, p in pairs(pools) do Kit.sweep(p) end
+  if not linkPlaced then linkBox:Hide() end
+  if not answerDrawn and ns.RunAnswer then ns.RunAnswer.hide() end
 end
 
 -- CF-62: who is online in the community and fits the run's range, not in its group (MemberTracker, re-drawn on
@@ -720,13 +708,9 @@ local function inviteLabel(run, open)
   return "Invite" .. DOT .. "from " .. clock(run.startsAt - ns.PlannedRuns.INVITE_LEAD)
 end
 
--- CF-63b (board CF63Group E): asks friends now for the run's dungeon with the note "For SM: Graveyard 20:30 · need
--- Healer"; the Ask dialog opens with it filled in (you can add Discord there).
+-- CF-63b (board CF63Group E): Ask now for this run: the Ask dialog with "For SM: Graveyard 20:30 · need a healer".
 askForRun = function(run, role)
-  local dungeon = dungeonOf(run)
-  if not dungeon then return end
-  local note = date and ns.PlannedRuns.askNote(run, dungeonName(run), role, now(), date) or nil
-  ns.RunDialogs.askNow(dungeon, note)
+  ns.RunDialogs.ask({ run = run, role = role })
 end
 
 -- CF-63b (board CF63Group D): a member's right-click menu: Whisper, Invite, Show in Friends.
@@ -996,6 +980,7 @@ local function renderRun(run, me, candidates)
   elseif not run.pending then
     -- CF-63b (board CF63Answer): answering inline, every click saves.
     y = y + ns.RunAnswer.render(parent, run, me, candidates, PAD, y, width, function() helpers.render() end)
+    answerDrawn = true
   end
 
   -- One row: Online now, fits (left); Edit or cancel or On the website (right, 236 px).
@@ -1017,6 +1002,7 @@ local function renderRun(run, me, candidates)
     linkBox:SetWidth(LINK_WIDTH - 16)
     linkBox:SetText(run.url)
     linkBox:Show()
+    linkPlaced = true
     ry = ry + 34
   end
   parent:SetHeight(math.max(ly, ry) + PAD)
@@ -1037,8 +1023,8 @@ local function renderEmpty(messageText)
   local site = ns.RunsFile.site()
   local ask = Kit.take(pools.primary, parent)
   ask:SetLabel("Ask now\226\128\166")
-  ask:SetEnabled(DungeonsTab.canAsk())
-  ask:SetScript("OnClick", function() DungeonsTab.askNow() end)
+  ask:SetEnabled(true)
+  ask:SetScript("OnClick", function() ns.RunDialogs.ask({}) end) -- CF-65: a dungeon that fits you
   local copy
   if site then
     copy = Kit.take(pools.buttons, parent)
@@ -1051,6 +1037,7 @@ local function renderEmpty(messageText)
       linkBox:SetWidth(260)
       linkBox:SetText(site)
       linkBox:Show()
+      linkPlaced = true
       if linkBox.SetFocus then linkBox:SetFocus() end
       if linkBox.HighlightText then linkBox:HighlightText() end
     end)
@@ -1237,19 +1224,14 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
   -- always possible: friends in game get it when any are online, Discord always (through the uploader).
   y = y + 12
   local ask = ns.GroupAsks.current()
-  if ask and ask.dungeon.id == dungeon.id then
-    y = askBlock(parent, entry, y, width)
-  else
-    local okAsk, wait = ns.GroupAsks.canAsk()
-    local a = Kit.take(pools.primary, parent)
-    a:SetLabel("Ask now")
-    a:SetEnabled(okAsk == true)
-    a.tooltip = okAsk and ASK_TIP or string.format("You can ask again in %d min.", math.ceil((wait or 0) / 60))
-    if a.SetMotionScriptsWhileDisabled then a:SetMotionScriptsWhileDisabled(true) end
-    a:SetScript("OnClick", function() ns.RunDialogs.askNow(dungeon) end)
-    a:SetPoint("TOPLEFT", PAD, -y)
-    y = y + 40
-  end
+  if ask and ask.dungeon.id == dungeon.id then y = askStatus(parent, y, width) end
+  local a = Kit.take(pools.primary, parent)
+  a:SetLabel("Ask now")
+  a:SetEnabled(true) -- CF-65: never gated here; the dialog says when you can ask again
+  a.tooltip = ASK_TIP
+  a:SetScript("OnClick", function() ns.RunDialogs.ask({ dungeon = dungeon }) end)
+  a:SetPoint("TOPLEFT", PAD, -y)
+  y = y + 40
   parent:SetHeight(y + PAD)
   detail:Update()
 end
@@ -1366,8 +1348,7 @@ function DungeonsTab.selectQuietly(value)
 end
 
 -- Fills the tab from the view model. messageText: the window's empty state (no community etc.).
-function DungeonsTab.render(view, messageText)
-  if not root then return end
+local function draw(view, messageText)
   entries = {}
   clearDetail()
   local me = ns.SelfInfo.read()
@@ -1446,22 +1427,10 @@ function DungeonsTab.render(view, messageText)
   end
 end
 
--- CF-62: whether Ask now… has a dungeon to ask for (CF-64: any dungeon the game knows; an ask is always possible).
-function DungeonsTab.canAsk()
-  return #ns.Dungeons.LIST > 0
-end
-
--- CF-62: "Ask now…" on the list: the selected run's dungeon, else the selected or first dungeon in range.
-function DungeonsTab.askNow()
-  local selected = entries[status().selected]
-  local dungeon = selected and (selected.run and dungeonOf(selected.run) or selected.dungeon)
-  if not dungeon then
-    for _, e in pairs(entries) do
-      if e.dungeon and e.fits then dungeon = e.dungeon break end
-    end
-  end
-  dungeon = dungeon or ns.Dungeons.first() -- CF-64: an ask is always possible
-  if dungeon then ns.RunDialogs.askNow(dungeon) end
+function DungeonsTab.render(view, messageText)
+  if not root then return end
+  draw(view, messageText)
+  sweep() -- CF-65: hide only what this draw didn't use
 end
 
 function DungeonsTab.reset()

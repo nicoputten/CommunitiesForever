@@ -672,6 +672,35 @@ function PlannedRuns.askNote(run, name, role, now, dateFn)
   return out
 end
 
+--[[ CF-65: what the Ask dialog opens with, the one decision for every way to start an ask (a dungeon's Ask now, Ask
+now for this run, an open slot's menu, the empty state, /cf ask). opts = { run, dungeon, role, note } (all optional):
+a run gives its dungeon and the note "For SM: Graveyard 20:30 · need a healer" (role: the slot it needs); else the
+dungeon given; else the first dungeon that fits your level; else the lowest one. ctx = { dungeonOf(run), runName(run),
+list (Dungeons.LIST), level, now, dateFn }. Returns { dungeon (nil when the game knows none), note }. ]]
+function PlannedRuns.askPrefill(opts, ctx)
+  opts = opts or {}
+  local dungeon, note = nil, opts.note
+  if opts.run then
+    dungeon = ctx.dungeonOf and ctx.dungeonOf(opts.run)
+    if dungeon and not note and ctx.dateFn and type(opts.run.startsAt) == "number" then
+      note = PlannedRuns.askNote(opts.run, ctx.runName and ctx.runName(opts.run) or dungeon.name, opts.role, ctx.now,
+        ctx.dateFn)
+    end
+  end
+  dungeon = dungeon or opts.dungeon
+  if not dungeon then
+    for _, d in ipairs(ctx.list or {}) do
+      if not dungeon and inRange(d, ctx.level) then dungeon = d end
+    end
+  end
+  if not dungeon then
+    for _, d in ipairs(ctx.list or {}) do
+      if not dungeon or d.min < dungeon.min then dungeon = d end
+    end
+  end
+  return { dungeon = dungeon, note = note }
+end
+
 PlannedRuns.MAX_ANSWER_NOTE = 80 -- CF-63: the note to the organiser on an answer
 
 --[[ CF-63b: what your answer is, for the "Your answer" line: "none" | "in" | "maybe" | "cant" | "reserve".

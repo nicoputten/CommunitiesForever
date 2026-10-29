@@ -128,7 +128,7 @@ describe("Dungeons tab (CF-24)", function()
     local askFor = ns.DungeonsTab.buttons()["Ask now"] -- CF-63c board CF63List
     assert.is_truthy(askFor.tooltip:find("Whispers online friends who fit", 1, true)) -- CF-61: its tooltip
     assert.is_nil(ns.DungeonsTab.buttons()["Plan a run\226\128\166"]) -- CF-64: no planning in the game
-    assert.is_truthy(ns.DungeonsTab.buttons()["Ask now\226\128\166"])
+    assert.is_nil(ns.DungeonsTab.buttons()["Ask now\226\128\166"]) -- CF-65: no Ask now… on the list
     assert.is_falsy(all:find("Whispers online friends", 1, true))
     assert.is_falsy(all:find("reaches the website and Discord", 1, true)) -- in the tooltip only
     assert.are.equal("", ns.MainFrame.window().footerRightText.text)
@@ -339,6 +339,30 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(ns.DungeonsTab.buttons()["Pick another character"])
     ns.DungeonsTab.buttons()["Show all dungeons"]:RunScript("OnClick")
     assert.is_truthy(text():find("\nOther dungeons\n", 1, true))
+  end)
+
+  -- CF-65: a redraw (the minute countdown, a roster change) keeps a drawn button shown: hiding and showing it
+  -- between mouse down and up drops the click.
+  it("keeps its buttons shown through a redraw, and opens the Ask dialog from every entry point", function()
+    load(20, sampleRuns())
+    open()
+    local before = ns.DungeonsTab.buttons()["Ask now for this run"]
+    local hidden = 0
+    local hide = before.Hide
+    before.Hide = function(self) hidden = hidden + 1 return hide(self) end
+    ns.MainFrame.render()
+    ns.MainFrame.render()
+    assert.are.equal(0, hidden)
+    assert.are.equal(before, ns.DungeonsTab.buttons()["Ask now for this run"])
+    -- Ask now for this run: the dialog with the run's dungeon and note.
+    before:RunScript("OnClick")
+    assert.is_true(ns.RunDialogs.frame().shown)
+    assert.is_truthy(ns.RunDialogs.widgets().note:GetText():find("^For The Deadmines "))
+    ns.RunDialogs.frame():Hide()
+    -- A dungeon's Ask now.
+    select("wc")
+    ns.DungeonsTab.buttons()["Ask now"]:RunScript("OnClick")
+    assert.is_truthy(table.concat(ns.RunDialogs.texts(), "\n"):find("Wailing Caverns", 1, true))
   end)
 
   it("opens Invite all 15 minutes before the start, and Invite instead of Whisper (CF-62)", function()
@@ -565,7 +589,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(text():find("\nNothing planned yet\n", 1, true))
     assert.is_truthy(text():find("Ves Doombringer is not in a dungeon's level range yet. The first one, Ragefire "
       .. "Chasm, starts at level 13.", 1, true))
-    assert.is_true(ns.DungeonsTab.buttons()["Ask now\226\128\166"].enabled) -- CF-64: an ask is always possible
+    assert.is_true(ns.DungeonsTab.buttons()["Ask now\226\128\166"].enabled) -- the empty state's, never greyed
   end)
 
   it("says why there's no dungeon: outside the community, too low or past every range (CF-61)", function()

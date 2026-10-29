@@ -12,12 +12,13 @@ local WIDTH = 460
 local PAD = 20
 local DOT = " \194\183 "
 local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
+local DISCORD_HELP = "For friends who aren't playing; posted after your next /reload."
 -- CF-64: the reload prompt's detail, in the ⓘ (the dialog itself says only what to do).
 local RELOAD_TIP = "The game saves only on a reload or logout; your uploader then posts the ask on Discord, about "
   .. "15 seconds later. Without a reload it waits for your next logout, and after 10 minutes it has expired."
 
 local dialog, pools, infos
-local noteBox
+local noteBox, discordBox
 local state = {} -- what the open dialog shows and edits
 
 local function range(dungeon)
@@ -74,6 +75,8 @@ local function create()
     primary = Kit.pool(function(parent) return Kit.button(parent, "", nil, "primary") end),
   }
   noteBox = Kit.input(content, { width = WIDTH - 2 * PAD, maxLetters = ns.Pending.MAX_NOTE })
+  -- CF-65 (Nico): posting on Discord is a choice again, on by default.
+  discordBox = Kit.checkbox(content, "Also post on Discord", DISCORD_HELP, true, function(on) state.discord = on end)
   infos = Kit.pool(Kit.info)
 end
 
@@ -81,8 +84,10 @@ local function begin(title, height)
   if not dialog then create() end
   for _, p in pairs(pools) do Kit.release(p) end
   Kit.release(infos)
-  noteBox:Hide()
-  noteBox:ClearAllPoints()
+  for _, w in ipairs({ noteBox, discordBox }) do
+    w:Hide()
+    w:ClearAllPoints()
+  end
   dialog.titleText:SetText(title)
   dialog:SetHeight(height)
   -- CF-64: on the window when it is open (it opened outside it, on the right).
@@ -186,12 +191,12 @@ local function notAsked(dungeon, recipients)
   return parts
 end
 
--- note (CF-63b, optional): the note to start with ("For SM: Graveyard 20:30 · need a healer").
-function RunDialogs.askNow(dungeon, note)
-  state = { dungeon = dungeon, char = currentChar() }
+-- The Ask dialog for a dungeon; note: the note to start with ("For SM: Graveyard 20:30 · need a healer").
+local function drawAsk(dungeon, note)
+  state = { dungeon = dungeon, char = currentChar(), discord = true }
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), ns.db.global.people,
     ns.db.global.self.battleTag)
-  begin("Ask now", 380)
+  begin("Ask now", 430)
   local y = 16
   local title = text("name", y, dungeon.name, "goldLight")
   local tw = title.text.GetStringWidth and title.text:GetStringWidth() or 160
@@ -202,7 +207,7 @@ function RunDialogs.askNow(dungeon, note)
   label(y, "Whispered now" .. DOT .. "online and fit")
   y = y + 20
   if #recipients == 0 then
-    text("small", y, "Nobody online in range: it goes to Discord.", "muted") -- CF-64: still asked
+    text("small", y, "Nobody with the addon is online in range.", "muted")
     y = y + 20
   end
   for i, r in ipairs(recipients) do
@@ -220,17 +225,40 @@ function RunDialogs.askNow(dungeon, note)
   label(y + 4, "Note (optional)")
   noteBox:SetValue(note or "")
   place(noteBox, PAD, y + 22)
-  local ok, wait = ns.GroupAsks.canAsk()
-  local main = actions("Ask now", function()
-    -- CF-64 (Nico): an ask is always possible: to friends in game when any are online, and always to Discord (the
-    -- Discord ask first, CF-51, so the whisper carries its id to every friend's file).
+  y = y + 60
+  discordBox:SetChecked(true)
+  discordBox:SetWidth(WIDTH - 2 * PAD)
+  place(discordBox, PAD, y)
+  -- CF-65: the button is never disabled; within 3 minutes of your last ask it says how long to wait instead.
+  local problem = text("tiny", y + 34, "", "warning")
+  actions("Ask now", function()
+    local ok, wait = ns.GroupAsks.canAsk()
+    if not ok then
+      problem.text:SetText(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
+      return
+    end
+    -- CF-65: to friends in game when any are online, and to Discord unless unticked (the Discord ask first, CF-51,
+    -- so the whisper carries its id to every friend's file). The note goes into the Discord ask (the pending item).
     local typed = noteBox:GetText()
-    local post = ns.Planner.askOnDiscord(dungeon.id, state.char, typed)
+    local post = state.discord and ns.Planner.askOnDiscord(dungeon.id, state.char, typed) or false
     ns.GroupAsks.ask(dungeon, ns.Pending.note(typed), post)
     dialog:Hide()
-    RunDialogs.reloadPrompt()
-  end, not ok and string.format("You can ask again in %d min.", math.ceil(wait / 60)) or nil)
-  main:SetEnabled(ok == true)
+    if post then RunDialogs.reloadPrompt() end
+  end)
+end
+
+--[[ CF-65: every way to start an ask comes here: a dungeon's Ask now, Ask now for this run, an open slot's menu, the
+empty state's Ask now…, /cf ask <dungeon>. opts = { run, dungeon, role, note } (PlannedRuns.askPrefill decides what
+the dialog opens with). Returns true when the dialog opened. ]]
+function RunDialogs.ask(opts)
+  local me = ns.SelfInfo.read()
+  local prefill = ns.PlannedRuns.askPrefill(opts, {
+    dungeonOf = function(run) return ns.Dungeons.get(run.dungeon) end,
+    runName = ns.Dungeons.runName, list = ns.Dungeons.LIST, level = me.level, now = GetServerTime(), dateFn = date,
+  })
+  if not prefill.dungeon then return false end
+  drawAsk(prefill.dungeon, prefill.note)
+  return true
 end
 
 -- For the specs.
@@ -252,7 +280,7 @@ function RunDialogs.buttons()
   return out
 end
 function RunDialogs.widgets()
-  return { note = noteBox }
+  return { note = noteBox, discord = discordBox }
 end
 function RunDialogs.tips()
   local out = {}

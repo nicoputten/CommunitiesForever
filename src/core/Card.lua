@@ -218,7 +218,7 @@ local function websiteDetail(siteFriends, name, now)
         characters[#characters + 1] = { name = c.name, realm = c.realm, classFile = c.classFile, level = c.level,
                                         seen = c.seenAt and Format.ago(c.seenAt, now) or nil, website = true }
       end
-      return { kind = "website", title = f.name, status = "from the website", characters = characters }
+      return { kind = "website", title = f.name, status = "From the website", characters = characters }
     end
   end
   return nil
