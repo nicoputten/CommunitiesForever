@@ -44,6 +44,14 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Log in on an alt outside the selected community, `/cf`, Dungeons | "<name> isn't in the community yet. Join it from the Friends tab with a friend's invite link." (not the level sentence) | open |
 | A character in the community below level 13 | "<name> is not in a dungeon's level range yet. The first one, Ragefire Chasm, starts at level 13." | open |
 
+### CF-61a Retail dry-run fixes: wizard, settings, version, alt join
+| Step | Expected | Status |
+|---|---|---|
+| `/cf setup` | The line under the progress bars reads "Step 1 of 6 · Welcome → Community" and stays inside the window; Next moves it to "Step 2 of 6 · Community → …". The last step shows "Step 6 of 6 · Done". | open |
+| `/cf settings` | Every description wraps inside its own column: none runs under the right column or past the window's edge, and the rows below move down to make room. The footer shows the version with one `v` (e.g. `v0.8.0-beta1`). | open |
+| A friend sets the community invite link (`/cf settings`, Community invite link). Log in on an alt that isn't in the community | A few seconds after login the window opens by itself on Friends with "How to join …". `/reload`: it doesn't open again on that alt. | open |
+| On that alt: Post invite link in chat, click the link, Join in Blizzard's window | Right after joining, "Create a Community tab on this character too?" shows: a compact dialog with one line, "A tab with only your community's chat.", and on the right Not now and Create tab with normal button padding. Not now closes it and it doesn't ask again on that character. | open |
+
 ### CF-61b No designer notes; one reset label per view
 | Step | Expected | Status |
 |---|---|---|

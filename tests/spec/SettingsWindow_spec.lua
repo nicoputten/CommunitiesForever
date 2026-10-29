@@ -44,7 +44,8 @@ describe("settings window (CF-43)", function()
     assert.is_true(window.shown)
     assert.are.same({ 640, 500 }, { window.width, window.height })
     assert.are.equal("Settings", window.titleText:GetText())
-    assert.are.equal("v" .. tostring(addon.version), window.footerRightText:GetText())
+    assert.are.equal(ns.Version.label(addon.version), window.footerRightText:GetText())
+    assert.is_nil(window.footerRightText:GetText():find("^vv")) -- CF-61: one v
     assert.is_truthy(window.footerText:GetText():find("Options", 1, true))
     window.scripts.OnKeyDown(window, "ESCAPE") -- CF-32: Esc closes it
     assert.is_false(ns.SettingsWindow.isShown())
@@ -60,6 +61,10 @@ describe("settings window (CF-43)", function()
       local box = control(key)
       local before = box:GetChecked()
       assert.are.equal(opt.get(), before, key)
+      if box.help then -- CF-61: the description wraps inside its column (half the 640 px window)
+        assert.are.equal(261, box.help.width, key)
+        assert.are.equal("LEFT", box.help.justifyH, key)
+      end
       box:RunScript("OnClick")
       assert.are.equal(not before, opt.get(), key) -- written through the option
       box:RunScript("OnClick")

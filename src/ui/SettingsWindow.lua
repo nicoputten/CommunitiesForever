@@ -30,7 +30,7 @@ local function toggle(parent, key, x, y)
   local opt = option(key)
   local box = Kit.checkbox(parent, opt.name, opt.help, opt.get(), function(value) opt.set({}, value) end)
   box:SetPoint("TOPLEFT", x, -y)
-  box:SetWidth(COLUMN)
+  box:Fit(COLUMN) -- CF-61: the help wraps inside its column
   controls[key] = box
   refreshers[#refreshers + 1] = function() box:SetChecked(option(key).get()) end
   return box:GetHeight() + 6
@@ -210,7 +210,7 @@ function SettingsWindow.open()
   if not window then build() end
   for _, refresh in ipairs(refreshers) do refresh() end
   layoutLower()
-  window.footerRightText:SetText("v" .. tostring(ns.version or "?"))
+  window.footerRightText:SetText(ns.Version.label(ns.version))
   window:Show()
   if window.Raise then window:Raise() end
   if not window.escape then window.escape = ns.Keys.closeOnEscape(window, function() window:Hide() end) end
