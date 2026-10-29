@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 16001, 120105
 ## Title: FriendProbe
 ## Notes: Launch checklist for CommunitiesForever (runs by itself until 18 Nov 2026; send the saved file to Nico)
 ## Version: 2026-10-29
