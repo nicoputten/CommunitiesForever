@@ -10,7 +10,7 @@ local DungeonsTab = {}
 local Theme, Kit = ns.Theme, ns.Kit
 
 local PAD = 20
-local ROW = 44
+local ROW = 28 -- CF-63c: one line per dungeon
 local SLOT_HEIGHT = 100
 -- CF-47: waiting for the next save and upload (CF-63: the tooltip of a clock icon)
 local PENDING = "Saved. Reaches the website with your next upload." -- CF-63 board CF63Answer
@@ -21,11 +21,11 @@ local ASK_TIP = "Whispers online friends who fit; can post on Discord too. Waits
 local LIST_WIDTH = 290
 local RUN_ROW = 50
 local GROUP_ROW = 36
-local ONLINE_WIDTH = 250
 local ONLINE_ROW = 30
 local LINK_WIDTH = 236 -- CF-63: Edit or cancel / On the website
 local ROLE_LABEL = { tank = "Tank", heal = "Healer", dps = "Damage" }
 local ROSTER_TIP = "Online members whose current character fits %s." -- CF-63 board CF63RunDetail
+local SUGGEST_TIP = "Friends\226\128\153 and your characters whose level fits, online or not." -- CF-63c
 local RUNS_TIP = "Runs from the website. Type /reload after an upload for newer."
 local LINK_TIP = "Copy with Ctrl+C. Edit or cancel happens on the website."
 local INVITE_TIP = "Invite all invites everyone who is in and online."
@@ -39,6 +39,10 @@ local pools
 local linkBox -- the run's website link to copy
 local ticking -- CF-63: the minute ticker runs
 local askForRun, memberMenu, openSlotMenu -- CF-63b, defined with renderRun
+-- CF-63c (board CF63List): the filter chip ("all" again when the window closes), the character "In range for"
+-- follows (nil: the one you are on; not saved, so back to it at each login) and Show all dungeons.
+local filter, rangeGuid, showAll = "all", nil, false
+local rangeOptions = {} -- your characters for the In range dropdown (from the last draw)
 
 -- ===== Helpers =====
 
@@ -141,14 +145,40 @@ end
 local function listRow(parent)
   local r = Kit.listRow(parent)
   r:SetHeight(ROW)
-  r.name = Theme.text(r, "group", "goldLight")
-  r.name:SetPoint("TOPLEFT", 12, -7)
-  r.right = Theme.text(r, "tiny", "muted")
-  r.right:SetPoint("TOPRIGHT", -12, -8)
-  r.meta = Theme.text(r, "tiny", "muted")
-  r.meta:SetPoint("BOTTOMLEFT", 12, 7)
+  r.name = Theme.text(r, "body", "text")
+  r.name:SetPoint("LEFT", 12, 0)
+  r.right = Theme.text(r, "small", "muted")
+  r.right:SetPoint("RIGHT", -12, 0)
+  r.meta = Theme.text(r, "tiny", "muted") -- unused since CF-63c (board CF63List: one line per dungeon)
+  r.meta:Hide()
   r:SetScript("OnClick", function(self) DungeonsTab.select(self.value) end)
   return r
+end
+
+-- CF-63c: a check box with its label (Show all dungeons).
+local function checkRow(parent)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetHeight(18)
+  b.box = CreateFrame("Frame", nil, b)
+  b.box:SetSize(13, 13)
+  b.box:SetPoint("LEFT", 0, 0)
+  local bg = Theme.fill(b.box, "input", "BACKGROUND")
+  bg:SetAllPoints()
+  b.box.edges = Kit.edges(b.box, "border")
+  b.check = b.box:CreateTexture(nil, "ARTWORK")
+  b.check:SetPoint("TOPLEFT", 1, -1)
+  b.check:SetPoint("BOTTOMRIGHT", -1, 1)
+  b.check:SetTexture(Theme.TEXTURES.check)
+  b.check:SetVertexColor(Theme.color("gold"))
+  b.text = Theme.text(b, "small", "textDim")
+  b.text:SetPoint("LEFT", 19, 0)
+  function b:SetCheck(label, on)
+    self.text:SetText(label)
+    self.checked = on and true or false
+    self.check:SetShown(self.checked)
+    self:SetWidth(19 + math.ceil(self.text:GetStringWidth() or 100))
+  end
+  return b
 end
 
 -- CF-62: a run row (50 px): the short name and the time; five role pips, "2 in · 1 maybe", the organiser.
@@ -338,35 +368,51 @@ local function section(parent, x, y, width, text, note, noteColor)
   return Kit.section(pools.section, pools.small, parent, x, y, width, text, note, noteColor)
 end
 
-local function renderList(runs, overview, me, candidates)
+-- CF-63c: the In range dropdown: your characters "Name (level)"; picking one makes the list follow it.
+local function rangeMenu(owner)
+  local items = {}
+  for i, c in ipairs(rangeOptions) do
+    items[i] = { label = string.format("%s (%s)", tostring(c.name), tostring(c.level or "?")), enabled = true,
+                 char = c }
+  end
+  ns.ContextMenu.open(owner, { items = items }, function(item)
+    rangeGuid = item.char.guid
+    status().selected = nil
+    helpers.render()
+  end)
+end
+
+-- rangeChar: the character "In range for" follows ({ guid, name, level }).
+local function renderList(runs, overview, me, candidates, rangeChar)
   Kit.release(pools.rows)
   Kit.release(pools.listText)
   Kit.release(pools.runRows)
   Kit.release(pools.listTitle)
   Kit.release(pools.listButtons)
   Kit.release(pools.listInfos)
+  Kit.release(pools.chips)
+  Kit.release(pools.checks)
   rows = {}
   local parent = list.child
   local width = math.max(200, (list:GetWidth() or 0) - 6)
   local y = 4
   local selected = status().selected
 
-  local function row(value, name, right, rightColor, meta, dim)
+  local function row(value, name, right, dim)
     local r = Kit.take(pools.rows, parent)
     r:SetPoint("TOPLEFT", 0, -y)
     r:SetPoint("RIGHT", parent, "RIGHT")
     r.value = value
     r.name:SetText(name)
-    r.name:SetTextColor(Theme.color(dim and "muted" or "goldLight"))
+    r.name:SetTextColor(Theme.color(value == selected and "goldLight" or (dim and "muted" or "text")))
     r.right:SetText(right or "")
-    r.right:SetTextColor(Theme.color(rightColor or "muted"))
-    r.meta:SetText(meta or "")
     r:SetSelected(value == selected)
     rows[#rows + 1] = { value = value, frame = r }
     y = y + ROW
   end
 
-  -- CF-62: "Runs" with Ask now…; the runs grouped Tonight, Tomorrow, This week, Later; role pips per row.
+  -- CF-62: "Dungeons" with Ask now…; CF-63c: the filter chips; the runs grouped Tonight, Tomorrow, This week,
+  -- Later; role pips per row.
   placeText(pools.listTitle, parent, 12, y + 6, width - 24, "Dungeons", "goldLight") -- CF-62 (board AG05)
   local ask = Kit.take(pools.listButtons, parent)
   ask:SetLabel("Ask now\226\128\166")
@@ -375,12 +421,32 @@ local function renderList(runs, overview, me, candidates)
   ask:SetScript("OnClick", function() DungeonsTab.askNow() end)
   ask.tooltip = ASK_TIP
   y = y + 36
-  if #runs > 0 then
-    placeText(pools.listText, parent, 12, y + 8, width - 24, "Planned", "textDim")
-    y = y + 24
+  local cx = 12
+  for _, def in ipairs(ns.PlannedRuns.FILTERS) do
+    local c = Kit.take(pools.chips, parent)
+    c:SetChip(def.text, filter == def.value)
+    c:SetHeight(24)
+    c.value = def.value
+    if cx + c:GetWidth() > width - 8 then
+      cx = 12
+      y = y + 29
+    end
+    c:SetPoint("TOPLEFT", cx, -y)
+    c:SetScript("OnClick", function()
+      filter = def.value
+      helpers.render()
+    end)
+    cx = cx + c:GetWidth() + 5
+  end
+  y = y + 30
+  local shown = ns.PlannedRuns.filterRuns(runs, filter, { me = me, candidates = candidates, dungeonOf = dungeonOf,
+                                                           level = rangeChar.level })
+  if #shown > 0 then
+    placeText(pools.listText, parent, 14, y + 6, width - 24, "Planned", "textDim")
+    y = y + 22
   end
   local lastBucket
-  for _, run in ipairs(runs) do
+  for _, run in ipairs(shown) do
     local bucket = date and ns.PlannedRuns.bucket(run.startsAt, now(), date) or ""
     if bucket ~= lastBucket then
       placeText(pools.listText, parent, 12, y + 8, width - 24, bucket, "faint")
@@ -418,32 +484,48 @@ local function renderList(runs, overview, me, candidates)
     placeText(pools.listText, parent, 12, y + 18, width - 24, "Plan one on the website, or ask who is up for "
       .. "something right now.", "muted")
     y = y + 40
+  elseif #shown == 0 then
+    placeText(pools.listText, parent, 14, y + 4, width - 24, "No runs here", "muted") -- CF-63c: a chip hides all
+    y = y + 24
   end
 
-  local runsPer = {}
-  for _, run in ipairs(runs) do runsPer[run.dungeon] = (runsPer[run.dungeon] or 0) + 1 end
-  local inRange = {}
+  -- CF-63c (board CF63List): "In range for" with a dropdown of your characters, Show all dungeons; one line per
+  -- dungeon, "17–24 · 3 fit"; with Show all, the others under "Other dungeons".
+  y = y + 8
+  local label = placeText(pools.listText, parent, 12, y + 6, 90, "In range for", "faint")
+  local lw = label.text.GetStringWidth and label.text:GetStringWidth() or 70
+  local pick = Kit.take(pools.listButtons, parent)
+  pick:SetLabel(string.format("%s (%s) \226\150\190", tostring(rangeChar.name), tostring(rangeChar.level or "?")))
+  pick:SetEnabled(true)
+  pick:SetHeight(24)
+  pick:SetPoint("TOPLEFT", 12 + lw + 6, -(y + 1))
+  pick:SetScript("OnClick", rangeMenu)
+  pick.tooltip = RANGE_TIP
+  y = y + 30
+  local all = Kit.take(pools.checks, parent)
+  all:SetCheck("Show all dungeons", showAll)
+  all:SetPoint("TOPLEFT", 12, -y)
+  all:SetScript("OnClick", function()
+    showAll = not showAll
+    helpers.render()
+  end)
+  y = y + 26
+  local inRange, others = {}, {}
   for _, entry in ipairs(overview) do
-    if entry.fits then inRange[#inRange + 1] = entry end
+    if entry.fits then inRange[#inRange + 1] = entry else others[#others + 1] = entry end
   end
-  if #inRange > 0 then
-    -- CF-62 (board AG05): "In range for <character> (<level>)" with an ⓘ; per dungeon "3 fit · 2/9 quests" and a
-    -- gold "1 run" tag.
-    local heading = placeText(pools.listText, parent, 12, y + 8, width - 40,
-      string.format("In range for %s (%s)", tostring(me.name), tostring(me.level or "?")), "textDim")
-    local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 150
-    local info = Kit.take(pools.listInfos, parent)
-    info:SetPoint("TOPLEFT", 12 + hw + 6, -(y + 7))
-    info.tip = RANGE_TIP
+  if #inRange == 0 then
+    placeText(pools.listText, parent, 14, y + 4, width - 24, "No dungeon fits yet", "textDim")
     y = y + 26
-    for _, entry in ipairs(inRange) do
-      local meta = entry.people .. " fit"
-      local q = questInfo(entry)
-      if q.total > 0 then meta = meta .. DOT .. string.format("%d/%d quests", q.have, q.total) end
-      if runsPer[entry.dungeon.id] then
-        meta = meta .. "    " .. colored(plural(runsPer[entry.dungeon.id], "run"), "goldLight")
-      end
-      row(entry.dungeon.id, entry.dungeon.name, range(entry.dungeon), "muted", meta)
+  end
+  for _, entry in ipairs(inRange) do
+    row(entry.dungeon.id, entry.dungeon.name, range(entry.dungeon) .. DOT .. entry.people .. " fit")
+  end
+  if showAll and #others > 0 then
+    placeText(pools.listText, parent, 14, y + 8, width - 24, "Other dungeons", "textDim")
+    y = y + 26
+    for _, entry in ipairs(others) do
+      row(entry.dungeon.id, entry.dungeon.name, range(entry.dungeon) .. DOT .. entry.people .. " fit", true)
     end
   end
   -- CF-62: how old the runs are, one muted line at the bottom of the list.
@@ -461,7 +543,6 @@ local function renderList(runs, overview, me, candidates)
   parent:SetHeight(y)
   list:Update()
 end
-
 
 -- CF-27: ask friends who's up for it now, or how your ask stands.
 local function askBlock(parent, entry, y, width)
@@ -499,6 +580,7 @@ local function clearDetail()
   end
   linkBox:Hide()
   if ns.RunAnswer then ns.RunAnswer.hide() end
+  if ns.PlanInline then ns.PlanInline.hide() end
 end
 
 -- CF-62: who is online in the community and fits the run's range, not in its group (MemberTracker, re-drawn on
@@ -917,21 +999,48 @@ local function renderEmpty(messageText)
   detail:Update()
 end
 
--- A dungeon in range (CF-62, board AG05): title with its run, the suggested group as rows, "Online now, fits",
--- the quests and Go.
-local function renderDetail(entry, me, messageText, runs, candidates)
+-- CF-63c (board CF63List I): no dungeon fits the character the list follows: the first one, and Show all dungeons
+-- or Pick another character.
+local function renderNoFit()
+  local parent = detail.child
+  local width = math.max(420, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local y = PAD + 80
+  placeText(pools.name, parent, PAD, y, width, "No dungeon fits yet", "heading", "CENTER")
+  y = y + 36
+  local first = ns.Dungeons.first()
+  if first then
+    placeText(pools.small, parent, PAD, y, width, string.format("First one: %s at level %d", first.name, first.min),
+      "textDim", "CENTER")
+  end
+  y = y + 30
+  local all = Kit.take(pools.buttons, parent)
+  all:SetLabel("Show all dungeons")
+  all:SetEnabled(true)
+  all:SetScript("OnClick", function()
+    showAll = true
+    helpers.render()
+  end)
+  local other = Kit.take(pools.buttons, parent)
+  other:SetLabel("Pick another character")
+  other:SetEnabled(#rangeOptions > 1)
+  other:SetScript("OnClick", rangeMenu)
+  local total = (all:GetWidth() or 140) + 10 + (other:GetWidth() or 160)
+  all:SetPoint("TOPLEFT", PAD + math.floor((width - total) / 2), -y)
+  other:SetPoint("LEFT", all, "RIGHT", 10, 0)
+  parent:SetHeight(y + 80)
+  detail:Update()
+end
+
+-- A dungeon (CF-62, board AG05; CF-63c board CF63List F to H): title, range and zone; for a dungeon out of range
+-- how your characters fit; the suggested group as rows; Online now, fits beside Plan a run (inline); the quests;
+-- Ask now and Plan a run….
+local function renderDetail(entry, messageText, runs, candidates, rangeChar)
   if not entry then return renderEmpty(messageText) end
   local parent = detail.child
   local width = math.max(560, (detail:GetWidth() or 0) - 6) - 2 * PAD
-  local leftWidth = width - ONLINE_WIDTH - 24
-  local rightX = PAD + leftWidth + 24
-  local y = PAD - 4
+  local y = PAD - 6
   local dungeon = entry.dungeon
-  local title = placeText(pools.name, parent, PAD, y, width, dungeon.name, "heading")
-  local tw = title.text.GetStringWidth and title.text:GetStringWidth() or 200
-  local sub = "level " .. range(dungeon)
-  if ns.Dungeons.ZONES[dungeon.id] then sub = sub .. DOT .. ns.Dungeons.ZONES[dungeon.id] end
-  placeText(pools.small, parent, PAD + tw + 12, y + 10, 220, sub, "muted")
+  placeText(pools.name, parent, PAD, y, width - 200, dungeon.name, "heading")
   -- A planned run for this dungeon: "1 run planned · Fri 20:00 ›" selects it.
   local planned = {}
   for _, run in ipairs(runs) do
@@ -945,32 +1054,49 @@ local function renderDetail(entry, me, messageText, runs, candidates)
     b:SetScript("OnClick", function() DungeonsTab.select("run:" .. planned[1].id) end)
     b:SetPoint("TOPRIGHT", parent, "TOPLEFT", PAD + width, -y)
   end
-  y = y + 40
-
-  -- Suggested group: the same 38 px rows as a run's group.
-  local top = y
-  y = section(parent, PAD, y, leftWidth, "Suggested group")
+  y = y + 34
+  local sub = "level " .. range(dungeon)
+  if ns.Dungeons.ZONES[dungeon.id] then sub = sub .. DOT .. ns.Dungeons.ZONES[dungeon.id] end
+  placeText(pools.small, parent, PAD, y, width, sub, "muted")
+  y = y + 18
+  local options = ns.PlannedRuns.charChoices(candidates, dungeon, rangeChar.guid)
   if not entry.fits then
-    placeText(pools.small, parent, PAD, y, leftWidth, string.format("%s is not in range.", tostring(me.name)), "muted")
-    y = y + 20
+    -- "Ada Lovewell 23: too low · Bo Example 58: fits" (your best alt, when one fits).
+    local own = rangeChar.level and ns.PlannedRuns.levelFit(rangeChar.level, dungeon.min, dungeon.max)
+    local parts = { string.format("%s %s: %s", tostring(rangeChar.name), tostring(rangeChar.level or "?"),
+      colored(own and own.kind == "tooLow" and "too low" or (own and own.label or "?"), "warning")) }
+    local alt = options[1]
+    if alt and alt.char.guid ~= rangeChar.guid and alt.fit.kind == "fits" then
+      parts[2] = string.format("%s %s: %s", tostring(alt.char.name), tostring(alt.char.level),
+        colored("fits", "online"))
+    end
+    placeText(pools.small, parent, PAD, y + 4, width, table.concat(parts, DOT), "muted")
+    y = y + 24
   end
+  y = y + 10
+
+  -- Suggested group: the same rows as a run's group, full width.
+  local heading = placeText(pools.section, parent, PAD, y, width, "Suggested group", "goldLight")
+  local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 120
+  local gi = Kit.take(pools.infos, parent)
+  gi:SetPoint("TOPLEFT", PAD + hw + 6, -(y + 3))
+  gi.tip = SUGGEST_TIP
+  y = y + Kit.SECTION_HEIGHT
   local group = ns.Dungeons.suggest(entry)
   local inGroup = {}
   for _, c in ipairs(group) do
     if c.guid then inGroup[c.guid] = true end
   end
   local fits = onlineFits(dungeon, inGroup, candidates)
-  local fitNames = {}
-  for i, f in ipairs(fits) do
-    if i > 8 then break end
-    fitNames[#fitNames + 1] = f.name .. " " .. f.level
-  end
   for _, slot in ipairs(ns.Dungeons.slots(group, entry.selfGuid)) do
     local g = Kit.take(pools.groupRows, parent)
     g:SetPoint("TOPLEFT", PAD, -y)
-    g:SetWidth(leftWidth)
-    g.tip = nil
+    g:SetWidth(width)
+    g.tip, g.tipLines, g.menu, g.menuOnClick = nil, nil, nil, nil
+    g.ask:Hide()
+    g.online:SetText("")
     local c = slot.char
+    rowEdges(g, false)
     if c then
       g.bg:SetColorTexture(Theme.color("white", 0.03))
       g.role:SetRole(c.role or slot.role)
@@ -979,37 +1105,34 @@ local function renderDetail(entry, me, messageText, runs, candidates)
       g.portrait:SetOnline(c.online)
       g.name:SetText(classColored(c, c.name))
       g.info:SetText(tostring(c.level) .. DOT .. (c.own and "you" or tostring(c.displayName or "member")))
-      g.status:SetText(c.own and "you" or (c.online and "online" or ""))
-      g.status:SetTextColor(Theme.color(c.own and "goldLight" or "onlineText"))
+      if c.online then g.online:SetText("online") end
+      g.status:SetText("")
     else
-      g.bg:SetColorTexture(Theme.color("white", 0))
+      g.bg:SetColorTexture(Theme.color("white", 0.015))
       g.role:SetRole(slot.role, true)
       g.portrait:Hide()
       g.name:SetText(colored(ROLE_LABEL[slot.role] .. DOT .. (slot.missing and "nobody fits" or "open"),
-        slot.missing and "warning" or "faint"))
+        slot.missing and "warning" or "muted"))
       g.info:SetText("")
-      if #fits > 0 and not slot.missing then
-        g.status:SetText(#fits .. " online fit")
-        g.status:SetTextColor(Theme.color("swap"))
-        g.tip = table.concat(fitNames, "\n")
-      else
-        g.status:SetText("")
-      end
+      g.status:SetText("")
     end
-    fitGroupRow(g, leftWidth)
-    y = y + GROUP_ROW + 4
-  end
-  local alternatives = ns.Dungeons.outside(entry, group)
-  if #alternatives > 0 then
-    local names = {}
-    for i, c in ipairs(alternatives) do names[i] = classColored(c, c.name) .. " " .. c.level end
-    placeText(pools.small, parent, PAD, y + 2, leftWidth, "Your other characters in range: " ..
-      table.concat(names, ", "), "muted")
-    y = y + 22
+    fitGroupRow(g, width)
+    y = y + GROUP_ROW + 5
   end
 
+  -- Online now, fits (left) beside Plan a run (right, inline, when open).
+  y = divider(parent, y + 6, width) + 12
+  local planning = ns.PlanInline.isOpen(dungeon)
+  local leftWidth = planning and (width - ns.PlanInline.WIDTH - 24) or width
+  local ly = onlineList(parent, PAD, y, leftWidth, fits, dungeon, false)
+  local ry = y
+  if planning then
+    ry = ry + ns.PlanInline.render(parent, dungeon, candidates, rangeChar.guid, PAD + leftWidth + 24, y,
+      function() helpers.render() end)
+  end
+  y = math.max(ly, ry) + 6
+
   -- Quests: QuestieDB for this dungeon and your faction; else what people in range have in their logs.
-  y = y + 10
   local info = questInfo(entry)
   local done = 0
   for _, q in ipairs(info.quests) do
@@ -1021,13 +1144,13 @@ local function renderDetail(entry, me, messageText, runs, candidates)
   else
     note = string.format("%d of %d in your log", info.have, info.total) .. (done > 0 and (DOT .. done .. " done") or "")
   end
-  y = section(parent, PAD, y, leftWidth, "Quests", note)
+  y = section(parent, PAD, y, width, "Quests", note)
   if info.complete then -- CF-62: without QuestieDB the heading says "needs Questie" and the list is hidden
     for _, q in ipairs(info.quests) do
       local r = Kit.take(pools.quests, parent)
       r:SetPoint("TOPLEFT", PAD, -y)
-      r:SetWidth(leftWidth)
-      r.name:SetWidth(leftWidth - 22 - 180)
+      r:SetWidth(width)
+      r.name:SetWidth(width - 22 - 180)
       local name = tostring(q.name or ("Quest " .. q.id))
       if q.state == "have" then
         r.check:Show()
@@ -1058,59 +1181,34 @@ local function renderDetail(entry, me, messageText, runs, candidates)
     end
   end
 
-  -- Go: Ask now for <dungeon> and Plan a run… (what a plan does is the button's tooltip).
-  y = section(parent, PAD, y + 10, leftWidth, "Go")
+  -- Ask now and Plan a run… (the plan opens inline; what a plan does is the button's tooltip).
+  y = y + 12
   local ask = ns.GroupAsks.current()
   if ask and ask.dungeon.id == dungeon.id then
-    y = askBlock(parent, entry, y, leftWidth)
+    y = askBlock(parent, entry, y, width)
   else
     local okAsk, wait = ns.GroupAsks.canAsk()
     local a = Kit.take(pools.primary, parent)
-    a:SetLabel("Ask now for " .. dungeon.name)
+    a:SetLabel("Ask now")
     a:SetEnabled(okAsk and entry.fits)
     a.tooltip = okAsk and ASK_TIP or string.format("You can ask again in %d min.", math.ceil((wait or 0) / 60))
     if a.SetMotionScriptsWhileDisabled then a:SetMotionScriptsWhileDisabled(true) end
     a:SetScript("OnClick", function() ns.RunDialogs.askNow(dungeon) end)
     a:SetPoint("TOPLEFT", PAD, -y)
-    local p = Kit.take(pools.buttons, parent)
-    p:SetLabel("Plan a run\226\128\166")
-    p:SetEnabled(true)
-    p.tooltip = PLAN_TIP
-    p:SetScript("OnClick", function() ns.RunDialogs.plan(dungeon) end)
-    p:SetPoint("LEFT", a, "RIGHT", 10, 0)
+    if not planning then
+      local p = Kit.take(pools.buttons, parent)
+      p:SetLabel("Plan a run\226\128\166")
+      p:SetEnabled(true)
+      p.tooltip = PLAN_TIP
+      p:SetScript("OnClick", function()
+        ns.PlanInline.open(dungeon)
+        helpers.render()
+      end)
+      p:SetPoint("LEFT", a, "RIGHT", 10, 0)
+    end
     y = y + 40
   end
-
-  -- Right column: Online now, fits.
-  local ry = top
-  local heading = placeText(pools.section, parent, rightX, ry, ONLINE_WIDTH, "Online now, fits " .. range(dungeon),
-    "goldLight")
-  local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 180
-  local ri = Kit.take(pools.infos, parent)
-  ri:SetPoint("TOPLEFT", rightX + hw + 8, -(ry + 3))
-  ri.tip = ROSTER_TIP
-  placeText(pools.small, parent, rightX, ry + 2, ONLINE_WIDTH, tostring(#fits), "faint", "RIGHT")
-  ry = ry + 28
-  if #fits == 0 then
-    placeText(pools.small, parent, rightX, ry, ONLINE_WIDTH, "Nobody online fits right now.", "muted")
-    ry = ry + 22
-  end
-  for _, f in ipairs(fits) do
-    local o = Kit.take(pools.onlineRows, parent)
-    o:SetPoint("TOPLEFT", rightX, -ry)
-    o:SetWidth(ONLINE_WIDTH)
-    o.portrait:SetClass(f.classFile)
-    o.portrait:SetOnline(true)
-    o.name:SetText(f.classFile and classColored(f, f.name) or tostring(f.name))
-    o.level:SetText(tostring(f.level))
-    o.info:SetText(table.concat({ f.friend or "community", f.zone }, DOT))
-    o.button:SetLabel("Whisper")
-    o.button:SetEnabled(true)
-    o.button.tooltip = nil
-    o.button:SetScript("OnClick", function() whisper(f.name) end)
-    ry = ry + ONLINE_ROW
-  end
-  parent:SetHeight(math.max(y, ry) + PAD)
+  parent:SetHeight(y + PAD)
   detail:Update()
 end
 
@@ -1171,6 +1269,7 @@ function DungeonsTab.create(parent, h)
     runRows = Kit.pool(runRow), listTitle = Kit.pool(Kit.textHolder("section")), listButtons = Kit.pool(button),
     groupRows = Kit.pool(groupRow), onlineRows = Kit.pool(onlineRow), infos = Kit.pool(Kit.info),
     listInfos = Kit.pool(Kit.info), clocks = Kit.pool(Kit.clock), -- CF-63
+    chips = Kit.pool(function(p) return ns.PlanInline.chip(p) end), checks = Kit.pool(checkRow),
     dividers = Kit.pool(function(p)
       local f = CreateFrame("Frame", nil, p)
       local t = Theme.fill(f, "divider", "BORDER")
@@ -1202,6 +1301,12 @@ end
 
 function DungeonsTab.hide() if root then root:Hide() end end
 
+-- CF-63c: the window closed: the chips start at All next time, and no plan box is open.
+function DungeonsTab.closed()
+  filter = "all"
+  if ns.PlanInline then ns.PlanInline.close() end
+end
+
 function DungeonsTab.select(value)
   status().selected = value
   helpers.render()
@@ -1219,30 +1324,46 @@ function DungeonsTab.render(view, messageText)
   clearDetail()
   local me = ns.SelfInfo.read()
   if messageText then
-    renderList({}, {}, me, {})
-    renderDetail(nil, me, messageText, {}, {})
+    renderList({}, {}, me, {}, { guid = me.guid, name = me.name, level = me.level })
+    renderDetail(nil, messageText, {}, {})
     return
   end
 
   local who = ns.Planner.me()
   local runs = ns.Planner.upcoming()
   local candidates = ns.Dungeons.candidates(view)
-  local overview = ns.Dungeons.overview(candidates, me.guid)
+  -- CF-63c: the character "In range for" follows: the one picked this session, else the one you are on.
+  rangeOptions = {}
+  local rangeChar
+  for _, c in ipairs(candidates) do
+    if c.own then
+      rangeOptions[#rangeOptions + 1] = c
+      if c.guid == (rangeGuid or me.guid) then rangeChar = c end
+    end
+  end
+  table.sort(rangeOptions, function(a, b) return (a.level or 0) > (b.level or 0) end)
+  rangeChar = rangeChar or { guid = me.guid, name = me.name, level = me.level }
+  local include
+  if showAll then
+    include = {}
+    for _, d in ipairs(ns.Dungeons.LIST) do include[d.id] = true end
+  end
+  local overview = ns.Dungeons.overview(candidates, rangeChar.guid, include)
   local order = {}
   for _, run in ipairs(runs) do
     entries["run:" .. run.id] = { run = run }
     order[#order + 1] = "run:" .. run.id
   end
+  local anyFits = false
   for _, entry in ipairs(overview) do
-    if entry.fits then
-      entries[entry.dungeon.id] = entry
-      order[#order + 1] = entry.dungeon.id
-    end
+    entries[entry.dungeon.id] = entry
+    order[#order + 1] = entry.dungeon.id
+    anyFits = anyFits or entry.fits
   end
 
   local st = status()
   if not st.selected or not entries[st.selected] then
-    -- CF-62: the next run you're in (or organise), else the first dungeon in range, else the first run.
+    -- CF-62: the next run you're in (or organise), else the first dungeon in range.
     local first
     for _, run in ipairs(runs) do
       local mine = ns.PlannedRuns.yourAnswer(run, who)
@@ -1252,23 +1373,30 @@ function DungeonsTab.render(view, messageText)
     end
     if not first then
       for _, value in ipairs(order) do
-        if not first and entries[value].dungeon then first = value end
+        if not first and entries[value].dungeon and entries[value].fits then first = value end
       end
     end
-    st.selected = first or order[1]
+    -- No dungeon fits (CF-63c board I): the first run only when there is no character to pick and nothing to show.
+    st.selected = first or ((anyFits or #runs == 0) and order[1] or nil)
   end
   me.guids, me.battleTag = who.guids, who.battleTag
-  renderList(runs, overview, me, candidates)
+  renderList(runs, overview, me, candidates, rangeChar)
   if not st.selected then
-    renderDetail(nil, me, ns.Dungeons.emptyText(me.name, me.level, ns.CommunitySelection.active() ~= nil), runs,
-      candidates)
+    if #runs > 0 then
+      renderNoFit()
+    else
+      renderDetail(nil, ns.Dungeons.emptyText(me.name, me.level, ns.CommunitySelection.active() ~= nil), runs,
+        candidates, rangeChar)
+    end
     return
   end
   local entry = entries[st.selected]
   if entry.run then
+    ns.PlanInline.close()
     renderRun(entry.run, me, candidates)
   else
-    renderDetail(entry, me, nil, runs, candidates)
+    if not ns.PlanInline.isOpen(entry.dungeon) then ns.PlanInline.close() end
+    renderDetail(entry, nil, runs, candidates, rangeChar)
   end
 end
 
@@ -1320,11 +1448,17 @@ function DungeonsTab.texts()
     end
   end
   for _, t in ipairs(ns.RunAnswer and ns.RunAnswer.texts() or {}) do out[#out + 1] = t end -- CF-63b
+  for _, t in ipairs(ns.PlanInline and ns.PlanInline.texts() or {}) do out[#out + 1] = t end -- CF-63c
   return out
 end
 
 function DungeonsTab.buttons()
   local out = ns.RunAnswer and ns.RunAnswer.buttons() or {} -- CF-63b
+  for label, b in pairs(ns.PlanInline and ns.PlanInline.buttons() or {}) do out[label] = b end -- CF-63c
+  for i = 1, pools and pools.chips.used or 0 do out["chip:" .. pools.chips.items[i].value] = pools.chips.items[i] end
+  for i = 1, pools and pools.checks.used or 0 do
+    out[pools.checks.items[i].text:GetText()] = pools.checks.items[i]
+  end
   for _, name in ipairs({ "buttons", "primary", "listButtons" }) do
     local p = pools and pools[name]
     for i = 1, p and p.used or 0 do out[p.items[i].label:GetText()] = p.items[i] end
@@ -1354,7 +1488,7 @@ function DungeonsTab.tips()
   for _, name in ipairs({ "infos", "listInfos", "clocks" }) do
     for i = 1, pools and pools[name].used or 0 do out[#out + 1] = pools[name].items[i].tip end
   end
-  for _, name in ipairs({ "primary", "buttons", "groupRows" }) do
+  for _, name in ipairs({ "primary", "buttons", "groupRows", "listButtons" }) do
     for i = 1, pools and pools[name].used or 0 do
       local t = pools[name].items[i].tooltip or pools[name].items[i].tip
       if t then out[#out + 1] = t end
