@@ -181,7 +181,8 @@ local function receive(text, senderID, battleTag, guid)
 end
 
 local function receiveBattleNet(text, senderID)
-  local battleTag = ns.PresenceTracker.battleTagFor(senderID)
+  -- A sender not in the snapshot may appear offline or not be reported yet: look it up once before dropping.
+  local battleTag = ns.PresenceTracker.battleTagFor(senderID) or ns.PresenceTracker.resolveSender(senderID)
   if not battleTag then
     stats.dropped = stats.dropped + 1 -- not a friend in Forever right now
     return

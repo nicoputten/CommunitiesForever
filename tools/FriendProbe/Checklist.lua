@@ -113,6 +113,8 @@ ns.items = {
   { id = "V84", retail = true, session = 6, auto = true, title = "Fishing loot (IsFishingLoot)" },
   { id = "V82", done = "retail 12.1.5", session = 6, auto = true, title = "The riding skill is readable" },
   { id = "V35b", session = 6, auto = true, title = "How a battleground ended (PVP_MATCH_COMPLETE)" },
+  { id = "V87", session = 2, auto = true, friend = true, title = "Data from a friend who appears offline",
+    how = "A friend sets Battle.net to Appear offline; both run CommunitiesForever; /cf ping on their side." },
   { id = "V51", session = 6, auto = true, friend = true, title = "Addon whispers reach the other faction",
     how = "Both run the probe: /fp whisper <their character>; their probe ticks it." },
 }

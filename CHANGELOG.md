@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them
+  (not "Unlinked"), while the window keeps showing them as offline. Friends who come online just before you log
+  in are picked up too.
 - **Dungeons in range:** under the planned runs, every dungeon that fits your character; picking one shows a
   suggested group, who's online and fits, the dungeon's quests (with Questie) and "Ask now" or "Plan a run…" for it.
 - **Dungeons, the runs:** runs grouped by day with role pips; a run shows the dungeon, a row per group member with
