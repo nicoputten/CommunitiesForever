@@ -149,7 +149,7 @@ describe("Format", function()
       assert.are.equal("U1", nodes[3].children[1].value)
     end)
 
-    it("groups Online, Offline and Not synced yet, with friends from the website (CF-62)", function()
+    it("groups Online, Offline and From the website (CF-62; CF-65 was Not synced yet)", function()
       local away = person({ online = false, battleTag = "Bob#1", displayName = "Bob" })
       local site = { { name = "Mira", chars = { { name = "Mira Sunstrider", classFile = "PRIEST", level = 28 } } },
                      { name = "bob", chars = {} } } -- Bob synced already (any case): not listed again
@@ -157,13 +157,13 @@ describe("Format", function()
       local sections = {}
       for i, n in ipairs(nodes) do sections[i] = n.section .. ":" .. n.text end
       assert.are.same({ "online:Sjaak", "online:You", "offline:Bob", "website:Mira" }, sections)
-      assert.are.same({ Format.SITE .. "Mira", 1, "from the website" },
-        { nodes[4].value, nodes[4].count, nodes[4].sub })
-      assert.are.equal("Not synced yet \194\183 6", Format.sectionTitle("website", 6))
+      assert.are.same({ Format.SITE .. "Mira", 1 }, { nodes[4].value, nodes[4].count })
+      assert.is_nil(nodes[4].sub) -- the row shows the character count
+      assert.are.equal("From the website \194\183 6", Format.sectionTitle("website", 6))
       assert.are.equal("Online \194\183 2", Format.sectionTitle("online", 2))
       assert.is_nil(Format.sectionTitle("unlinked", 3))
       local d = Card.detail({ people = {}, unlinked = {} }, Format.SITE .. "Mira", NOW, nil, site)
-      assert.are.same({ "website", "Mira", "from the website" }, { d.kind, d.title, d.status })
+      assert.are.same({ "website", "Mira", "From the website" }, { d.kind, d.title, d.status })
       assert.are.equal("Mira Sunstrider", d.characters[1].name)
     end)
 

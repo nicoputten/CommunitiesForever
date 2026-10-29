@@ -6,6 +6,11 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window
+  again (they could open behind it).
+- **Ask now:** "Also post on Discord" is back and ticked by default; untick it to ask only friends in game.
+- **Friends:** friends the website knows who haven't synced in game are listed under "From the website" (was
+  "Not synced yet"), with what that means on hover.
 - **Dungeons, no planning in the game:** "Ask now" is the way in game; plan runs for later on the website or with the
   bot's /plan. Runs planned there still show here, and you answer them as before.
 - **Fixed, Ask now:** it always works now: friends with the addon who are online get it, and it is always posted on

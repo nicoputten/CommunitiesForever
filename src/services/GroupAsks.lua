@@ -56,31 +56,36 @@ end
 -- Asks who's up for the dungeon. Returns the number of friends in range asked (0: none online), or nil and the
 -- seconds to wait when you asked too recently. note (CF-47): optional, shown with the ask.
 -- post (CF-51): your Pending ask item { id, guid, role }, posted on Discord: the ask goes to every friend with the
--- addon, so their files carry it to the site too (only those in range are asked). CF-64 (Nico): an ask is always
--- possible and always goes to Discord: without a post (/cf ask) it makes one.
+-- addon, so their files carry it to the site too (only those in range are asked). nil (/cf ask): one is made
+-- (CF-64); false (CF-65, "Also post on Discord" unticked): not posted, only friends in range online are asked.
 function GroupAsks.ask(dungeon, note, post)
   local ok, wait = GroupAsks.canAsk()
   if not ok then
     say(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
     return nil, wait
   end
-  post = post or ns.Planner.askOnDiscord(dungeon.id, ownChar(), note)
+  if post == nil then post = ns.Planner.askOnDiscord(dungeon.id, ownChar(), note) end
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), addonRef.db.global.people,
     own().battleTag)
-  local targets = ns.GroupAsk.peers(ns.Sync.online(), addonRef.db.global.people, own().battleTag)
+  if not post and #recipients == 0 then
+    say("Nobody with CommunitiesForever is online in range of " .. dungeon.name .. ", and it isn't posted on Discord.")
+    return 0
+  end
+  local targets = post and ns.GroupAsk.peers(ns.Sync.online(), addonRef.db.global.people, own().battleTag)
+    or recipients
   counter = counter + 1
   local t = now()
   local id = string.format("%d%d", t, counter)
   local message = ns.GroupAsk.message(id, dungeon, ownName(), ns.SelfInfo.read().name, t, note,
-    post and { item = post.id, guid = post.guid, role = post.role })
+    post and { item = post.id, guid = post.guid, role = post.role } or nil)
   for _, r in ipairs(targets) do ns.Messenger.send(r.gameAccountID, message) end
   local names = {}
   for i, r in ipairs(recipients) do names[i] = tostring(r.displayName or r.battleTag) end
   mine = { id = id, dungeon = dungeon, at = t, recipients = recipients, answers = {} }
   lastAskAt = t
   if #recipients > 0 then
-    say(string.format("Asked %s who's up for %s. It's on Discord after your next /reload.", table.concat(names, ", "),
-      dungeon.name))
+    say(string.format("Asked %s who's up for %s.%s", table.concat(names, ", "), dungeon.name,
+      post and " It's on Discord after your next /reload." or ""))
   else
     say(string.format("Your ask for %s is on Discord after your next /reload.", dungeon.name))
   end

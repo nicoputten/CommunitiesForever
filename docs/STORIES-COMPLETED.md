@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -900,3 +900,20 @@ Fixes from the test:
   `[activity]` print debug lines, both behind their toggle.
 - F. Runs.lua is read again on every /reload (a TOC file, V67) and taken when it is newer; an old "Runs from" means
   the uploader didn't write a newer file (no ask made, see D, or the file went to another WoW folder).
+
+## CF-65 Retail test of build 4 (decided with Nico, 2026-10-31)
+From Nico's retail test of develop 524ff44 with the uploader in `--retail` mode.
+1. Dialogs opened behind the main window (both were DIALOG strata, the window toplevel): `Kit.dialog` is one strata
+   higher (FULLSCREEN) and raised on show; Blizzard's menus (FULLSCREEN_DIALOG) stay above both. That covers Ask now,
+   the reload prompt, the start panel, settings and setup.
+2. "Also post on Discord" is back in the Ask dialog, ticked by default (Nico: "that was the whole point"); unticked,
+   the ask goes only to friends online in range. `/cf ask` keeps posting (CF-64). The path, checked: the dialog makes
+   a `pending` ask with its note, the game writes it on /reload, the uploader sends the whole file (`--retail`:
+   the `_retail_` folder), the site reads the `ask` item with its note and posts it on Discord when its admin
+   setting allows. The site drops an ask uploaded more than 10 minutes after it was made, as does the game when it
+   saves later than that.
+3. The Friends group "Not synced yet" is "From the website", with the character count per row; the meaning is in
+   the card's ⓘ.
+4. "Unlinked: Ikrasse-Kazzak 18" is expected: a community member no synced record claims by GUID. The website's
+   friends list in Runs.lua has names and realms but no GUIDs, and names are never matched (rule 4); linking it
+   would need the site to send each character's GUID.

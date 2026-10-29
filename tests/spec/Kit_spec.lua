@@ -179,6 +179,19 @@ describe("kit and window shell (CF-39)", function()
       assert.is_true(r.selectedBar.shown)
     end)
 
+    it("dialog: one strata above the main window, raised on show (CF-65)", function()
+      load()
+      local raised = 0
+      local d = ns.Kit.dialog({ title = "Test", width = 300, height = 200 })
+      d.Raise = function() raised = raised + 1 end
+      assert.are.equal("FULLSCREEN", d.strata)
+      d:Hide()
+      d:Show()
+      d:RunScript("OnShow")
+      assert.is_true(raised > 0)
+      assert.are.equal("DIALOG", ns.Kit.window({ title = "W", status = {} }).strata)
+    end)
+
     it("goal box: 15 px, a check when done, a blue corner when swapped (CF-63)", function()
       load()
       local b = ns.Kit.goalBox(_G.UIParent)
