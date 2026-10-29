@@ -73,6 +73,66 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 
 **Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The facts behind it are counted live per Doomsday day and week and stay on the player's computer (CF-56, Nico 2026-10-28); progress starts on the day the update is installed. A day's set holds at most 5 ids (3 PvE dailies, the Skirmish, the Hunt as `hunt`), a week's 4 (3 PvE weeklies, the Bounty). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
 
+## Short labels (CF-61)
+Each goal's column title on the addon's Board and the site's and bot's boards: at most 10 characters, the same everywhere (`Doomsday.SHORT_LABELS`). The Hunt is "Hunt". A new goal gets its label in the same change.
+| Goal | Short label |
+|---|---|
+| `d.quests10` | 10 quests |
+| `d.quests20` | 20 quests |
+| `d.zone5` | 5 in zone |
+| `d.zones3` | 3 zones |
+| `d.shared3` | 3 shared |
+| `d.level` | Level |
+| `d.altLevel` | Alt level |
+| `d.ilvl` | Item level |
+| `d.cleanLevel` | Clean lvl |
+| `d.dungeon` | Dungeon |
+| `d.dungeonFriend` | Group run |
+| `d.bosses3` | 3 bosses |
+| `d.skill5` | Skills |
+| `d.secondary` | Secondary |
+| `d.fish20` | 20 fish |
+| `d.chars2` | 2 chars |
+| `d.groupFriend` | Group up |
+| `d.trade` | Trade |
+| `d.rare` | Rare loot |
+| `d.earlyBird` | Early bird |
+| `w.days3` | 3 days |
+| `w.days5` | 5 days |
+| `w.chars3` | 3 chars |
+| `w.levels3` | 3 levels |
+| `w.altLevels2` | Alt 2 lvls |
+| `w.quests50` | 50 quests |
+| `w.zones5` | 5 zones |
+| `w.dungeons3` | 3 dungeons |
+| `w.dungeonsDiff3` | 3 distinct |
+| `w.dungeonFriends2` | Trio run |
+| `w.fullClear` | Full clear |
+| `w.skill25` | 25 skill |
+| `w.cap` | Skill cap |
+| `w.newProf` | New prof |
+| `w.ilvl3` | Item lvl+3 |
+| `w.friends3` | 3 friends |
+| `w.rare5` | 5 rares |
+| `w.session2h` | 2h session |
+| `w.discover5` | Discover 5 |
+| `w.craftTrade` | Craft gift |
+| `p.frontLine` | Front line |
+| `p.punchUp` | Punch up |
+| `p.loneWolf` | Lone wolf |
+| `p.untouchable` | Untouched |
+| `p.variety` | Variety |
+| `p.ranked` | Ranked |
+| `b.zone25` | Zone 25 |
+| `b.allClasses` | Classes |
+| `b.allRaces` | Races |
+| `b.ranked5` | 5 ranked |
+| `b.kills50` | 50 kills |
+| `b.spree10` | Spree 10 |
+| `b.hunt3` | 3 hunts |
+| `b.duels3` | 3 duels |
+| `b.days5` | Kill days |
+
 ## The algorithm, exactly (CF-55)
 Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
 

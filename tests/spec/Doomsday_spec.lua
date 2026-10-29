@@ -32,6 +32,14 @@ describe("Doomsday (CF-55)", function()
     assert.are.same(cases.salts.weeklies, Doomsday.SALT.weeklies)
   end)
 
+  it("gives every goal a short label of at most 10 characters (CF-61, the same on the site)", function()
+    for _, g in ipairs(Doomsday.GOALS) do
+      assert.is_string(g.shortLabel, g.id)
+      assert.is_true(#g.shortLabel >= 1 and #g.shortLabel <= 10, g.id .. ": " .. g.shortLabel)
+    end
+    for id in pairs(Doomsday.SHORT_LABELS) do assert.is_table(Doomsday.goal(id), id) end
+  end)
+
   it("picks", function()
     for _, c in ipairs(cases.pick) do
       assert.are.equal(c.expect, Doomsday.pick(c.n, c.salt, c.count), c.n .. "/" .. c.salt)

@@ -193,63 +193,78 @@ end
 
 -- ===== Board, Ladder, Feats (CF-57b) =====
 
-local NAME_WIDTH = 150
-local STREAK_WIDTH = 50
+local NAME_WIDTH = 170
 local POINTS_WIDTH = 110
 
-local function points(p) return string.format("%d \194\183 %d", p.pve or 0, p.pvp or 0) end
+local function points(p) return string.format("PvE %d \194\183 PvP %d", p.pve or 0, p.pvp or 0) end
 
+-- CF-61: a goal on the Board: a gold check when done, an empty box when not (the details are in the tooltip).
+local function box() return Theme.bundledFonts() and "\226\150\161" or "o" end
+
+local function cellTip(cell, isSelf)
+  local lines = { ns.DoomsdayView.goalText(cell.id) }
+  if cell.done then
+    lines[#lines + 1] = "Done at " .. clock(cell.at)
+  elseif isSelf and cell.target then
+    lines[#lines + 1] = string.format("%d/%d", cell.value or 0, cell.target)
+  else
+    lines[#lines + 1] = "Not done yet"
+  end
+  if cell.instead then lines[#lines + 1] = "Instead of: " .. cell.instead end
+  return table.concat(lines, "\n")
+end
+
+local function hover(parent, x, y, w, tip)
+  local h = Kit.take(pools.hovers, parent)
+  h:SetPoint("TOPLEFT", x, -(y + 2))
+  h:SetSize(w, 20)
+  h.tip = tip
+end
+
+-- CF-61c (Nico, 2026-10-29; board DD08AddonBoard): the friend's name, struck through with the finish time when all
+-- three PvE dailies are done, and the crown; a check or a box per goal with a dot for a swap; one points column.
+-- The streak, progress, times and swaps are in the tooltips.
 local function board(parent, width)
   local b = ns.DoomsdayBoard.board()
   local y = header(parent, "Today \194\183 " .. b.label, 0, width, newGoals(ns.DoomsdayTracker.state()))
   local cols = math.max(1, #b.columns)
-  local colWidth = math.floor((width - 2 * PAD - NAME_WIDTH - STREAK_WIDTH - POINTS_WIDTH) / cols)
+  local colWidth = math.floor((width - 2 * PAD - NAME_WIDTH - POINTS_WIDTH) / cols)
   local function colX(i) return PAD + NAME_WIDTH + (i - 1) * colWidth end
   -- Column labels.
   placeText(pools.tiny, parent, PAD, y + 4, NAME_WIDTH, "FRIEND", "faint")
   for i, c in ipairs(b.columns) do
     placeText(pools.tiny, parent, colX(i), y + 4, colWidth - 6, c.short:upper(), "faint")
   end
-  placeText(pools.tiny, parent, colX(cols + 1), y + 4, STREAK_WIDTH, "STREAK", "faint")
-  placeText(pools.tiny, parent, colX(cols + 1) + STREAK_WIDTH, y + 4, POINTS_WIDTH, "PVE \194\183 PVP", "faint")
+  placeText(pools.tiny, parent, colX(cols + 1), y + 4, POINTS_WIDTH, "POINTS", "faint")
   y = y + 24
   for _, row in ipairs(b.rows) do
-    local name = (row.isSelf and (row.name .. " (you)") or row.name) .. (row.crown and gold("  crown") or "")
+    local name = row.isSelf and (row.name .. " (you)") or row.name
     local fs = placeText(pools.body, parent, PAD, y + 4, NAME_WIDTH - 6, name, row.isSelf and "goldLight" or "text")
-    if row.crossed and fs then
+    local nameWidth = math.min(NAME_WIDTH - 6, fs and fs.text and fs.text.GetStringWidth and fs.text:GetStringWidth()
+      or 60)
+    local after = (row.finishedAt and clock(row.finishedAt) or "") .. (row.crown and "  crown" or "")
+    if after ~= "" then
+      placeText(pools.small, parent, PAD + nameWidth + 6, y + 6, NAME_WIDTH - nameWidth - 6, gold(after), "goldLight")
+    end
+    if row.crossed then
       local strike = Kit.take(pools.lines, parent)
       strike:SetPoint("TOPLEFT", PAD, -(y + 12))
-      strike:SetWidth(math.min(NAME_WIDTH - 6, (fs.text and fs.text.GetStringWidth and fs.text:GetStringWidth() or 60)))
-      -- CF-61: what crossed out means, on hover (it was a legend under the board).
-      local h = Kit.take(pools.hovers, parent)
-      h:SetPoint("TOPLEFT", PAD, -(y + 2))
-      h:SetSize(NAME_WIDTH - 6, 20)
-      h.tip = "All three PvE dailies done"
+      strike:SetWidth(nameWidth)
     end
+    local tip = string.format("Streak %d %s", row.streak or 0, (row.streak or 0) == 1 and "day" or "days")
+    if row.crossed then tip = tip .. "\nAll three PvE dailies done at " .. clock(row.finishedAt) end
+    hover(parent, PAD, y, NAME_WIDTH - 6, tip)
     if row.status ~= "ok" then
       placeText(pools.small, parent, colX(1), y + 6, colWidth * cols, "no Doomsday data yet", "faint")
     else
       for i, cell in ipairs(row.cells) do
-        local text
-        if cell.done then
-          text = gold(clock(cell.at))
-        elseif cell.target then
-          text = string.format("%d/%d", cell.value or 0, cell.target)
-        else
-          text = dim("\194\183")
-        end
-        if cell.instead then
-          text = text .. dim(" *")
-          local h = Kit.take(pools.hovers, parent)
-          h:SetPoint("TOPLEFT", colX(i), -(y + 2))
-          h:SetSize(colWidth - 6, 20)
-          h.tip = "Instead of: " .. cell.instead
-        end
-        placeText(pools.small, parent, colX(i), y + 6, colWidth - 6, text, "muted")
+        local mark = cell.done and gold(check()) or dim(box())
+        if cell.instead then mark = mark .. dim(" \194\183") end -- the swap
+        placeText(pools.small, parent, colX(i), y + 6, colWidth - 6, mark, "muted")
+        hover(parent, colX(i), y, colWidth - 6, cellTip(cell, row.isSelf))
       end
     end
-    placeText(pools.small, parent, colX(cols + 1), y + 6, STREAK_WIDTH, tostring(row.streak or 0), "muted")
-    placeText(pools.small, parent, colX(cols + 1) + STREAK_WIDTH, y + 6, POINTS_WIDTH, points(row.today), "muted")
+    placeText(pools.small, parent, colX(cols + 1), y + 6, POINTS_WIDTH, points(row.today), "muted")
     y = y + 28
   end
   return y + 12
@@ -427,6 +442,13 @@ function DoomsdayTab.texts()
       if text and text ~= "" then out[#out + 1] = text end
     end
   end
+  return out
+end
+
+-- For the specs: the hover tooltips on the current view.
+function DoomsdayTab.tips()
+  local out = {}
+  for i = 1, pools and pools.hovers.used or 0 do out[#out + 1] = pools.hovers.items[i].tip end
   return out
 end
 

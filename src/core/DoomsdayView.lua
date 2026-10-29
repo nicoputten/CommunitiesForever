@@ -223,20 +223,11 @@ end
 
 -- ===== Board and Ladder (CF-57b; board DD08AddonBoard) =====
 
--- Column labels of the Board (the goal's short name).
-local SHORT = {
-  ["d.quests10"] = "10 quests", ["d.quests20"] = "20 quests", ["d.zone5"] = "5 in a zone", ["d.zones3"] = "3 zones",
-  ["d.shared3"] = "Shared quests", ["d.level"] = "Level up", ["d.altLevel"] = "Alt level", ["d.ilvl"] = "Item level",
-  ["d.cleanLevel"] = "Clean level", ["d.dungeon"] = "Dungeon", ["d.dungeonFriend"] = "Dungeon w/ friend",
-  ["d.bosses3"] = "3 bosses", ["d.skill5"] = "5 skill points", ["d.secondary"] = "Cooking / FA / Fishing",
-  ["d.fish20"] = "20 fish", ["d.chars2"] = "2 characters", ["d.groupFriend"] = "Group up", ["d.trade"] = "Trade",
-  ["d.rare"] = "Rare loot", ["d.earlyBird"] = "Early bird", ["p.frontLine"] = "Front line", ["p.punchUp"] = "Punch up",
-  ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouchable", ["p.variety"] = "Variety", ["p.ranked"] = "Ranked",
-  hunt = "Hunt",
-}
-
+-- Column labels of the Board: the goal's shortLabel (CF-61, at most 10 characters, as on the site).
 function DoomsdayView.short(id)
-  return SHORT[id] or (ns.Doomsday.goal(id) and ns.Doomsday.goal(id).text) or "Newer goal"
+  if id == "hunt" then return "Hunt" end
+  local g = ns.Doomsday.goal(id)
+  return g and (g.shortLabel or g.text) or "Newer goal"
 end
 
 --[[ One friend's points and counts for a day and a week from their synced data:
