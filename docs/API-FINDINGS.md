@@ -103,6 +103,9 @@ Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Ma
 |---|---|
 | `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` | Blocked for addons (V75 retail: fail). Blizzard shows its popup "... only available to the Blizzard UI. You can disable this addon and reload the UI.", also when the call is inside `pcall`. FriendProbe now only tries it from a button; CommunitiesForever never registers it (CF-61, Nico 2026-10-29: death causes from the death recap and mirror timers). |
 | `frame:CreateAnimationGroup()` with a `Translation` (Ambient effects, V64) | Animates the frame itself: the whole title bar slid across as a dark block every few seconds, the streak's bright edge riding along (CF-43 bug). The shine now creates the group on its streak texture (`texture:CreateAnimationGroup()`), so only the streak moves. The texture (white, alpha in the file) with `SetBlendMode("ADD")` was fine. |
+| V47 a click on an addon chat link (FriendProbe run 2, build 70575, 29 Oct) | pass: "link click reached the addon via SetItemRef hook". Closed (Nico: checked on Retail counts as done). |
+| V74 enemy player fields | Level, class and race are readable by mouseover. Still open for Forever: enemy target and nameplates, `NAME_PLATE_UNIT_ADDED`, the PvP rank. |
+| V79 PvP counters | `GetPVPLifetimeStats()` works (`0, 0` on a character without kills); `GetStatistic(60)` gives total deaths (`31`). The Vanilla rank API (`UnitPVPRank`, `GetPVPRankInfo`, `GetPVPThisWeekStats`) is missing on Retail, as expected: still open for Forever. |
 | A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
 
 ## Retail 12.1.5 dry run (2026-10-29)

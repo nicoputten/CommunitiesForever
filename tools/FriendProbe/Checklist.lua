@@ -57,7 +57,8 @@ ns.items = {
   -- 2. With a friend
   { id = "V50b", done = "retail 12.1.5", session = 2, auto = true,
     title = "A burst of 30 addon whispers arrives (to yourself)" },
-  { id = "V47", retail = true, session = 2, auto = true, title = "A click on an addon chat link reaches the addon",
+  { id = "V47", done = "retail 12.1.5", retail = true, session = 2, auto = true,
+    title = "A click on an addon chat link reaches the addon",
     how = "Press Test: links and invites, click the test link in chat." },
   { id = "V80", done = "retail 12.1.5", session = 2, auto = true, friend = true,
     title = "Duel lines parse (DUEL_WINNER_*)",
