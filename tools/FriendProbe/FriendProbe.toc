@@ -5,7 +5,6 @@
 ## SavedVariables: FriendProbeDB
 
 ReloadProbe.lua
-ReloadProbeLate.lua
 Checklist.lua
 FriendProbe.lua
 Window.lua

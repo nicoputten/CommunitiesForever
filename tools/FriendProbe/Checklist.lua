@@ -2,7 +2,8 @@
 -- (tests/spec/ProbeChecklist_spec.lua fails when they drift apart) and the story steps worth a tick.
 -- id: the VERIFY.md number or a story; session: the play session (1 to 6); title: what to check;
 -- auto: the probe ticks it itself; friend: needs a second person; how: what to do for a manual item;
--- retail: Retail (the same Mainline API and Midnight restrictions) can answer it too, for a dry run before launch.
+-- retail: Retail (the same Mainline API and Midnight restrictions) can answer it too, for a dry run before launch;
+-- note: what is known already (shown under the item while it is open).
 -- Results are kept per client, so a Retail answer never closes a Forever item by itself.
 local _, ns = ...
 
@@ -37,7 +38,7 @@ ns.items = {
   { id = "V54", retail = true, session = 1, title = "Esc closes the window; the key binding shows",
     how = "Open /cf, press Esc: the window closes, the game menu doesn't. The binding is in Keybindings." },
   { id = "V67", retail = true, session = 1, title = "A changed addon file is re-read on /reload",
-    how = "Follow VERIFY.md V67 (it edits a file while the game runs), then Test: file reload." },
+    how = "Manual: VERIFY.md V67 (you add ReloadProbeLate.lua and its TOC line), then Test: file reload." },
   { id = "Doomsday tab", session = 1, title = "The Doomsday tab: Today and Week look right",
     how = "/cf, Doomsday: compare with VERIFY.md CF-57a." },
 
@@ -84,7 +85,9 @@ ns.items = {
   -- 5. World PvP
   { id = "V73", session = 5, auto = true, title = "Honor message: victim and rank" },
   { id = "V74", session = 5, auto = true, title = "Enemy players: level, class, race readable" },
-  { id = "V75", retail = true, session = 5, auto = true, title = "The combat log can be registered" },
+  { id = "V75", session = 5, auto = true, title = "The combat log can be registered",
+    how = "Press Test the combat log (Blizzard may show a warning: then answer No).",
+    note = "Retail 12.1.5: blocked for addons (Blizzard's popup). Forever is still open." },
   { id = "V76", session = 5, auto = true, title = "Group and instance at a kill" },
   { id = "V79", session = 5, auto = true, title = "PvP counters, rank and deaths" },
   { id = "V81", retail = true, session = 5, auto = true, title = "Where a death's cause comes from" },
