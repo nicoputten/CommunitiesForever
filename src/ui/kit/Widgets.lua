@@ -25,6 +25,27 @@ function Kit.edges(frame, colorName, layer, inset)
   return lines
 end
 
+-- CF-62: a small "i" in a ring that shows `info.tip` on hover: where an explanation goes instead of a visible line.
+function Kit.info(parent)
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(14, 14)
+  local ring = f:CreateTexture(nil, "ARTWORK")
+  ring:SetAllPoints()
+  ring:SetTexture(Theme.TEXTURES.ring)
+  ring:SetVertexColor(Theme.color("faint"))
+  f.label = Theme.text(f, "tiny", "faint")
+  f.label:SetPoint("CENTER", 0, 0)
+  f.label:SetText("i")
+  f:SetScript("OnEnter", function(self)
+    if not (self.tip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  f:SetScript("OnLeave", function(self) if self.tip and GameTooltip then GameTooltip:Hide() end end)
+  return f
+end
+
 -- Button with the gold look. kind: "normal", "primary" or "ghost". onClick(button).
 function Kit.button(parent, text, onClick, kind)
   local b = CreateFrame("Button", nil, parent)

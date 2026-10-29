@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday Today, redone:** a check box per goal, a short bar only for goals you count up, the points per goal in
+  PvE green or PvP red, "⇄ swapped" with the original on hover, boxes for today, this week and your streak, and
+  "Friends today" next to it.
 - **Tidier setup:** the last explanatory notes are gone from the setup, the settings and the chat-tab chat line.
 - **Fixed:** no more Blizzard warning that the addon uses something "only available to the Blizzard UI": the addon
   no longer reads the combat log. What killed you now comes from the death recap.

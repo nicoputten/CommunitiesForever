@@ -82,6 +82,7 @@ function DoomsdayBoard.board()
   for _, s in ipairs(list) do
     local entry = s.isSelf and mine.today or s.day
     local row = { key = s.key, name = s.name, isSelf = s.isSelf, status = entry and "ok" or "noData", cells = {},
+                  virgin = not s.killedEver, -- CF-62: "PvP Virgin" on Today's mini board
                   streak = s.isSelf and mine.streak or s.streak, today = s.today, week = s.week }
     if entry then
       for i, id in ipairs(entry.set or {}) do
