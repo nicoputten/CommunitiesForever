@@ -36,6 +36,30 @@ function RunStart.due(runs, me, last, now, reminderMinutes)
   return out
 end
 
+--[[ CF-63d: the run banners (they replace the reminder of due): 30 minutes before, 15 minutes before (invites
+open) and at the start, for runs you organise or answered I'm in or Maybe. What became due after `last` up to
+`now`: { { kind = "soon" | "invites" | "start", run, organiser = true|nil } }; per run only the latest one that
+became due (after a gap, no stale banner before the current one). ]]
+RunStart.BANNERS = { { kind = "soon", before = 30 * 60 }, { kind = "invites", before = 15 * 60 },
+                     { kind = "start", before = 0 } }
+
+function RunStart.banners(runs, me, last, now)
+  local out = {}
+  for _, run in ipairs(runs or {}) do
+    if type(run.startsAt) == "number" and involved(run, me) then
+      local latest
+      for _, b in ipairs(RunStart.BANNERS) do
+        local at = run.startsAt - b.before
+        if at > last and at <= now then latest = b.kind end
+      end
+      if latest then
+        out[#out + 1] = { kind = latest, run = run, organiser = ns.PlannedRuns.isOrganiser(run, me) or nil }
+      end
+    end
+  end
+  return out
+end
+
 -- Who is online for an answer: key, presence (from Sync.online: { [key] = { guid, name, level, ... } }).
 local function presenceOf(a, ctx)
   local key = a.battleTag or (ctx.keyOf and ctx.keyOf(a))

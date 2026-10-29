@@ -417,4 +417,79 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
     assert.is_false(PlannedRuns.inviteOpen(run, 5000 - 901))
     assert.is_true(PlannedRuns.inviteOpen(run, 5000 - 900))
   end)
+
+  -- CF-63: the logic of the interactive Dungeons tab.
+  describe("CF-63", function()
+    local DOT = " \194\183 "
+    local SMGY = { min = 26, max = 36 }
+    local ME = { battleTag = "Me#1000", guids = { ["G-ME"] = true } }
+    -- 2026-11-06 (a Friday) 18:30 local; os.date / os.time as the game's date and localTime.
+    local AT = os.time({ year = 2026, month = 11, day = 6, hour = 18, min = 30, sec = 0 })
+
+    it("lists all your characters with their fit, best first, the one you are on before others", function()
+      local chars = {
+        { own = true, guid = "G-A", name = "Alt Low", level = 22 },
+        { own = true, guid = "G-B", name = "Big Carry", level = 60 },
+        { own = true, guid = "G-ME", name = "Me Now", level = 30 },
+        { own = true, guid = "G-C", name = "Other Fit", level = 34 },
+        { own = false, guid = "G-F", name = "Friend", level = 30 },
+      }
+      local list = PlannedRuns.charChoices(chars, SMGY, "G-ME")
+      local names, labels = {}, {}
+      for i, o in ipairs(list) do names[i], labels[i] = o.char.name, o.fit.label end
+      assert.are.same({ "Me Now", "Other Fit", "Alt Low", "Big Carry" }, names)
+      assert.are.same({ "fits", "fits", "4 below", "carry" .. DOT .. "+24" }, labels)
+      assert.are.equal(4, #PlannedRuns.charChoices(chars, nil, "G-ME")) -- unknown range: all, all fit
+    end)
+
+    it("shows each role the class can play as open or full, your own answer left out", function()
+      local run = { answers = {
+        { guid = "G-ME", answer = "in", role = "heal" },
+        { guid = "G-T", answer = "in", role = "tank" },
+        { guid = "G-1", answer = "in", role = "dps" }, { guid = "G-2", answer = "in", role = "dps" },
+        { guid = "G-3", answer = "maybe", role = "dps" },
+      } }
+      local list = PlannedRuns.roleChoices(run, {}, SMGY, "DRUID", ME)
+      local labels = {}
+      for i, o in ipairs(list) do labels[i] = o.label end
+      -- Your heal slot counts as open for you; a maybe holds a slot loosely: damage stays open.
+      assert.are.same({ "Tank" .. DOT .. "full", "Healer" .. DOT .. "open", "Damage" .. DOT .. "open" }, labels)
+      run.answers[5].answer = "in"
+      assert.are.equal("full", PlannedRuns.roleChoices(run, {}, SMGY, "MAGE", ME)[1].state)
+      assert.are.equal(1, #PlannedRuns.roleChoices(run, {}, SMGY, "MAGE", ME))
+    end)
+
+    it("names the first role a run needs", function()
+      assert.are.equal("tank", PlannedRuns.neededRole({ answers = {} }, {}, SMGY))
+      assert.are.equal("heal", PlannedRuns.neededRole({ answers = { { answer = "in", role = "tank" } } }, {}, SMGY))
+    end)
+
+    it("writes the whisper and the ask note to fill a slot", function()
+      local today = { startsAt = AT + 7200 } -- 20:30
+      local monday = { startsAt = AT + 3 * 86400 }
+      local name = "Scarlet Monastery: Graveyard"
+      assert.are.equal("Up for SM: Graveyard at 20:30? We need a Healer.",
+        PlannedRuns.whisperText(today, name, "heal", AT, os.date))
+      assert.are.equal("Up for SM: Graveyard at 20:30?", PlannedRuns.whisperText(today, name, nil, AT, os.date))
+      assert.is_truthy(PlannedRuns.whisperText(monday, "The Deadmines", "dps", AT, os.date)
+        :find("^Up for The Deadmines on Mon 18:30%? We need a damage dealer%.$"))
+      assert.are.equal("For SM: Graveyard 20:30" .. DOT .. "need Healer",
+        PlannedRuns.askNote(today, name, "heal", AT, os.date))
+      assert.are.equal("For SM: Graveyard 20:30", PlannedRuns.askNote(today, name, nil, AT, os.date))
+    end)
+
+    it("offers the next three evenings at 20:00, tonight only while it is an hour away", function()
+      local function labels(now)
+        local out = {}
+        for i, c in ipairs(PlannedRuns.planChips(now, os.date, os.time)) do
+          out[i] = c.label
+          assert.are.equal(20, os.date("*t", c.startsAt).hour)
+        end
+        return out
+      end
+      assert.are.same({ "Tonight 20:00", "Tomorrow 20:00", "Sun 20:00" }, labels(AT))
+      local late = os.time({ year = 2026, month = 11, day = 6, hour = 19, min = 15, sec = 0 })
+      assert.are.same({ "Tomorrow 20:00", "Sun 20:00", "Mon 20:00" }, labels(late))
+    end)
+  end)
 end)
