@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them
   (not "Unlinked"), while the window keeps showing them as offline. Friends who come online just before you log
   in are picked up too.
