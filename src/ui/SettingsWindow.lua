@@ -74,7 +74,6 @@ local function build()
     for _, clubId in ipairs(opt.sorting()) do list[#list + 1] = { value = clubId, text = values[clubId] } end
     community:SetChoices("Community", list, opt.get())
   end
-  label(body, right, y + 50, "Character communities only", "tiny", "faint")
   y = y + 76
 
   -- Sharing | Notifications.

@@ -83,8 +83,8 @@ local render -- defined below
 local STEP_BODIES = {}
 
 function STEP_BODIES.welcome()
-  text("Friends who run the addon share their characters with you, including alts outside the community. "
-    .. "Everything stays inside your group.", "body", "textDim", 16)
+  text("Friends who run the addon share their characters with you, including alts outside the community.", "body",
+    "textDim", 16)
   local w = math.floor((BODY_WIDTH - 20) / 3)
   for i, feature in ipairs(FEATURES) do
     local tile = Kit.take(pools.tiles, wizard.body)
@@ -117,7 +117,6 @@ function STEP_BODIES.community()
   communitySelect:SetChoices("Community", list, opt.get())
   communitySelect:Show()
   y = y + 38
-  text("Only character communities are listed.", "small", "faint")
 end
 
 function STEP_BODIES.name()
@@ -143,17 +142,13 @@ function STEP_BODIES.chat()
   text("Community chat in its own color and its own chat tab, so you never miss it.")
   text(string.format("%s[%s] Alice Example: anyone up for Deadmines?|r", Theme.rgbCode(color.r, color.g, color.b),
     ns.CommunityChat.tabName()), "body", "text")
+  -- The Create button sits where Next is (see render), so clicking on through the wizard creates it.
   if ns.CommunityChat.tab() then
     text("This character has a " .. ns.CommunityChat.tabName() .. " chat tab.", "body", "goldLight")
-  else
-    -- The Create button sits where Next is (see render), so clicking on through the wizard creates it.
-    text(gold("Create chat tab") .. " makes a " .. ns.CommunityChat.tabName()
-      .. " tab and goes on; Not now goes on without one.")
   end
   toggle("keepGeneral", "Off: with a Community tab, the community chat shows only there.")
   toggle("alert", "Chat tabs that show it flash (not the one you look at).")
   toggle("sound")
-  text("Chat tabs are saved per character: your other characters ask once.", "small", "faint")
 end
 
 function STEP_BODIES.notifications()
