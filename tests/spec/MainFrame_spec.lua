@@ -33,6 +33,32 @@ describe("MainFrame", function()
     assert.are.equal(window, frame()) -- reused
   end)
 
+  it("lists friends known from the website under Not synced yet, with their characters (CF-62)", function()
+    state = wowapi.install()
+    ns = helpers.loadAddon()
+    -- As Data\Runs.lua sets it (after the addon's files, which include that file).
+    _G.CF_RUNS = { v = 1, runs = {}, site = "https://wow.example.org", friends = {
+      { name = "Mira", chars = { { name = "Mira Sunstrider", realm = "Chromaggus", classFile = "PRIEST", level = 28,
+                                   seenAt = 1000 } } } } }
+    addon = state.addon
+    addon:OnInitialize()
+    addon.db.global.settings.clubId = "23125681"
+    addon:OnEnable()
+    ns.MainFrame.toggle()
+    local site
+    for _, r in ipairs(ns.FriendsTab.rows()) do
+      if r.node and r.node.website then site = r end
+    end
+    assert.is_not_nil(site)
+    assert.are.equal("from the website", site.frame.count:GetText())
+    select(site.path)
+    assert.is_true(hasText("Mira"))
+    assert.is_true(hasText("from the website"))
+    assert.is_true(hasText("Mira Sunstrider"))
+    assert.is_true(hasText("Chromaggus"))
+    assert.are.equal("https://wow.example.org", ns.RunsFile.site())
+  end)
+
   it("stores window and list state in settings", function()
     load("23125681")
     ns.MainFrame.toggle()
@@ -53,7 +79,7 @@ describe("MainFrame", function()
     local r, g, b = ns.Kit.classColor("MAGE")
     assert.are.same({ r, g, b, 1 }, garraka.name.textColor)
     assert.is_true(garraka.portrait.online) -- playing it
-    assert.are.equal("Vestras (you)", tab().row("Vestras#1000").name:GetText())
+    assert.are.equal("You", tab().row("Vestras#1000").name:GetText()) -- CF-62
     assert.is_false(tab().row("Vestras#1000").mark.shown) -- no addon mark on your own row
     -- CF-40: the footer: sync state left (CF-61: no hint on the right).
     assert.is_truthy(frame().footerText.text:find("this session", 1, true)) -- CF-62

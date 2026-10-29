@@ -103,17 +103,30 @@ end
 local function renderList(selected)
   release(listPools.groups)
   release(listPools.chars)
+  release(listPools.headers)
   rows = {}
   local parent = list.child
   local y = 2
+  -- CF-62: "Online · N", "Offline · N", "Not synced yet · N" above their people.
+  local perSection = {}
   for _, node in ipairs(nodes) do
+    if node.section then perSection[node.section] = (perSection[node.section] or 0) + 1 end
+  end
+  local lastSection
+  for _, node in ipairs(nodes) do
+    local title = node.section ~= lastSection and ns.Format.sectionTitle(node.section, perSection[node.section] or 0)
+    lastSection = node.section
+    if title then
+      placeText(listPools.headers, parent, LIST_PAD, y + 8, Theme.SIZES.listWidth - 2 * LIST_PAD, title, "faint")
+      y = y + 26
+    end
     local h = take(listPools.groups, parent)
     h:SetPoint("TOPLEFT", 0, -y)
     h:SetPoint("RIGHT", parent, "RIGHT")
     h.path = node.value
     h.name:SetText(node.text)
-    h.count:SetText(tostring(node.count or #node.children))
-    if node.unlinked then h.dot:Hide() else
+    h.count:SetText(node.sub or tostring(node.count or #node.children))
+    if node.unlinked or node.website then h.dot:Hide() else
       h.dot:Show()
       h.dot:SetVertexColor(Theme.color(node.online and "online" or "faint"))
     end
@@ -125,7 +138,7 @@ local function renderList(selected)
     h:SetScript("OnClick", function()
       if node.unlinked then FriendsTab.toggle(node.value) else FriendsTab.select(node.value) end
     end)
-    if not node.unlinked then helpers.rightClickMenu(h, function() return h.path end) end
+    if not node.unlinked and not node.website then helpers.rightClickMenu(h, function() return h.path end) end
     rows[#rows + 1] = { kind = "group", path = node.value, frame = h, node = node }
     y = y + 26
     if not isFolded then
@@ -385,26 +398,73 @@ function renderCard.character(parent, d, width, path)
   return sharedQuests(parent, d.sharedQuests, y, width, path)
 end
 
--- A person's characters, one clickable line each (CF-40: also right-click).
+-- CF-62: a person's characters as cards (board AG03Tabs): class icon, name in class colour with the realm as a
+-- dim suffix, "· Level 57 · Healer", online or played/seen on the right; a level bar, the zone, the professions.
+-- Clickable (and right-click) for synced people; website characters only show.
+local CARD_HEIGHT = 58
 local function characterLines(parent, characters, groupValue, y, width)
+  local maxLevel = ns.Feats and ns.Feats.MAX_LEVEL or 60
   for _, c in ipairs(characters) do
-    local line = take(cardPools.charLines, parent)
-    line:SetPoint("TOPLEFT", PAD, -y)
-    line:SetWidth(width)
+    local card = take(cardPools.charCards, parent)
+    card:SetPoint("TOPLEFT", PAD, -y)
+    card:SetSize(width - 2 * PAD, CARD_HEIGHT)
     local rgb, file = classColor(c.classFile, c.classID)
-    line.portrait:SetClass(file)
-    line.portrait:SetOnline(c.seen == "Now")
-    line.name:SetText(tostring(c.name))
-    line.name:SetTextColor(rgb[1], rgb[2], rgb[3], 1)
+    card.portrait:SetClass(file)
+    card.portrait:SetOnline(c.seen == "Now")
+    card.name:SetText(tostring(c.name))
+    card.realm:SetText(c.realm or "")
+    card.name:SetTextColor(rgb[1], rgb[2], rgb[3], 1)
     local parts = { "Level " .. tostring(c.level or "?") }
     if c.role then parts[#parts + 1] = ns.Card.ROLE_NAMES[c.role] or c.role end
-    parts[#parts + 1] = c.seen == "Now" and "online" or ((c.own and "played " or "seen ") .. tostring(c.seen))
     if c.outside then parts[#parts + 1] = "not in community" end
-    line.info:SetText(table.concat(parts, " \194\183 "))
-    line.path = groupValue .. "\001" .. c.guid
-    y = y + Theme.SIZES.row
+    card.info:SetText("\194\183 " .. table.concat(parts, " \194\183 "))
+    local online = c.seen == "Now"
+    card.label:SetText(online and "online" or (c.seen and ((c.own and "played " or "seen ") .. tostring(c.seen)) or ""))
+    card.label:SetTextColor(Theme.color(online and "onlineText" or "faint"))
+    card.bar.fill:SetVertexColor(rgb[1], rgb[2], rgb[3], 1)
+    card.bar.fill:SetWidth(math.max(1, 120 * math.min(1, (c.level or 0) / maxLevel)))
+    card.text:SetText(c.zone or "")
+    card.note:SetText(c.professions or (c.website and "" or "no professions yet"))
+    card.path = c.guid and (groupValue .. "\001" .. c.guid) or nil
+    card:EnableMouse(card.path ~= nil)
+    y = y + CARD_HEIGHT + 8
   end
   return y
+end
+
+local function charCardFactory(parent)
+  local r = CreateFrame("Button", nil, parent)
+  r.edges = Kit.edges(r, "divider")
+  local hover = r:CreateTexture(nil, "HIGHLIGHT")
+  hover:SetAllPoints()
+  hover:SetColorTexture(Theme.color("hover"))
+  r.portrait = Kit.portrait(r, Theme.SIZES.portraitMedium)
+  r.portrait:SetPoint("TOPLEFT", 12, -10)
+  r.name = Theme.text(r, "body", "text")
+  r.name:SetPoint("TOPLEFT", r.portrait, "TOPRIGHT", 10, -1)
+  r.realm = Theme.text(r, "small", "faint") -- the realm as a dim suffix
+  r.realm:SetPoint("LEFT", r.name, "RIGHT", 6, 0)
+  r.info = Theme.text(r, "small", "muted")
+  r.info:SetPoint("LEFT", r.realm, "RIGHT", 6, 0)
+  r.label = Theme.text(r, "small", "faint")
+  r.label:SetPoint("TOPRIGHT", -12, -12)
+  r.bar = CreateFrame("Frame", nil, r)
+  r.bar:SetSize(120, 4)
+  r.bar:SetPoint("TOPLEFT", r.portrait, "TOPRIGHT", 10, -26)
+  r.bar.track = Theme.fill(r.bar, "track", "BACKGROUND")
+  r.bar.track:SetAllPoints()
+  r.bar.fill = r.bar:CreateTexture(nil, "ARTWORK")
+  r.bar.fill:SetColorTexture(1, 1, 1, 1)
+  r.bar.fill:SetPoint("TOPLEFT")
+  r.bar.fill:SetPoint("BOTTOMLEFT")
+  r.text = Theme.text(r, "small", "textDim")
+  r.text:SetPoint("LEFT", r.bar, "RIGHT", 10, 0)
+  r.note = Theme.text(r, "small", "faint")
+  r.note:SetPoint("RIGHT", -12, 0)
+  r.note:SetPoint("TOP", r.bar, "TOP", 0, 5)
+  r:SetScript("OnClick", function(self) if self.path then FriendsTab.select(self.path) end end)
+  helpers.rightClickMenu(r, function() return r.path end)
+  return r
 end
 
 local function charLineFactory(parent)
@@ -420,12 +480,32 @@ local function charLineFactory(parent)
   return r
 end
 
+-- CF-62: on your own card while no friend has synced: what to expect (the boards' empty box, kept by Nico).
+local function emptyBox(parent, y, width)
+  local others = 0
+  for _, p in ipairs(view and view.people or {}) do
+    if not p.isSelf then others = others + 1 end
+  end
+  if others > 0 then return y end
+  local known = #(ns.RunsFile.friends())
+  local text = "Friends appear here when they are online with the addon at the same time as you, or after the "
+    .. "website sync."
+  if known > 0 then
+    text = text .. string.format(" %d friend%s known from the website and fill in after your next /reload "
+      .. "following an upload.", known, known == 1 and " is" or "s are")
+  end
+  local box = take(cardPools.boxes, parent)
+  box:SetPoint("TOPLEFT", PAD, -(y + 4))
+  box:SetSize(width - 2 * PAD, 58)
+  placeText(cardPools.small, parent, PAD + 12, y + 14, width - 2 * PAD - 24, text, "textDim")
+  return y + 70
+end
+
 function renderCard.person(parent, d, width, path)
   local y = PAD - 4
   placeText(cardPools.name, parent, PAD, y, width, d.title, "heading")
   y = y + LINE.name + 4
   local sub = {}
-  if d.battleTag then sub[#sub + 1] = d.battleTag end
   if d.source then sub[#sub + 1] = d.source end
   if #sub > 0 then
     placeText(cardPools.small, parent, PAD, y, width, table.concat(sub, " \194\183 "), "faint")
@@ -435,15 +515,21 @@ function renderCard.person(parent, d, width, path)
     placeText(cardPools.small, parent, PAD, y, width, d.addon, "faint")
     y = y + LINE.small + 2
   end
-  local statusLine = d.status
-  if d.current and d.online then
-    statusLine = "Online on " .. tostring(d.current.name)
-      .. ((d.current.visible == false or d.current.outside) and " (not in community)" or "")
-  end
-  placeText(cardPools.body, parent, PAD, y + 4, width, statusLine, d.online and "onlineText" or "textDim")
+  placeText(cardPools.body, parent, PAD, y + 4, width, d.status, d.online and "onlineText" or "textDim")
   y = section(parent, PAD, y + LINE.body + 14, width, "Characters")
   y = characterLines(parent, d.characters, path, y, width) + 10
+  if d.isSelf then y = emptyBox(parent, y, width) end
   return sharedQuests(parent, d.sharedQuests, y, width, path)
+end
+
+-- CF-62: a friend known only from the website: their characters as the site saw them.
+function renderCard.website(parent, d, width, path)
+  local y = PAD - 4
+  placeText(cardPools.name, parent, PAD, y, width, d.title, "heading")
+  y = y + LINE.name + 4
+  placeText(cardPools.body, parent, PAD, y + 4, width, d.status, "textDim")
+  y = section(parent, PAD, y + LINE.body + 14, width, "Characters")
+  return characterLines(parent, d.characters, path, y, width)
 end
 
 function renderCard.unlinked(parent, d, width, path)
@@ -528,12 +614,18 @@ function FriendsTab.create(parent, h)
   detail:SetPoint("TOPLEFT", column, "TOPRIGHT", 0, 0)
   detail:SetPoint("BOTTOMRIGHT")
 
-  listPools = { groups = pool(groupFactory), chars = pool(charFactory) }
+  listPools = { groups = pool(groupFactory), chars = pool(charFactory), headers = pool(textFactory("tiny")) }
   cardPools = {
     name = pool(textFactory("name")), section = pool(textFactory("section")), group = pool(textFactory("group")),
     body = pool(textFactory("body")), small = pool(textFactory("small")), tiny = pool(textFactory("tiny")),
     buttons = pool(buttonFactory), bars = pool(barFactory), tiles = pool(tileFactory),
     portraits = pool(portraitFactory), links = pool(linkFactory), charLines = pool(charLineFactory),
+    charCards = pool(charCardFactory), -- CF-62
+    boxes = pool(function(p)
+      local f = CreateFrame("Frame", nil, p)
+      f.edges = Kit.edges(f, "divider")
+      return f
+    end),
   }
   return root
 end
@@ -557,7 +649,8 @@ function FriendsTab.render(v, empty)
   end
   local terms = ns.Filter.parse(text)
   local shownView, shown, total = ns.Filter.apply(view, terms)
-  nodes = ns.Format.tree(shownView)
+  local siteFriends = #terms == 0 and ns.RunsFile.friends() or {} -- CF-62: "Not synced yet"
+  nodes = ns.Format.tree(shownView, siteFriends)
   local st = status()
   st.groups = st.groups or {}
   if #terms > 0 then
@@ -566,7 +659,7 @@ function FriendsTab.render(v, empty)
   countText:SetText(#terms > 0 and string.format("%d of %d", shown, total) or "")
 
   local selected = st.selected
-  if not selected or ns.Card.detail(shownView, selected, GetServerTime()).kind == "message" then
+  if not selected or ns.Card.detail(shownView, selected, GetServerTime(), nil, siteFriends).kind == "message" then
     selected = nodes[1] and nodes[1].value
   end
   st.selected = selected
@@ -575,8 +668,8 @@ function FriendsTab.render(v, empty)
     renderDetail({ kind = "message", text = string.format("No character matches \"%s\".", text) }, nil)
     return
   end
-  renderDetail(ns.Card.detail(view, selected, GetServerTime(), selected and helpers.showAllQuests[selected]),
-    selected)
+  renderDetail(ns.Card.detail(view, selected, GetServerTime(), selected and helpers.showAllQuests[selected],
+    siteFriends), selected)
 end
 
 function FriendsTab.select(path)
@@ -597,7 +690,8 @@ function FriendsTab.rows() return rows end
 function FriendsTab.searchBox() return search end
 function FriendsTab.countText() return countText and countText:GetText() or "" end
 
-local TEXT_POOLS = { "name", "body", "small", "section", "group", "tiny", "tiles", "charLines", "links", "buttons" }
+local TEXT_POOLS = { "name", "body", "small", "section", "group", "tiny", "tiles", "charLines", "charCards", "links",
+                     "buttons" }
 
 function FriendsTab.cardTexts()
   local out = {}
@@ -605,7 +699,7 @@ function FriendsTab.cardTexts()
     local p = cardPools[poolName]
     for i = 1, p.used do
       local item = p.items[i]
-      for _, key in ipairs({ "text", "name", "info", "label", "value", "note" }) do
+      for _, key in ipairs({ "text", "name", "realm", "info", "label", "value", "note" }) do
         local fs = item[key]
         if type(fs) == "table" and fs.GetText and fs:GetText() and fs:GetText() ~= "" then
           out[#out + 1] = fs:GetText()
@@ -627,7 +721,7 @@ end
 
 function FriendsTab.cardLines()
   local out = {}
-  for i = 1, cardPools and cardPools.charLines.used or 0 do out[i] = cardPools.charLines.items[i] end
+  for i = 1, cardPools and cardPools.charCards.used or 0 do out[i] = cardPools.charCards.items[i] end -- CF-62
   return out
 end
 

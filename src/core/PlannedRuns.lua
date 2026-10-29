@@ -539,5 +539,41 @@ function PlannedRuns.untilText(at, now)
   return string.format("in %d day%s", d, d == 1 and "" or "s")
 end
 
+-- ===== CF-62: what the site knows, for Friends ("Not synced yet") and the Dungeons empty state =====
+PlannedRuns.MAX_FRIENDS = 50
+PlannedRuns.MAX_FRIEND_CHARS = 20
+
+-- The site's base URL (CF_RUNS.site), or nil: an http(s) address without spaces.
+function PlannedRuns.site(raw)
+  local address = type(raw) == "table" and text(raw.site, PlannedRuns.MAX_URL)
+  return address and address:match("^https?://%S+$") or nil
+end
+
+--[[ The friends the site knows (CF_RUNS.friends, web PR #130): { { name, chars = { { name, realm, classFile, level,
+seenAt } } } }, display names only, the uploader left out by the site. Cleaned and capped; {} without. ]]
+function PlannedRuns.friends(raw)
+  local list = type(raw) == "table" and type(raw.friends) == "table" and raw.friends or {}
+  local out = {}
+  for _, f in ipairs(list) do
+    if #out >= PlannedRuns.MAX_FRIENDS then break end
+    local name = type(f) == "table" and text(f.name, 24)
+    if name and name ~= "" then
+      local chars = {}
+      for _, c in ipairs(type(f.chars) == "table" and f.chars or {}) do
+        if #chars >= PlannedRuns.MAX_FRIEND_CHARS then break end
+        local cname = type(c) == "table" and text(c.name, 40)
+        if cname and cname ~= "" then
+          local class = type(c.classFile) == "string" and c.classFile:match("^%u+$") and #c.classFile <= 12
+            and c.classFile or nil
+          chars[#chars + 1] = { name = cname, realm = text(c.realm, 40), classFile = class,
+                                level = number(c.level, 1, 100), seenAt = time(c.seenAt) }
+        end
+      end
+      out[#out + 1] = { name = name, chars = chars }
+    end
+  end
+  return out
+end
+
 ns.PlannedRuns = PlannedRuns
 return PlannedRuns

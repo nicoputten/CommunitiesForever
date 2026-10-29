@@ -370,4 +370,20 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
     assert.are.equal(os.date("!%H:%M", at + 3600), PlannedRuns.theirClock(at, 3600, os.date))
     assert.is_nil(PlannedRuns.theirClock(at, nil, os.date))
   end)
+  it("reads the site's address and the friends it knows (CF-62, optional)", function()
+    assert.are.equal("https://wow.example.org", PlannedRuns.site({ site = "https://wow.example.org" }))
+    assert.is_nil(PlannedRuns.site({ site = "javascript:alert(1)" }))
+    assert.is_nil(PlannedRuns.site({}))
+    local friends = PlannedRuns.friends({ friends = {
+      { name = "Mira", chars = { { name = "Mira Sunstrider", realm = "Chromaggus", classFile = "PRIEST", level = 41,
+                                   seenAt = 1793000000 }, { name = "Bad", classFile = "priest|r" }, "junk" } },
+      { name = "" }, "junk", { name = "Ada", chars = {} },
+    } })
+    assert.are.equal(2, #friends)
+    assert.are.same({ name = "Mira Sunstrider", realm = "Chromaggus", classFile = "PRIEST", level = 41,
+                      seenAt = 1793000000 }, friends[1].chars[1])
+    assert.is_nil(friends[1].chars[2].classFile)
+    assert.are.same({ name = "Ada", chars = {} }, friends[2])
+    assert.are.same({}, PlannedRuns.friends(nil))
+  end)
 end)

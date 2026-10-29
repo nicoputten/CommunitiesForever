@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Friends:** "You" for yourself and no BattleTag anywhere; "Online on <character> · <zone>"; each character as a
+  small card with its realm, level bar, zone and professions; friends the website knows but who haven't synced yet
+  under "Not synced yet".
 - **Footer:** says how many friends synced this session and when ("Synced with 2 friends · 22:41"), or that it's
   waiting for someone online; on Friends, how many of your characters there are.
 - **Activity:** the character comes first, then the friend; a one-line summary of today next to the filters.

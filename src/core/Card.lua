@@ -194,9 +194,42 @@ end
     sharedQuests }                       -- CF-19: only on a friend's character
 showAllQuests: list every shared quest instead of the first MAX_QUEST_LINES.
 ]]
-function Card.detail(view, path, now, showAllQuests)
+-- CF-62: "Mining 240 · Blacksmithing 225" (highest first), or nil without professions.
+function Card.professionsText(professions)
+  local list = {}
+  for _, p in pairs(professions or {}) do
+    if type(p) == "table" and p.name then list[#list + 1] = p end
+  end
+  table.sort(list, function(a, b)
+    if (a.rank or 0) ~= (b.rank or 0) then return (a.rank or 0) > (b.rank or 0) end
+    return tostring(a.name) < tostring(b.name)
+  end)
+  local parts = {}
+  for _, p in ipairs(list) do parts[#parts + 1] = string.format("%s %d", p.name, p.rank or 0) end
+  return #parts > 0 and table.concat(parts, " \194\183 ") or nil
+end
+
+-- CF-62: a friend known only from the website (Format.SITE path): their characters as the site saw them.
+local function websiteDetail(siteFriends, name, now)
+  for _, f in ipairs(siteFriends or {}) do
+    if f.name == name then
+      local characters = {}
+      for _, c in ipairs(f.chars) do
+        characters[#characters + 1] = { name = c.name, realm = c.realm, classFile = c.classFile, level = c.level,
+                                        seen = c.seenAt and Format.ago(c.seenAt, now) or nil, website = true }
+      end
+      return { kind = "website", title = f.name, status = "from the website", characters = characters }
+    end
+  end
+  return nil
+end
+
+function Card.detail(view, path, now, showAllQuests, siteFriends)
   if not path then
     return { kind = "message", text = "Select a person or character on the left." }
+  end
+  if path:sub(1, #Format.SITE) == Format.SITE then
+    return websiteDetail(siteFriends, path:sub(#Format.SITE + 1), now) or Card.detail(view, nil, now)
   end
   local group, guid = Format.splitPath(path)
 
@@ -225,7 +258,10 @@ function Card.detail(view, path, now, showAllQuests)
     characters[#characters + 1] = { guid = row.guid, name = row.name, classFile = row.classFile,
                                     classID = row.classID, level = row.level, seen = Format.seen(row, now),
                                     role = row.role,
-                                    own = person and person.isSelf or false, outside = row.outside or false }
+                                    own = person and person.isSelf or false, outside = row.outside or false,
+                                    -- CF-62: the character cards
+                                    realm = row.realm, zone = row.zone or row.lastZone,
+                                    professions = Card.professionsText(row.professions) }
   end
   if not person then
     return { kind = "unlinked", characters = characters }
@@ -233,7 +269,8 @@ function Card.detail(view, path, now, showAllQuests)
 
   local status
   if person.online and person.currentChar then
-    status = "Online on " .. tostring(person.currentChar.name) ..
+    local zone = person.currentChar.zone
+    status = "Online on " .. tostring(person.currentChar.name) .. (zone and (" \194\183 " .. zone) or "") ..
       ((person.currentChar.visible == false or person.currentChar.outside) and " (not in community)" or "")
   elseif person.online then
     status = "Online"
@@ -252,7 +289,8 @@ function Card.detail(view, path, now, showAllQuests)
     source = person.updatedAt and string.format("Updated %s via %s", Format.ago(person.updatedAt, now),
       tostring(person.viaName)) or ("Via " .. tostring(person.viaName))
   end
-  return { kind = "person", title = personTitle(person), battleTag = person.battleTag, online = person.online,
+  -- CF-62: no BattleTag on the card (not even your own); "You" for yourself.
+  return { kind = "person", title = personTitle(person), isSelf = person.isSelf, online = person.online,
            -- CF-34: who runs the addon; nil on your own card.
            addon = not person.isSelf and (person.usesAddon and Card.USES_ADDON or Card.NO_ADDON) or nil,
            status = status, current = person.currentChar, characters = characters, source = source,
