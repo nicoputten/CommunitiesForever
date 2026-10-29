@@ -97,5 +97,12 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16). No longer used: AceConfig was removed after CF-43. |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
+## Retail dry runs (not Forever)
+Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.
+| API | Result |
+|---|---|
+| `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` | Blocked for addons (V75 retail: fail). Blizzard shows its popup "... only available to the Blizzard UI. You can disable this addon and reload the UI.", also when the call is inside `pcall`. FriendProbe now only tries it from a button; CommunitiesForever must never register it automatically. |
+| A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
+
 ## Not available / not useful
 - LanMiaoApi (CurseForge) reports none of the above as present in `APIDocumentation`; it only confirms runtime existence. Not a source of signatures or secret flags for these APIs.

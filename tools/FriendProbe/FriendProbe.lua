@@ -300,8 +300,8 @@ local function ButtonWindow(title, buttons)
 end
 
 -- V67: is a changed Lua file in the addon folder re-read on /reload? ReloadProbe.lua ships with "A"; the
--- VERIFY.md step changes it on disk while the game runs. ReloadProbeLate.lua is listed in the TOC but not
--- shipped: the step creates it while the game runs (expected: it loads only after a game restart).
+-- VERIFY.md step changes it on disk while the game runs. ReloadProbeLate.lua is not in the shipped TOC (a missing
+-- file listed there shows a Lua warning at every login): the step adds the file and its TOC line by hand.
 local function ReloadFile()
   log("V67 ReloadProbe.lua mark", S(FriendProbeReloadMark), "| ReloadProbeLate.lua",
     FriendProbeLateMark and S(FriendProbeLateMark) or "not loaded")
@@ -683,10 +683,16 @@ local function PvpRegister()
   for _, event in ipairs(PVP_EVENTS) do
     if not pcall(pvpFrame.RegisterEvent, pvpFrame, event) then log("pvp: unknown event", event) end
   end
+end
+
+-- V75: may an addon register the combat log? Only from the checklist's button, never at login: on Retail 12.1.5
+-- Blizzard blocks it with a popup ("only available to the Blizzard UI ... disable this addon"), even inside pcall.
+local function CombatLogTest()
+  log("== V75 COMBAT LOG (button) ==")
   local ok, err = pcall(pvpFrame.RegisterEvent, pvpFrame, "COMBAT_LOG_EVENT_UNFILTERED")
   combatLog = ok and "registered" or ("blocked: " .. S(err))
   log("V75 combat log:", combatLog)
-  result("V75", ok and "pass" or "fail", combatLog)
+  result("V75", ok and "pass" or "fail", combatLog .. " (no error here can still mean Blizzard's popup showed)")
 end
 
 
@@ -829,6 +835,7 @@ ns.tests = {
   { text = "Test: links and invites", run = function() Invite() end },
   { text = "Test: invite all", run = function() InviteAll() end },
   { text = "Test: file reload (V67)", run = function() ReloadFile() end },
+  { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
 }
 ns.log = log
 

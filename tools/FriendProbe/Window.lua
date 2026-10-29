@@ -19,9 +19,9 @@ local function forOtherClient(item)
 end
 
 local function stateText(item)
-  if forOtherClient(item) then return "|cff707070Forever only|r", "" end
+  if forOtherClient(item) then return "|cff707070Forever only|r", item.note or "" end
   local r = resultOf(item.id)
-  if not r then return "|cff909090open|r", item.how or "" end
+  if not r then return "|cff909090open|r", (item.how or "") .. (item.note and ("  " .. item.note) or "") end
   return LABELS[r.status] or tostring(r.status), (r.detail or "") .. (r.later and ("  (later: " .. r.later .. ")") or "")
 end
 

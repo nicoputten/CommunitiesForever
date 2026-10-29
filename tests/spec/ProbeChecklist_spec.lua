@@ -33,6 +33,20 @@ describe("FriendProbe launch checklist (CF-60)", function()
     assert.is_true(next(open) ~= nil)
   end)
 
+  it("lists in the TOC only files that exist", function()
+    local count = 0
+    for line in io.lines(PROBE .. "FriendProbe.toc") do
+      line = line:gsub("%s+$", "")
+      if line ~= "" and not line:match("^#") then
+        local f = io.open(PROBE .. line, "r")
+        assert.is_truthy(f, "the TOC lists a missing file: " .. line)
+        f:close()
+        count = count + 1
+      end
+    end
+    assert.is_true(count > 0)
+  end)
+
   it("puts every item in one of the six sessions, and says what to do for the manual ones", function()
     local ns = checklist()
     assert.are.equal(6, #ns.sessions)
@@ -44,13 +58,21 @@ describe("FriendProbe launch checklist (CF-60)", function()
   end)
 
   describe("in the game (the WoW mock)", function()
-    local state, printed
+    local state, printed, registered
 
     -- project: WOW_PROJECT_ID (18 Forever, the mock's; 1 Retail).
     local function login(serverTime, project)
       state = wowapi.install()
       state.serverTime = serverTime
       if project then _G.WOW_PROJECT_ID = project end
+      -- Every event a probe frame registers (the mock's frames don't keep them).
+      registered = {}
+      local create = _G.CreateFrame
+      _G.CreateFrame = function(...)
+        local frame = create(...)
+        frame.RegisterEvent = function(_, event) registered[event] = true end
+        return frame
+      end
       printed = {}
       _G.print = function(...) printed[#printed + 1] = table.concat({ ... }, " ") end
       _G.SlashCmdList = {}
@@ -110,7 +132,24 @@ describe("FriendProbe launch checklist (CF-60)", function()
       end
       table.sort(retail)
       assert.are.same({ "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67", "V68", "V69",
-                        "V70", "V71", "V72", "V75", "V77", "V78", "V81", "V83", "V84", "V85", "V86" }, retail)
+                        "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86" }, retail)
+    end)
+
+    it("never registers the combat log by itself, only from its button (Blizzard's popup on Retail)", function()
+      for _, project in ipairs({ 18, 1 }) do
+        local ns = login(1793300000, project)
+        assert.is_nil(registered.COMBAT_LOG_EVENT_UNFILTERED)
+        assert.is_true(registered.CHAT_MSG_COMBAT_HONOR_GAIN) -- the rest of the PvP logging runs
+        for _, t in ipairs(ns.tests) do
+          if t.text:find("combat log", 1, true) then t.run() end
+        end
+        assert.is_true(registered.COMBAT_LOG_EVENT_UNFILTERED)
+        assert.is_table(ns.results().V75)
+        if project == 18 then -- the last login is cleaned up by after_each
+          _G.FriendProbeDB = nil
+          wowapi.uninstall()
+        end
+      end
     end)
 
     it("stops by itself after 18 Nov", function()
