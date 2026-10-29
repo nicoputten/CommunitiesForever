@@ -33,6 +33,13 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-66 The minimap button's shield
+| Step | Expected | Status |
+|---|---|---|
+| Log in at 1080 × 720 with the minimap button on | The button shows the gold shield with a cross inside LibDBIcon's round ring, sharp, not stretched; no green square or question mark (that would mean `media\textures\mapicon.tga` is missing). Hover: the tooltip as before; left-click opens the window, right-click the settings. | open |
+| Retail (and Forever, if it has one): the addon compartment (the button next to the minimap that lists addons) | CommunitiesForever is listed with the same shield; clicking it opens the window. Hide the minimap button in the settings: it leaves the compartment too; show it again: back. | open |
+| Esc > Options > AddOns, or the AddOns list at character select | CommunitiesForever shows the shield as its icon (`## IconTexture`). | open |
+
 ### CF-63c Dungeons tab: the list, in range, planning (board CF63List)
 | Step | Expected | Status |
 |---|---|---|

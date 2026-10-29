@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Minimap button:** the addon's own gold shield instead of a generic icon, also in the addon compartment and the
+  AddOns list.
 
 ## v1.0.0 (2026-10-29)
 - **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window
