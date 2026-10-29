@@ -33,7 +33,7 @@ describe("MainFrame", function()
     assert.are.equal(window, frame()) -- reused
   end)
 
-  it("lists friends known from the website under Not synced yet, with their characters (CF-62)", function()
+  it("lists friends known from the website under From the website, with their characters (CF-62, CF-65)", function()
     state = wowapi.install()
     ns = helpers.loadAddon()
     -- As Data\Runs.lua sets it (after the addon's files, which include that file).
@@ -50,10 +50,11 @@ describe("MainFrame", function()
       if r.node and r.node.website then site = r end
     end
     assert.is_not_nil(site)
-    assert.are.equal("from the website", site.frame.count:GetText())
+    assert.are.equal("1", site.frame.count:GetText()) -- the character count
     select(site.path)
     assert.is_true(hasText("Mira"))
-    assert.is_true(hasText("from the website"))
+    assert.is_true(hasText("From the website"))
+    assert.is_truthy(table.concat(ns.FriendsTab.cardTips(), "\n"):find("Not synced in game yet", 1, true))
     assert.is_true(hasText("Mira Sunstrider"))
     assert.is_true(hasText("Chromaggus"))
     assert.are.equal("https://wow.example.org", ns.RunsFile.site())

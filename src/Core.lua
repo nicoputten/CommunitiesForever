@@ -83,7 +83,7 @@ local function askCommand(self, _, input)
   local name = input:match("^%s*%S+%s+(.-)%s*$") -- the rest of the line: names have spaces
   local dungeon = name and name ~= "" and ns.Dungeons.dungeonOf(name)
   if dungeon then
-    ns.GroupAsks.ask(dungeon)
+    ns.RunDialogs.ask({ dungeon = dungeon }) -- CF-65: the same Ask dialog as every other way in
   elseif name and name ~= "" then
     self:Print("No dungeon called " .. name .. ". Example: /cf ask Deadmines")
   else
@@ -150,7 +150,8 @@ local COMMANDS = {
     run = function(self, argument)
       if argument == "debug" then -- CF-28: trace parts, missing parts and resends
         ns.Messenger.setDebug(not ns.Messenger.debugOn())
-        self:Print(ns.Messenger.debugOn() and "Sync debug on: message parts, missing parts and resends are printed."
+        self:Print(ns.Messenger.debugOn() and "Sync debug on until /reload: message parts, missing parts and resends "
+          .. "are printed."
           or "Sync debug off.")
         return
       end

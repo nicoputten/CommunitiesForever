@@ -166,12 +166,6 @@ local function queue(item)
   return item
 end
 
--- CF-47: a run you plan (Plan a run). char = { guid, name, role }; startsAt UTC. Returns the item.
-function Planner.plan(dungeonId, startsAt, char, note)
-  return queue({ kind = "plan", dungeon = dungeonId, startsAt = startsAt, guid = char.guid, name = char.name,
-                 role = char.role, note = ns.Pending.note(note) })
-end
-
 -- CF-47: your answer to a run (Sign up in game). Also sent to the organiser's addon when they are online.
 -- CF-63: note (optional): a note to the organiser, up to 80 characters.
 function Planner.answer(run, answer, char, note)

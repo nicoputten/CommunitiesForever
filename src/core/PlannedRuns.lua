@@ -529,42 +529,6 @@ function PlannedRuns.theirClock(at, utcOffset, dateFn)
   return string.format("%02d:%02d", t.hour, t.min)
 end
 
--- The civil date of a day number from days() (inverse).
-local function civil(n)
-  local era = math.floor(n / 146097)
-  local doe = n - era * 146097
-  local yoe = math.floor((doe - math.floor(doe / 1460) + math.floor(doe / 36524) - math.floor(doe / 146096)) / 365)
-  local doy = doe - (365 * yoe + math.floor(yoe / 4) - math.floor(yoe / 100))
-  local mp = math.floor((5 * doy + 2) / 153)
-  local day = doy - math.floor((153 * mp + 2) / 5) + 1
-  local month = mp < 10 and mp + 3 or mp - 9
-  return { year = yoe + era * 400 + (month <= 2 and 1 or 0), month = month, day = day }
-end
-
--- CF-47: Plan a run's days: today and the next 6 by the local calendar (no daylight saving surprises),
--- { { label = "Today" | "Wed", year, month, day } }.
-function PlannedRuns.dayChoices(now, dateFn)
-  local today = dateFn("*t", now)
-  local first = days({ year = today.year, month = today.month, day = today.day })
-  local list = {}
-  for i = 0, 6 do
-    local d = civil(first + i)
-    -- days() counts from 0000-03-01, a Wednesday (index 4 in WEEKDAYS).
-    d.label = i == 0 and "Today" or WEEKDAYS[(first + i + 3) % 7 + 1]
-    list[#list + 1] = d
-  end
-  return list
-end
-
--- CF-47: "20:30", "8:05" or "2030" typed as a time: hour, minute; or nil.
-function PlannedRuns.parseClock(typed)
-  if type(typed) ~= "string" then return nil end
-  local h, m = typed:match("^%s*(%d%d?)[:%.]?(%d%d)%s*$")
-  h, m = tonumber(h), tonumber(m)
-  if not h or h > 23 or m > 59 then return nil end
-  return h, m
-end
-
 -- "in 2 h 40 m", "in 25 min", "in 3 days", "started 10 min ago" (CF-63 board CF63RunDetail: "in 3 h 10 m").
 function PlannedRuns.untilText(at, now)
   local seconds = at - now
@@ -708,6 +672,35 @@ function PlannedRuns.askNote(run, name, role, now, dateFn)
   return out
 end
 
+--[[ CF-65: what the Ask dialog opens with, the one decision for every way to start an ask (a dungeon's Ask now, Ask
+now for this run, an open slot's menu, the empty state, /cf ask). opts = { run, dungeon, role, note } (all optional):
+a run gives its dungeon and the note "For SM: Graveyard 20:30 · need a healer" (role: the slot it needs); else the
+dungeon given; else the first dungeon that fits your level; else the lowest one. ctx = { dungeonOf(run), runName(run),
+list (Dungeons.LIST), level, now, dateFn }. Returns { dungeon (nil when the game knows none), note }. ]]
+function PlannedRuns.askPrefill(opts, ctx)
+  opts = opts or {}
+  local dungeon, note = nil, opts.note
+  if opts.run then
+    dungeon = ctx.dungeonOf and ctx.dungeonOf(opts.run)
+    if dungeon and not note and ctx.dateFn and type(opts.run.startsAt) == "number" then
+      note = PlannedRuns.askNote(opts.run, ctx.runName and ctx.runName(opts.run) or dungeon.name, opts.role, ctx.now,
+        ctx.dateFn)
+    end
+  end
+  dungeon = dungeon or opts.dungeon
+  if not dungeon then
+    for _, d in ipairs(ctx.list or {}) do
+      if not dungeon and inRange(d, ctx.level) then dungeon = d end
+    end
+  end
+  if not dungeon then
+    for _, d in ipairs(ctx.list or {}) do
+      if not dungeon or d.min < dungeon.min then dungeon = d end
+    end
+  end
+  return { dungeon = dungeon, note = note }
+end
+
 PlannedRuns.MAX_ANSWER_NOTE = 80 -- CF-63: the note to the organiser on an answer
 
 --[[ CF-63b: what your answer is, for the "Your answer" line: "none" | "in" | "maybe" | "cant" | "reserve".
@@ -785,26 +778,6 @@ function PlannedRuns.filterRuns(runs, kind, ctx)
     if keep then out[#out + 1] = run end
   end
   return out
-end
-
-PlannedRuns.PLAN_HOUR = 20       -- CF-63c: the planning chips' time, your clock
-PlannedRuns.PLAN_MIN_LEAD = 3600 -- "Tonight" only while it is at least this far away
-
---[[ CF-63c: the planning chips: the next three evenings at PLAN_HOUR:00 your time,
-{ { label = "Tonight 20:00" | "Tomorrow 20:00" | "Fri 20:00", startsAt } }. timeFn: local date table -> server
-seconds (Panels.localTime in game, os.time in tests). Tonight only while it is at least PLAN_MIN_LEAD away. ]]
-function PlannedRuns.planChips(now, dateFn, timeFn)
-  local clock = string.format("%02d:00", PlannedRuns.PLAN_HOUR)
-  local list = {}
-  for i, d in ipairs(PlannedRuns.dayChoices(now, dateFn)) do
-    if #list >= 3 then break end
-    local at = timeFn({ year = d.year, month = d.month, day = d.day, hour = PlannedRuns.PLAN_HOUR, min = 0, sec = 0 })
-    if type(at) == "number" and at - now >= PlannedRuns.PLAN_MIN_LEAD then
-      local day = i == 1 and "Tonight" or i == 2 and "Tomorrow" or d.label
-      list[#list + 1] = { label = day .. " " .. clock, startsAt = at }
-    end
-  end
-  return list
 end
 
 ns.PlannedRuns = PlannedRuns

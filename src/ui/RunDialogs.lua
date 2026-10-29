@@ -1,4 +1,5 @@
--- RunDialogs: Ask now, Plan a run and the reload prompt (CF-47; CF-63b: answering is inline, RunAnswer; design
+-- RunDialogs: Ask now and the reload prompt (CF-47; CF-63b: answering is inline, RunAnswer; CF-64: no planning in
+-- the game, that happens on the website or with the bot's /plan; design
 -- docs/design/runs-2026-10/run-dialogs.html). One kit dialog, redrawn for each; texts and buttons from pools.
 -- What has to reach the website goes into the pending list (services/Planner.lua) and needs a /reload: the
 -- game saves only then, and the uploader sends the saved file.
@@ -11,19 +12,14 @@ local WIDTH = 460
 local PAD = 20
 local DOT = " \194\183 "
 local ROLE_WORDS = { tank = "tank", heal = "healer", dps = "damage" }
-local ROLE_BUTTONS = { tank = "Tank", heal = "Healer", dps = "Damage" }
-local LATER = "Reaches the site and Discord after /reload. You'll be asked next."
-local DISCORD_HELP = "For friends who aren't playing. Needs a /reload to send; posted about 15 s later."
-local RELOAD_TEXT = "The game only saves when you reload or log out. Your uploader then sends it; it's on Discord "
-  .. "about 15 seconds later. Friends in game already got the whisper."
-local LATER_NOTE = "Later: waits for your next reload or logout. If that's more than 10 min away the ask has "
-  .. "expired and isn't posted."
+local DISCORD_HELP = "For friends who aren't playing; posted after your next /reload."
+-- CF-64: the reload prompt's detail, in the ⓘ (the dialog itself says only what to do).
+local RELOAD_TIP = "The game saves only on a reload or logout; your uploader then posts the ask on Discord, about "
+  .. "15 seconds later. Without a reload it waits for your next logout, and after 10 minutes it has expired."
 
-local dialog, pools
-local noteBox, timeBox, dungeonSelect, leadSelect, discordBox
+local dialog, pools, infos
+local noteBox, discordBox
 local state = {} -- what the open dialog shows and edits
-
-local function now() return GetServerTime() end
 
 local function range(dungeon)
   return string.format("%d%s%d", dungeon.min, Theme.bundledFonts() and "\226\128\147" or "-", dungeon.max)
@@ -79,29 +75,27 @@ local function create()
     primary = Kit.pool(function(parent) return Kit.button(parent, "", nil, "primary") end),
   }
   noteBox = Kit.input(content, { width = WIDTH - 2 * PAD, maxLetters = ns.Pending.MAX_NOTE })
-  timeBox = Kit.input(content, { width = 80, maxLetters = 5 })
-  dungeonSelect = Kit.select(content, function(value) state.dungeon = ns.Dungeons.get(value) end)
-  leadSelect = Kit.select(content, function(value)
-    for _, c in ipairs(ownChars()) do
-      if c.guid == value then state.char = c end
-    end
-    -- CF-49: the role row follows the character's class.
-    state.role = state.char and ns.PlannedRuns.defaultRole(state.char.classFile, state.char.role)
-    state.time, state.note = timeBox:GetText(), noteBox:GetText()
-    RunDialogs.drawPlan()
-  end)
-  discordBox = Kit.checkbox(content, "Also post on Discord", DISCORD_HELP, false, function(on) state.discord = on end)
+  -- CF-65 (Nico): posting on Discord is a choice again, on by default.
+  discordBox = Kit.checkbox(content, "Also post on Discord", DISCORD_HELP, true, function(on) state.discord = on end)
+  infos = Kit.pool(Kit.info)
 end
 
 local function begin(title, height)
   if not dialog then create() end
   for _, p in pairs(pools) do Kit.release(p) end
-  for _, w in ipairs({ noteBox, timeBox, dungeonSelect, leadSelect, discordBox }) do
+  Kit.release(infos)
+  for _, w in ipairs({ noteBox, discordBox }) do
     w:Hide()
     w:ClearAllPoints()
   end
   dialog.titleText:SetText(title)
   dialog:SetHeight(height)
+  -- CF-64: on the window when it is open (it opened outside it, on the right).
+  local window = ns.MainFrame.window and ns.MainFrame.window()
+  if window and window:IsShown() then
+    dialog:ClearAllPoints()
+    dialog:SetPoint("CENTER", window, "CENTER", 0, 0)
+  end
   dialog:Show()
   return dialog.content
 end
@@ -145,36 +139,17 @@ local function actions(mainLabel, onMain, note)
   return main
 end
 
--- CF-49: a row of the roles the class can play (Tank, Healer, Damage), the picked one highlighted.
-local function roleRow(y, classFile, picked, onPick)
-  label(y, "Role")
-  local x = PAD
-  for _, role in ipairs(ns.PlannedRuns.rolesFor(classFile)) do
-    local b = button(role == picked and "buttons" or "ghost", ROLE_BUTTONS[role], function() onPick(role) end)
-    b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", x, -(y + 18))
-    x = x + (b:GetWidth() or 60) + 4
-  end
-  return y + 56
-end
-
--- A copy of the character with the picked role (what goes into the pending item).
-local function withRole(c, role)
-  if not c then return nil end
-  local copy = {}
-  for k, v in pairs(c) do copy[k] = v end
-  copy.role = role or c.role
-  return copy
-end
-
 -- ===== Reload prompt =====
 
--- After Ask now with Discord or Plan a run: reload now so the game saves, or later.
+-- After Ask now: reload now so the game saves and the ask reaches Discord, or later (CF-64: short; the detail in an ⓘ).
 function RunDialogs.reloadPrompt()
-  begin("Post on Discord?", 230)
-  text("name", 18, "Reload now to post on Discord", "goldLight")
-  text("small", 44, RELOAD_TEXT, "textDim")
-  text("tiny", 100, LATER_NOTE, "faint")
+  begin("Post on Discord?", 150)
+  local head = text("name", 18, "Reload to post it on Discord", "goldLight")
+  local hw = head.text.GetStringWidth and head.text:GetStringWidth() or 240
+  local info = Kit.take(infos, dialog.content)
+  info:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", PAD + hw + 8, -21)
+  info.tip = RELOAD_TIP
+  text("small", 46, "Friends in game got it already.", "textDim")
   local main = button("primary", "Reload now", function()
     dialog:Hide()
     if not ns.Panels.reload() then
@@ -216,9 +191,9 @@ local function notAsked(dungeon, recipients)
   return parts
 end
 
--- note (CF-63b, optional): the note to start with ("For SM: Graveyard 20:30 · need a healer").
-function RunDialogs.askNow(dungeon, note)
-  state = { dungeon = dungeon, discord = false, char = currentChar() }
+-- The Ask dialog for a dungeon; note: the note to start with ("For SM: Graveyard 20:30 · need a healer").
+local function drawAsk(dungeon, note)
+  state = { dungeon = dungeon, char = currentChar(), discord = true }
   local recipients = ns.GroupAsk.recipients(dungeon, ns.Sync.online(), ns.db.global.people,
     ns.db.global.self.battleTag)
   begin("Ask now", 430)
@@ -232,7 +207,7 @@ function RunDialogs.askNow(dungeon, note)
   label(y, "Whispered now" .. DOT .. "online and fit")
   y = y + 20
   if #recipients == 0 then
-    text("small", y, "Nobody with the addon is online with a character in range.", "muted")
+    text("small", y, "Nobody with the addon is online in range.", "muted")
     y = y + 20
   end
   for i, r in ipairs(recipients) do
@@ -251,106 +226,39 @@ function RunDialogs.askNow(dungeon, note)
   noteBox:SetValue(note or "")
   place(noteBox, PAD, y + 22)
   y = y + 60
-  discordBox:SetChecked(false)
+  discordBox:SetChecked(true)
   discordBox:SetWidth(WIDTH - 2 * PAD)
   place(discordBox, PAD, y)
-  local ok, wait = ns.GroupAsks.canAsk()
-  local main = actions("Ask now", function()
+  -- CF-65: the button is never disabled; within 3 minutes of your last ask it says how long to wait instead.
+  local problem = text("tiny", y + 34, "", "warning")
+  actions("Ask now", function()
+    local ok, wait = ns.GroupAsks.canAsk()
+    if not ok then
+      problem.text:SetText(string.format("You can ask again in %d min.", math.ceil(wait / 60)))
+      return
+    end
+    -- CF-65: to friends in game when any are online, and to Discord unless unticked (the Discord ask first, CF-51,
+    -- so the whisper carries its id to every friend's file). The note goes into the Discord ask (the pending item).
     local typed = noteBox:GetText()
-    -- CF-51: the Discord ask first, so the whisper carries its id to every friend's file.
-    local post = state.discord and ns.Planner.askOnDiscord(dungeon.id, state.char, typed) or nil
-    if #recipients > 0 or post then ns.GroupAsks.ask(dungeon, ns.Pending.note(typed), post) end
+    local post = state.discord and ns.Planner.askOnDiscord(dungeon.id, state.char, typed) or false
+    ns.GroupAsks.ask(dungeon, ns.Pending.note(typed), post)
     dialog:Hide()
-    if state.discord then RunDialogs.reloadPrompt() end
-  end, not ok and string.format("You can ask again in %d min.", math.ceil(wait / 60)) or nil)
-  main:SetEnabled(ok == true)
+    if post then RunDialogs.reloadPrompt() end
+  end)
 end
 
--- ===== Plan a run =====
-
-function RunDialogs.plan(dungeon)
-  local char = currentChar()
-  state = { dungeon = dungeon, char = char, days = date and ns.PlannedRuns.dayChoices(now(), date) or {},
-            day = 1, time = "20:00", note = "", role = ns.PlannedRuns.defaultRole(char.classFile, char.role) }
-  RunDialogs.drawPlan()
-end
-
--- (Redrawn when a day is picked; what was typed is kept.)
-function RunDialogs.drawPlan()
-  begin("Plan a run", 496)
-  local y = 16
-  label(y, "Dungeon")
-  local list = {}
-  for _, d in ipairs(ns.Dungeons.LIST) do list[#list + 1] = { value = d.id, text = d.name .. DOT .. range(d) } end
-  table.sort(list, function(a, b)
-    local da, db = ns.Dungeons.get(a.value), ns.Dungeons.get(b.value)
-    if da.min ~= db.min then return da.min < db.min end
-    return da.name < db.name
-  end)
-  dungeonSelect:SetChoices("Dungeon", list, state.dungeon and state.dungeon.id)
-  dungeonSelect:SetWidth(WIDTH - 2 * PAD)
-  place(dungeonSelect, PAD, y + 18)
-  y = y + 56
-  label(y, "Lead as")
-  local chars = {}
-  for _, c in ipairs(ownChars()) do
-    chars[#chars + 1] = { value = c.guid, text = tostring(c.name) .. " " .. tostring(c.level) .. DOT
-      .. (ROLE_WORDS[c.role] or "damage") }
-  end
-  leadSelect:SetChoices("Lead as", chars, state.char and state.char.guid)
-  leadSelect:SetWidth(WIDTH - 2 * PAD)
-  place(leadSelect, PAD, y + 18)
-  y = y + 56
-  y = roleRow(y, state.char and state.char.classFile, state.role, function(role)
-    state.role, state.time, state.note = role, timeBox:GetText(), noteBox:GetText()
-    RunDialogs.drawPlan()
-  end)
-  label(y, "Day")
-  local x = PAD
-  for i, d in ipairs(state.days) do
-    local b = button(i == state.day and "buttons" or "ghost", d.label, function()
-      state.day, state.time, state.note = i, timeBox:GetText(), noteBox:GetText()
-      RunDialogs.drawPlan()
-    end)
-    b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", dialog.content, "TOPLEFT", x, -(y + 18))
-    x = x + (b:GetWidth() or 60) + 4
-  end
-  y = y + 56
-  label(y, "Time")
-  timeBox:SetValue(state.time)
-  place(timeBox, PAD, y + 18)
-  text("tiny", y + 26, "your PC clock" .. DOT .. "friends see their own time", "faint", PAD + 92, 300)
-  y = y + 56
-  label(y, "Note (optional)")
-  noteBox:SetValue(state.note)
-  place(noteBox, PAD, y + 18)
-  local problem = text("tiny", y + 52, "", "warning")
-  actions("Plan run", function()
-    local h, m = ns.PlannedRuns.parseClock(timeBox:GetText())
-    local day = state.days[state.day]
-    local startsAt = h and day and ns.Panels.localTime({ year = day.year, month = day.month, day = day.day,
-                                                         hour = h, min = m })
-    if not h then
-      problem.text:SetText("Type the time as 20:30.")
-      return
-    end
-    if not startsAt then
-      problem.text:SetText("This game version can't convert the time. Plan the run on the website.")
-      return
-    end
-    if startsAt <= now() then
-      problem.text:SetText("That time has passed.")
-      return
-    end
-    if not (state.dungeon and state.char and state.char.guid) then
-      problem.text:SetText("Pick a dungeon and a character.")
-      return
-    end
-    ns.Planner.plan(state.dungeon.id, startsAt, withRole(state.char, state.role), noteBox:GetText())
-    dialog:Hide()
-    RunDialogs.reloadPrompt()
-  end, LATER)
+--[[ CF-65: every way to start an ask comes here: a dungeon's Ask now, Ask now for this run, an open slot's menu, the
+empty state's Ask now…, /cf ask <dungeon>. opts = { run, dungeon, role, note } (PlannedRuns.askPrefill decides what
+the dialog opens with). Returns true when the dialog opened. ]]
+function RunDialogs.ask(opts)
+  local me = ns.SelfInfo.read()
+  local prefill = ns.PlannedRuns.askPrefill(opts, {
+    dungeonOf = function(run) return ns.Dungeons.get(run.dungeon) end,
+    runName = ns.Dungeons.runName, list = ns.Dungeons.LIST, level = me.level, now = GetServerTime(), dateFn = date,
+  })
+  if not prefill.dungeon then return false end
+  drawAsk(prefill.dungeon, prefill.note)
+  return true
 end
 
 -- For the specs.
@@ -372,7 +280,12 @@ function RunDialogs.buttons()
   return out
 end
 function RunDialogs.widgets()
-  return { note = noteBox, time = timeBox, dungeon = dungeonSelect, lead = leadSelect, discord = discordBox }
+  return { note = noteBox, discord = discordBox }
+end
+function RunDialogs.tips()
+  local out = {}
+  for i = 1, infos and infos.used or 0 do out[i] = infos.items[i].tip end
+  return out
 end
 
 ns.RunDialogs = RunDialogs

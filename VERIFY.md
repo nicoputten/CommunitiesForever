@@ -14,7 +14,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V51 | Do addon whispers reach a character of the other faction? (CF-28) | Both characters need FriendProbe: `/fp whisper <the other character's name>`; the other log should show `addon message <- ... V51:whisper`. | open |
 | V52 | How stale does community presence get after a logout? (CF-28: online status for non-friends; CF-15 bug) | A few minutes after a member logged out, the FriendProbe run (at login): under V52 COMMUNITY PRESENCE, does that member still show `Online`? | open |
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
-| V59 | Does a friend **receive** the hidden sync channel's HELLO, and which `CHAT_MSG_ADDON` arguments name the channel? (CF-31; sending works on Retail 12.1.5: API-FINDINGS) | Two players in the community who are **not** Battle.net friends, both with CommunitiesForever. Both `/cf sync debug` (it stays on until you type it again). Log in A, then B. On A: `[sync] to the community channel: HELLO …`. On B: a `[sync]` line receiving that HELLO from A, and within seconds A's characters show with their data in `/cf` (not only the community's class and level). Then `/cf sync debug` again on both to stop the lines. If B shows nothing: B's `/dump GetChannelList()` (is a `cf…` channel in it?). | open |
+| V59 | Does a friend **receive** the hidden sync channel's HELLO, and which `CHAT_MSG_ADDON` arguments name the channel? (CF-31; sending works on Retail 12.1.5: API-FINDINGS) | Two players in the community who are **not** Battle.net friends, both with CommunitiesForever. Log in A and B, then `/cf sync debug` on both (it lasts until the next /reload or login, CF-64). On A `/cf sync`: `[sync] to the community channel: HELLO …`. On B: a `[sync]` line receiving that HELLO from A, and within seconds A's characters show with their data in `/cf` (not only the community's class and level). Then `/cf sync debug` again on both to stop the lines. If B shows nothing: B's `/dump GetChannelList()` (is a `cf…` channel in it?). | open |
 | V64 | Do the ambient effects work (CF-43)? `texture:CreateAnimationGroup` (on the streak, not the frame: see API-FINDINGS "Retail dry runs") with a `Translation` animation (`SetOffset`, `SetDuration`, `SetStartDelay`, `SetLooping("REPEAT")`), `SetClipsChildren` and `Texture:SetBlendMode("ADD")`. | See the CF-43 steps: a soft light streak slides across the window title every few seconds and across LEVEL UP chips, clipped to them; the title bar and the chips themselves never move and no dark block shows; between passes nothing shows, no white strip behind the title's shield (CF-62: an `Alpha` animation holds it visible only while it moves); off with Ambient effects. If nothing moves, send any Lua error. | open |
 
 | V69 | Can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), the first invite making a party? (CF-48: Invite everyone ready) | With at least two friends online in Forever and you not in a group: FriendProbe's Test: invite all, click `Invite all N`. Do all friends get an invite (also the second, while the first hasn't accepted yet)? Let them accept, wait 10 s (`V69 after 10 s: in group N`), `/reload` and send the log (the `V69 C_PartyInfo.InviteUnit` lines and `INVITE EVENT` lines). | open |
@@ -42,7 +42,6 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | "In range for  Ves Doombringer (23) ▾" | Click it: your characters "Name (level)", highest first; pick an alt: the list and its dungeons follow that character until the next login. Hover: "Ranges are typical levels; …". One line per dungeon: "Wailing Caverns   17–24 · 3 fit". | open |
 | Tick "Show all dungeons" | "Other dungeons" lists the rest, greyed. Pick one out of range: under the title "Ves Doombringer 23: too low · Valen Duskward 58: fits" (your alt, when one fits). | open |
 | A dungeon with nobody else online | "Suggested group ⓘ" (hover: "Friends’ and your characters whose level fits, online or not.") with full-width rows; "Online now, fits" says "Nobody else online fits"; then Quests, Ask now and Plan a run…. | open |
-| Plan a run… | A "Plan a run" box beside Online now: chips "Tonight 20:00" (only while 20:00 is an hour away), "Tomorrow 20:00", "<weekday> 20:00", "Other time…" (opens the old Plan dialog); your best character for the dungeon (an alt when you're out of range) with its fit; its roles; Note; Plan and Cancel. Plan: the run shows in Planned with a pocket watch, and the reload prompt opens. The time is 20:00 on your PC's clock. | open |
 | A character below level 13 with no run you're in | Left: "No dungeon fits yet"; right, centred: "No dungeon fits yet", "First one: Ragefire Chasm at level 13", "Show all dungeons", "Pick another character". | open |
 
 ### CF-63b Dungeons tab: answering inline, group rows (boards CF63Answer, CF63Group)
@@ -68,6 +67,29 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Be in combat (or a battleground) when one comes due | No banner until combat ends; then only the latest one for that run, and none from before a start that has passed. | open |
 | Answer Can’t, or be a reserve | No banners for that run. | open |
 | Settings: Run reminders off | No banners (the chat lines follow their own settings). Ambient effects off: the banner appears and disappears without fading. | open |
+
+### CF-65 Retail test of build 4: dialogs in front, Post on Discord, From the website
+| Step | Expected | Status |
+|---|---|---|
+| Open `/cf`, click into the window, then open each dialog: Ask now… (list), Ask now (a dungeon), the reload prompt after an ask, the start panel (a run you organise at its start), Settings (gear), the setup wizard and the Community tab prompt | Every one opens **in front of** the CommunitiesForever window, also after clicking the window again first. Dropdowns (In range for, the answer's character) and right-click menus open in front of both. | open |
+| Ask now: the dialog | "Also post on Discord" is there and ticked; its line "For friends who aren't playing; posted after your next /reload." With nobody in range online: "Nobody with the addon is online in range." | open |
+| Note "test123", Ask now (ticked), Reload now, uploader running (`--retail` on Retail) within 10 minutes | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` item `kind = "ask"`, the dungeon (e.g. `ubrs`) and `note = "test123"` until the site confirms it. On the site the ask shows; on Discord it's posted with "test123" when the site's admin setting "Ask now from the game" is on. More than 10 minutes between the ask and the upload: the site drops it (expired). | open |
+| Untick "Also post on Discord", Ask now | Only friends online in range get it; no reload prompt, nothing in `pending`. Nobody in range: "Nobody with CommunitiesForever is online in range of <dungeon>, and it isn't posted on Discord." | open |
+| Every way to start an ask, each clicked several times, also right when the minute countdown ticks over and while a friend logs in or out (the tab redraws then): a dungeon's "Ask now"; "Ask now for this run" (on the Group line); click an open slot, then its menu's "Ask now for this run"; the empty state's "Ask now…" (a character with no run and no dungeon); `/cf ask Deadmines` | Every click opens the same Ask dialog, in front of the window: the dungeon (the run's, the one clicked, else one that fits you), "You go as …", the note filled in for a run ("For SM: Graveyard 20:30 · need a healer"), "Also post on Discord" ticked. No click is lost. There is no "Ask now…" above the run list any more. | open |
+| Right after an ask, Ask now again | The button is never greyed; the dialog opens, and its Ask now says "You can ask again in 3 min." until the 3 minutes are over. The dungeon you asked for shows "Asked who's up for it · …" above its Ask now. | open |
+| Friends tab with friends the website knows who haven't synced | Header "From the website · N"; each row shows their character count. Click one: "From the website" with an ⓘ (hover: "Not synced in game yet: their characters as the website last saw them. …"), then their characters. | open |
+
+### CF-64 Retail test of v0.10.0-beta1: no planning in game, fixes
+| Step | Expected | Status |
+|---|---|---|
+| Update with sync debug on (from an earlier version), log in | No `[sync]` lines in chat. `/cf sync debug` says "Sync debug on until /reload: …" and the lines come; after `/reload` they're gone again without typing anything. | open |
+| `/cf`, Dungeons, a dungeon | No "Plan a run…" anywhere (dungeon, list, run). "Ask now" is enabled, also for a dungeon out of range and with nobody online (only greyed for 3 minutes after an ask). | open |
+| "In range for" | A dropdown in the input look with a gold arrow drawn as a texture, "Sekaru (11)" and no "▯". Click it: your characters; hover: "Ranges are typical levels; …". | open |
+| A run with friends' characters (synced, in the community roster, or answered on the website) | Each group row and suggested-group row shows that character's round class icon. A Discord answer without a character shows no icon and no empty ring. | open |
+| A run with open slots | One "Ask now for this run" at the right of the "Group" line (not on each open slot), also at the narrowest window. It opens Ask now with "For <dungeon> <time> · need a tank" (the first open role). A click on an open slot still opens Whisper / Ask now for this run / Invite. | open |
+| Ask now with nobody with the addon online in range, "Also post on Discord" ticked | Chat: "Your ask for <dungeon> is on Discord after your next /reload." The dialog said "Nobody with the addon is online in range." | open |
+| After Ask now | "Post on Discord?" centred on the CommunitiesForever window: "Reload to post it on Discord" with an ⓘ (hover: the details), "Friends in game got it already.", Reload now / Later. | open |
+| Reload now, let the uploader upload | The ask is on Discord within a minute; after the next `/reload` the list footer "Runs from …" shows the new time. If it stays old, check the uploader writes `Data\Runs.lua` into the Forever install's `Interface\AddOns\CommunitiesForever` (not `_retail_`). | open |
 
 ### CF-63e Doomsday goal boxes (boards CF63DoomBoard, CF63DoomToday)
 | Step | Expected | Status |
@@ -97,7 +119,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Pick a dungeon with a planned run | Title "<dungeon>", "level 22–30 · <zone>", and "1 run planned · Fri 20:00 ›" on the right, which opens the run. | open |
 | Same dungeon | "Suggested group" as five 38 px rows (role and class icons, full names, "level · friend", "you"/"online"); "Healer · nobody in range"; "Damage · open" with "N online fit"; "Your other characters in range: …". "Online now, fits …" on the right. | open |
 | With Questie | "Quests" with "N of M in your log · K done": a check for quests in your log ("Bob has it too"), "!" for ones to pick up ("level 17"), grey with "done" for completed ones. Without Questie: "Quests · needs Questie" and no list. | open |
-| Go | "Ask now for <dungeon>" (opens the Ask dialog for it; hover: what it does) and "Plan a run…" (opens the plan dialog; hover: "A planned run reaches the website and Discord with your next upload."). | open |
+| Go | "Ask now" (opens the Ask dialog for it; hover: what it does). No "Plan a run…" (CF-64). | open |
 | A level 1–12 character, no runs | Centred: "Nothing planned yet", the reason ("… is not in a dungeon's level range yet …" / "… isn't in the community yet …"), "Ask now…" (disabled without a dungeon) and, when the uploader wrote the site's address, "Copy website link" (the link appears selected; Ctrl+C copies it). | open |
 
 ### CF-62d1 Dungeons tab: runs (board AG02Dungeons)
@@ -115,7 +137,7 @@ New APIs (guarded): the role icon atlases `UI-LFG-RoleIcon-Tank`, `-Healer`, `-D
 ### CF-62c Friends tab (board AG03Tabs)
 | Step | Expected | Status |
 |---|---|---|
-| `/cf`, Friends | The list has headers "Online · N", "Offline · N" and, with a site upload that knows friends who haven't synced, "Not synced yet · N" with each friend's name and "from the website". Your own entry reads "You". No BattleTag anywhere. | open |
+| `/cf`, Friends | The list has headers "Online · N", "Offline · N" and, with a site upload that knows friends who haven't synced, "From the website · N" with each friend's name and "from the website". Your own entry reads "You". No BattleTag anywhere. | open |
 | Your own card | Title "You", "Online on <character> · <zone>" in green. Each character as a bordered card: class icon, name in class colour with the realm dim after it, "· Level N · <role>", "online" or "played … ago" on the right, a level bar in class colour, the zone, and the professions ("Mining 240 · …") or "no professions yet". | open |
 | No friend synced yet | Under your characters a bordered box: "Friends appear here when they are online with the addon at the same time as you, or after the website sync. N friends are known from the website and fill in after your next /reload following an upload." | open |
 | Click a "from the website" friend | Their name, "from the website", and their characters as cards with realm, class, level and "seen … ago". | open |
@@ -279,7 +301,7 @@ Two accounts with this build, Battle.net friends, both in the community: A (asks
 
 | Step | Expected | Status |
 |---|---|---|
-| A: Ask now for a dungeon B has no character in range of, tick "Also post on Discord" | B gets no "asks: … now?" line; after B's `/reload`, B's saved file has a `pending` item `kind = "ask"` with A's item id (as in A's file), A's guid and BattleTag. | open |
+| A: Ask now for a dungeon B has no character in range of with "Also post on Discord" ticked | B gets no "asks: … now?" line; after B's `/reload`, B's saved file has a `pending` item `kind = "ask"` with A's item id (as in A's file), A's guid and BattleTag. | open |
 | B uploads (the uploader app) before A reloads | The ask shows on Discord as A's ask, once; after A's upload too, still one post. B's next runs fetch lists the id under `received` and B's `pending` loses it. | open |
 | A: Ask now for a dungeon B fits, posted on Discord; B: [Join] | B's `pending` gets the ask and an `askAnswer` (`answer = "in"`); after B's upload the Discord post lists B as In. | open |
 | B waits 11 minutes before `/reload` | The carried ask and the answer are pruned, nothing reaches the site. | open |
@@ -301,7 +323,6 @@ Use the CF-46 test file. Give one run a dungeon well above your character (e.g. 
 | A run in range, "Answer" | Your characters with "fits", "+N over", "carry · +N" or "N below", fits first. Under them "ROLE" with only the roles the class can play (Warrior Tank and Damage, Mage only Damage), starting on the character's role. A carry shows "Little XP for you here.", 1–5 below "This will be tough." | open |
 | Healer, Save answer | `pending` in the saved file (after `/reload`) has the answer with `role = "heal"`. With the organiser online with this build: their slot shows you as Healer. | open |
 | The run 12+ levels above you, "Answer", pick the character | ~~"6+ levels below: Maybe only", I'm in greyed out~~ Since CF-50: see CF-50. | open |
-| "Plan a run" | A ROLE row under Lead as; another Lead as character changes the roles; the plan's `role` in `pending` is the one picked. | open |
 | The run with Cy and Bo in the Dungeons tab | Cy's slot says "carry · +12" in orange; Bo has no slot; "Reserve: Bo Stone (Healer)" under the slots. A character of yours 1–5 below or a carry is in "Close: … (your alt, 4 below)". | open |
 | A Runs.lua from before (no role, fit, reserve) | The tab looks as with CF-46. | open |
 
@@ -319,20 +340,16 @@ Compare with `docs/design/runs-2026-10/run-start.html`. Use the CF-46 test file 
 | A run someone else organises, at start time | A note "STARTING NOW", "Waiting for <organiser>'s invite", Request invite (V48: `RequestInviteFromUnit`); a chat line with [Request invite]. The run card has Request invite from 5 minutes before the start. With the organiser offline, the panel says whom to whisper instead. | open |
 | A friend answers your run in game, or on Discord (a newer Runs.lua) | "<friend> is in for <dungeon> (answered in game)." / "(answered on Discord)." Runs from a friend's addon: "Runs updated at <time>. Type /reload for newer." | open |
 
-### CF-47 Ask now, plan a run, sign up
+### CF-47 Ask now, sign up (planning in game removed in CF-64)
 Compare with `docs/design/runs-2026-10/run-dialogs.html`. The answer steps need the CF-46 test file (with a run someone else organises) and ideally that friend online with this build.
 
 | Step | Expected | Status |
 |---|---|---|
 | Dungeons tab, a dungeon in range, "Ask now" | A dialog "Ask now": the dungeon with its range and "now", "You go as <character> <level> · <role>", "WHISPERED NOW · ONLINE AND FIT" with the friends who get it, "Not asked: …" with why (above/below the range, offline), a note field, "Also post on Discord" with its help line, Cancel and Ask now. | open |
-| Type a note, tick Also post on Discord, Ask now | Friends get the ask with your note in quotes (CF-27 chat line). Then "Post on Discord?" with "Reload now to post on Discord", the text about saving, Later and Reload now. | open |
+| Type a note, keep "Also post on Discord" ticked (CF-65: on by default), Ask now | Friends online get the ask with your note in quotes (CF-27 chat line). Then "Post on Discord?" with "Reload to post it on Discord" and an ⓘ, on the main window. Unticked: no Discord ask and no reload prompt. | open |
 | Reload now (V68) | The UI reloads. Without the API: the line "Type /reload to post it now." | open |
-| "Plan a run" on a dungeon | Dungeon and Lead as dropdowns, the days Today and the next six (the picked one highlighted), Time "20:00" with "your PC clock · friends see their own time", a note, Cancel and Plan run. "Reaches the site and Discord after /reload." | open |
-| Pick tomorrow, 21:30, Plan run (V71) | The reload prompt; the run shows in the Runs list at once with "reaches Discord after /reload". A time like "soon": "Type the time as 20:30."; today 00:00: "That time has passed." | open |
-| A run someone else organises, "Answer" | "Answer": the dungeon, "Thu 21:00 · 20:00 for <organiser>" (their time, when the site sent their offset), I'm in / Maybe / Can't, "PICK MY CHARACTER" with your characters and fits / too high / too low, "reaches Discord after /reload", Save answer. Can't hides the characters. | open |
-| Maybe, a character, Save answer | The row says "you: maybe as <character>  reaches Discord after /reload". With the organiser online with this build: their Dungeons tab shows you in the run within seconds (`/cf sync debug`: `RUNANSWER`). | open |
-| `/reload`, then let the uploader upload (after UP-12 and WEB-43) | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` list with your plan, ask and answer. After the site has them and the next Runs.lua lists them under `received`, the "reaches Discord" labels go. | open |
-| Ask now with Discord, Later, wait 11 minutes, log out | The ask is gone from `pending` in the saved file (not posted). | open |
+| `/reload`, then let the uploader upload (after UP-12 and WEB-43) | `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` has a `pending` list with your ask and answer. After the site has them and the next Runs.lua lists them under `received`, the "reaches Discord" labels go. | open |
+| Ask now, Later, wait 11 minutes, log out | The ask is gone from `pending` in the saved file (not posted). | open |
 
 ### CF-46 Dungeons tab with runs
 Compare with `docs/design/runs-2026-10/dungeons-runs.html`. Until the uploader writes runs (UP-12), make a test file by hand. In PowerShell, with your game folder and a character name of yours in the first two lines (a run in 2 hours and one tomorrow, you organise the first):

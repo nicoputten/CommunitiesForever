@@ -5,13 +5,14 @@ describe("Messenger resend (CF-28)", function()
   local state, ns, addon, Messenger
   local FRIEND_GA = 5
 
-  local function load()
+  local function load(setup)
     state = wowapi.install()
     ns = helpers.loadAddon()
     Messenger = ns.Messenger
     addon = state.addon
     addon:OnInitialize()
     addon.db.global.settings.clubId = "23125681"
+    if setup then setup(addon.db.global) end
     addon:OnEnable()
     for _ = 1, 50 do
       state.time = state.time + 5
@@ -92,10 +93,11 @@ describe("Messenger resend (CF-28)", function()
     assert.are.equal(2, Messenger.stats().resent)
   end)
 
-  it("traces parts, misses and resends with /cf sync debug", function()
+  it("traces parts, misses and resends with /cf sync debug, for this session only (CF-64)", function()
     load()
     addon:OnSlashCommand("sync debug")
-    assert.is_true(addon.db.global.settings.syncDebug)
+    assert.is_true(Messenger.debugOn())
+    assert.is_nil(addon.db.global.settings.syncDebug) -- not saved
     state.printed = {}
     Messenger.send(FRIEND_GA, big())
     flush(5)
@@ -107,6 +109,16 @@ describe("Messenger resend (CF-28)", function()
     assert.is_truthy(text:find("PING " .. msgId .. " in ", 1, true))
     assert.is_truthy(text:find("resent 1 part(s) of " .. msgId, 1, true))
     addon:OnSlashCommand("sync debug")
+    assert.is_false(Messenger.debugOn())
+    state.printed = {}
+    Messenger.send(FRIEND_GA, big())
+    flush(5)
+    assert.is_falsy(table.concat(state.printed, "\n"):find("[sync]", 1, true))
+  end)
+
+  it("starts with sync debug off and drops the flag an earlier version saved (CF-64)", function()
+    load(function(g) g.settings.syncDebug = true end)
+    assert.is_false(Messenger.debugOn())
     assert.is_nil(addon.db.global.settings.syncDebug)
   end)
 end)

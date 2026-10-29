@@ -214,6 +214,7 @@ function StartPanel.open(id)
 end
 
 function StartPanel.isShown() return dialog ~= nil and dialog:IsShown() end
+function StartPanel.frame() return dialog end -- CF-65, for the specs
 
 -- For the specs.
 function StartPanel.texts()

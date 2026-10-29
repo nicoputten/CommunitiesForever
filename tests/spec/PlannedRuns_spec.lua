@@ -350,35 +350,6 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
     assert.are.same({}, PlannedRuns.validate({ updatedAt = NOW }).received)
   end)
 
-  it("reads a typed time", function()
-    assert.are.same({ 20, 30 }, { PlannedRuns.parseClock("20:30") })
-    assert.are.same({ 8, 5 }, { PlannedRuns.parseClock(" 8:05 ") })
-    assert.are.same({ 20, 30 }, { PlannedRuns.parseClock("2030") })
-    assert.are.same({ 20, 30 }, { PlannedRuns.parseClock("20.30") })
-    assert.is_nil(PlannedRuns.parseClock("24:00"))
-    assert.is_nil(PlannedRuns.parseClock("20:60"))
-    assert.is_nil(PlannedRuns.parseClock("soon"))
-    assert.is_nil(PlannedRuns.parseClock(nil))
-  end)
-
-  it("offers today and the next six days by the calendar, across a month end", function()
-    -- os.date with a fixed "now": 2026-10-27 (a Tuesday) in local time.
-    local function fakeDate(fmt, t)
-      assert.are.equal("*t", fmt)
-      assert.are.equal(NOW, t)
-      return { year = 2026, month = 10, day = 27, hour = 23, min = 50, wday = 3 }
-    end
-    local days = PlannedRuns.dayChoices(NOW, fakeDate)
-    local labels, dates = {}, {}
-    for i, d in ipairs(days) do
-      labels[i] = d.label
-      dates[i] = string.format("%d-%02d-%02d", d.year, d.month, d.day)
-    end
-    assert.are.same({ "Today", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon" }, labels)
-    assert.are.same({ "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01",
-                      "2026-11-02" }, dates)
-  end)
-
   it("gives the organiser's clock time from their offset", function()
     local at = 1793210400 -- 2026-11-02 19:20 UTC
     assert.are.equal(os.date("!%H:%M", at + 3600), PlannedRuns.theirClock(at, 3600, os.date))
@@ -464,6 +435,28 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
       assert.are.equal(1, #PlannedRuns.roleChoices(run, {}, SMGY, "MAGE", ME))
     end)
 
+    it("decides what the Ask dialog opens with, for every way in (CF-65)", function()
+      local dm, wc = { id = "dm", name = "The Deadmines", min = 17, max = 26 }, { id = "wc", min = 15, max = 25 }
+      local rfc = { id = "rfc", min = 13, max = 18 }
+      local list = { dm, wc, rfc }
+      local ctx = { dungeonOf = function(run) return run.dungeon == "smgy" and SMGY or nil end,
+                    runName = function() return "Scarlet Monastery: Graveyard" end, list = list, level = 20, now = AT,
+                    dateFn = os.date }
+      local run = { dungeon = "smgy", startsAt = AT + 7200 }
+      -- Ask now for this run / an open slot: the run's dungeon and its note.
+      local p = PlannedRuns.askPrefill({ run = run, role = "heal" }, ctx)
+      assert.are.equal(SMGY, p.dungeon)
+      assert.are.equal("For SM: Graveyard 20:30" .. DOT .. "need a healer", p.note)
+      -- A dungeon's Ask now, /cf ask <dungeon>: that dungeon, no note.
+      p = PlannedRuns.askPrefill({ dungeon = wc }, ctx)
+      assert.are.same({ wc, nil }, { p.dungeon, p.note })
+      -- The empty state: the first that fits your level, else the lowest.
+      assert.are.equal(dm, PlannedRuns.askPrefill({}, ctx).dungeon)
+      ctx.level = 8
+      assert.are.equal(rfc, PlannedRuns.askPrefill(nil, ctx).dungeon)
+      assert.is_nil(PlannedRuns.askPrefill({}, { list = {} }).dungeon)
+    end)
+
     it("says what your answer is, reserve when your role is full (CF-63b)", function()
       assert.are.equal("none", PlannedRuns.answerState(nil, false))
       assert.are.equal("in", PlannedRuns.answerState({ answer = "in" }, false))
@@ -527,18 +520,5 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
       assert.are.equal("For SM: Graveyard 20:30", PlannedRuns.askNote(today, name, nil, AT, os.date))
     end)
 
-    it("offers the next three evenings at 20:00, tonight only while it is an hour away", function()
-      local function labels(now)
-        local out = {}
-        for i, c in ipairs(PlannedRuns.planChips(now, os.date, os.time)) do
-          out[i] = c.label
-          assert.are.equal(20, os.date("*t", c.startsAt).hour)
-        end
-        return out
-      end
-      assert.are.same({ "Tonight 20:00", "Tomorrow 20:00", "Sun 20:00" }, labels(AT))
-      local late = os.time({ year = 2026, month = 11, day = 6, hour = 19, min = 15, sec = 0 })
-      assert.are.same({ "Tomorrow 20:00", "Sun 20:00", "Mon 20:00" }, labels(late))
-    end)
   end)
 end)

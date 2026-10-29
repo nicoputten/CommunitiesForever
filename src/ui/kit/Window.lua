@@ -162,9 +162,14 @@ function Kit.window(opts)
 end
 
 --[[ CF-43: a fixed-size dialog in the same look (settings, setup): the window without tabs, settings button,
-resize grip or saved size. opts = { title, width, height, onClose() }. Content fills title bar to footer. ]]
+resize grip or saved size. opts = { title, width, height, onClose() }. Content fills title bar to footer.
+CF-65: one strata above the main window (FULLSCREEN over its DIALOG; Blizzard's menus are FULLSCREEN_DIALOG, above
+both) and raised on show, so a dialog never opens behind the window. ]]
+Kit.DIALOG_STRATA = "FULLSCREEN"
 function Kit.dialog(opts)
   local f = Kit.window({ title = opts.title, status = {}, onClose = opts.onClose })
+  f:SetFrameStrata(Kit.DIALOG_STRATA)
+  f:HookScript("OnShow", function(self) if self.Raise then self:Raise() end end)
   f:SetSize(opts.width, opts.height)
   f:SetResizable(false)
   f.grip:Hide()

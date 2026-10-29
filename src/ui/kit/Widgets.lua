@@ -580,6 +580,14 @@ function Kit.select(parent, onChange)
     end
     self.text:SetText(shown)
   end
+  -- CF-64: sel.tooltip (optional) shows on hover.
+  b:SetScript("OnEnter", function(self)
+    if not (self.tooltip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function(self) if self.tooltip and GameTooltip then GameTooltip:Hide() end end)
   b:SetScript("OnClick", function(self)
     local items = {}
     for i, c in ipairs(self.list or {}) do items[i] = { label = c.text, enabled = true, value = c.value } end
@@ -680,6 +688,13 @@ end
 function Kit.release(p)
   for i = 1, #p.items do p.items[i]:Hide() end
   p.used = 0
+end
+
+-- CF-65: like release, but the items stay shown; Kit.sweep(p) after the redraw hides the ones not taken again. A
+-- button that is drawn again is never hidden and shown in between (that drops a click in progress).
+function Kit.recycle(p) p.used = 0 end
+function Kit.sweep(p)
+  for i = p.used + 1, #p.items do p.items[i]:Hide() end
 end
 
 -- Places a pooled text (from a Kit.textHolder pool) at x, y below the parent's top left. color: a colour name
