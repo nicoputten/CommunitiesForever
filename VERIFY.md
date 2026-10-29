@@ -35,6 +35,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-62d2 Dungeons tab: in range and the empty state (board AG05InRange, D)
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Dungeons | "Dungeons" with "Ask now…"; "Planned" over the runs; then "In range for <character> (<level>)" with an ⓘ (hover: "Ranges are typical levels; …"); per dungeon the name, its range, "N fit · X/Y quests" and a gold "1 run" when planned. Without a run you're in, the first dungeon in range opens; with one, that run. | open |
+| Pick a dungeon with a planned run | Title "<dungeon>", "level 22–30 · <zone>", and "1 run planned · Fri 20:00 ›" on the right, which opens the run. | open |
+| Same dungeon | "Suggested group" as five 38 px rows (role and class icons, full names, "level · friend", "you"/"online"); "Healer · nobody in range"; "Damage · open" with "N online fit"; "Your other characters in range: …". "Online now, fits …" on the right. | open |
+| With Questie | "Quests" with "N of M in your log · K done": a check for quests in your log ("Bob has it too"), "!" for ones to pick up ("level 17"), grey with "done" for completed ones. Without Questie: "Quests · needs Questie" and no list. | open |
+| Go | "Ask now for <dungeon>" (opens the Ask dialog for it; hover: what it does) and "Plan a run…" (opens the plan dialog; hover: "A planned run reaches the website and Discord with your next upload."). | open |
+| A level 1–12 character, no runs | Centred: "Nothing planned yet", the reason ("… is not in a dungeon's level range yet …" / "… isn't in the community yet …"), "Ask now…" (disabled without a dungeon) and, when the uploader wrote the site's address, "Copy website link" (the link appears selected; Ctrl+C copies it). | open |
+
 ### CF-62d1 Dungeons tab: runs (board AG02Dungeons)
 New APIs (guarded): the role icon atlases `UI-LFG-RoleIcon-Tank`, `-Healer`, `-DPS` through `C_Texture.GetAtlasInfo` (without them a coloured square), `ChatFrame_SendTell(name)` for Whisper (else `ChatFrameUtil.OpenChat`), `Button:SetMotionScriptsWhileDisabled` (the tooltip on a disabled Invite all).
 | Step | Expected | Status |
