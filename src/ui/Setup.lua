@@ -83,8 +83,8 @@ local render -- defined below
 local STEP_BODIES = {}
 
 function STEP_BODIES.welcome()
-  text("Friends who run the addon share their characters with you, including alts outside the community. "
-    .. "Everything stays inside your group.", "body", "textDim", 16)
+  text("Friends who run the addon share their characters with you, including alts outside the community.", "body",
+    "textDim", 16)
   local w = math.floor((BODY_WIDTH - 20) / 3)
   for i, feature in ipairs(FEATURES) do
     local tile = Kit.take(pools.tiles, wizard.body)
@@ -117,7 +117,6 @@ function STEP_BODIES.community()
   communitySelect:SetChoices("Community", list, opt.get())
   communitySelect:Show()
   y = y + 38
-  text("Only character communities are listed.", "small", "faint")
 end
 
 function STEP_BODIES.name()
@@ -143,17 +142,13 @@ function STEP_BODIES.chat()
   text("Community chat in its own color and its own chat tab, so you never miss it.")
   text(string.format("%s[%s] Alice Example: anyone up for Deadmines?|r", Theme.rgbCode(color.r, color.g, color.b),
     ns.CommunityChat.tabName()), "body", "text")
+  -- The Create button sits where Next is (see render), so clicking on through the wizard creates it.
   if ns.CommunityChat.tab() then
     text("This character has a " .. ns.CommunityChat.tabName() .. " chat tab.", "body", "goldLight")
-  else
-    -- The Create button sits where Next is (see render), so clicking on through the wizard creates it.
-    text(gold("Create chat tab") .. " makes a " .. ns.CommunityChat.tabName()
-      .. " tab and goes on; Not now goes on without one.")
   end
   toggle("keepGeneral", "Off: with a Community tab, the community chat shows only there.")
   toggle("alert", "Chat tabs that show it flash (not the one you look at).")
   toggle("sound")
-  text("Chat tabs are saved per character: your other characters ask once.", "small", "faint")
 end
 
 function STEP_BODIES.notifications()
@@ -188,12 +183,12 @@ local function go(delta)
   render()
 end
 
--- "Step 2 of 6 · Welcome → Community → ..." (the arrow needs the bundled font).
+-- "Step 2 of 6 · Community → Sharing" (CF-61: the current and the next step; the arrow needs the bundled font).
 local function progressText()
   local titles = {}
   for i, step in ipairs(steps) do titles[i] = step.title end
   local arrow = Theme.bundledFonts() and " \226\134\146 " or " \194\183 "
-  return ns.Onboarding.progress(index, #steps) .. " \194\183 " .. table.concat(titles, arrow)
+  return ns.Onboarding.progressLine(index, titles, arrow)
 end
 
 -- The buttons at the bottom: Back on the left; on the right Skip setup and Next, Not now and Create chat
@@ -331,7 +326,8 @@ end
 -- character is not asked again; /cf settings still has the button.
 function Setup.openPrompt()
   if not prompt then
-    prompt = Kit.dialog({ title = ADDON_NAME, width = 420, height = 200, onClose = function()
+    -- CF-61: sized to its content, one short line, Create tab and Not now on the right like other dialogs.
+    prompt = Kit.dialog({ title = ADDON_NAME, width = 400, height = 150, onClose = function()
       local guid = selfGuid()
       if guid then ns.Onboarding.dontAsk(settings(), guid) end
     end })
@@ -341,15 +337,18 @@ function Setup.openPrompt()
     question:SetText("Create a Community tab on this character too?")
     local help = Theme.text(prompt.content, "small", "textDim")
     help:SetPoint("TOPLEFT", question, "BOTTOMLEFT", 0, -8)
-    help:SetWidth(380)
+    help:SetWidth(360)
     help:SetJustifyH("LEFT")
-    help:SetText("Chat tabs are saved per character. The tab shows only the community chat. Close this window "
-      .. "if you don't want one.")
-    prompt.create = Kit.button(prompt.content, "Yes, create a Community tab", function()
+    help:SetText("A tab with only your community's chat.")
+    prompt.create = Kit.button(prompt.content, "Create tab", function()
       ns.CommunityChat.createTab()
       prompt:Hide()
     end, "primary")
-    prompt.create:SetPoint("BOTTOM", 0, 20)
+    prompt.create:SetWidth(math.max(110, prompt.create:GetWidth() or 0))
+    prompt.create:SetPoint("BOTTOMRIGHT", -PAD, 16)
+    prompt.notNow = Kit.button(prompt.content, "Not now", function() prompt:Hide() end, "ghost") -- onClose: not again
+    prompt.notNow:SetWidth(math.max(90, prompt.notNow:GetWidth() or 0))
+    prompt.notNow:SetPoint("RIGHT", prompt.create, "LEFT", -8, 0)
     prompt.texts = { question, help }
   end
   prompt:Show()
@@ -365,10 +364,12 @@ end
 function Setup.plan()
   if ns.CommunitySelection.passive() then return nil end -- no community yet: nothing to set up
   local guid = selfGuid()
+  local inCommunity = ns.CommunitySelection.active() and true or false
   return ns.Onboarding.plan(settings(), {
     guid = guid,
     hasTab = (guid and settings().chatTab and settings().chatTab[guid]) or ns.CommunityChat.tab() ~= nil,
-    inCommunity = ns.CommunitySelection.active() and true or false,
+    inCommunity = inCommunity,
+    joinable = not inCommunity and ns.CommunitySelection.selected() ~= nil and ns.Invites.current() ~= nil,
   })
 end
 
@@ -379,11 +380,19 @@ function Setup.check()
     Setup.open(plan.steps)
   elseif plan.kind == "chatPrompt" then
     Setup.openPrompt()
+  elseif plan.kind == "join" then
+    -- CF-61: an alt outside the community: the window once, on the Friends tab's how-to-join steps.
+    ns.Onboarding.joinShown(settings(), selfGuid())
+    if not ns.MainFrame.isShown() then ns.MainFrame.toggle() end
+    ns.MainFrame.selectTab("friends")
   end
 end
 
 -- After login: the setup or the prompt when due; else CF-43's Open on login (not while passive).
+local loginChecked -- CF-61: joining a community before the login check is left to that check
+
 local function afterLogin()
+  loginChecked = true
   Setup.check()
   if Setup.isShown() or Setup.promptShown() then return end
   if settings().openOnLogin and not ns.CommunitySelection.passive() and not ns.MainFrame.isShown() then
@@ -396,8 +405,15 @@ function Setup.start(addon)
   C_Timer.NewTimer(Setup.LOGIN_DELAY, afterLogin)
   -- Joined a community while playing: the setup opens right away (unless it is open already).
   -- Own AceEvent object: AceEvent keeps one handler per object and message.
-  LibStub("AceEvent-3.0"):Embed({}):RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
+  local events = LibStub("AceEvent-3.0"):Embed({})
+  events:RegisterMessage(ns.CommunitySelection.PASSIVE_CHANGED, function(_, passive)
     if not passive and not Setup.isShown() then Setup.check() end
+  end)
+  -- CF-61: this character joined the selected community (an alt, with the invite link): the chat tab prompt.
+  events:RegisterMessage(ns.CommunitySelection.CHANGED, function()
+    if loginChecked and ns.CommunitySelection.active() and not Setup.isShown() and not Setup.promptShown() then
+      Setup.check()
+    end
   end)
 end
 

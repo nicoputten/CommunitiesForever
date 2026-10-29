@@ -44,7 +44,8 @@ describe("settings window (CF-43)", function()
     assert.is_true(window.shown)
     assert.are.same({ 640, 500 }, { window.width, window.height })
     assert.are.equal("Settings", window.titleText:GetText())
-    assert.are.equal("v" .. tostring(addon.version), window.footerRightText:GetText())
+    assert.are.equal(ns.Version.label(addon.version), window.footerRightText:GetText())
+    assert.is_nil(window.footerRightText:GetText():find("^vv")) -- CF-61: one v
     assert.is_truthy(window.footerText:GetText():find("Options", 1, true))
     window.scripts.OnKeyDown(window, "ESCAPE") -- CF-32: Esc closes it
     assert.is_false(ns.SettingsWindow.isShown())
@@ -60,6 +61,10 @@ describe("settings window (CF-43)", function()
       local box = control(key)
       local before = box:GetChecked()
       assert.are.equal(opt.get(), before, key)
+      if box.help then -- CF-61: the description wraps inside its column (half the 640 px window)
+        assert.are.equal(261, box.help.width, key)
+        assert.are.equal("LEFT", box.help.justifyH, key)
+      end
       box:RunScript("OnClick")
       assert.are.equal(not before, opt.get(), key) -- written through the option
       box:RunScript("OnClick")
@@ -114,18 +119,39 @@ describe("settings window (CF-43)", function()
     load()
     local playing = false
     local frame = _G.CreateFrame("Frame")
-    frame.CreateAnimationGroup = function()
-      return {
-        CreateAnimation = function() return { SetDuration = function() end, SetStartDelay = function() end,
-                                              SetOffset = function() end } end,
-        SetLooping = function() end,
-        Play = function() playing = true end,
-        Stop = function() playing = false end,
-        IsPlaying = function() return playing end,
-      }
+    -- Retail dry run: a group on the frame slid the whole title bar. Only the streak texture may move.
+    frame.CreateAnimationGroup = function() error("the shine must not animate its frame") end
+    local createTexture = frame.CreateTexture
+    local owner
+    local anims = {}
+    frame.CreateTexture = function(self, ...)
+      local texture = createTexture(self, ...)
+      texture.CreateAnimationGroup = function(t)
+        owner = t
+        return {
+          CreateAnimation = function(_, kind)
+            local anim = { kind = kind, set = {} }
+            for _, m in ipairs({ "SetDuration", "SetStartDelay", "SetOffset", "SetFromAlpha", "SetToAlpha" }) do
+              anim[m] = function(a, v) a.set[m] = v end
+            end
+            anims[#anims + 1] = anim
+            return anim
+          end,
+          SetLooping = function() end,
+          Play = function() playing = true end,
+          Stop = function() playing = false end,
+          IsPlaying = function() return playing end,
+        }
+      end
+      return texture
     end
     local shine = ns.Kit.shine(frame, frame, 5)
+    assert.are.equal(shine.streak, owner)
     assert.is_true(playing)
+    -- CF-62: invisible between passes: alpha 0, held at 1 only while it moves.
+    assert.are.equal(0, shine.streak.alpha)
+    assert.are.equal("Alpha", anims[2].kind)
+    assert.are.same({ 1, 1, 5 }, { anims[2].set.SetFromAlpha, anims[2].set.SetToAlpha, anims[2].set.SetStartDelay })
     ns.Settings.options().args.ambientEffects.set({}, false)
     shine:Refresh()
     assert.is_false(playing)

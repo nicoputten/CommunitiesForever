@@ -27,7 +27,15 @@ function Net:person(def)
   return def
 end
 
+local function gameAccount(def)
+  return { clientProgram = "WoW", wowProjectID = 18, isOnline = true, characterName = def.name,
+           realmName = "ClassicBetaPvP", realmDisplayName = net.REALM, className = def.className or "Mage",
+           characterLevel = def.level, factionName = "Horde", playerGuid = def.guid, gameAccountID = def.gameAccountID }
+end
+
+-- def.hidden: Battle.net "Appear offline": friends see no online game account, but data still reaches them.
 local function friendEntry(def, online)
+  online = online and not def.hidden
   return { battleTag = def.battleTag, gameAccounts = online and {
     { clientProgram = "WoW", wowProjectID = 18, isOnline = true, characterName = def.name,
       realmName = "ClassicBetaPvP", realmDisplayName = net.REALM, className = def.className or "Mage",
@@ -49,6 +57,15 @@ function Net:refreshWorld(key)
     friends[#friends + 1] = friendEntry(self.people[other], self:isOnline(other))
   end
   state.friends = friends
+  -- Game accounts the game can still tell by ID (GetGameAccountInfoByID, GetAccountInfoByGUID), hidden or not.
+  state.gameAccountsByID, state.accountsByGuid = {}, {}
+  for _, other in ipairs(me.friends or {}) do
+    local def = self.people[other]
+    if self:isOnline(other) then
+      state.gameAccountsByID[def.gameAccountID] = gameAccount(def)
+      state.accountsByGuid[def.guid] = def.battleTag
+    end
+  end
   local members, id = {}, 0
   for otherKey, def in pairs(self.people) do
     id = id + 1

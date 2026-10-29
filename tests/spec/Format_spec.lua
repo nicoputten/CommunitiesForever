@@ -144,9 +144,27 @@ describe("Format", function()
       assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
                         outside = false, shared = 0 },
         nodes[1].children[1])
-      assert.are.equal("Vestras (you)", nodes[2].text)
+      assert.are.equal("You", nodes[2].text) -- CF-62
       assert.are.same({ Format.UNLINKED, "Unlinked", true }, { nodes[3].value, nodes[3].text, nodes[3].unlinked })
       assert.are.equal("U1", nodes[3].children[1].value)
+    end)
+
+    it("groups Online, Offline and Not synced yet, with friends from the website (CF-62)", function()
+      local away = person({ online = false, battleTag = "Bob#1", displayName = "Bob" })
+      local site = { { name = "Mira", chars = { { name = "Mira Sunstrider", classFile = "PRIEST", level = 28 } } },
+                     { name = "bob", chars = {} } } -- Bob synced already (any case): not listed again
+      local nodes = Format.tree({ people = { away, person(), me() }, unlinked = {} }, site)
+      local sections = {}
+      for i, n in ipairs(nodes) do sections[i] = n.section .. ":" .. n.text end
+      assert.are.same({ "online:Sjaak", "online:You", "offline:Bob", "website:Mira" }, sections)
+      assert.are.same({ Format.SITE .. "Mira", 1, "from the website" },
+        { nodes[4].value, nodes[4].count, nodes[4].sub })
+      assert.are.equal("Not synced yet \194\183 6", Format.sectionTitle("website", 6))
+      assert.are.equal("Online \194\183 2", Format.sectionTitle("online", 2))
+      assert.is_nil(Format.sectionTitle("unlinked", 3))
+      local d = Card.detail({ people = {}, unlinked = {} }, Format.SITE .. "Mira", NOW, nil, site)
+      assert.are.same({ "website", "Mira", "from the website" }, { d.kind, d.title, d.status })
+      assert.are.equal("Mira Sunstrider", d.characters[1].name)
     end)
 
     it("has no Unlinked group without unlinked characters", function()
@@ -207,14 +225,22 @@ describe("Format", function()
       assert.is_nil(Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).talentBars)
     end)
 
-    it("sums up the sync state for the footer", function()
+    it("sums up the sync state for the footer (CF-62: friends synced this session)", function()
       local view = { people = { person(), me() }, unlinked = unlinked }
-      assert.are.equal("Not synced yet \194\183 2 characters from 1 friend", Format.friendsFooter(view, NOW))
+      local start = NOW - 600
+      local function clock(t) return t == NOW - 120 and "22:41" or "?" end
+      local own = #me().chars
+      local ownText = string.format("%d of your character%s", own, own == 1 and "" or "s")
+      local waiting = "Synced with 0 friends \194\183 waiting for someone online"
+      assert.are.equal(waiting, Format.syncedText(view, start, clock))
+      assert.are.equal("Synced with 0 friends this session \194\183 " .. ownText, Format.friendsFooter(view, start))
+      view.people[1].receivedAt = NOW - 900 -- before this session: not counted
+      assert.are.equal(waiting, Format.syncedText(view, start, clock))
       view.people[1].receivedAt = NOW - 120
-      assert.are.equal("Synced with Sjaak 2 min ago \194\183 2 characters from 1 friend",
-        Format.friendsFooter(view, NOW))
-      assert.are.equal("Not synced yet \194\183 0 characters from 0 friends", Format.friendsFooter({}, NOW))
-      assert.are.equal("Synced with Sjaak 2 min ago", Format.syncedText(view, NOW)) -- CF-42: the Dungeons footer
+      assert.are.equal("Synced with 1 friend \194\183 22:41", Format.syncedText(view, start, clock))
+      assert.are.equal("Synced with 1 friend this session \194\183 " .. ownText, Format.friendsFooter(view, start))
+      assert.are.equal("Synced with 0 friends this session \194\183 0 of your characters",
+        Format.friendsFooter({}, start))
     end)
 
     it("counts quests shared with you on friends' characters in the list", function()
@@ -244,11 +270,13 @@ describe("Format", function()
       local d = Card.detail(view, "Sjaakovich#2232", NOW)
       assert.are.equal("person", d.kind)
       assert.are.equal("Sjaak", d.title)
-      assert.are.equal("Sjaakovich#2232", d.battleTag)
-      assert.are.equal("Online on Garraka", d.status)
+      assert.is_nil(d.battleTag) -- CF-62: no BattleTag in the window
+      assert.are.equal("Online on Garraka \194\183 Orgrimmar", d.status) -- CF-62: with the zone
+      local grom = d.characters[2]
       assert.are.same({ guid = "G2", name = "Grom", classFile = "WARRIOR", classID = 8, level = 11, seen = "2 h ago",
                         own = false, outside = false },
-        d.characters[2])
+        { guid = grom.guid, name = grom.name, classFile = grom.classFile, classID = grom.classID, level = grom.level,
+          seen = grom.seen, own = grom.own, outside = grom.outside })
     end)
 
     it("says on the card whether they run the addon (CF-34), not on your own", function()

@@ -138,4 +138,34 @@ describe("Friends", function()
       assert.are.same({ battleTag = "New#2", lastSeen = 5000 }, presence.A)
     end)
   end)
+  describe("a friend who appears offline (Battle.net)", function()
+    local friends = { ["Ada#1001"] = true }
+
+    it("is resolved from the sending game account, only for a friend in this game", function()
+      local info = { clientProgram = "WoW", wowProjectID = 18, playerGuid = "Player-1-A" }
+      assert.are.same({ "Ada#1001", "Player-1-A" },
+        { Friends.resolveHidden(info, "Ada#1001", friends, {}, {}, "WoW", 18) })
+      -- No account lookup: the GUID from presence seen earlier, or from a stored record.
+      assert.are.equal("Ada#1001", Friends.resolveHidden(info, nil, friends,
+        { ["Player-1-A"] = { battleTag = "Ada#1001" } }, {}, "WoW", 18))
+      assert.are.equal("Ada#1001", Friends.resolveHidden(info, nil, friends, {},
+        { ["Ada#1001"] = { chars = { ["Player-1-A"] = {} } } }, "WoW", 18))
+      assert.is_nil(Friends.resolveHidden(info, "Zed#9", friends, {}, {}, "WoW", 18)) -- not a friend
+      assert.is_nil(Friends.resolveHidden({ clientProgram = "WoW", wowProjectID = 1, playerGuid = "x" }, "Ada#1001",
+        friends, {}, {}, "WoW", 18)) -- another game
+      assert.is_nil(Friends.resolveHidden(nil, "Ada#1001", friends, {}, {}, "WoW", 18))
+    end)
+
+    it("joins the snapshot for sync and linking, never as online", function()
+      local hiddenSnap = Friends.snapshot({ { battleTag = "Ada#1001", gameAccounts = {} } }, "WoW", 18)
+      Friends.addHidden(hiddenSnap, 77, "Ada#1001", "Player-1-A")
+      assert.are.equal("Ada#1001", hiddenSnap.gameAccounts[77])
+      assert.is_nil(hiddenSnap.online["Ada#1001"])
+      assert.is_nil(hiddenSnap.characters["Player-1-A"])
+      local presence = { ["Player-1-A"] = { battleTag = "Ada#1001", lastSeen = 100 } }
+      Friends.recordPresence(presence, hiddenSnap, 999)
+      assert.are.same({ battleTag = "Ada#1001", lastSeen = 100 }, presence["Player-1-A"]) -- lastSeen not moved
+      assert.are.same({}, Friends.changes(Friends.snapshot({}, "WoW", 18), hiddenSnap)) -- no "came online"
+    end)
+  end)
 end)

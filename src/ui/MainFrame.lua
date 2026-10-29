@@ -7,9 +7,7 @@ local ADDON_NAME, ns = ...
 local MainFrame = {}
 
 local REFRESH_DEBOUNCE = 0.2
-local FOOTER_HINT = "/cf to open \194\183 drag the title to move"
 
-local GROUP_ASK_NOTE = "Group asks wait until combat ends" -- CF-42
 
 local addonRef, events, frame, refreshDebounced
 local tabs -- CF-39: the kit's tab row
@@ -143,7 +141,10 @@ local function updateTitle()
   frame.statusText:SetText(online > 0 and string.format("\226\151\143 %d online", online) or "")
 end
 
-local function synced(empty) return empty and "" or ns.Format.syncedText(view, GetServerTime()) end
+-- CF-62: the footer counts the friends synced since this session started.
+local sessionStart
+local function clockOf(t) return date and t and date("%H:%M", t) or "" end
+local function synced(empty) return empty and "" or ns.Format.syncedText(view, sessionStart, clockOf) end
 
 --[[ The tabs, in order (CF-59: one table instead of an if-chain per place). module(): the tab's file (create,
 show, hide, render); helpers(): what create gets; footer(empty): the left and right footer texts (CF-40 the sync
@@ -152,19 +153,19 @@ local TABS = {
   { value = "friends", text = "Friends", module = function() return ns.FriendsTab end, -- CF-40
     helpers = function() return friendsHelpers() end,
     footer = function(empty)
-      return not empty and ns.Format.friendsFooter(view, GetServerTime()) or "", FOOTER_HINT
+      return not empty and ns.Format.friendsFooter(view, sessionStart) or "", ""
     end },
   { value = "activity", text = "Activity", module = function() return ns.ActivityTab end, -- CF-22, CF-41
     helpers = function() return { settings = settings, render = MainFrame.render } end,
-    footer = function() return ns.ActivityTab.NOTE, string.format("Keeps %d days", ns.Feed.KEEP_DAYS) end },
+    footer = function() return "", string.format("Keeps %d days", ns.Feed.KEEP_DAYS) end },
   { value = "dungeons", text = "Dungeons", module = function() return ns.DungeonsTab end, -- CF-24, CF-42: a badge
     helpers = function()
       return { settings = settings, render = MainFrame.render, print = function(text) addonRef:Print(text) end }
     end,
-    footer = function(empty) return synced(empty), GROUP_ASK_NOTE end },
+    footer = function(empty) return synced(empty), "" end },
   { value = "doomsday", text = "Doomsday", module = function() return ns.DoomsdayTab end, -- CF-57
     helpers = function() return { settings = settings, render = MainFrame.render } end,
-    footer = function(empty) return synced(empty), ns.DoomsdayTab.NOTE end },
+    footer = function(empty) return synced(empty), "" end },
 }
 
 -- The tab definition of a value (the first, Friends, for an unknown one).
@@ -276,6 +277,7 @@ local function refreshMessages()
 end
 
 function MainFrame.start(addon)
+  sessionStart = GetServerTime() -- CF-62
   addonRef = addon
   frame, view = nil, nil
   filterText, savedGroups = "", nil

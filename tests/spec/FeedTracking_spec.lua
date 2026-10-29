@@ -101,7 +101,11 @@ describe("activity feed (CF-22)", function()
     local text = activityText()
     assert.are.equal("activity", ns.MainFrame.tabs().active) -- CF-39: the kit tabs mark the active one
     assert.is_truthy(text:find("\nToday\n", 1, true))
-    assert.is_truthy(text:find("\nFriend on Friend Char and 1 more character\n", 1, true))
+    -- CF-62: the character first, then the friend; a summary right of the chips; the end of the day in an ⓘ.
+    assert.is_truthy(text:find("\nFriend Char \194\183 Friend and 1 more character\n", 1, true))
+    local summary = ns.ActivityTab.summary()
+    assert.is_truthy(summary:find("^Today: %d friends? active \194\183 %d+ quests? \194\183 %d+ levels?$"), summary)
+    assert.is_truthy(table.concat(ns.ActivityTab.tips(), "\n"):find("That's all for today", 1, true))
     assert.is_truthy(text:find("\n12 \226\134\146 14\n", 1, true)) -- the LEVEL UP chip
     assert.is_truthy(text:find("\nMining reached Journeyman\n", 1, true))
     assert.is_truthy(text:find("\nlearned Alchemy\n", 1, true))
@@ -118,13 +122,13 @@ describe("activity feed (CF-22)", function()
     click("Show less")
     assert.is_falsy(activityText():find("Friend Alt", 1, true))
 
-    -- The footer: who shares, how long it keeps.
+    -- The footer: how long it keeps (CF-61: no note on who shares).
     local window = ns.MainFrame.window()
-    assert.are.equal("Friends with CommunitiesForever share their activity.", window.footerText.text)
+    assert.are.equal("", window.footerText.text)
     assert.are.equal("Keeps 7 days", window.footerRightText.text)
 
     ns.MainFrame.selectTab("friends")
-    assert.is_truthy(window.footerRightText.text:find("/cf to open", 1, true))
+    assert.are.equal("", window.footerRightText.text)
   end)
 
   it("filters with the chips, whole entries, and starts at All after closing (CF-41)", function()
@@ -141,7 +145,7 @@ describe("activity feed (CF-22)", function()
     chips.levels:RunScript("OnClick")
     assert.is_true(chips.levels.active)
     local text = activityText()
-    assert.is_truthy(text:find("\nFriend on Friend Char\n", 1, true))
+    assert.is_truthy(text:find("\nFriend Char \194\183 Friend\n", 1, true))
     assert.is_truthy(text:find("\nDurotar\n", 1, true)) -- the whole entry, questing too
     assert.is_falsy(text:find("1 quest done", 1, true)) -- your entry has no level-up
     chips.together:RunScript("OnClick")

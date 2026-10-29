@@ -13,6 +13,9 @@ Feats.HONOR_KILLS = { 1, 100, 1000, 5000, 10000 }
 Feats.DUEL_WINS = { 10, 50, 100 }
 Feats.DEATHS = 100
 Feats.RIDING_MOUNT, Feats.RIDING_EPIC = 75, 150
+-- CF-61: the levels a mount needs in Vanilla. Below them a riding skill is not a mount feat (Retail's riding came
+-- with any level), and such a stored feat is hidden.
+Feats.MOUNT_LEVEL, Feats.EPIC_MOUNT_LEVEL = 40, 60
 Feats.BATTLEGROUNDS = { ["Warsong Gulch"] = true, ["Arathi Basin"] = true, ["Alterac Valley"] = true }
 
 local COOKING, FIRST_AID, FISHING = 185, 129, 356
@@ -98,8 +101,12 @@ function Feats.derive(char, entries)
     add("deaths100", "deaths100", "A spirit healer's best friend", "100 deaths")
   end
   local riding = char.riding or 0
-  if riding >= Feats.RIDING_MOUNT then add("mount", "mount", "Mount", "at level " .. level) end
-  if riding >= Feats.RIDING_EPIC then add("epicMount", "epicMount", "Epic mount", "at level " .. level) end
+  if riding >= Feats.RIDING_MOUNT and level >= Feats.MOUNT_LEVEL then
+    add("mount", "mount", "Mount", "at level " .. level)
+  end
+  if riding >= Feats.RIDING_EPIC and level >= Feats.EPIC_MOUNT_LEVEL then
+    add("epicMount", "epicMount", "Epic mount", "at level " .. level)
+  end
   if rank(char, FISHING) > 1 then add("firstCatch", "firstCatch", "First catch", "Fishing") end
   local primaries = 0
   for line in pairs(char.professions or {}) do
@@ -154,17 +161,37 @@ function Feats.remember(store, list, now)
   return new
 end
 
+-- CF-61: a stored mount feat from below the mount level ("at level 12", from a Retail client) is not shown.
+local MIN_LEVEL = { mount = Feats.MOUNT_LEVEL, epicMount = Feats.EPIC_MOUNT_LEVEL }
+local function shown(key, f)
+  if not MIN_LEVEL[key] then return true end
+  local level = tonumber(type(f.detail) == "string" and f.detail:match("at level (%d+)"))
+  return level ~= nil and level >= MIN_LEVEL[key]
+end
+
 --[[ A character's feats for the tab, newest first, "Earlier" ones last by key: { { key, title, detail, at } }. ]]
 function Feats.list(store)
   local list = {}
   for key, f in pairs(store or {}) do
-    if key ~= "_seen" then list[#list + 1] = { key = key, title = f.title, detail = f.detail, at = f.at or 0 } end
+    if key ~= "_seen" and shown(key, f) then
+      list[#list + 1] = { key = key, title = f.title, detail = f.detail, at = f.at or 0 }
+    end
   end
   table.sort(list, function(a, b)
     if a.at ~= b.at then return a.at > b.at end
     return a.key < b.key
   end)
   return list
+end
+
+-- CF-61: Feats.list split into the feats earned while the addon watched (at > 0) and those the character already
+-- had at the first sight (at 0, "Already had"). Returns earned, earlier.
+function Feats.split(list)
+  local earned, earlier = {}, {}
+  for _, f in ipairs(list or {}) do
+    if (f.at or 0) > 0 then earned[#earned + 1] = f else earlier[#earlier + 1] = f end
+  end
+  return earned, earlier
 end
 
 -- The next honorable-kill feat and how far: "1,000 honorable kills", "412 / 1,000"; nil past the last.

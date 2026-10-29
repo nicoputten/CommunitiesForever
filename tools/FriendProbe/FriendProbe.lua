@@ -1,41 +1,17 @@
--- FriendProbe: checks the open API questions in VERIFY.md in-game (Claude Code cannot run WoW).
--- Commands:
---   /fp start       clear the log, then run every check below and switch on feed logging
---   /fp invite      chat links per friend online in Forever: test link, request invite, invite by name,
---                   invite via Battle.net (V47 link clicks, V48 invites; CF-27). Needs a friend online.
---   /fp menu        right-click menu test window (V57, CF-37): Blizzard context menu, whisper, copy box,
---                   right-click on an AceGUI tree row
---   /fp reloadfile  V67 (CF-45): which version of ReloadProbe.lua (and ReloadProbeLate.lua) the game loaded
---   /fp reload      V68 (CF-45): buttons that call C_UI.Reload() and ReloadUI() from a click
---   /fp inviteall   V69 (CF-45): one button that invites every friend online in Forever by name
---   /fp pvp         V73-V76 (CF-54), V79-V83 (CF-52, CF-53): log honor messages, kill counters, enemy players
---                   seen (target, mouseover, nameplates), the combat log if allowed, deaths, duel lines, mirror
---                   timers and loot (stays on after /reload)
---   /fp pvp off     stop pvp logging
---   /fp feed off    stop feed logging (V35)
---   /fp clear       wipe the saved log
--- Checks (by VERIFY.md number):
---   context  build, character, addons (CommunitiesForever, Questie, QuestieDB)
---   V8       community IDs, to compare between two clients
---   V30      talents: per tree the nodes with points (position and spell), for another class than Warrior
---   V41      chat windows: every GetChatWindowInfo return (a closed tab: shown and docked off?)
---   V46      dungeons the client knows: Group Finder (C_LFGList) activities with level ranges, and the old
---            Dungeon Finder list (GetLFGDungeonInfo) beyond the Vanilla entries
---   V35      feed logging: instance, boss, group and battleground events (stays on after /reload)
---   V49      addon message in the community channel (does it arrive, also back at yourself?)
---   V50      whisper addon messages to yourself: size limit (200, 255, 256 bytes) and a burst of 30
---   V52      community member presence (run after a member logged out: still online?)
---   V57      which menu, whisper and invite functions exist (the clicks need /fp menu)
---   V77/V78  region, and the realm clock next to the server time (the realm's offset from UTC)
---   V79-V83  PvP counters and rank, duel strings, death recap, riding skill, loot strings, watch-list items
---   /fp comm whisper <name>  addon whisper to a character (V51: a character of the other faction)
---   /fp comm channel         one addon message in the community channel (V49: run on two clients)
---   /fp comm summary         what came back so far
+-- FriendProbe: the launch checklist (CF-60). It checks the open API questions and story steps of VERIFY.md
+-- in-game (Claude Code cannot run WoW), so one zip is all a friend installs.
+-- - Silent: no chat output during play. Everything goes to FriendProbeDB (the saved file, WTF\Account\<account>\
+--   SavedVariables\FriendProbe.lua): the log (capped), and per checklist item its result.
+-- - Automatic: from the first login until STOP_AT (2026-11-18) it logs and checks by itself; nothing to type.
+-- - /fp opens the checklist window: six play sessions, automatic ticks, Yes / No for what it can't judge, test
+--   buttons (reload, links and invites, invite all) and Copy report.
+-- The items are in Checklist.lua (data, kept in step with VERIFY.md by tests/spec/ProbeChecklist_spec.lua).
 -- Already answered checks were removed; see docs/API-FINDINGS.md and the git history for the old probes.
--- The log is saved in FriendProbeDB (WTF\Account\<account>\SavedVariables\FriendProbe.lua) on /reload or logout.
+local _, ns = ...
 
-local MAX_LOG = 3000
-local LFG_MAX_ID = 3000
+local MAX_LOG = 2000
+-- Until when the probe runs by itself: 2026-11-18 00:00 UTC (two weeks after launch).
+local STOP_AT = 1794960000
 
 local function S(v)
   local ok, s = pcall(tostring, v)
@@ -48,11 +24,45 @@ local function log(...)
   local parts = {}
   for i = 1, select("#", ...) do parts[#parts + 1] = S((select(i, ...))) end
   local line = table.concat(parts, " ")
-  print("|cff33ff99FP|r " .. line)
   local l = FriendProbeDB.log
   l[#l + 1] = date("%H:%M:%S ") .. line
   while #l > MAX_LOG do table.remove(l, 1) end
 end
+
+-- The client the probe runs on: "forever" (WOW_PROJECT_ID 18), "retail" (1, a dry run before launch) or
+-- "project <n>". Results are kept per client: a Retail answer never closes a Forever item.
+function ns.client()
+  if WOW_PROJECT_ID == 18 then return "forever" end
+  if WOW_PROJECT_ID == 1 then return "retail" end
+  return "project " .. S(WOW_PROJECT_ID)
+end
+
+-- This client's results: { [id] = result }.
+function ns.results()
+  FriendProbeDB = FriendProbeDB or {}
+  FriendProbeDB.results = FriendProbeDB.results or {}
+  local client = ns.client()
+  FriendProbeDB.results[client] = FriendProbeDB.results[client] or {}
+  return FriendProbeDB.results[client]
+end
+
+-- A checklist item's result: status "pass" | "fail" | "yes" | "no" | "info", with what was seen. A pass stays (once
+-- it worked, the question is answered); later fails are kept as detail. Stored per client and item, with the
+-- character, the build and the time.
+local function result(id, status, detail)
+  local results = ns.results()
+  local r = results[id]
+  if r and r.status == "pass" and status ~= "pass" and status ~= "no" then
+    r.later = S(detail)
+    return
+  end
+  results[id] = { status = status, detail = S(detail):sub(1, 200), at = date("%Y-%m-%d %H:%M"),
+                  char = GetUnitName and S(GetUnitName("player", true)) or "?",
+                  build = GetBuildInfo and S((select(2, GetBuildInfo()))) or "?" }
+  log("RESULT", ns.client(), id, status, S(detail))
+  if ns.refresh then ns.refresh() end
+end
+ns.result = result
 
 -- Every field of a table on one line, sorted, so we see what Forever returns, not what we expect.
 local function DumpTable(label, t)
@@ -119,101 +129,6 @@ local function Clubs()
   log("compare these clubIds with the same /fp start on another client (V8)")
 end
 
--- ===== V30: talents per tree =====
--- Spell name for a trait entry (definition -> spellID -> name); nil when unknown.
-local function EntrySpellName(configID, entryID)
-  if not (entryID and C_Traits.GetEntryInfo and C_Traits.GetDefinitionInfo) then return nil end
-  local entry = C_Traits.GetEntryInfo(configID, entryID)
-  local definition = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
-  local spellID = definition and (definition.spellID or definition.overriddenSpellID)
-  if not spellID then return nil end
-  if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
-  return GetSpellInfo and (GetSpellInfo(spellID))
-end
-
--- Nodes with points spent, left to right (posX), with their spell: shows which tree each point is in.
-local function Talents()
-  if not (C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits) then log("talent API missing") return end
-  local configID = C_ClassTalents.GetActiveConfigID()
-  local info = configID and C_Traits.GetConfigInfo(configID)
-  log("class", UnitClassBase("player"), "activeConfigID", S(configID))
-  for _, treeID in ipairs(info and info.treeIDs or {}) do
-    local spent = {}
-    for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
-      local node = C_Traits.GetNodeInfo(configID, nodeID)
-      if node and (node.ranksPurchased or 0) > 0 then spent[#spent + 1] = node end
-    end
-    table.sort(spent, function(a, b) return (a.posX or 0) < (b.posX or 0) end)
-    log("tree", treeID, "nodes with points", #spent)
-    for _, node in ipairs(spent) do
-      local entryID = node.activeEntry and node.activeEntry.entryID or (node.entryIDs and node.entryIDs[1])
-      log("  posX", node.posX, "posY", node.posY, "ranks", node.ranksPurchased, "spell",
-        S(EntrySpellName(configID, entryID)))
-    end
-  end
-  log("compare with /cf self: the points should sit under the right tree names (V30)")
-end
-
--- ===== V41: chat windows =====
-local function ChatWindows()
-  if not GetChatWindowInfo then log("GetChatWindowInfo missing") return end
-  for i = 1, NUM_CHAT_WINDOWS or 10 do
-    local name, fontSize, r, g, b, alpha, shown, locked, docked, uninteractable = GetChatWindowInfo(i)
-    if name and name ~= "" then
-      log("window", i, S(name), "shown", S(shown), "docked", S(docked), "locked", S(locked),
-        "uninteractable", S(uninteractable), "returns", select("#", GetChatWindowInfo(i)), "font", S(fontSize),
-        "color", S(r), S(g), S(b), S(alpha))
-    end
-  end
-  log("close a chat tab before /fp start to see what a closed one returns (V41)")
-end
-
--- ===== V46: dungeons the client knows =====
--- Group Finder (premade groups, the "Looking For Group" window with level ranges): categories, activity
--- groups and every activity with all its fields.
-local function GroupFinder()
-  local lfg = C_LFGList
-  for _, name in ipairs({ "GetAvailableCategories", "GetLfgCategoryInfo", "GetAvailableActivityGroups",
-                          "GetActivityGroupInfo", "GetAvailableActivities", "GetActivityInfoTable" }) do
-    log("exists C_LFGList." .. name, lfg ~= nil and lfg[name] ~= nil)
-  end
-  if not (lfg and lfg.GetAvailableCategories and lfg.GetAvailableActivities and lfg.GetActivityInfoTable) then return end
-  if Enum and Enum.LFGListFilter then DumpTable("Enum.LFGListFilter", Enum.LFGListFilter) end
-  for _, categoryID in ipairs(lfg.GetAvailableCategories() or {}) do
-    DumpTable("category " .. categoryID, lfg.GetLfgCategoryInfo and lfg.GetLfgCategoryInfo(categoryID))
-    if lfg.GetAvailableActivityGroups and lfg.GetActivityGroupInfo then
-      for _, groupID in ipairs(lfg.GetAvailableActivityGroups(categoryID) or {}) do
-        log("  activity group", groupID, lfg.GetActivityGroupInfo(groupID))
-      end
-    end
-    local activities = lfg.GetAvailableActivities(categoryID) or {}
-    log("  activities", #activities)
-    for _, activityID in ipairs(activities) do
-      DumpTable("  activity " .. activityID, lfg.GetActivityInfoTable(activityID))
-    end
-  end
-end
-
--- Old Dungeon Finder IDs: a count per expansion level, and every dungeon-like entry beyond expansion 0
--- (the Vanilla list is known: V46 first run).
-local function DungeonFinder()
-  if not GetLFGDungeonInfo then log("GetLFGDungeonInfo missing") return end
-  local perExpansion = {}
-  for id = 1, LFG_MAX_ID do
-    local name, typeID, subtypeID, minLevel, maxLevel, recLevel, _, _, expansionLevel, _, _, difficulty,
-      maxPlayers = GetLFGDungeonInfo(id)
-    if name then
-      local key = S(expansionLevel)
-      perExpansion[key] = (perExpansion[key] or 0) + 1
-      if expansionLevel ~= 0 and (typeID == 1 or typeID == 2) then
-        log("  LFG", id, S(name), "expansion", key, "type", S(typeID), "subtype", S(subtypeID), "levels",
-          S(minLevel) .. "-" .. S(maxLevel), "rec", S(recLevel), "players", S(maxPlayers), "difficulty", S(difficulty))
-      end
-    end
-  end
-  for key, n in pairs(perExpansion) do log("LFG entries with expansion", key, n) end
-end
-
 -- ===== V35: activity feed events (logged while on, also after /reload) =====
 local FEED_EVENTS = { "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "ENCOUNTER_START", "ENCOUNTER_END",
   "BOSS_KILL", "GROUP_ROSTER_UPDATE", "UPDATE_BATTLEFIELD_STATUS", "PVP_MATCH_ACTIVE", "PVP_MATCH_COMPLETE" }
@@ -246,7 +161,7 @@ local function FeedRegister()
 end
 
 feedFrame:SetScript("OnEvent", function(_, event, ...)
-  if not (FriendProbeDB and FriendProbeDB.feed) then return end
+  if not ns.running() then return end
   local args = {}
   for i = 1, select("#", ...) do args[#args + 1] = S((select(i, ...))) end
   log("FEED " .. event, table.concat(args, " | "))
@@ -259,20 +174,14 @@ feedFrame:SetScript("OnEvent", function(_, event, ...)
     LogCall("  GetBattlefieldStatus", GetBattlefieldStatus, (...) or 1)
     LogCall("  GetBattlefieldWinner", GetBattlefieldWinner)
   elseif event == "PVP_MATCH_COMPLETE" then
+    local winner = ...
+    if type(winner) == "number" then result("V35b", "pass", "PVP_MATCH_COMPLETE winner " .. winner) end
     LogCall("  GetBattlefieldWinner", GetBattlefieldWinner)
     LogCall("  GetBattlefieldArenaFaction", GetBattlefieldArenaFaction)
     LogCall("  UnitFactionGroup", UnitFactionGroup, "player")
   end
 end)
 
-local function FeedOn()
-  FriendProbeDB.feed = true
-  FeedRegister()
-  log("feed logging on (stays on after /reload; /fp feed off stops it). Run a dungeon with a boss kill and a")
-  log("battleground to the end, then /reload and send the log (V35).")
-  LogInstance()
-  LogGroup()
-end
 
 -- ===== V47/V48: addon chat links and party invites (CF-27) =====
 -- Each link click is a hardware event, like the real Join and Invite links will be. Events around
@@ -295,6 +204,7 @@ local function OnLink(source, link)
   local action, index = S(link):match("^addon:FriendProbe:(%a+):(%d+)")
   if not action then return end
   log("V47 link clicked via", source, action, index)
+  result("V47", "pass", "link click reached the addon via " .. S(source))
   -- Both hooks may report the same click: act once.
   local now = GetTime()
   if lastLink == link and now - lastLinkAt < 1 then return end
@@ -308,6 +218,8 @@ local function OnLink(source, link)
   elseif action == "bnet" then
     LogCall("BNInviteFriend " .. S(t.gameAccountID), BNInviteFriend, t.gameAccountID)
   end
+  -- CF-62: what was tried shows on the V48 row (only the log had it); Yes/No says whether it worked.
+  result("V48", "info", "tried " .. action .. " on " .. S(t.name) .. "; did they get the invite?")
 end
 
 local linksHooked = false
@@ -357,6 +269,7 @@ local function Invite()
   log("exists BNInviteFriend", BNInviteFriend ~= nil, "EventRegistry", EventRegistry ~= nil)
   HookLinks()
   WatchInvites()
+  -- The only chat output of the probe: the links have to be in chat to be clicked (the player pressed the test).
   print("|cff33ff99FP|r V47 " .. Link("test", 0, "click me: link test"))
   inviteTargets = OnlineFriends()
   for n, t in ipairs(inviteTargets) do
@@ -389,11 +302,15 @@ local function ButtonWindow(title, buttons)
 end
 
 -- V67: is a changed Lua file in the addon folder re-read on /reload? ReloadProbe.lua ships with "A"; the
--- VERIFY.md step changes it on disk while the game runs. ReloadProbeLate.lua is listed in the TOC but not
--- shipped: the step creates it while the game runs (expected: it loads only after a game restart).
+-- VERIFY.md step changes it on disk while the game runs. ReloadProbeLate.lua is not in the shipped TOC (a missing
+-- file listed there shows a Lua warning at every login): the step adds the file and its TOC line by hand.
 local function ReloadFile()
-  log("V67 ReloadProbe.lua mark", S(FriendProbeReloadMark), "| ReloadProbeLate.lua",
-    FriendProbeLateMark and S(FriendProbeLateMark) or "not loaded")
+  local mark, late = S(FriendProbeReloadMark), FriendProbeLateMark and S(FriendProbeLateMark) or "not loaded"
+  log("V67 ReloadProbe.lua mark", mark, "| ReloadProbeLate.lua", late)
+  -- CF-62: the result shows on the V67 row (it only went to the log).
+  local detail = "ReloadProbe.lua mark " .. mark .. ", ReloadProbeLate.lua " .. late
+  result("V67", mark == "B" and "pass" or "info", mark == "B" and detail
+    or (detail .. ": change the file as VERIFY.md V67 says, /reload, test again"))
 end
 
 -- V68: may an addon reload the UI from a button click? The click is remembered in FriendProbeDB; after
@@ -438,184 +355,17 @@ local function InviteAll()
       for _, t in ipairs(friends) do
         LogCall("V69 C_PartyInfo.InviteUnit " .. S(t.name), C_PartyInfo and C_PartyInfo.InviteUnit, t.name)
       end
-      C_Timer.After(10, function() log("V69 after 10 s: in group", S(GetNumGroupMembers())) end)
+      C_Timer.After(10, function()
+        local n = GetNumGroupMembers and GetNumGroupMembers() or 0
+        log("V69 after 10 s: in group", S(n))
+        -- CF-62: on the V69 row too.
+        result("V69", n > 1 and "info" or "fail", "invited " .. #friends .. ", " .. S(n) .. " in the group after 10 s")
+      end)
     end },
   })
   log("V69 click Invite all (you not in a group); friends accept; /reload and send the log")
 end
 
--- ===== V57: right-click menu (CF-37) =====
-local function MenuApis()
-  log("exists MenuUtil", MenuUtil ~= nil)
-  log("exists MenuUtil.CreateContextMenu", MenuUtil ~= nil and MenuUtil.CreateContextMenu ~= nil)
-  log("exists ChatFrameUtil.SendTell", ChatFrameUtil ~= nil and ChatFrameUtil.SendTell ~= nil)
-  log("exists ChatFrame_SendTell", ChatFrame_SendTell ~= nil)
-  log("exists ChatFrameUtil.OpenChat", ChatFrameUtil ~= nil and ChatFrameUtil.OpenChat ~= nil)
-  log("exists ChatFrame_OpenChat", ChatFrame_OpenChat ~= nil)
-  log("exists C_PartyInfo.InviteUnit", C_PartyInfo ~= nil and C_PartyInfo.InviteUnit ~= nil)
-  log("exists AceGUI-3.0", LibStub ~= nil and LibStub("AceGUI-3.0", true) ~= nil)
-  log("V57 clicks: /fp menu")
-end
-
-local menuWindow, copyBox
-
--- The name in a box, selected, so Ctrl+C copies it (WoW has no clipboard API; run 1: copying works).
--- Run 2: the box closes by itself after Ctrl+C and when it loses focus (a click elsewhere).
-local function ShowCopy(name)
-  if not copyBox then
-    copyBox = CreateFrame("EditBox", nil, UIParent, "InputBoxTemplate")
-    copyBox:SetSize(220, 24)
-    copyBox:SetPoint("CENTER", 0, -120)
-    copyBox:SetAutoFocus(false)
-    copyBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    copyBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-    copyBox:SetScript("OnEditFocusLost", function(self)
-      log("V57 copy box lost focus: hidden")
-      self:Hide()
-    end)
-    copyBox:SetScript("OnKeyDown", function(self, key)
-      if key == "C" and IsControlKeyDown and IsControlKeyDown() then
-        log("V57 copy box saw Ctrl+C: hides now")
-        C_Timer.After(0, function() self:ClearFocus() end)
-      end
-    end)
-  end
-  copyBox:SetText(name)
-  copyBox:Show()
-  copyBox:SetFocus()
-  copyBox:HighlightText()
-  log("V57 copy box shown with", name, "- press Ctrl+C: it should disappear; paste in chat to check")
-end
-
--- The chat input that is open now, if any (functions guarded: which one exists is part of the answer).
-local function ActiveChatInput()
-  if ChatFrameUtil and ChatFrameUtil.GetActiveWindow then return ChatFrameUtil.GetActiveWindow(), "ChatFrameUtil" end
-  if ChatEdit_GetActiveWindow then return ChatEdit_GetActiveWindow(), "ChatEdit" end
-  return nil, "none"
-end
-
-local function Whisper(name)
-  if ChatFrameUtil and ChatFrameUtil.SendTell then
-    LogCall("V57 ChatFrameUtil.SendTell", ChatFrameUtil.SendTell, name)
-  elseif ChatFrame_SendTell then
-    LogCall("V57 ChatFrame_SendTell", ChatFrame_SendTell, name)
-  else
-    log("V57 no SendTell function")
-  end
-  C_Timer.After(0.2, function()
-    local input, via = ActiveChatInput()
-    if not input then
-      log("V57 chat input after whisper: none open (via " .. via .. ")")
-      return
-    end
-    log("V57 chat input after whisper: shown", S(input:IsShown()), "chatType",
-      S(input.GetAttribute and input:GetAttribute("chatType")), "tellTarget",
-      S(input.GetAttribute and input:GetAttribute("tellTarget")), "text", S(input:GetText()), "via", via)
-  end)
-end
-
-local function OpenMenu(owner, name, title)
-  if not (MenuUtil and MenuUtil.CreateContextMenu) then
-    log("V57 MenuUtil.CreateContextMenu missing: CF-37 needs its own popup")
-    return
-  end
-  local ok, menu = pcall(MenuUtil.CreateContextMenu, owner, function(_, root)
-    root:CreateTitle(title or name)
-    root:CreateButton("Whisper", function() log("V57 menu click: Whisper") Whisper(name) end)
-    root:CreateButton("Copy name", function() log("V57 menu click: Copy name") ShowCopy(name) end)
-    root:CreateButton("Invite (logs only)", function() log("V57 menu click: Invite") end)
-  end)
-  if not ok then
-    log("V57 CreateContextMenu error", S(menu))
-    return
-  end
-  log("V57 CreateContextMenu opened")
-  -- Run 2: raising the menu (level 150 over the window's 100) changed nothing on screen. Run 3 compares a
-  -- window one strata lower instead; only log where the menu is, now and once it is shown.
-  local function where(when)
-    if type(menu) == "table" and menu.GetFrameStrata then
-      log("V57 menu", when, "strata", S(menu:GetFrameStrata()), "level", S(menu.GetFrameLevel and menu:GetFrameLevel()))
-    else
-      log("V57 CreateContextMenu returned", type(menu))
-    end
-  end
-  where("now")
-  C_Timer.After(0.1, function() where("shown") end)
-end
-
--- AceGUI makes the tree's row buttons when it lays the tree out (run 1: none existed yet), and reuses them:
--- hook every row button once, now and after each refresh.
-local function HookTreeRows(tree, name)
-  local hooked = 0
-  for _, row in ipairs(tree.buttons or {}) do
-    if row.HookScript and not row.fpHooked then
-      row.fpHooked = true
-      row:HookScript("OnMouseUp", function(self, mouse)
-        log("V57 tree row mouse up", mouse, "on", S(self.uniquevalue), "level", S(self.level))
-        if mouse == "RightButton" then
-          OpenMenu(self, name, self.level == 1 and "Person: Bob (playing " .. name .. ")" or nil)
-        end
-      end)
-      hooked = hooked + 1
-    end
-  end
-  if hooked > 0 then log("V57 tree rows hooked", hooked) end
-end
-
--- A test window: a plain button, and (with CommunitiesForever's AceGUI) a tree like the Friends list.
-local function MenuTest()
-  local name = GetUnitName("player", true)
-  if menuWindow then menuWindow:Show() return end
-  menuWindow = CreateFrame("Frame", nil, UIParent, "BasicFrameTemplateWithInset")
-  menuWindow:SetSize(260, 120)
-  menuWindow:SetPoint("CENTER", 0, 120)
-  local button = CreateFrame("Button", nil, menuWindow, "UIPanelButtonTemplate")
-  button:SetSize(200, 26)
-  button:SetPoint("TOP", 0, -36)
-  button:SetText("Right-click me")
-  button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  button:SetScript("OnClick", function(self, mouse)
-    log("V57 plain button click", mouse)
-    if mouse == "RightButton" then OpenMenu(self, name) end
-  end)
-  log("V57 test window open: right-click the button, try Whisper and Copy name")
-
-  local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
-  if not AceGUI then
-    log("V57 no AceGUI (load CommunitiesForever too) - tree row test skipped")
-    return
-  end
-  -- Run 3: the same tree twice. Left at AceGUI's strata (FULLSCREEN_DIALOG: run 2 showed the menu below it),
-  -- right one strata lower (DIALOG), as CF-37 would set the main window.
-  local function TreeWindow(title, strata, x)
-    local frame = AceGUI:Create("Frame")
-    frame:SetTitle(title)
-    frame:SetWidth(300)
-    frame:SetHeight(200)
-    frame:SetLayout("Fill")
-    frame.frame:ClearAllPoints()
-    frame.frame:SetPoint("CENTER", UIParent, "CENTER", x, -60)
-    if strata then frame.frame:SetFrameStrata(strata) end
-    log("V57 window", title, "strata", S(frame.frame:GetFrameStrata()), "level", S(frame.frame:GetFrameLevel()))
-    local tree = AceGUI:Create("TreeGroup")
-    if tree.EnableButtonTooltips then tree:EnableButtonTooltips(false) end -- as in the Friends list
-    tree:SetTree({ { value = "p", text = "Person", children = { { value = "c", text = name } } } })
-    tree:SetStatusTable({ groups = { p = true } })
-    frame:AddChild(tree)
-    local refresh = tree.RefreshTree
-    tree.RefreshTree = function(self, ...)
-      refresh(self, ...)
-      HookTreeRows(self, name)
-    end
-    tree:RefreshTree()
-    C_Timer.After(0.2, function() HookTreeRows(tree, name) end)
-  end
-  TreeWindow("FP strata default", nil, -170)
-  TreeWindow("FP strata DIALOG", "DIALOG", 170)
-  log("V57 in BOTH windows right-click the Person row and the", name, "row: is the menu above the window?")
-end
-
--- ===== Commands =====
 -- ===== V49-V52: community transport (CF-28) =====
 local COMM_PREFIX = "FProbe"
 local commReceived = {}
@@ -638,8 +388,8 @@ end
 
 local function SendAddon(label, text, channel, target)
   if not (C_ChatInfo and C_ChatInfo.SendAddonMessage) then log(label, "SendAddonMessage missing") return end
-  local ok, result = pcall(C_ChatInfo.SendAddonMessage, COMM_PREFIX, text, channel, target)
-  log(label, "len", #text, "->", ok and S(result) or ("error " .. S(result)))
+  local ok, sent = pcall(C_ChatInfo.SendAddonMessage, COMM_PREFIX, text, channel, target)
+  log(label, "len", #text, "->", ok and S(sent) or ("error " .. S(sent)))
 end
 
 local function CommSummary()
@@ -697,7 +447,9 @@ commFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender, tar
   if tag == "V50:burst" then
     -- Logged as they arrive (a /reload before a delayed summary lost the count in run 1).
     if commReceived[tag] % 10 == 0 then log("received V50:burst", commReceived[tag], "so far") end
+    if commReceived[tag] == 30 then result("V50b", "pass", "all 30 burst whispers arrived") end
   else
+    if tag == "V51:whisper" then result("V51", "pass", "whisper from " .. S(sender) .. " arrived") end
     log("addon message <-", S(sender), "channel", S(channel), "len", #S(text), "target", S(target), "zoneChannelID",
       S(zoneChannelID), "localID", S(localID), "name", S(name), "text", S(text):sub(1, 20))
   end
@@ -733,12 +485,28 @@ end
 
 local PVP_EVENTS = { "CHAT_MSG_COMBAT_HONOR_GAIN", "PLAYER_PVP_KILLS_CHANGED", "NAME_PLATE_UNIT_ADDED",
   "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT", "PLAYER_DEAD", "CHAT_MSG_SYSTEM", "MIRROR_TIMER_START",
-  "MIRROR_TIMER_STOP", "CHAT_MSG_LOOT", "PLAYER_MONEY" }
+  "MIRROR_TIMER_STOP", "CHAT_MSG_LOOT", "PLAYER_MONEY", "LOOT_OPENED", "TRADE_SHOW", "TRADE_PLAYER_ITEM_CHANGED",
+  "UI_INFO_MESSAGE", "ENCOUNTER_START", "ENCOUNTER_END" }
+
+-- V86: a "Discovered" message (ERR_ZONE_EXPLORED, ERR_ZONE_EXPLORED_XP).
+local function Discovered(text)
+  for _, key in ipairs({ "ERR_ZONE_EXPLORED", "ERR_ZONE_EXPLORED_XP" }) do
+    local p = Pattern(_G[key])
+    if p and text:match(p) then
+      log("V86 discovered", text)
+      result("V86", "pass", key .. " matched: " .. text)
+    end
+  end
+end
 local pvpFrame = CreateFrame("Frame")
 local pvpRegistered, combatLog = false, nil
 local unitSeen = {}   -- guid -> GetTime() of the last V74 line (one line per player per minute)
 local seenByName = {} -- full name -> the fields seen, for the honor message
 local lastDamage      -- the last damage the player took (combat log)
+local mirrorSeen      -- a MIRROR_TIMER event was seen (V81)
+local encounter       -- an encounter is in progress (V70)
+local tradePartner    -- V85: the trade partner's GUID, the items given
+local tradeGiven = {}
 
 local function Counters(label)
   log(label, "session", Vals(GetPVPSessionStats), "| lifetime", Vals(GetPVPLifetimeStats),
@@ -760,6 +528,17 @@ local function LogUnit(unit, source)
   local rank = UnitPVPRank and UnitPVPRank(unit)
   log("V74 unit", source, "name", Val(name), "level", Val(level), "class", Val(class), "race", Val(race),
     "UnitPVPRank", Val(rank), "rankInfo", rank and Vals(GetPVPRankInfo, rank, unit) or "missing", "guid", Val(guid))
+  local fields = { level = level, class = class, race = race }
+  local bad = {}
+  for field, v in pairs(fields) do
+    if v == nil or (issecretvalue and issecretvalue(v)) then bad[#bad + 1] = field .. " " .. Val(v) end
+  end
+  table.sort(bad)
+  if #bad == 0 then
+    result("V74", "pass", "level, class and race readable via " .. source)
+  else
+    result("V74", "fail", table.concat(bad, ", ") .. " via " .. source)
+  end
   if type(name) == "string" and not (issecretvalue and issecretvalue(name)) then
     seenByName[name] = { level = level, class = class, race = race, rank = rank, at = GetTime(), source = source }
   end
@@ -774,6 +553,13 @@ local function Honor(text, ...)
   local victim, rank
   if pattern and type(text) == "string" then victim, rank = text:match(pattern) end
   log("V73 honor parsed: victim", Val(victim), "rank", Val(rank))
+  if victim then
+    result("V73", "pass", "victim and rank from the honor message")
+  elseif not pattern then
+    result("V73", "fail", "COMBATLOG_HONORGAIN missing")
+  else
+    result("V73", "fail", "honor message did not match: " .. S(text):sub(1, 80))
+  end
   local seen = victim and seenByName[victim]
   if seen then
     log("V73 victim seen", string.format("%.0f s before", GetTime() - seen.at), "via", seen.source, "level",
@@ -783,6 +569,12 @@ local function Honor(text, ...)
   end
   local _, instanceType = GetInstanceInfo()
   log("V76 at the kill: group", Vals(IsInGroup), "instance", Val(instanceType), "zone", Vals(GetRealZoneText))
+  local grouped = IsInGroup and IsInGroup()
+  if type(grouped) == "boolean" and type(instanceType) == "string" then
+    result("V76", "pass", "group " .. S(grouped) .. ", instance " .. instanceType)
+  else
+    result("V76", "fail", "IsInGroup " .. Vals(IsInGroup) .. ", instance " .. Val(instanceType))
+  end
   Counters("V73 counters (honor)")
 end
 
@@ -816,11 +608,16 @@ local function Dead()
     end
   end
   log("V79 total deaths GetStatistic(60)", Vals(GetStatistic, 60))
+  local sources = {}
+  if combatLog == "registered" then sources[#sources + 1] = "combat log" end
+  if C_DeathRecap and C_DeathRecap.GetRecapEvents then sources[#sources + 1] = "death recap" end
+  if mirrorSeen then sources[#sources + 1] = "mirror timers" end
+  result("V81", #sources > 0 and "pass" or "fail", #sources > 0 and table.concat(sources, ", ") or "no cause source")
   lastDamage = nil
 end
 
 pvpFrame:SetScript("OnEvent", function(_, event, ...)
-  if not (FriendProbeDB and FriendProbeDB.pvp) then return end
+  if not ns.running() then return end
   if event == "COMBAT_LOG_EVENT_UNFILTERED" then
     CombatLogEvent()
   elseif event == "CHAT_MSG_COMBAT_HONOR_GAIN" then
@@ -838,10 +635,53 @@ pvpFrame:SetScript("OnEvent", function(_, event, ...)
   elseif event == "CHAT_MSG_SYSTEM" then
     local text = ...
     local me = GetUnitName and GetUnitName("player", true)
-    if type(text) == "string" and type(me) == "string" and text:find(me, 1, true) then log("V80 system", text) end
+    if type(text) == "string" and type(me) == "string" and text:find(me, 1, true) then
+      log("V80 system", text)
+      for _, f in ipairs({ DUEL_WINNER_KNOCKOUT, DUEL_WINNER_RETREAT }) do
+        local p = Pattern(f)
+        local a, b
+        if p then a, b = text:match(p) end
+        if a and (a == me or b == me) then result("V80", "pass", "duel line parsed: " .. text) end
+      end
+    end
+    if type(text) == "string" then Discovered(text) end
   elseif event == "CHAT_MSG_LOOT" or event == "PLAYER_MONEY" then
-    log("V83 " .. event, Val((...)), "money", Vals(GetMoney))
+    local text = ...
+    log("V83 " .. event, Val(text), "money", Vals(GetMoney))
+    for _, key in ipairs({ "LOOT_ITEM_SELF", "LOOT_ITEM_PUSHED_SELF", "LOOT_ITEM_CREATED_SELF" }) do
+      local p = Pattern(_G[key])
+      if p and type(text) == "string" and text:match(p) then result("V83", "pass", key .. " matched: " .. text) end
+    end
+  elseif event == "LOOT_OPENED" then
+    local fishing = IsFishingLoot and IsFishingLoot()
+    log("V84 LOOT_OPENED fishing", Val(fishing), "items", Vals(GetNumLootItems))
+    if fishing then result("V84", "pass", "IsFishingLoot true, " .. Vals(GetNumLootItems) .. " items") end
+  elseif event == "TRADE_SHOW" then
+    tradePartner, tradeGiven = UnitGUID and UnitGUID("NPC"), {}
+    log("V85 TRADE_SHOW partner", Val(tradePartner))
+  elseif event == "TRADE_PLAYER_ITEM_CHANGED" then
+    tradeGiven[#tradeGiven + 1] = Vals(GetTradePlayerItemLink, (...))
+  elseif event == "UI_INFO_MESSAGE" then
+    local _, text = ...
+    if type(text) == "string" and ERR_TRADE_COMPLETE and text == ERR_TRADE_COMPLETE then
+      log("V85 trade complete with", Val(tradePartner), "gave", table.concat(tradeGiven, ", "))
+      if tradePartner then result("V85", "pass", "trade complete, partner GUID " .. Val(tradePartner)) end
+      tradePartner = nil
+    elseif type(text) == "string" then
+      Discovered(text)
+    end
+  elseif event == "ENCOUNTER_START" or event == "ENCOUNTER_END" then
+    encounter = event == "ENCOUNTER_START"
+    local locked = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
+    local busy = IsEncounterInProgress and IsEncounterInProgress()
+    log("V70 " .. event, "lockdown", Val(locked), "in progress", Val(busy))
+    if encounter and (locked == true or busy == true) then
+      result("V70", "pass", "in a boss fight: lockdown " .. Val(locked) .. ", in progress " .. Val(busy))
+    elseif encounter then
+      result("V70", "fail", "in a boss fight both false/missing: " .. Val(locked) .. ", " .. Val(busy))
+    end
   else
+    mirrorSeen = true
     local args = {}
     for i = 1, select("#", ...) do args[#args + 1] = Val((select(i, ...))) end
     log("V81 " .. event, table.concat(args, " | "))
@@ -854,20 +694,18 @@ local function PvpRegister()
   for _, event in ipairs(PVP_EVENTS) do
     if not pcall(pvpFrame.RegisterEvent, pvpFrame, event) then log("pvp: unknown event", event) end
   end
+end
+
+-- V75: may an addon register the combat log? Only from the checklist's button, never at login: on Retail 12.1.5
+-- Blizzard blocks it with a popup ("only available to the Blizzard UI ... disable this addon"), even inside pcall.
+local function CombatLogTest()
+  log("== V75 COMBAT LOG (button) ==")
   local ok, err = pcall(pvpFrame.RegisterEvent, pvpFrame, "COMBAT_LOG_EVENT_UNFILTERED")
   combatLog = ok and "registered" or ("blocked: " .. S(err))
   log("V75 combat log:", combatLog)
+  result("V75", ok and "pass" or "fail", combatLog .. " (no error here can still mean Blizzard's popup showed)")
 end
 
-local function PvpOn()
-  FriendProbeDB.pvp = true
-  PvpRegister()
-  log("pvp logging on (stays on after /reload; /fp pvp off stops it). Get honorable kills in the world (one solo,")
-  log("one in a group) and one in a battleground; target, mouse over and look at enemy players with nameplates on;")
-  log("die once to a player and once by falling; duel a friend; loot a blue. Then /reload and send the log.")
-  Counters("V73 counters (now)")
-  LogUnit("target", "target")
-end
 
 -- ===== V77, V78 (CF-54) and V79-V83 (CF-52, CF-53): values to read once =====
 local WATCH_ITEMS = { 12784, 12360, 14342, 15063, 15062, 19807, 19970, 19979 }
@@ -875,10 +713,14 @@ local RIDING_LINES = { 148, 149, 150, 152, 533, 553, 554, 713, 762 }
 
 local function RealmTime()
   log("V77 region GetCurrentRegion()", Vals(GetCurrentRegion))
-  local hour, minute = GetGameTime and GetGameTime()
+  local region = GetCurrentRegion and GetCurrentRegion()
+  result("V77", type(region) == "number" and "pass" or "fail", "region " .. Val(region))
+  local hour, minute
+  if GetGameTime then hour, minute = GetGameTime() end
   local now = GetServerTime()
   if type(hour) ~= "number" then
     log("V78 realm time: GetGameTime missing")
+    result("V78", "fail", "GetGameTime missing")
     return
   end
   local diff = (hour * 60 + minute) - math.floor(now / 60) % 1440
@@ -886,9 +728,14 @@ local function RealmTime()
   local offset = math.floor(diff / 15 + 0.5) * 15
   log(string.format("V78 realm time GetGameTime %02d:%02d, server (UTC) %s, offset %+d min", hour, minute,
     date("!%H:%M", now), offset))
+  local sane = math.abs(offset) <= 14 * 60 and math.abs(diff - offset) <= 5
+  result("V78", sane and "pass" or "fail", string.format("realm %02d:%02d, offset %+d min", hour, minute, offset))
 end
 
 local function DataApis()
+  local hk = GetPVPLifetimeStats and GetPVPLifetimeStats()
+  result("V79", type(hk) == "number" and "pass" or "fail", "lifetime " .. Vals(GetPVPLifetimeStats)
+    .. ", rank " .. Vals(UnitPVPRank, "player") .. ", deaths " .. Vals(GetStatistic, 60))
   log("V79 lifetime", Vals(GetPVPLifetimeStats), "| UnitPVPRank", Vals(UnitPVPRank, "player"),
     "| this week", Vals(GetPVPThisWeekStats), "| deaths GetStatistic(60)", Vals(GetStatistic, 60))
   local rank = UnitPVPRank and UnitPVPRank("player")
@@ -906,6 +753,15 @@ local function DataApis()
   log("V82 GetProfessionInfoBySkillLineID", Val(C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID),
     "| IsSpellKnown 33388/33391", Vals(IsSpellKnown, 33388), Vals(IsSpellKnown, 33391), "| GetNumSkillLines",
     Vals(GetNumSkillLines), "| C_Timer.NewTicker", Val(C_Timer and C_Timer.NewTicker))
+  local riding = {}
+  for _, line in ipairs(RIDING_LINES) do
+    local fn = C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID
+    local ok, info
+    if fn then ok, info = pcall(fn, line) end
+    if ok and type(info) == "table" and (info.skillLevel or 0) > 0 then riding[#riding + 1] = "line " .. line end
+  end
+  if IsSpellKnown and (IsSpellKnown(33388) or IsSpellKnown(33391)) then riding[#riding + 1] = "spell" end
+  if #riding > 0 then result("V82", "pass", "riding from " .. table.concat(riding, ", ")) end
   if GetNumSkillLines and GetSkillLineInfo then
     for i = 1, GetNumSkillLines() or 0 do log("V82 skill", i, Vals(GetSkillLineInfo, i)) end
   end
@@ -917,81 +773,126 @@ local function DataApis()
   end
 end
 
-local function Start()
+-- ===== Automatic: static checks once per login, event logging while running =====
+
+function ns.running()
+  return GetServerTime() < STOP_AT and not (FriendProbeDB and FriendProbeDB.stopped)
+end
+
+-- V63, V71, V55, V68 and the API presence hints for the manual items.
+local function StaticChecks()
+  local clock = date and date("%H:%M")
+  result("V63", type(clock) == "string" and clock:match("^%d%d:%d%d$") and "pass" or "fail", "date: " .. S(clock))
+  local t = time and time({ year = 2026, month = 11, day = 6, hour = 20, min = 30 })
+  result("V71", type(t) == "number" and math.abs(t - GetServerTime()) < 400 * 86400 and "pass" or "fail",
+    "time() " .. S(t) .. " next to server " .. S(GetServerTime()))
+  result("V55", GameTooltip and GameTooltip.AddDoubleLine and "pass" or "fail", "GameTooltip.AddDoubleLine "
+    .. S(GameTooltip and GameTooltip.AddDoubleLine ~= nil))
+  local hints = {
+    V65 = ColorPickerFrame and ColorPickerFrame.SetupColorPickerAndShow ~= nil,
+    V66 = Settings and Settings.RegisterCanvasLayoutCategory ~= nil,
+    V72 = (ChatFrameUtil and ChatFrameUtil.OpenChat ~= nil) or ChatFrame_OpenChat ~= nil,
+    V59 = JoinTemporaryChannel ~= nil,
+  }
+  for id, present in pairs(hints) do
+    local r = ns.results()[id]
+    if not (r and (r.status == "yes" or r.status == "no")) then
+      result(id, "info", present and "the API is there; check it by eye" or "the API is missing")
+    end
+  end
+end
+
+local function Auto()
   FriendProbeDB = FriendProbeDB or {}
-  FriendProbeDB.log = {}
-  log("FriendProbe start")
+  if not ns.running() then return end
+  log("== FriendProbe login", S(GetUnitName and GetUnitName("player", true)), "==")
   Section("CONTEXT", Context)
   Section("V8 COMMUNITIES", Clubs)
-  Section("V30 TALENTS", Talents)
-  Section("V41 CHAT WINDOWS", ChatWindows)
-  Section("V46 GROUP FINDER", GroupFinder)
-  Section("V46 DUNGEON FINDER", DungeonFinder)
   Section("V52 COMMUNITY PRESENCE", CommunityPresence)
-  Section("V49/V50 COMMUNITY TRANSPORT", CommunityTransport)
-  Section("V35 FEED", FeedOn)
-  Section("V57 MENU APIS", MenuApis)
   Section("V77/V78 REGION AND REALM TIME", RealmTime)
   Section("V79-V83 DOOMSDAY DATA APIS", DataApis)
-  log("start done: /reload, then send WTF\\Account\\<account>\\SavedVariables\\FriendProbe.lua")
+  Section("STATIC CHECKS", StaticChecks)
+  FeedRegister()
+  PvpRegister()
+  -- V50b once a day: the self-whisper burst (silent).
+  local today = date("%Y-%m-%d")
+  if FriendProbeDB.burstDay ~= today then
+    FriendProbeDB.burstDay = today
+    C_Timer.After(20, function() Section("V50b COMMUNITY TRANSPORT", CommunityTransport) end)
+  end
 end
 
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
-loader:SetScript("OnEvent", function(_, _, name)
+loader:RegisterEvent("PLAYER_LOGIN")
+loader:SetScript("OnEvent", function(_, event, name)
+  if event == "PLAYER_LOGIN" then
+    Auto()
+    return
+  end
   if name ~= "FriendProbe" then return end
   FriendProbeDB = FriendProbeDB or {}
   if FriendProbeDB.reloadBy then
     log("V68 reloaded by", FriendProbeDB.reloadBy)
+    result("V68", "pass", "reloaded by " .. S(FriendProbeDB.reloadBy) .. " from a click")
     FriendProbeDB.reloadBy = nil
   end
-  if FriendProbeDB.feed then FeedRegister() end
-  if FriendProbeDB.pvp then PvpRegister() end
   if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then C_ChatInfo.RegisterAddonMessagePrefix(COMM_PREFIX) end
 end)
 
+-- The test buttons of the checklist window.
+ns.tests = {
+  { text = "Test: reload", run = function() ReloadButtons() end },
+  { text = "Test: links and invites", run = function() Invite() end },
+  { text = "Test: invite all", run = function() InviteAll() end },
+  { text = "Test: file reload (V67)", run = function() ReloadFile() end },
+  { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
+}
+ns.log = log
+
+-- V87: Battle.net "Appear offline". Data from a friend whose WoW game account isn't in the friend list (they
+-- appear offline): does it still arrive, and does the game still tell who sent it?
+local bnFrame = CreateFrame("Frame")
+pcall(bnFrame.RegisterEvent, bnFrame, "BN_CHAT_MSG_ADDON")
+bnFrame:SetScript("OnEvent", function(_, _, prefix, _, _, senderID)
+  if not ns.running() or type(senderID) ~= "number" then return end
+  for _, f in ipairs(OnlineFriends()) do
+    if f.gameAccountID == senderID then return end -- a visible friend: nothing to learn
+  end
+  local byID = C_BattleNet and C_BattleNet.GetGameAccountInfoByID
+  local info = byID and select(2, pcall(byID, senderID))
+  local guid = type(info) == "table" and info.playerGuid or nil
+  local account = guid and C_BattleNet.GetAccountInfoByGUID and select(2, pcall(C_BattleNet.GetAccountInfoByGUID, guid))
+  local bt = type(account) == "table" and account.battleTag or nil
+  local detail = string.format("from hidden game account %s (prefix %s): GetGameAccountInfoByID %s, playerGuid %s, "
+    .. "wowProjectID %s, GetAccountInfoByGUID battleTag %s", S(senderID), S(prefix),
+    type(info) == "table" and "ok" or "nil", guid and "yes" or "no", S(type(info) == "table" and info.wowProjectID),
+    bt and "yes" or "no")
+  log("V87 " .. detail)
+  result("V87", guid and bt and "pass" or "fail", detail)
+end)
+
+-- Every event handler runs guarded: a secret value or a missing API in an instance (Midnight, Retail dry runs) is
+-- logged, never shown as a Lua error.
+for _, frame in ipairs({ feedFrame, inviteFrame, commFrame, pvpFrame, bnFrame, loader }) do
+  local handler = frame:GetScript("OnEvent")
+  frame:SetScript("OnEvent", function(...)
+    local ok, err = pcall(handler, ...)
+    if not ok then log("handler error", S((select(2, ...))), S(err)) end
+  end)
+end
+
+-- /fp opens the checklist. /fp whisper <name> (V51) and /fp stop are the only other commands.
 SLASH_FRIENDPROBE1 = "/fp"
 SlashCmdList.FRIENDPROBE = function(msg)
   local cmd, arg = msg:match("^(%S*)%s*(.-)$")
   cmd = cmd:lower()
-  if cmd == "start" then
-    Start()
-  elseif cmd == "comm" then
-    local target = arg:match("^whisper%s+(.+)$")
-    if arg == "summary" then
-      log("== V49/V50 RECEIVED ==")
-      CommSummary()
-    elseif arg == "channel" then
-      local _, index = CommunityChannel()
-      SendAddon("V49 CHANNEL send", "V49:channel from " .. S(GetUnitName("player", true)), "CHANNEL", index)
-    elseif target then
-      SendAddon("V51 WHISPER " .. target, "V51:whisper from " .. S(GetUnitName("player", true)), "WHISPER", target)
-      log("V51: does the other character's /fp log show 'addon message <-'? (both need FriendProbe)")
-    else
-      print("|cff33ff99FP|r /fp comm whisper <character name> | channel | summary")
-    end
-  elseif cmd == "invite" then
-    Invite()
-  elseif cmd == "reloadfile" then
-    ReloadFile()
-  elseif cmd == "reload" then
-    ReloadButtons()
-  elseif cmd == "inviteall" then
-    InviteAll()
-  elseif cmd == "menu" then
-    Section("V57 MENU", MenuTest)
-  elseif cmd == "pvp" and arg == "off" then
-    FriendProbeDB.pvp = nil
-    log("pvp logging off")
-  elseif cmd == "pvp" then
-    Section("V73-V76 PVP", PvpOn)
-  elseif cmd == "feed" and arg == "off" then
-    FriendProbeDB.feed = nil
-    log("feed logging off")
-  elseif cmd == "clear" then
-    FriendProbeDB.log = {}
-    print("|cff33ff99FP|r log cleared")
+  if cmd == "whisper" and arg ~= "" then
+    SendAddon("V51 WHISPER " .. arg, "V51:whisper from " .. S(GetUnitName("player", true)), "WHISPER", arg)
+  elseif cmd == "stop" then
+    FriendProbeDB.stopped = true
+    log("stopped by /fp stop")
   else
-    print("|cff33ff99FP|r /fp start (clear the log and run all open checks) | pvp | pvp off | invite | reloadfile | reload | inviteall | menu | comm whisper <name> | feed off | clear")
+    ns.toggleWindow()
   end
 end

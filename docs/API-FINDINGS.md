@@ -97,5 +97,42 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16). No longer used: AceConfig was removed after CF-43. |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
+## Retail dry runs (not Forever)
+Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.
+| API | Result |
+|---|---|
+| `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` | Blocked for addons (V75 retail: fail). Blizzard shows its popup "... only available to the Blizzard UI. You can disable this addon and reload the UI.", also when the call is inside `pcall`. FriendProbe now only tries it from a button; CommunitiesForever never registers it (CF-61, Nico 2026-10-29: death causes from the death recap and mirror timers). |
+| `frame:CreateAnimationGroup()` with a `Translation` (Ambient effects, V64) | Animates the frame itself: the whole title bar slid across as a dark block every few seconds, the streak's bright edge riding along (CF-43 bug). The shine now creates the group on its streak texture (`texture:CreateAnimationGroup()`), so only the streak moves. The texture (white, alpha in the file) with `SetBlendMode("ADD")` was fine. |
+| V47 a click on an addon chat link (FriendProbe run 2, build 70575, 29 Oct) | pass: "link click reached the addon via SetItemRef hook". Closed (Nico: checked on Retail counts as done). |
+| V74 enemy player fields | Level, class and race are readable by mouseover. Still open for Forever: enemy target and nameplates, `NAME_PLATE_UNIT_ADDED`, the PvP rank. |
+| V79 PvP counters | `GetPVPLifetimeStats()` works (`0, 0` on a character without kills); `GetStatistic(60)` gives total deaths (`31`). The Vanilla rank API (`UnitPVPRank`, `GetPVPRankInfo`, `GetPVPThisWeekStats`) is missing on Retail, as expected: still open for Forever. |
+| V72 `ChatFrameUtil.OpenChat("/w <name> <text>")` (Whisper on the start panel) | yes (Nico, by hand): the chat input opens as a whisper with the text filled in, not sent. Closed. |
+| V59 the hidden sync channel, sending | `JoinTemporaryChannel` plus `SendAddonMessage(prefix, text, "CHANNEL", index)` sends: `/cf sync debug` printed "[sync] to the community channel: HELLO …". Receiving on another client is still open (V59). |
+| A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |
+
+## Retail 12.1.5 dry run (2026-10-29)
+FriendProbe on Retail 12.1.5, build 70575, one EU character (interface 120105: the same Mainline API and Midnight restrictions as Forever). **Answers for Forever (Nico, 2026-10-29, CF-61):** what he checked on Retail needs no recheck; those VERIFY.md items are closed: V77, V78, V63, V71, V55, V68, V50b, V83, V86, V82, V54, V61, V80 (the strings) and V81 (`C_DeathRecap` exists); from the second run (CF-62) V62, V65, V66 and V67. Still open, so only hints here: V64 (the shimmer fix), V75 (combat log), V79 (Vanilla ranks), and everything that needs a friend, a dungeon, PvP or Forever itself.
+| Item | Retail result | What it suggests for Forever |
+|---|---|---|
+| V77 `GetCurrentRegion()` | `3` (EU) | As expected. |
+| V78 `GetGameTime()` | Realm clock 12:31 against UTC 11:31: offset +60 min (CET) | The realm offset from `GetGameTime` and `GetServerTime` works as CF-55 assumes. |
+| V63 `date("%H:%M")`, V71 `time({...})` | pass | Local clock and date-to-seconds work. |
+| V68 `C_UI.Reload()` from a click | pass: the UI reloaded | A button may reload the UI. |
+| V55 `GameTooltip:AddDoubleLine` | exists | Two-column minimap tooltip works. |
+| V50b self-whisper burst | 30 of 30 arrived. A 256-byte whisper arrives as 255 bytes | Whispers are capped at 255 bytes, which matches `Protocol.COMMUNITY_CHUNK = 255`. |
+| V79 PvP counters | `GetPVPLifetimeStats()` gives `0, 0`; `UnitPVPRank`, `GetPVPThisWeekStats`, `GetPVPRankInfo` missing; `GetStatistic(60)` (total deaths) gives `31` | Retail has no Vanilla rank system, so the missing rank functions say nothing about Forever. Deaths from `GetStatistic(60)` work. |
+| V80 `DUEL_WINNER_KNOCKOUT`, `DUEL_WINNER_RETREAT` | exist: `"%1$s has defeated %2$s in a duel"` and `"%2$s has fled from %1$s in a duel"` | Positional arguments: the winner is `%1$s` in both, also when it comes second in the text. `GameText.parse` already handles `%n$s` (GameText spec); no duel was fought, so a real match is not confirmed. |
+| V81 `C_DeathRecap.GetRecapEvents` | exists | A cause source when the combat log is not allowed. |
+| V82 riding | `IsSpellKnown(33388)` false, `IsSpellKnown(33391)` true; `GetNumSkillLines` missing | Riding from spells works; the skill-line fallback doesn't exist on this API. |
+| V83 loot strings and items | `LOOT_ITEM_*` strings as expected; `LOOT_ITEM_PUSHED_SELF` matched a real item. Item links use a new colour prefix `|cnIQ1:` (quality in the prefix, not `|cffRRGGBB`); parsing `|Hitem:` still works. `GetItemInfo` is empty until the item is cached (names arrived on a later login). The watch-list IDs exist: 12784, 12360, 14342, 15063, 15062, 19807, 19970, 19979 | **Item info loads asynchronously:** code must not rely on `GetItemInfo` at loot time. The watch list keys on the item ID from the link, and the slot comes from `C_Item.GetItemInfoInstant`; both are fine. **The quality fallback is at risk:** `Loot.parse` reads the link colour `|cffRRGGBB` when `C_Item.GetItemQualityByID` is nil (not cached). With `|cnIQ<n>:` links that fallback finds nothing, so a rare or epic looted before it is cached would be missed. Check the Forever link format at launch (V83). |
+| V86 `ERR_ZONE_EXPLORED`, `ERR_ZONE_EXPLORED_XP` | both matched a discovery | Discovery parsing works. |
+| V62 Friends tab native calls (EditBox, ScrollFrame, mouse wheel, fold arrow) | yes (by hand) | Closed (CF-62). |
+| V65 `ColorPickerFrame:SetupColorPickerAndShow` with `swatchFunc`, `cancelFunc`, `GetColorRGB` | yes (by hand): picks the chat colour, Cancel restores it | Closed (CF-62). |
+| V66 `Settings.RegisterCanvasLayoutCategory` and `Settings.RegisterAddOnCategory` | yes (by hand): the page is under Esc › Options › AddOns | Closed (CF-62). |
+| V67 a changed addon file on `/reload` | pass: a Lua file changed on disk is re-read on `/reload`, and even a newly added file with its TOC line loads on `/reload` (no restart needed) | Closed (CF-62): `Data\Runs.lua` written by the uploader is picked up with `/reload`. |
+| V75 combat log | `RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` returned without an error, but Blizzard showed "only available to the Blizzard UI", and no events arrived | Likely forbidden for addons, not confirmed. See "Retail dry runs" above. |
+| V54 Esc closes the window, key binding | yes (by hand) | |
+| V61 the window draws right | no (by hand): the title shimmer drew a dark block (fixed in #117, see "Retail dry runs"); the rest draws | Closed; the shimmer itself stays open as V64. |
+
 ## Not available / not useful
 - LanMiaoApi (CurseForge) reports none of the above as present in `APIDocumentation`; it only confirms runtime existence. Not a source of signatures or secret flags for these APIs.

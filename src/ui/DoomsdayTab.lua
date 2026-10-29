@@ -1,5 +1,6 @@
 -- DoomsdayTab: the Doomsday tab (CF-57; board docs/design/doomsday-2026-10/DD07AddonToday). Chips on top (Today,
--- Week, and from CF-57b Board, Ladder and Feats (board DD08AddonBoard)) with the time to the reset on the right.
+-- Week, and from CF-57b Board, Ladder and Feats (board DD08AddonBoard)). CF-61: each view's header says when it
+-- resets; no notes about the rules or the site in the tab.
 -- Native kit frames; the model is DoomsdayTracker (state, board, ladder, feats) and DoomsdayView, this file only
 -- draws it.
 local _, ns = ...
@@ -11,13 +12,12 @@ local PAD = 24
 local KIND_WIDTH = 70
 local RIGHT_WIDTH = 90
 local ROW_HEIGHT = 40
-DoomsdayTab.NOTE = "Suggestions, never rules \194\183 all-time totals on the site"
 
 DoomsdayTab.VIEWS = { { value = "today", text = "Today" }, { value = "week", text = "Week" },
                       { value = "board", text = "Board" }, { value = "ladder", text = "Ladder" },
                       { value = "feats", text = "Feats" } }
 
-local root, chipsBar, resetText, scroll, chips
+local root, chipsBar, scroll, chips
 local helpers -- from MainFrame: settings(), render()
 local current = "today"
 local pools
@@ -27,13 +27,28 @@ local placeText = Kit.placeText
 local function gold(text) return Theme.code("goldLight") .. tostring(text) .. "|r" end
 local function dim(text) return Theme.code("textDim") .. tostring(text) .. "|r" end
 
--- "10:42" in your own clock.
+local dayStartAt -- CF-61: the start of the shown day (Today, Board); nil in the week's views
+
+-- "10:42" in your own clock; "Wed 00:04" after midnight or in the week's views (CF-61).
 local function clock(at)
   if not at or not date then return "" end
-  return date("%H:%M", at)
+  return ns.DoomsdayView.timeText(at, dayStartAt, date)
 end
 
 local function check() return Theme.bundledFonts() and "\226\156\147" or "done" end
+
+-- "New goals Thu 19:00 · in 4 h 28 m" (Today, Board; CF-62 adds the time) and "Week resets Sun 19:00 · in 3 d 5 h"
+-- (Week, Ladder).
+local function newGoals(state)
+  local at = date and state.dayStart and ns.DoomsdayView.timeText(state.dayStart + ns.Doomsday.DAY, nil, date) or ""
+  return string.format("New goals %s%sin %s", at, at ~= "" and " \194\183 " or "",
+    ns.DoomsdayView.until_(state.resetsIn))
+end
+local function weekResets(state)
+  local resetAt = date and date("%a %H:%M", ns.Doomsday.dayStart(ns.Doomsday.weekStart(state.week + 1),
+    ns.DoomsdayTracker.schedule().offset, state.reset)) or ""
+  return string.format("Week resets %s \194\183 in %s", resetAt, ns.DoomsdayView.until_(state.weekResetsIn))
+end
 
 -- ===== Factories =====
 
@@ -76,9 +91,9 @@ end
 
 -- ===== Drawing =====
 
-local function header(parent, text, y, width, right)
+local function header(parent, text, y, width, right, rightColor)
   placeText(pools.day, parent, PAD, y + 12, width - 2 * PAD, text, "goldLight")
-  if right then placeText(pools.small, parent, PAD, y + 15, width - 2 * PAD, right, "faint", "RIGHT") end
+  if right then placeText(pools.small, parent, PAD, y + 15, width - 2 * PAD, right, rightColor or "faint", "RIGHT") end
   local sep = Kit.take(pools.lines, parent)
   sep:SetPoint("TOPLEFT", PAD, -(y + 36))
   sep:SetPoint("RIGHT", parent, "RIGHT", -PAD, 0)
@@ -117,53 +132,228 @@ local function textLine(parent, text, y, width, color, pool)
   return 22
 end
 
-local function today(parent, state, width)
-  local rows = ns.DoomsdayView.rows(state.today, state.progress, state.hunts)
-  local done, total = ns.DoomsdayView.doneCount(rows)
-  local points = ns.DoomsdayView.todayPoints(state)
-  local y = 0
-  if total > 0 and done == total then
-    y = y + header(parent, "Doomsday done. Go touch grass.", y, width)
-    y = y + textLine(parent, string.format("All %d goals \194\183 PvE %d \194\183 PvP %d \194\183 streak %d", total,
-      points.pve, points.pvp, state.streak), y + 4, width, "goldLight")
+-- ===== Today (CF-62, board AG03Tabs) =====
+
+local SIDE_WIDTH = 270  -- "Friends today"
+local BAR_WIDTH = 140
+local TRACK = { daily = "pve", weekly = "pve", skirmish = "pvp", bounty = "pvp" }
+local SWAP_TIP = "\226\135\132 swapped: your character can't do the original goal (hover for it). Goals are "
+  .. "suggestions; skip any."
+local FRIENDS_TIP = "Live for friends online with the addon; others after their upload."
+local DUEL_TIP = "Win +3 \194\183 loss +1 \194\183 first duel per friend"
+
+local function trackOf(id)
+  if id == "hunt" then return "pvp" end
+  local g = ns.Doomsday.goal(id)
+  return g and TRACK[g.slot] or "pve"
+end
+
+local function colored(name, text) return Theme.code(name) .. tostring(text) .. "|r" end
+
+-- An 18 px check box: green with a check when done, an outline when not (read-only).
+local function checkBox(parent)
+  local b = CreateFrame("Frame", nil, parent)
+  b:SetSize(18, 18)
+  b.fill = Theme.fill(b, "track", "BACKGROUND")
+  b.fill:SetAllPoints()
+  b.edges = Kit.edges(b, "divider")
+  b.mark = b:CreateTexture(nil, "ARTWORK")
+  b.mark:SetSize(14, 14)
+  b.mark:SetPoint("CENTER")
+  b.mark:SetTexture(Theme.TEXTURES.check)
+  b.mark:SetVertexColor(Theme.color("outline"))
+  function b:SetDone(done)
+    self.fill:SetColorTexture(Theme.color(done and "pve" or "track"))
+    self.mark:SetShown(done and true or false)
+  end
+  return b
+end
+
+-- A box with a 1 px border (the stat boxes, the mini board's goal boxes).
+local function frameBox(parent)
+  local b = CreateFrame("Frame", nil, parent)
+  b.fill = Theme.fill(b, "track", "BACKGROUND")
+  b.fill:SetAllPoints()
+  b.edges = Kit.edges(b, "divider")
+  return b
+end
+
+local function boxAt(parent, x, y, w, h, fillColor, fillAlpha)
+  local b = Kit.take(pools.frames, parent)
+  b:SetPoint("TOPLEFT", x, -y)
+  b:SetSize(w, h)
+  b.fill:SetColorTexture(Theme.color(fillColor or "track", fillAlpha))
+  return b
+end
+
+local function infoAt(parent, x, y, tip)
+  local f = Kit.take(pools.infos, parent)
+  f:SetPoint("TOPLEFT", x, -y)
+  f.tip = tip
+  return f
+end
+
+local function textWidth(holder, fallback)
+  local fs = holder and holder.text
+  local w = fs and fs.GetStringWidth and fs:GetStringWidth()
+  return type(w) == "number" and w > 0 and w or fallback
+end
+
+-- One 40 px goal row: check box, kind, title (struck through when done), "⇄ swapped", progress, points.
+local function todayRow(parent, r, y, width)
+  local track = r.track
+  local cb = Kit.take(pools.checks, parent)
+  cb:SetPoint("TOPLEFT", PAD, -(y + 11))
+  cb:SetDone(r.done)
+  placeText(pools.tiny, parent, PAD + 28, y + 13, 62, r.kind, track)
+  local titleX = PAD + 92
+  local right = PAD + width - 2 * PAD -- the left column's right edge
+  local titleWidth = right - titleX - BAR_WIDTH - 90
+  local t = placeText(pools.body, parent, titleX, y + 11, titleWidth, r.text, r.done and "muted" or "text")
+  local tw = math.min(titleWidth, textWidth(t, titleWidth))
+  if r.done then
+    local strike = Kit.take(pools.lines, parent)
+    strike:SetPoint("TOPLEFT", titleX, -(y + 19))
+    strike:SetWidth(tw)
+  end
+  if r.instead then
+    placeText(pools.small, parent, titleX + tw + 8, y + 13, 90, "\226\135\132 swapped", "swap")
+    local h = Kit.take(pools.hovers, parent)
+    h:SetPoint("TOPLEFT", titleX, -(y + 8))
+    h:SetSize(tw + 96, 22)
+    h.tip = "Instead of: " .. r.instead
+  end
+  if r.tip then
+    local h = Kit.take(pools.hovers, parent)
+    h:SetPoint("TOPLEFT", titleX, -(y + 8))
+    h:SetSize(right - titleX, 22)
+    h.tip = r.tip
+  end
+  -- Progress: "done" / "not yet" for one-step goals, else a 140 px bar next to "1/10".
+  local px = right - 40 - BAR_WIDTH - 44
+  if (r.target or 1) <= 1 then
+    placeText(pools.small, parent, px, y + 13, BAR_WIDTH + 40, r.done and "done" or "not yet",
+      r.done and "pve" or "muted", "RIGHT")
   else
-    local title = string.format("Today \194\183 %s \194\183 %d of %d done", state.label, done, total)
-    y = y + header(parent, title, y, width)
+    local b = Kit.take(pools.bars, parent)
+    b:SetPoint("TOPLEFT", px, -(y + 18))
+    b:SetFraction(r.fraction, BAR_WIDTH)
+    placeText(pools.small, parent, px + BAR_WIDTH + 6, y + 13, 40, string.format("%d/%d", r.value or 0, r.target),
+      "muted")
   end
-  for _, row in ipairs(rows) do y = y + goalRow(parent, row, y, width) end
-  -- The Duel slot: not a goal (never counts for crossing out or the streak).
-  placeText(pools.tiny, parent, PAD, y + 8, KIND_WIDTH - 8, "DUEL", "faint")
-  placeText(pools.body, parent, PAD + KIND_WIDTH, y + 6, width - 2 * PAD - KIND_WIDTH, "First duel with each friend",
-    "text")
-  local parts = {}
-  for _, d in ipairs(state.duels.done) do parts[#parts + 1] = ns.DoomsdayView.duelText(d) end
-  local duelText = #parts > 0 and table.concat(parts, " \194\183 ") or "no duel yet"
-  if #state.duels.open > 0 then
-    duelText = duelText .. dim("  \194\183 open: " .. table.concat(state.duels.open, ", "))
+  if r.points and r.points ~= "" then
+    placeText(pools.small, parent, right - 36, y + 13, 36, r.points, track, "RIGHT")
   end
-  placeText(pools.small, parent, PAD + KIND_WIDTH, y + 26, width - 2 * PAD - KIND_WIDTH, duelText, "muted")
-  y = y + 48
-  y = y + 8
-  y = y + textLine(parent, gold(string.format("PvE %d", points.pve)) .. dim("  \194\183  ")
-    .. gold(string.format("PvP %d", points.pvp)), y, width, "goldLight", pools.body)
-  local kills = ns.DoomsdayView.killSummary(state.dayScored)
-  if kills then y = y + textLine(parent, kills, y, width) end
-  y = y + textLine(parent, string.format("Streak %d %s \194\183 best %d", state.streak,
-    state.streak == 1 and "day" or "days", state.best), y, width)
-  if state.crown then
-    y = y + textLine(parent, gold(state.crown.mine and "You" or state.crown.name)
-      .. dim(" finished all dailies first, " .. clock(state.crown.at)), y, width)
+  return ROW_HEIGHT
+end
+
+-- The three stat boxes: Today and This week (PvE green · PvP red), Streak.
+local function statBoxes(parent, state, points, y, width, killTip)
+  local gap = 10
+  local w = math.floor((width - 2 * gap) / 3)
+  local function stat(i, title, value, tip)
+    local x = PAD + (i - 1) * (w + gap)
+    boxAt(parent, x, y, w, 52)
+    placeText(pools.tiny, parent, x + 10, y + 8, w - 20, title, "faint")
+    placeText(pools.body, parent, x + 10, y + 26, w - 20, value, "text")
+    if tip then
+      local h = Kit.take(pools.hovers, parent)
+      h:SetPoint("TOPLEFT", x, -y)
+      h:SetSize(w, 52)
+      h.tip = tip
+    end
   end
-  y = y + textLine(parent, "Any of your characters counts.", y + 6, width, "faint")
-  return y + 12
+  local function pts(p)
+    return colored("pve", "PvE " .. (p.pve or 0)) .. dim("  \194\183  ") .. colored("pvp", "PvP " .. (p.pvp or 0))
+  end
+  stat(1, "Today", pts(points), killTip)
+  stat(2, "This week", pts(state.points))
+  stat(3, "Streak", colored("warning", string.format("%d %s", state.streak, state.streak == 1 and "day" or "days"))
+    .. dim("  best " .. state.best))
+  return 52
+end
+
+-- "Friends today": one row per friend with Doomsday data, you as "You"; a box per goal of the day.
+local function friendsToday(parent, x, y, width)
+  local b = ns.DoomsdayBoard.board()
+  local title = placeText(pools.body, parent, x, y, width, "Friends today", "goldLight")
+  infoAt(parent, x + math.min(width - 16, textWidth(title, 90)) + 6, y + 1, FRIENDS_TIP)
+  placeText(pools.tiny, parent, x, y + 2, width, "PvE \194\183 PvP", "faint", "RIGHT")
+  y = y + 26
+  for _, row in ipairs(b and b.rows or {}) do
+    if row.status == "ok" then
+      local name = row.isSelf and "You" or tostring(row.name)
+      local fs = placeText(pools.small, parent, x, y + 2, 80, name, row.isSelf and "goldLight" or "text")
+      local nw = math.min(80, textWidth(fs, 60))
+      if row.crossed then
+        local strike = Kit.take(pools.lines, parent)
+        strike:SetPoint("TOPLEFT", x, -(y + 9))
+        strike:SetWidth(nw)
+      end
+      if row.crown then placeText(pools.tiny, parent, x + nw + 3, y + 3, 40, "crown", "goldLight") end
+      local bx = x + 112
+      local pvpShown = false
+      for i, cell in ipairs(row.cells) do
+        local track = trackOf(cell.id)
+        if track == "pvp" and row.virgin then
+          if not pvpShown then placeText(pools.tiny, parent, bx + (i - 1) * 15, y + 3, 70, "PvP Virgin", "faint") end
+          pvpShown = true
+        else
+          boxAt(parent, bx + (i - 1) * 15, y + 3, 12, 12, cell.done and track or "track")
+        end
+      end
+      placeText(pools.small, parent, x, y + 2, width, string.format("%d \194\183 %d", row.today.pve or 0,
+        row.today.pvp or 0), "muted", "RIGHT")
+      y = y + 22
+    end
+  end
+  return y
+end
+
+local function today(parent, state, width)
+  local goals = ns.DoomsdayView.rows(state.today, state.progress, state.hunts)
+  local duelDone = #state.duels.done > 0
+  local done, total = ns.DoomsdayView.doneCount(goals, duelDone) -- CF-61: the Duel slot counts
+  local points = ns.DoomsdayView.todayPoints(state)
+  local leftWidth = width - SIDE_WIDTH - 24
+  local title = total > 0 and done == total and "Doomsday done. Go touch grass."
+    or string.format("Today \194\183 %s \194\183 %d of %d done", state.label, done, total)
+  local y = header(parent, title, 0, width, newGoals(state), "warning")
+  -- The ⓘ after the title holds what "⇄ swapped" means.
+  local titleHolder = pools.day.items[pools.day.used]
+  infoAt(parent, PAD + math.min(leftWidth - 20, textWidth(titleHolder, 300)) + 8, 16, SWAP_TIP)
+  local top = y
+  for _, g in ipairs(goals) do
+    local track, p = ns.Doomsday.goalPoints(g.id)
+    g.track = g.id == "hunt" and "pvp" or track or trackOf(g.id)
+    g.points = p and ("+" .. p) or ""
+    y = y + todayRow(parent, g, y, leftWidth)
+  end
+  -- The Duel slot: done after the first duel; points earned today; details on hover.
+  local duelPoints, parts = 0, {}
+  for _, d in ipairs(state.duels.done) do
+    parts[#parts + 1] = ns.DoomsdayView.duelText(d)
+    if not d.disputed then
+      duelPoints = duelPoints + (d.won and ns.Doomsday.POINTS.duelWin or ns.Doomsday.POINTS.duelLoss)
+    end
+  end
+  local tip = DUEL_TIP
+  if #parts > 0 then tip = table.concat(parts, "\n") .. "\n" .. tip end
+  if #state.duels.open > 0 then tip = tip .. "\nOpen: " .. table.concat(state.duels.open, ", ") end
+  local friends = #state.duels.done + #state.duels.open
+  y = y + todayRow(parent, { kind = "Duel", track = "pvp", text = "First duel with each friend", done = duelDone,
+    value = #state.duels.done, target = math.max(friends, 1),
+    fraction = friends > 0 and #state.duels.done / friends or 0,
+    points = duelPoints > 0 and ("+" .. duelPoints) or "", tip = tip }, y, leftWidth)
+  y = y + 12
+  y = y + statBoxes(parent, state, points, y, leftWidth - 2 * PAD, ns.DoomsdayView.killSummary(state.dayScored))
+  local side = friendsToday(parent, width - PAD - SIDE_WIDTH, top + 8, SIDE_WIDTH)
+  return math.max(y, side) + 16
 end
 
 local function week(parent, state, width)
   local rows = ns.DoomsdayView.rows(state.thisWeek, state.weekProgress)
-  local resetAt = date and date("%a %H:%M", ns.Doomsday.dayStart(ns.Doomsday.weekStart(state.week + 1),
-    ns.DoomsdayTracker.schedule().offset, state.reset)) or ""
-  local y = header(parent, "This week \194\183 15 points each", 0, width,
-    string.format("week resets %s \194\183 in %s", resetAt, ns.DoomsdayView.until_(state.weekResetsIn)))
+  local y = header(parent, "This week", 0, width, weekResets(state))
   for _, row in ipairs(rows) do
     y = y + goalRow(parent, row, y, width)
     local needed = not row.done and ns.DoomsdayView.stillNeeded(row.id, state.weekScored, state.factions)
@@ -189,63 +379,80 @@ end
 
 -- ===== Board, Ladder, Feats (CF-57b) =====
 
-local NAME_WIDTH = 150
-local STREAK_WIDTH = 50
+local NAME_WIDTH = 170
 local POINTS_WIDTH = 110
 
-local function points(p) return string.format("%d \194\183 %d", p.pve or 0, p.pvp or 0) end
+local function points(p) return string.format("PvE %d \194\183 PvP %d", p.pve or 0, p.pvp or 0) end
 
+-- CF-61: a goal on the Board: a gold check when done, an empty box when not (the details are in the tooltip).
+local function box() return Theme.bundledFonts() and "\226\150\161" or "o" end
+
+local function cellTip(cell, isSelf)
+  local lines = { ns.DoomsdayView.goalText(cell.id) }
+  if cell.done then
+    lines[#lines + 1] = "Done at " .. clock(cell.at)
+  elseif isSelf and cell.target then
+    lines[#lines + 1] = string.format("%d/%d", cell.value or 0, cell.target)
+  else
+    lines[#lines + 1] = "Not done yet"
+  end
+  if cell.instead then lines[#lines + 1] = "Instead of: " .. cell.instead end
+  return table.concat(lines, "\n")
+end
+
+local function hover(parent, x, y, w, tip)
+  local h = Kit.take(pools.hovers, parent)
+  h:SetPoint("TOPLEFT", x, -(y + 2))
+  h:SetSize(w, 20)
+  h.tip = tip
+end
+
+-- CF-61c (Nico, 2026-10-29; board DD08AddonBoard): the friend's name, struck through with the finish time when all
+-- three PvE dailies are done, and the crown; a check or a box per goal with a dot for a swap; one points column.
+-- The streak, progress, times and swaps are in the tooltips.
 local function board(parent, width)
   local b = ns.DoomsdayBoard.board()
-  local y = header(parent, "Today \194\183 " .. b.label, 0, width,
-    "Live for friends online with the addon; others update after their upload.")
+  local y = header(parent, "Today \194\183 " .. b.label, 0, width, newGoals(ns.DoomsdayTracker.state()))
   local cols = math.max(1, #b.columns)
-  local colWidth = math.floor((width - 2 * PAD - NAME_WIDTH - STREAK_WIDTH - POINTS_WIDTH) / cols)
+  local colWidth = math.floor((width - 2 * PAD - NAME_WIDTH - POINTS_WIDTH) / cols)
   local function colX(i) return PAD + NAME_WIDTH + (i - 1) * colWidth end
   -- Column labels.
   placeText(pools.tiny, parent, PAD, y + 4, NAME_WIDTH, "FRIEND", "faint")
   for i, c in ipairs(b.columns) do
     placeText(pools.tiny, parent, colX(i), y + 4, colWidth - 6, c.short:upper(), "faint")
   end
-  placeText(pools.tiny, parent, colX(cols + 1), y + 4, STREAK_WIDTH, "STREAK", "faint")
-  placeText(pools.tiny, parent, colX(cols + 1) + STREAK_WIDTH, y + 4, POINTS_WIDTH, "PVE \194\183 PVP", "faint")
+  placeText(pools.tiny, parent, colX(cols + 1), y + 4, POINTS_WIDTH, "POINTS", "faint")
   y = y + 24
   for _, row in ipairs(b.rows) do
-    local name = (row.isSelf and (row.name .. " (you)") or row.name) .. (row.crown and gold("  crown") or "")
+    local name = row.isSelf and (row.name .. " (you)") or row.name
     local fs = placeText(pools.body, parent, PAD, y + 4, NAME_WIDTH - 6, name, row.isSelf and "goldLight" or "text")
-    if row.crossed and fs then
+    local nameWidth = math.min(NAME_WIDTH - 6, fs and fs.text and fs.text.GetStringWidth and fs.text:GetStringWidth()
+      or 60)
+    local after = (row.finishedAt and clock(row.finishedAt) or "") .. (row.crown and "  crown" or "")
+    if after ~= "" then
+      placeText(pools.small, parent, PAD + nameWidth + 6, y + 6, NAME_WIDTH - nameWidth - 6, gold(after), "goldLight")
+    end
+    if row.crossed then
       local strike = Kit.take(pools.lines, parent)
       strike:SetPoint("TOPLEFT", PAD, -(y + 12))
-      strike:SetWidth(math.min(NAME_WIDTH - 6, (fs.text and fs.text.GetStringWidth and fs.text:GetStringWidth() or 60)))
+      strike:SetWidth(nameWidth)
     end
+    local tip = string.format("Streak %d %s", row.streak or 0, (row.streak or 0) == 1 and "day" or "days")
+    if row.crossed then tip = tip .. "\nAll three PvE dailies done at " .. clock(row.finishedAt) end
+    hover(parent, PAD, y, NAME_WIDTH - 6, tip)
     if row.status ~= "ok" then
       placeText(pools.small, parent, colX(1), y + 6, colWidth * cols, "no Doomsday data yet", "faint")
     else
       for i, cell in ipairs(row.cells) do
-        local text
-        if cell.done then
-          text = gold(clock(cell.at))
-        elseif cell.target then
-          text = string.format("%d/%d", cell.value or 0, cell.target)
-        else
-          text = dim("\194\183")
-        end
-        if cell.instead then
-          text = text .. dim(" *")
-          local h = Kit.take(pools.hovers, parent)
-          h:SetPoint("TOPLEFT", colX(i), -(y + 2))
-          h:SetSize(colWidth - 6, 20)
-          h.tip = "Instead of: " .. cell.instead
-        end
-        placeText(pools.small, parent, colX(i), y + 6, colWidth - 6, text, "muted")
+        local mark = cell.done and gold(check()) or dim(box())
+        if cell.instead then mark = mark .. dim(" \194\183") end -- the swap
+        placeText(pools.small, parent, colX(i), y + 6, colWidth - 6, mark, "muted")
+        hover(parent, colX(i), y, colWidth - 6, cellTip(cell, row.isSelf))
       end
     end
-    placeText(pools.small, parent, colX(cols + 1), y + 6, STREAK_WIDTH, tostring(row.streak or 0), "muted")
-    placeText(pools.small, parent, colX(cols + 1) + STREAK_WIDTH, y + 6, POINTS_WIDTH, points(row.today), "muted")
+    placeText(pools.small, parent, colX(cols + 1), y + 6, POINTS_WIDTH, points(row.today), "muted")
     y = y + 28
   end
-  y = y + textLine(parent, "* = swapped goal (hover for the original). Crossed out: all three PvE dailies done.", y + 8,
-    width, "faint")
   return y + 12
 end
 
@@ -286,7 +493,7 @@ end
 local function ladder(parent, width)
   local l = ns.DoomsdayBoard.ladder()
   local state = ns.DoomsdayTracker.state()
-  local y = header(parent, "This week", 0, width, "week resets in " .. ns.DoomsdayView.until_(state.weekResetsIn))
+  local y = header(parent, "This week", 0, width, weekResets(state))
   y = ladderSection(parent, width, y, "PvE", "pve", l.pve, l)
   y = ladderSection(parent, width, y + 8, "PvP", "pvp", l.pvp, l)
   for _, key in ipairs(l.virgins) do
@@ -301,13 +508,14 @@ local function ladder(parent, width)
     for _, c in pairs(me.chars or {}) do
       if c.pvp and c.pvp.rank and (not best or c.pvp.rank > best.pvp.rank) then best = c end
     end
-    local rank = best and ns.Pvp.rankText(best.pvp, best.faction)
+    local virgin = false
+    for _, key in ipairs(l.virgins) do virgin = virgin or key == me.key end
+    local rank = best and ns.Pvp.rankText(best.pvp, best.faction, virgin)
     if rank then y = y + textLine(parent, rank, y, width, "goldLight") end
     local zone = ns.DoomsdayView.topZone(me.killsByZone)
     local kills = string.format("%d kills this week", me.kills) .. (zone and (" \194\183 most in " .. zone) or "")
     y = y + textLine(parent, kills, y, width)
-    y = y + textLine(parent, string.format("Duels %d\226\128\147%d \194\183 ratings on the site", me.duels.won,
-      me.duels.lost), y, width)
+    y = y + textLine(parent, string.format("Duels %d\226\128\147%d", me.duels.won, me.duels.lost), y, width)
     local names = {}
     for name in pairs(me.bg) do names[#names + 1] = name end
     table.sort(names)
@@ -317,8 +525,6 @@ local function ladder(parent, width)
       y = y + textLine(parent, text, y, width)
     end
   end
-  y = y + textLine(parent, "This week only. All-time totals, Elo and battleground history live on the site and in "
-    .. "Discord.", y + 8, width, "faint")
   return y + 12
 end
 
@@ -326,18 +532,28 @@ local function feats(parent, width)
   local y = header(parent, "Feats \194\183 your characters", 0, width)
   for _, c in ipairs(ns.DoomsdayBoard.feats()) do
     local name = Theme.rgbCode(Kit.classColor(c.classFile)) .. tostring(c.name) .. "|r"
-    local count = string.format("  \194\183 %d %s", #c.feats, #c.feats == 1 and "feat" or "feats")
+    local earned, earlier = ns.Feats.split(c.feats)
+    local count = string.format("  \194\183 %d %s", #earned, #earned == 1 and "feat" or "feats")
     y = y + textLine(parent, name .. dim(count), y + 6, width, "text", pools.body) + 4
-    for _, f in ipairs(c.feats) do
-      local when = f.at > 0 and date and date("%d %b", f.at) or "earlier"
+    -- CF-61: only feats earned while the addon watched; what the character already had folds into one line.
+    for _, f in ipairs(earned) do
+      local when = date and date("%d %b", f.at) or ""
       local detail = string.format("  \194\183 %s%s", f.detail and (f.detail .. " \194\183 ") or "", when)
       y = y + textLine(parent, gold(f.title) .. dim(detail), y, width, "text")
     end
+    if #earlier > 0 then
+      local titles, tips = {}, {}
+      for _, f in ipairs(earlier) do
+        titles[#titles + 1] = f.title
+        tips[#tips + 1] = f.title .. (f.detail and (" \194\183 " .. f.detail) or "")
+      end
+      placeText(pools.small, parent, PAD, y, width - 2 * PAD, dim("Already had: " .. table.concat(titles, ", ")),
+        "textDim")
+      hover(parent, PAD, y - 2, width - 2 * PAD, table.concat(tips, "\n"))
+      y = y + 22
+    end
     local nextTitle, progress = ns.Feats.nextKills(c.pvp and c.pvp.hk)
-    if c.pvp and (c.pvp.hk or 0) == 0 then
-      local text = "no kills yet \194\183 Rank title: Conscientious Objector until the first kill."
-      y = y + textLine(parent, text, y, width, "faint")
-    elseif nextTitle then
+    if nextTitle and (c.pvp and c.pvp.hk or 0) > 0 then
       y = y + textLine(parent, nextTitle .. "  \194\183 " .. progress, y, width, "faint")
     end
     y = y + 8
@@ -363,8 +579,6 @@ function DoomsdayTab.create(parent, h)
     chips[def.value] = c
     previous = c
   end
-  resetText = Theme.text(chipsBar, "small", "faint")
-  resetText:SetPoint("RIGHT")
   scroll = Kit.scrollArea(root)
   scroll:SetPoint("TOPLEFT", chipsBar, "BOTTOMLEFT", -PAD, -4)
   scroll:SetPoint("BOTTOMRIGHT", 0, 4)
@@ -372,6 +586,7 @@ function DoomsdayTab.create(parent, h)
     day = Kit.pool(Kit.textHolder("day")), body = Kit.pool(Kit.textHolder("body")),
     small = Kit.pool(Kit.textHolder("small")), tiny = Kit.pool(Kit.textHolder("tiny")),
     lines = Kit.pool(line), bars = Kit.pool(bar), hovers = Kit.pool(hoverArea),
+    checks = Kit.pool(checkBox), frames = Kit.pool(frameBox), infos = Kit.pool(Kit.info), -- CF-62
     rows = Kit.pool(function(p) return CreateFrame("Button", nil, p) end), -- CF-57b: Ladder rows to expand
   }
   return root
@@ -395,7 +610,7 @@ function DoomsdayTab.render(_, empty)
   local parent = scroll.child
   local width = math.max(400, scroll:GetWidth() or 0)
   local state = not empty and ns.DoomsdayTracker.state() or nil
-  resetText:SetText(state and ("resets in " .. ns.DoomsdayView.until_(state.resetsIn)) or "")
+  dayStartAt = state and (current == "today" or current == "board") and state.dayStart or nil
   local y
   if empty then
     placeText(pools.body, parent, PAD, 14, width - 2 * PAD, empty, "textDim")
@@ -433,8 +648,16 @@ function DoomsdayTab.texts()
   return out
 end
 
+-- For the specs: the hover tooltips on the current view.
+function DoomsdayTab.tips()
+  local out = {}
+  for _, name in ipairs({ "hovers", "infos" }) do -- CF-62: the ⓘ icons too
+    for i = 1, pools and pools[name].used or 0 do out[#out + 1] = pools[name].items[i].tip end
+  end
+  return out
+end
+
 function DoomsdayTab.chips() return chips end
-function DoomsdayTab.resetLabel() return resetText and resetText:GetText() end
 function DoomsdayTab.reset()
   current = "today"
   expanded = {}

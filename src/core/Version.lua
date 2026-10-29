@@ -41,5 +41,11 @@ function Version.isNewer(own, other)
   return Version.compare(a, b) < 0
 end
 
+-- CF-61: the version as shown: "v0.8.0-beta1" (tags already start with v; dev builds "0.1.155" get one), "?" without.
+function Version.label(text)
+  if type(text) ~= "string" or text == "" then return "?" end
+  return text:match("^v") and text or ("v" .. text)
+end
+
 ns.Version = Version
 return Version

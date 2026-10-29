@@ -25,12 +25,6 @@ describe("PvP, duels and deaths (CF-52)", function()
   local function entry() return addon.db.global.self.feed[TODAY][myGuid] end
 
   -- The combat log event of damage to the player: subevent, source GUID and flags, environmental type.
-  local function damage(subevent, sourceGuid, sourceFlags, environment)
-    state.combatEvent = { 1000.5, subevent, false, sourceGuid, "Someone", sourceFlags, 0, myGuid, ME, 0x511, 0,
-                          environment }
-    wowapi.fireEvent(state, "COMBAT_LOG_EVENT_UNFILTERED")
-  end
-
   after_each(function()
     wowapi.uninstall()
   end)
@@ -89,27 +83,10 @@ describe("PvP, duels and deaths (CF-52)", function()
     assert.are.same({ 1, 1 }, { char().pvp.duelsWon, char().pvp.duelsLost })
   end)
 
-  it("records deaths with their cause from the combat log", function()
+  it("never registers the combat log (CF-61: Blizzard's banner on Retail)", function()
     load()
-    state.zone = "Thousand Needles"
-    state.serverTime = 1100
-    damage("ENVIRONMENTAL_DAMAGE", nil, 0, "Falling")
-    wowapi.fireEvent(state, "PLAYER_DEAD")
-    state.serverTime = 1200
-    damage("SPELL_DAMAGE", "Player-1-X", 0x0548)
-    wowapi.fireEvent(state, "PLAYER_DEAD")
-    state.serverTime = 1300
-    damage("SWING_DAMAGE", "Creature-0-1", 0x0a48)
-    state.combatEvent = { 1, "SWING_DAMAGE", false, "Player-1-X", "Someone", 0x0548, 0, "Player-9-OTHER" }
-    wowapi.fireEvent(state, "COMBAT_LOG_EVENT_UNFILTERED") -- damage to someone else
-    wowapi.fireEvent(state, "PLAYER_DEAD")
-    state.serverTime = 1400
-    wowapi.fireEvent(state, "PLAYER_DEAD") -- the last damage was used for the previous death
-    local causes = {}
-    for i, d in ipairs(entry().deaths) do causes[i] = d.cause end
-    assert.are.same({ "fall", "player", "creature", "other" }, causes)
-    assert.are.same({ t = 1100, zone = "Thousand Needles", cause = "fall" }, entry().deaths[1])
-    assert.are.equal(4, char().pvp.deaths)
+    assert.is_false(ns.PvpTracker.combatLog)
+    assert.is_nil(state.eventHandlers.COMBAT_LOG_EVENT_UNFILTERED)
   end)
 
   it("falls back to mirror timers without the combat log, and takes the death statistic", function()

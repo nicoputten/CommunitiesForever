@@ -7,6 +7,13 @@ describe("Version (CF-35)", function()
     Version = helpers.loadAddonFile("src/core/Version.lua", helpers.coreNs())
   end)
 
+  it("labels a version with one v (CF-61: the footer showed vv0.8.0-beta1)", function()
+    assert.are.equal("v0.8.0-beta1", Version.label("v0.8.0-beta1"))
+    assert.are.equal("v0.1.155", Version.label("0.1.155"))
+    assert.are.equal("?", Version.label(nil))
+    assert.are.equal("?", Version.label(""))
+  end)
+
   it("parses release tags only", function()
     assert.are.same({ major = 0, minor = 3, patch = 0, stage = 2, n = 1 }, Version.parse("v0.3.0-beta1"))
     assert.are.same({ major = 1, minor = 2, patch = 3, stage = 3, n = 0 }, Version.parse("v1.2.3"))

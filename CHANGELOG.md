@@ -5,6 +5,51 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v0.9.0-beta1 (2026-10-29)
+- **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them
+  (not "Unlinked"), while the window keeps showing them as offline. Friends who come online just before you log
+  in are picked up too.
+- **Dungeons in range:** under the planned runs, every dungeon that fits your character; picking one shows a
+  suggested group, who's online and fits, the dungeon's quests (with Questie) and "Ask now" or "Plan a run…" for it.
+- **Dungeons, the runs:** runs grouped by day with role pips; a run shows the dungeon, a row per group member with
+  their status, who in the community is online and fits (Whisper, or Invite near the start), Invite all from 15
+  minutes before the start, and your answer with one click.
+- **Friends:** "You" for yourself and no BattleTag anywhere; "Online on <character> · <zone>"; each character as a
+  small card with its realm, level bar, zone and professions; friends the website knows but who haven't synced yet
+  under "Not synced yet".
+- **Footer:** says how many friends synced this session and when ("Synced with 2 friends · 22:41"), or that it's
+  waiting for someone online; on Friends, how many of your characters there are.
+- **Activity:** the character comes first, then the friend; a one-line summary of today next to the filters.
+- **Doomsday Today, redone:** a check box per goal, a short bar only for goals you count up, the points per goal in
+  PvE green or PvP red, "⇄ swapped" with the original on hover, boxes for today, this week and your streak, and
+  "Friends today" next to it.
+- **Fixed:** the light streak across the window title no longer waits as a white strip behind the shield between
+  passes; the LEVEL UP shine likewise.
+- **Tidier setup:** the last explanatory notes are gone from the setup, the settings and the chat-tab chat line.
+- **Fixed:** no more Blizzard warning that the addon uses something "only available to the Blizzard UI": the addon
+  no longer reads the combat log. What killed you now comes from the death recap.
+- **Fixed:** the Dungeons tab on a character outside the community says it isn't in the community yet, instead of
+  that its level fits no dungeon.
+- **Doomsday rules:** a duel ends "PvP Virgin" too; without a PvP rank you read "No rank yet · N kills"; the Duel
+  slot counts in "N of M done"; the day is named by its start ("Wed evening"), and times after midnight show their
+  weekday. All times in your own clock.
+- **Feats:** the list shows what your characters earned while the addon was watching; what they already had is one
+  "Already had" line (hover for the details). A mount only counts from level 40, an epic mount from 60.
+- **A cleaner Doomsday Board:** short column titles, a check mark or an empty box per goal (hover for the
+  progress, the time and a swap), the finish time next to a crossed-out name, and one points column.
+- **Tidier windows:** the notes explaining how the addon works are gone from the tabs and footers. What a button
+  does shows when you hover it (Ask now). Doomsday shows "New goals in …" on Today and Board and "Week resets …"
+  on Week and Ladder.
+- **Fixed:** the light streak across the window title no longer drags a dark block over the title, and LEVEL UP
+  chips stay put while their shine plays (Ambient effects).
+- **Fixed:** the setup's step line fits the window (it shows the current and the next step), the settings'
+  descriptions wrap inside their column, and the settings footer shows the version with one "v".
+- **An alt outside the community:** the window opens once by itself on how to join (when a friend shared the invite
+  link), and right after joining you're offered the Community chat tab, in a tidier dialog with Create tab and
+  Not now.
+- **Fixed:** blue and purple loot is counted on clients whose item links carry the quality instead of a colour,
+  also for items the game has not cached yet.
+
 ## v0.8.0-beta1 (2026-10-29)
 - **Doomsday.** Every day three PvE dailies and a PvP Skirmish, every week three weeklies and a Bounty: the same
   goals for the whole group, resetting at 19:00 realm time, and suggestions, never rules. Progress counts over all

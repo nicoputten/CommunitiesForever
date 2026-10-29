@@ -510,7 +510,10 @@ function buildState(today, schedule)
   local names = {}
   for _, key in ipairs(friendKeys()) do names[key] = nameOf(key) end
   points.pvp = points.pvp + (duelResult.points[me] or 0)
-  return { day = today, week = week, label = ns.Doomsday.label(today), source = schedule.source,
+  -- CF-61: "Wed evening" in the player's clock (DoomsdayView.dayLabel); the start for the times after midnight.
+  local dayStart = ns.Doomsday.dayStart(today, schedule.offset, schedule.reset)
+  local label = (date and ns.DoomsdayView.dayLabel(dayStart, date)) or ns.Doomsday.label(today)
+  return { day = today, week = week, label = label, dayStart = dayStart, source = schedule.source,
            reset = schedule.reset, offset = schedule.offset, today = day, thisWeek = wk,
            progress = list(day, dayProgress),
            weekProgress = list(wk, weekProgress), streak = goals.streak and goals.streak.n or 0, best = goals.best or 0,

@@ -40,6 +40,22 @@ function Presence.friendAccounts()
   return accounts
 end
 
+-- A game account by its ID (C_BattleNet.GetGameAccountInfoByID, unverified on Forever: VERIFY.md V87), or nil.
+function Presence.gameAccountInfo(gameAccountID)
+  if not (C_BattleNet and C_BattleNet.GetGameAccountInfoByID) then return nil end
+  local ok, info = pcall(C_BattleNet.GetGameAccountInfoByID, gameAccountID)
+  return ok and type(info) == "table" and info or nil
+end
+
+-- The BattleTag of the Battle.net account a character belongs to (C_BattleNet.GetAccountInfoByGUID, unverified:
+-- V87), or nil.
+function Presence.battleTagForGuid(guid)
+  if not (guid and C_BattleNet and C_BattleNet.GetAccountInfoByGUID) then return nil end
+  local ok, info = pcall(C_BattleNet.GetAccountInfoByGUID, guid)
+  local bt = ok and type(info) == "table" and info.battleTag
+  return type(bt) == "string" and bt or nil
+end
+
 function Presence.watch(addon)
   for _, event in ipairs(EVENTS) do
     ns.Events.register(addon, event, function()

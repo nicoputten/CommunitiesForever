@@ -474,6 +474,46 @@ function PlannedRuns.whenText(at, now, dateFn)
   return string.format("%s %d %s %s", WEEKDAYS[t.wday], t.day, MONTHS[t.month], clock)
 end
 
+-- ===== CF-62: the Dungeons tab v2 (board AG02Dungeons) =====
+
+PlannedRuns.INVITE_LEAD = 15 * 60 -- Invite all (and Invite in "Online now, fits") opens this long before the start
+
+-- The run list's groups by local start: "Today" (or "Tonight" from 17:00), "Tomorrow", "This week" (the next 6
+-- days), "Later". Runs that started already count as today.
+PlannedRuns.BUCKETS = { "Today", "Tonight", "Tomorrow", "This week", "Later" }
+function PlannedRuns.bucket(at, now, dateFn)
+  local t, n = dateFn("*t", at), dateFn("*t", now)
+  local diff = days(t) - days(n)
+  if diff <= 0 then return t.hour >= 17 and "Tonight" or "Today" end
+  if diff == 1 then return "Tomorrow" end
+  if diff < 7 then return "This week" end
+  return "Later"
+end
+
+-- The time on a run row: "20:30" today, else "Fri 20:00" (this week) or "Fri 6 Nov 20:00".
+function PlannedRuns.rowTime(at, now, dateFn)
+  local t, n = dateFn("*t", at), dateFn("*t", now)
+  local clock = string.format("%02d:%02d", t.hour, t.min)
+  local diff = days(t) - days(n)
+  if diff <= 0 then return clock end
+  if diff < 7 then return WEEKDAYS[t.wday] .. " " .. clock end
+  return string.format("%s %d %s %s", WEEKDAYS[t.wday], t.day, MONTHS[t.month], clock)
+end
+
+-- A dungeon's short name for the run list: "Scarlet Monastery: Graveyard" -> "SM: Graveyard"; others unchanged.
+function PlannedRuns.shortName(name)
+  if type(name) ~= "string" then return name end
+  local prefix, rest = name:match("^(.-): (.+)$")
+  if not prefix then return name end
+  local initials = prefix:gsub("(%a)%a*%s*", "%1")
+  return initials .. ": " .. rest
+end
+
+-- Whether Invite all (and Invite) is open: from INVITE_LEAD before the start.
+function PlannedRuns.inviteOpen(run, now)
+  return type(run) == "table" and type(run.startsAt) == "number" and now >= run.startsAt - PlannedRuns.INVITE_LEAD
+end
+
 -- "20:30" local time.
 function PlannedRuns.clock(at, dateFn)
   local t = dateFn("*t", at)
@@ -537,6 +577,42 @@ function PlannedRuns.untilText(at, now)
   end
   local d = math.floor(minutes / (24 * 60))
   return string.format("in %d day%s", d, d == 1 and "" or "s")
+end
+
+-- ===== CF-62: what the site knows, for Friends ("Not synced yet") and the Dungeons empty state =====
+PlannedRuns.MAX_FRIENDS = 50
+PlannedRuns.MAX_FRIEND_CHARS = 20
+
+-- The site's base URL (CF_RUNS.site), or nil: an http(s) address without spaces.
+function PlannedRuns.site(raw)
+  local address = type(raw) == "table" and text(raw.site, PlannedRuns.MAX_URL)
+  return address and address:match("^https?://%S+$") or nil
+end
+
+--[[ The friends the site knows (CF_RUNS.friends, web PR #130): { { name, chars = { { name, realm, classFile, level,
+seenAt } } } }, display names only, the uploader left out by the site. Cleaned and capped; {} without. ]]
+function PlannedRuns.friends(raw)
+  local list = type(raw) == "table" and type(raw.friends) == "table" and raw.friends or {}
+  local out = {}
+  for _, f in ipairs(list) do
+    if #out >= PlannedRuns.MAX_FRIENDS then break end
+    local name = type(f) == "table" and text(f.name, 24)
+    if name and name ~= "" then
+      local chars = {}
+      for _, c in ipairs(type(f.chars) == "table" and f.chars or {}) do
+        if #chars >= PlannedRuns.MAX_FRIEND_CHARS then break end
+        local cname = type(c) == "table" and text(c.name, 40)
+        if cname and cname ~= "" then
+          local class = type(c.classFile) == "string" and c.classFile:match("^%u+$") and #c.classFile <= 12
+            and c.classFile or nil
+          chars[#chars + 1] = { name = cname, realm = text(c.realm, 40), classFile = class,
+                                level = number(c.level, 1, 100), seenAt = time(c.seenAt) }
+        end
+      end
+      out[#out + 1] = { name = name, chars = chars }
+    end
+  end
+  return out
 end
 
 ns.PlannedRuns = PlannedRuns

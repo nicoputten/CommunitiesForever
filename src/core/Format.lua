@@ -105,9 +105,12 @@ local function groupValue(person)
   return person.battleTag or Format.SELF
 end
 
+-- CF-62: "You" for yourself (no BattleTag or display name of your own in the window).
 local function personTitle(person)
-  return person.isSelf and (person.displayName .. " (you)") or person.displayName
+  return person.isSelf and "You" or person.displayName
 end
+
+Format.SITE = "site:" -- CF-62: the list value prefix of a friend known only from the website
 
 --[[ The Friends list (CF-40): people and their characters. Each node:
   { value, text, online, isSelf, count, children = { { value = guid, name, classFile, classID, level, online } } }
@@ -122,10 +125,12 @@ local function ownRows(view)
   return {}
 end
 
-function Format.tree(view)
-  local nodes = {}
+function Format.tree(view, siteFriends)
+  local online, offline = {}, {}
   local own = ownRows(view)
+  local synced = {}
   for _, person in ipairs(view.people) do
+    if person.displayName then synced[person.displayName:lower()] = true end
     local children = {}
     for _, c in ipairs(person.chars) do
       local _, shared = nil, nil
@@ -134,9 +139,22 @@ function Format.tree(view)
                                   level = c.level, online = c.online, outside = c.outside or false,
                                   shared = shared } -- CF-40: quests shared with you (friends' characters only)
     end
-    nodes[#nodes + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
-                          isSelf = person.isSelf, usesAddon = person.usesAddon, count = #children,
-                          children = children }
+    -- CF-62: grouped "Online" then "Offline" (you count as online), keeping the Linker order within.
+    local isOnline = person.online or person.isSelf or false
+    local list = isOnline and online or offline
+    list[#list + 1] = { value = groupValue(person), text = personTitle(person), online = person.online,
+                        isSelf = person.isSelf, usesAddon = person.usesAddon, count = #children,
+                        children = children, section = isOnline and "online" or "offline" }
+  end
+  local nodes = {}
+  for _, n in ipairs(online) do nodes[#nodes + 1] = n end
+  for _, n in ipairs(offline) do nodes[#nodes + 1] = n end
+  -- CF-62: friends the website knows who haven't synced: "Not synced yet", "from the website".
+  for _, f in ipairs(siteFriends or {}) do
+    if not synced[f.name:lower()] then
+      nodes[#nodes + 1] = { value = Format.SITE .. f.name, text = f.name, website = true, count = #f.chars,
+                            children = {}, section = "website", sub = "from the website" }
+    end
   end
   if #view.unlinked > 0 then
     local children = {}
@@ -144,36 +162,51 @@ function Format.tree(view)
       children[#children + 1] = { value = c.guid, name = c.name, classID = c.classID, level = c.level,
                                   online = c.online }
     end
-    nodes[#nodes + 1] = { value = Format.UNLINKED, text = "Unlinked", unlinked = true, children = children }
+    nodes[#nodes + 1] = { value = Format.UNLINKED, text = "Unlinked", unlinked = true, children = children,
+                          section = "unlinked" }
   end
   return nodes
 end
 
--- CF-42: "Synced with <person> 2 min ago" (the newest record that arrived), or "Not synced yet".
-function Format.syncedText(view, now)
-  local newest, newestName
-  for _, person in ipairs(view.people or {}) do
-    if not person.isSelf and person.receivedAt and (not newest or person.receivedAt > newest) then
-      newest, newestName = person.receivedAt, person.displayName
-    end
-  end
-  return newest and string.format("Synced with %s %s", tostring(newestName), Format.ago(newest, now))
-    or "Not synced yet"
+-- CF-62: the list's section headers: "Online · 2", "Offline · 1", "Not synced yet · 6" (nil for Unlinked).
+function Format.sectionTitle(section, count)
+  local titles = { online = "Online", offline = "Offline", website = "Not synced yet" }
+  return titles[section] and string.format("%s \194\183 %d", titles[section], count) or nil
 end
 
--- CF-40: the Friends tab footer: the sync state (syncedText) and "N characters from M friends" (everyone but
--- you).
-function Format.friendsFooter(view, now)
-  local chars, friends = 0, 0
+-- CF-62: friends whose record arrived this session (since `since`, server time), and the newest arrival.
+local function syncedSince(view, since)
+  local count, newest = 0, nil
   for _, person in ipairs(view.people or {}) do
-    if not person.isSelf then
-      friends = friends + 1
-      chars = chars + #person.chars
+    local at = person.receivedAt
+    if not person.isSelf and type(at) == "number" and at >= (since or 0) then
+      count = count + 1
+      if not newest or at > newest then newest = at end
     end
   end
-  local synced = Format.syncedText(view, now)
-  return string.format("%s \194\183 %d character%s from %d friend%s", synced, chars, chars == 1 and "" or "s",
-    friends, friends == 1 and "" or "s")
+  return count, newest
+end
+
+--[[ CF-62 (was "Synced with <person> 2 min ago" / "Not synced yet", CF-42): "Synced with 2 friends · 22:41" (the
+newest arrival in your clock), or "Synced with 0 friends · waiting for someone online". since: the session's start;
+clock(t): "22:41". ]]
+function Format.syncedText(view, since, clock)
+  local count, newest = syncedSince(view, since)
+  if count == 0 then return "Synced with 0 friends \194\183 waiting for someone online" end
+  return string.format("Synced with %d friend%s \194\183 %s", count, count == 1 and "" or "s",
+    clock and clock(newest) or "")
+end
+
+-- CF-62: the Friends tab footer: "Synced with 2 friends this session · 3 of your characters" (your own characters,
+-- never "0 characters from 0 friends").
+function Format.friendsFooter(view, since)
+  local count = syncedSince(view, since)
+  local own = 0
+  for _, person in ipairs(view.people or {}) do
+    if person.isSelf then own = #(person.chars or {}) end
+  end
+  return string.format("Synced with %d friend%s this session \194\183 %d of your character%s", count,
+    count == 1 and "" or "s", own, own == 1 and "" or "s")
 end
 
 function Format.findPerson(view, value)

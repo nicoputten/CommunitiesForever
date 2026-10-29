@@ -25,6 +25,56 @@ function Kit.edges(frame, colorName, layer, inset)
   return lines
 end
 
+-- CF-62: a small "i" in a ring that shows `info.tip` on hover: where an explanation goes instead of a visible line.
+function Kit.info(parent)
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(14, 14)
+  local ring = f:CreateTexture(nil, "ARTWORK")
+  ring:SetAllPoints()
+  ring:SetTexture(Theme.TEXTURES.ring)
+  ring:SetVertexColor(Theme.color("faint"))
+  f.label = Theme.text(f, "tiny", "faint")
+  f.label:SetPoint("CENTER", 0, 0)
+  f.label:SetText("i")
+  f:SetScript("OnEnter", function(self)
+    if not (self.tip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  f:SetScript("OnLeave", function(self) if self.tip and GameTooltip then GameTooltip:Hide() end end)
+  return f
+end
+
+-- CF-62: Blizzard role icons by atlas, guarded (unverified on Forever, VERIFY.md CF-62d): without the atlas a
+-- coloured square in the role's colour. icon:SetRole(role, dim): dim for an open slot.
+local ROLE_ATLAS = { tank = "UI-LFG-RoleIcon-Tank", heal = "UI-LFG-RoleIcon-Healer", dps = "UI-LFG-RoleIcon-DPS" }
+local atlasKnown = {}
+function Kit.hasAtlas(name)
+  if atlasKnown[name] == nil then
+    local ok, info = pcall(function() return C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(name) end)
+    atlasKnown[name] = ok and info ~= nil and true or false
+  end
+  return atlasKnown[name]
+end
+
+function Kit.roleIcon(parent, size)
+  local t = parent:CreateTexture(nil, "ARTWORK")
+  t:SetSize(size, size)
+  function t:SetRole(role, dim)
+    role = ROLE_ATLAS[role] and role or "dps"
+    if Kit.hasAtlas(ROLE_ATLAS[role]) and self.SetAtlas then
+      self:SetAtlas(ROLE_ATLAS[role])
+      self:SetVertexColor(1, 1, 1, 1)
+    else
+      self:SetColorTexture(Theme.color(role))
+    end
+    if self.SetDesaturated then self:SetDesaturated(dim and true or false) end
+    self:SetAlpha(dim and 0.45 or 1)
+  end
+  return t
+end
+
 -- Button with the gold look. kind: "normal", "primary" or "ghost". onClick(button).
 function Kit.button(parent, text, onClick, kind)
   local b = CreateFrame("Button", nil, parent)
@@ -46,6 +96,14 @@ function Kit.button(parent, text, onClick, kind)
   b.label = Theme.text(b, "button", b.kind == "primary" and "outline" or "goldPale")
   b.label:SetPoint("CENTER")
   b:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
+  -- CF-61: b.tooltip (optional) shows on hover (guarded).
+  b:SetScript("OnEnter", function(self)
+    if not (self.tooltip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function(self) if self.tooltip and GameTooltip then GameTooltip:Hide() end end)
   function b:SetLabel(label)
     self.label:SetText(label)
     local width = self.label.GetStringWidth and self.label:GetStringWidth() or 0
@@ -112,6 +170,19 @@ function Kit.checkbox(parent, label, help, checked, onChange)
     end
   end
   function c:GetChecked() return self.checked end
+  -- CF-61: wraps the label and help to `width` (the switch included) and grows the row to fit them.
+  function c:Fit(width)
+    self:SetWidth(width)
+    local height = 0
+    for _, fs in ipairs({ self.text, self.help }) do
+      fs:SetWidth(width - 24)
+      fs:SetJustifyH("LEFT")
+      if fs.SetWordWrap then fs:SetWordWrap(true) end
+      local h = fs.GetStringHeight and fs:GetStringHeight()
+      height = height + (type(h) == "number" and h > 0 and h or 12) + 2
+    end
+    self:SetHeight(math.max(self.help and 34 or 22, math.ceil(height) + 4))
+  end
   c:SetScript("OnClick", function(self)
     self:SetChecked(not self.checked)
     if onChange then onChange(self.checked) end
@@ -489,12 +560,14 @@ end
 
 --[[ Ambient effects (CF-43): a bright streak that slides across `region` every `period` seconds, on a
 frame that clips it. Kit.ambient() says whether effects are on (set by the addon from the settings); the
-streak plays only then. AnimationGroup is unverified on Forever (VERIFY.md V64): without it nothing moves.
+streak plays only then. The animation group belongs to the streak texture: a group on `frame` would slide the
+whole frame (on Retail the title bar moved as a dark block, API-FINDINGS "Retail dry runs"). AnimationGroup is
+unverified on Forever (VERIFY.md V64): without it nothing moves.
 Returns the shine object with :Refresh() (follows Kit.ambient) or nil. ]]
 Kit.ambient = function() return true end
 
 function Kit.shine(frame, region, period)
-  if not (frame.CreateAnimationGroup and frame.CreateTexture) then return nil end
+  if not frame.CreateTexture then return nil end
   if frame.SetClipsChildren then frame:SetClipsChildren(true) end
   local streak = frame:CreateTexture(nil, "OVERLAY", nil, 6)
   streak:SetTexture(Theme.TEXTURES.shine)
@@ -502,14 +575,24 @@ function Kit.shine(frame, region, period)
   streak:SetSize(48, 18)
   streak:SetPoint("CENTER", region or frame, "LEFT", -30, 0)
   streak:Hide()
-  local group = frame:CreateAnimationGroup()
+  local group = streak.CreateAnimationGroup and streak:CreateAnimationGroup()
   if not group then return nil end
   local move = group:CreateAnimation("Translation")
   if not move then return nil end
   group:SetLooping("REPEAT")
   move:SetDuration(1.4)
   move:SetStartDelay(period or 6)
-  local shine = { streak = streak, group = group, move = move, region = region or frame }
+  -- CF-62: invisible between passes (it waited at its start, a white strip behind the title's shield): alpha 0, and
+  -- an Alpha animation holds it at 1 only while it moves. Without Alpha animations it stays as before.
+  local fade = group:CreateAnimation("Alpha")
+  if fade and fade.SetFromAlpha then
+    streak:SetAlpha(0)
+    fade:SetFromAlpha(1)
+    fade:SetToAlpha(1)
+    fade:SetDuration(1.4)
+    fade:SetStartDelay(period or 6)
+  end
+  local shine = { streak = streak, group = group, move = move, fade = fade, region = region or frame }
   function shine:Refresh()
     local width = (self.region.GetWidth and self.region:GetWidth() or 0) + 60
     self.move:SetOffset(width, 0)
@@ -541,6 +624,7 @@ function Kit.take(p, parent)
   end
   item:Show()
   item:ClearAllPoints()
+  item.tooltip = nil -- CF-61: a reused button doesn't keep another one's tooltip
   return item
 end
 
