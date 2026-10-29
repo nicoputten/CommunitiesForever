@@ -192,7 +192,7 @@ function Settings.options()
         order = 5.2,
         width = "full",
         name = "Run reminders",
-        help = "A note under the minimap before a run you're in, and at its start",
+        help = "A banner at the top of the screen 30 and 15 minutes before a run you're in, and at its start",
         get = function() return ns.db.global.settings.runToasts ~= false end,
         set = function(_, value) ns.db.global.settings.runToasts = value end,
       },

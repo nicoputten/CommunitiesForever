@@ -84,19 +84,25 @@ describe("Run alerts (CF-48)", function()
     _G.CF_RUNS, _G.C_PartyInfo, _G.ReloadUI = nil, nil, nil
   end)
 
-  it("reminds at the site's reminder time: a chat line, the note under the minimap and its Open", function()
+  it("reminds at the site's reminder time: a chat line, the banner (CF-63d) and its Open", function()
     load(runs())
     state.printed = {}
     advance(NOW + 3600 - 1800)
     local all = printed()
     assert.is_truthy(all:find("The Deadmines starts in 30 min (" .. os.date("%H:%M", NOW + 3600) .. "). "
       .. "You organise. [Open]", 1, true))
-    local toast = ns.RunToasts.frame()
-    assert.is_true(toast.shown)
-    assert.are.equal("IN 30 MINUTES", toast.title:GetText())
-    assert.is_truthy(toast.text:GetText():find("You invite at start. 2 in.", 1, true))
-    assert.is_truthy(clickLink("Open"))
+    local banner = ns.RunBanner.frame()
+    assert.is_true(banner.shown)
+    assert.are.same({ "In 30 minutes", "The Deadmines", "Ves Doombringer \194\183 " .. os.date("%H:%M", NOW + 3600) },
+      { banner.title:GetText(), banner.name:GetText(), banner.line:GetText() })
+    assert.is_false(banner.invite.shown)
+    -- 15 minutes before: Invites open, and the organiser's Invite all.
+    advance(NOW + 3600 - 900)
+    local shown = ns.RunBanner.shown()
+    assert.are.same({ "invites", true }, { shown[#shown].kind, shown[#shown].invite })
+    banner:RunScript("OnClick")
     assert.are.equal("run:r1", addon.db.global.settings.dungeonTree.selected)
+    assert.is_truthy(clickLink("Open"))
     -- Only once.
     state.printed = {}
     advance(NOW + 3600 - 1700)
@@ -111,7 +117,7 @@ describe("Run alerts (CF-48)", function()
     state.printed = {}
     advance(NOW + 3600 - 1800)
     assert.is_falsy(printed():find("starts in", 1, true))
-    assert.is_nil(ns.RunToasts.frame())
+    assert.is_nil(ns.RunBanner.frame())
     ns.Settings.option("runLine_reminder").set({}, true)
     assert.is_nil(addon.db.global.settings.runLines.reminder)
   end)
@@ -161,13 +167,26 @@ describe("Run alerts (CF-48)", function()
   it("tells everyone else it starts, with Request invite", function()
     load(runs())
     advance(NOW + 7200)
-    local toast = ns.RunToasts.frame()
-    assert.are.equal("STARTING NOW", toast.title:GetText())
-    assert.are.equal("Waiting for Garraka Doombringer's invite", toast.text:GetText()) -- no record: the name
-    toast.button:RunScript("OnClick")
-    assert.are.same({ "Garraka Doombringer" }, requested)
+    local shown = ns.RunBanner.shown()
+    assert.are.same({ "start", "Starting now", "Wailing Caverns", false },
+      { shown[#shown].kind, shown[#shown].title, shown[#shown].name, shown[#shown].invite })
     assert.is_truthy(printed():find("Wailing Caverns is starting now. Invites go out from Garraka Doombringer. "
       .. "[Request invite]", 1, true))
+    assert.is_truthy(clickLink("Request invite"))
+    assert.are.same({ "Garraka Doombringer" }, requested)
+  end)
+
+  it("holds banners during combat, then shows only the latest still worth showing (CF-63d)", function()
+    load(runs())
+    state.inCombat = true
+    advance(NOW + 3600 - 1800)
+    assert.is_nil(ns.RunBanner.frame()) -- held
+    advance(NOW + 3600 - 900)
+    state.inCombat = false
+    advance(NOW + 3600 - 890)
+    local shown = ns.RunBanner.shown()
+    assert.are.equal(1, #shown)
+    assert.are.equal("invites", shown[1].kind) -- the 30-minute one is not shown any more
   end)
 
   it("announces answers to your run and runs from a friend", function()

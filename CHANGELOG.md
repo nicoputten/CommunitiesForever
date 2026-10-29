@@ -18,6 +18,9 @@ tagging; the release stops if the tag has no section.
 - **Dungeons, the group:** hover a member for their level fit, role, where and when they answered and where they
   are online; right-click for Whisper, Invite (from 15 minutes before the start) and Show in Friends. An open slot
   has "Ask now for this run", and its menu whispers the first friend who fits with a ready-made line.
+- **Run reminders:** a banner at the top of the screen, like LEVEL UP, 30 minutes before a run you're in, when
+  invites open 15 minutes before (the organiser gets Invite all) and at the start; a click opens the run. It waits
+  while you're in combat or a battleground. It replaces the note under the minimap.
 
 ## v0.9.0-beta1 (2026-10-29)
 - **Fixed:** a friend set to "Appear offline" on Battle.net still syncs and their characters are linked to them
