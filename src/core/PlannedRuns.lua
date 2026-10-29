@@ -564,7 +564,7 @@ function PlannedRuns.parseClock(typed)
   return h, m
 end
 
--- "in 2 h 40 min", "in 25 min", "in 3 days", "started 10 min ago".
+-- "in 2 h 40 m", "in 25 min", "in 3 days", "started 10 min ago" (CF-63 board CF63RunDetail: "in 3 h 10 m").
 function PlannedRuns.untilText(at, now)
   local seconds = at - now
   if seconds < 0 then
@@ -574,10 +574,19 @@ function PlannedRuns.untilText(at, now)
   if minutes < 60 then return string.format("in %d min", minutes) end
   if minutes < 24 * 60 then
     local h, m = math.floor(minutes / 60), minutes % 60
-    return m > 0 and string.format("in %d h %d min", h, m) or string.format("in %d h", h)
+    return m > 0 and string.format("in %d h %d m", h, m) or string.format("in %d h", h)
   end
   local d = math.floor(minutes / (24 * 60))
   return string.format("in %d day%s", d, d == 1 and "" or "s")
+end
+
+PlannedRuns.STARTING_FOR = 30 * 60 -- CF-63: "Starting now" this long after the start
+
+-- CF-63: a run's countdown: untilText before the start, "Starting now" for STARTING_FOR after it, then "started
+-- N min ago".
+function PlannedRuns.countdown(at, now)
+  if now >= at and now < at + PlannedRuns.STARTING_FOR then return "Starting now" end
+  return PlannedRuns.untilText(at, now)
 end
 
 -- ===== CF-62: what the site knows, for Friends ("Not synced yet") and the Dungeons empty state =====

@@ -33,15 +33,19 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
-### CF-63a Dungeons tab: dungeon names, in range on Retail, the run layout
+### CF-63a Dungeons tab: dungeon names, in range on Retail, the run detail (board CF63RunDetail)
 | Step | Expected | Status |
 |---|---|---|
-| Retail 12.1.5 (or Forever), a website run for SM: Graveyard (`smgy`); `/reload` after the upload, `/cf`, Dungeons | The run row says "SM: Graveyard" (never "smgy"); the run's title "Scarlet Monastery: Graveyard" with "level 26–36" next to it. | open |
-| Same, alone online (no friend on) | "In range for <character> (<level>)" lists the dungeons that fit you; on Retail the Vanilla dungeons, no Retail ones. "Online now, fits 26–36" shows on the run. | open |
+| Retail 12.1.5 (or Forever), a website run for SM: Graveyard (`smgy`); `/reload` after the upload, `/cf`, Dungeons | The run row says "SM: Graveyard" (hover: "Scarlet Monastery: Graveyard"); never "smgy". | open |
+| Open the run | Three header lines: "Scarlet Monastery: Graveyard"; "level 26–36 · Tirisfal Glades"; "Tomorrow 20:30 · in 1 day · planned on the website" (or "in 3 h 10 m", "in 12 min"). Compare with `docs/design/cf-63-2026-10/CF63RunDetail.dc.html` A. | open |
+| Same, alone online (no friend on) | "In range for <character> (<level>)" lists the dungeons that fit you; on Retail the Vanilla dungeons, no Retail ones. | open |
 | A run for a dungeon the addon doesn't know (if the site has one) | The site's name, else "A dungeon"; never an id. | open |
-| A run with several answers, window at its normal size (1080 × 720) | The group rows span the full width; no name runs into its status ("answered on Discord", "maybe · online · <zone>"); "Edit or cancel" (organiser) or "On the website" with the link box sits below the group and your answer, on the left; "Online now, fits" on the right beside it. | open |
-| Make the window as narrow as it goes | A long name is cut with "..." before it reaches the status; nothing overlaps. | open |
-| Answer a run (I'm in), before `/reload` | A small pocket watch icon after the run row's "N in" and after the run's time line; hover: "Not on the website yet: reaches the website and Discord after /reload." No text line. If the icon is missing (only an empty ring shows), note it: `Interface\Icons\INV_Misc_PocketWatch_01` isn't there. | open |
+| The group, window at its normal size (1080 × 720) | Five 36 px rows across the full width: role, round class icon, name, "level · friend", then a green "online" for members online and the status right-aligned ("organiser", "you", "Discord", "maybe", "3 below"). Your own row has a gold edge. "Damage · open" for an open slot, "Healer · nobody fits" when nobody in range plays it. No name runs into its status. | open |
+| Below the group | A line, "Your answer" (or the organiser's Start / Invite all), a line, then one row: "Online now, fits ⓘ" with one line per member ("Lia Thornwhisper 29 · Lia", Whisper) on the left; "On the website ⓘ" (or "Edit or cancel" when you organise) with the link box on the right. Hover the ⓘs: "Online members whose current character fits 26–36." and "Copy with Ctrl+C. Edit or cancel happens on the website." Nobody: "Nobody else online fits". | open |
+| Make the window as narrow as it goes | A long name is cut with "..." before it reaches "online" or the status; nothing overlaps. | open |
+| Keep the window open on a run across a minute boundary | The countdown changes without clicking ("in 13 min" becomes "in 12 min"). From 15 minutes before the start Invite shows next to Whisper; at the start the line says "Starting now · 20:30" (in orange) for 30 minutes. | open |
+| Answer a run (I'm in), before `/reload` | A small pocket watch icon after the run row's "N in" and after the run's time line; hover: "Saved. Reaches the website with your next upload." No text line. If only an empty ring shows, `Interface\Icons\INV_Misc_PocketWatch_01` isn't there: note it. | open |
+| The bottom of the run list | "Runs from Wed 22:30 ⓘ" (when the runs file was written); hover: "Runs from the website. Type /reload after an upload for newer." | open |
 
 ### CF-62d2 Dungeons tab: in range and the empty state (board AG05InRange, D)
 | Step | Expected | Status |
