@@ -46,7 +46,10 @@ RunStart.BANNERS = { { kind = "soon", before = 30 * 60 }, { kind = "invites", be
 function RunStart.banners(runs, me, last, now)
   local out = {}
   for _, run in ipairs(runs or {}) do
-    if type(run.startsAt) == "number" and involved(run, me) then
+    local mine = ns.PlannedRuns.yourAnswer(run, me)
+    -- CF-63d board: a reserve gets nothing (only the organiser and who is in or maybe).
+    local reserve = mine and mine.reserve and not ns.PlannedRuns.isOrganiser(run, me)
+    if type(run.startsAt) == "number" and involved(run, me) and not reserve then
       local latest
       for _, b in ipairs(RunStart.BANNERS) do
         local at = run.startsAt - b.before
@@ -56,6 +59,34 @@ function RunStart.banners(runs, me, last, now)
         out[#out + 1] = { kind = latest, run = run, organiser = ns.PlannedRuns.isOrganiser(run, me) or nil }
       end
     end
+  end
+  return out
+end
+
+--[[ CF-63d (Nico 2026-10-30): banners wait during combat and battlegrounds. held: the banners that came due
+meanwhile (RunStart.banners), oldest first. What to show now: per run only the latest; one that came due before the
+start is dropped once the run has started (the start banner shows instead), the start banner once the run started
+more than PlannedRuns.STARTING_FOR ago. ]]
+function RunStart.release(held, now)
+  local latest, order = {}, {}
+  for _, e in ipairs(held or {}) do
+    local id = e.run and e.run.id
+    if id then
+      if not latest[id] then order[#order + 1] = id end
+      latest[id] = e
+    end
+  end
+  local out = {}
+  for _, id in ipairs(order) do
+    local e = latest[id]
+    local startsAt = e.run.startsAt
+    local keep
+    if e.kind == "start" then
+      keep = now < startsAt + ns.PlannedRuns.STARTING_FOR
+    else
+      keep = now < startsAt
+    end
+    if keep then out[#out + 1] = e end
   end
   return out
 end

@@ -92,6 +92,30 @@ describe("RunStart (CF-48)", function()
     assert.is_truthy(PlannedRuns)
   end)
 
+  it("gives a reserve no banner (CF-63d)", function()
+    local runs = { run("r", NOW + 1800, { { guid = "G-ME", answer = "in", reserve = true } }) }
+    assert.are.equal(0, #RunStart.banners(runs, ME, NOW - 15, NOW))
+  end)
+
+  it("releases held banners after combat: the latest per run, none from before a start that passed (CF-63d)",
+    function()
+      local a = run("a", NOW + 600, {})
+      local b = run("b", NOW - 60, {})
+      local c = run("c", NOW - 3600, {})
+      local held = {
+        { kind = "soon", run = a }, { kind = "invites", run = a }, -- a: invites, the latest
+        { kind = "invites", run = b }, -- b started a minute ago: dropped (its start banner shows instead)
+        { kind = "start", run = c },   -- c started an hour ago: too late
+      }
+      local out = RunStart.release(held, NOW)
+      assert.are.equal(1, #out)
+      assert.are.same({ "invites", "a" }, { out[1].kind, out[1].run.id })
+      held[#held + 1] = { kind = "start", run = b }
+      out = RunStart.release(held, NOW)
+      assert.are.same({ "invites:a", "start:b" }, { out[1].kind .. ":" .. out[1].run.id,
+                                                   out[2].kind .. ":" .. out[2].run.id })
+    end)
+
   it("shows the banners at 30 and 15 minutes and at the start, the latest one only after a gap (CF-63d)", function()
     local runs = {
       run("in", NOW + 1800, { { guid = "G-ME", answer = "in" } }),

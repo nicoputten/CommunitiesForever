@@ -56,7 +56,18 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | Click Can’t | "You can’t make it"; the dropdown, roles and note disappear. | open |
 | Hover a member's row | Tooltip: the character; "Level 30 · fits · Tank"; "Answered on the website, Mon 21:12" (or Discord, in game); their note in quotes if any; "Online on <character> · <zone>" when online. | open |
 | Right-click a member's row | Menu with their name: Whisper (opens a whisper), "Invite · from 20:15" (greyed until 15 minutes before the start, and in combat), Show in Friends (opens the Friends tab on their character). Your own row has no menu. | open |
-| An open slot | "Damage · open" with "Ask now for this run" on the right: it opens Ask now with the note "For SM: Graveyard 20:30 · need Damage". Click the row: a menu "Damage · open" with "Whisper <the first who fits>" (opens the chat box with "Up for SM: Graveyard at 20:30? We need a Damage." filled in; you press Enter), Ask now for this run, "Invite · from 20:15". | open |
+| An open slot | "Damage · open" with "Ask now for this run" on the right: it opens Ask now with the note "For SM: Graveyard 20:30 · need damage". Click the row: a menu "Damage · open" with "Whisper <the first who fits>" (opens the chat box with "Up for SM: Graveyard at 20:30? We need damage." filled in; you press Enter), Ask now for this run, "Invite · from 20:15". | open |
+
+### CF-63d Run reminder banners (board CF63Banners)
+| Step | Expected | Status |
+|---|---|---|
+| Answer I’m in to a run that starts in 31 minutes (or plan one), wait | At 30 minutes before: a banner top centre, below where LEVEL UP shows: "In 30 minutes", "SM: Graveyard" large, "Healer · Vesgar Bloodhoof · 20:30"; gold lines above and below; it fades in, stays 10 s, fades out. A soft chime. The chat line "… starts in 30 min …" as before. No note under the minimap any more. Compare with `docs/design/cf-63-2026-10/CF63Banners.dc.html`. | open |
+| 15 minutes before | "Invites open". As the organiser also "Invite all" (greyed in combat, tooltip "Not in combat"); clicking it invites everyone in and online. | open |
+| At the start | "Starting now"; the organiser's start panel opens as before. | open |
+| Click a banner | The window opens on that run. | open |
+| Be in combat (or a battleground) when one comes due | No banner until combat ends; then only the latest one for that run, and none from before a start that has passed. | open |
+| Answer Can’t, or be a reserve | No banners for that run. | open |
+| Settings: Run reminders off | No banners (the chat lines follow their own settings). Ambient effects off: the banner appears and disappears without fading. | open |
 
 ### CF-63a Dungeons tab: dungeon names, in range on Retail, the run detail (board CF63RunDetail)
 | Step | Expected | Status |

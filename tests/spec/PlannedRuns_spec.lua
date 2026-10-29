@@ -517,12 +517,12 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
       local today = { startsAt = AT + 7200 } -- 20:30
       local monday = { startsAt = AT + 3 * 86400 }
       local name = "Scarlet Monastery: Graveyard"
-      assert.are.equal("Up for SM: Graveyard at 20:30? We need a Healer.",
+      assert.are.equal("Up for SM: Graveyard at 20:30? We need a healer.",
         PlannedRuns.whisperText(today, name, "heal", AT, os.date))
       assert.are.equal("Up for SM: Graveyard at 20:30?", PlannedRuns.whisperText(today, name, nil, AT, os.date))
       assert.is_truthy(PlannedRuns.whisperText(monday, "The Deadmines", "dps", AT, os.date)
-        :find("^Up for The Deadmines on Mon 18:30%? We need a Damage%.$"))
-      assert.are.equal("For SM: Graveyard 20:30" .. DOT .. "need Healer",
+        :find("^Up for The Deadmines on Mon 18:30%? We need damage%.$"))
+      assert.are.equal("For SM: Graveyard 20:30" .. DOT .. "need a healer",
         PlannedRuns.askNote(today, name, "heal", AT, os.date))
       assert.are.equal("For SM: Graveyard 20:30", PlannedRuns.askNote(today, name, nil, AT, os.date))
     end)
