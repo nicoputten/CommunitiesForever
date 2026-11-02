@@ -76,6 +76,38 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     assert.is_truthy(t:find("Ves Doombringer", 1, true))
   end)
 
+  it("counts down while open and shows the new day after the reset", function()
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
+    local n = D.EPOCH + 3
+    local start = D.dayStart(n, CET, RESET)
+    local ticks = {}
+    load(function(s)
+      s.serverTime = start + 3600
+      _G.C_Timer.NewTicker = function(seconds, fn) ticks[#ticks + 1] = { seconds = seconds, fn = fn } end
+    end)
+    local function minute()
+      for _, t in ipairs(ticks) do t.fn() end
+    end
+    ns.MainFrame.toggle()
+    ns.MainFrame.selectTab("doomsday")
+    assert.is_truthy(texts():find("in 23 h 0 m\n", 1, true))
+    state.serverTime = start + 3 * 3600
+    minute()
+    assert.is_truthy(texts():find("in 21 h 0 m\n", 1, true))
+    -- Across the reset, the tab still open: the next day, its goals and a full day to go.
+    state.serverTime = start + 86400 + 60
+    minute()
+    local label = ns.DoomsdayView.dayLabel(D.dayStart(n + 1, CET, RESET), os.date) or D.label(n + 1)
+    assert.is_truthy(texts():find("\nToday \194\183 " .. label .. " \194\183 ", 1, true))
+    assert.is_truthy(texts():find("in 23 h 59 m\n", 1, true))
+    assert.is_table(addon.db.global.self.goals.days[n + 1])
+    -- Closed: no redraws.
+    ns.MainFrame.toggle()
+    state.serverTime = start + 86400 + 660
+    minute()
+    assert.is_truthy(texts():find("in 23 h 59 m\n", 1, true))
+  end)
+
   it("says a daily is done in chat, and keeps quiet with the setting off", function()
     local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local n = dayWith(D, "d.quests10")

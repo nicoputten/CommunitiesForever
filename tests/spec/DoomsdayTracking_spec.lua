@@ -77,6 +77,34 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     assert.are.equal(D.week(saturday) + 1, D.week(saturday + 1))
   end)
 
+  it("turns the day at the reset with nothing happening in game, checked every minute", function()
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
+    local n = D.EPOCH + 3
+    local start = D.dayStart(n, CET, RESET)
+    local ticks = {}
+    load(function(s)
+      s.serverTime = start + 86400 - 90
+      _G.C_Timer.NewTicker = function(seconds, fn) ticks[#ticks + 1] = { seconds = seconds, fn = fn } end
+    end)
+    local tick
+    for _, t in ipairs(ticks) do
+      if t.seconds == 60 then tick = t.fn end
+    end
+    local changed = #wowapi.sentMessages(state, ns.DoomsdayTracker.CHANGED)
+    -- A minute before the reset: still the same day, nothing to tell.
+    state.serverTime = start + 86400 - 30
+    tick()
+    assert.is_nil(goals().days[n + 1])
+    assert.are.equal(changed, #wowapi.sentMessages(state, ns.DoomsdayTracker.CHANGED))
+    -- Past the reset: the new day's goals are drawn and told once (the window, the swap lines, the send).
+    state.serverTime = start + 86400 + 30
+    tick()
+    assert.is_table(goals().days[n + 1])
+    assert.are.equal(changed + 1, #wowapi.sentMessages(state, ns.DoomsdayTracker.CHANGED))
+    tick()
+    assert.are.equal(changed + 1, #wowapi.sentMessages(state, ns.DoomsdayTracker.CHANGED))
+  end)
+
   it("takes the reset setting from the runs file, and a friend's newer one from HELLO", function()
     load(nil, function()
       _G.CF_RUNS = { updatedAt = 10, runs = {}, doomsday = { reset = 72000, changedAt = 50, offset = 25200 } }

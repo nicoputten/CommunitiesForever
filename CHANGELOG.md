@@ -13,6 +13,8 @@ tagging; the release stops if the tag has no section.
   closes. Settings › Celebrations: banners, sounds, friends' celebrations and a Preview.
 - **Minimap button:** the addon's own gold shield instead of a generic icon, also in the addon compartment and the
   AddOns list.
+- **Fixed:** the Doomsday tab counts down to the reset while it's open, and the new day's goals show up (and reach
+  your friends) within a minute of the reset, even when you're just standing around.
 
 ## v1.0.0 (2026-10-29)
 - **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window

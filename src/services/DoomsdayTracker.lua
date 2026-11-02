@@ -15,6 +15,7 @@ DoomsdayTracker.KILL = "CF_DOOMSDAY_KILL"
 local addonRef, events
 local cache -- CF-59: the last DoomsdayTracker.state(), see there
 local started, newDay = false, false -- CF-57: a day made after login is told (DoomsdayAlerts' swap lines)
+local evaluatedDay, ticking -- the day evaluate() last ran for; the minute check that turns the day runs
 
 local function global() return addonRef.db.global end
 local function own() return global().self end
@@ -197,6 +198,7 @@ end
 local function evaluate()
   cache = nil
   local today, schedule = DoomsdayTracker.today()
+  evaluatedDay = today
   local week = ns.Doomsday.week(today)
   local facts = store()
   local community = communityNames()
@@ -543,6 +545,13 @@ function DoomsdayTracker.start(addon)
   fromSnapshot()
   evaluate()
   started = true
+  -- The day turns at the reset without anything happening in game: checked every minute, so the new goals are
+  -- drawn, sent and told within a minute of it.
+  if not ticking then
+    ticking = ns.Timer.every(60, function()
+      if addonRef and DoomsdayTracker.today() ~= evaluatedDay then evaluate() end
+    end)
+  end
 end
 
 ns.DoomsdayTracker = DoomsdayTracker
