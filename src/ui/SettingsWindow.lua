@@ -14,6 +14,7 @@ local COLUMN = math.floor((WIDTH - 2 * PAD - GAP) / 2)
 local window, scroll
 local controls = {}    -- option key -> control (checkbox, input, select)
 local refreshers = {}  -- functions that show the current values
+local switches = {}    -- CF-67: the switches' refreshers (a switch may grey out another)
 local rolePool, roleRows
 
 local function option(key) return ns.Settings.option(key) end
@@ -26,13 +27,35 @@ local function label(parent, x, y, text, role, colorName)
 end
 
 -- A switch bound to an option; returns its height.
+-- CF-67: a tooltip on a control from its option's `tip`.
+local function tip(control, text)
+  if not text then return end
+  control:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(text, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  control:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+end
+
 local function toggle(parent, key, x, y)
   local opt = option(key)
-  local box = Kit.checkbox(parent, opt.name, opt.help, opt.get(), function(value) opt.set({}, value) end)
+  local box = Kit.checkbox(parent, opt.name, opt.help, opt.get(), function(value)
+    opt.set({}, value)
+    for _, refresh in ipairs(switches) do refresh() end -- CF-67: a switch may grey out another
+  end)
   box:SetPoint("TOPLEFT", x, -y)
   box:Fit(COLUMN) -- CF-61: the help wraps inside its column
+  tip(box, opt.tip)
   controls[key] = box
-  refreshers[#refreshers + 1] = function() box:SetChecked(option(key).get()) end
+  local function refresh()
+    local o = option(key)
+    box:SetChecked(o.get())
+    box:SetEnabled(not (o.disabled and o.disabled()))
+  end
+  refreshers[#refreshers + 1] = refresh
+  switches[#switches + 1] = refresh
   return box:GetHeight() + 6
 end
 
@@ -124,6 +147,18 @@ local function build()
   ry = ry + toggle(body, "minimap", right, ry)
   ry = ry + toggle(body, "openOnLogin", right, ry)
   ry = ry + toggle(body, "ambientEffects", right, ry)
+  -- CF-67: Celebrations (board CB09), under Interface.
+  ry = section(body, right, ry + 12, "Celebrations")
+  ry = ry + toggle(body, "celebrations", right, ry)
+  ry = ry + toggle(body, "celebrationSounds", right, ry)
+  ry = ry + toggle(body, "celebrationFriends", right, ry)
+  local preview = Kit.button(body, option("celebrationPreview").name, function()
+    option("celebrationPreview").func()
+  end)
+  preview:SetPoint("TOPLEFT", right, -(ry + 2))
+  tip(preview, option("celebrationPreview").tip)
+  controls.celebrationPreview = preview
+  ry = ry + 36
   y = math.max(ly, ry) + 12
 
   -- CF-21: the invite link friends see on characters outside the community (to share, not to join: V26).

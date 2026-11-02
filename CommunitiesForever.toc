@@ -28,6 +28,7 @@ src\core\Feed.lua
 src\core\Doomsday.lua
 src\core\Goals.lua
 src\core\DoomsdayView.lua
+src\core\Celebrations.lua
 src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
@@ -74,6 +75,8 @@ src\adapters\Classes.lua
 src\adapters\PvpInfo.lua
 src\adapters\LootInfo.lua
 src\adapters\GoalEvents.lua
+src\adapters\Sounds.lua
+src\adapters\Screen.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua
@@ -98,6 +101,7 @@ src\services\Planner.lua
 src\services\GroupAsks.lua
 src\services\RunAlerts.lua
 src\services\DoomsdayAlerts.lua
+src\services\Celebrate.lua
 
 src\ui\kit\Theme.lua
 src\ui\kit\Widgets.lua
@@ -110,6 +114,7 @@ src\ui\DoomsdayTab.lua
 src\ui\RunDialogs.lua
 src\ui\RunBanner.lua
 src\ui\CrownToast.lua
+src\ui\CelebrationBanner.lua
 src\ui\StartPanel.lua
 src\ui\FriendsTab.lua
 src\ui\ActivityTab.lua

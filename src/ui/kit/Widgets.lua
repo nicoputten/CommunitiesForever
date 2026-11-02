@@ -219,6 +219,12 @@ function Kit.checkbox(parent, label, help, checked, onChange)
     end
   end
   function c:GetChecked() return self.checked end
+  -- CF-67: a switch that doesn't apply now: greyed out, still visible, clicks ignored.
+  function c:SetEnabled(on)
+    self.enabled = on ~= false
+    self:SetAlpha(self.enabled and 1 or 0.45)
+  end
+  function c:IsEnabled() return self.enabled ~= false end
   -- CF-61: wraps the label and help to `width` (the switch included) and grows the row to fit them.
   function c:Fit(width)
     self:SetWidth(width)
@@ -233,6 +239,7 @@ function Kit.checkbox(parent, label, help, checked, onChange)
     self:SetHeight(math.max(self.help and 34 or 22, math.ceil(height) + 4))
   end
   c:SetScript("OnClick", function(self)
+    if not self:IsEnabled() then return end
     self:SetChecked(not self.checked)
     if onChange then onChange(self.checked) end
   end)

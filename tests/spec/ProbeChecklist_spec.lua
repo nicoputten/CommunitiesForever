@@ -146,7 +146,7 @@ describe("FriendProbe launch checklist (CF-60)", function()
       end
       table.sort(retail)
       assert.are.same({ "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67", "V68", "V69",
-                        "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86" }, retail)
+                        "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86", "V88", "V89" }, retail)
     end)
 
     it("never registers the combat log by itself, only from its button (Blizzard's popup on Retail)", function()

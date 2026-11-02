@@ -60,6 +60,7 @@ stds.wow = {
     "ColorPickerFrame", -- CF-43
     "C_UI", "ReloadUI", "time", -- CF-47 (V68, V71)
     "MinimapCluster", "ChatFrame_OpenChat", -- CF-48 (V72)
+    "GetPhysicalScreenSize", "ChatFrame1", -- CF-67 (V89)
     "issecretvalue",
     "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",
