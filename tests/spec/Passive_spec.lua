@@ -52,6 +52,7 @@ describe("passive without a community", function()
     assert.are.equal("555", addon.db.global.settings.clubId)
     assert.is_true(ns.Setup.isShown())
     assert.is_true(state.minimapIcon.shown)
+    assert.is_true(state.minimapIcon.compartment) -- CF-66: in the addon compartment with the button
     assert.is_true(#state.bnSent > 0) -- HELLO to the Battle.net friends online
   end)
 
@@ -60,6 +61,19 @@ describe("passive without a community", function()
     ns.Minimap.setShown(false)
     join()
     assert.is_false(state.minimapIcon.shown)
+    assert.is_false(state.minimapIcon.compartment)
+  end)
+
+  -- CF-66: the designer's shield, shipped with the addon (media/textures), as the button's icon.
+  it("shows the addon's shield on the minimap button", function()
+    load({})
+    assert.are.equal("Interface\\AddOns\\CommunitiesForever\\media\\textures\\mapicon.tga",
+      state.minimapIcon.object.icon)
+    local f = assert(io.open("media/textures/mapicon.tga", "rb"))
+    local header = f:read(18)
+    f:close()
+    -- An uncompressed 32-bit TGA (type 2) of 64 x 64 with an alpha channel.
+    assert.are.same({ 2, 64, 64, 32 }, { header:byte(3), header:byte(13), header:byte(15), header:byte(17) })
   end)
 
   it("is active with a stored community, also on a character outside it", function()

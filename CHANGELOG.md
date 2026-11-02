@@ -5,6 +5,20 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.1.0 (2026-11-02)
+- **Fixed:** no "is online" chat lines right after you log in for friends who were already online.
+- **Fixed:** `/cf activity debug` is off again after a `/reload` or logout, so a debug left on from the beta no
+  longer prints instance events in chat.
+- **Celebrations:** a banner with a game sound when you finish a Doomsday goal, complete the day (with the crown when
+  you were first), finish a weekly or the Bounty, or earn a feat; big feats get a bigger banner. Several at once
+  become one banner; nothing shows during combat, boss fights or battlegrounds until afterwards. A quiet line bottom
+  left when a friend completes the day, a weekly or a special feat. Hover pauses, a click opens Doomsday, right-click
+  closes. Settings › Celebrations: banners, sounds, friends' celebrations and a Preview.
+- **Minimap button:** the addon's own gold shield instead of a generic icon, also in the addon compartment and the
+  AddOns list.
+- **Fixed:** the Doomsday tab counts down to the reset while it's open, and the new day's goals show up (and reach
+  your friends) within a minute of the reset, even when you're just standing around.
+
 ## v1.0.0 (2026-10-29)
 - **Fixed:** the Ask dialog, the reload prompt, the start panel, settings and setup open in front of the window
   again (they could open behind it).

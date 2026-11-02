@@ -153,7 +153,11 @@ function DoomsdayBoard.feats()
   return list
 end
 
--- Remembers the feats of the own characters (first seen times, local). Returns { { guid, key } } new now.
+-- CF-67: feats new while you play (not at the first sight), for the celebration banners: ({ { guid, key, feat } }).
+DoomsdayBoard.FEATS = "CF_DOOMSDAY_FEATS"
+
+-- Remembers the feats of the own characters (first seen times, local). Returns { { guid, key, feat } } new now
+-- (feat: the Feats.derive entry).
 local function rememberFeats()
   own().feats = own().feats or {}
   local new = {}
@@ -167,8 +171,11 @@ local function rememberFeats()
       if e then entries[#entries + 1] = e end
     end
     own().feats[guid] = own().feats[guid] or {}
-    for _, key in ipairs(ns.Feats.remember(own().feats[guid], ns.Feats.derive(c, entries), GetServerTime())) do
-      new[#new + 1] = { guid = guid, key = key }
+    local derived = ns.Feats.derive(c, entries)
+    local byKey = {}
+    for _, f in ipairs(derived) do byKey[f.key] = f end
+    for _, key in ipairs(ns.Feats.remember(own().feats[guid], derived, GetServerTime())) do
+      new[#new + 1] = { guid = guid, key = key, feat = byKey[key] }
     end
   end
   return new
@@ -179,8 +186,13 @@ DoomsdayBoard.rememberFeats = rememberFeats
 function DoomsdayBoard.start(addon)
   addonRef = addon
   events = events or LibStub("AceEvent-3.0"):Embed({})
-  events:RegisterMessage(ns.SelfTracker.UPDATED, function() rememberFeats() end)
-  events:RegisterMessage(ns.FeedTracker.CHANGED, function() rememberFeats() end) -- epics, watch list
+  -- CF-67: what is new while you play is told (DoomsdayBoard.FEATS); the first sight below is not.
+  local function check()
+    local new = rememberFeats()
+    if #new > 0 then addon:SendMessage(DoomsdayBoard.FEATS, new) end
+  end
+  events:RegisterMessage(ns.SelfTracker.UPDATED, check)
+  events:RegisterMessage(ns.FeedTracker.CHANGED, check) -- epics, watch list
   rememberFeats() -- the first sight marks what was there as "Earlier"
 end
 

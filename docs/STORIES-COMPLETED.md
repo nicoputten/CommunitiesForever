@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -926,3 +926,87 @@ From Nico's retail test of develop 524ff44 with the uploader in `--retail` mode.
 4. "Unlinked: Ikrasse-Kazzak 18" is expected: a community member no synced record claims by GUID. The website's
    friends list in Runs.lua has names and realms but no GUIDs, and names are never matched (rule 4); linking it
    would need the site to send each character's GUID.
+
+## CF-66 The minimap button's shield (Nico, 2026-10-31)
+The designer's icon set (64 × 64 32-bit TGAs with alpha): the shield alone (`CF_MapIcon`) and a full round button
+with its own ring in normal, highlight, pushed and alert versions. The minimap button uses the shield alone
+(`media/textures/mapicon.tga`), since LibDBIcon draws its own ring; the same icon is the TOC's `IconTexture` and the
+addon compartment's entry (LibDBIcon, only where the compartment exists), which follows the button's shown state.
+Not done: the alert look while a run starts within 30 minutes. The alert image is a full button with its own ring,
+so inside LibDBIcon's ring it would show two; a clean alert needs a shield-only variant with the red dot. No world
+map button (not asked).
+
+## CF-67 Celebration banners (Nico, 2026-11-02)
+More gamification for Doomsday: a banner of its own, with a game sound, when you finish something, and a quiet line
+when a friend does something big. Built from the designer's nine boards in `docs/design/celebrations-2026-11/`
+(CB01 to CB09); where this story and a board differ, the board wins for the look, this story for the rules.
+
+**Your own moments** (a banner and a Blizzard sound, no sound files of our own):
+- each daily goal done (PvE dailies, the Skirmish, the Hunt): small, a green (PvE) or red (PvP) edge, "+5" (CB01)
+- **Day complete**: all three PvE dailies done, the moment you are crossed out on the Board (so a PvE-only friend
+  can finish, as the crown). Medium, gold edge, the Doomsday emblem, today's points "PvE 15 · PvP 10" side by side
+  (never a total) and the streak; with the crown on the medallion when you were first (CB02). The daily that
+  finished the day is part of this banner, not a second one.
+- each weekly goal (blue edge) and the Bounty (red edge): medium, "+15", "Week 44 · 2 of 4" (CB03)
+- a feat unlocked (CB04): **big** for PvP rank 6 or higher, level 60, the first epic, a mount, an epic mount,
+  1,000 honorable kills or more, and "First in the group" (none of your characters and no friend's character in the
+  records you hold has that feat); medium for the rest. The first epic takes the violet edge.
+
+**Friends' moments** (CB06): a friend's day complete, a weekly done, a special feat. One quiet 34 px line bottom
+left above the chat, no sound, 4 s, at most 3 stacked; they wait while your own banner shows. Only friends with a
+record (BattleTag keys), never a single daily or a normal feat.
+
+**Rules:**
+- **Weight:** small, medium, big: the sound, the size (400 × 64, 470 × 80, 540 × 98 with rays and a glow) and the time
+  on screen (4, 5, 6 s).
+- **Folding** (CB05): everything that arrives within 3 seconds, or while banners wait, becomes one banner: the
+  heaviest wins, ties go to the latest. The rest is one grey line under it in this order: day complete, goals
+  ("+3 goals"), weeklies ("+1 weekly"), feats ("+2 feats"), crown. Only the winner's sound plays.
+- **Waiting:** in combat, during an encounter and in a battleground or arena banners wait, and show 2 s after it
+  ends, folded.
+- **No doubles, nothing old:** no banner for what happened before the update or before login; nothing twice after a
+  `/reload` (own moments are remembered per day, week and feat; friends' moments by key). Feats found in the first
+  10 s after login are taken as known (as the Feats view's "Already had"). A friend's moment shows only when it
+  happened after your login and within the last 15 minutes; the first time a friend's character is seen, its feats
+  are known.
+- **Place and motion** (CB07, CB08): centred, 190 px above the bottom of the screen; below 1600 px screen width at
+  85 %. In over 250 ms (rise 16 px and fade, the medallion pops 0.8 → 1.05 → 1), out over 400 ms (fade, sink 8 px);
+  big feats turn their rays slowly. Ambient effects off: no movement at all.
+- **Mouse:** hover pauses the timer and shows "Click to open Doomsday" (feats: "Click to open Feats"); a click opens
+  the window on Doomsday › Today (goals, day complete), Week (weeklies), Feats (feats) or Board (friends); right-click
+  dismisses.
+- **Settings** (CB09): a section "Celebrations" with "Celebration banners", "Celebration sounds", "Friends'
+  celebrations" (all on by default; banners off greys out the friends' switch) and a Preview button (a medium sample
+  banner for 5 s with its sound). The existing crown toast and the Doomsday chat lines stay as they are.
+
+**Built:**
+- `src/core/Celebrations.lua` (pure): the moments from goals done, feats and friends' records; weights and edges;
+  folding; the waiting queue; the friends' rules and their known keys. Busted specs.
+- `src/services/Celebrate.lua`: listens to Doomsday and feats, asks the adapters whether you are busy, shows banners.
+- `src/ui/CelebrationBanner.lua`: the plaque and the friends' line on kit frames, textures drawn by
+  `tools/make-textures.py` from the boards' shapes.
+- Sounds: `SOUNDKIT` entries per weight, guarded (V88). Physical screen width and texture rotation guarded (V89).
+
+**Compatibility (rule 8):** three new switches in `settings` (nil = on, no migration) and
+`self.doomsday.celebrated` (local, never sent; nil = nothing celebrated yet). An older version ignores both and keeps
+them in the file. No message changes.
+
+**Acceptance:**
+- Each trigger above makes its banner with the board's texts, colours and size; friends' moments make their line.
+- Several at once fold as on CB05 with one sound; nothing shows in combat, an encounter or a battleground until 2 s
+  after; nothing repeats after `/reload`; nothing from before login.
+- The settings work as on CB09; Preview shows a medium sample; Ambient effects off stops all movement.
+- `busted` and `luacheck` pass; VERIFY steps per board (CF-67) and V88, V89.
+
+**Decided** (Nico approved all five on 2026-11-02, after PR #161):
+- **Day complete** is the moment all three PvE dailies are done: crossed out on the Board, the same moment as the
+  crown. A PvE-only friend gets it too; the Skirmish, the Hunt and the Duel slot don't count for it. The daily that
+  finished the day is part of that banner.
+- **"First in the group"**: none of your other characters and no friend's character in the records you hold has
+  that feat key. The site doesn't send feats, so this is what the addon can see.
+- **Friends' moments** show only when they happened after your login and at most 15 minutes ago (a feat by its
+  character's `updatedAt`); a friend's character seen for the first time counts as known.
+- **Feats found in the first 10 s after login** are known (a catch-up after an update or a snapshot), not new.
+- **Week label** "Week 44": the calendar week (Sunday first) of the Doomsday week's start.
+- **Sounds** (unverified, V88): small `IG_QUEST_LIST_COMPLETE`; medium `UI_EPICLOOT_TOAST`; big
+  `UI_LEGENDARY_LOOT_TOAST`; each falls back to the lighter ones.

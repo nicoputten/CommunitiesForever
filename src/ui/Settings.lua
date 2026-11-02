@@ -186,6 +186,42 @@ function Settings.options()
         get = function() return ns.db.global.settings.doomsdayChat ~= false end,
         set = function(_, value) ns.db.global.settings.doomsdayChat = value end,
       },
+      -- CF-67: the celebration banners (board CB09); `tip` is the switch's tooltip.
+      celebrations = {
+        type = "toggle",
+        order = 5.16,
+        width = "full",
+        name = "Celebration banners",
+        tip = "A banner when you finish a Doomsday goal or earn a feat.",
+        get = function() return ns.db.global.settings.celebrations ~= false end,
+        set = function(_, value) ns.db.global.settings.celebrations = value end,
+      },
+      celebrationSounds = {
+        type = "toggle",
+        order = 5.17,
+        width = "full",
+        name = "Celebration sounds",
+        tip = "Plays a game sound with your own banners.",
+        get = function() return ns.db.global.settings.celebrationSounds ~= false end,
+        set = function(_, value) ns.db.global.settings.celebrationSounds = value end,
+      },
+      celebrationFriends = {
+        type = "toggle",
+        order = 5.18,
+        width = "full",
+        name = "Friends' celebrations",
+        tip = "A small line when a friend finishes the day, a weekly or a special feat.",
+        disabled = function() return ns.db.global.settings.celebrations == false end,
+        get = function() return ns.db.global.settings.celebrationFriends ~= false end,
+        set = function(_, value) ns.db.global.settings.celebrationFriends = value end,
+      },
+      celebrationPreview = {
+        type = "execute",
+        order = 5.19,
+        name = "Preview",
+        tip = "Shows a sample banner.",
+        func = function() ns.Celebrate.preview() end,
+      },
       -- CF-48: planned runs: the reminder and Starting now notes, their chime, and the chat lines per type.
       runToasts = {
         type = "toggle",

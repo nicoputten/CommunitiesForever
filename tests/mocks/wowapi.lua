@@ -230,6 +230,15 @@ local function fakeLibs(state)
   end
   function DBIcon:Show(name) state.minimapIcon.shown = true; assert(name == state.minimapIcon.name) end
   function DBIcon:Hide(name) state.minimapIcon.shown = false; assert(name == state.minimapIcon.name) end
+  -- CF-66: the addon compartment (LibDBIcon 1.0 MINOR 57).
+  function DBIcon:AddButtonToCompartment(name)
+    state.minimapIcon.compartment = true
+    assert(name == state.minimapIcon.name)
+  end
+  function DBIcon:RemoveButtonFromCompartment(name)
+    state.minimapIcon.compartment = false
+    assert(name == state.minimapIcon.name)
+  end
 
   return {
     ["AceAddon-3.0"] = AceAddon,

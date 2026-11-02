@@ -329,33 +329,6 @@ function PlannedRuns.fitOf(a, char, dungeon)
   return nil
 end
 
---[[ One of your characters for a free tank, healer or damage slot ("Grom Ashfeller fits tank"), when you
-haven't answered: candidate, role; or nil. CF-49: the character is suggested by levelFit (fits or a few over)
-and its class can play the free role, its own role first. The character you are on first. ]]
-function PlannedRuns.youFit(run, candidates, dungeon, me, selfGuid)
-  if PlannedRuns.yourAnswer(run, me) or PlannedRuns.isOrganiser(run, me) then return nil end
-  if not dungeon then return nil end
-  local free = {}
-  for _, slot in ipairs(PlannedRuns.slots(run, candidates, dungeon)) do
-    if not slot.answer then free[slot.role] = true end
-  end
-  local function roleFor(c)
-    local own = c.role or "dps"
-    if free[own] and PlannedRuns.canPlay(c.classFile, own) then return own end
-    for _, r in ipairs(PlannedRuns.rolesFor(c.classFile)) do
-      if free[r] then return r end
-    end
-    return nil
-  end
-  local best, bestRole
-  for _, c in ipairs(candidates or {}) do
-    local role = c.own and PlannedRuns.levelFit(c.level, dungeon.min, dungeon.max).suggested and roleFor(c)
-    if role and (not best or c.guid == selfGuid) then best, bestRole = c, role end
-  end
-  if best then return best, bestRole end
-  return nil
-end
-
 --[[ Characters not suggested for the run that may still join it (CF-49, levelFit: 1-5 below or a carry),
 not answered yet: { { char, fit } }, your own first, then low before carries, then the smallest gap. ]]
 function PlannedRuns.close(run, candidates, dungeon)
@@ -519,13 +492,6 @@ end
 -- "20:30" local time.
 function PlannedRuns.clock(at, dateFn)
   local t = dateFn("*t", at)
-  return string.format("%02d:%02d", t.hour, t.min)
-end
-
--- CF-47: the organiser's clock time of a start ("20:00 for Bob"): utcOffset seconds east of UTC, or nil.
-function PlannedRuns.theirClock(at, utcOffset, dateFn)
-  if type(utcOffset) ~= "number" then return nil end
-  local t = dateFn("!*t", at + utcOffset)
   return string.format("%02d:%02d", t.hour, t.min)
 end
 

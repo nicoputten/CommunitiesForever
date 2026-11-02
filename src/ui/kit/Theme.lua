@@ -48,6 +48,17 @@ Theme.COLORS = {
   goalEdge = hex("7C6838"),         -- CF-63: an open goal box's edge (board CF63DoomBoard)
   goalFill = hex("0B111C"),         -- CF-63: an open goal box
   goalDone = hex("2A2210"),         -- CF-63: a done goal box
+  -- CF-67: the celebration banners' edges per kind (boards CB01 to CB06) and the plaque.
+  celebPve = hex("7FD99A"),
+  celebPvp = hex("F08A80"),
+  celebDay = hex("F0D08E"),
+  celebWeekly = hex("9DB4FF"),
+  celebEpic = hex("C77DFF"),
+  celebBronze = hex("7A5A22"),      -- the edge's lower part
+  plaqueTop = hex("16243A"),        -- the plaque's face, top to bottom
+  plaqueBottom = hex("0A111D"),
+  celebLine = hex("C9CFD9"),        -- the banner's line, a friend's line
+  friendLine = hex("0A111D", 0.88), -- a friend's line's background
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).
@@ -93,6 +104,13 @@ Theme.TEXT = {
   badge = { "bold", 10, "GameFontHighlightSmall" },
   chip = { "bold", 11, "GameFontHighlightSmall" }, -- CF-41: the LEVEL UP chip
   banner = { "display", 28, "GameFontNormalHuge" }, -- CF-63d: the run banner's dungeon
+  -- CF-67: the celebration banners (small, medium, big).
+  celebKicker = { "bold", 12, "GameFontNormalSmall" },
+  celebTitleSmall = { "display", 20, "GameFontNormalLarge" },
+  celebTitleMedium = { "display", 25, "GameFontNormalHuge" },
+  celebTitleBig = { "display", 30, "GameFontNormalHuge" },
+  celebPointsSmall = { "serif", 26, "GameFontNormalHuge" },
+  celebPointsMedium = { "serif", 32, "GameFontNormalHuge" },
 }
 
 -- Clients whose letters the bundled fonts do not have use the game font throughout.
@@ -138,6 +156,22 @@ Theme.TEXTURES = {
   shadow = MEDIA .. "textures\\shadow.tga",
   arrow = MEDIA .. "textures\\arrow.tga", -- CF-40: fold arrow
   quest = MEDIA .. "textures\\quest.tga", -- CF-40: shared-quest count
+  mapIcon = MEDIA .. "textures\\mapicon.tga", -- CF-66: the minimap button's shield (the designer's CF_MapIcon)
+  -- CF-67: the celebration banners (tools/make-textures.py, from the boards CB01 to CB04).
+  plaqueEnd = MEDIA .. "textures\\plaqueend.tga",
+  edgeLine = MEDIA .. "textures\\edgeline.tga",
+  glow = MEDIA .. "textures\\glow.tga",
+  rays = MEDIA .. "textures\\rays.tga",
+  medal = MEDIA .. "textures\\medal.tga",
+  medalRing = MEDIA .. "textures\\medalring.tga",
+  goalDone = MEDIA .. "textures\\goaldone.tga",
+  emblem = MEDIA .. "textures\\emblem.tga",
+  crown = MEDIA .. "textures\\crown.tga",
+  flame = MEDIA .. "textures\\flame.tga",
+  hourglass = MEDIA .. "textures\\hourglass.tga",
+  swords = MEDIA .. "textures\\swords.tga",
+  rank = MEDIA .. "textures\\rank.tga",
+  epic = MEDIA .. "textures\\epic.tga",
 }
 
 -- Sizes (px at UI scale 1) from the design.

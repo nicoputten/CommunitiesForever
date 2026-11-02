@@ -65,6 +65,20 @@ describe("keybinding and Esc (CF-32)", function()
     assert.is_true(ns.MainFrame.isShown())
   end)
 
+  it("passes keys on again at the next show when combat began right after Esc", function()
+    load()
+    ns.MainFrame.toggle()
+    local w = windowFrame()
+    press(w, "ESCAPE")
+    state.inCombat = true
+    wowapi.runTimers(state) -- the restore is skipped in combat
+    assert.is_false(w.propagate)
+    state.inCombat = false
+    ns.MainFrame.toggle()
+    w:RunScript("OnShow")
+    assert.is_true(w.propagate)
+  end)
+
   it("closes the setup on Esc", function()
     load()
     addon:OnSlashCommand("setup")

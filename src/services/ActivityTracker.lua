@@ -7,15 +7,16 @@ local _, ns = ...
 local ActivityTracker = {}
 
 local addonRef
+local debugging = false -- /cf activity debug, for this session only (as /cf sync debug, CF-64)
 
 local function db() return addonRef.db.global end
 
 function ActivityTracker.debugOn()
-  return addonRef ~= nil and db().settings.activityDebug == true
+  return addonRef ~= nil and debugging
 end
 
 function ActivityTracker.setDebug(on)
-  db().settings.activityDebug = on or nil
+  debugging = on and true or false
 end
 
 local function trace(text, ...)
@@ -127,6 +128,10 @@ end
 
 function ActivityTracker.start(addon)
   addonRef = addon
+  -- Off at every login and /reload: the flag earlier versions saved is dropped, so a debug switched on in the beta
+  -- doesn't print instance events at launch (rule 8: an older version only reads its own flag).
+  debugging = false
+  db().settings.activityDebug = nil
   db().runs = db().runs or {}
   addon:RegisterMessage(ns.Instance.EVENT, function(_, event, ...) onEvent(event, ...) end)
   ns.Instance.watch(addon)

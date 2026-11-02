@@ -60,6 +60,8 @@ CommunitiesForever/
       Goals.lua              own Doomsday goals: realm offset fallbacks, the reset setting, facts per day and week,
                              the situation for swaps, done marks, cleaning and merging received goals (CF-56)
       DoomsdayView.lua       what the Doomsday tab, its chat lines and the character card's PvP line show (CF-57)
+      Celebrations.lua       celebration banners: moments from goals, feats and friends' records, weights, folding,
+                             the waiting queue, remembered keys (CF-67)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
                              match end, the 10-minute and boss rule (CF-23)
       PlannedRuns.lua        checks planned runs (CF_RUNS, RUNS messages): types, caps, escapes stripped (CF-45);
@@ -89,10 +91,13 @@ CommunitiesForever/
                              death events, combat log damage to the player when allowed (CF-52, guarded)
       LootInfo.lua           loot strings, item quality and slot (C_Item), money, loot and money events (CF-53, guarded)
       GoalEvents.lua         fishing loot, trades, discoveries for goals that wait for data (CF-56, guarded)
+      Sounds.lua             the game's sounds for the celebration banners per weight (CF-67, guarded)
+      Screen.lua             the screen's width in pixels (CF-67, guarded)
       RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
       DoomsdayAlerts.lua     Doomsday chat lines (goals done, bonus kills, the crown, swaps) and the crown toast (CF-57)
+      Celebrate.lua          celebration banners: your goals and feats, friends' big moments, waiting while busy (CF-67)
       RunAlerts.lua          run reminders and start (15 s checks while runs exist), chat lines with links (CF-48)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
@@ -127,6 +132,7 @@ CommunitiesForever/
       RunAnswer.lua          a run's "Your answer" block, answering inline (CF-63b)
       DoomsdayTab.lua        the Doomsday tab: Today and Week (CF-57a), Board, Ladder and Feats (CF-57b)
       CrownToast.lua         "First to finish today!" under the minimap, fading in and sliding with Ambient effects (CF-57)
+      CelebrationBanner.lua  the celebration plaque low in the centre and friends' lines above the chat (CF-67)
       RunBanner.lua          the run banners at the top of the screen, 30 and 15 min before and at the start (CF-63d)
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
@@ -186,7 +192,7 @@ global = {
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
                 chatAlert = true, chatSound = false, chatKeepGeneral = true,
                 chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
-                activityDebug = nil,                 -- CF-23: /cf activity debug prints instance events
+                activityDebug = nil,                 -- CF-23; no longer saved: /cf activity debug is per session
                 onboarded, onboardedVersion,         -- CF-26: setup wizard done (Skip and close count)
                 chatTabPrompt = { [guid] = true },   -- CF-26: no Community tab prompt on these characters
                 groupAsks = true,                    -- CF-27: receive "who's up for it?" asks
@@ -197,14 +203,18 @@ global = {
                 doomsdayChat = true,                 -- CF-57: Doomsday's chat lines (nil = on)
                 doomsdayReset,                       -- CF-56: the reset setting (runs file or a friend's HELLO)
                 runToasts, runSound,                 -- CF-48: run notes and their chime (nil = on)
-                runLines = { [kind] = false } },     -- CF-48: run chat lines turned off (reminder, answered, starting,
+                runLines = { [kind] = false },       -- CF-48: run chat lines turned off (reminder, answered, starting,
                                                      -- otherChar, ping, updated)
+                celebrations, celebrationSounds, celebrationFriends }, -- CF-67: banners, sounds, friends' lines
+                                                     -- (nil = on)
   self      = { battleTag, displayName, version, chars = { [guid] = Char },
                 invite = { clubId, code, setAt },    -- CF-21: shared invite link (owner/leaders/moderators)
                 feed = Feed,                         -- CF-22: activity feed, last 7 realm days
                 goals = { days = { [n] = Goal }, weeks = { [w] = Goal }, streak = { n, last }, best },
                                                      -- CF-56: own Doomsday goals, 14 days and 2 weeks, sent
-                doomsday = { days = { [n] = Facts }, weeks = { [w] = Facts }, chars = { [guid] = { death, level } } },
+                doomsday = { days = { [n] = Facts }, weeks = { [w] = Facts }, chars = { [guid] = { death, level } },
+                             celebrated = { own = { [key] = true }, friends = { [friend] = { keys, chars } } } },
+                                                     -- CF-67: celebration banners shown (local, never sent)
                 feats = { [guid] = { [key] = { at, title, detail } } } }, -- CF-57b: own feats, first seen (0 = earlier), local
                                                      -- CF-56: the facts behind them (core/Goals.lua), local only
   people    = { [battleTag] = { displayName, version, receivedAt,

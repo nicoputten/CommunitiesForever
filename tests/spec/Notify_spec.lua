@@ -16,6 +16,7 @@ describe("Notify (CF-15)", function()
     -- Garraka was seen online before (presence link), so Sjaak is linked in the community.
     addon.db.global.presence["Player-4619-01789956"] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
     state.printed = {}
+    state.serverTime = state.serverTime + ns.Notify.LOGIN_QUIET -- past the login baseline
   end
 
   local function sjaakOnline(guid, name)
@@ -78,6 +79,19 @@ describe("Notify (CF-15)", function()
   it("stays quiet for friends already online at login", function()
     state, ns, addon = helpers.client({ clubId = CLUB })
     assert.are.same({}, state.printed)
+  end)
+
+  it("stays quiet for friends Battle.net reports only shortly after login", function()
+    load()
+    state.serverTime = state.serverTime - ns.Notify.LOGIN_QUIET + 5 -- the reread 5 s after login
+    sjaakOnline()
+    assert.are.same({}, state.printed)
+    state.friends[1].gameAccounts[1].isOnline = false
+    wowapi.fireEvent(state, "BN_FRIEND_ACCOUNT_OFFLINE")
+    wowapi.runTimers(state)
+    state.serverTime = state.serverTime + ns.Notify.LOGIN_QUIET
+    sjaakOnline()
+    assert.are.same({ NOTICE }, state.printed)
   end)
 
   it("can be switched off in settings", function()

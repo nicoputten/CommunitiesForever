@@ -36,6 +36,9 @@ function Keys.closeOnEscape(frame, close)
       self:SetPropagateKeyboardInput(true)
     end
   end)
+  -- An Esc just before combat skips the restore above (not allowed in combat); restore it on the next show out
+  -- of combat, so a window opened later doesn't keep keys from the game.
+  if frame.HookScript then frame:HookScript("OnShow", function(self) propagate(self, true) end) end
   return true
 end
 
