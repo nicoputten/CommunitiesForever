@@ -156,12 +156,16 @@ end
   local r = Protocol.reassembler()
   local encoded, err = r:add(sender, chunk, now)  -- encoded when complete; err "malformed" for bad chunks
   r:missing(now) -> { { sender, msgId, total, parts = { n, ... } } }  -- CF-28: to ask for again
-Chunks may arrive in any order; duplicates are ignored; incomplete messages expire
-Protocol.EXPIRE_SECONDS after their last part (time is passed in by the caller).
+Chunks may arrive in any order; duplicates are ignored, also a part arriving late after its message was complete
+(a resend after a MISS); incomplete messages expire Protocol.EXPIRE_SECONDS after their last part (time is passed in
+by the caller).
 ]]
 function Protocol.reassembler()
   -- [sender .. "|" .. msgId] = { sender, msgId, total, parts = { [seq] = slice }, count, firstAt, lastAt, asks }
   local pending = {}
+  -- [sender .. "|" .. msgId] = time completed: late parts of these are dropped instead of starting the message
+  -- again (which would ask for all its other parts and deliver it twice).
+  local done = {}
   local r = {}
 
   function r.expire(_, now)
@@ -169,6 +173,9 @@ function Protocol.reassembler()
       if now - entry.lastAt >= Protocol.EXPIRE_SECONDS then
         pending[key] = nil
       end
+    end
+    for key, at in pairs(done) do
+      if now - at >= Protocol.EXPIRE_SECONDS then done[key] = nil end
     end
   end
 
@@ -201,6 +208,7 @@ function Protocol.reassembler()
     local slice = chunk:sub(#msgId + #seqText + #totalText + 4)
 
     local key = tostring(sender) .. "|" .. msgId
+    if done[key] then return nil end -- a late duplicate of a complete message
     local entry = pending[key]
     if not entry then
       entry = { sender = sender, msgId = msgId, total = total, parts = {}, count = 0, firstAt = now, lastAt = now,
@@ -217,6 +225,7 @@ function Protocol.reassembler()
     if entry.count < entry.total then return nil end
 
     pending[key] = nil
+    done[key] = now
     return table.concat(entry.parts, "", 1, entry.total)
   end
 

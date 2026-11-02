@@ -127,7 +127,25 @@ describe("Protocol", function()
       assert.is_nil(r:add(1, chunks[2], 0))
       assert.is_nil(r:add(1, chunks[2], 0))
       assert.are.equal(encoded, r:add(1, chunks[3], 0))
-      assert.is_nil(r:add(1, chunks[3], 0)) -- late duplicate after completion starts a new, incomplete entry
+      assert.is_nil(r:add(1, chunks[3], 0))
+      assert.are.equal(0, r:pendingCount())
+    end)
+
+    it("drops a part that arrives after its message was complete (a late resend), without asking again", function()
+      local encoded = noise(9000)
+      local chunks = Protocol.chunk(encoded, "late")
+      local r = Protocol.reassembler()
+      r:add(1, chunks[1], 0)
+      r:add(1, chunks[3], 0)
+      assert.are.equal(1, #r:missing(5)) -- part 2 is asked for again
+      assert.are.equal(encoded, r:add(1, chunks[2], 6)) -- the slow original arrives
+      assert.is_nil(r:add(1, chunks[2], 7)) -- then the resend
+      assert.are.equal(0, r:pendingCount())
+      assert.are.same({}, r:missing(20)) -- no MISS for parts 1 and 3
+      -- Forgotten after EXPIRE_SECONDS like any message (ids are unique per session anyway).
+      r:expire(6 + Protocol.EXPIRE_SECONDS)
+      assert.is_nil(r:add(1, chunks[2], 6 + Protocol.EXPIRE_SECONDS))
+      assert.are.equal(1, r:pendingCount())
     end)
 
     it("keeps messages from different senders and ids apart", function()
