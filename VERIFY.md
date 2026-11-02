@@ -35,6 +35,12 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### Bug hunt: Doomsday refreshes at the reset
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday › Today, leave it open a few minutes | "New goals … in X h Y m" drops by a minute each minute without clicking anything. | open |
+| Keep the Doomsday tab open across 19:00 realm time (or the site's reset), standing still | Within a minute of the reset: the header shows the next day ("Today · <day> · 0 of N done"), new goals, "in 23 h 59 m"; a swapped goal gets its chat line. A friend with the addon sees your new day on their Board without you doing anything. | open |
+
 ### CF-67 Celebration banners (boards in docs/design/celebrations-2026-11/)
 Compare each banner with its board. Your own banners sit centred low on the screen, just above the action bars.
 

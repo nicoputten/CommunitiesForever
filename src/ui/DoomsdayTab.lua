@@ -22,6 +22,7 @@ local helpers -- from MainFrame: settings(), render()
 local current = "today"
 local pools
 local expanded = {} -- CF-57b: Ladder rows showing their characters (track:key), while the window is open
+local ticking -- the minute ticker runs (the countdowns)
 
 local placeText = Kit.placeText
 local function gold(text) return Theme.code("goldLight") .. tostring(text) .. "|r" end
@@ -599,7 +600,16 @@ function DoomsdayTab.create(parent, h)
   return root
 end
 
-function DoomsdayTab.show() if root then root:Show() end end
+-- Shown: "New goals in" and "Week resets in" count down, redrawn every minute while the tab is open.
+function DoomsdayTab.show()
+  if not root then return end
+  root:Show()
+  if not ticking then
+    ticking = ns.Timer.every(60, function()
+      if root and root:IsVisible() and helpers then helpers.render() end
+    end)
+  end
+end
 function DoomsdayTab.hide() if root then root:Hide() end end
 
 function DoomsdayTab.select(value)
