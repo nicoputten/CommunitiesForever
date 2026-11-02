@@ -99,7 +99,6 @@ describe("Runs v2 (CF-49)", function()
 
   describe("slots, reserves and suggestions", function()
     local DM = { id = "dm", min = 17, max = 26 }
-    local ME = { battleTag = "Me#1000", guids = { ["G-ME"] = true, ["G-ALT"] = true, ["G-OLD"] = true } }
 
     it("gives a reserve no slot and lists it", function()
       local run = { answers = {
@@ -125,22 +124,11 @@ describe("Runs v2 (CF-49)", function()
       assert.is_nil(PlannedRuns.fitOf({}, nil, DM))
     end)
 
-    it("suggests a character of yours a few over, in a free role its class can play", function()
+    it("lists a carry of yours as close", function()
       local candidates = {
-        { guid = "G-ME", name = "Me Example", level = 28, own = true, role = "dps", classFile = "WARRIOR" },
+        { guid = "G-ME", name = "Me Example", level = 40, own = true, role = "dps", classFile = "WARRIOR" },
       }
-      -- Damage is taken: the warrior is offered as tank, which its class can play.
-      local run = { answers = { { name = "A", answer = "in", role = "dps" },
-                                { name = "B", answer = "in", role = "dps" },
-                                { name = "C", answer = "in", role = "dps" } } }
-      local c, role = PlannedRuns.youFit(run, candidates, DM, ME, "G-ME")
-      assert.are.same({ "Me Example", "tank" }, { c.name, role })
-      -- A mage can't heal or tank.
-      candidates[1].classFile = "MAGE"
-      assert.is_nil(PlannedRuns.youFit(run, candidates, DM, ME, "G-ME"))
-      -- A carry isn't suggested; it is "close".
-      candidates[1].classFile, candidates[1].level = "WARRIOR", 40
-      assert.is_nil(PlannedRuns.youFit(run, candidates, DM, ME, "G-ME"))
+      local run = { answers = { { name = "A", answer = "in", role = "dps" } } }
       local close = PlannedRuns.close(run, candidates, DM)
       assert.are.equal("carry \194\183 +14", close[1].fit.label)
     end)

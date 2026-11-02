@@ -26,15 +26,6 @@ function Panels.reload()
   return (pcall(reload))
 end
 
--- CF-47: UTC seconds of a local date and time ({ year, month, day, hour, min }), via the game's time()
--- (unverified on Forever, VERIFY.md V71). nil without it.
-function Panels.localTime(parts)
-  if not time then return nil end
-  local ok, t = pcall(time, { year = parts.year, month = parts.month, day = parts.day, hour = parts.hour,
-                              min = parts.min, sec = 0 })
-  return ok and type(t) == "number" and t or nil
-end
-
 -- Adds `frame` as the addon's page under Options › AddOns. Returns true when it was registered.
 function Panels.registerOptions(frame, name)
   local settings = _G.Settings

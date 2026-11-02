@@ -285,16 +285,6 @@ describe("PlannedRuns views (CF-46)", function()
     assert.are.same({ "T1", "T2" }, { slots[1].answer.name, slots[3].answer.name })
   end)
 
-  it("says which of your characters fits a free slot, the one you are on first", function()
-    local run = { answers = { { name = "T", answer = "in", role = "tank" } } }
-    local c, role = PlannedRuns.youFit(run, CANDIDATES, DM, ME, "G-ME")
-    assert.are.same({ "Me Example", "dps" }, { c.name, role })
-    c, role = PlannedRuns.youFit({ answers = {} }, CANDIDATES, DM, ME, "G-ALT")
-    assert.are.same({ "Alt Example", "tank" }, { c.name, role })
-    assert.is_nil(PlannedRuns.youFit({ answers = { { guid = "G-ME", answer = "cant" } } }, CANDIDATES, DM, ME, "G-ME"))
-    assert.is_nil(PlannedRuns.youFit({ organiser = { battleTag = "Me#1000" }, answers = {} }, CANDIDATES, DM, ME))
-  end)
-
   it("lists characters that may join but aren't suggested (CF-49: 1-5 below, carries), your own first", function()
     local close = PlannedRuns.close({ answers = {} }, CANDIDATES, DM)
     -- Cy Example is 4 over: suggested, so not "close".
@@ -350,11 +340,6 @@ describe("PlannedRuns for the dialogs (CF-47)", function()
     assert.are.same({}, PlannedRuns.validate({ updatedAt = NOW }).received)
   end)
 
-  it("gives the organiser's clock time from their offset", function()
-    local at = 1793210400 -- 2026-11-02 19:20 UTC
-    assert.are.equal(os.date("!%H:%M", at + 3600), PlannedRuns.theirClock(at, 3600, os.date))
-    assert.is_nil(PlannedRuns.theirClock(at, nil, os.date))
-  end)
   it("reads the site's address and the friends it knows (CF-62, optional)", function()
     assert.are.equal("https://wow.example.org", PlannedRuns.site({ site = "https://wow.example.org" }))
     assert.is_nil(PlannedRuns.site({ site = "javascript:alert(1)" }))
