@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** no "is online" chat lines right after you log in for friends who were already online.
 - **Celebrations:** a banner with a game sound when you finish a Doomsday goal, complete the day (with the crown when
   you were first), finish a weekly or the Bounty, or earn a feat; big feats get a bigger banner. Several at once
   become one banner; nothing shows during combat, boss fights or battlegrounds until afterwards. A quiet line bottom
