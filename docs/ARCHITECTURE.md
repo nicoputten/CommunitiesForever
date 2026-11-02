@@ -192,7 +192,7 @@ global = {
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
                 chatAlert = true, chatSound = false, chatKeepGeneral = true,
                 chatTab = { [guid] = true },         -- CF-25: characters with a Community chat tab
-                activityDebug = nil,                 -- CF-23: /cf activity debug prints instance events
+                activityDebug = nil,                 -- CF-23; no longer saved: /cf activity debug is per session
                 onboarded, onboardedVersion,         -- CF-26: setup wizard done (Skip and close count)
                 chatTabPrompt = { [guid] = true },   -- CF-26: no Community tab prompt on these characters
                 groupAsks = true,                    -- CF-27: receive "who's up for it?" asks
