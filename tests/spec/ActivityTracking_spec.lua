@@ -126,10 +126,11 @@ describe("dungeon, raid and battleground runs (CF-23)", function()
     assert.is_nil(ns.ActivityTracker.current())
   end)
 
-  it("prints the trace with /cf activity debug, also after a reload", function()
+  it("prints the trace with /cf activity debug, for this session only", function()
     load()
     addon:OnSlashCommand("activity debug")
-    assert.is_true(addon.db.global.settings.activityDebug)
+    assert.is_true(ns.ActivityTracker.debugOn())
+    assert.is_nil(addon.db.global.settings.activityDebug) -- not saved
     state.printed = {}
     enter(DEADMINES)
     wowapi.fireEvent(state, "ENCOUNTER_END", 1001, "Boss", 1, 5, 1)
@@ -144,6 +145,14 @@ describe("dungeon, raid and battleground runs (CF-23)", function()
 
     addon:OnSlashCommand("activity")
     addon:OnSlashCommand("activity debug")
+    assert.is_false(ns.ActivityTracker.debugOn())
+  end)
+
+  it("drops the debug flag earlier versions saved, so it is off after an update", function()
+    load()
+    addon.db.global.settings.activityDebug = true
+    ns.ActivityTracker.start(addon)
+    assert.is_false(ns.ActivityTracker.debugOn())
     assert.is_nil(addon.db.global.settings.activityDebug)
   end)
 

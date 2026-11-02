@@ -59,7 +59,7 @@ as JSON for readability; on the wire they are compressed Lua tables.
 
 **Parts:** the encoded text is split into parts with the header `<msgId>:<part>:<total>:`, for example
 `3f2ax1a:2:5:` followed by the slice. `msgId` is per sender and session (a session prefix from the server
-time plus a counter). Parts may arrive in any order; duplicates are ignored.
+time plus a counter). Parts may arrive in any order; duplicates are ignored, also a part that arrives after its message was complete (for 30 s).
 
 **Missing parts (CF-28 part 2a):**
 

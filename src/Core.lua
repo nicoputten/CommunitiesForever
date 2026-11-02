@@ -104,7 +104,7 @@ local function activityCommand(self, argument)
   if argument == "debug" then
     ns.ActivityTracker.setDebug(not ns.ActivityTracker.debugOn())
     self:Print(ns.ActivityTracker.debugOn()
-      and "Activity debug on: instance events and run decisions are printed (stays on after /reload)."
+      and "Activity debug on until /reload: instance events and run decisions are printed."
       or "Activity debug off.")
     return
   end

@@ -7,6 +7,8 @@ tagging; the release stops if the tag has no section.
 
 ## Unreleased
 - **Fixed:** no "is online" chat lines right after you log in for friends who were already online.
+- **Fixed:** `/cf activity debug` is off again after a `/reload` or logout, so a debug left on from the beta no
+  longer prints instance events in chat.
 - **Celebrations:** a banner with a game sound when you finish a Doomsday goal, complete the day (with the crown when
   you were first), finish a weekly or the Bounty, or earn a feat; big feats get a bigger banner. Several at once
   become one banner; nothing shows during combat, boss fights or battlegrounds until afterwards. A quiet line bottom
