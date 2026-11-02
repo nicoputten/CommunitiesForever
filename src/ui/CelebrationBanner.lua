@@ -377,9 +377,6 @@ end
 
 function CelebrationBanner.isShown() return banner ~= nil and banner:IsShown() end
 
--- Dismisses the banner now (as a right-click).
-function CelebrationBanner.dismiss() if CelebrationBanner.isShown() then finish() end end
-
 -- ===== Friends' lines (CB06) =====
 
 local function placeFriends()
@@ -505,7 +502,6 @@ end
 
 -- For the specs.
 function CelebrationBanner.frame() return banner end
-function CelebrationBanner.friendFrames() return friendLines end
 function CelebrationBanner.shown() return shown end
 function CelebrationBanner.friendTexts() return friendsShown end
 function CelebrationBanner.reset() banner, friendLines, shown, friendsShown = nil, {}, {}, {} end
