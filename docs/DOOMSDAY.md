@@ -167,6 +167,22 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - **The crown:** the first friend to finish all 3 PvE dailies that day, by the time the addon recorded. **No points** (version B): the race is for fun, the points are about playing. The crown holds until the next reset.
 - **Streak:** Doomsday days in a row with at least one goal done, in either track. A day with none ends it. The best ever is kept. No points.
 
+## Celebrations (CF-67, addon only)
+The addon celebrates Doomsday moments with a banner and a game sound (decided with Nico, 2026-11-02; the look is on
+the boards in `docs/design/celebrations-2026-11/`). No points, nothing sent; the site and the bot don't show them.
+- **Your moments:** each daily done (the PvE dailies, the Skirmish, the Hunt), **day complete**, each weekly and the
+  Bounty, a feat unlocked.
+- **Day complete** is the moment you are crossed out: all 3 PvE dailies done, the same moment as the crown (the crown
+  shows on that banner when you were first). A PvE-only friend gets it too.
+- **Big feats:** PvP rank 6 or higher, level 60, the first epic, a mount, an epic mount, 1,000 honorable kills or
+  more, and **first in the group**: none of your other characters and no friend's character in the records the addon
+  holds has that feat. The rest are medium.
+- **Friends' moments:** only a day complete, a weekly done or a big feat, as a quiet line without sound; only when it
+  happened after your login and at most 15 minutes ago.
+- **Nothing old, nothing twice:** no banner for what happened before the update or login (feats found in the first
+  10 s after login count as known), none again after a `/reload`.
+- Points on a day-complete banner are shown per track side by side, never added together.
+
 ## Kill points (world kills)
 A kill inside a battleground (`bg = true`) never counts here: it goes to the battleground block.
 
