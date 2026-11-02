@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+
+## v1.1.0 (2026-11-02)
 - **Fixed:** no "is online" chat lines right after you log in for friends who were already online.
 - **Fixed:** `/cf activity debug` is off again after a `/reload` or logout, so a debug left on from the beta no
   longer prints instance events in chat.
