@@ -57,6 +57,7 @@ function addon:OnEnable()
   ns.RunAlerts.start(self) -- CF-48: run reminders, start time, chat lines
   ns.DoomsdayBoard.start(self) -- CF-57b: Board, Ladder, Feats (feats remembered from the first sight)
   ns.DoomsdayAlerts.start(self) -- CF-57: Doomsday chat lines and the crown toast (after Sync: PEOPLE_UPDATED)
+  ns.Celebrate.start(self) -- CF-67: celebration banners (after DoomsdayBoard: FEATS, and Sync: PEOPLE_UPDATED)
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
 end
 

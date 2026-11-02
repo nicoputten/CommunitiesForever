@@ -6,6 +6,11 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Celebrations:** a banner with a game sound when you finish a Doomsday goal, complete the day (with the crown when
+  you were first), finish a weekly or the Bounty, or earn a feat; big feats get a bigger banner. Several at once
+  become one banner; nothing shows during combat, boss fights or battlegrounds until afterwards. A quiet line bottom
+  left when a friend completes the day, a weekly or a special feat. Hover pauses, a click opens Doomsday, right-click
+  closes. Settings › Celebrations: banners, sounds, friends' celebrations and a Preview.
 - **Minimap button:** the addon's own gold shield instead of a generic icon, also in the addon compartment and the
   AddOns list.
 
