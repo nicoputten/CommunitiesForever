@@ -9,8 +9,11 @@ local _, ns = ...
 local Notify = {}
 
 local REPEAT_SECONDS = 30
+-- Friends already online at login are the baseline, but Battle.net can fill in their game accounts a few seconds
+-- later (PresenceTracker reads them again 5 and 30 s after login): no "came online" lines until then.
+Notify.LOGIN_QUIET = 35
 
-local addonRef, lastNotified
+local addonRef, lastNotified, startedAt
 
 local function linkedPerson(battleTag)
   for _, person in ipairs(ns.ViewModel.build(addonRef).people) do
@@ -22,6 +25,7 @@ local function notify(battleTag)
   if addonRef.db.global.settings.notifications == false then return end
   if ns.CommunitySelection.passive() then return end
   local now = GetServerTime()
+  if now - startedAt < Notify.LOGIN_QUIET then return end
   local last = lastNotified[battleTag]
   if last and now - last < REPEAT_SECONDS then return end
 
@@ -65,6 +69,7 @@ function Notify.start(addon)
   addonRef = addon
   ns.LevelUpToast.reset()
   lastNotified = {}
+  startedAt = GetServerTime()
   local events = LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag) notify(battleTag) end)
   events:RegisterMessage(ns.PresenceTracker.FRIEND_SWITCHED, function(_, battleTag) notify(battleTag) end)

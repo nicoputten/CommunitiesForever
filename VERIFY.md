@@ -648,4 +648,5 @@ Needs a friend linked to you in the community (they do not need the addon).
 |---|---|---|
 | A Battle.net friend logs off (fix for the bug found: account offline but character still online) | Within a few seconds their account and all their characters show offline (no green dot), also when the Communities window still lists them as online. | open |
 | The friend switches to another character | Only the character they are on shows online. | open |
+| Log in (or `/reload`) while the friend is already online in Forever, and wait a minute | No "<friend> is online on ..." line; one appears only when they log in or switch later (bug hunt: Battle.net can report friends a few seconds after login). | open |
 
