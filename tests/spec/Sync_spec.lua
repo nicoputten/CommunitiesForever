@@ -98,6 +98,26 @@ describe("Sync", function()
       assert.are.equal(addon.db.global.self.version, hellos[1].ver)
     end)
 
+    -- AceEvent calls the objects listening to one event in no fixed order: SelfTracker's snapshot bump and the
+    -- records missions' level-up (RecordEvents, a done mission) both listen to the level-up.
+    it("is sent once for a level-up whatever order its handlers run in", function()
+      for _, reversed in ipairs({ false, true }) do
+        load()
+        outgoing()
+        if reversed then
+          local order = state.handlerOrder[state.messageHandlers[ns.SelfInfo.CHANGED]]
+          for i = 1, math.floor(#order / 2) do order[i], order[#order + 1 - i] = order[#order + 1 - i], order[i] end
+        end
+        state.serverTime = 1010
+        wowapi.fireEvent(state, "PLAYER_LEVEL_UP", 12)
+        local hellos = ofType(outgoing(), "HELLO")
+        assert.are.equal(1, #hellos)
+        assert.are.equal(1010, hellos[1].ver)
+        assert.are.equal(1010, addon.db.global.self.version)
+        wowapi.uninstall()
+      end
+    end)
+
     it("is not repeated for the same version within 60 s", function()
       load()
       outgoing()

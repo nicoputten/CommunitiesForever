@@ -13,6 +13,9 @@ FeedTracker.BUMP_DEBOUNCE = 60
 local addonRef, bumpDebounced
 -- Own version when the last unsynced feed change was made; nil when nothing waits.
 local pendingVersion
+-- Highest own version that may have left this client: the stored one at start, then each own record Sync
+-- builds to send. A newer own version is known to no friend yet, so a change made meanwhile rides on it.
+local publishedVersion = 0
 
 local function own() return addonRef.db.global.self end
 
@@ -28,6 +31,16 @@ local function bumpPending()
   pendingVersion = nil
 end
 
+-- A change to wait for: bumps the version after the debounce, unless the own version is not published
+-- yet (e.g. a goal done by the level-up that just bumped it). That keeps one level-up at one sync, whatever
+-- order the handlers of the same event run in.
+local function changed()
+  local version = own().version or 0
+  if version > publishedVersion then return end
+  pendingVersion = version
+  bumpDebounced()
+end
+
 -- Today's realm day number.
 function FeedTracker.today()
   return ns.Feed.dayNumber(ns.SelfInfo.today())
@@ -36,6 +49,7 @@ end
 function FeedTracker.start(addon)
   addonRef = addon
   bumpDebounced = ns.Timer.debounce(FeedTracker.BUMP_DEBOUNCE, bumpPending)
+  publishedVersion = own().version or 0
   if own().feed then ns.Feed.trim(own().feed, FeedTracker.today()) end
 end
 
@@ -54,16 +68,19 @@ function FeedTracker.record(char, events, bumped, day)
   if ns.DoomsdayTracker then ns.DoomsdayTracker.observeFeed(char, events) end -- CF-56: goal facts
   addonRef:SendMessage(FeedTracker.CHANGED)
   if bumped then return end
-  pendingVersion = own().version
-  bumpDebounced()
+  changed()
 end
 
 -- Something the own record carries changed without a feed event (CF-52: PvP counters): bumps the version
 -- through the same debounce as feed changes.
 function FeedTracker.changedLater()
   if not addonRef then return end
-  pendingVersion = own().version
-  bumpDebounced()
+  changed()
+end
+
+-- Sync builds the own record to send at this version: changes from now on need a newer one.
+function FeedTracker.published(version)
+  if type(version) == "number" and version > publishedVersion then publishedVersion = version end
 end
 
 ns.FeedTracker = FeedTracker
