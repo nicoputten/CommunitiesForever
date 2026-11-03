@@ -3,7 +3,8 @@
 -- Yours: a long plaque with angled ends and a round medallion on the left, low in the middle of the screen, a colour
 -- edge per kind, three sizes by weight. Friends': one quiet line bottom left above the chat, at most 3 stacked. Hover
 -- pauses and tells what a click opens, a click opens the Doomsday tab, right-click dismisses. Motion (CB08) with
--- Ambient effects on and AnimationGroup present (V64): rise in, the medallion pops, big feats turn their rays; out:
+-- Ambient effects on and AnimationGroup present (V64): rise in, big feats turn their rays (the medallion moves
+-- with the plaque: its own scale animation grew it far past the board in the game, Nico 2026-11-03); out:
 -- fade and sink. Without them a banner appears, stays and disappears.
 local _, ns = ...
 
@@ -150,7 +151,7 @@ function create()
   banner.topLine:SetHeight(3)
   banner.topLine:SetPoint("TOPLEFT", END, -1.5)
   banner.topLine:SetPoint("TOPRIGHT", -END, -1.5)
-  -- The medallion: its own frame, so it can pop; rays and glow behind it.
+  -- The medallion: its own frame; rays and glow behind it.
   banner.medal = CreateFrame("Frame", nil, banner)
   banner.rays = banner:CreateTexture(nil, "BORDER", nil, 1)
   banner.rays:SetTexture(Theme.TEXTURES.rays)
@@ -200,20 +201,6 @@ function create()
     end)
   else
     banner.intro = nil
-  end
-  banner.pop = group(banner.medal)
-  local grow, settle = anim(banner.pop, "Scale"), anim(banner.pop, "Scale")
-  if grow and settle and grow.SetScaleFrom then
-    grow:SetScaleFrom(0.8, 0.8)
-    grow:SetScaleTo(1.05, 1.05)
-    grow:SetDuration(0.2)
-    grow:SetOrder(1)
-    settle:SetScaleFrom(1.05, 1.05)
-    settle:SetScaleTo(1, 1)
-    settle:SetDuration(0.1)
-    settle:SetOrder(2)
-  else
-    banner.pop = nil
   end
   banner.outro = group(banner)
   local sink = anim(banner.outro, "Translation")
@@ -369,7 +356,6 @@ function CelebrationBanner.show(b, opts)
   banner:Show()
   if banner.ambient then
     if banner.intro then banner.intro:Stop() banner.intro:Play() end
-    if banner.pop then banner.pop:Stop() banner.pop:Play() end
     if banner.spin and b.weight == "big" then banner.spin:Play() end
   end
   startTimer(ns.Celebrations.SECONDS[b.weight] or 5)
