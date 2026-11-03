@@ -40,7 +40,7 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 ## E18 The Doomsday mission catalogue (approved by Nico, 2026-11-03)
 `docs/DOOMSDAY-CATALOGUE.md` is the approved list of dailies: 118 PvE dailies in 15 categories and 4 Skirmish goals,
 numbered 1 to 125 (#16, #27 and #94 removed), each with its id, label, points (1, 3 or 5), "done when", data source
-and fallback. The weekly catalogue (`docs/DOOMSDAY-WEEKLY-CATALOGUE.md`, #177: 50 weeklies, #8 still open) and the
+and fallback. The weekly catalogue (`docs/DOOMSDAY-WEEKLY-CATALOGUE.md`, #177: 50 weeklies) and the
 PvP catalogue (`docs/DOOMSDAY-PVP-CATALOGUE.md`, #178: 57 Skirmish and 43 Bounty goals) were approved by Nico on
 2026-11-03; CF-79 puts them in code, and the tracker lanes cover their missions too. Read the catalogue first;
 where a story and a catalogue disagree on a mission, the catalogue wins. The site's side is in
@@ -80,7 +80,8 @@ progress function registered before CF-79 lists the weekly is harmless, so the l
 
 Dependencies: CF-70 before everything. CF-69 → CF-78 → CF-79 in the rules lane. CF-71, CF-72, CF-73 need only CF-70
 and run side by side, and alongside the rules lane. CF-74 to CF-76 need CF-70 and their launch checks
-(`docs/API-FINDINGS.md`); CF-80 and CF-81 the same. CF-77 needs CF-69 and the tracker stories it puts in the pool, and the site's WEB-80.
+(`docs/API-FINDINGS.md`); CF-80 and CF-81 the same. CF-77 needs CF-69 and the tracker stories it puts in the pool,
+and the site's WEB-80.
 
 ### CF-70 The catalogue in code, and the mission modules (first, one worker)
 Touches: `src/core/Doomsday.lua`, `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `CommunitiesForever.toc`,
@@ -196,8 +197,8 @@ Missions: `d.fish50`, `d.fishZones`, `d.fishFriend`, `d.fishNight`, `d.nightOwl`
 Touches: `src/core/missions/Items.lua`, `src/adapters/missions/ItemEvents.lua`, its spec and fixture, VERIFY.md,
 CHANGELOG.md. Waits for: CF-70 and the V checks named below.
 Missions: the cooking, firstaid and care missions and `d.gather10`, `d.newRecipe`, `d.craftGreen`, `d.coins10`,
-`d.equipNew`, `d.treasure`, `d.jump100` (catalogue "needs probe" rows with V95, V104 to V106, V110, V112, V113, V116 to
-V119).
+`d.equipNew` (and the weekly `w.blueGear`), `d.treasure`, `d.jump100` (catalogue "needs probe" rows with V95, V104
+to V106, V110, V112, V113, V116 to V119).
 - Built per mission once its V passed (`docs/API-FINDINGS.md`); a mission whose V failed is marked retired in the
   catalogue and stays out.
 - The campfire missions take their spell ID, buff and item count from V119; their "done when" is rewritten from the
@@ -215,10 +216,13 @@ Missions: the combat, travel and economy missions and `d.whisper`, `d.wave`, `d.
 ### CF-79 The weekly and PvP catalogues in code (rules lane)
 Touches: `src/core/Doomsday.lua` (the weekly, Skirmish and Bounty entries and labels), `docs/DOOMSDAY.md`,
 `tests/fixtures/doomsday-cases.json` (`pools`). Waits for: CF-78 (same files). Both catalogues are approved (#177,
-#178); weekly #8 waits for Nico's answer and is built as he decides.
+#178).
 - As CF-70 for the weeklies and the PvP goals: every approved mission with category, points, `can` and fallback, no
   `since`. The existing pool-1 Skirmish and Bounty goals get the PvP catalogue's sizes (from pool version 2).
 - `needs` per PvP goal (kill, duel, bg, emote, flag), so CF-78's rule can tell fight goals from the rest.
+- Weekly #8 is the new `w.blueGear` (a blue or better item new to the character; its tracker is CF-75's V113 gear
+  tracker). `w.ilvl3` keeps its id and meaning and is marked retired from pool version 2 (`retired = 2`): it stays in
+  pool version 1's draw, golden cases unchanged.
 - Their trackers are the lanes' (weeklies) and CF-80 and CF-81 (PvP).
 
 ### CF-80 PvP fights: kills, deaths, duels, battlegrounds (PvP fights lane)
