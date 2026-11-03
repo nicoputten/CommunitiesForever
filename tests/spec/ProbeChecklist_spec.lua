@@ -148,7 +148,7 @@ describe("FriendProbe launch checklist (CF-60)", function()
       assert.are.same({ "V100", "V102", "V103", "V108", "V109", "V110", "V111", "V112", "V113", "V115", "V116",
                         "V117", "V118", "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67",
                         "V68", "V69", "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86", "V88",
-                        "V89", "V90", "V91", "V93", "V94", "V95", "V96", "V98", "V99" }, retail)
+                        "V89", "V90", "V93", "V94", "V95", "V96", "V98", "V99" }, retail)
     end)
 
     it("never registers the combat log by itself, only from its button (Blizzard's popup on Retail)", function()

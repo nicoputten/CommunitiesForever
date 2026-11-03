@@ -127,7 +127,7 @@ ns.items = {
   { id = "V51", session = 6, auto = true, friend = true, title = "Addon whispers reach the other faction",
     how = "Both run the probe: /fp whisper <their character>; their probe ticks it." },
 
-  -- The Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE-DRAFT.md): Missions.lua ticks these while you play.
+  -- The Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE.md): Missions.lua ticks these while you play.
   { id = "V95", retail = true, session = 1, auto = true, title = "Own spell casts: a readable spell ID",
     how = "Cast any spell, e.g. the Hearthstone." },
   { id = "V99", retail = true, session = 1, auto = true, title = "Merchant: buy and repair seen",
@@ -153,7 +153,6 @@ ns.items = {
     how = "A warlock friend summons you (or a meeting stone)." },
   { id = "V90", retail = true, session = 3, auto = true, title = "Kills from the XP message",
     how = "Kill an enemy that gives XP, alone and in a group." },
-  { id = "V91", retail = true, session = 3, auto = true, title = "The XP bar (UnitXP, UnitXPMax)" },
   { id = "V93", retail = true, session = 3, auto = true, title = "Enemy creatures: name, elite or rare, level",
     how = "Target or mouse over enemy creatures, also an elite." },
   { id = "V94", retail = true, session = 3, auto = true, title = "A flight, and learning a flight path",
@@ -171,8 +170,6 @@ ns.items = {
   { id = "V115", retail = true, session = 3, auto = true, title = "Places within zones (GetSubZoneText)" },
   { id = "V116", retail = true, session = 3, auto = true, title = "Items used: potion, scroll, food, bandage",
     how = "Drink a potion, read a scroll, eat food or use a bandage." },
-  { id = "V92", session = 6, auto = true, title = "Raid bosses (ENCOUNTER_END in a raid)",
-    how = "Kill a raid boss." },
   { id = "V98", retail = true, session = 6, auto = true, title = "Mounted and swimming (IsMounted, IsSwimming)",
     how = "Ride a mount; swim." },
   { id = "V101", session = 6, auto = true, title = "The auction house: posting and buying",
