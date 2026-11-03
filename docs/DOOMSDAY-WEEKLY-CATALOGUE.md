@@ -1,6 +1,12 @@
-# Doomsday: catalogue of PvE weeklies (draft)
+# Doomsday: catalogue of PvE weeklies
 
-Draft for Nico's review, 2026-11-03: 50 PvE weekly missions, numbered 1 to 50. It follows the daily catalogue
+**Approved by Nico, 2026-11-03**, line by line on the review page: 49 missions yes as drafted. **#8 (`w.ilvl3`,
+"Raise an item level by 3") is still open:** too easy at low levels. The proposed fix is a blue upgrade: "Put on a
+rare (blue) or better item new to the character" (V113 and V83), with the can't-do "highest character below 15 →
+`w.levels3`". Nico decides; until then #8 stays as drafted below. #7 (`w.altLevels2`) stays next to the daily
+`d.altLevel` (one level on an alt), as decision 3 allows.
+
+50 PvE weekly missions, numbered 1 to 50. It follows the daily catalogue
 (`docs/DOOMSDAY-CATALOGUE.md`) and its decisions: general missions only (no zone, dungeon or place names), mostly new
 kinds of activity, points per mission, a data status, can't-do with a fallback, and probe-gated where an API is
 unverified. Nothing here is in the pool yet: no code, no `POOL_VERSION` bump, `docs/DOOMSDAY.md` unchanged.
