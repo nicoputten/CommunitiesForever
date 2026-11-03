@@ -92,6 +92,23 @@ Pool version 2 (CF-77) is what turns the sizes on; until then the points stay 5 
 | A friend on v1.1.0 or older syncs while you are online | No errors on either side; their points and yours on Board and Ladder are as before. | open |
 | After CF-77 (pool version 2): finish a 1-point daily (e.g. Light a campfire) | Its chat line and banner show "+1"; the week's total grows by 1. | open |
 
+### CF-72 Records missions: levels, play, dungeons (tracking only, not in the draw yet)
+No new API: `GetInstanceInfo` (V35), the group (V35), `PLAYER_LEVEL_UP`. The missions are not drawn until pool
+version 2 (CF-77), so check the facts. "Today's records" below means:
+`/run local d=CommunitiesForeverDB.global.self.doomsday.days local n=0 for k in pairs(d) do if k>n then n=k end end for k,v in pairs(d[n].records or {}) do print(k,type(v)=="table" and #v or tostring(v)) end`
+(tables print 0: use `/dump CommunitiesForeverDB.global.self.doomsday.days` for their contents).
+
+| Step | Expected | Status |
+|---|---|---|
+| First login with this build; `/dump CommunitiesForeverDB.global.self.doomsday.dungeonsSeen` | The dungeons of your feed's party runs (last 7 days) per character GUID; `{}` without runs. No Lua error. | open |
+| Gain a level on a character below level 20, outside a group; today's records | `lowbie 1`, `dingDungeon 0`, `dingFriend 0`. | open |
+| Gain a level inside a dungeon, grouped with a friend's character from the community; today's records | `dingDungeon 1`, `dingFriend 1`. | open |
+| In a dungeon new to the character, kill the first boss; `/dump CommunitiesForeverDB.global.self.doomsday.dungeonsSeen` and `/dump CommunitiesForeverDB.global.self.doomsday.days` (newest day, `records.newDungeons`) | The dungeon is in the character's set; `newDungeons` has a key with the GUID and the dungeon. Kill a second boss: nothing new added. | open |
+| Kill 3 bosses of one dungeon within 45 minutes of entering; today's records | `speedRun true`. | open |
+| Raise Cooking (or Fishing, First Aid) by a few points; `/dump CommunitiesForeverDB.global.self.doomsday.days` (newest day, `records.skillGain`) | `[185]` (Cooking), `[356]` (Fishing) or `[129]` (First Aid) holds the points gained today. | open |
+| Log in a character you last played 2 or more Doomsday days ago; today's records | `switchUp true`; `dustOff true` only if its last play was 7 or more days ago. The first login of each character with this build counts as unknown (no credit). | open |
+| `/reload` | No change to `switchUp`/`dustOff` (the last login is now), no Lua error. | open |
+
 ### CF-68 Doomsday schedule from the site
 Needs the site's Mission pool page (web WEB-78) and the uploader. Pick a day at least 2 days ahead (today and tomorrow are locked on the site).
 
