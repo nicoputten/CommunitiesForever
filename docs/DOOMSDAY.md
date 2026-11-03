@@ -77,7 +77,9 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 **Pool version.** `Doomsday.POOL_VERSION`.
 - A goal that waits for data (column "Data": the addon story whose tracker it needs, unverified until launch) joins the pool only in the release after its API is verified. That release bumps the version.
 - A goal that needs a field the probe found unreadable stays out. If a pool is then empty, the slot stays empty.
-- Ids are never reused or renamed. A retired goal keeps its id in the catalogue, marked retired.
+- Ids are never reused or renamed. A retired goal keeps its id in the catalogue, marked retired with the pool version it leaves from (`retired = 2`: `w.ilvl3` stays in pool version 1's draw, replaced by `w.blueGear`).
+- A can't-do check added to a goal already in the pool applies from a pool version on (`canFrom`), so older days draw and swap as before: `b.zone25`'s "no character of level 20 or more" from pool version 2 (CF-79).
+- PvP goals carry what they need (`needs`: kill, duel, bg, emote or flag, CF-79); only kill, duel and bg goals are a real fight (CF-78, "Two tracks").
 
 **Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The facts behind it are counted live per Doomsday day and week and stay on the player's computer (CF-56, Nico 2026-10-28); progress starts on the day the update is installed. A day's set holds at most 5 ids (3 PvE dailies, the Skirmish, the Hunt as `hunt`), a week's 4 (3 PvE weeklies, the Bounty). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
 
@@ -223,6 +225,37 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `w.session2h` | 2h session |
 | `w.discover5` | Discover 5 |
 | `w.craftTrade` | Craft gift |
+| `w.groupQuests3` | 3 group Q |
+| `w.questUp5` | 5 hard Q |
+| `w.duoQuests5` | Duo quests |
+| `w.blueGear` | Blue gear |
+| `w.levels5` | 5 levels |
+| `w.levelDays3` | Level days |
+| `w.dungeons5` | 5 dungeons |
+| `w.bosses15` | 15 bosses |
+| `w.newDungeons2` | New dgn x2 |
+| `w.cleanRuns2` | 2 clean |
+| `w.gather50` | Gather 50 |
+| `w.recipes3` | 3 recipes |
+| `w.cook30` | Cook 30 |
+| `w.cookKinds5` | 5 dishes |
+| `w.fish100` | 100 fish |
+| `w.fishZones4` | Fish 4 zns |
+| `w.bandages20` | 20 bandage |
+| `w.days7` | Every day |
+| `w.dayAndNight` | Day+night |
+| `w.deathless3h` | Iron 3h |
+| `w.friendDays3` | Duo days |
+| `w.trades3` | 3 trades |
+| `w.chatDays5` | Chatty |
+| `w.mentor3` | Mentor |
+| `w.newZones3` | 3 new zns |
+| `w.roam10` | Roam 10 |
+| `w.flightPaths3` | 3 paths |
+| `w.kills200` | 200 foes |
+| `w.elites10` | 10 elites |
+| `w.weapon25` | Weapon +25 |
+| `w.potions5` | 5 potions |
 | `p.frontLine` | Front line |
 | `p.punchUp` | Punch up |
 | `p.loneWolf` | Lone wolf |
@@ -233,6 +266,53 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `p.boo` | Boo |
 | `p.punchUp5` | Punch up 5 |
 | `p.punchDown5` | Punch down |
+| `p.kills10` | 10 kills |
+| `p.zones3` | 3 zones |
+| `p.double` | Double |
+| `p.triple` | Triple |
+| `p.firstBlood` | 1st blood |
+| `p.nightRaid` | Night raid |
+| `p.enemyLand` | Enemy land |
+| `p.homeGuard` | Home guard |
+| `p.contested` | Contested |
+| `p.skull` | Skull |
+| `p.fairFight` | Fair fight |
+| `p.mirror` | Mirror |
+| `p.races3` | 3 races |
+| `p.healers` | Healers |
+| `p.casters3` | Casters |
+| `p.melee3` | Fighters |
+| `p.nemesis` | Nemesis |
+| `p.rankUp` | Outrank |
+| `p.huntPair` | Hunt pair |
+| `p.streak3` | Streak 3 |
+| `p.revenge` | Revenge |
+| `p.flagHour` | Flagged 30 |
+| `p.comeback` | Comeback |
+| `p.noDeath` | Spotless |
+| `p.duoKills` | Duo kills |
+| `p.trioKills` | Trio kills |
+| `p.escort` | Escort |
+| `p.avenge` | Avenge |
+| `p.pack` | Pack hunt |
+| `p.duelWin` | Duel win |
+| `p.duelStranger` | Stranger |
+| `p.duels3` | 3 duels |
+| `p.duelUp` | Duel up |
+| `p.duelClass` | Class duel |
+| `p.duelWins2` | 2 in a row |
+| `p.rematch` | Rematch |
+| `p.bgPlay` | BG played |
+| `p.bgWin` | BG win |
+| `p.bgKills5` | BG kills 5 |
+| `p.bgFriend` | BG buddy |
+| `p.bgFlag` | Flag cap |
+| `p.bgBase` | Base |
+| `p.bgTop` | BG top |
+| `p.salute` | Salute |
+| `p.chicken` | Chicken |
+| `p.bowKill` | Bow first |
+| `p.flagUp` | Flag up |
 | `b.zone25` | Zone 25 |
 | `b.allClasses` | Classes |
 | `b.allRaces` | Races |
@@ -242,6 +322,40 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `b.hunt3` | 3 hunts |
 | `b.duels3` | 3 duels |
 | `b.days5` | Kill days |
+| `b.kills150` | 150 kills |
+| `b.zones8` | 8 zones |
+| `b.nights3` | Nights x3 |
+| `b.enemyLand25` | Invader |
+| `b.triples3` | 3 triples |
+| `b.firstBlood3` | Blood x3 |
+| `b.combos10` | 10 combos |
+| `b.punchUp10` | Up x10 |
+| `b.skulls3` | 3 skulls |
+| `b.fair10` | Fair x10 |
+| `b.nemesis` | Nemesis x3 |
+| `b.solo20` | Solo 20 |
+| `b.untouchable3` | Untouch x3 |
+| `b.revenge3` | Revenge x3 |
+| `b.flagged3h` | Flagged 3h |
+| `b.kd` | K over D |
+| `b.duoKills15` | Duo 15 |
+| `b.warband` | Warband |
+| `b.avenge3` | Avenge x3 |
+| `b.huntAll` | All hunt |
+| `b.duelWins5` | Duel wins |
+| `b.duelAll` | Duel all |
+| `b.duelDays4` | Duel days |
+| `b.strangers3` | Strangers |
+| `b.bgWins3` | 3 BG wins |
+| `b.bgEach` | Every BG |
+| `b.bgDays3` | BG days |
+| `b.bgKills30` | BG kill 30 |
+| `b.bgFlags3` | 3 flags |
+| `b.bgBases5` | 5 bases |
+| `b.bgFriends` | BG trio |
+| `b.rankUp` | Rank up |
+| `b.skirmish5` | Skirmish 5 |
+| `b.taunts5` | Taunts |
 
 ## The algorithm, exactly (CF-55)
 Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
@@ -250,7 +364,7 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - PvE dailies and weeklies: the goals with Data **now**.
 - Skirmish: `p.frontLine`, `p.loneWolf`, `p.untouchable`. Bounty: `b.zone25`, `b.kills50`, `b.spree10`, `b.duels3`, `b.days5`. These need only the kill's time, zone and `solo`, and deaths.
 - **No Hunt** yet: the slot is empty until the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `p.ranked`, `b.allClasses`, `b.allRaces`, `b.ranked5`, `b.hunt3` where their fields are readable, and the goals marked 52, 53, 56 whose APIs are verified.
-- Pool order is the order of the tables in this file.
+- Pool order is the order of the tables in this file. The weeklies, Skirmish and Bounty goals of pool version 1 keep their place; the catalogues' other goals follow them, in catalogue order (CF-79).
 
 **Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
 
@@ -453,28 +567,59 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 
 ### PvE weeklies
 
-| Id | Goal | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|
-| `w.days3` | Play on 3 days | 3 Doomsday days with a login | now | |
-| `w.days5` | Play on 5 days | 5 Doomsday days with a login | now | |
-| `w.chars3` | Play 3 different characters | 3 characters logged in this week | now | fewer than 3 characters → `w.days3` |
-| `w.levels3` | Gain 3 levels | 3 levels over all characters | now | all characters at 60 → `w.quests50` |
-| `w.altLevels2` | Gain 2 levels on an alt | 2 levels on one character that isn't your highest | now | only one character below 60 → `w.quests50` |
-| `w.quests50` | Finish 50 quests | 50 quests handed in | now | |
-| `w.zones5` | Hand in quests in 5 zones | quests in 5 zones | now | |
-| `w.dungeons3` | Run 3 dungeons | 3 finished party runs | now | no character in range of a dungeon → `w.quests50` |
-| `w.dungeonsDiff3` | Run 3 different dungeons | party runs in 3 different instances | now | as `w.dungeons3` |
-| `w.dungeonFriends2` | Run a dungeon with 2 friends | a party run with community characters of 2 other friends | now | as `w.dungeons3` |
-| `w.fullClear` | Clear every boss of a dungeon | one party run that killed every boss of that dungeon (the addon's boss count per dungeon, `Goals.BOSSES`, from the game's DungeonEncounter table; dungeons with wings or optional bosses get a count after launch and can't be cleared until then) | now | as `w.dungeons3` |
-| `w.skill25` | Earn 25 profession skill points | 25 points over all professions this week | now | no profession → `w.quests50` |
-| `w.cap` | Reach a profession cap | a profession reaches 75/75, 150/150, 225/225 or 300/300 (as the site's milestone) | now | no profession below 300 → `w.skill25`, then `w.quests50` |
-| `w.newProf` | Learn a new profession | a character learns a profession it didn't have | now | |
-| `w.ilvl3` | Raise an item level by 3 | one character's item level 3 above its first login this week | now | item level unreadable → `w.quests50` |
-| `w.friends3` | Group with 3 different friends | in a group with community characters of 3 other friends | 53 | |
-| `w.rare5` | Loot 5 rare items | 5 rare (blue) or better items | 53 | |
-| `w.session2h` | Play a 2-hour session | one login lasting 2 hours | 53 | |
-| `w.discover5` | Discover 5 new places | 5 of the game's "discovered" messages (exploration) | 56 | |
-| `w.craftTrade` | Craft something and trade it | an item one of your characters created this week, given to another friend's community character in a trade | 56 | no crafting profession → `w.quests50` |
+| Id | Category | Goal | Points | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|
+| `w.days3` | play | Play on 3 days | 5 | 3 Doomsday days with a login | now |  |
+| `w.days5` | play | Play on 5 days | 10 | 5 Doomsday days with a login | now |  |
+| `w.chars3` | play | Play 3 different characters | 5 | 3 characters logged in this week | now | fewer than 3 characters → `w.days3` |
+| `w.levels3` | levels | Gain 3 levels | 10 | 3 levels over all characters | now | all characters at 60 → `w.quests50` |
+| `w.altLevels2` | levels | Gain 2 levels on an alt | 10 | 2 levels on one character that isn't your highest | now | only one character below 60 → `w.quests50` |
+| `w.quests50` | quests | Finish 50 quests | 10 | 50 quests handed in | now |  |
+| `w.zones5` | quests | Hand in quests in 5 zones | 5 | quests in 5 zones | now |  |
+| `w.dungeons3` | dungeons | Run 3 dungeons | 10 | 3 finished party runs | now | no character in range of a dungeon → `w.quests50` |
+| `w.dungeonsDiff3` | dungeons | Run 3 different dungeons | 10 | party runs in 3 different instances | now | as `w.dungeons3` |
+| `w.dungeonFriends2` | dungeons | Run a dungeon with 2 friends | 10 | a party run with community characters of 2 other friends | now | as `w.dungeons3` |
+| `w.fullClear` | dungeons | Clear every boss of a dungeon | 10 | one party run that killed every boss of that dungeon (the addon's boss count per dungeon, `Goals.BOSSES`, from the game's DungeonEncounter table; dungeons with wings or optional bosses get a count after launch and can't be cleared until then) | now | as `w.dungeons3` |
+| `w.skill25` | crafts | Earn 25 profession skill points | 10 | 25 points over all professions this week | now | no profession → `w.quests50` |
+| `w.cap` | crafts | Reach a profession cap | 10 | a profession reaches 75/75, 150/150, 225/225 or 300/300 (as the site's milestone) | now | no profession below 300 → `w.skill25`, then `w.quests50` |
+| `w.newProf` | crafts | Learn a new profession | 5 | a character learns a profession it didn't have | now |  |
+| `w.ilvl3` | levels | Raise an item level by 3 | 15 (pool 1 only) | one character's item level 3 above its first login this week; **retired from pool version 2** (replaced by `w.blueGear`) | now | item level unreadable → `w.quests50` |
+| `w.friends3` | social | Group with 3 different friends | 10 | in a group with community characters of 3 other friends | existing tracker, waits for its launch check: CF-53 groups |  |
+| `w.rare5` | loot | Loot 5 rare items | 10 | 5 rare (blue) or better items | existing tracker, waits for its launch check: V83 |  |
+| `w.session2h` | play | Play a 2-hour session | 5 | one login lasting 2 hours | existing tracker, waits for its launch check: CF-53 sessions |  |
+| `w.discover5` | exploration | Discover 5 new places | 5 | 5 of the game's "discovered" messages (exploration) | existing tracker, waits for its launch check: V86 |  |
+| `w.craftTrade` | crafts | Craft something and trade it | 10 | an item one of your characters created this week, given to another friend's community character in a trade | existing tracker, waits for its launch check: V85 | no crafting profession → `w.quests50` |
+| `w.groupQuests3` | quests | Finish 3 group quests | 10 | 3 quests handed in that the quest log marked as group quests | new tracker, verified API: CF-71 |  |
+| `w.questUp5` | quests | Finish 5 quests above the character's level | 10 | 5 quests handed in whose level is higher than the character's | new tracker, verified API: CF-71 | all characters at 60 → `w.quests50` |
+| `w.duoQuests5` | quests | Hand in 5 quests in a group with a friend | 10 | 5 quests handed in while grouped with a friend's community character | new tracker, verified API: CF-71 |  |
+| `w.blueGear` | levels | Put on a blue item new to the character | 10 | a rare (blue) or better item put on that the character never wore before (`PLAYER_EQUIPMENT_CHANGED`, `GetInventoryItemID`, the item's quality); replaces `w.ilvl3`, retired from pool version 2 | needs probe V113, V83 | highest character below 15 → `w.levels3` |
+| `w.levels5` | levels | Gain 5 levels | 15 | 5 levels over all characters | works now | all characters at 60 → `w.quests50` |
+| `w.levelDays3` | levels | Gain a level on 3 days | 10 | a level gained on 3 Doomsday days of the week | works now | all characters at 60 → `w.quests50` |
+| `w.dungeons5` | dungeons | Run 5 dungeons | 15 | 5 finished party runs | works now | as `w.dungeons3` |
+| `w.bosses15` | dungeons | Defeat 15 dungeon bosses | 15 | 15 bosses across the week's party runs | works now | as `w.dungeons3` |
+| `w.newDungeons2` | dungeons | Run 2 dungeons new to the character | 10 | party runs with at least 1 boss in 2 dungeons the character had no earlier run of | new tracker, verified API: CF-72 | as `w.dungeons3` |
+| `w.cleanRuns2` | dungeons | Run 2 dungeons without dying | 10 | two party runs, each with at least 1 boss and no death of that character in it | existing tracker, waits for its launch check: CF-52 deaths | as `w.dungeons3` |
+| `w.gather50` | crafts | Gather 50 herbs, ore or leather | 10 | 50 items of the herb, metal and stone or leather classes looted from a gathering node or a skinned body | needs probe V106 | no character with Herbalism, Mining or Skinning → `w.skill25` |
+| `w.recipes3` | crafts | Learn 3 new recipes | 10 | 3 recipes learned | needs probe V104 | no profession at all → `w.newProf` |
+| `w.cook30` | cooking | Cook 30 dishes | 10 | 30 food or drink items created | needs probe V105 | no character with Cooking → `w.skill25` |
+| `w.cookKinds5` | cooking | Cook 5 different dishes | 10 | food or drink items of 5 different item IDs created | needs probe V105 | no character with Cooking → `w.skill25` |
+| `w.fish100` | fishing | Catch 100 fish | 15 | 100 items from fishing loot | existing tracker, waits for its launch check: V84 | no character with Fishing → `w.skill25` |
+| `w.fishZones4` | fishing | Fish in 4 zones | 10 | fishing loot in 4 different zones | existing tracker, waits for its launch check: V84 | no character with Fishing → `w.skill25` |
+| `w.bandages20` | firstaid | Make 20 bandages | 10 | 20 bandages created | needs probe V105 | no character with First Aid → `w.skill25` |
+| `w.days7` | play | Play on all 7 days | 15 | all 7 Doomsday days of the week with a login | works now |  |
+| `w.dayAndNight` | play | Play before 09:00 and after 23:00 | 10 | a login before 09:00 local time and a login between 23:00 and 03:00 local time, in the same week | existing tracker, waits for its launch check: CF-53 sessions |  |
+| `w.deathless3h` | play | Play 3 hours without dying | 15 | 3 hours of session time on one character with no death in between | existing tracker, waits for its launch check: CF-52 deaths, CF-53 sessions |  |
+| `w.friendDays3` | social | Group with a friend on 3 days | 10 | in a group with a friend's community character on 3 Doomsday days | existing tracker, waits for its launch check: CF-53 groups |  |
+| `w.trades3` | social | Trade with 3 different friends | 10 | completed trades with community characters of 3 other friends | existing tracker, waits for its launch check: V85 | fewer than 3 other friends in the community → `w.friends3` |
+| `w.chatDays5` | social | Chat in the community on 5 days | 5 | an own message in the selected community's channel on 5 Doomsday days | new tracker, verified API: CF-73 (V38) |  |
+| `w.mentor3` | social | Group with a lower friend on 3 days | 10 | grouped with a friend's community character 5 or more levels below the own character, on 3 Doomsday days | new tracker, verified API: CF-73 |  |
+| `w.newZones3` | exploration | Set foot in 3 zones new to the character | 10 | zones entered that the character had never been in, 3 in total | new tracker, verified API: CF-73 |  |
+| `w.roam10` | exploration | Visit 10 zones | 10 | 10 different zones entered | new tracker, verified API: CF-73 |  |
+| `w.flightPaths3` | travel | Learn 3 flight paths | 10 | 3 new flight paths learned | needs probe V94 |  |
+| `w.kills200` | combat | Defeat 200 enemies | 15 | 200 kill XP messages | needs probe V90 | all characters at 60 → `w.dungeons3` |
+| `w.elites10` | combat | Defeat 10 elites | 10 | kill XP messages naming creatures last seen as elite or rare elite, 10 in total | needs probe V90, V93 | all characters at 60 → `w.dungeons3` |
+| `w.weapon25` | combat | Raise weapon skills 25 times | 10 | 25 weapon or defense skill-up messages | needs probe V107 |  |
+| `w.potions5` | care | Drink 5 potions | 5 | 5 potions used | needs probe V116 |  |
 
 "Another friend's community character" means a character of a different BattleTag, as the `with` lists of runs already use. Your own alts don't count.
 
@@ -490,18 +635,65 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 ### Skirmish pool (daily)
 `pick(n, 2, #pool)`:
 
-| Id | Goal | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|
-| `p.frontLine` | Front line: 5 kills in the zone of the day | 5 counted kills in that zone. The zone is `pick(n, 4, #band)` from the band of the friend's highest character that played that day (see Lists) | now | no character of level 20 or more → `p.loneWolf` |
-| `p.punchUp` | Punch up: 2 kills on players 3+ levels above you | 2 counted kills with `diff >= 3` (a skull counts) | CF-54 | |
-| `p.loneWolf` | Lone wolf: 3 solo kills | 3 counted kills with `solo` | now | |
-| `p.untouchable` | Untouchable: 5 kills without dying | 5 counted kills on one character with no death in between | now | |
-| `p.variety` | Variety: kills of 3 different classes | 3 different victim classes | CF-54 | |
-| `p.ranked` | Ranked bounty: kill a ranked player | 1 counted kill of a victim with PvP rank 1 or higher | CF-54 | |
-| `p.flex` | Flex at a player of the other faction | the `/flex` emote with an enemy-faction player targeted | CF-76, V108 (emote and target), V74 | |
-| `p.boo` | Boo a player of the other faction | the `/boo` emote with an enemy-faction player targeted | CF-76, V108 (emote and target), V74 | |
-| `p.punchUp5` | Kill an enemy player 5+ levels higher | a counted kill with `diff >= 5` (a skull counts) | CF-74, V73, V74 | |
-| `p.punchDown5` | Kill an enemy player 5+ levels lower | a counted kill with `diff <= -5` (it scores 0 kill points; only the goal counts) | CF-74, V73, V74 | |
+| Id | Category | Needs | Goal | Points | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| `p.frontLine` | worldKills | kill | Front line: 5 kills in the zone of the day | 3 | 5 counted kills in that zone. The zone is `pick(n, 4, #band)` from the band of the friend's highest character that played that day (see Lists) | now | no character of level 20 or more → `p.loneWolf` |
+| `p.punchUp` | targets | kill | Punch up: 2 kills on players 3+ levels above | 3 | 2 counted kills with `diff >= 3` (a skull counts) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.loneWolf` | worldKills | kill | Lone wolf: 3 solo kills | 3 | 3 counted kills with `solo` | now |  |
+| `p.untouchable` | streaks | kill | Untouchable: 5 kills without dying | 5 | 5 counted kills on one character with no death in between | now |  |
+| `p.variety` | targets | kill | Variety: kills of 3 different classes | 3 | 3 different victim classes | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.ranked` | targets | kill | Ranked bounty: kill a ranked player | 5 | 1 counted kill of a victim with PvP rank 1 or higher | existing tracker, waits for its launch check: V73, V74, V79 (victim and own rank) |  |
+| `p.flex` | taunts | emote | Flex at a player of the other faction | 1 | the `/flex` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
+| `p.boo` | taunts | emote | Boo a player of the other faction | 1 | the `/boo` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
+| `p.punchUp5` | targets | kill | Kill an enemy player 5+ levels higher | 5 | a counted kill with `diff >= 5` (a skull counts) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.punchDown5` | targets | kill | Kill an enemy player 5+ levels lower | 3 | a counted kill with `diff <= -5` (it scores 0 kill points; only the goal counts) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.kills10` | worldKills | kill | Score 10 kills | 3 | 10 counted world kills | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
+| `p.zones3` | worldKills | kill | Kills in 3 zones | 3 | counted kills in 3 different zones | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
+| `p.double` | worldKills | kill | Double: 2 kills within 10 seconds | 5 | 2 counted kills by one character within 10 seconds | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
+| `p.triple` | worldKills | kill | Triple: 3 kills within 2 minutes | 5 | 3 counted kills by one character within 2 minutes | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
+| `p.firstBlood` | worldKills | kill | First blood: the first kill among friends | 5 | the day's first counted world kill of all friends (by the kill's time in the synced records) | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
+| `p.nightRaid` | worldKills | kill | Night raid: a kill after 23:00 realm time | 3 | a counted kill between 23:00 and 05:00 realm time (`GetGameTime`) | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
+| `p.enemyLand` | worldKills | kill | Kill in the enemy's territory | 3 | a counted kill in a zone of the enemy faction (`C_PvP.GetZonePVPInfo` "hostile") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
+| `p.homeGuard` | worldKills | kill | Defend home: a kill in friendly territory | 3 | a counted kill in a zone of the own faction ("friendly") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
+| `p.contested` | worldKills | kill | Kills in contested land | 3 | 3 counted kills in contested zones ("contested") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
+| `p.skull` | targets | kill | Slay a skull | 5 | a counted kill of a victim shown as a skull (`lvl = -1`) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.fairFight` | targets | kill | Fair fight: a kill at the same level | 3 | a counted kill with `diff = 0` | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.mirror` | targets | kill | Mirror match: kill an enemy of the same class | 3 | a counted kill of a victim of the killer's own class | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.races3` | targets | kill | Kills of 3 different races | 3 | 3 different victim races | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.healers` | targets | kill | Silence the healers: 2 healer-class kills | 3 | 2 counted kills of priests, druids, paladins or shamans | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.casters3` | targets | kill | Kill 3 casters | 3 | 3 counted kills of mages, warlocks or priests | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.melee3` | targets | kill | Kill 3 fighters | 3 | 3 counted kills of warriors, rogues or paladins | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.nemesis` | targets | kill | Nemesis: kill the same player twice | 3 | 2 counted kills of the same victim name | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.rankUp` | targets | kill | Kill a player of higher rank | 5 | a counted kill of a victim whose PvP rank is above the killer's | existing tracker, waits for its launch check: V73, V74, V79 (victim and own rank) |  |
+| `p.huntPair` | targets | kill | Kills of 2 Hunt combinations | 3 | counted kills of 2 different race and class combinations of the enemy list (not only today's Hunt) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.streak3` | streaks | kill | Three in a row without dying | 3 | 3 counted kills on one character with no death in between | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
+| `p.revenge` | streaks | kill | Revenge: kill the player who killed you | 5 | a counted kill of the player who killed that character, within 30 minutes of the death | needs probe V120 (new) |  |
+| `p.flagHour` | streaks | flag | Stay flagged for 30 minutes without dying | 3 | 30 minutes flagged for PvP on one character with no death | needs probe V121 (new) |  |
+| `p.comeback` | streaks | kill | Comeback: a kill within 5 minutes of a death | 3 | a counted kill within 5 minutes after the same character died to a player | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
+| `p.noDeath` | streaks | kill | Score 3 kills and never die that day | 5 | 3 counted kills on a day with no death to a player on any character up to that moment | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
+| `p.duoKills` | teamwork | kill | Kills with a friend | 3 | 3 counted kills while grouped with a friend's community character | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `p.loneWolf` |
+| `p.trioKills` | teamwork | kill | Kills with 2 friends | 5 | a counted kill while grouped with community characters of 2 other friends | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `p.loneWolf` |
+| `p.escort` | teamwork | kill | Escort: a kill grouped with a lower friend | 3 | a counted kill while grouped with a friend's community character 5 or more levels below the killer | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `p.loneWolf` |
+| `p.avenge` | teamwork | kill | Avenge a friend | 5 | a counted kill of the player who killed a friend in the same group, within 10 minutes | needs probe V120 (new) | no other friend in the community → `p.loneWolf` |
+| `p.pack` | teamwork | kill | Pack hunt: a kill in a full party | 3 | a counted kill while in a party of 5 (`GetNumGroupMembers`, not a raid) | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups |  |
+| `p.duelWin` | duels | duel | Win a duel | 1 | a duel won (any opponent) | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `p.duelStranger` | duels | duel | Beat a stranger in a duel | 3 | a duel won against a player who is not a community character | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `p.duels3` | duels | duel | Fight 3 duels | 3 | 3 duels finished, won or lost | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `p.duelUp` | duels | duel | Win a duel against a higher level | 5 | a duel won against a friend's community character of a higher level | existing tracker, waits for its launch check: CF-52 duels (V80) | no other friend in the community → `p.loneWolf` |
+| `p.duelClass` | duels | duel | Duel a friend of another class | 1 | a duel with a friend's community character of another class than the own | existing tracker, waits for its launch check: CF-52 duels (V80) | no other friend in the community → `p.loneWolf` |
+| `p.duelWins2` | duels | duel | Win 2 duels in a row | 3 | 2 duels won one after the other by one character, no loss between | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `p.rematch` | duels | duel | Rematch: beat the one who beat you | 3 | a duel won against an opponent who won the previous duel between the two that day | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `p.bgPlay` | battlegrounds | bg | Play a battleground to the end | 3 | a battleground run finished (won or lost, `PVP_MATCH_COMPLETE`) | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `p.loneWolf` |
+| `p.bgWin` | battlegrounds | bg | Win a battleground | 5 | a battleground run won | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `p.loneWolf` |
+| `p.bgKills5` | battlegrounds | bg | 5 kills in a battleground | 3 | 5 battleground kills in one run | existing tracker, waits for its launch check: V35b, V73 (battleground kills) | no character of level 10 or more → `p.loneWolf` |
+| `p.bgFriend` | battlegrounds | bg | A battleground with a friend | 3 | a battleground run finished with a friend's community character in it | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `p.loneWolf` |
+| `p.bgFlag` | battlegrounds | bg | Capture a flag | 5 | a flag capture by the character (the battleground's score) | needs probe V122 (new) | no character of level 10 or more → `p.loneWolf` |
+| `p.bgBase` | battlegrounds | bg | Assault or defend a base | 3 | a base or tower assaulted or defended by the character (the battleground's score) | needs probe V122 (new) | no character of level 10 or more → `p.loneWolf` |
+| `p.bgTop` | battlegrounds | bg | Top killer of the team in a battleground | 5 | the most honorable kills of the own team in a finished battleground run (the battleground's score) | needs probe V122 (new) | no character of level 10 or more → `p.loneWolf` |
+| `p.salute` | taunts | emote | Salute a worthy enemy | 1 | the `/salute` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
+| `p.chicken` | taunts | emote | Call an enemy a chicken | 1 | the `/chicken` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
+| `p.bowKill` | taunts | kill | Bow, then win | 3 | the `/bow` emote at an enemy-faction player, then a counted kill of that player within 2 minutes | needs probe V108, V74, V73 |  |
+| `p.flagUp` | taunts | flag | Flag up for PvP | 1 | a character flagged for PvP for 10 minutes | needs probe V121 (new) |  |
 
 ### The Duel slot (daily)
 - Your first duel with each friend that day: a win +3, a loss +1.
@@ -513,17 +705,51 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 ### Weekly bounty pool
 `pick(week, 3, #pool)`:
 
-| Id | Goal | Done when |
-|---|---|---|
-| `b.zone25` | 25 kills in the zone of the week | `pick(week, 5, #band)` from the band of the friend's highest character |
-| `b.allClasses` | A kill of every enemy class | each class of the enemy list at least once |
-| `b.allRaces` | A kill of every enemy race | each race at least once |
-| `b.ranked5` | 5 kills on ranked players | victims with PvP rank 1 or higher |
-| `b.kills50` | 50 counted kills | |
-| `b.spree10` | A spree of 10 | 10 kills on one character without dying |
-| `b.hunt3` | The Hunt done on 3 days | |
-| `b.duels3` | Duels with 3 different friends | |
-| `b.days5` | Kills on 5 days | a counted kill on 5 of the 7 days |
+| Id | Category | Needs | Goal | Points | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| `b.zone25` | worldKills | kill | 25 kills in the zone of the week | 10 | `pick(week, 5, #band)` from the band of the friend's highest character | now | no character of level 20 or more → `b.kills50` (from pool version 2) |
+| `b.allClasses` | targets | kill | A kill of every enemy class | 15 | each class of the enemy list at least once | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.allRaces` | targets | kill | A kill of every enemy race | 10 | each race at least once | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.ranked5` | targets | kill | 5 kills on ranked players | 15 | victims with PvP rank 1 or higher | existing tracker, waits for its launch check: V73, V74, V79 (victim and own rank) |  |
+| `b.kills50` | worldKills | kill | 50 counted kills | 10 | 50 counted world kills | now |  |
+| `b.spree10` | streaks | kill | A spree of 10 | 15 | 10 kills on one character without dying | now |  |
+| `b.hunt3` | targets | kill | The Hunt done on 3 days | 10 | the Hunt done on 3 days | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.duels3` | duels | duel | Duels with 3 different friends | 5 | duels with community characters of 3 other friends | now |  |
+| `b.days5` | worldKills | kill | Kills on 5 days | 10 | a counted kill on 5 of the 7 days | now |  |
+| `b.kills150` | worldKills | kill | 150 counted kills | 15 | 150 counted world kills | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `b.kills50` |
+| `b.zones8` | worldKills | kill | Kills in 8 zones | 10 | counted kills in 8 different zones | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `b.kills50` |
+| `b.nights3` | worldKills | kill | Night raids on 3 nights | 10 | a counted kill between 23:00 and 05:00 realm time on 3 days | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `b.kills50` |
+| `b.enemyLand25` | worldKills | kill | 25 kills in the enemy's territory | 10 | counted kills in zones of the enemy faction, 25 in total | needs probe V123 (new) | no character of level 20 or more → `b.kills50` |
+| `b.triples3` | worldKills | kill | 3 triples | 15 | 3 times 3 counted kills by one character within 2 minutes | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `b.kills50` |
+| `b.firstBlood3` | worldKills | kill | First blood on 3 days | 10 | the day's first counted kill of all friends, on 3 days | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `b.kills50` |
+| `b.combos10` | targets | kill | 10 different Hunt combinations | 15 | counted kills of 10 different race and class combinations of the enemy list | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.punchUp10` | targets | kill | 10 kills on players 3+ levels above | 10 | 10 counted kills with `diff >= 3` (a skull counts) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.skulls3` | targets | kill | Slay 3 skulls | 15 | 3 counted kills of skull victims | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.fair10` | targets | kill | 10 fair fights | 10 | 10 counted kills with `-2 <= diff <= 2` | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.nemesis` | targets | kill | Nemesis: the same player 3 times | 5 | counted kills of the same victim name on 3 different days | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.solo20` | streaks | kill | 20 solo kills | 10 | 20 counted kills with `solo` | existing tracker, waits for its launch check: V73, V76 (CF-55b kills, `solo`) |  |
+| `b.untouchable3` | streaks | kill | Untouchable on 3 days | 10 | 5 counted kills without dying on one character, on 3 days | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
+| `b.revenge3` | streaks | kill | Revenge 3 times | 10 | 3 counted kills of the player who killed that character, each within 30 minutes | needs probe V120 (new) |  |
+| `b.flagged3h` | streaks | flag | 3 hours flagged for PvP | 5 | 3 hours flagged for PvP in total | needs probe V121 (new) |  |
+| `b.kd` | streaks | kill | More kills than deaths | 10 | at least 10 counted kills and fewer deaths to players than kills, over the week | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
+| `b.duoKills15` | teamwork | kill | 15 kills with friends | 10 | 15 counted kills while grouped with a friend's community character | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `b.kills50` |
+| `b.warband` | teamwork | kill | A warband of 3 friends | 10 | 5 counted kills while grouped with community characters of 2 other friends | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `b.kills50` |
+| `b.avenge3` | teamwork | kill | Avenge friends 3 times | 15 | counted kills of players who killed a friend in the same group within 10 minutes, 3 in total | needs probe V120 (new) | no other friend in the community → `b.kills50` |
+| `b.huntAll` | teamwork | kill | Every friend does the Hunt | 10 | the Hunt done by every friend who played PvP that week (counted for each of them when the last one finishes) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) | no other friend in the community → `b.kills50` |
+| `b.duelWins5` | duels | duel | Win 5 duels | 10 | 5 duels won (any opponent) | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `b.duelAll` | duels | duel | Duel every friend | 15 | a duel with a community character of every other friend who played that week (at least 2) | existing tracker, waits for its launch check: CF-52 duels (V80) | no other friend in the community → `b.kills50` |
+| `b.duelDays4` | duels | duel | Duel on 4 days | 5 | a duel on 4 days of the week | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `b.strangers3` | duels | duel | Beat 3 strangers in duels | 10 | duels won against 3 different players who are not community characters | existing tracker, waits for its launch check: CF-52 duels (V80) |  |
+| `b.bgWins3` | battlegrounds | bg | Win 3 battlegrounds | 10 | 3 battleground runs won | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `b.kills50` |
+| `b.bgEach` | battlegrounds | bg | Play every battleground | 15 | a finished run in every battleground open to the character | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `b.kills50` |
+| `b.bgDays3` | battlegrounds | bg | Battlegrounds on 3 days | 10 | a finished battleground run on 3 days | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `b.kills50` |
+| `b.bgKills30` | battlegrounds | bg | 30 battleground kills | 10 | 30 battleground kills | existing tracker, waits for its launch check: V35b, V73 (battleground kills) | no character of level 10 or more → `b.kills50` |
+| `b.bgFlags3` | battlegrounds | bg | Capture 3 flags | 15 | 3 flag captures | needs probe V122 (new) | no character of level 10 or more → `b.kills50` |
+| `b.bgBases5` | battlegrounds | bg | Take or hold 5 bases | 10 | 5 bases or towers assaulted or defended | needs probe V122 (new) | no character of level 10 or more → `b.kills50` |
+| `b.bgFriends` | battlegrounds | bg | Win a battleground with 2 friends | 15 | a battleground run won with community characters of 2 other friends in it | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `b.kills50` |
+| `b.rankUp` | honor | kill | Rise a PvP rank | 15 | a character's PvP rank higher than at the start of the week | existing tracker, waits for its launch check: V79 (own rank) |  |
+| `b.skirmish5` | honor | kill | The Skirmish done on 5 days | 10 | the day's Skirmish done on 5 days of the week | works now: the Skirmish `done` per day |  |
+| `b.taunts5` | taunts | emote | Taunt 5 enemies | 5 | `/flex`, `/boo`, `/chicken` or `/rude` at 5 different enemy-faction players | needs probe V108, V74 |  |
 
 ## Battleground block
 - Battleground kills (`bg = true`) score with the same bands and counting rules, as **battleground points**: never PvP points, never in the week's kills.

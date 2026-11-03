@@ -45,8 +45,9 @@ describe("Doomsday (CF-55)", function()
     it("matches the file's catalogue, in pool order", function()
       local list = {}
       for i, g in ipairs(Doomsday.GOALS) do
-        list[i] = { id = g.id, slot = g.slot, category = g.category, since = g.since, points = g.points,
-                    text = g.text, short = g.shortLabel, can = g.can, fallback = g.fallback }
+        list[i] = { id = g.id, slot = g.slot, category = g.category, needs = g.needs, since = g.since,
+                    points = g.points, text = g.text, short = g.shortLabel, can = g.can, fallback = g.fallback,
+                    retired = g.retired, canFrom = g.canFrom }
       end
       assert.are.same(cases.pools.catalogue, list)
     end)
@@ -74,6 +75,49 @@ describe("Doomsday (CF-55)", function()
         assert.is_nil(seen[key], g.id .. " and " .. tostring(seen[key]))
         seen[key] = g.id
       end
+    end)
+
+    -- CF-79: docs/DOOMSDAY-WEEKLY-CATALOGUE.md and docs/DOOMSDAY-PVP-CATALOGUE.md.
+    it("has the 50 weeklies in 14 categories, sized 5, 10 or 15, and w.ilvl3 retired from pool version 2", function()
+      local weeklies, categories, n = 0, {}, 0
+      for _, g in ipairs(Doomsday.GOALS) do
+        if g.slot == "weekly" and g.id ~= "w.ilvl3" then
+          weeklies = weeklies + 1
+          if not categories[g.category] then categories[g.category], n = true, n + 1 end
+          assert.is_true(g.points == 5 or g.points == 10 or g.points == 15, g.id)
+        end
+      end
+      assert.are.same({ 50, 14 }, { weeklies, n })
+      assert.are.same({ 2, nil }, { Doomsday.goal("w.ilvl3").retired, Doomsday.goal("w.blueGear").since })
+      local function has(list, id)
+        for _, x in ipairs(list) do if x == id then return true end end
+        return false
+      end
+      assert.is_true(has(Doomsday.pool("weekly", 1), "w.ilvl3"))
+      assert.is_false(has(Doomsday.pool("weekly", 2), "w.ilvl3"))
+    end)
+
+    it("has 57 Skirmish and 43 Bounty goals, each with what it needs", function()
+      local count, sizes = { skirmish = 0, bounty = 0 }, { skirmish = { 1, 3, 5 }, bounty = { 5, 10, 15 } }
+      local needs = { kill = true, duel = true, bg = true, emote = true, flag = true }
+      for _, g in ipairs(Doomsday.GOALS) do
+        if sizes[g.slot] then
+          count[g.slot] = count[g.slot] + 1
+          assert.is_true(needs[g.needs], g.id)
+          local s = sizes[g.slot]
+          assert.is_true(g.points == s[1] or g.points == s[2] or g.points == s[3], g.id)
+        end
+      end
+      assert.are.same({ skirmish = 57, bounty = 43 }, count)
+      assert.are.same({ "taunts", "emote" }, { Doomsday.goal("p.flex").category, Doomsday.goal("p.flex").needs })
+    end)
+
+    it("checks b.zone25's level only from pool version 2 (pool version 1 is unchanged)", function()
+      assert.is_true(Doomsday.canDo("b.zone25", { highest = 15 }, 1))
+      assert.is_false(Doomsday.canDo("b.zone25", { highest = 15 }, 2))
+      assert.is_false(Doomsday.canDo("p.bgWin", { highest = 9 }))
+      assert.is_true(Doomsday.canDo("p.bgWin", { highest = 9, highestToday = 10 }))
+      assert.is_false(Doomsday.canDo("w.blueGear", { highest = 14 }))
     end)
 
     it("names known goals as fallbacks and known situation checks", function()
@@ -284,7 +328,8 @@ describe("Doomsday (CF-55)", function()
   it("keeps the flat points without a pool and for goals without a size", function()
     assert.are.equal(5, Doomsday.pointsFor("d.quests10"))
     assert.are.equal(15, Doomsday.pointsFor("w.days3"))
-    assert.are.equal(15, Doomsday.pointsFor("w.days3", 2)) -- no size yet: flat
+    assert.are.equal(5, Doomsday.pointsFor("w.days3", 2))
+    assert.are.equal(15, Doomsday.pointsFor("w.ilvl3", 2)) -- no size (retired from pool 2): flat
     assert.are.same({ "pve", 3 }, { Doomsday.goalPoints("d.quests10", 2) })
     assert.is_nil(Doomsday.goalPoints("x.newer", 2))
     assert.are.equal(1, Doomsday.entryPool(nil, nil))
