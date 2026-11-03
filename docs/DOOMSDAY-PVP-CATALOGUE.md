@@ -1,6 +1,8 @@
-# Doomsday: catalogue of PvP missions (draft)
+# Doomsday: catalogue of PvP missions
 
-Draft for Nico's review, 2026-11-03: 100 PvP missions, numbered 1 to 100: **57 for the Skirmish** (the daily PvP
+**Approved by Nico, 2026-11-03**, every mission as drafted, on the review page.
+
+100 PvP missions, numbered 1 to 100: **57 for the Skirmish** (the daily PvP
 slot) and **43 for the Bounty** (the weekly PvP slot). 19 of them are existing ids (★): the Skirmish and Bounty
 pools of `docs/DOOMSDAY.md` and the 4 Skirmish goals approved in the daily catalogue (`docs/DOOMSDAY-CATALOGUE.md`
 #122 to #125). Nothing here is in the pool yet: no code, no `POOL_VERSION` bump, `DOOMSDAY.md` unchanged.
