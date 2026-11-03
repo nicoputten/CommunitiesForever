@@ -117,7 +117,8 @@ local function readRiding()
   return answered and 0 or nil
 end
 
--- Raw quest log entries in log order (CF-19, V23): { questID, title, isHeader, isHidden, tagID }.
+-- Raw quest log entries in log order (CF-19, V23): { questID, title, isHeader, isHidden, tagID, level,
+-- suggestedGroup } (level and suggestedGroup: CF-71).
 -- tagID from C_QuestLog.GetQuestTagInfo (unverified, VERIFY.md V31). nil when the log is not readable.
 local function readQuestLog()
   if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return nil end
@@ -133,7 +134,8 @@ local function readQuestLog()
         tagID = tag and tag.tagID
       end
       entries[#entries + 1] = { questID = info.questID, title = info.title, isHeader = info.isHeader,
-                                isHidden = info.isHidden, tagID = tagID }
+                                isHidden = info.isHidden, tagID = tagID, level = info.level,
+                                suggestedGroup = info.suggestedGroup }
     end
   end
   return entries

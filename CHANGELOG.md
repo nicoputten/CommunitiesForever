@@ -10,6 +10,8 @@ tagging; the release stops if the tag has no section.
 - **Doomsday:** the site's owner can set future days' and weeks' missions on the site; they arrive with the uploader
   and reach friends without it through the addon. Days nobody changed keep the usual goals, and a day that has
   started never changes.
+- **Doomsday:** quest hand-ins and new quests are now tracked in detail (quests above your level, group, class and
+  dungeon quests, quick hand-ins, quests with a friend) for the coming quest missions.
 
 ## v1.1.0 (2026-11-02)
 - **Fixed:** no "is online" chat lines right after you log in for friends who were already online.

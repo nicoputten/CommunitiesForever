@@ -182,7 +182,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `chars` | **All** own characters by GUID, also those outside the community |
 | `chars.*.updatedAt` | When the owner last saw this character change: the per-character merge key |
 | `chars.*.lastPlayed` | Last login on that character (updated without a version change) |
-| `chars.*.quests` | Quest log: `{ questID = { title, area, dungeon } }`, IDs only, no progress |
+| `chars.*.quests` | Quest log: `{ questID = { title, area, dungeon, level, suggestedGroup } }`, IDs only, no progress. CF-71: `level` (the quest's) and `suggestedGroup` (only above 0) are optional, nil from older versions |
 | `chars.*.pvp` | CF-52, optional: `hk` lifetime honorable kills, `rank` PvP rank number (0 none, 1 to 14) and `rankName` the game's name for it, `weekKills`/`weekHonor` this week's, and the addon's own lifetime counters `deaths` (or the game's death statistic when higher), `duelsWon`, `duelsLost` (counted since the addon recorded them). Each field missing = unknown |
 | `chars.*.riding` | CF-53, optional: riding skill 0, 75 or 150 (missing = unknown) |
 | `removed` | Only in relayed copies: characters the owner dropped, with the time |
