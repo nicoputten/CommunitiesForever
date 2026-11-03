@@ -66,6 +66,14 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-79 The weekly and PvP catalogues in code
+The new missions wait for data (no `since`) and their trackers; nothing new is drawn until pool version 2 (CF-77).
+
+| Step | Expected | Status |
+|---|---|---|
+| On this build, Doomsday › Week on the same week as a friend on the previous build | The same 3 weeklies and the same Bounty on both, and the same swaps (pool version 1 unchanged). | open |
+| Doomsday › Today on the same day as that friend | The same Skirmish on both. | open |
+
 ### CF-78 Only a real fight ends PvP Virgin
 Taunt and flag goals arrive with pool version 2 and later (CF-79, CF-81); until then the steps check the battleground and that nothing else changed.
 
