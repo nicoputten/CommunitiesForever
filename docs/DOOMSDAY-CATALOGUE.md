@@ -1,11 +1,12 @@
-# Doomsday: catalogue of PvE dailies (draft)
+# Doomsday: catalogue of PvE dailies
 
-Draft for Nico's review, 2026-11-03. Nothing here is in the pool yet: no code, no `POOL_VERSION` bump, and
-`docs/DOOMSDAY.md` is unchanged. After the OK, the next steps are stories for the trackers, the site's copy of the
-pool and a pool version bump. The probe checks (V90 to V119) are in the FriendProbe launch checklist. Weeklies come
-later and are not part of this draft.
+**Approved by Nico, 2026-11-03**, line by line on the review page: every mission below is a yes. #16 and #27 were
+removed in that review and #94 before it; #39 changed to 1 point. Nothing here is in the pool yet: no code, no
+`POOL_VERSION` bump, and `docs/DOOMSDAY.md` is unchanged until the stories (`docs/STORIES.md`) are built. The probe
+checks (V90 to V119) are in the FriendProbe launch checklist. Weeklies come later and are not part of this
+catalogue.
 
-Decisions this draft follows (Nico, 2026-11-03):
+Decisions this catalogue follows (Nico, 2026-11-03):
 - At least 100 PvE dailies, **mostly new kinds of activity**, with only a few size variants.
 - **General missions only:** no zone, dungeon or place names; anyone can do them anywhere, given their level and
   characters.
@@ -21,6 +22,9 @@ Decisions this draft follows (Nico, 2026-11-03):
 - **Review answers** (Nico, 2026-11-03): goals that need a friend get no fallback (the goal is to get a friend
   online); goals score 1, 3 or 5 points by size (see "Points"); "Log out rested"
   (`d.inn`, #94) is removed and its probe check V97 with it; "kill 5+ levels lower" stays at 5.
+- **Approval** (Nico, 2026-11-03, the review page): every mission yes, except "Fill a quarter of the XP bar"
+  (`d.xpQuarter`, #16) and "Defeat a raid boss" (`d.raidBoss`, #27), removed with their probe checks V91 and V92;
+  "Play 2 characters" (`d.chars2`, #39) scores 1 point.
 
 The rules of `DOOMSDAY.md` still hold: per friend, any character counts and progress adds up across characters;
 "a friend" means a community character of another BattleTag (never an own alt); the draw takes 3 dailies from 3
@@ -29,14 +33,15 @@ never shown as an amount.
 
 ## Summary
 
-**120 PvE dailies in 15 categories, plus 4 Skirmish goals** (numbers 1 to 125; #94 removed in review). The 20 existing dailies are all kept
+**118 PvE dailies in 15 categories, plus 4 Skirmish goals** (numbers 1 to 125; #16, #27 and #94 removed in
+review). The 20 existing dailies are all kept
 with their ids; 4 of them move to a new category (below).
 
 | Category | Dailies | Works now | Existing tracker | New, verified API | Needs probe |
 |---|---|---|---|---|---|
 | quests | 10 | 6 | | 4 | |
-| levels | 9 | 5 | 1 | 2 | 1 |
-| dungeons | 9 | 6 | 1 | 1 | 1 |
+| levels | 8 | 5 | 1 | 2 | |
+| dungeons | 8 | 6 | 1 | 1 | |
 | crafts | 6 | 2 | | 1 | 3 |
 | cooking | 9 | 1 | 1 | | 7 |
 | fishing | 7 | 1 | 5 | | 1 |
@@ -49,7 +54,7 @@ with their ids; 4 of them move to a new category (below).
 | loot | 6 | | 1 | 2 | 3 |
 | economy | 7 | | 1 | | 6 |
 | care | 9 | | | | 9 |
-| **PvE total** | **120** | **26** | **18** | **20** | **56** |
+| **PvE total** | **118** | **26** | **18** | **20** | **54** |
 | skirmish (PvP) | 4 | | 2 | | 2 |
 
 **Data** (the column "Data" in the tables):
@@ -59,22 +64,21 @@ with their ids; 4 of them move to a new category (below).
   still unverified on Forever. They join once their `VERIFY.md` item or story steps pass (named in the row).
 - **"new tracker, verified API"** (20): needs new recording code, but every event and API it reads is in
   `docs/API-FINDINGS.md`. No probe needed; can join the next pool version.
-- **"needs probe V…"** (56): reads an API that is not verified on Forever. Each names its `VERIFY.md` item (V90 to
-  V119, no V97), which the FriendProbe launch checklist checks.
+- **"needs probe V…"** (54): reads an API that is not verified on Forever. Each names its `VERIFY.md` item (V90 to
+  V119, without V91, V92 and V97), which the FriendProbe launch checklist checks.
 
-So **46 of 120 work without a probe** (works now + new tracker), **64 once the existing trackers' launch checks pass**.
+So **46 of 118 work without a probe** (works now + new tracker), **64 once the existing trackers' launch checks pass**.
 
 ### Points
 Today every daily scores 5 PvE points and every Skirmish goal 5 PvP points (`DOOMSDAY.md` "Points"). Decided with
 Nico, 2026-11-03:
 - **Three sizes: 1, 3 and 5 points**, so no daily is worth more than today. The column "Points" has each goal's size;
-  it is a draft to judge per line.
-  - **1, quick** (19): done in a minute, wherever you are: Campfire, 100 jumps, Chat, Whisper, Wave, Group pic, Fly,
-    Hearth, New home, Sell, Shopping, Mail pal, Mailbox, Repair, Well fed, Restock, Bank, Tidy bags, Potion.
-  - **3, standard** (84): everything else.
-  - **5, demanding** (17): a dungeon, an hour of play, or an evening's worth: 20 quests, 2 levels, XP 25%, Dungeon,
-    Group run, 3 bosses, Clean run, Speed run, Fresh run, Raid boss, 2 dungeons, Cook 15, 50 fish, 1h session, No
-    deaths, Rare hunt, Streak 20.
+  Nico approved them line by line.
+  - **1, quick** (20): done in a minute, wherever you are: Campfire, 2 chars, 100 jumps, Chat, Whisper, Wave, Group pic,
+    Fly, Hearth, New home, Sell, Shopping, Mail pal, Mailbox, Repair, Well fed, Restock, Bank, Tidy bags, Potion.
+  - **3, standard** (83): everything else.
+  - **5, demanding** (15): a dungeon, an hour of play, or an evening's worth: 20 quests, 2 levels, Dungeon, Group run, 3
+    bosses, Clean run, Speed run, Fresh run, 2 dungeons, Cook 15, 50 fish, 1h session, No deaths, Rare hunt, Streak 20.
 - **A day's total varies** with the goals drawn (3 to 15 points from the PvE dailies). The draw stays as it is; it
   is the same for everyone.
 - **The Skirmish uses the same sizes:** flex and boo 1 PvP point, `p.punchDown5` 3, `p.punchUp5` 5. The Skirmish goals
@@ -110,9 +114,7 @@ optional, nil = unknown; they stay local like CF-56's facts, only `done` travels
 | Quest details at turn-in | `d.questUp`, `d.groupQuest`, `d.classQuest`, `d.dungeonQuest`, `d.questBurst`, `d.accept5`, `d.questTogether` | `QUEST_TURNED_IN` (questID, already used by CF-22), `QUEST_ACCEPTED`, `C_QuestLog.GetInfo` `level` and `suggestedGroup` kept in the stored quest log next to `area` and `dungeon` (V23, V31); turn-in times | none |
 | Level context | `d.dingDungeon`, `d.dingFriend`, `d.lowbie` | `PLAYER_LEVEL_UP` with `GetInstanceInfo` type (V35) and the group's friends (CF-53 groups) | none |
 | Skill points per profession | `d.cookSkill5`, `d.fishSkill5`, `d.aidSkill5` | the professions per character the addon stores (skill lines 185, 356, 129), as `d.skill5` counts all | none |
-| XP bar | `d.xpQuarter` | `PLAYER_XP_UPDATE`, `UnitXP`, `UnitXPMax` | V91 |
 | Dungeon history | `d.newDungeon` | feed `runs`; new stored per-character set of dungeon names | none |
-| Raid bosses | `d.raidBoss` | `ENCOUNTER_END` in a raid (CF-23 records raids; only the dungeon part is verified) | V92 |
 | Crafting details | `d.craft5`, `d.cook5`, `d.cook15`, `d.cookKinds3`, `d.bandage3`, `d.bandage10`, `d.bandageKinds2`, `d.craftGreen`, `d.feedFriend` | `LOOT_ITEM_CREATED_SELF` (CF-56's crafted tracker, V83), counted per item ID; item class and quality | V105 |
 | Gathering, chests, fishing loot | `d.gather10`, `d.treasure`, `d.fishKinds3` | `LOOT_OPENED`, `GetLootSourceInfo`, `GetLootSlotLink`, item class of looted items | V106 |
 | Recipes | `d.newRecipe`, `d.cookRecipe` | a new-recipe event or system message | V104 |
@@ -153,15 +155,13 @@ the community), `canBuff` (a character of a class with a buff it can cast on oth
 `highest`, `hasProfession`, `hasFishing`, `hasCraftingProfession` and `dungeonInRange` cover the rest.
 
 ### Probe checks
-In `VERIFY.md` (V90 to V119; V97 was dropped with `d.inn`) and in the FriendProbe launch checklist, which ticks
+In `VERIFY.md` (V90 to V119; V91, V92 and V97 were dropped with their missions) and in the FriendProbe launch checklist, which ticks
 most of them by itself while playing. "Retail" means a Retail 12.1.5 dry run can answer it (Nico's rule: checked on Retail counts as done),
 "Forever" that only Forever can.
 
 | Check | Question | Where |
 |---|---|---|
 | V90 | Does `CHAT_MSG_COMBAT_XP_GAIN` arrive with readable text matching `COMBATLOG_XPGAIN_FIRSTPERSON` (and its group variants) once per kill, also in a group? | Retail (low character), Forever |
-| V91 | Do `PLAYER_XP_UPDATE`, `UnitXP("player")` and `UnitXPMax("player")` work? | Retail |
-| V92 | Does `ENCOUNTER_END` (or `BOSS_KILL`) fire with `success` for raid bosses? (V35's raid part) | Forever |
 | V93 | Do `UnitClassification`, `UnitLevel` and `UnitName` read for hostile creatures by target, mouseover and nameplate? | Retail |
 | V94 | Do `UnitOnTaxi` and `PLAYER_CONTROL_LOST` tell a flight, and does `ERR_NEWTAXIPATH` arrive (`UI_INFO_MESSAGE` or `CHAT_MSG_SYSTEM`) when a flight path is learned? | Retail, Forever |
 | V95 | Does `UNIT_SPELLCAST_SUCCEEDED` for `"player"` give a readable spell ID (Hearthstone 8690, a bandage, the campfire)? | Retail |
@@ -252,7 +252,7 @@ character". "That day" is the Doomsday day.
 | 9 | `d.questBurst` | Hand in 3 quests within 10 minutes | Quick 3 | 3 | quests | 3 quests handed in by one character within 10 minutes | new tracker, verified API: turn-in times |  |
 | 10 | `d.accept5` | Take on 5 new quests | Take 5 | 3 | quests | 5 different quests accepted that day (by quest ID; abandoning and taking one again counts once) | new tracker, verified API: `QUEST_ACCEPTED` |  |
 
-### levels (9)
+### levels (8)
 
 | # | Id | Title | Label | Points | Category | Done when | Data | Can't do when → fallback |
 |---|---|---|---|---|---|---|---|---|
@@ -261,12 +261,11 @@ character". "That day" is the Doomsday day.
 | 13 | ★ `d.ilvl` | Raise an item level | Item level | 3 | levels | a character's item level is higher than at its first login that day | works now (pool 1) | item level unreadable → `d.quests10` |
 | 14 | ★ `d.cleanLevel` | Gain a level without dying | Clean lvl | 3 | levels | a level on a character with no death between that level and the previous one | existing tracker, waits for its launch check: 52 (CF-52 deaths) | all characters at 60 → `d.quests20` |
 | 15 | `d.levels2` | Gain 2 levels | 2 levels | 5 | levels | 2 levels over all characters | works now | all characters at 60 → `d.quests20` |
-| 16 | `d.xpQuarter` | Fill a quarter of the XP bar | XP 25% | 5 | levels | XP gained that day adds up to a quarter of the bar: the sum over gains of (gain ÷ `UnitXPMax` at the gain) ≥ 0.25 | needs probe V91 | all characters at 60 → `d.quests20` |
 | 17 | `d.dingDungeon` | Gain a level inside a dungeon | Deep ding | 3 | levels | a level gained while the instance type is `party` | new tracker, verified API: `GetInstanceInfo` at the level-up | all characters at 60 or no character in range of a dungeon → `d.level` |
 | 18 | `d.dingFriend` | Gain a level in a group with a friend | Duo ding | 3 | levels | a level gained while grouped with a friend's community character | new tracker, verified API: group at the level-up (CF-53 groups) | all characters at 60 → `d.groupFriend` |
 | 19 | `d.lowbie` | Gain a level on a character below 20 | Lowbie | 3 | levels | a level on a character that was below 20 before it | works now | no character below 20 → `d.altLevel` |
 
-### dungeons (9)
+### dungeons (8)
 
 | # | Id | Title | Label | Points | Category | Done when | Data | Can't do when → fallback |
 |---|---|---|---|---|---|---|---|---|
@@ -277,7 +276,6 @@ character". "That day" is the Doomsday day.
 | 24 | `d.cleanRun` | Run a dungeon without dying | Clean run | 5 | dungeons | a party run with at least 1 boss and no death of that character between its start and its last boss | existing tracker, waits for its launch check: 52 (deaths) | as `d.dungeon` |
 | 25 | `d.speedRun` | Defeat 3 bosses of one dungeon within 45 minutes | Speed run | 5 | dungeons | a party run with 3 or more bosses whose first entry to last boss took 45 minutes or less | works now: run `startedAt`, `lastAt` | as `d.dungeon` |
 | 26 | `d.newDungeon` | Run a dungeon new to the character | Fresh run | 5 | dungeons | a party run with at least 1 boss in a dungeon that character has no earlier run of | new tracker, verified API: per-character dungeon set (new stored data) | as `d.dungeon` |
-| 27 | `d.raidBoss` | Defeat a raid boss | Raid boss | 5 | dungeons | a boss killed in a raid run (feed `runs`, instance `raid`) | needs probe V92 | no character at 60 → `d.bosses3` |
 | 28 | `d.dungeons2` | Run 2 dungeons | 2 dungeons | 5 | dungeons | 2 finished party runs | works now | as `d.dungeon` |
 
 ### crafts (6)
@@ -333,7 +331,7 @@ character". "That day" is the Doomsday day.
 
 | # | Id | Title | Label | Points | Category | Done when | Data | Can't do when → fallback |
 |---|---|---|---|---|---|---|---|---|
-| 39 | ★ `d.chars2` | Play 2 characters | 2 chars | 3 | play | 2 characters logged in that day | works now (pool 1) | only one character → `d.quests10` |
+| 39 | ★ `d.chars2` | Play 2 characters | 2 chars | 1 | play | 2 characters logged in that day | works now (pool 1) | only one character → `d.quests10` |
 | 40 | `d.chars3` | Play 3 characters | Play 3 | 3 | play | 3 characters logged in that day | works now | fewer than 3 characters → `d.chars2` |
 | 41 | `d.switchUp` | Play a character not played the day before | Switch up | 3 | play | a character logged in that day that wasn't logged in the previous Doomsday day | works now: facts per day | only one character → `d.quests10` |
 | 42 | `d.dustOff` | Play a character after a week away | Dust off | 3 | play | a character logged in whose last login was 7 or more days earlier (`lastPlayed`) | works now | no character unplayed for 7 days → `d.chars2` |
