@@ -1,7 +1,7 @@
 {
- "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
+ "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
  "version": 1,
- "poolVersion": 1,
+ "poolVersion": 2,
  "epoch": 20761,
  "defaultReset": 68400,
  "salts": {
@@ -28,15 +28,44 @@
    "d.zone5",
    "d.zones3",
    "d.shared3",
+   "d.questUp",
+   "d.groupQuest",
+   "d.classQuest",
+   "d.questBurst",
+   "d.accept5",
    "d.level",
    "d.altLevel",
    "d.ilvl",
+   "d.levels2",
+   "d.dingDungeon",
+   "d.dingFriend",
+   "d.lowbie",
    "d.dungeon",
    "d.dungeonFriend",
    "d.bosses3",
+   "d.dungeonQuest",
+   "d.speedRun",
+   "d.newDungeon",
+   "d.dungeons2",
    "d.skill5",
    "d.secondary",
-   "d.chars2"
+   "d.cookSkill5",
+   "d.fishSkill5",
+   "d.aidSkill5",
+   "d.chars2",
+   "d.chars3",
+   "d.switchUp",
+   "d.dustOff",
+   "d.questTogether",
+   "d.chatHello",
+   "d.sameZone",
+   "d.online3",
+   "d.carry",
+   "d.roam4",
+   "d.newZone",
+   "d.nostalgia",
+   "d.daredevil",
+   "d.crossSea"
   ],
   "weekly": [
    "w.days3",
@@ -53,7 +82,19 @@
    "w.skill25",
    "w.cap",
    "w.newProf",
-   "w.ilvl3"
+   "w.groupQuests3",
+   "w.questUp5",
+   "w.duoQuests5",
+   "w.levels5",
+   "w.levelDays3",
+   "w.dungeons5",
+   "w.bosses15",
+   "w.newDungeons2",
+   "w.days7",
+   "w.chatDays5",
+   "w.mentor3",
+   "w.newZones3",
+   "w.roam10"
   ],
   "skirmish": [
    "p.frontLine",
@@ -122,6 +163,7 @@
     "id": "d.questUp",
     "slot": "daily",
     "category": "quests",
+    "since": 2,
     "points": 3,
     "text": "Finish a quest above the character's level",
     "short": "Hard quest",
@@ -134,6 +176,7 @@
     "id": "d.groupQuest",
     "slot": "daily",
     "category": "quests",
+    "since": 2,
     "points": 3,
     "text": "Finish a group quest",
     "short": "Group Q"
@@ -142,6 +185,7 @@
     "id": "d.classQuest",
     "slot": "daily",
     "category": "quests",
+    "since": 2,
     "points": 3,
     "text": "Finish a class quest",
     "short": "Class Q"
@@ -150,6 +194,7 @@
     "id": "d.questBurst",
     "slot": "daily",
     "category": "quests",
+    "since": 2,
     "points": 3,
     "text": "Hand in 3 quests within 10 minutes",
     "short": "Quick 3"
@@ -158,6 +203,7 @@
     "id": "d.accept5",
     "slot": "daily",
     "category": "quests",
+    "since": 2,
     "points": 3,
     "text": "Take on 5 new quests",
     "short": "Take 5"
@@ -217,6 +263,7 @@
     "id": "d.levels2",
     "slot": "daily",
     "category": "levels",
+    "since": 2,
     "points": 5,
     "text": "Gain 2 levels",
     "short": "2 levels",
@@ -229,6 +276,7 @@
     "id": "d.dingDungeon",
     "slot": "daily",
     "category": "levels",
+    "since": 2,
     "points": 3,
     "text": "Gain a level inside a dungeon",
     "short": "Deep ding",
@@ -241,6 +289,7 @@
     "id": "d.dingFriend",
     "slot": "daily",
     "category": "levels",
+    "since": 2,
     "points": 3,
     "text": "Gain a level in a group with a friend",
     "short": "Duo ding",
@@ -253,6 +302,7 @@
     "id": "d.lowbie",
     "slot": "daily",
     "category": "levels",
+    "since": 2,
     "points": 3,
     "text": "Gain a level on a character below 20",
     "short": "Lowbie",
@@ -304,6 +354,7 @@
     "id": "d.dungeonQuest",
     "slot": "daily",
     "category": "dungeons",
+    "since": 2,
     "points": 3,
     "text": "Hand in a dungeon quest",
     "short": "Dungeon Q",
@@ -328,6 +379,7 @@
     "id": "d.speedRun",
     "slot": "daily",
     "category": "dungeons",
+    "since": 2,
     "points": 5,
     "text": "Defeat 3 bosses of one dungeon within 45 minutes",
     "short": "Speed run",
@@ -340,6 +392,7 @@
     "id": "d.newDungeon",
     "slot": "daily",
     "category": "dungeons",
+    "since": 2,
     "points": 5,
     "text": "Run a dungeon new to the character",
     "short": "Fresh run",
@@ -352,6 +405,7 @@
     "id": "d.dungeons2",
     "slot": "daily",
     "category": "dungeons",
+    "since": 2,
     "points": 5,
     "text": "Run 2 dungeons",
     "short": "2 dungeons",
@@ -458,6 +512,7 @@
     "id": "d.cookSkill5",
     "slot": "daily",
     "category": "cooking",
+    "since": 2,
     "points": 3,
     "text": "Raise Cooking by 5 points",
     "short": "Cooking +5",
@@ -574,6 +629,7 @@
     "id": "d.fishSkill5",
     "slot": "daily",
     "category": "fishing",
+    "since": 2,
     "points": 3,
     "text": "Raise Fishing by 5 points",
     "short": "Fishing +5",
@@ -682,6 +738,7 @@
     "id": "d.aidSkill5",
     "slot": "daily",
     "category": "firstaid",
+    "since": 2,
     "points": 3,
     "text": "Raise First Aid by 5 points",
     "short": "Aid +5",
@@ -719,6 +776,7 @@
     "id": "d.chars3",
     "slot": "daily",
     "category": "play",
+    "since": 2,
     "points": 3,
     "text": "Play 3 characters",
     "short": "Play 3",
@@ -731,6 +789,7 @@
     "id": "d.switchUp",
     "slot": "daily",
     "category": "play",
+    "since": 2,
     "points": 3,
     "text": "Play a character not played the day before",
     "short": "Switch up",
@@ -743,6 +802,7 @@
     "id": "d.dustOff",
     "slot": "daily",
     "category": "play",
+    "since": 2,
     "points": 3,
     "text": "Play a character after a week away",
     "short": "Dust off",
@@ -811,6 +871,7 @@
     "id": "d.questTogether",
     "slot": "daily",
     "category": "social",
+    "since": 2,
     "points": 3,
     "text": "Hand in a quest in a group with a friend",
     "short": "Duo quest"
@@ -819,6 +880,7 @@
     "id": "d.chatHello",
     "slot": "daily",
     "category": "social",
+    "since": 2,
     "points": 1,
     "text": "Say something in the community chat",
     "short": "Chat"
@@ -827,6 +889,7 @@
     "id": "d.sameZone",
     "slot": "daily",
     "category": "social",
+    "since": 2,
     "points": 3,
     "text": "Be in the same zone as a friend",
     "short": "Neighbours",
@@ -839,6 +902,7 @@
     "id": "d.online3",
     "slot": "daily",
     "category": "social",
+    "since": 2,
     "points": 3,
     "text": "Be online with 3 friends at once",
     "short": "Full house",
@@ -851,6 +915,7 @@
     "id": "d.carry",
     "slot": "daily",
     "category": "social",
+    "since": 2,
     "points": 3,
     "text": "Group with a friend 5+ levels lower",
     "short": "Carry"
@@ -899,6 +964,7 @@
     "id": "d.roam4",
     "slot": "daily",
     "category": "exploration",
+    "since": 2,
     "points": 3,
     "text": "Visit 4 zones",
     "short": "Roam 4"
@@ -907,6 +973,7 @@
     "id": "d.newZone",
     "slot": "daily",
     "category": "exploration",
+    "since": 2,
     "points": 3,
     "text": "Set foot in a zone new to the character",
     "short": "New zone"
@@ -931,6 +998,7 @@
     "id": "d.nostalgia",
     "slot": "daily",
     "category": "exploration",
+    "since": 2,
     "points": 3,
     "text": "Visit a zone far below the character's level",
     "short": "Nostalgia",
@@ -943,6 +1011,7 @@
     "id": "d.daredevil",
     "slot": "daily",
     "category": "exploration",
+    "since": 2,
     "points": 3,
     "text": "Visit a zone above the character's level",
     "short": "Daredevil",
@@ -999,6 +1068,7 @@
     "id": "d.crossSea",
     "slot": "daily",
     "category": "travel",
+    "since": 2,
     "points": 3,
     "text": "Cross the sea",
     "short": "Cross sea"
@@ -1499,6 +1569,7 @@
     "id": "w.groupQuests3",
     "slot": "weekly",
     "category": "quests",
+    "since": 2,
     "points": 10,
     "text": "Finish 3 group quests",
     "short": "3 group Q"
@@ -1507,6 +1578,7 @@
     "id": "w.questUp5",
     "slot": "weekly",
     "category": "quests",
+    "since": 2,
     "points": 10,
     "text": "Finish 5 quests above the character's level",
     "short": "5 hard Q",
@@ -1519,6 +1591,7 @@
     "id": "w.duoQuests5",
     "slot": "weekly",
     "category": "quests",
+    "since": 2,
     "points": 10,
     "text": "Hand in 5 quests in a group with a friend",
     "short": "Duo quests"
@@ -1539,6 +1612,7 @@
     "id": "w.levels5",
     "slot": "weekly",
     "category": "levels",
+    "since": 2,
     "points": 15,
     "text": "Gain 5 levels",
     "short": "5 levels",
@@ -1551,6 +1625,7 @@
     "id": "w.levelDays3",
     "slot": "weekly",
     "category": "levels",
+    "since": 2,
     "points": 10,
     "text": "Gain a level on 3 days",
     "short": "Level days",
@@ -1563,6 +1638,7 @@
     "id": "w.dungeons5",
     "slot": "weekly",
     "category": "dungeons",
+    "since": 2,
     "points": 15,
     "text": "Run 5 dungeons",
     "short": "5 dungeons",
@@ -1575,6 +1651,7 @@
     "id": "w.bosses15",
     "slot": "weekly",
     "category": "dungeons",
+    "since": 2,
     "points": 15,
     "text": "Defeat 15 dungeon bosses",
     "short": "15 bosses",
@@ -1587,6 +1664,7 @@
     "id": "w.newDungeons2",
     "slot": "weekly",
     "category": "dungeons",
+    "since": 2,
     "points": 10,
     "text": "Run 2 dungeons new to the character",
     "short": "New dgn x2",
@@ -1695,6 +1773,7 @@
     "id": "w.days7",
     "slot": "weekly",
     "category": "play",
+    "since": 2,
     "points": 15,
     "text": "Play on all 7 days",
     "short": "Every day"
@@ -1739,6 +1818,7 @@
     "id": "w.chatDays5",
     "slot": "weekly",
     "category": "social",
+    "since": 2,
     "points": 5,
     "text": "Chat in the community on 5 days",
     "short": "Chatty"
@@ -1747,6 +1827,7 @@
     "id": "w.mentor3",
     "slot": "weekly",
     "category": "social",
+    "since": 2,
     "points": 10,
     "text": "Group with a lower friend on 3 days",
     "short": "Mentor"
@@ -1755,6 +1836,7 @@
     "id": "w.newZones3",
     "slot": "weekly",
     "category": "exploration",
+    "since": 2,
     "points": 10,
     "text": "Set foot in 3 zones new to the character",
     "short": "3 new zns"
@@ -1763,6 +1845,7 @@
     "id": "w.roam10",
     "slot": "weekly",
     "category": "exploration",
+    "since": 2,
     "points": 10,
     "text": "Visit 10 zones",
     "short": "Roam 10"
@@ -3296,6 +3379,330 @@
      ],
      "skirmish": "p.untouchable"
     }
+   },
+   {
+    "pool": 2,
+    "day": 20758,
+    "expect": {
+     "dailies": [
+      "d.lowbie",
+      "d.groupQuest",
+      "d.cookSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20759,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.groupQuest",
+      "d.chatHello"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20760,
+    "expect": {
+     "dailies": [
+      "d.dungeonFriend",
+      "d.lowbie",
+      "d.skill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20761,
+    "expect": {
+     "dailies": [
+      "d.altLevel",
+      "d.quests20",
+      "d.dungeon"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20762,
+    "expect": {
+     "dailies": [
+      "d.nostalgia",
+      "d.chars2",
+      "d.questBurst"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20763,
+    "expect": {
+     "dailies": [
+      "d.dungeons2",
+      "d.sameZone",
+      "d.quests10"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20764,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.dustOff",
+      "d.fishSkill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20765,
+    "expect": {
+     "dailies": [
+      "d.questBurst",
+      "d.bosses3",
+      "d.dingDungeon"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20766,
+    "expect": {
+     "dailies": [
+      "d.online3",
+      "d.crossSea",
+      "d.cookSkill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20767,
+    "expect": {
+     "dailies": [
+      "d.sameZone",
+      "d.dustOff",
+      "d.roam4"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20768,
+    "expect": {
+     "dailies": [
+      "d.bosses3",
+      "d.daredevil",
+      "d.altLevel"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20769,
+    "expect": {
+     "dailies": [
+      "d.newDungeon",
+      "d.classQuest",
+      "d.skill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20770,
+    "expect": {
+     "dailies": [
+      "d.questUp",
+      "d.dingDungeon",
+      "d.chatHello"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20771,
+    "expect": {
+     "dailies": [
+      "d.dustOff",
+      "d.ilvl",
+      "d.dungeonQuest"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20772,
+    "expect": {
+     "dailies": [
+      "d.chatHello",
+      "d.dungeonFriend",
+      "d.daredevil"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20773,
+    "expect": {
+     "dailies": [
+      "d.lowbie",
+      "d.zones3",
+      "d.fishSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20774,
+    "expect": {
+     "dailies": [
+      "d.quests20",
+      "d.newZone",
+      "d.aidSkill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20775,
+    "expect": {
+     "dailies": [
+      "d.zones3",
+      "d.nostalgia",
+      "d.dingDungeon"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20776,
+    "expect": {
+     "dailies": [
+      "d.chars2",
+      "d.dungeonFriend",
+      "d.sameZone"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20777,
+    "expect": {
+     "dailies": [
+      "d.chars3",
+      "d.questBurst",
+      "d.cookSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20778,
+    "expect": {
+     "dailies": [
+      "d.dingDungeon",
+      "d.accept5",
+      "d.chatHello"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20779,
+    "expect": {
+     "dailies": [
+      "d.daredevil",
+      "d.ilvl",
+      "d.quests10"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20780,
+    "expect": {
+     "dailies": [
+      "d.crossSea",
+      "d.level",
+      "d.questTogether"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20781,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.classQuest",
+      "d.switchUp"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20791,
+    "expect": {
+     "dailies": [
+      "d.dungeonQuest",
+      "d.questBurst",
+      "d.newZone"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20821,
+    "expect": {
+     "dailies": [
+      "d.cookSkill5",
+      "d.lowbie",
+      "d.aidSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20900,
+    "expect": {
+     "dailies": [
+      "d.dungeon",
+      "d.shared3",
+      "d.sameZone"
+     ],
+     "skirmish": "p.frontLine"
+    }
    }
   ],
   "weeks": [
@@ -3407,6 +3814,126 @@
       "w.days5"
      ],
      "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2966,
+    "expect": {
+     "weeklies": [
+      "w.chatDays5",
+      "w.quests50",
+      "w.days5"
+     ],
+     "bounty": "b.kills50"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2967,
+    "expect": {
+     "weeklies": [
+      "w.groupQuests3",
+      "w.chars3",
+      "w.altLevels2"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2968,
+    "expect": {
+     "weeklies": [
+      "w.mentor3",
+      "w.levels5",
+      "w.dungeonFriends2"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2969,
+    "expect": {
+     "weeklies": [
+      "w.newZones3",
+      "w.groupQuests3",
+      "w.chars3"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2970,
+    "expect": {
+     "weeklies": [
+      "w.dungeonsDiff3",
+      "w.days5",
+      "w.altLevels2"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2971,
+    "expect": {
+     "weeklies": [
+      "w.dungeons5",
+      "w.levels5",
+      "w.zones5"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2972,
+    "expect": {
+     "weeklies": [
+      "w.bosses15",
+      "w.days3",
+      "w.questUp5"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2973,
+    "expect": {
+     "weeklies": [
+      "w.levels3",
+      "w.zones5",
+      "w.dungeonFriends2"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2980,
+    "expect": {
+     "weeklies": [
+      "w.bosses15",
+      "w.days3",
+      "w.roam10"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 3000,
+    "expect": {
+     "weeklies": [
+      "w.chatDays5",
+      "w.fullClear",
+      "w.roam10"
+     ],
+     "bounty": "b.days5"
     }
    }
   ],
@@ -3778,6 +4305,58 @@
      "w.zones5": "w.altLevels2"
     },
     "zone": "Felwood"
+   }
+  },
+  {
+   "note": "pool version 2: a fallback outside the pool (d.groupFriend) is still taken; a secondary skill without the profession falls back",
+   "pool": 2,
+   "day": 20766,
+   "situation": {
+    "chars": 2,
+    "below60": 1,
+    "altBelow60": 1,
+    "highest": 40,
+    "friends": 1,
+    "hasCooking": false
+   },
+   "expect": {
+    "set": [
+     "d.groupFriend",
+     "d.crossSea",
+     "d.secondary",
+     "p.frontLine"
+    ],
+    "swapped": {
+     "d.groupFriend": "d.online3",
+     "d.secondary": "d.cookSkill5"
+    },
+    "zone": "Arathi Highlands"
+   }
+  },
+  {
+   "note": "pool version 2 week: a fallback already taken moves on in pool version 2's order, past a goal that can't be done",
+   "pool": 2,
+   "week": 2968,
+   "situation": {
+    "chars": 2,
+    "below60": 0,
+    "altBelow60": 0,
+    "highest": 60,
+    "dungeonInRange": false,
+    "friends": 2
+   },
+   "expect": {
+    "set": [
+     "w.mentor3",
+     "w.quests50",
+     "w.skill25",
+     "b.days5"
+    ],
+    "swapped": {
+     "w.quests50": "w.levels5",
+     "w.skill25": "w.dungeonFriends2"
+    },
+    "zone": "Silithus"
    }
   }
  ],

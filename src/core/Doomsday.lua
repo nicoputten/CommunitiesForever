@@ -5,7 +5,7 @@ local _, ns = ... -- requires ns.Calendar (load core/Calendar.lua first)
 
 local Doomsday = {}
 
-Doomsday.POOL_VERSION = 1
+Doomsday.POOL_VERSION = 2
 Doomsday.DEFAULT_RESET = 68400   -- 19:00 realm time, seconds after midnight
 Doomsday.DAY = 86400
 -- The first Doomsday day: the draw runs forward from here, so "never twice in a row" is exact.
@@ -96,12 +96,13 @@ local GOALS = {
   { id = "d.zones3", slot = "daily", category = "quests", since = 1, points = 3, text = "Hand in quests in 3 zones" },
   { id = "d.shared3", slot = "daily", category = "quests", since = 1, points = 3, text = "Share 3 quests with a friend",
     can = "friendQuestLog", fallback = { "d.quests10" } },
-  { id = "d.questUp", slot = "daily", category = "quests", points = 3,
+  { id = "d.questUp", slot = "daily", category = "quests", since = 2, points = 3,
     text = "Finish a quest above the character's level", can = "below60", fallback = { "d.quests10" } },
-  { id = "d.groupQuest", slot = "daily", category = "quests", points = 3, text = "Finish a group quest" },
-  { id = "d.classQuest", slot = "daily", category = "quests", points = 3, text = "Finish a class quest" },
-  { id = "d.questBurst", slot = "daily", category = "quests", points = 3, text = "Hand in 3 quests within 10 minutes" },
-  { id = "d.accept5", slot = "daily", category = "quests", points = 3, text = "Take on 5 new quests" },
+  { id = "d.groupQuest", slot = "daily", category = "quests", since = 2, points = 3, text = "Finish a group quest" },
+  { id = "d.classQuest", slot = "daily", category = "quests", since = 2, points = 3, text = "Finish a class quest" },
+  { id = "d.questBurst", slot = "daily", category = "quests", since = 2, points = 3,
+    text = "Hand in 3 quests within 10 minutes" },
+  { id = "d.accept5", slot = "daily", category = "quests", since = 2, points = 3, text = "Take on 5 new quests" },
 
   -- levels
   { id = "d.level", slot = "daily", category = "levels", since = 1, points = 3, text = "Gain a level",
@@ -112,14 +113,14 @@ local GOALS = {
     can = "ilvlReadable", fallback = { "d.quests10" } },
   { id = "d.cleanLevel", slot = "daily", category = "levels", points = 3, text = "Gain a level without dying",
     can = "below60", fallback = { "d.quests20" } },
-  { id = "d.levels2", slot = "daily", category = "levels", points = 5, text = "Gain 2 levels",
+  { id = "d.levels2", slot = "daily", category = "levels", since = 2, points = 5, text = "Gain 2 levels",
     can = "below60", fallback = { "d.quests20" } },
-  { id = "d.dingDungeon", slot = "daily", category = "levels", points = 3, text = "Gain a level inside a dungeon",
-    can = "below60Dungeon", fallback = { "d.level" } },
-  { id = "d.dingFriend", slot = "daily", category = "levels", points = 3,
+  { id = "d.dingDungeon", slot = "daily", category = "levels", since = 2, points = 3,
+    text = "Gain a level inside a dungeon", can = "below60Dungeon", fallback = { "d.level" } },
+  { id = "d.dingFriend", slot = "daily", category = "levels", since = 2, points = 3,
     text = "Gain a level in a group with a friend", can = "below60", fallback = { "d.groupFriend" } },
-  { id = "d.lowbie", slot = "daily", category = "levels", points = 3, text = "Gain a level on a character below 20",
-    can = "below20", fallback = { "d.altLevel" } },
+  { id = "d.lowbie", slot = "daily", category = "levels", since = 2, points = 3,
+    text = "Gain a level on a character below 20", can = "below20", fallback = { "d.altLevel" } },
 
   -- dungeons
   { id = "d.dungeon", slot = "daily", category = "dungeons", since = 1, points = 5, text = "Run a dungeon",
@@ -128,15 +129,15 @@ local GOALS = {
     text = "Run a dungeon with a friend", can = "dungeonInRange", fallback = { "d.quests10" } },
   { id = "d.bosses3", slot = "daily", category = "dungeons", since = 1, points = 5, text = "Defeat 3 dungeon bosses",
     can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.dungeonQuest", slot = "daily", category = "dungeons", points = 3, text = "Hand in a dungeon quest",
-    can = "dungeonInRange", fallback = { "d.quests10" } },
+  { id = "d.dungeonQuest", slot = "daily", category = "dungeons", since = 2, points = 3,
+    text = "Hand in a dungeon quest", can = "dungeonInRange", fallback = { "d.quests10" } },
   { id = "d.cleanRun", slot = "daily", category = "dungeons", points = 5, text = "Run a dungeon without dying",
     can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.speedRun", slot = "daily", category = "dungeons", points = 5,
+  { id = "d.speedRun", slot = "daily", category = "dungeons", since = 2, points = 5,
     text = "Defeat 3 bosses of one dungeon within 45 minutes", can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.newDungeon", slot = "daily", category = "dungeons", points = 5, text = "Run a dungeon new to the character",
-    can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.dungeons2", slot = "daily", category = "dungeons", points = 5, text = "Run 2 dungeons",
+  { id = "d.newDungeon", slot = "daily", category = "dungeons", since = 2, points = 5,
+    text = "Run a dungeon new to the character", can = "dungeonInRange", fallback = { "d.quests10" } },
+  { id = "d.dungeons2", slot = "daily", category = "dungeons", since = 2, points = 5, text = "Run 2 dungeons",
     can = "dungeonInRange", fallback = { "d.quests10" } },
 
   -- crafts
@@ -158,8 +159,8 @@ local GOALS = {
     can = "hasCooking", fallback = { "d.secondary" } },
   { id = "d.cook15", slot = "daily", category = "cooking", points = 5, text = "Cook 15 dishes",
     can = "hasCooking", fallback = { "d.secondary" } },
-  { id = "d.cookSkill5", slot = "daily", category = "cooking", points = 3, text = "Raise Cooking by 5 points",
-    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.cookSkill5", slot = "daily", category = "cooking", since = 2, points = 3,
+    text = "Raise Cooking by 5 points", can = "hasCooking", fallback = { "d.secondary" } },
   { id = "d.cookKinds3", slot = "daily", category = "cooking", points = 3, text = "Cook 3 different dishes",
     can = "hasCooking", fallback = { "d.secondary" } },
   { id = "d.campfire", slot = "daily", category = "cooking", points = 1, text = "Light a campfire",
@@ -180,8 +181,8 @@ local GOALS = {
     can = "hasFishing", fallback = { "d.secondary" } },
   { id = "d.fish50", slot = "daily", category = "fishing", points = 5, text = "Catch 50 fish",
     can = "hasFishing", fallback = { "d.secondary" } },
-  { id = "d.fishSkill5", slot = "daily", category = "fishing", points = 3, text = "Raise Fishing by 5 points",
-    can = "hasFishing", fallback = { "d.secondary" } },
+  { id = "d.fishSkill5", slot = "daily", category = "fishing", since = 2, points = 3,
+    text = "Raise Fishing by 5 points", can = "hasFishing", fallback = { "d.secondary" } },
   { id = "d.fishKinds3", slot = "daily", category = "fishing", points = 3, text = "Catch 3 kinds of fish",
     can = "hasFishing", fallback = { "d.secondary" } },
   { id = "d.fishFriend", slot = "daily", category = "fishing", points = 3, text = "Fish in a group with a friend",
@@ -200,20 +201,20 @@ local GOALS = {
     can = "hasFirstAid", fallback = { "d.secondary" } },
   { id = "d.bandageFriend", slot = "daily", category = "firstaid", points = 3, text = "Bandage a friend",
     can = "hasFirstAid", fallback = { "d.groupFriend" } },
-  { id = "d.aidSkill5", slot = "daily", category = "firstaid", points = 3, text = "Raise First Aid by 5 points",
-    can = "hasFirstAid", fallback = { "d.secondary" } },
+  { id = "d.aidSkill5", slot = "daily", category = "firstaid", since = 2, points = 3,
+    text = "Raise First Aid by 5 points", can = "hasFirstAid", fallback = { "d.secondary" } },
   { id = "d.bandageKinds2", slot = "daily", category = "firstaid", points = 3, text = "Make 2 kinds of bandages",
     can = "hasFirstAid", fallback = { "d.secondary" } },
 
   -- play
   { id = "d.chars2", slot = "daily", category = "play", since = 1, points = 1, text = "Play 2 characters",
     can = "chars2", fallback = { "d.quests10" } },
-  { id = "d.chars3", slot = "daily", category = "play", points = 3, text = "Play 3 characters",
+  { id = "d.chars3", slot = "daily", category = "play", since = 2, points = 3, text = "Play 3 characters",
     can = "chars3", fallback = { "d.chars2" } },
-  { id = "d.switchUp", slot = "daily", category = "play", points = 3,
+  { id = "d.switchUp", slot = "daily", category = "play", since = 2, points = 3,
     text = "Play a character not played the day before", can = "chars2", fallback = { "d.quests10" } },
-  { id = "d.dustOff", slot = "daily", category = "play", points = 3, text = "Play a character after a week away",
-    can = "idle7", fallback = { "d.chars2" } },
+  { id = "d.dustOff", slot = "daily", category = "play", since = 2, points = 3,
+    text = "Play a character after a week away", can = "idle7", fallback = { "d.chars2" } },
   { id = "d.earlyBird", slot = "daily", category = "play", points = 3, text = "Early bird: play before 09:00" },
   { id = "d.nightOwl", slot = "daily", category = "play", points = 3, text = "Night owl: play after 23:00" },
   { id = "d.session1h", slot = "daily", category = "play", points = 5, text = "Play a 1-hour session" },
@@ -223,14 +224,16 @@ local GOALS = {
   -- social
   { id = "d.groupFriend", slot = "daily", category = "social", points = 3, text = "Group up with a friend" },
   { id = "d.trade", slot = "daily", category = "social", points = 3, text = "Trade with a friend" },
-  { id = "d.questTogether", slot = "daily", category = "social", points = 3,
+  { id = "d.questTogether", slot = "daily", category = "social", since = 2, points = 3,
     text = "Hand in a quest in a group with a friend" },
-  { id = "d.chatHello", slot = "daily", category = "social", points = 1, text = "Say something in the community chat" },
-  { id = "d.sameZone", slot = "daily", category = "social", points = 3, text = "Be in the same zone as a friend",
-    can = "friends1", fallback = { "d.chars2" } },
-  { id = "d.online3", slot = "daily", category = "social", points = 3, text = "Be online with 3 friends at once",
-    can = "friends3", fallback = { "d.groupFriend" } },
-  { id = "d.carry", slot = "daily", category = "social", points = 3, text = "Group with a friend 5+ levels lower" },
+  { id = "d.chatHello", slot = "daily", category = "social", since = 2, points = 1,
+    text = "Say something in the community chat" },
+  { id = "d.sameZone", slot = "daily", category = "social", since = 2, points = 3,
+    text = "Be in the same zone as a friend", can = "friends1", fallback = { "d.chars2" } },
+  { id = "d.online3", slot = "daily", category = "social", since = 2, points = 3,
+    text = "Be online with 3 friends at once", can = "friends3", fallback = { "d.groupFriend" } },
+  { id = "d.carry", slot = "daily", category = "social", since = 2, points = 3,
+    text = "Group with a friend 5+ levels lower" },
   { id = "d.whisper", slot = "daily", category = "social", points = 1, text = "Whisper a friend" },
   { id = "d.wave", slot = "daily", category = "social", points = 1, text = "Wave at a friend" },
   { id = "d.groupPic", slot = "daily", category = "social", points = 1,
@@ -239,14 +242,14 @@ local GOALS = {
   -- exploration
   { id = "d.discover1", slot = "daily", category = "exploration", points = 3, text = "Discover a new place" },
   { id = "d.discover3", slot = "daily", category = "exploration", points = 3, text = "Discover 3 new places" },
-  { id = "d.roam4", slot = "daily", category = "exploration", points = 3, text = "Visit 4 zones" },
-  { id = "d.newZone", slot = "daily", category = "exploration", points = 3,
+  { id = "d.roam4", slot = "daily", category = "exploration", since = 2, points = 3, text = "Visit 4 zones" },
+  { id = "d.newZone", slot = "daily", category = "exploration", since = 2, points = 3,
     text = "Set foot in a zone new to the character" },
   { id = "d.places10", slot = "daily", category = "exploration", points = 3, text = "Visit 10 places within zones" },
   { id = "d.swim", slot = "daily", category = "exploration", points = 3, text = "Swim for 2 minutes" },
-  { id = "d.nostalgia", slot = "daily", category = "exploration", points = 3,
+  { id = "d.nostalgia", slot = "daily", category = "exploration", since = 2, points = 3,
     text = "Visit a zone far below the character's level", can = "level30", fallback = { "d.roam4" } },
-  { id = "d.daredevil", slot = "daily", category = "exploration", points = 3,
+  { id = "d.daredevil", slot = "daily", category = "exploration", since = 2, points = 3,
     text = "Visit a zone above the character's level", can = "below60", fallback = { "d.roam4" } },
 
   -- travel
@@ -256,7 +259,7 @@ local GOALS = {
   { id = "d.bind", slot = "daily", category = "travel", points = 1, text = "Make a new inn home" },
   { id = "d.ride", slot = "daily", category = "travel", points = 3, text = "Ride a mount for 15 minutes",
     can = "riding", fallback = { "d.roam4" } },
-  { id = "d.crossSea", slot = "daily", category = "travel", points = 3, text = "Cross the sea" },
+  { id = "d.crossSea", slot = "daily", category = "travel", since = 2, points = 3, text = "Cross the sea" },
   { id = "d.summoned", slot = "daily", category = "travel", points = 3, text = "Get summoned by a friend" },
 
   -- combat
@@ -336,22 +339,23 @@ local GOALS = {
   { id = "w.craftTrade", slot = "weekly", category = "crafts", points = 10, text = "Craft something and trade it",
     can = "hasCraftingProfession", fallback = { "w.quests50" } },
   -- CF-79: the new weekly missions of the weekly catalogue, in its order (no since: they wait for data).
-  { id = "w.groupQuests3", slot = "weekly", category = "quests", points = 10, text = "Finish 3 group quests" },
-  { id = "w.questUp5", slot = "weekly", category = "quests", points = 10,
+  { id = "w.groupQuests3", slot = "weekly", category = "quests", since = 2, points = 10,
+    text = "Finish 3 group quests" },
+  { id = "w.questUp5", slot = "weekly", category = "quests", since = 2, points = 10,
     text = "Finish 5 quests above the character's level", can = "below60", fallback = { "w.quests50" } },
-  { id = "w.duoQuests5", slot = "weekly", category = "quests", points = 10,
+  { id = "w.duoQuests5", slot = "weekly", category = "quests", since = 2, points = 10,
     text = "Hand in 5 quests in a group with a friend" },
   { id = "w.blueGear", slot = "weekly", category = "levels", points = 10,
     text = "Put on a blue item new to the character", can = "level15", fallback = { "w.levels3" } },
-  { id = "w.levels5", slot = "weekly", category = "levels", points = 15, text = "Gain 5 levels", can = "below60",
-    fallback = { "w.quests50" } },
-  { id = "w.levelDays3", slot = "weekly", category = "levels", points = 10, text = "Gain a level on 3 days",
+  { id = "w.levels5", slot = "weekly", category = "levels", since = 2, points = 15,
+    text = "Gain 5 levels", can = "below60", fallback = { "w.quests50" } },
+  { id = "w.levelDays3", slot = "weekly", category = "levels", since = 2, points = 10, text = "Gain a level on 3 days",
     can = "below60", fallback = { "w.quests50" } },
-  { id = "w.dungeons5", slot = "weekly", category = "dungeons", points = 15, text = "Run 5 dungeons",
+  { id = "w.dungeons5", slot = "weekly", category = "dungeons", since = 2, points = 15, text = "Run 5 dungeons",
     can = "dungeonInRange", fallback = { "w.quests50" } },
-  { id = "w.bosses15", slot = "weekly", category = "dungeons", points = 15, text = "Defeat 15 dungeon bosses",
-    can = "dungeonInRange", fallback = { "w.quests50" } },
-  { id = "w.newDungeons2", slot = "weekly", category = "dungeons", points = 10,
+  { id = "w.bosses15", slot = "weekly", category = "dungeons", since = 2, points = 15,
+    text = "Defeat 15 dungeon bosses", can = "dungeonInRange", fallback = { "w.quests50" } },
+  { id = "w.newDungeons2", slot = "weekly", category = "dungeons", since = 2, points = 10,
     text = "Run 2 dungeons new to the character", can = "dungeonInRange", fallback = { "w.quests50" } },
   { id = "w.cleanRuns2", slot = "weekly", category = "dungeons", points = 10, text = "Run 2 dungeons without dying",
     can = "dungeonInRange", fallback = { "w.quests50" } },
@@ -369,17 +373,19 @@ local GOALS = {
     can = "hasFishing", fallback = { "w.skill25" } },
   { id = "w.bandages20", slot = "weekly", category = "firstaid", points = 10, text = "Make 20 bandages",
     can = "hasFirstAid", fallback = { "w.skill25" } },
-  { id = "w.days7", slot = "weekly", category = "play", points = 15, text = "Play on all 7 days" },
+  { id = "w.days7", slot = "weekly", category = "play", since = 2, points = 15, text = "Play on all 7 days" },
   { id = "w.dayAndNight", slot = "weekly", category = "play", points = 10, text = "Play before 09:00 and after 23:00" },
   { id = "w.deathless3h", slot = "weekly", category = "play", points = 15, text = "Play 3 hours without dying" },
   { id = "w.friendDays3", slot = "weekly", category = "social", points = 10, text = "Group with a friend on 3 days" },
   { id = "w.trades3", slot = "weekly", category = "social", points = 10, text = "Trade with 3 different friends",
     can = "friends3", fallback = { "w.friends3" } },
-  { id = "w.chatDays5", slot = "weekly", category = "social", points = 5, text = "Chat in the community on 5 days" },
-  { id = "w.mentor3", slot = "weekly", category = "social", points = 10, text = "Group with a lower friend on 3 days" },
-  { id = "w.newZones3", slot = "weekly", category = "exploration", points = 10,
+  { id = "w.chatDays5", slot = "weekly", category = "social", since = 2, points = 5,
+    text = "Chat in the community on 5 days" },
+  { id = "w.mentor3", slot = "weekly", category = "social", since = 2, points = 10,
+    text = "Group with a lower friend on 3 days" },
+  { id = "w.newZones3", slot = "weekly", category = "exploration", since = 2, points = 10,
     text = "Set foot in 3 zones new to the character" },
-  { id = "w.roam10", slot = "weekly", category = "exploration", points = 10, text = "Visit 10 zones" },
+  { id = "w.roam10", slot = "weekly", category = "exploration", since = 2, points = 10, text = "Visit 10 zones" },
   { id = "w.flightPaths3", slot = "weekly", category = "travel", points = 10, text = "Learn 3 flight paths" },
   { id = "w.kills200", slot = "weekly", category = "combat", points = 15, text = "Defeat 200 enemies",
     can = "below60", fallback = { "w.dungeons3" } },
@@ -767,8 +773,9 @@ local function drawOne(pool, n, salt, previous)
   return available[Doomsday.pick(n, salt, #available)]
 end
 
--- Three PvE dailies of different categories, none of `previous` while enough are left.
-local function drawDailies(pool, n, previous)
+-- Three goals of different categories, none of `previous` while enough are left: the PvE dailies, and the
+-- weeklies from pool version 2 (CF-77). salts: one per slot.
+local function drawByCategory(pool, n, previous, salts)
   local chosen, categories = {}, {}
   local excluded = asSet(previous)
   for slot = 1, 3 do
@@ -783,15 +790,17 @@ local function drawDailies(pool, n, previous)
     local list = candidates(true)
     if #list == 0 then list = candidates(false) end
     if #list == 0 then break end
-    local id = list[Doomsday.pick(n, SALT.dailies[slot], #list)]
+    local id = list[Doomsday.pick(n, salts[slot], #list)]
     chosen[#chosen + 1] = id
     categories[BY_ID[id].category] = true
   end
   return chosen
 end
 
--- Three PvE weeklies, none of `previous` while enough are left.
-local function drawWeeklies(pool, week, previous)
+-- Three PvE weeklies, none of `previous` while enough are left. Pool version 1 draws them without categories;
+-- from version 2 they are of different categories, as the dailies (CF-77).
+local function drawWeeklies(pool, week, previous, version)
+  if version >= 2 then return drawByCategory(pool, week, previous, SALT.weeklies) end
   local chosen, taken = {}, {}
   local excluded = asSet(previous)
   for slot = 1, 3 do
@@ -843,7 +852,7 @@ function Doomsday.draw(n, version)
     local result = dayCache[k]
     if not result then
       local prev = previous or { dailies = {} }
-      result = { dailies = drawDailies(dailyPool, day, prev.dailies),
+      result = { dailies = drawByCategory(dailyPool, day, prev.dailies, SALT.dailies),
                  skirmish = drawOne(skirmishPool, day, SALT.skirmish, prev.skirmish and { prev.skirmish }) }
       if huntOn then
         local before = prev.hunt or {}
@@ -871,7 +880,7 @@ function Doomsday.drawWeek(week, version)
     local result = weekCache[k]
     if not result then
       local prev = previous or { weeklies = {} }
-      result = { weeklies = drawWeeklies(weeklyPool, w, prev.weeklies),
+      result = { weeklies = drawWeeklies(weeklyPool, w, prev.weeklies, version),
                  bounty = drawOne(bountyPool, w, SALT.bounty, prev.bounty and { prev.bounty }) }
       weekCache[k] = result
     end

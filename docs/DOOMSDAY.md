@@ -358,7 +358,7 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `b.taunts5` | Taunts |
 
 ## The algorithm, exactly (CF-55)
-Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides.
+Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides. A golden case with `pool` is of that pool version; one without it is of pool version 1.
 
 **Pool version 1** (`Doomsday.POOL_VERSION = 1`):
 - PvE dailies and weeklies: the goals with Data **now**.
@@ -366,12 +366,26 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - **No Hunt** yet: the slot is empty until the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `p.ranked`, `b.allClasses`, `b.allRaces`, `b.ranked5`, `b.hunt3` where their fields are readable, and the goals marked 52, 53, 56 whose APIs are verified.
 - Pool order is the order of the tables in this file. The weeklies, Skirmish and Bounty goals of pool version 1 keep their place; the catalogues' other goals follow them, in catalogue order (CF-79).
 
+**Pool version 2** (`Doomsday.POOL_VERSION = 2`, CF-77, the release after v1.1.0):
+- Joins (`since = 2`): the missions whose trackers are built on verified APIs, CF-71 (quests), CF-72 (records) and CF-73 (friends and places), each with its registered progress:
+  - 29 PvE dailies: `d.questUp`, `d.groupQuest`, `d.classQuest`, `d.questBurst`, `d.accept5`, `d.levels2`, `d.dingDungeon`, `d.dingFriend`, `d.lowbie`, `d.dungeonQuest`, `d.speedRun`, `d.newDungeon`, `d.dungeons2`, `d.cookSkill5`, `d.fishSkill5`, `d.aidSkill5`, `d.chars3`, `d.switchUp`, `d.dustOff`, `d.questTogether`, `d.chatHello`, `d.sameZone`, `d.online3`, `d.carry`, `d.roam4`, `d.newZone`, `d.nostalgia`, `d.daredevil`, `d.crossSea`.
+  - 13 PvE weeklies: `w.groupQuests3`, `w.questUp5`, `w.duoQuests5`, `w.levels5`, `w.levelDays3`, `w.dungeons5`, `w.bosses15`, `w.newDungeons2`, `w.days7`, `w.chatDays5`, `w.mentor3`, `w.newZones3`, `w.roam10`.
+  - No Skirmish or Bounty goal: they wait for the launch checks (CF-80, CF-81).
+- Leaves: `w.ilvl3` (`retired = 2`, CF-79).
+- The pools: 43 dailies in 11 of the 15 categories (none yet in combat, loot, economy and care; one each in cooking, fishing, first aid and travel), 27 weeklies in 7 categories, Skirmish and Bounty as version 1.
+- Points: each goal's own size (CF-69, `Doomsday.pointsFor`).
+- The weeklies are drawn in different categories (below).
+- Missions waiting for launch checks (CF-74 to CF-76, CF-80, CF-81) join in later versions, one bump per release, with golden cases each.
+
+**Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use version 2. A friend on an older addon keeps drawing version 1, so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so version 1's draws stay as they were.
+
 **Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
 
 **The draw, never twice in a row.** It runs forward from the **epoch**, day `20761` (the Doomsday day that starts on Wednesday 2026-11-04, launch), and week `2966` (the week holding it). Each day excludes the previous day's draw (before swaps); the epoch day and any day before it exclude nothing. Weeks the same.
 - **PvE dailies:** for slot 1, 2, 3: the candidates are the pool's goals, in pool order, whose category isn't taken yet and that weren't in the previous day's dailies; slot k takes `candidates[pick(n, 10 + k, #candidates)]`. If no candidate is left, the previous day's goals are allowed again (categories still differ).
 - **Skirmish, Bounty:** `available = pool without the previous draw` (the whole pool when that leaves nothing); `available[pick(n, salt, #available)]`.
-- **PvE weeklies:** as the dailies without categories: slot k takes `candidates[pick(week, 20 + k, #candidates)]` from the pool minus the goals already chosen and minus last week's.
+- **PvE weeklies, pool version 1:** as the dailies without categories: slot k takes `candidates[pick(week, 20 + k, #candidates)]` from the pool minus the goals already chosen and minus last week's (if that leaves none, last week's are allowed again).
+- **PvE weeklies, from pool version 2** (CF-77): exactly as the dailies, with the week: the candidates are the pool's weeklies, in pool order, whose category isn't taken yet and that weren't in last week's; slot k takes `candidates[pick(week, 20 + k, #candidates)]`. If no candidate is left, last week's are allowed again (categories still differ).
 - **The Hunt** (once in the pool): per hunting faction, the 20 combinations in list order minus the previous day's combination (none on the epoch), `available[pick(n, 1, #available)]`.
 - **Zone of the day / week:** `band.zones[pick(n, 4, #zones)]` / `pick(week, 5, #zones)`, the band by level (20–29, 30–44, 45–54, 55–60); below 20 there is none.
 

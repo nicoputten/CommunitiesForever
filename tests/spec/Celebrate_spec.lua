@@ -62,7 +62,7 @@ describe("Celebration banners in game (CF-67)", function()
     assert.is_true(frame:IsShown())
     assert.are.same({ 400, 64 }, { frame:GetWidth(), frame:GetHeight() })
     assert.are.equal("DAILY GOAL" .. DOT .. "PVE", frame.kicker:GetText())
-    assert.are.equal("+5", frame.pointsText:GetText())
+    assert.are.equal("+3", frame.pointsText:GetText()) -- CF-77: its size in pool version 2
     -- The same goal again (another CHANGED): nothing twice.
     addon:SendMessage(ns.DoomsdayTracker.CHANGED, { "d.quests10" }, {})
     wait(10)
