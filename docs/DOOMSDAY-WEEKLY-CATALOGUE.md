@@ -13,7 +13,7 @@ restrict; no pronouns; gold never shown as an amount.
 ## Summary
 
 **50 weeklies in 14 categories.** The 20 existing weeklies are all kept with their ids (★); 30 are new. The categories
-are the daily catalogue's; the weekly draw doesn't use them today (see the questions).
+are the daily catalogue's; the weekly draw takes 3 different ones (decision 2).
 
 | Category | Weeklies | Works now | Existing tracker | New, verified API | Needs probe |
 |---|---|---|---|---|---|
@@ -52,14 +52,12 @@ Today every weekly scores 15. Proposal: three sizes, **5 / 10 / 15**, the daily 
 - Points per goal is the rule change of CF-69: the site counts from the `done` ids and the pool version recorded with
   the week.
 
-## Design questions for Nico
-1. **Points scale:** 5 / 10 / 15 as above, or keep every weekly at 15?
-2. **Categories in the weekly draw:** today the 3 weeklies come from the pool without categories, so a week can have
-   3 dungeon weeklies. Should the weekly draw also take 3 different categories, as the dailies do? It changes the
-   weekly draw (golden cases, both sides) in the same pool version bump.
-3. **Weeklies that repeat a daily** (`w.dungeons5` next to `d.dungeons2`, `w.fish100` next to `d.fish50`): the same
-   play then counts for a daily and a weekly. That is how the existing ones work (`w.quests50` and `d.quests20`).
-   Keep it?
+## Decisions (Nico, 2026-11-03)
+1. **Points stay 5 / 10 / 15** as above.
+2. **The weekly draw takes 3 different categories**, as the dailies do. It changes the weekly draw and its golden
+   cases on both sides, in the same pool version bump (E18, CF-77).
+3. **Overlap with a daily is fine:** the same play counts for a daily and a weekly (`w.dungeons5` next to
+   `d.dungeons2`), as `w.quests50` and `d.quests20` do today.
 
 ## Hard to track honestly
 - **Per-day goals** (`w.days7`, `w.levelDays3`, `w.friendDays3`, `w.chatDays5`, `w.mentor3`) count Doomsday days,
