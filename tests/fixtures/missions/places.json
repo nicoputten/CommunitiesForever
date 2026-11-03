@@ -1,4 +1,132 @@
 {
- "about": "Progress cases of the places missions (CF-73), addon only: the site never computes progress. Never edit a case to make code pass.",
- "cases": []
+ "about": "Progress cases of the friends and places missions (CF-73), addon only: the site never computes progress. Never edit a case to make code pass. Each case adds its observations (Goals.observe) to new facts and expects [value, target, done] per goal id.",
+ "cases": [
+  {
+   "name": "four zones, one of them twice",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Elwynn Forest", "new": false },
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Westfall", "new": false },
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Elwynn Forest", "new": false },
+    { "kind": "placeZone", "guid": "Player-1-B", "zone": "Durotar", "new": false },
+    { "kind": "placeZone", "guid": "Player-1-B", "zone": "The Barrens", "new": false }
+   ],
+   "progress": { "d.roam4": [4, 4, true], "w.roam10": [4, 10, false], "d.newZone": [0, 1, false] }
+  },
+  {
+   "name": "new zones on two characters, the same zone counts per character",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Duskwood", "new": true },
+    { "kind": "placeZone", "guid": "Player-1-B", "zone": "Duskwood", "new": true },
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Redridge Mountains", "new": true }
+   ],
+   "progress": { "d.newZone": [3, 1, true], "w.newZones3": [3, 3, true], "d.roam4": [2, 4, false] }
+  },
+  {
+   "name": "a zone without a name counts nothing",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "", "new": true }
+   ],
+   "progress": { "d.roam4": [0, 4, false], "d.newZone": [0, 1, false] }
+  },
+  {
+   "name": "Eastern Kingdoms to Kalimdor crosses the sea",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Wetlands", "continent": 0 },
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Darkshore", "continent": 1, "previous": 0 }
+   ],
+   "progress": { "d.crossSea": [1, 1, true] }
+  },
+  {
+   "name": "the same continent, or an unknown one before, is no crossing",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Darkshore", "continent": 1 },
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Ashenvale", "continent": 1, "previous": 1 },
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Deeprun Tram", "previous": 0 }
+   ],
+   "progress": { "d.crossSea": [0, 1, false] }
+  },
+  {
+   "name": "a level 35 in a 1 to 10 zone: nostalgia",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Elwynn Forest", "level": 35, "min": 1, "max": 10 }
+   ],
+   "progress": { "d.nostalgia": [1, 1, true], "d.daredevil": [0, 1, false] }
+  },
+  {
+   "name": "nostalgia needs the zone's highest level 20 below: 30 in a 1 to 11 zone is not",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Elwynn Forest", "level": 30, "min": 1, "max": 11 }
+   ],
+   "progress": { "d.nostalgia": [0, 1, false] }
+  },
+  {
+   "name": "daredevil needs the zone's lowest level 5 above: 20 in a 24 to 34 zone is not",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Duskwood", "level": 20, "min": 24, "max": 34 }
+   ],
+   "progress": { "d.daredevil": [0, 1, false] }
+  },
+  {
+   "name": "a level 20 in a 25 to 35 zone",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Stranglethorn Vale", "level": 20, "min": 25, "max": 35 }
+   ],
+   "progress": { "d.daredevil": [1, 1, true], "d.nostalgia": [0, 1, false] }
+  },
+  {
+   "name": "a zone without level ranges never counts for nostalgia or daredevil",
+   "observations": [
+    { "kind": "placeZone", "guid": "Player-1-A", "zone": "Somewhere New", "level": 60 },
+    { "kind": "placeZone", "guid": "Player-1-B", "zone": "Somewhere New", "level": 1 }
+   ],
+   "progress": { "d.nostalgia": [0, 1, false], "d.daredevil": [0, 1, false], "d.roam4": [1, 4, false] }
+  },
+  {
+   "name": "friends online: the most at once counts, not the sum",
+   "observations": [
+    { "kind": "placeFriends", "online": 2, "sameZone": false },
+    { "kind": "placeFriends", "online": 1, "sameZone": false },
+    { "kind": "placeFriends", "online": 2, "sameZone": false }
+   ],
+   "progress": { "d.online3": [2, 3, false], "d.sameZone": [0, 1, false] }
+  },
+  {
+   "name": "three friends online at once, one in the same zone",
+   "observations": [
+    { "kind": "placeFriends", "online": 3, "sameZone": true }
+   ],
+   "progress": { "d.online3": [3, 3, true], "d.sameZone": [1, 1, true] }
+  },
+  {
+   "name": "carrying a lower friend on two days",
+   "observations": [
+    { "kind": "placeGroup", "carry": true, "day": 100 },
+    { "kind": "placeGroup", "carry": true, "day": 100 },
+    { "kind": "placeGroup", "carry": true, "day": 101 },
+    { "kind": "placeGroup", "carry": false, "day": 102 }
+   ],
+   "progress": { "d.carry": [3, 1, true], "w.mentor3": [2, 3, false] }
+  },
+  {
+   "name": "chat on five days",
+   "observations": [
+    { "kind": "placeChat", "day": 100 },
+    { "kind": "placeChat", "day": 100 },
+    { "kind": "placeChat", "day": 101 },
+    { "kind": "placeChat", "day": 103 },
+    { "kind": "placeChat", "day": 104 },
+    { "kind": "placeChat", "day": 106 }
+   ],
+   "progress": { "d.chatHello": [6, 1, true], "w.chatDays5": [5, 5, true] }
+  },
+  {
+   "name": "nothing observed",
+   "observations": [],
+   "progress": { "d.sameZone": [0, 1, false], "d.online3": [0, 3, false], "d.carry": [0, 1, false],
+                 "d.chatHello": [0, 1, false], "d.roam4": [0, 4, false], "d.newZone": [0, 1, false],
+                 "d.crossSea": [0, 1, false], "d.nostalgia": [0, 1, false], "d.daredevil": [0, 1, false],
+                 "w.chatDays5": [0, 5, false], "w.mentor3": [0, 3, false], "w.newZones3": [0, 3, false],
+                 "w.roam10": [0, 10, false] }
+  }
+ ]
 }

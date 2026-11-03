@@ -66,6 +66,24 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-73 Friends and places for Doomsday missions
+The missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the places line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local p=d.places; if p then local z,nz=0,0; for _ in pairs(p.zones) do z=z+1 end; for _ in pairs(p.newZones) do nz=nz+1 end; print(n,'zones',z,'new',nz,'sea',p.crossSea,'nost',p.nostalgia,'dare',p.daredevil,'same',p.sameZone,'online',p.onlineMax,'carry',p.carry,'chat',p.chat) end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| First login with this build, then `/run local n=0; for _,s in pairs(CommunitiesForeverDB.global.self.doomsday.zonesSeen) do for z in pairs(s) do n=n+1 end end; print(n)` | A number above 0 on a character that handed in quests before (the zones of the stored feed). | open |
+| Ride into 2 other zones; the places line | `zones` went up by 2 (the login zone counts too). A zone this character never quested in before counts in `new`; going back to it doesn't count again. | open |
+| Enter a dungeon and leave it | `zones` doesn't count the dungeon (only zones outside instances). | open |
+| Take the boat or zeppelin to the other continent | `sea` true. The Deeprun Tram doesn't count. | open |
+| Zone level names (V46, zones part, unverified): `/run local l=C_LFGList; for _,a in ipairs(l.GetAvailableActivities(116) or {}) do local i=l.GetActivityInfoTable(a); print(i.fullName,'/',i.shortName,i.minLevelSuggestion,i.maxLevelSuggestion,i.difficultyID,i.maxNumPlayers) end` and compare with `/run print(GetRealZoneText())` in a few zones | The zones are listed with their level range, and the full or short name matches `GetRealZoneText()` exactly (e.g. "Elwynn Forest"). Answered: move it to `docs/API-FINDINGS.md`; if names differ, say how. | open |
+| A level 30+ character enters a starting zone (e.g. Elwynn Forest) | `nost` true. | open |
+| A character enters a zone whose lowest suggested level is 5 or more above its level | `dare` true. | open |
+| Club member zone text (V18): with a friend's community character online in your zone, `/run for _,m in pairs(CommunitiesForever.MemberTracker.members()) do print(m.name,m.zone,m.presence) end` | The friend's `zone` is the same text as your `GetRealZoneText()`. | open |
+| With a friend's community character online; the places line | `online` 1 or more; `same` true while both are in the same zone. A friend on the mobile app (presence 2) doesn't count. | open |
+| Group with a friend's community character 5 or more levels lower | `carry` 1 or more; with one 4 levels lower, or your own alt, it stays. | open |
+| Say something in the selected community's chat | `chat` 1 or more; a friend's message doesn't count, nor one in another community. | open |
+| A friend on v1.1.0 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
+
 ### CF-79 The weekly and PvP catalogues in code
 The new missions wait for data (no `since`) and their trackers; nothing new is drawn until pool version 2 (CF-77).
 

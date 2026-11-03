@@ -19,6 +19,9 @@ tagging; the release stops if the tag has no section.
   started never changes.
 - **Doomsday:** quest hand-ins and new quests are now tracked in detail (quests above your level, group, class and
   dungeon quests, quick hand-ins, quests with a friend) for the coming quest missions.
+- **Doomsday:** the addon now records zones visited (new to a character, far below or above its level, across the
+  sea), friends online at once and in your zone, grouping with a lower friend and your community chat messages, for
+  the friends and places missions that join the draw later. Nothing changes in today's goals yet.
 
 ## v1.1.0 (2026-11-02)
 - **Fixed:** no "is online" chat lines right after you log in for friends who were already online.
