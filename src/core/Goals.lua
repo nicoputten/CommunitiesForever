@@ -448,7 +448,9 @@ local function cleanEntry(e, maxSet)
     local t = number(at, 0, 1e11)
     if cleanId(id) and t and count(done) < maxSet then done[id] = t end
   end
-  return { set = set, swapped = swapped, done = done, at = number(e.at, 0, 1e11) or 0 }
+  -- CF-69: the pool version the set was drawn in (optional; nil: goals.pool, then 1, Doomsday.entryPool).
+  local pool = number(e.pool, 1, 1e4)
+  return { set = set, swapped = swapped, done = done, at = number(e.at, 0, 1e11) or 0, pool = pool }
 end
 
 local function cleanMap(map, maxEntries, maxSet)
@@ -509,15 +511,24 @@ function Goals.merge(stored, incoming, maxAt)
   return result
 end
 
+-- CF-69: an own entry recorded before entries carried their pool was drawn in pool version 1 (the only one then).
+local function withPool(e)
+  if type(e) ~= "table" or e.pool then return e end
+  local copy = {}
+  for k, v in pairs(e) do copy[k] = v end
+  copy.pool = 1
+  return copy
+end
+
 -- The own goals as RECORD sends them: the last SEND_DAYS days up to today, this and last week.
 function Goals.outgoing(goals, today, week, pool, reset)
   if type(goals) ~= "table" then return nil end
   local days, weeks = {}, {}
   for n, e in pairs(goals.days or {}) do
-    if n > today - Goals.SEND_DAYS and n <= today then days[n] = e end
+    if n > today - Goals.SEND_DAYS and n <= today then days[n] = withPool(e) end
   end
   for w, e in pairs(goals.weeks or {}) do
-    if w >= week - 1 and w <= week then weeks[w] = e end
+    if w >= week - 1 and w <= week then weeks[w] = withPool(e) end
   end
   return { days = days, weeks = weeks, streak = goals.streak and goals.streak.n or 0, best = goals.best or 0,
            pool = pool, reset = reset }

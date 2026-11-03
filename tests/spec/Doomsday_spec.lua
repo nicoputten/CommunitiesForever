@@ -268,6 +268,29 @@ describe("Doomsday (CF-55)", function()
     end
   end)
 
+  -- CF-69: points per goal, in the pool version of the day or week.
+  it("scores each goal in its day's pool version", function()
+    for _, c in ipairs(cases.pointsPerGoal) do
+      local pool = Doomsday.entryPool(c.entry, c.goalsPool)
+      assert.are.equal(c.expect.pool, pool, c.note)
+      local total = Doomsday.points(c.done, 0, 0, pool)
+      assert.are.same({ c.expect.pve, c.expect.pvp }, { total.pve, total.pvp }, c.note)
+      for id in pairs(c.done) do
+        assert.are.equal(c.expect.goals[id], Doomsday.pointsFor(id, pool), c.note .. ": " .. id)
+      end
+    end
+  end)
+
+  it("keeps the flat points without a pool and for goals without a size", function()
+    assert.are.equal(5, Doomsday.pointsFor("d.quests10"))
+    assert.are.equal(15, Doomsday.pointsFor("w.days3"))
+    assert.are.equal(15, Doomsday.pointsFor("w.days3", 2)) -- no size yet: flat
+    assert.are.same({ "pve", 3 }, { Doomsday.goalPoints("d.quests10", 2) })
+    assert.is_nil(Doomsday.goalPoints("x.newer", 2))
+    assert.are.equal(1, Doomsday.entryPool(nil, nil))
+    assert.are.equal(1, Doomsday.entryPool({ pool = 0 }, "2"))
+  end)
+
   it("crosses out and crowns", function()
     for _, c in ipairs(cases.crown) do
       for _, f in ipairs(c.friends) do

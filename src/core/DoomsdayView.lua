@@ -182,13 +182,10 @@ function DoomsdayView.stillNeeded(id, scored, factions)
   return best and #best > 0 and table.concat(best, ", ") or nil
 end
 
--- Today's points per track: the day's goals done, today's kill points and today's Duel slot.
+-- Today's points per track: the day's goals done (in the day's pool version, CF-69), today's kill points and
+-- today's Duel slot.
 function DoomsdayView.todayPoints(state)
-  local points = { pve = 0, pvp = 0 }
-  for id in pairs(state.today and state.today.done or {}) do
-    local track, p = ns.Doomsday.goalPoints(id)
-    if track then points[track] = points[track] + p end
-  end
+  local points = ns.Doomsday.points(state.today and state.today.done, 0, 0, ns.Doomsday.entryPool(state.today))
   for _, s in ipairs(state.dayScored or {}) do
     if s.track == "pvp" then points.pvp = points.pvp + s.points end
   end
@@ -202,25 +199,29 @@ end
 
 -- ===== Chat lines (CF-57; the board's "chat lines") =====
 
+-- The chat lines take the goal's points (CF-69: Doomsday.pointsFor); without them the flat 5 and 15.
+
 -- "Daily done: Finish 10 quests (+5 PvE, 2 of 3 today)".
-function DoomsdayView.dailyDoneLine(text, done, total)
-  return string.format("Daily done: %s (+%d PvE, %d of %d today)", text, ns.Doomsday.POINTS.daily, done, total)
+function DoomsdayView.dailyDoneLine(text, done, total, points)
+  return string.format("Daily done: %s (+%d PvE, %d of %d today)", text, points or ns.Doomsday.POINTS.daily, done,
+    total)
 end
 
 -- "Weekly done: Run 3 dungeons (+15 PvE)".
-function DoomsdayView.weeklyDoneLine(text, track)
-  return string.format("Weekly done: %s (+%d %s)", text, ns.Doomsday.POINTS.weekly, track == "pvp" and "PvP" or "PvE")
+function DoomsdayView.weeklyDoneLine(text, track, points)
+  return string.format("Weekly done: %s (+%d %s)", text, points or ns.Doomsday.POINTS.weekly,
+    track == "pvp" and "PvP" or "PvE")
 end
 
 -- "Skirmish done: Lone wolf: 3 solo kills (+5 PvP)".
-function DoomsdayView.skirmishDoneLine(text)
-  return string.format("Skirmish done: %s (+%d PvP)", text, ns.Doomsday.POINTS.daily)
+function DoomsdayView.skirmishDoneLine(text, points)
+  return string.format("Skirmish done: %s (+%d PvP)", text, points or ns.Doomsday.POINTS.daily)
 end
 
 -- "Hunt done: a Night Elf Druid fell to Ada Nightshade (+5 PvP)".
-function DoomsdayView.huntDoneLine(hunt, charName)
+function DoomsdayView.huntDoneLine(hunt, charName, points)
   return string.format("Hunt done: %s fell to %s (+%d PvP)", DoomsdayView.huntText(hunt, true) or "the Hunt",
-    tostring(charName), ns.Doomsday.POINTS.daily)
+    tostring(charName), points or ns.Doomsday.POINTS.daily)
 end
 
 -- A kill worth more than 1 point: "Kill: +2 PvP · 3 levels above you, and solo (+1)". nil for 1 point or less.
@@ -270,9 +271,11 @@ function DoomsdayView.score(d)
   local goals = type(d.goals) == "table" and d.goals or {}
   local r = { day = goals.days and goals.days[d.day], today = { pve = 0, pvp = 0 }, week = { pve = 0, pvp = 0 },
               goals = 0, kills = 0, perChar = {}, killedEver = false, streak = goals.streak, killsByZone = {}, bg = {} }
-  local function count(done, into)
-    for id in pairs(done or {}) do
-      local track, p = D.goalPoints(id)
+  -- CF-69: each day and week in the pool version it was drawn in.
+  local function count(e, into)
+    local pool = D.entryPool(e, goals.pool)
+    for id in pairs(e.done or {}) do
+      local track, p = D.goalPoints(id, pool)
       if track then
         into[track] = into[track] + p
         if into == r.week then r.goals = r.goals + 1 end
@@ -280,10 +283,10 @@ function DoomsdayView.score(d)
     end
   end
   for n, e in pairs(goals.days or {}) do
-    if D.week(n) == d.week then count(e.done, r.week) end
-    if n == d.day then count(e.done, r.today) end
+    if D.week(n) == d.week then count(e, r.week) end
+    if n == d.day then count(e, r.today) end
   end
-  if goals.weeks and goals.weeks[d.week] then count(goals.weeks[d.week].done, r.week) end
+  if goals.weeks and goals.weeks[d.week] then count(goals.weeks[d.week], r.week) end
   local kills = {}
   for feedDay, chars in pairs(d.feed or {}) do
     for guid, e in pairs(type(chars) == "table" and chars or {}) do

@@ -276,5 +276,19 @@ describe("Goals (CF-56)", function()
       assert.is_table(out.weeks[10])
       assert.are.same({ 4, 6, 1, 68400 }, { out.streak, out.best, out.pool, out.reset })
     end)
+
+    -- CF-69: an entry's pool version travels with it; an entry recorded before CF-69 was drawn in pool 1.
+    it("keeps each entry's pool version", function()
+      local clean = Goals.clean({ days = { [1] = { set = {}, done = {}, at = 1, pool = 2 },
+                                           [2] = { set = {}, done = {}, at = 1, pool = 0 },
+                                           [3] = { set = {}, done = {}, at = 1, pool = "2" },
+                                           [4] = { set = {}, done = {}, at = 1 } }, weeks = {} })
+      assert.are.same({ 2 }, { clean.days[1].pool, clean.days[2].pool, clean.days[3].pool, clean.days[4].pool })
+      local old, new = entry(1), entry(2)
+      new.pool = 2
+      local out = Goals.outgoing({ days = { [30] = old, [29] = new }, weeks = { [11] = entry(3) } }, 30, 11, 2)
+      assert.are.same({ 1, 2, 1 }, { out.days[30].pool, out.days[29].pool, out.weeks[11].pool })
+      assert.is_nil(old.pool) -- the stored entry is left as it is
+    end)
   end)
 end)
