@@ -266,4 +266,22 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, "Ada#1001")
     assert.are_not.equal(third, ns.DoomsdayTracker.state())
   end)
+
+  -- CF-70: a mission adapter's observation reaches today's and this week's facts, for registered kinds only.
+  it("forwards the mission modules' observations and watches their adapters", function()
+    local watched
+    load(nil, function()
+      ns.Goals.registerKind("testDone", function(f, obs) f.test2 = (f.test2 or 0) + (obs.count or 1) end)
+      ns.MissionEvents.Quests.watch = function(a) watched = a end
+    end)
+    assert.are.equal(addon, watched)
+    local today = ns.DoomsdayTracker.today()
+    local facts = addon.db.global.self.doomsday
+    addon:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, "testDone", { count = 2 })
+    addon:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, "testDone")
+    addon:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, "quest", { zone = "Westfall" }) -- built-in: not forwarded
+    assert.are.equal(3, facts.days[today].test2)
+    assert.are.equal(3, facts.weeks[ns.Doomsday.week(today)].test2)
+    assert.is_nil(facts.days[today].quests.Westfall)
+  end)
 end)

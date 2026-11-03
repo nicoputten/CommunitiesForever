@@ -53,6 +53,15 @@ src\core\Outbox.lua
 src\core\Format.lua
 src\core\Card.lua
 
+src\core\missions\Quests.lua
+src\core\missions\Records.lua
+src\core\missions\Places.lua
+src\core\missions\Extended.lua
+src\core\missions\Items.lua
+src\core\missions\World.lua
+src\core\missions\Fights.lua
+src\core\missions\Battle.lua
+
 src\adapters\Safe.lua
 src\adapters\Events.lua
 src\adapters\Timer.lua
@@ -77,6 +86,15 @@ src\adapters\LootInfo.lua
 src\adapters\GoalEvents.lua
 src\adapters\Sounds.lua
 src\adapters\Screen.lua
+
+src\adapters\missions\QuestEvents.lua
+src\adapters\missions\RecordEvents.lua
+src\adapters\missions\PlaceEvents.lua
+src\adapters\missions\ExtendedEvents.lua
+src\adapters\missions\ItemEvents.lua
+src\adapters\missions\WorldEvents.lua
+src\adapters\missions\FightEvents.lua
+src\adapters\missions\BattleEvents.lua
 
 src\services\FeedTracker.lua
 src\services\ActivityTracker.lua
