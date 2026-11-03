@@ -567,6 +567,19 @@ local function Honor(text, ...)
   else
     log("V73 victim not seen as target, mouseover or nameplate")
   end
+  -- The Hunt (DOOMSDAY.md): the victim's race and class at the kill, from the name in the honor message matched to a
+  -- player seen just before. Both halves on Forever decide whether the Hunt can go into the pool.
+  local readable = seen and type(seen.class) == "string" and type(seen.race) == "string"
+    and not (issecretvalue and (issecretvalue(seen.class) or issecretvalue(seen.race)))
+  if readable then
+    result("Hunt", "pass", string.format("%s: %s %s via %s, %.0f s before the kill", victim, seen.race, seen.class,
+      seen.source, GetTime() - seen.at))
+  elseif victim then
+    local r = ns.results().Hunt
+    if not (r and r.status == "pass") then
+      result("Hunt", "info", "victim " .. victim .. " named, but not seen with race and class before the kill")
+    end
+  end
   local _, instanceType = GetInstanceInfo()
   log("V76 at the kill: group", Vals(IsInGroup), "instance", Val(instanceType), "zone", Vals(GetRealZoneText))
   local grouped = IsInGroup and IsInGroup()
@@ -779,6 +792,65 @@ function ns.running()
   return GetServerTime() < STOP_AT and not (FriendProbeDB and FriendProbeDB.stopped)
 end
 
+-- V64, V89: the APIs behind the ambient effects and the celebration banner. The look stays a check by eye.
+local ANIMATIONS = { Translation = { "SetOffset" }, Scale = { "SetScaleFrom", "SetScaleTo" },
+  Rotation = { "SetDegrees" }, Alpha = { "SetFromAlpha", "SetToAlpha" } }
+local function AnimationApis()
+  local missing = {}
+  local function need(label, present) if not present then missing[#missing + 1] = label end end
+  local frame = CreateFrame("Frame", nil, UIParent)
+  frame:Hide()
+  local texture = frame:CreateTexture()
+  need("SetClipsChildren", frame.SetClipsChildren ~= nil)
+  need("SetBlendMode", texture.SetBlendMode ~= nil)
+  need("SetGradient", texture.SetGradient ~= nil)
+  need("CreateColor", CreateColor ~= nil)
+  need("GetPhysicalScreenSize", GetPhysicalScreenSize ~= nil)
+  local okGroup, group = pcall(texture.CreateAnimationGroup, texture)
+  need("CreateAnimationGroup", okGroup and group ~= nil)
+  if okGroup and group then
+    for kind, methods in pairs(ANIMATIONS) do
+      local okAnim, anim = pcall(group.CreateAnimation, group, kind)
+      if okAnim and anim then
+        need(kind .. ":SetOrder", anim.SetOrder ~= nil)
+        for _, method in ipairs(methods) do need(kind .. ":" .. method, anim[method] ~= nil) end
+      else
+        need(kind, false)
+      end
+    end
+  end
+  table.sort(missing)
+  log("V64/V89 animation APIs:", #missing == 0 and "all there" or ("missing " .. table.concat(missing, ", ")),
+    "| screen", Vals(GetPhysicalScreenSize))
+  return missing
+end
+
+-- V88: the celebration sounds, per weight the first key that exists (CF-67).
+local SOUNDS = { "IG_QUEST_LIST_COMPLETE", "UI_EPICLOOT_TOAST", "UI_LEGENDARY_LOOT_TOAST" }
+local function SoundKeys()
+  local parts, missing = {}, 0
+  for _, key in ipairs(SOUNDS) do
+    local id = SOUNDKIT and SOUNDKIT[key]
+    parts[#parts + 1] = key .. " " .. Val(id)
+    if id == nil then missing = missing + 1 end
+  end
+  log("V88 SOUNDKIT", table.concat(parts, ", "), "| PlaySound", Val(PlaySound))
+  return missing, table.concat(parts, ", ")
+end
+
+-- The checklist button: each sound once, 2 s apart, so they can be told apart.
+local function SoundTest()
+  log("== V88 CELEBRATION SOUNDS (button) ==")
+  for i, key in ipairs(SOUNDS) do
+    C_Timer.After((i - 1) * 2, function()
+      local id = SOUNDKIT and SOUNDKIT[key]
+      local willPlay = id and PlaySound and select(2, pcall(PlaySound, id, "SFX"))
+      log("V88 play", key, Val(id), "willPlay", Val(willPlay))
+      print("|cffffd100FriendProbe|r sound " .. i .. ": " .. key .. (willPlay and "" or " (did not play)"))
+    end)
+  end
+end
+
 -- V63, V71, V55, V68 and the API presence hints for the manual items.
 local function StaticChecks()
   local clock = date and date("%H:%M")
@@ -799,6 +871,17 @@ local function StaticChecks()
     if not (r and (r.status == "yes" or r.status == "no")) then
       result(id, "info", present and "the API is there; check it by eye" or "the API is missing")
     end
+  end
+  local missing = AnimationApis()
+  local soundsMissing, sounds = SoundKeys()
+  local details = {
+    V64 = #missing == 0 and "the APIs are there; check it by eye" or ("missing " .. table.concat(missing, ", ")),
+    V89 = #missing == 0 and "the APIs are there; check it by eye" or ("missing " .. table.concat(missing, ", ")),
+    V88 = (soundsMissing == 0 and "all three keys exist; press Test: celebration sounds" or "keys: " .. sounds),
+  }
+  for id, detail in pairs(details) do
+    local r = ns.results()[id]
+    if not (r and (r.status == "yes" or r.status == "no")) then result(id, "info", detail) end
   end
 end
 
@@ -847,8 +930,10 @@ ns.tests = {
   { text = "Test: invite all", run = function() InviteAll() end },
   { text = "Test: file reload (V67)", run = function() ReloadFile() end },
   { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
+  { text = "Test: celebration sounds (V88)", run = function() SoundTest() end },
 }
 ns.log = log
+ns.S, ns.Val, ns.Vals, ns.Pattern, ns.DumpTable = S, Val, Vals, Pattern, DumpTable -- for Missions.lua
 
 -- V87: Battle.net "Appear offline". Data from a friend whose WoW game account isn't in the friend list (they
 -- appear offline): does it still arrive, and does the game still tell who sent it?

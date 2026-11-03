@@ -13,6 +13,36 @@ describe("Goals (CF-56)", function()
     return Doomsday.dayNumberOf(y, m, d) * 86400 + hour * 3600 + minute * 60
   end
 
+  -- CF-68: the site's mission schedule, checked (golden cases shared with the site).
+  describe("mission schedule", function()
+    local cases = helpers.readJson("tests/fixtures/doomsday-cases.json")
+
+    it("checks it as the golden cases say", function()
+      for _, c in ipairs(cases.scheduleCheck) do
+        local day = Doomsday.day(c.serverTime, c.offset, c.reset)
+        assert.are.same(c.expect, Goals.cleanMissionSchedule(c.input, day, Doomsday.week(day)), c.note)
+      end
+    end)
+
+    it("takes integer keys, and no v below 1 or a fraction", function()
+      assert.are.same({ v = 1, days = { ["20766"] = { skirmish = "p.loneWolf" } } },
+        Goals.cleanMissionSchedule({ v = 1, days = { [20766] = { skirmish = "p.loneWolf" } } }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 0 }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 1.5 }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 1, weeks = 5 }, 20766, 2967))
+    end)
+
+    it("takes a newer v, at most 5 minutes ahead", function()
+      local now = 1000
+      assert.is_true(Goals.newerMissionSchedule(nil, { v = 1 }, now))
+      assert.is_true(Goals.newerMissionSchedule({ v = 10 }, { v = now + 300 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = now + 301 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = 10 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = 9 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, nil, now))
+    end)
+  end)
+
   describe("schedule", function()
     it("knows CET and CEST by the EU summer-time dates", function()
       assert.are.equal(3600, Goals.cetOffset(utc(2026, 3, 29, 0, 59)))
@@ -113,7 +143,69 @@ describe("Goals (CF-56)", function()
     local s = Goals.situation(chars, { B = true }, false, true)
     assert.are.same({ chars = 2, below60 = 1, altBelow60 = 1, highest = 60, highestToday = 24, ilvlReadable = true,
                       hasProfession = true, hasFishing = true, hasCraftingProfession = false,
-                      professionBelow300 = true, friendQuestLog = false, dungeonInRange = true }, s)
+                      professionBelow300 = true, friendQuestLog = false, dungeonInRange = true,
+                      below20 = 0, hasCooking = true, hasFirstAid = false, hasGathering = true }, s)
+  end)
+
+  -- CF-70: the catalogue's swap fields; riding, canBuff and idle7 only when every character tells.
+  it("builds the catalogue's situation fields, unknown left out", function()
+    local now, day = 2000000000, 86400
+    local chars = {
+      A = { level = 60, classFile = "WARRIOR", riding = 0, lastPlayed = now - 8 * day,
+            professions = { [129] = { rank = 10 } } },
+      B = { level = 12, classFile = "ROGUE", riding = 0, lastPlayed = now - day },
+    }
+    local s = Goals.situation(chars, nil, false, true, { friends = 2, now = now })
+    assert.are.same({ 1, true, false, false, false, 2, false, 1 },
+                    { s.below20, s.hasFirstAid, s.hasCooking, s.hasGathering, s.riding, s.friends, s.canBuff,
+                      s.idle7 })
+    chars.B.classFile, chars.B.riding = "PRIEST", 75
+    s = Goals.situation(chars, nil, false, true, { now = now })
+    assert.are.same({ true, true }, { s.riding, s.canBuff })
+    assert.is_nil(s.friends)
+    -- Not readable on one character: unknown, unless another one already tells.
+    chars.B.classFile, chars.B.riding, chars.B.lastPlayed = nil, nil, nil
+    chars.A.lastPlayed = now
+    s = Goals.situation(chars, nil, false, true, { now = now })
+    assert.is_nil(s.riding)
+    assert.is_nil(s.canBuff)
+    assert.is_nil(s.idle7)
+    chars.A.lastPlayed = now - 7 * day
+    assert.are.equal(1, Goals.situation(chars, nil, false, true, { now = now }).idle7)
+    assert.is_nil(Goals.situation(chars, nil, false, true).idle7) -- no server time
+    assert.are.equal(false, Goals.situation({}, nil, false, true, { now = now }).riding)
+  end)
+
+  describe("mission modules (CF-70)", function()
+    it("adds a module's kind to the facts under its own key, never a built-in one", function()
+      Goals.registerKind("questDone", function(f, obs)
+        f.quests2 = f.quests2 or { n = 0 }
+        f.quests2.n = f.quests2.n + (obs.count or 1)
+      end)
+      Goals.registerKind("quest", function(f) f.hijacked = true end)
+      assert.is_true(Goals.isModuleKind("questDone"))
+      assert.is_false(Goals.isModuleKind("nope"))
+      local f = Goals.newFacts()
+      Goals.observe(f, { kind = "questDone", count = 2 })
+      Goals.observe(f, { kind = "questDone" })
+      Goals.observe(f, { kind = "quest", zone = "Westfall" })
+      Goals.observe(f, { kind = "nope" })
+      assert.are.same({ n = 3 }, f.quests2)
+      assert.are.same({ Westfall = 1 }, f.quests)
+      assert.is_nil(f.hijacked)
+      local pf = Goals.progressFacts(f, {})
+      assert.are.same({ n = 3 }, pf.quests2)
+      assert.is_nil(pf.kills) -- built-in raw facts stay out
+      assert.are.equal(0, pf.chars)
+    end)
+
+    it("reads a module goal's progress from its facts", function()
+      Goals.registerKind("questDone", function(f) f.quests2 = (f.quests2 or 0) + 1 end)
+      Doomsday.registerProgress("d.questBurst", function(pf) return pf.quests2 or 0, 3 end)
+      local f = Goals.newFacts()
+      for _ = 1, 3 do Goals.observe(f, { kind = "questDone" }) end
+      assert.are.same({ 3, 3, true }, { Doomsday.progress("d.questBurst", Goals.progressFacts(f, {})) })
+    end)
   end)
 
   it("marks goals done once, with the time", function()
@@ -183,6 +275,20 @@ describe("Goals (CF-56)", function()
       assert.is_nil(out.weeks[9])
       assert.is_table(out.weeks[10])
       assert.are.same({ 4, 6, 1, 68400 }, { out.streak, out.best, out.pool, out.reset })
+    end)
+
+    -- CF-69: an entry's pool version travels with it; an entry recorded before CF-69 was drawn in pool 1.
+    it("keeps each entry's pool version", function()
+      local clean = Goals.clean({ days = { [1] = { set = {}, done = {}, at = 1, pool = 2 },
+                                           [2] = { set = {}, done = {}, at = 1, pool = 0 },
+                                           [3] = { set = {}, done = {}, at = 1, pool = "2" },
+                                           [4] = { set = {}, done = {}, at = 1 } }, weeks = {} })
+      assert.are.same({ 2 }, { clean.days[1].pool, clean.days[2].pool, clean.days[3].pool, clean.days[4].pool })
+      local old, new = entry(1), entry(2)
+      new.pool = 2
+      local out = Goals.outgoing({ days = { [30] = old, [29] = new }, weeks = { [11] = entry(3) } }, 30, 11, 2)
+      assert.are.same({ 1, 2, 1 }, { out.days[30].pool, out.days[29].pool, out.weeks[11].pool })
+      assert.is_nil(old.pool) -- the stored entry is left as it is
     end)
   end)
 end)

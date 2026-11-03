@@ -116,6 +116,72 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     assert.are.equal(68400, ns.DoomsdayTracker.schedule().reset)
   end)
 
+  -- CF-68: the site's mission schedule, from the runs file and SavedVariables.
+  describe("the site's mission schedule (CF-68)", function()
+    local cases = helpers.readJson("tests/fixtures/doomsday-cases.json").scheduled
+    local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
+
+    -- A day's set with the swaps undone (the test character can't do every goal).
+    local function beforeSwaps(entry)
+      local list = {}
+      for i, id in ipairs(entry.set) do list[i] = entry.swapped[id] or id end
+      return list
+    end
+
+    local function file(schedule)
+      return function() _G.CF_RUNS = { updatedAt = 10, runs = {}, doomsday = { schedule = schedule } } end
+    end
+
+    it("uses the runs file's schedule for the day it lists and keeps it", function()
+      local c = cases[1]
+      load(function(s) s.serverTime = D.dayStart(c.day, CET, RESET) + 3600 end, file(c.schedule))
+      local day = c.schedule.days[tostring(c.day)]
+      local scheduled = { day.daily[1], day.daily[2], day.daily[3], day.skirmish }
+      assert.are.same(scheduled, beforeSwaps(goals().days[c.day]))
+      assert.are.equal(c.schedule.v, addon.db.global.doomsdaySchedule.v)
+      assert.are.equal(c.schedule.v, ns.DoomsdayTracker.missionScheduleVersion())
+      -- The next day is the normal draw.
+      state.serverTime = state.serverTime + 86400
+      quest()
+      local normal = D.draw(c.day + 1)
+      assert.are.same({ normal.dailies[1], normal.dailies[2], normal.dailies[3], normal.skirmish },
+        beforeSwaps(goals().days[c.day + 1]))
+    end)
+
+    it("keeps the set of a day already recorded", function()
+      local c
+      for _, case in ipairs(cases) do
+        if case.recorded then c = case end
+      end
+      local start = D.dayStart(c.day, CET, RESET)
+      local recorded = { set = c.recorded, swapped = {}, done = {}, at = start + 60 }
+      load(function(s)
+        s.serverTime = start + 3600
+        s.savedVariables = { global = { self = { goals = { days = { [c.day] = recorded } } } } }
+      end, file(c.schedule))
+      assert.are.equal(c.schedule.v, ns.DoomsdayTracker.missionScheduleVersion()) -- taken, but today stays
+      assert.are.same(c.expect.set, goals().days[c.day].set)
+    end)
+
+    it("drops days and weeks that are over at login, and starts without one when none is stored", function()
+      local c = cases[1]
+      local later = D.dayStart(c.day + 2, CET, RESET) + 3600
+      local stored = { v = 7, days = { [tostring(c.day)] = c.schedule.days[tostring(c.day)],
+                                       [tostring(c.day + 3)] = { skirmish = "p.loneWolf" } },
+                       weeks = { ["2960"] = { bounty = "b.zone25" } } }
+      load(function(s)
+        s.serverTime = later
+        s.savedVariables = { global = { doomsdaySchedule = stored } }
+      end)
+      assert.are.same({ v = 7, days = { [tostring(c.day + 3)] = { skirmish = "p.loneWolf" } } },
+        addon.db.global.doomsdaySchedule)
+      wowapi.uninstall()
+      load()
+      assert.is_nil(addon.db.global.doomsdaySchedule)
+      assert.are.equal(0, ns.DoomsdayTracker.missionScheduleVersion())
+    end)
+  end)
+
   it("sends goals in RECORD and the setting in HELLO", function()
     load()
     ns.DoomsdayTracker.receiveSetting({ reset = 68400, changedAt = 60 })
@@ -123,6 +189,9 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     local today = ns.DoomsdayTracker.today()
     assert.is_table(record.goals.days[today])
     assert.are.equal(ns.Doomsday.POOL_VERSION, record.goals.pool)
+    -- CF-69: the day and week carry the pool version they were drawn in.
+    assert.are.equal(ns.Doomsday.POOL_VERSION, record.goals.days[today].pool)
+    assert.are.equal(ns.Doomsday.POOL_VERSION, record.goals.weeks[ns.Doomsday.week(today)].pool)
     assert.are.equal(68400, record.goals.reset)
     state.bnSent = {}
     ns.Sync.announce()
@@ -199,5 +268,23 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     local third = ns.DoomsdayTracker.state()
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, "Ada#1001")
     assert.are_not.equal(third, ns.DoomsdayTracker.state())
+  end)
+
+  -- CF-70: a mission adapter's observation reaches today's and this week's facts, for registered kinds only.
+  it("forwards the mission modules' observations and watches their adapters", function()
+    local watched
+    load(nil, function()
+      ns.Goals.registerKind("testDone", function(f, obs) f.test2 = (f.test2 or 0) + (obs.count or 1) end)
+      ns.MissionEvents.Quests.watch = function(a) watched = a end
+    end)
+    assert.are.equal(addon, watched)
+    local today = ns.DoomsdayTracker.today()
+    local facts = addon.db.global.self.doomsday
+    addon:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, "testDone", { count = 2 })
+    addon:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, "testDone")
+    addon:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, "quest", { zone = "Westfall" }) -- built-in: not forwarded
+    assert.are.equal(3, facts.days[today].test2)
+    assert.are.equal(3, facts.weeks[ns.Doomsday.week(today)].test2)
+    assert.is_nil(facts.days[today].quests.Westfall)
   end)
 end)

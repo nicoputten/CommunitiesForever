@@ -36,8 +36,9 @@ local function scores(day, week, schedule)
   local community = communityNames()
   local duels, owner = duelInput()
   local result = ns.Doomsday.duels(duels, owner, schedule)
-  local dayDuels, weekDuels = {}, {}
+  local dayDuels, weekDuels, dueled = {}, {}, {}
   for _, d in ipairs(result.duels) do
+    dueled[d.a], dueled[d.b] = true, true -- CF-78: a duel is a real fight, disputed or not
     if not d.disputed and d.winner then
       local loser = d.winner == d.a and d.b or d.a
       local sides = { { d.winner, ns.Doomsday.POINTS.duelWin, true }, { loser, ns.Doomsday.POINTS.duelLoss } }
@@ -59,7 +60,7 @@ local function scores(day, week, schedule)
     s.today.pvp = s.today.pvp + (dayDuels[p.key] or 0)
     s.week.pvp = s.week.pvp + (weekDuels[p.key] and weekDuels[p.key].points or 0)
     s.duels = weekDuels[p.key] or { points = 0, won = 0, lost = 0 }
-    if s.week.pvp > 0 or s.today.pvp > 0 then s.killedEver = true end -- CF-61: any PvP point ends the Virgin
+    if dueled[p.key] then s.foughtEver = true end
     s.key, s.name, s.isSelf, s.chars, s.hasGoals = p.key, p.name, p.isSelf, p.chars, type(p.goals) == "table"
     list[#list + 1] = s
   end
@@ -82,7 +83,7 @@ function DoomsdayBoard.board()
   for _, s in ipairs(list) do
     local entry = s.isSelf and mine.today or s.day
     local row = { key = s.key, name = s.name, isSelf = s.isSelf, status = entry and "ok" or "noData", cells = {},
-                  virgin = not s.killedEver, -- CF-62: "PvP Virgin" on Today's mini board
+                  virgin = not s.foughtEver, -- CF-62: "PvP Virgin" on Today's mini board
                   streak = s.isSelf and mine.streak or s.streak, today = s.today, week = s.week }
     if entry then
       for i, id in ipairs(entry.set or {}) do
@@ -118,7 +119,7 @@ function DoomsdayBoard.ladder()
     for _, s in ipairs(list) do
       if s.hasGoals or s.isSelf then
         friends[#friends + 1] = { friend = s.key, name = s.name, pve = s.week.pve, pvp = s.week.pvp, goals = s.goals,
-                                  kills = s.kills, killedEver = s.killedEver }
+                                  kills = s.kills, foughtEver = s.foughtEver }
       end
     end
     return friends

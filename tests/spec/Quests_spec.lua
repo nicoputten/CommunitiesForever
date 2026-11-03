@@ -42,6 +42,20 @@ describe("Quests (CF-19)", function()
       assert.is_true(quests[4].dungeon)
     end)
 
+    it("keeps the quest's level and a group quest's size (CF-71), nil when unknown or 0", function()
+      local quests = Quests.fromLog({
+        { isHeader = true, title = "Durotar" },
+        { questID = 1, title = "Normal", level = 8, suggestedGroup = 0 },
+        { questID = 2, title = "Group", level = 12, suggestedGroup = 3 },
+        { questID = 3, title = "No details" },
+        { questID = 4, title = "Odd values", level = "12", suggestedGroup = true },
+      })
+      assert.are.same({ title = "Normal", area = "Durotar", dungeon = false, level = 8 }, quests[1])
+      assert.are.same({ title = "Group", area = "Durotar", dungeon = false, level = 12, suggestedGroup = 3 }, quests[2])
+      assert.are.same({ title = "No details", area = "Durotar", dungeon = false }, quests[3])
+      assert.are.same({ title = "Odd values", area = "Durotar", dungeon = false }, quests[4])
+    end)
+
     it("treats an empty log as unreadable unless allowed (turn-in or abandon)", function()
       assert.is_nil(Quests.fromLog({}))
       assert.is_nil(Quests.fromLog({ { isHeader = true, title = "Durotar" } }))

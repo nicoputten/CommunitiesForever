@@ -101,6 +101,7 @@ people whose account ID is unknown are simply not mentioned there.
 | `ch` | Optional, community only (CF-31): the hidden channel the sender listens on. Members that sent it get later HELLOs on the channel instead of a whisper each. Older clients send none and ignore it (rule 8) |
 | `dd` | Optional (CF-56): the Doomsday reset setting the sender uses, `{ reset, changedAt, offset, offsetUntil, offsetAfter }` (docs/DOOMSDAY.md "Schedule"). The receiver keeps the newer `changedAt`. Older clients ignore it |
 | `ru` | Optional (CF-46): updatedAt of the sender's planned runs, 0 when it has none. Older clients send none (and get no runs) and ignore it (rule 8) |
+| `ds` | Optional (CF-68): `v` of the site's Doomsday mission schedule the sender uses, 0 when it has none. A receiver with an older one sends `SCHEDREQ`. Older clients send none and ignore it (rule 8) |
 | `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
 
 The receiver compares: `ver` newer than stored → `REQ` for the sender's own record. A `known` entry newer
@@ -181,7 +182,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `chars` | **All** own characters by GUID, also those outside the community |
 | `chars.*.updatedAt` | When the owner last saw this character change: the per-character merge key |
 | `chars.*.lastPlayed` | Last login on that character (updated without a version change) |
-| `chars.*.quests` | Quest log: `{ questID = { title, area, dungeon } }`, IDs only, no progress |
+| `chars.*.quests` | Quest log: `{ questID = { title, area, dungeon, level, suggestedGroup } }`, IDs only, no progress. CF-71: `level` (the quest's) and `suggestedGroup` (only above 0) are optional, nil from older versions |
 | `chars.*.pvp` | CF-52, optional: `hk` lifetime honorable kills, `rank` PvP rank number (0 none, 1 to 14) and `rankName` the game's name for it, `weekKills`/`weekHonor` this week's, and the addon's own lifetime counters `deaths` (or the game's death statistic when higher), `duelsWon`, `duelsLost` (counted since the addon recorded them). Each field missing = unknown |
 | `chars.*.riding` | CF-53, optional: riding skill 0, 75 or 150 (missing = unknown) |
 | `removed` | Only in relayed copies: characters the owner dropped, with the time |
@@ -196,7 +197,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 | `feed.*.*.sessions` | CF-53: `{ from, to }` server times, at most 20, under the day the session started; `to` moves every 5 minutes and at logout, a login within 5 minutes continues the session |
 | `feed.*.*.groups` | CF-53: `{ [guid] = true }` characters of the selected community you were in a group with |
 | `feed.*.*.pvpKills` | CF-55b: one entry per honorable kill, at most 100 (`kills` keeps counting past it): `t`, `zone`, `name` (the victim's full name from the honor message; missing for a kill only the counter showed), `lvl` (-1 skull), `myLvl`, `class` and `race` tokens, `rank` (number), `solo`, `bg`. Victim fields come from the honor message or from what was seen of that player (target, mouseover, nameplate) in the 10 minutes before; each is missing when unknown. Received: tokens checked (`^%u+$`, `^%a+$`), levels -1 to 100, rank 0 to 14 |
-| `goals` | CF-56, optional: the sender's Doomsday goals. `days` (the last 7 Doomsday days) and `weeks` (this and last week), each `{ set, swapped = { [id] = originalId }, done = { [id] = time }, at }`; `streak`, `best`, `pool` (the pool version), `reset` (seconds after realm midnight). Always sent (CF-58); `false` from an older client or a missing field = nothing sent, the stored goals stay |
+| `goals` | CF-56, optional: the sender's Doomsday goals. `days` (the last 7 Doomsday days) and `weeks` (this and last week), each `{ set, swapped = { [id] = originalId }, done = { [id] = time }, at, pool }` (`pool`, CF-69, optional: the pool version the set was drawn in, a number ≥ 1; missing = the sender's `pool`, then 1); `streak`, `best`, `pool` (the pool version), `reset` (seconds after realm midnight). Always sent (CF-58); `false` from an older client or a missing field = nothing sent, the stored goals stay |
 | `feed.*.*.duels` | CF-52: `{ t, won, vs }`, at most 50, every duel of that character; `vs` = the opponent's full name as the game gives it (never split) |
 
 Not in a record: zone, online status and current level of community characters: those come live from the
@@ -229,6 +230,24 @@ The receiver checks the runs like the file (`PlannedRuns.validate`) and keeps th
 newer than its own and at most 5 minutes ahead of server time; then it sends a HELLO with the new `ru`. Over
 the community every `battleTag` is left out. Not sent during an encounter, a keystone or a PvP match
 (`Instance.messagingRestricted`, V70): tried again 30 s later.
+
+### SCHED and SCHEDREQ (CF-68, the Doomsday mission schedule)
+
+```json
+{ "t": "SCHEDREQ", "pv": 1 }
+{ "t": "SCHED", "pv": 1, "v": 1794300000,
+  "days": { "20768": { "daily": ["d.quests10", "d.level", "d.dungeon"], "skirmish": "p.loneWolf" } },
+  "weeks": { "2968": { "weekly": ["w.days5", "w.zones5", "w.newProf"], "bounty": "b.spree10" } } }
+```
+
+The site's schedule as `CF_RUNS.doomsday.schedule` gives it (docs/DOOMSDAY.md "Schedule from the site"), after
+the receiver's check. A HELLO whose `ds` is newer than ours gets `SCHEDREQ` (at most once per target and `ds` per
+60 s), answered with `SCHED` (at most once per target and `v` per 60 s). The receiver checks it like the file
+(`Goals.cleanMissionSchedule`: day and week windows, ids, lists of exactly 3) and keeps it when `v` is newer than its own and
+at most 5 minutes ahead of server time; then it sends a HELLO with the new `ds`. A `{ v }` without days and weeks
+with a newer `v` clears the older one; `days` and `weeks` are left out when empty. No BattleTags in it, so the same over Battle.net and the community. Not sent during an
+encounter, a keystone or a PvP match (`Instance.messagingRestricted`, V70): tried again 30 s later. Older clients
+send no `ds`, so they are never asked, and they ignore `SCHED` and `SCHEDREQ` (rule 8): they show the normal draw.
 
 ### RUNANSWER (CF-47, an answer to a run)
 
@@ -286,6 +305,9 @@ Every receiver keeps it as a Pending `ask` item with the asker's `item` id, `at`
 | A REQ arrives | RECORD | That peer only |
 | A HELLO shows older or newer planned runs (`ru`, CF-46) | RUNS or RUNREQ | That peer only |
 | Newer planned runs were accepted | HELLO, 5 s debounced | Everyone |
+| A HELLO shows a newer mission schedule (`ds`, CF-68) | SCHEDREQ | That peer only |
+| A SCHEDREQ arrives | SCHED | That peer only |
+| A newer mission schedule was accepted | HELLO, 5 s debounced | Everyone |
 | A message stays incomplete for 3 s | MISS | Its sender only |
 | Logout | BYE | Community peers |
 | `/cf sync` | HELLO (forced) | Everyone online |
@@ -338,7 +360,8 @@ The version bumps only when a synced field of the character you are on really ch
 - Activity feed: per day and character, the entry with the newer `at` stays; on an equal `at` the stored one
   (CF-52: a copy relayed by an older client lacks the newer fields).
 - `chars.*.pvp` (CF-52): only the expected fields, whole numbers ≥ 0, rank at most 14.
-- `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 5 per day and 4 per week, 7 days and 2 weeks, numbers ≥ 0. Ids of a newer pool are kept.
+- `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 5 per day and 4 per week, 7 days and 2 weeks, numbers ≥ 0, an entry's `pool` ≥ 1 (else dropped). Ids of a newer pool are kept.
+- `SCHED` (CF-68): as the runs file's schedule (`Goals.cleanMissionSchedule`); a newer `v`, at most 5 minutes ahead, replaces ours whole. Days and weeks already recorded in `goals` keep their set.
 - All received text is cleaned: color, link and texture codes removed; names, feed sizes and days capped.
 
 **Keys:** a Battle.net record that shows an `aid` merges an earlier `aid:` entry of the same account into

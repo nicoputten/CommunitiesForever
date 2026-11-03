@@ -84,19 +84,25 @@ local function goalsDone(newly, weekly)
       if state.today.done[id] then doneDailies = doneDailies + 1 end
     end
   end
+  -- CF-69: each goal's points in the pool version of its day or week.
+  local dayPool, weekPool = ns.Doomsday.entryPool(state.today), ns.Doomsday.entryPool(state.thisWeek)
   for _, id in ipairs(newly or {}) do
     local g = ns.Doomsday.goal(id)
+    local points = ns.Doomsday.pointsFor(id, dayPool)
     if id == "hunt" then
-      say(ns.DoomsdayView.huntDoneLine(state.hunts and state.hunts[1], currentCharName()))
+      say(ns.DoomsdayView.huntDoneLine(state.hunts and state.hunts[1], currentCharName(), points))
     elseif g and g.slot == "daily" then
-      say(ns.DoomsdayView.dailyDoneLine(g.text, doneDailies, dailies))
+      say(ns.DoomsdayView.dailyDoneLine(g.text, doneDailies, dailies, points))
     elseif g and g.slot == "skirmish" then
-      say(ns.DoomsdayView.skirmishDoneLine(g.text))
+      say(ns.DoomsdayView.skirmishDoneLine(g.text, points))
     end
   end
   for _, id in ipairs(weekly or {}) do
     local g = ns.Doomsday.goal(id)
-    if g then say(ns.DoomsdayView.weeklyDoneLine(g.text, g.slot == "bounty" and "pvp" or "pve")) end
+    if g then
+      say(ns.DoomsdayView.weeklyDoneLine(g.text, g.slot == "bounty" and "pvp" or "pve",
+        ns.Doomsday.pointsFor(id, weekPool)))
+    end
   end
   crown(state)
   swaps(state)

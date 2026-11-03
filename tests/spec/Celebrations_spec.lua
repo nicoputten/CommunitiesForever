@@ -34,6 +34,13 @@ describe("Celebrations (CF-67)", function()
       assert.are.equal("today", m.view)
     end)
 
+    it("the goal's own points in the day's pool version (CF-69)", function()
+      local day = { set = { "d.campfire", "d.level", "d.dungeon" }, done = { ["d.campfire"] = 1 }, pool = 2 }
+      assert.are.equal("+1", C.goalMoments({ newly = { "d.campfire" }, today = day })[1].points)
+      day.pool = nil
+      assert.are.equal("+5", C.goalMoments({ newly = { "d.campfire" }, today = day })[1].points)
+    end)
+
     it("a Skirmish: red edge, its name before the colon", function()
       local m = C.goalMoments({ newly = { "p.loneWolf" }, today = today({ ["p.loneWolf"] = 1 }),
                                 dayLabel = "Wed evening", duelDone = true })[1]

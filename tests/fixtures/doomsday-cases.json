@@ -1,7 +1,7 @@
 {
- "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
+ "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
  "version": 1,
- "poolVersion": 1,
+ "poolVersion": 2,
  "epoch": 20761,
  "defaultReset": 68400,
  "salts": {
@@ -28,15 +28,44 @@
    "d.zone5",
    "d.zones3",
    "d.shared3",
+   "d.questUp",
+   "d.groupQuest",
+   "d.classQuest",
+   "d.questBurst",
+   "d.accept5",
    "d.level",
    "d.altLevel",
    "d.ilvl",
+   "d.levels2",
+   "d.dingDungeon",
+   "d.dingFriend",
+   "d.lowbie",
    "d.dungeon",
    "d.dungeonFriend",
    "d.bosses3",
+   "d.dungeonQuest",
+   "d.speedRun",
+   "d.newDungeon",
+   "d.dungeons2",
    "d.skill5",
    "d.secondary",
-   "d.chars2"
+   "d.cookSkill5",
+   "d.fishSkill5",
+   "d.aidSkill5",
+   "d.chars2",
+   "d.chars3",
+   "d.switchUp",
+   "d.dustOff",
+   "d.questTogether",
+   "d.chatHello",
+   "d.sameZone",
+   "d.online3",
+   "d.carry",
+   "d.roam4",
+   "d.newZone",
+   "d.nostalgia",
+   "d.daredevil",
+   "d.crossSea"
   ],
   "weekly": [
    "w.days3",
@@ -53,7 +82,19 @@
    "w.skill25",
    "w.cap",
    "w.newProf",
-   "w.ilvl3"
+   "w.groupQuests3",
+   "w.questUp5",
+   "w.duoQuests5",
+   "w.levels5",
+   "w.levelDays3",
+   "w.dungeons5",
+   "w.bosses15",
+   "w.newDungeons2",
+   "w.days7",
+   "w.chatDays5",
+   "w.mentor3",
+   "w.newZones3",
+   "w.roam10"
   ],
   "skirmish": [
    "p.frontLine",
@@ -67,7 +108,2874 @@
    "b.duels3",
    "b.days5"
   ],
-  "hunt": "off until the pool version that verifies victim race and class (the cases under hunts are for that version)"
+  "hunt": "off until the pool version that verifies victim race and class (the cases under hunts are for that version)",
+  "catalogue": [
+   {
+    "id": "d.quests10",
+    "slot": "daily",
+    "category": "quests",
+    "since": 1,
+    "points": 3,
+    "text": "Finish 10 quests",
+    "short": "10 quests"
+   },
+   {
+    "id": "d.quests20",
+    "slot": "daily",
+    "category": "quests",
+    "since": 1,
+    "points": 5,
+    "text": "Finish 20 quests",
+    "short": "20 quests"
+   },
+   {
+    "id": "d.zone5",
+    "slot": "daily",
+    "category": "quests",
+    "since": 1,
+    "points": 3,
+    "text": "Finish 5 quests in one zone",
+    "short": "5 in zone"
+   },
+   {
+    "id": "d.zones3",
+    "slot": "daily",
+    "category": "quests",
+    "since": 1,
+    "points": 3,
+    "text": "Hand in quests in 3 zones",
+    "short": "3 zones"
+   },
+   {
+    "id": "d.shared3",
+    "slot": "daily",
+    "category": "quests",
+    "since": 1,
+    "points": 3,
+    "text": "Share 3 quests with a friend",
+    "short": "3 shared",
+    "can": "friendQuestLog",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.questUp",
+    "slot": "daily",
+    "category": "quests",
+    "since": 2,
+    "points": 3,
+    "text": "Finish a quest above the character's level",
+    "short": "Hard quest",
+    "can": "below60",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.groupQuest",
+    "slot": "daily",
+    "category": "quests",
+    "since": 2,
+    "points": 3,
+    "text": "Finish a group quest",
+    "short": "Group Q"
+   },
+   {
+    "id": "d.classQuest",
+    "slot": "daily",
+    "category": "quests",
+    "since": 2,
+    "points": 3,
+    "text": "Finish a class quest",
+    "short": "Class Q"
+   },
+   {
+    "id": "d.questBurst",
+    "slot": "daily",
+    "category": "quests",
+    "since": 2,
+    "points": 3,
+    "text": "Hand in 3 quests within 10 minutes",
+    "short": "Quick 3"
+   },
+   {
+    "id": "d.accept5",
+    "slot": "daily",
+    "category": "quests",
+    "since": 2,
+    "points": 3,
+    "text": "Take on 5 new quests",
+    "short": "Take 5"
+   },
+   {
+    "id": "d.level",
+    "slot": "daily",
+    "category": "levels",
+    "since": 1,
+    "points": 3,
+    "text": "Gain a level",
+    "short": "Level",
+    "can": "below60",
+    "fallback": [
+     "d.quests20"
+    ]
+   },
+   {
+    "id": "d.altLevel",
+    "slot": "daily",
+    "category": "levels",
+    "since": 1,
+    "points": 3,
+    "text": "Gain a level on an alt",
+    "short": "Alt level",
+    "can": "altBelow60",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.ilvl",
+    "slot": "daily",
+    "category": "levels",
+    "since": 1,
+    "points": 3,
+    "text": "Raise an item level",
+    "short": "Item level",
+    "can": "ilvlReadable",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.cleanLevel",
+    "slot": "daily",
+    "category": "levels",
+    "points": 3,
+    "text": "Gain a level without dying",
+    "short": "Clean lvl",
+    "can": "below60",
+    "fallback": [
+     "d.quests20"
+    ]
+   },
+   {
+    "id": "d.levels2",
+    "slot": "daily",
+    "category": "levels",
+    "since": 2,
+    "points": 5,
+    "text": "Gain 2 levels",
+    "short": "2 levels",
+    "can": "below60",
+    "fallback": [
+     "d.quests20"
+    ]
+   },
+   {
+    "id": "d.dingDungeon",
+    "slot": "daily",
+    "category": "levels",
+    "since": 2,
+    "points": 3,
+    "text": "Gain a level inside a dungeon",
+    "short": "Deep ding",
+    "can": "below60Dungeon",
+    "fallback": [
+     "d.level"
+    ]
+   },
+   {
+    "id": "d.dingFriend",
+    "slot": "daily",
+    "category": "levels",
+    "since": 2,
+    "points": 3,
+    "text": "Gain a level in a group with a friend",
+    "short": "Duo ding",
+    "can": "below60",
+    "fallback": [
+     "d.groupFriend"
+    ]
+   },
+   {
+    "id": "d.lowbie",
+    "slot": "daily",
+    "category": "levels",
+    "since": 2,
+    "points": 3,
+    "text": "Gain a level on a character below 20",
+    "short": "Lowbie",
+    "can": "below20",
+    "fallback": [
+     "d.altLevel"
+    ]
+   },
+   {
+    "id": "d.dungeon",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 1,
+    "points": 5,
+    "text": "Run a dungeon",
+    "short": "Dungeon",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.dungeonFriend",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 1,
+    "points": 5,
+    "text": "Run a dungeon with a friend",
+    "short": "Group run",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.bosses3",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 1,
+    "points": 5,
+    "text": "Defeat 3 dungeon bosses",
+    "short": "3 bosses",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.dungeonQuest",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 2,
+    "points": 3,
+    "text": "Hand in a dungeon quest",
+    "short": "Dungeon Q",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.cleanRun",
+    "slot": "daily",
+    "category": "dungeons",
+    "points": 5,
+    "text": "Run a dungeon without dying",
+    "short": "Clean run",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.speedRun",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 2,
+    "points": 5,
+    "text": "Defeat 3 bosses of one dungeon within 45 minutes",
+    "short": "Speed run",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.newDungeon",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 2,
+    "points": 5,
+    "text": "Run a dungeon new to the character",
+    "short": "Fresh run",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.dungeons2",
+    "slot": "daily",
+    "category": "dungeons",
+    "since": 2,
+    "points": 5,
+    "text": "Run 2 dungeons",
+    "short": "2 dungeons",
+    "can": "dungeonInRange",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.skill5",
+    "slot": "daily",
+    "category": "crafts",
+    "since": 1,
+    "points": 3,
+    "text": "Earn 5 profession skill points",
+    "short": "Skills",
+    "can": "hasProfession",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.secondary",
+    "slot": "daily",
+    "category": "crafts",
+    "since": 1,
+    "points": 3,
+    "text": "Raise Cooking, First Aid or Fishing",
+    "short": "Secondary"
+   },
+   {
+    "id": "d.craft5",
+    "slot": "daily",
+    "category": "crafts",
+    "points": 3,
+    "text": "Craft 5 items",
+    "short": "Craft 5",
+    "can": "anyProfession",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.gather10",
+    "slot": "daily",
+    "category": "crafts",
+    "points": 3,
+    "text": "Gather 10 herbs, ore or leather",
+    "short": "Gather 10",
+    "can": "hasGathering",
+    "fallback": [
+     "d.skill5"
+    ]
+   },
+   {
+    "id": "d.newRecipe",
+    "slot": "daily",
+    "category": "crafts",
+    "points": 3,
+    "text": "Learn a new recipe",
+    "short": "Recipe",
+    "can": "anyProfession",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.craftGreen",
+    "slot": "daily",
+    "category": "crafts",
+    "points": 3,
+    "text": "Craft something uncommon or better",
+    "short": "Fine craft",
+    "can": "hasCraftingProfession",
+    "fallback": [
+     "d.craft5"
+    ]
+   },
+   {
+    "id": "d.cook5",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 3,
+    "text": "Cook 5 meals",
+    "short": "Cook 5",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.cook15",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 5,
+    "text": "Cook 15 dishes",
+    "short": "Cook 15",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.cookSkill5",
+    "slot": "daily",
+    "category": "cooking",
+    "since": 2,
+    "points": 3,
+    "text": "Raise Cooking by 5 points",
+    "short": "Cooking +5",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.cookKinds3",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 3,
+    "text": "Cook 3 different dishes",
+    "short": "3 dishes",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.campfire",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 1,
+    "text": "Light a campfire",
+    "short": "Campfire",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.campfireBuff",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 3,
+    "text": "Sit at a campfire fed with 3 or more items",
+    "short": "Cozy fire"
+   },
+   {
+    "id": "d.eatOwn",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 3,
+    "text": "Eat a dish cooked that day",
+    "short": "Home meal",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.cookRecipe",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 3,
+    "text": "Learn a cooking recipe",
+    "short": "New dish",
+    "can": "hasCooking",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.feedFriend",
+    "slot": "daily",
+    "category": "cooking",
+    "points": 3,
+    "text": "Give a friend a dish cooked by an own character",
+    "short": "Feed pal",
+    "can": "hasCooking",
+    "fallback": [
+     "d.trade"
+    ]
+   },
+   {
+    "id": "d.fish20",
+    "slot": "daily",
+    "category": "fishing",
+    "points": 3,
+    "text": "Catch 20 fish",
+    "short": "20 fish",
+    "can": "hasFishing",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.fishZones",
+    "slot": "daily",
+    "category": "fishing",
+    "points": 3,
+    "text": "Fish in 2 zones",
+    "short": "Fish spots",
+    "can": "hasFishing",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.fish50",
+    "slot": "daily",
+    "category": "fishing",
+    "points": 5,
+    "text": "Catch 50 fish",
+    "short": "50 fish",
+    "can": "hasFishing",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.fishSkill5",
+    "slot": "daily",
+    "category": "fishing",
+    "since": 2,
+    "points": 3,
+    "text": "Raise Fishing by 5 points",
+    "short": "Fishing +5",
+    "can": "hasFishing",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.fishKinds3",
+    "slot": "daily",
+    "category": "fishing",
+    "points": 3,
+    "text": "Catch 3 kinds of fish",
+    "short": "Fish kinds",
+    "can": "hasFishing",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.fishFriend",
+    "slot": "daily",
+    "category": "fishing",
+    "points": 3,
+    "text": "Fish in a group with a friend",
+    "short": "Fish buddy",
+    "can": "hasFishing",
+    "fallback": [
+     "d.groupFriend"
+    ]
+   },
+   {
+    "id": "d.fishNight",
+    "slot": "daily",
+    "category": "fishing",
+    "points": 3,
+    "text": "Fish at night",
+    "short": "Night fish",
+    "can": "hasFishing",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.bandage3",
+    "slot": "daily",
+    "category": "firstaid",
+    "points": 3,
+    "text": "Make 3 bandages",
+    "short": "Bandages",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.bandageUp",
+    "slot": "daily",
+    "category": "firstaid",
+    "points": 3,
+    "text": "Use a bandage",
+    "short": "Bandage up",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.bandage10",
+    "slot": "daily",
+    "category": "firstaid",
+    "points": 3,
+    "text": "Make 10 bandages",
+    "short": "10 bandage",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.bandageUse3",
+    "slot": "daily",
+    "category": "firstaid",
+    "points": 3,
+    "text": "Use 3 bandages",
+    "short": "Bandage x3",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.bandageFriend",
+    "slot": "daily",
+    "category": "firstaid",
+    "points": 3,
+    "text": "Bandage a friend",
+    "short": "Medic",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.groupFriend"
+    ]
+   },
+   {
+    "id": "d.aidSkill5",
+    "slot": "daily",
+    "category": "firstaid",
+    "since": 2,
+    "points": 3,
+    "text": "Raise First Aid by 5 points",
+    "short": "Aid +5",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.bandageKinds2",
+    "slot": "daily",
+    "category": "firstaid",
+    "points": 3,
+    "text": "Make 2 kinds of bandages",
+    "short": "2 bandages",
+    "can": "hasFirstAid",
+    "fallback": [
+     "d.secondary"
+    ]
+   },
+   {
+    "id": "d.chars2",
+    "slot": "daily",
+    "category": "play",
+    "since": 1,
+    "points": 1,
+    "text": "Play 2 characters",
+    "short": "2 chars",
+    "can": "chars2",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.chars3",
+    "slot": "daily",
+    "category": "play",
+    "since": 2,
+    "points": 3,
+    "text": "Play 3 characters",
+    "short": "Play 3",
+    "can": "chars3",
+    "fallback": [
+     "d.chars2"
+    ]
+   },
+   {
+    "id": "d.switchUp",
+    "slot": "daily",
+    "category": "play",
+    "since": 2,
+    "points": 3,
+    "text": "Play a character not played the day before",
+    "short": "Switch up",
+    "can": "chars2",
+    "fallback": [
+     "d.quests10"
+    ]
+   },
+   {
+    "id": "d.dustOff",
+    "slot": "daily",
+    "category": "play",
+    "since": 2,
+    "points": 3,
+    "text": "Play a character after a week away",
+    "short": "Dust off",
+    "can": "idle7",
+    "fallback": [
+     "d.chars2"
+    ]
+   },
+   {
+    "id": "d.earlyBird",
+    "slot": "daily",
+    "category": "play",
+    "points": 3,
+    "text": "Early bird: play before 09:00",
+    "short": "Early bird"
+   },
+   {
+    "id": "d.nightOwl",
+    "slot": "daily",
+    "category": "play",
+    "points": 3,
+    "text": "Night owl: play after 23:00",
+    "short": "Night owl"
+   },
+   {
+    "id": "d.session1h",
+    "slot": "daily",
+    "category": "play",
+    "points": 5,
+    "text": "Play a 1-hour session",
+    "short": "1h session"
+   },
+   {
+    "id": "d.deathless",
+    "slot": "daily",
+    "category": "play",
+    "points": 5,
+    "text": "Play an hour without dying",
+    "short": "No deaths"
+   },
+   {
+    "id": "d.jump100",
+    "slot": "daily",
+    "category": "play",
+    "points": 1,
+    "text": "Jump 100 times",
+    "short": "100 jumps"
+   },
+   {
+    "id": "d.groupFriend",
+    "slot": "daily",
+    "category": "social",
+    "points": 3,
+    "text": "Group up with a friend",
+    "short": "Group up"
+   },
+   {
+    "id": "d.trade",
+    "slot": "daily",
+    "category": "social",
+    "points": 3,
+    "text": "Trade with a friend",
+    "short": "Trade"
+   },
+   {
+    "id": "d.questTogether",
+    "slot": "daily",
+    "category": "social",
+    "since": 2,
+    "points": 3,
+    "text": "Hand in a quest in a group with a friend",
+    "short": "Duo quest"
+   },
+   {
+    "id": "d.chatHello",
+    "slot": "daily",
+    "category": "social",
+    "since": 2,
+    "points": 1,
+    "text": "Say something in the community chat",
+    "short": "Chat"
+   },
+   {
+    "id": "d.sameZone",
+    "slot": "daily",
+    "category": "social",
+    "since": 2,
+    "points": 3,
+    "text": "Be in the same zone as a friend",
+    "short": "Neighbours",
+    "can": "friends1",
+    "fallback": [
+     "d.chars2"
+    ]
+   },
+   {
+    "id": "d.online3",
+    "slot": "daily",
+    "category": "social",
+    "since": 2,
+    "points": 3,
+    "text": "Be online with 3 friends at once",
+    "short": "Full house",
+    "can": "friends3",
+    "fallback": [
+     "d.groupFriend"
+    ]
+   },
+   {
+    "id": "d.carry",
+    "slot": "daily",
+    "category": "social",
+    "since": 2,
+    "points": 3,
+    "text": "Group with a friend 5+ levels lower",
+    "short": "Carry"
+   },
+   {
+    "id": "d.whisper",
+    "slot": "daily",
+    "category": "social",
+    "points": 1,
+    "text": "Whisper a friend",
+    "short": "Whisper"
+   },
+   {
+    "id": "d.wave",
+    "slot": "daily",
+    "category": "social",
+    "points": 1,
+    "text": "Wave at a friend",
+    "short": "Wave"
+   },
+   {
+    "id": "d.groupPic",
+    "slot": "daily",
+    "category": "social",
+    "points": 1,
+    "text": "Take a screenshot in a group with a friend",
+    "short": "Group pic"
+   },
+   {
+    "id": "d.discover1",
+    "slot": "daily",
+    "category": "exploration",
+    "points": 3,
+    "text": "Discover a new place",
+    "short": "Discover"
+   },
+   {
+    "id": "d.discover3",
+    "slot": "daily",
+    "category": "exploration",
+    "points": 3,
+    "text": "Discover 3 new places",
+    "short": "Discover 3"
+   },
+   {
+    "id": "d.roam4",
+    "slot": "daily",
+    "category": "exploration",
+    "since": 2,
+    "points": 3,
+    "text": "Visit 4 zones",
+    "short": "Roam 4"
+   },
+   {
+    "id": "d.newZone",
+    "slot": "daily",
+    "category": "exploration",
+    "since": 2,
+    "points": 3,
+    "text": "Set foot in a zone new to the character",
+    "short": "New zone"
+   },
+   {
+    "id": "d.places10",
+    "slot": "daily",
+    "category": "exploration",
+    "points": 3,
+    "text": "Visit 10 places within zones",
+    "short": "10 places"
+   },
+   {
+    "id": "d.swim",
+    "slot": "daily",
+    "category": "exploration",
+    "points": 3,
+    "text": "Swim for 2 minutes",
+    "short": "Swim"
+   },
+   {
+    "id": "d.nostalgia",
+    "slot": "daily",
+    "category": "exploration",
+    "since": 2,
+    "points": 3,
+    "text": "Visit a zone far below the character's level",
+    "short": "Nostalgia",
+    "can": "level30",
+    "fallback": [
+     "d.roam4"
+    ]
+   },
+   {
+    "id": "d.daredevil",
+    "slot": "daily",
+    "category": "exploration",
+    "since": 2,
+    "points": 3,
+    "text": "Visit a zone above the character's level",
+    "short": "Daredevil",
+    "can": "below60",
+    "fallback": [
+     "d.roam4"
+    ]
+   },
+   {
+    "id": "d.flight",
+    "slot": "daily",
+    "category": "travel",
+    "points": 1,
+    "text": "Take a flight",
+    "short": "Fly"
+   },
+   {
+    "id": "d.newFlight",
+    "slot": "daily",
+    "category": "travel",
+    "points": 3,
+    "text": "Learn a new flight path",
+    "short": "New flight"
+   },
+   {
+    "id": "d.hearth",
+    "slot": "daily",
+    "category": "travel",
+    "points": 1,
+    "text": "Use the hearthstone",
+    "short": "Hearth"
+   },
+   {
+    "id": "d.bind",
+    "slot": "daily",
+    "category": "travel",
+    "points": 1,
+    "text": "Make a new inn home",
+    "short": "New home"
+   },
+   {
+    "id": "d.ride",
+    "slot": "daily",
+    "category": "travel",
+    "points": 3,
+    "text": "Ride a mount for 15 minutes",
+    "short": "Ride",
+    "can": "riding",
+    "fallback": [
+     "d.roam4"
+    ]
+   },
+   {
+    "id": "d.crossSea",
+    "slot": "daily",
+    "category": "travel",
+    "since": 2,
+    "points": 3,
+    "text": "Cross the sea",
+    "short": "Cross sea"
+   },
+   {
+    "id": "d.summoned",
+    "slot": "daily",
+    "category": "travel",
+    "points": 3,
+    "text": "Get summoned by a friend",
+    "short": "Summoned"
+   },
+   {
+    "id": "d.kills30",
+    "slot": "daily",
+    "category": "combat",
+    "points": 3,
+    "text": "Defeat 30 enemies",
+    "short": "30 foes",
+    "can": "below60",
+    "fallback": [
+     "d.bosses3"
+    ]
+   },
+   {
+    "id": "d.elite",
+    "slot": "daily",
+    "category": "combat",
+    "points": 3,
+    "text": "Defeat an elite",
+    "short": "Elite",
+    "can": "below60",
+    "fallback": [
+     "d.bosses3"
+    ]
+   },
+   {
+    "id": "d.rareMob",
+    "slot": "daily",
+    "category": "combat",
+    "points": 5,
+    "text": "Defeat a rare enemy",
+    "short": "Rare hunt",
+    "can": "below60",
+    "fallback": [
+     "d.bosses3"
+    ]
+   },
+   {
+    "id": "d.bigFoe",
+    "slot": "daily",
+    "category": "combat",
+    "points": 3,
+    "text": "Defeat an enemy 3+ levels higher",
+    "short": "Big foe",
+    "can": "below60",
+    "fallback": [
+     "d.bosses3"
+    ]
+   },
+   {
+    "id": "d.streak20",
+    "slot": "daily",
+    "category": "combat",
+    "points": 5,
+    "text": "Defeat 20 enemies without dying",
+    "short": "Streak 20",
+    "can": "below60",
+    "fallback": [
+     "d.bosses3"
+    ]
+   },
+   {
+    "id": "d.weaponSkill",
+    "slot": "daily",
+    "category": "combat",
+    "points": 3,
+    "text": "Raise a weapon skill 5 times",
+    "short": "Weapon +5"
+   },
+   {
+    "id": "d.duoHunt",
+    "slot": "daily",
+    "category": "combat",
+    "points": 3,
+    "text": "Defeat 15 enemies in a group with a friend",
+    "short": "Duo hunt",
+    "can": "below60",
+    "fallback": [
+     "d.dungeonFriend"
+    ]
+   },
+   {
+    "id": "d.rare",
+    "slot": "daily",
+    "category": "loot",
+    "points": 3,
+    "text": "Loot a rare item",
+    "short": "Rare loot"
+   },
+   {
+    "id": "d.green5",
+    "slot": "daily",
+    "category": "loot",
+    "points": 3,
+    "text": "Loot 5 uncommon items",
+    "short": "5 greens"
+   },
+   {
+    "id": "d.reward",
+    "slot": "daily",
+    "category": "loot",
+    "points": 3,
+    "text": "Earn an uncommon quest reward",
+    "short": "Reward"
+   },
+   {
+    "id": "d.coins10",
+    "slot": "daily",
+    "category": "loot",
+    "points": 3,
+    "text": "Loot coins from 10 enemies",
+    "short": "10 purses"
+   },
+   {
+    "id": "d.equipNew",
+    "slot": "daily",
+    "category": "loot",
+    "points": 3,
+    "text": "Wear a new find",
+    "short": "New gear"
+   },
+   {
+    "id": "d.treasure",
+    "slot": "daily",
+    "category": "loot",
+    "points": 3,
+    "text": "Open a treasure chest",
+    "short": "Treasure"
+   },
+   {
+    "id": "d.vendorSale",
+    "slot": "daily",
+    "category": "economy",
+    "points": 1,
+    "text": "Sell to a merchant",
+    "short": "Sell"
+   },
+   {
+    "id": "d.vendorBuy",
+    "slot": "daily",
+    "category": "economy",
+    "points": 1,
+    "text": "Buy from a merchant",
+    "short": "Shopping"
+   },
+   {
+    "id": "d.auctionPost",
+    "slot": "daily",
+    "category": "economy",
+    "points": 3,
+    "text": "Put an item up for auction",
+    "short": "Auction"
+   },
+   {
+    "id": "d.auctionBuy",
+    "slot": "daily",
+    "category": "economy",
+    "points": 3,
+    "text": "Buy at the auction house",
+    "short": "Bargain"
+   },
+   {
+    "id": "d.mailFriend",
+    "slot": "daily",
+    "category": "economy",
+    "points": 1,
+    "text": "Send mail to a friend",
+    "short": "Mail pal"
+   },
+   {
+    "id": "d.mailbox",
+    "slot": "daily",
+    "category": "economy",
+    "points": 1,
+    "text": "Empty the mailbox",
+    "short": "Mailbox"
+   },
+   {
+    "id": "d.profit",
+    "slot": "daily",
+    "category": "economy",
+    "points": 3,
+    "text": "End a session in profit",
+    "short": "In profit"
+   },
+   {
+    "id": "d.repair",
+    "slot": "daily",
+    "category": "care",
+    "points": 1,
+    "text": "Repair gear",
+    "short": "Repair"
+   },
+   {
+    "id": "d.trainer",
+    "slot": "daily",
+    "category": "care",
+    "points": 3,
+    "text": "Learn a spell at a trainer",
+    "short": "Train",
+    "can": "below60",
+    "fallback": [
+     "d.repair"
+    ]
+   },
+   {
+    "id": "d.wellFed",
+    "slot": "daily",
+    "category": "care",
+    "points": 1,
+    "text": "Get Well Fed",
+    "short": "Well fed"
+   },
+   {
+    "id": "d.buffFriend",
+    "slot": "daily",
+    "category": "care",
+    "points": 3,
+    "text": "Buff a friend",
+    "short": "Buff pal",
+    "can": "canBuff",
+    "fallback": [
+     "d.groupFriend"
+    ]
+   },
+   {
+    "id": "d.restock",
+    "slot": "daily",
+    "category": "care",
+    "points": 1,
+    "text": "Restock food or drink",
+    "short": "Restock"
+   },
+   {
+    "id": "d.bank",
+    "slot": "daily",
+    "category": "care",
+    "points": 1,
+    "text": "Visit the bank",
+    "short": "Bank"
+   },
+   {
+    "id": "d.tidyBags",
+    "slot": "daily",
+    "category": "care",
+    "points": 1,
+    "text": "Clear the junk from the bags",
+    "short": "Tidy bags"
+   },
+   {
+    "id": "d.potion",
+    "slot": "daily",
+    "category": "care",
+    "points": 1,
+    "text": "Drink a potion",
+    "short": "Potion"
+   },
+   {
+    "id": "d.scrolls10",
+    "slot": "daily",
+    "category": "care",
+    "points": 3,
+    "text": "Read 10 scrolls on the own character",
+    "short": "10 scrolls"
+   },
+   {
+    "id": "w.days3",
+    "slot": "weekly",
+    "category": "play",
+    "since": 1,
+    "points": 5,
+    "text": "Play on 3 days",
+    "short": "3 days"
+   },
+   {
+    "id": "w.days5",
+    "slot": "weekly",
+    "category": "play",
+    "since": 1,
+    "points": 10,
+    "text": "Play on 5 days",
+    "short": "5 days"
+   },
+   {
+    "id": "w.chars3",
+    "slot": "weekly",
+    "category": "play",
+    "since": 1,
+    "points": 5,
+    "text": "Play 3 different characters",
+    "short": "3 chars",
+    "can": "chars3",
+    "fallback": [
+     "w.days3"
+    ]
+   },
+   {
+    "id": "w.levels3",
+    "slot": "weekly",
+    "category": "levels",
+    "since": 1,
+    "points": 10,
+    "text": "Gain 3 levels",
+    "short": "3 levels",
+    "can": "below60",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.altLevels2",
+    "slot": "weekly",
+    "category": "levels",
+    "since": 1,
+    "points": 10,
+    "text": "Gain 2 levels on an alt",
+    "short": "Alt 2 lvls",
+    "can": "altBelow60",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.quests50",
+    "slot": "weekly",
+    "category": "quests",
+    "since": 1,
+    "points": 10,
+    "text": "Finish 50 quests",
+    "short": "50 quests"
+   },
+   {
+    "id": "w.zones5",
+    "slot": "weekly",
+    "category": "quests",
+    "since": 1,
+    "points": 5,
+    "text": "Hand in quests in 5 zones",
+    "short": "5 zones"
+   },
+   {
+    "id": "w.dungeons3",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 1,
+    "points": 10,
+    "text": "Run 3 dungeons",
+    "short": "3 dungeons",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.dungeonsDiff3",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 1,
+    "points": 10,
+    "text": "Run 3 different dungeons",
+    "short": "3 distinct",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.dungeonFriends2",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 1,
+    "points": 10,
+    "text": "Run a dungeon with 2 friends",
+    "short": "Trio run",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.fullClear",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 1,
+    "points": 10,
+    "text": "Clear every boss of a dungeon",
+    "short": "Full clear",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.skill25",
+    "slot": "weekly",
+    "category": "crafts",
+    "since": 1,
+    "points": 10,
+    "text": "Earn 25 profession skill points",
+    "short": "25 skill",
+    "can": "hasProfession",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.cap",
+    "slot": "weekly",
+    "category": "crafts",
+    "since": 1,
+    "points": 10,
+    "text": "Reach a profession cap",
+    "short": "Skill cap",
+    "can": "professionBelow300",
+    "fallback": [
+     "w.skill25",
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.newProf",
+    "slot": "weekly",
+    "category": "crafts",
+    "since": 1,
+    "points": 5,
+    "text": "Learn a new profession",
+    "short": "New prof"
+   },
+   {
+    "id": "w.ilvl3",
+    "slot": "weekly",
+    "category": "levels",
+    "since": 1,
+    "text": "Raise an item level by 3",
+    "short": "Item lvl+3",
+    "can": "ilvlReadable",
+    "fallback": [
+     "w.quests50"
+    ],
+    "retired": 2
+   },
+   {
+    "id": "w.friends3",
+    "slot": "weekly",
+    "category": "social",
+    "points": 10,
+    "text": "Group with 3 different friends",
+    "short": "3 friends"
+   },
+   {
+    "id": "w.rare5",
+    "slot": "weekly",
+    "category": "loot",
+    "points": 10,
+    "text": "Loot 5 rare items",
+    "short": "5 rares"
+   },
+   {
+    "id": "w.session2h",
+    "slot": "weekly",
+    "category": "play",
+    "points": 5,
+    "text": "Play a 2-hour session",
+    "short": "2h session"
+   },
+   {
+    "id": "w.discover5",
+    "slot": "weekly",
+    "category": "exploration",
+    "points": 5,
+    "text": "Discover 5 new places",
+    "short": "Discover 5"
+   },
+   {
+    "id": "w.craftTrade",
+    "slot": "weekly",
+    "category": "crafts",
+    "points": 10,
+    "text": "Craft something and trade it",
+    "short": "Craft gift",
+    "can": "hasCraftingProfession",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.groupQuests3",
+    "slot": "weekly",
+    "category": "quests",
+    "since": 2,
+    "points": 10,
+    "text": "Finish 3 group quests",
+    "short": "3 group Q"
+   },
+   {
+    "id": "w.questUp5",
+    "slot": "weekly",
+    "category": "quests",
+    "since": 2,
+    "points": 10,
+    "text": "Finish 5 quests above the character's level",
+    "short": "5 hard Q",
+    "can": "below60",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.duoQuests5",
+    "slot": "weekly",
+    "category": "quests",
+    "since": 2,
+    "points": 10,
+    "text": "Hand in 5 quests in a group with a friend",
+    "short": "Duo quests"
+   },
+   {
+    "id": "w.blueGear",
+    "slot": "weekly",
+    "category": "levels",
+    "points": 10,
+    "text": "Put on a blue item new to the character",
+    "short": "Blue gear",
+    "can": "level15",
+    "fallback": [
+     "w.levels3"
+    ]
+   },
+   {
+    "id": "w.levels5",
+    "slot": "weekly",
+    "category": "levels",
+    "since": 2,
+    "points": 15,
+    "text": "Gain 5 levels",
+    "short": "5 levels",
+    "can": "below60",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.levelDays3",
+    "slot": "weekly",
+    "category": "levels",
+    "since": 2,
+    "points": 10,
+    "text": "Gain a level on 3 days",
+    "short": "Level days",
+    "can": "below60",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.dungeons5",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 2,
+    "points": 15,
+    "text": "Run 5 dungeons",
+    "short": "5 dungeons",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.bosses15",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 2,
+    "points": 15,
+    "text": "Defeat 15 dungeon bosses",
+    "short": "15 bosses",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.newDungeons2",
+    "slot": "weekly",
+    "category": "dungeons",
+    "since": 2,
+    "points": 10,
+    "text": "Run 2 dungeons new to the character",
+    "short": "New dgn x2",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.cleanRuns2",
+    "slot": "weekly",
+    "category": "dungeons",
+    "points": 10,
+    "text": "Run 2 dungeons without dying",
+    "short": "2 clean",
+    "can": "dungeonInRange",
+    "fallback": [
+     "w.quests50"
+    ]
+   },
+   {
+    "id": "w.gather50",
+    "slot": "weekly",
+    "category": "crafts",
+    "points": 10,
+    "text": "Gather 50 herbs, ore or leather",
+    "short": "Gather 50",
+    "can": "hasGathering",
+    "fallback": [
+     "w.skill25"
+    ]
+   },
+   {
+    "id": "w.recipes3",
+    "slot": "weekly",
+    "category": "crafts",
+    "points": 10,
+    "text": "Learn 3 new recipes",
+    "short": "3 recipes",
+    "can": "anyProfession",
+    "fallback": [
+     "w.newProf"
+    ]
+   },
+   {
+    "id": "w.cook30",
+    "slot": "weekly",
+    "category": "cooking",
+    "points": 10,
+    "text": "Cook 30 dishes",
+    "short": "Cook 30",
+    "can": "hasCooking",
+    "fallback": [
+     "w.skill25"
+    ]
+   },
+   {
+    "id": "w.cookKinds5",
+    "slot": "weekly",
+    "category": "cooking",
+    "points": 10,
+    "text": "Cook 5 different dishes",
+    "short": "5 dishes",
+    "can": "hasCooking",
+    "fallback": [
+     "w.skill25"
+    ]
+   },
+   {
+    "id": "w.fish100",
+    "slot": "weekly",
+    "category": "fishing",
+    "points": 15,
+    "text": "Catch 100 fish",
+    "short": "100 fish",
+    "can": "hasFishing",
+    "fallback": [
+     "w.skill25"
+    ]
+   },
+   {
+    "id": "w.fishZones4",
+    "slot": "weekly",
+    "category": "fishing",
+    "points": 10,
+    "text": "Fish in 4 zones",
+    "short": "Fish 4 zns",
+    "can": "hasFishing",
+    "fallback": [
+     "w.skill25"
+    ]
+   },
+   {
+    "id": "w.bandages20",
+    "slot": "weekly",
+    "category": "firstaid",
+    "points": 10,
+    "text": "Make 20 bandages",
+    "short": "20 bandage",
+    "can": "hasFirstAid",
+    "fallback": [
+     "w.skill25"
+    ]
+   },
+   {
+    "id": "w.days7",
+    "slot": "weekly",
+    "category": "play",
+    "since": 2,
+    "points": 15,
+    "text": "Play on all 7 days",
+    "short": "Every day"
+   },
+   {
+    "id": "w.dayAndNight",
+    "slot": "weekly",
+    "category": "play",
+    "points": 10,
+    "text": "Play before 09:00 and after 23:00",
+    "short": "Day+night"
+   },
+   {
+    "id": "w.deathless3h",
+    "slot": "weekly",
+    "category": "play",
+    "points": 15,
+    "text": "Play 3 hours without dying",
+    "short": "Iron 3h"
+   },
+   {
+    "id": "w.friendDays3",
+    "slot": "weekly",
+    "category": "social",
+    "points": 10,
+    "text": "Group with a friend on 3 days",
+    "short": "Duo days"
+   },
+   {
+    "id": "w.trades3",
+    "slot": "weekly",
+    "category": "social",
+    "points": 10,
+    "text": "Trade with 3 different friends",
+    "short": "3 trades",
+    "can": "friends3",
+    "fallback": [
+     "w.friends3"
+    ]
+   },
+   {
+    "id": "w.chatDays5",
+    "slot": "weekly",
+    "category": "social",
+    "since": 2,
+    "points": 5,
+    "text": "Chat in the community on 5 days",
+    "short": "Chatty"
+   },
+   {
+    "id": "w.mentor3",
+    "slot": "weekly",
+    "category": "social",
+    "since": 2,
+    "points": 10,
+    "text": "Group with a lower friend on 3 days",
+    "short": "Mentor"
+   },
+   {
+    "id": "w.newZones3",
+    "slot": "weekly",
+    "category": "exploration",
+    "since": 2,
+    "points": 10,
+    "text": "Set foot in 3 zones new to the character",
+    "short": "3 new zns"
+   },
+   {
+    "id": "w.roam10",
+    "slot": "weekly",
+    "category": "exploration",
+    "since": 2,
+    "points": 10,
+    "text": "Visit 10 zones",
+    "short": "Roam 10"
+   },
+   {
+    "id": "w.flightPaths3",
+    "slot": "weekly",
+    "category": "travel",
+    "points": 10,
+    "text": "Learn 3 flight paths",
+    "short": "3 paths"
+   },
+   {
+    "id": "w.kills200",
+    "slot": "weekly",
+    "category": "combat",
+    "points": 15,
+    "text": "Defeat 200 enemies",
+    "short": "200 foes",
+    "can": "below60",
+    "fallback": [
+     "w.dungeons3"
+    ]
+   },
+   {
+    "id": "w.elites10",
+    "slot": "weekly",
+    "category": "combat",
+    "points": 10,
+    "text": "Defeat 10 elites",
+    "short": "10 elites",
+    "can": "below60",
+    "fallback": [
+     "w.dungeons3"
+    ]
+   },
+   {
+    "id": "w.weapon25",
+    "slot": "weekly",
+    "category": "combat",
+    "points": 10,
+    "text": "Raise weapon skills 25 times",
+    "short": "Weapon +25"
+   },
+   {
+    "id": "w.potions5",
+    "slot": "weekly",
+    "category": "care",
+    "points": 5,
+    "text": "Drink 5 potions",
+    "short": "5 potions"
+   },
+   {
+    "id": "p.frontLine",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "since": 1,
+    "points": 3,
+    "text": "Front line: 5 kills in the zone of the day",
+    "short": "Front line",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.punchUp",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Punch up: 2 kills on players 3+ levels above",
+    "short": "Punch up"
+   },
+   {
+    "id": "p.loneWolf",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "since": 1,
+    "points": 3,
+    "text": "Lone wolf: 3 solo kills",
+    "short": "Lone wolf"
+   },
+   {
+    "id": "p.untouchable",
+    "slot": "skirmish",
+    "category": "streaks",
+    "needs": "kill",
+    "since": 1,
+    "points": 5,
+    "text": "Untouchable: 5 kills without dying",
+    "short": "Untouched"
+   },
+   {
+    "id": "p.variety",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Variety: kills of 3 different classes",
+    "short": "Variety"
+   },
+   {
+    "id": "p.ranked",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 5,
+    "text": "Ranked bounty: kill a ranked player",
+    "short": "Ranked"
+   },
+   {
+    "id": "p.flex",
+    "slot": "skirmish",
+    "category": "taunts",
+    "needs": "emote",
+    "points": 1,
+    "text": "Flex at a player of the other faction",
+    "short": "Flex"
+   },
+   {
+    "id": "p.boo",
+    "slot": "skirmish",
+    "category": "taunts",
+    "needs": "emote",
+    "points": 1,
+    "text": "Boo a player of the other faction",
+    "short": "Boo"
+   },
+   {
+    "id": "p.punchUp5",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 5,
+    "text": "Kill an enemy player 5+ levels higher",
+    "short": "Punch up 5"
+   },
+   {
+    "id": "p.punchDown5",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kill an enemy player 5+ levels lower",
+    "short": "Punch down"
+   },
+   {
+    "id": "p.kills10",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 3,
+    "text": "Score 10 kills",
+    "short": "10 kills",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.zones3",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kills in 3 zones",
+    "short": "3 zones",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.double",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 5,
+    "text": "Double: 2 kills within 10 seconds",
+    "short": "Double",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.triple",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 5,
+    "text": "Triple: 3 kills within 2 minutes",
+    "short": "Triple",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.firstBlood",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 5,
+    "text": "First blood: the first kill among friends",
+    "short": "1st blood",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.nightRaid",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 3,
+    "text": "Night raid: a kill after 23:00 realm time",
+    "short": "Night raid",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.enemyLand",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kill in the enemy's territory",
+    "short": "Enemy land",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.homeGuard",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 3,
+    "text": "Defend home: a kill in friendly territory",
+    "short": "Home guard",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.contested",
+    "slot": "skirmish",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kills in contested land",
+    "short": "Contested",
+    "can": "level20",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.skull",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 5,
+    "text": "Slay a skull",
+    "short": "Skull"
+   },
+   {
+    "id": "p.fairFight",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Fair fight: a kill at the same level",
+    "short": "Fair fight"
+   },
+   {
+    "id": "p.mirror",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Mirror match: kill an enemy of the same class",
+    "short": "Mirror"
+   },
+   {
+    "id": "p.races3",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kills of 3 different races",
+    "short": "3 races"
+   },
+   {
+    "id": "p.healers",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Silence the healers: 2 healer-class kills",
+    "short": "Healers"
+   },
+   {
+    "id": "p.casters3",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kill 3 casters",
+    "short": "Casters"
+   },
+   {
+    "id": "p.melee3",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kill 3 fighters",
+    "short": "Fighters"
+   },
+   {
+    "id": "p.nemesis",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Nemesis: kill the same player twice",
+    "short": "Nemesis"
+   },
+   {
+    "id": "p.rankUp",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 5,
+    "text": "Kill a player of higher rank",
+    "short": "Outrank"
+   },
+   {
+    "id": "p.huntPair",
+    "slot": "skirmish",
+    "category": "targets",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kills of 2 Hunt combinations",
+    "short": "Hunt pair"
+   },
+   {
+    "id": "p.streak3",
+    "slot": "skirmish",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 3,
+    "text": "Three in a row without dying",
+    "short": "Streak 3"
+   },
+   {
+    "id": "p.revenge",
+    "slot": "skirmish",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 5,
+    "text": "Revenge: kill the player who killed you",
+    "short": "Revenge"
+   },
+   {
+    "id": "p.flagHour",
+    "slot": "skirmish",
+    "category": "streaks",
+    "needs": "flag",
+    "points": 3,
+    "text": "Stay flagged for 30 minutes without dying",
+    "short": "Flagged 30"
+   },
+   {
+    "id": "p.comeback",
+    "slot": "skirmish",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 3,
+    "text": "Comeback: a kill within 5 minutes of a death",
+    "short": "Comeback"
+   },
+   {
+    "id": "p.noDeath",
+    "slot": "skirmish",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 5,
+    "text": "Score 3 kills and never die that day",
+    "short": "Spotless"
+   },
+   {
+    "id": "p.duoKills",
+    "slot": "skirmish",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 3,
+    "text": "Kills with a friend",
+    "short": "Duo kills",
+    "can": "friends1",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.trioKills",
+    "slot": "skirmish",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 5,
+    "text": "Kills with 2 friends",
+    "short": "Trio kills",
+    "can": "friends1",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.escort",
+    "slot": "skirmish",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 3,
+    "text": "Escort: a kill grouped with a lower friend",
+    "short": "Escort",
+    "can": "friends1",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.avenge",
+    "slot": "skirmish",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 5,
+    "text": "Avenge a friend",
+    "short": "Avenge",
+    "can": "friends1",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.pack",
+    "slot": "skirmish",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 3,
+    "text": "Pack hunt: a kill in a full party",
+    "short": "Pack hunt"
+   },
+   {
+    "id": "p.duelWin",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 1,
+    "text": "Win a duel",
+    "short": "Duel win"
+   },
+   {
+    "id": "p.duelStranger",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 3,
+    "text": "Beat a stranger in a duel",
+    "short": "Stranger"
+   },
+   {
+    "id": "p.duels3",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 3,
+    "text": "Fight 3 duels",
+    "short": "3 duels"
+   },
+   {
+    "id": "p.duelUp",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 5,
+    "text": "Win a duel against a higher level",
+    "short": "Duel up",
+    "can": "friends1",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.duelClass",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 1,
+    "text": "Duel a friend of another class",
+    "short": "Class duel",
+    "can": "friends1",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.duelWins2",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 3,
+    "text": "Win 2 duels in a row",
+    "short": "2 in a row"
+   },
+   {
+    "id": "p.rematch",
+    "slot": "skirmish",
+    "category": "duels",
+    "needs": "duel",
+    "points": 3,
+    "text": "Rematch: beat the one who beat you",
+    "short": "Rematch"
+   },
+   {
+    "id": "p.bgPlay",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 3,
+    "text": "Play a battleground to the end",
+    "short": "BG played",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.bgWin",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 5,
+    "text": "Win a battleground",
+    "short": "BG win",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.bgKills5",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 3,
+    "text": "5 kills in a battleground",
+    "short": "BG kills 5",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.bgFriend",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 3,
+    "text": "A battleground with a friend",
+    "short": "BG buddy",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.bgFlag",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 5,
+    "text": "Capture a flag",
+    "short": "Flag cap",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.bgBase",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 3,
+    "text": "Assault or defend a base",
+    "short": "Base",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.bgTop",
+    "slot": "skirmish",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 5,
+    "text": "Top killer of the team in a battleground",
+    "short": "BG top",
+    "can": "level10",
+    "fallback": [
+     "p.loneWolf"
+    ]
+   },
+   {
+    "id": "p.salute",
+    "slot": "skirmish",
+    "category": "taunts",
+    "needs": "emote",
+    "points": 1,
+    "text": "Salute a worthy enemy",
+    "short": "Salute"
+   },
+   {
+    "id": "p.chicken",
+    "slot": "skirmish",
+    "category": "taunts",
+    "needs": "emote",
+    "points": 1,
+    "text": "Call an enemy a chicken",
+    "short": "Chicken"
+   },
+   {
+    "id": "p.bowKill",
+    "slot": "skirmish",
+    "category": "taunts",
+    "needs": "kill",
+    "points": 3,
+    "text": "Bow, then win",
+    "short": "Bow first"
+   },
+   {
+    "id": "p.flagUp",
+    "slot": "skirmish",
+    "category": "taunts",
+    "needs": "flag",
+    "points": 1,
+    "text": "Flag up for PvP",
+    "short": "Flag up"
+   },
+   {
+    "id": "b.zone25",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "since": 1,
+    "points": 10,
+    "text": "25 kills in the zone of the week",
+    "short": "Zone 25",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ],
+    "canFrom": 2
+   },
+   {
+    "id": "b.allClasses",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 15,
+    "text": "A kill of every enemy class",
+    "short": "Classes"
+   },
+   {
+    "id": "b.allRaces",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 10,
+    "text": "A kill of every enemy race",
+    "short": "Races"
+   },
+   {
+    "id": "b.ranked5",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 15,
+    "text": "5 kills on ranked players",
+    "short": "5 ranked"
+   },
+   {
+    "id": "b.kills50",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "since": 1,
+    "points": 10,
+    "text": "50 counted kills",
+    "short": "50 kills"
+   },
+   {
+    "id": "b.spree10",
+    "slot": "bounty",
+    "category": "streaks",
+    "needs": "kill",
+    "since": 1,
+    "points": 15,
+    "text": "A spree of 10",
+    "short": "Spree 10"
+   },
+   {
+    "id": "b.hunt3",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 10,
+    "text": "The Hunt done on 3 days",
+    "short": "3 hunts"
+   },
+   {
+    "id": "b.duels3",
+    "slot": "bounty",
+    "category": "duels",
+    "needs": "duel",
+    "since": 1,
+    "points": 5,
+    "text": "Duels with 3 different friends",
+    "short": "3 duels"
+   },
+   {
+    "id": "b.days5",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "since": 1,
+    "points": 10,
+    "text": "Kills on 5 days",
+    "short": "Kill days"
+   },
+   {
+    "id": "b.kills150",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 15,
+    "text": "150 counted kills",
+    "short": "150 kills",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.zones8",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 10,
+    "text": "Kills in 8 zones",
+    "short": "8 zones",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.nights3",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 10,
+    "text": "Night raids on 3 nights",
+    "short": "Nights x3",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.enemyLand25",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 10,
+    "text": "25 kills in the enemy's territory",
+    "short": "Invader",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.triples3",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 15,
+    "text": "3 triples",
+    "short": "3 triples",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.firstBlood3",
+    "slot": "bounty",
+    "category": "worldKills",
+    "needs": "kill",
+    "points": 10,
+    "text": "First blood on 3 days",
+    "short": "Blood x3",
+    "can": "level20",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.combos10",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 15,
+    "text": "10 different Hunt combinations",
+    "short": "10 combos"
+   },
+   {
+    "id": "b.punchUp10",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 10,
+    "text": "10 kills on players 3+ levels above",
+    "short": "Up x10"
+   },
+   {
+    "id": "b.skulls3",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 15,
+    "text": "Slay 3 skulls",
+    "short": "3 skulls"
+   },
+   {
+    "id": "b.fair10",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 10,
+    "text": "10 fair fights",
+    "short": "Fair x10"
+   },
+   {
+    "id": "b.nemesis",
+    "slot": "bounty",
+    "category": "targets",
+    "needs": "kill",
+    "points": 5,
+    "text": "Nemesis: the same player 3 times",
+    "short": "Nemesis x3"
+   },
+   {
+    "id": "b.solo20",
+    "slot": "bounty",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 10,
+    "text": "20 solo kills",
+    "short": "Solo 20"
+   },
+   {
+    "id": "b.untouchable3",
+    "slot": "bounty",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 10,
+    "text": "Untouchable on 3 days",
+    "short": "Untouch x3"
+   },
+   {
+    "id": "b.revenge3",
+    "slot": "bounty",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 10,
+    "text": "Revenge 3 times",
+    "short": "Revenge x3"
+   },
+   {
+    "id": "b.flagged3h",
+    "slot": "bounty",
+    "category": "streaks",
+    "needs": "flag",
+    "points": 5,
+    "text": "3 hours flagged for PvP",
+    "short": "Flagged 3h"
+   },
+   {
+    "id": "b.kd",
+    "slot": "bounty",
+    "category": "streaks",
+    "needs": "kill",
+    "points": 10,
+    "text": "More kills than deaths",
+    "short": "K over D"
+   },
+   {
+    "id": "b.duoKills15",
+    "slot": "bounty",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 10,
+    "text": "15 kills with friends",
+    "short": "Duo 15",
+    "can": "friends1",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.warband",
+    "slot": "bounty",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 10,
+    "text": "A warband of 3 friends",
+    "short": "Warband",
+    "can": "friends1",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.avenge3",
+    "slot": "bounty",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 15,
+    "text": "Avenge friends 3 times",
+    "short": "Avenge x3",
+    "can": "friends1",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.huntAll",
+    "slot": "bounty",
+    "category": "teamwork",
+    "needs": "kill",
+    "points": 10,
+    "text": "Every friend does the Hunt",
+    "short": "All hunt",
+    "can": "friends1",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.duelWins5",
+    "slot": "bounty",
+    "category": "duels",
+    "needs": "duel",
+    "points": 10,
+    "text": "Win 5 duels",
+    "short": "Duel wins"
+   },
+   {
+    "id": "b.duelAll",
+    "slot": "bounty",
+    "category": "duels",
+    "needs": "duel",
+    "points": 15,
+    "text": "Duel every friend",
+    "short": "Duel all",
+    "can": "friends1",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.duelDays4",
+    "slot": "bounty",
+    "category": "duels",
+    "needs": "duel",
+    "points": 5,
+    "text": "Duel on 4 days",
+    "short": "Duel days"
+   },
+   {
+    "id": "b.strangers3",
+    "slot": "bounty",
+    "category": "duels",
+    "needs": "duel",
+    "points": 10,
+    "text": "Beat 3 strangers in duels",
+    "short": "Strangers"
+   },
+   {
+    "id": "b.bgWins3",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 10,
+    "text": "Win 3 battlegrounds",
+    "short": "3 BG wins",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.bgEach",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 15,
+    "text": "Play every battleground",
+    "short": "Every BG",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.bgDays3",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 10,
+    "text": "Battlegrounds on 3 days",
+    "short": "BG days",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.bgKills30",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 10,
+    "text": "30 battleground kills",
+    "short": "BG kill 30",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.bgFlags3",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 15,
+    "text": "Capture 3 flags",
+    "short": "3 flags",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.bgBases5",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 10,
+    "text": "Take or hold 5 bases",
+    "short": "5 bases",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.bgFriends",
+    "slot": "bounty",
+    "category": "battlegrounds",
+    "needs": "bg",
+    "points": 15,
+    "text": "Win a battleground with 2 friends",
+    "short": "BG trio",
+    "can": "level10",
+    "fallback": [
+     "b.kills50"
+    ]
+   },
+   {
+    "id": "b.rankUp",
+    "slot": "bounty",
+    "category": "honor",
+    "needs": "kill",
+    "points": 15,
+    "text": "Rise a PvP rank",
+    "short": "Rank up"
+   },
+   {
+    "id": "b.skirmish5",
+    "slot": "bounty",
+    "category": "honor",
+    "needs": "kill",
+    "points": 10,
+    "text": "The Skirmish done on 5 days",
+    "short": "Skirmish 5"
+   },
+   {
+    "id": "b.taunts5",
+    "slot": "bounty",
+    "category": "taunts",
+    "needs": "emote",
+    "points": 5,
+    "text": "Taunt 5 enemies",
+    "short": "Taunts"
+   }
+  ]
  },
  "pick": [
   {
@@ -471,6 +3379,330 @@
      ],
      "skirmish": "p.untouchable"
     }
+   },
+   {
+    "pool": 2,
+    "day": 20758,
+    "expect": {
+     "dailies": [
+      "d.lowbie",
+      "d.groupQuest",
+      "d.cookSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20759,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.groupQuest",
+      "d.chatHello"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20760,
+    "expect": {
+     "dailies": [
+      "d.dungeonFriend",
+      "d.lowbie",
+      "d.skill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20761,
+    "expect": {
+     "dailies": [
+      "d.altLevel",
+      "d.quests20",
+      "d.dungeon"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20762,
+    "expect": {
+     "dailies": [
+      "d.nostalgia",
+      "d.chars2",
+      "d.questBurst"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20763,
+    "expect": {
+     "dailies": [
+      "d.dungeons2",
+      "d.sameZone",
+      "d.quests10"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20764,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.dustOff",
+      "d.fishSkill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20765,
+    "expect": {
+     "dailies": [
+      "d.questBurst",
+      "d.bosses3",
+      "d.dingDungeon"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20766,
+    "expect": {
+     "dailies": [
+      "d.online3",
+      "d.crossSea",
+      "d.cookSkill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20767,
+    "expect": {
+     "dailies": [
+      "d.sameZone",
+      "d.dustOff",
+      "d.roam4"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20768,
+    "expect": {
+     "dailies": [
+      "d.bosses3",
+      "d.daredevil",
+      "d.altLevel"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20769,
+    "expect": {
+     "dailies": [
+      "d.newDungeon",
+      "d.classQuest",
+      "d.skill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20770,
+    "expect": {
+     "dailies": [
+      "d.questUp",
+      "d.dingDungeon",
+      "d.chatHello"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20771,
+    "expect": {
+     "dailies": [
+      "d.dustOff",
+      "d.ilvl",
+      "d.dungeonQuest"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20772,
+    "expect": {
+     "dailies": [
+      "d.chatHello",
+      "d.dungeonFriend",
+      "d.daredevil"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20773,
+    "expect": {
+     "dailies": [
+      "d.lowbie",
+      "d.zones3",
+      "d.fishSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20774,
+    "expect": {
+     "dailies": [
+      "d.quests20",
+      "d.newZone",
+      "d.aidSkill5"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20775,
+    "expect": {
+     "dailies": [
+      "d.zones3",
+      "d.nostalgia",
+      "d.dingDungeon"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20776,
+    "expect": {
+     "dailies": [
+      "d.chars2",
+      "d.dungeonFriend",
+      "d.sameZone"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20777,
+    "expect": {
+     "dailies": [
+      "d.chars3",
+      "d.questBurst",
+      "d.cookSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20778,
+    "expect": {
+     "dailies": [
+      "d.dingDungeon",
+      "d.accept5",
+      "d.chatHello"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20779,
+    "expect": {
+     "dailies": [
+      "d.daredevil",
+      "d.ilvl",
+      "d.quests10"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20780,
+    "expect": {
+     "dailies": [
+      "d.crossSea",
+      "d.level",
+      "d.questTogether"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20781,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.classQuest",
+      "d.switchUp"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20791,
+    "expect": {
+     "dailies": [
+      "d.dungeonQuest",
+      "d.questBurst",
+      "d.newZone"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20821,
+    "expect": {
+     "dailies": [
+      "d.cookSkill5",
+      "d.lowbie",
+      "d.aidSkill5"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 2,
+    "day": 20900,
+    "expect": {
+     "dailies": [
+      "d.dungeon",
+      "d.shared3",
+      "d.sameZone"
+     ],
+     "skirmish": "p.frontLine"
+    }
    }
   ],
   "weeks": [
@@ -582,6 +3814,126 @@
       "w.days5"
      ],
      "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2966,
+    "expect": {
+     "weeklies": [
+      "w.chatDays5",
+      "w.quests50",
+      "w.days5"
+     ],
+     "bounty": "b.kills50"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2967,
+    "expect": {
+     "weeklies": [
+      "w.groupQuests3",
+      "w.chars3",
+      "w.altLevels2"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2968,
+    "expect": {
+     "weeklies": [
+      "w.mentor3",
+      "w.levels5",
+      "w.dungeonFriends2"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2969,
+    "expect": {
+     "weeklies": [
+      "w.newZones3",
+      "w.groupQuests3",
+      "w.chars3"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2970,
+    "expect": {
+     "weeklies": [
+      "w.dungeonsDiff3",
+      "w.days5",
+      "w.altLevels2"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2971,
+    "expect": {
+     "weeklies": [
+      "w.dungeons5",
+      "w.levels5",
+      "w.zones5"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2972,
+    "expect": {
+     "weeklies": [
+      "w.bosses15",
+      "w.days3",
+      "w.questUp5"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2973,
+    "expect": {
+     "weeklies": [
+      "w.levels3",
+      "w.zones5",
+      "w.dungeonFriends2"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 2980,
+    "expect": {
+     "weeklies": [
+      "w.bosses15",
+      "w.days3",
+      "w.roam10"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 2,
+    "week": 3000,
+    "expect": {
+     "weeklies": [
+      "w.chatDays5",
+      "w.fullClear",
+      "w.roam10"
+     ],
+     "bounty": "b.days5"
     }
    }
   ],
@@ -953,6 +4305,538 @@
      "w.zones5": "w.altLevels2"
     },
     "zone": "Felwood"
+   }
+  },
+  {
+   "note": "pool version 2: a fallback outside the pool (d.groupFriend) is still taken; a secondary skill without the profession falls back",
+   "pool": 2,
+   "day": 20766,
+   "situation": {
+    "chars": 2,
+    "below60": 1,
+    "altBelow60": 1,
+    "highest": 40,
+    "friends": 1,
+    "hasCooking": false
+   },
+   "expect": {
+    "set": [
+     "d.groupFriend",
+     "d.crossSea",
+     "d.secondary",
+     "p.frontLine"
+    ],
+    "swapped": {
+     "d.groupFriend": "d.online3",
+     "d.secondary": "d.cookSkill5"
+    },
+    "zone": "Arathi Highlands"
+   }
+  },
+  {
+   "note": "pool version 2 week: a fallback already taken moves on in pool version 2's order, past a goal that can't be done",
+   "pool": 2,
+   "week": 2968,
+   "situation": {
+    "chars": 2,
+    "below60": 0,
+    "altBelow60": 0,
+    "highest": 60,
+    "dungeonInRange": false,
+    "friends": 2
+   },
+   "expect": {
+    "set": [
+     "w.mentor3",
+     "w.quests50",
+     "w.skill25",
+     "b.days5"
+    ],
+    "swapped": {
+     "w.quests50": "w.levels5",
+     "w.skill25": "w.dungeonFriends2"
+    },
+    "zone": "Silithus"
+   }
+  }
+ ],
+ "scheduleCheck": [
+  {
+   "note": "a full day and a full week are kept as they are",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "the window: yesterday to 16 days ahead, last week to 3 weeks ahead",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20764": {
+      "skirmish": "p.loneWolf"
+     },
+     "20765": {
+      "skirmish": "p.loneWolf"
+     },
+     "20782": {
+      "skirmish": "p.loneWolf"
+     },
+     "20783": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2965": {
+      "bounty": "b.spree10"
+     },
+     "2966": {
+      "bounty": "b.spree10"
+     },
+     "2970": {
+      "bounty": "b.spree10"
+     },
+     "2971": {
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20765": {
+      "skirmish": "p.loneWolf"
+     },
+     "20782": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2966": {
+      "bounty": "b.spree10"
+     },
+     "2970": {
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "broken fields are dropped, the rest stays; a day left empty is dropped; unknown ids pass the check",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20767": {
+      "daily": [
+       "d.quests10",
+       "d.level"
+      ],
+      "skirmish": "p.loneWolf"
+     },
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.quests10",
+       "d.level"
+      ],
+      "skirmish": 7
+     },
+     "20769": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.x;y"
+      ],
+      "skirmish": "p.aVeryLongMissionIdThatIsTooLong"
+     },
+     "20770": {
+      "daily": [
+       "d.newer",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.newer",
+      "hunt": "NightElf:DRUID",
+      "zone": "Tanaris"
+     },
+     "20771.5": {
+      "skirmish": "p.loneWolf"
+     },
+     "abc": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf",
+       "w.cap"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20767": {
+      "skirmish": "p.loneWolf"
+     },
+     "20770": {
+      "daily": [
+       "d.newer",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.newer"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "only v: a valid, empty schedule (it clears an older one)",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {},
+    "weeks": {}
+   },
+   "expect": {
+    "v": 1794300000
+   }
+  },
+  {
+   "note": "no v: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "days": {
+     "20768": {
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": null
+  },
+  {
+   "note": "v not an integer: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": "1794300000",
+    "days": {}
+   },
+   "expect": null
+  },
+  {
+   "note": "days not a table: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": "20768"
+   },
+   "expect": null
+  },
+  {
+   "note": "not a table: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": "schedule",
+   "expect": null
+  }
+ ],
+ "scheduled": [
+  {
+   "note": "a day with all slots",
+   "day": 20768,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.quests10",
+     "d.level",
+     "d.dungeon"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "the day after a scheduled day keeps the normal draw, also a mission the scheduled day has",
+   "day": 20769,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.ilvl",
+     "d.dungeon",
+     "d.quests10"
+    ],
+    "skirmish": "p.untouchable"
+   }
+  },
+  {
+   "note": "one slot: the others are the normal draw",
+   "day": 20769,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20769": {
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.ilvl",
+     "d.dungeon",
+     "d.quests10"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "an unknown id: that whole list is the normal draw; an unknown Skirmish too",
+   "day": 20770,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20770": {
+      "daily": [
+       "d.quests20",
+       "d.newer",
+       "d.level"
+      ],
+      "skirmish": "p.newer"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.zones3",
+     "d.skill5",
+     "d.dungeonFriend"
+    ],
+    "skirmish": "p.frontLine"
+   }
+  },
+  {
+   "note": "a catalogue id that isn't in this pool version counts as unknown",
+   "day": 20770,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20770": {
+      "daily": [
+       "d.quests20",
+       "d.cleanLevel",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.zones3",
+     "d.skill5",
+     "d.dungeonFriend"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "a week with all slots",
+   "week": 2968,
+   "schedule": {
+    "v": 1794300000,
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "weeklies": [
+     "w.days5",
+     "w.zones5",
+     "w.newProf"
+    ],
+    "bounty": "b.spree10"
+   }
+  },
+  {
+   "note": "a week with only the Bounty",
+   "week": 2969,
+   "schedule": {
+    "v": 1794300000,
+    "weeks": {
+     "2969": {
+      "bounty": "b.days5"
+     }
+    }
+   },
+   "expect": {
+    "weeklies": [
+     "w.newProf",
+     "w.chars3",
+     "w.skill25"
+    ],
+    "bounty": "b.days5"
+   }
+  },
+  {
+   "note": "swaps apply on top of the scheduled set",
+   "day": 20768,
+   "situation": {
+    "below60": 0
+   },
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.level",
+       "d.quests10",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "set": [
+     "d.quests20",
+     "d.quests10",
+     "d.dungeon",
+     "p.loneWolf"
+    ],
+    "swapped": {
+     "d.quests20": "d.level"
+    }
+   }
+  },
+  {
+   "addonOnly": true,
+   "note": "a day that already has a recorded set keeps it when a schedule arrives later",
+   "day": 20768,
+   "recorded": [
+    "d.skill5",
+    "d.dungeonFriend",
+    "d.chars2",
+    "p.frontLine"
+   ],
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "set": [
+     "d.skill5",
+     "d.dungeonFriend",
+     "d.chars2",
+     "p.frontLine"
+    ]
    }
   }
  ],
@@ -3032,6 +6916,113 @@
    }
   }
  ],
+ "pointsPerGoal": [
+  {
+   "note": "a day of pool version 1 (an entry without pool, no goals.pool): flat, 5 per daily, Skirmish and Hunt",
+   "entry": {},
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2,
+    "d.quests20": 3,
+    "p.flex": 4,
+    "hunt": 5
+   },
+   "expect": {
+    "pool": 1,
+    "pve": 15,
+    "pvp": 10,
+    "goals": {
+     "d.quests10": 5,
+     "d.campfire": 5,
+     "d.quests20": 5,
+     "p.flex": 5,
+     "hunt": 5
+    }
+   }
+  },
+  {
+   "note": "a day of pool version 2: each goal's own size (1, 3 or 5); the Hunt stays 5",
+   "entry": {
+    "pool": 2
+   },
+   "goalsPool": 1,
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2,
+    "d.quests20": 3,
+    "p.flex": 4,
+    "hunt": 5
+   },
+   "expect": {
+    "pool": 2,
+    "pve": 9,
+    "pvp": 6,
+    "goals": {
+     "d.quests10": 3,
+     "d.campfire": 1,
+     "d.quests20": 5,
+     "p.flex": 1,
+     "hunt": 5
+    }
+   }
+  },
+  {
+   "note": "an entry without pool takes the friend's goals.pool",
+   "entry": {},
+   "goalsPool": 2,
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2
+   },
+   "expect": {
+    "pool": 2,
+    "pve": 4,
+    "pvp": 0,
+    "goals": {
+     "d.quests10": 3,
+     "d.campfire": 1
+    }
+   }
+  },
+  {
+   "note": "the entry's own pool wins over goals.pool: a day keeps the points of the pool it was drawn in",
+   "entry": {
+    "pool": 1
+   },
+   "goalsPool": 2,
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2
+   },
+   "expect": {
+    "pool": 1,
+    "pve": 10,
+    "pvp": 0,
+    "goals": {
+     "d.quests10": 5,
+     "d.campfire": 5
+    }
+   }
+  },
+  {
+   "note": "an unknown id (a newer pool) counts nothing in any pool version",
+   "entry": {
+    "pool": 2
+   },
+   "done": {
+    "x.newer": 1,
+    "d.campfire": 2
+   },
+   "expect": {
+    "pool": 2,
+    "pve": 1,
+    "pvp": 0,
+    "goals": {
+     "d.campfire": 1
+    }
+   }
+  }
+ ],
  "crown": [
   {
    "note": "crossed out = all 3 PvE dailies; the PvP goal doesn't count; the first by the last daily's time; equal times go to the lower friend key",
@@ -3279,6 +7270,94 @@
     ],
     "virgins": [
      "Cy#1003"
+    ]
+   }
+  },
+  {
+   "note": "CF-78: only a real fight (an honorable kill, a duel, a finished battleground: foughtEver) ranks on PvP; a friend with only PvP points from goals without a fight (emotes, the flag) stays a PvP Virgin with the points; foughtEver wins over the older killedEver, which is read when foughtEver is missing",
+   "friends": [
+    {
+     "friend": "Ada#1001",
+     "name": "Ada",
+     "pve": 10,
+     "pvp": 2,
+     "goals": 2,
+     "kills": 0,
+     "foughtEver": false
+    },
+    {
+     "friend": "Bob#1002",
+     "name": "Bob",
+     "pve": 10,
+     "pvp": 0,
+     "goals": 1,
+     "kills": 0,
+     "foughtEver": true
+    },
+    {
+     "friend": "Cy#1003",
+     "name": "Cy",
+     "pve": 5,
+     "pvp": 6,
+     "goals": 1,
+     "kills": 3,
+     "killedEver": true
+    },
+    {
+     "friend": "Mira#1004",
+     "name": "Mira",
+     "pve": 0,
+     "pvp": 1,
+     "goals": 1,
+     "kills": 0,
+     "foughtEver": false,
+     "killedEver": true
+    }
+   ],
+   "expect": {
+    "pve": [
+     {
+      "friend": "Ada#1001",
+      "rank": 1,
+      "points": 10,
+      "move": "new"
+     },
+     {
+      "friend": "Bob#1002",
+      "rank": 2,
+      "points": 10,
+      "move": "new"
+     },
+     {
+      "friend": "Cy#1003",
+      "rank": 3,
+      "points": 5,
+      "move": "new"
+     },
+     {
+      "friend": "Mira#1004",
+      "rank": 4,
+      "points": 0,
+      "move": "new"
+     }
+    ],
+    "pvp": [
+     {
+      "friend": "Cy#1003",
+      "rank": 1,
+      "points": 6,
+      "move": "new"
+     },
+     {
+      "friend": "Bob#1002",
+      "rank": 2,
+      "points": 0,
+      "move": "new"
+     }
+    ],
+    "virgins": [
+     "Ada#1001",
+     "Mira#1004"
     ]
    }
   }

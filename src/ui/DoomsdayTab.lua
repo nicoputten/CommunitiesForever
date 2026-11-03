@@ -340,7 +340,7 @@ local function today(parent, state, width)
   infoAt(parent, PAD + math.min(leftWidth - 20, textWidth(titleHolder, 300)) + 8, 16, SWAP_TIP)
   local top = y
   for _, g in ipairs(goals) do
-    local track, p = ns.Doomsday.goalPoints(g.id)
+    local track, p = ns.Doomsday.goalPoints(g.id, ns.Doomsday.entryPool(state.today)) -- CF-69: the day's pool
     g.track = g.id == "hunt" and "pvp" or track or trackOf(g.id)
     g.points = p and ("+" .. p) or ""
     y = y + todayRow(parent, g, y, leftWidth)
@@ -426,7 +426,8 @@ local function board(parent, width)
   -- Column labels.
   placeText(pools.tiny, parent, PAD, y + 4, NAME_WIDTH, "FRIEND", "faint")
   for i, c in ipairs(b.columns) do
-    placeText(pools.tiny, parent, colX(i), y + 4, colWidth - 6, c.short:upper(), "faint")
+    -- Centred over its goal boxes (Nico, 2026-11-03: the labels sat left of the boxes).
+    placeText(pools.tiny, parent, colX(i), y + 4, colWidth - 6, c.short:upper(), "faint", "CENTER")
   end
   placeText(pools.tiny, parent, colX(cols + 1), y + 4, POINTS_WIDTH, "POINTS", "faint")
   y = y + 24

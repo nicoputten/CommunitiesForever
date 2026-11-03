@@ -1,6 +1,7 @@
 -- DoomsdayTracker: the own Doomsday goals (CF-56). Counts facts per Doomsday day and week from what the own
 -- characters do (FeedTracker passes every feed event here; snapshot changes add item level and professions),
--- marks goals done as soon as Doomsday says so, and keeps the reset setting (runs file, friends' HELLO).
+-- marks goals done as soon as Doomsday says so, and keeps the reset setting (runs file, friends' HELLO) and the
+-- site's mission schedule (CF-68: runs file, friends' SCHED; global.doomsdaySchedule).
 -- Local: self.doomsday = { days = { [n] = facts }, weeks = { [w] = facts }, chars = { [guid] = { death, level } } }.
 -- Sent: self.goals = { days = { [n] = { set, swapped, done, at } }, weeks = { ... }, streak = { n, last }, best }.
 local _, ns = ...
@@ -11,6 +12,11 @@ local DoomsdayTracker = {}
 DoomsdayTracker.CHANGED = "CF_DOOMSDAY_CHANGED"
 -- CF-57: a kill of the current character, scored (Doomsday.scoreKills entry), for the chat line.
 DoomsdayTracker.KILL = "CF_DOOMSDAY_KILL"
+-- CF-70: an observation of a mission module's adapter (src/adapters/missions/*): (kind, obs). Forwarded to
+-- Goals.observe for today's and this week's facts when a mission module registered the kind.
+DoomsdayTracker.MISSION_EVENT = "CF_MISSION_EVENT"
+-- The mission adapters (ns.MissionEvents), watched at start, in TOC order.
+local MISSION_ADAPTERS = { "Quests", "Records", "Places", "Extended", "Items", "World", "Fights", "Battle" }
 
 local addonRef, events
 local cache -- CF-59: the last DoomsdayTracker.state(), see there
@@ -49,6 +55,41 @@ function DoomsdayTracker.receiveSetting(raw)
   global().settings.doomsdayReset = newer
   cache = nil
   return true
+end
+
+-- CF-68: the site's mission schedule in use (Goals.cleanMissionSchedule's shape), or nil.
+function DoomsdayTracker.missionSchedule()
+  return addonRef and global().doomsdaySchedule or nil
+end
+
+-- v of our mission schedule (0: none), for HELLO `ds`.
+function DoomsdayTracker.missionScheduleVersion()
+  local current = DoomsdayTracker.missionSchedule()
+  return current and current.v or 0
+end
+
+-- A mission schedule from the runs file or a friend's SCHED (untrusted): checked, and kept when its v is newer
+-- (at most 5 minutes ahead). Days and weeks already recorded keep their set. Returns true when it was taken.
+function DoomsdayTracker.receiveMissionSchedule(raw)
+  if not addonRef then return false end
+  local today = DoomsdayTracker.today()
+  local ok, incoming = pcall(ns.Goals.cleanMissionSchedule, raw, today, ns.Doomsday.week(today))
+  if not (ok and incoming) then return false end
+  if not ns.Goals.newerMissionSchedule(DoomsdayTracker.missionSchedule(), incoming, GetServerTime()) then
+    return false
+  end
+  global().doomsdaySchedule = incoming
+  cache = nil
+  return true
+end
+
+-- The stored schedule checked again (SavedVariables are a file too), without the days and weeks that are over.
+local function pruneMissionSchedule()
+  local stored = global().doomsdaySchedule
+  if stored == nil then return end
+  local today = DoomsdayTracker.today()
+  local ok, clean = pcall(ns.Goals.cleanMissionSchedule, stored, today, ns.Doomsday.week(today))
+  global().doomsdaySchedule = ok and clean or nil
 end
 
 -- { reset, offset, source } now.
@@ -107,6 +148,19 @@ local function friendQuestLog()
   return false
 end
 
+-- CF-70: other friends with a character in the selected community (nil: no members known yet).
+local function communityFriends()
+  local ok, members = pcall(ns.MemberTracker.members)
+  if not ok or type(members) ~= "table" or next(members) == nil then return nil end
+  local byGuid = owners()
+  local seen, n = {}, 0
+  for guid in pairs(members) do
+    local bt = byGuid[guid]
+    if bt and not seen[bt] then seen[bt], n = true, n + 1 end
+  end
+  return n
+end
+
 local function dungeonInRange()
   for _, c in pairs(own().chars or {}) do
     for _, d in ipairs(ns.Dungeons.LIST or {}) do
@@ -142,11 +196,13 @@ local function dayEntry(n)
   local entry = goals.days[n]
   if entry then return entry end
   local f = factsFor(facts.days, n)
-  local situation = ns.Goals.situation(own().chars, f.chars, friendQuestLog(), dungeonInRange())
-  local drawn = ns.Doomsday.goalsForDay(n, situation)
+  local situation = ns.Goals.situation(own().chars, f.chars, friendQuestLog(), dungeonInRange(),
+                                       { friends = communityFriends(), now = GetServerTime() })
+  local drawn = ns.Doomsday.goalsForDay(n, situation, nil, DoomsdayTracker.missionSchedule())
   local set = drawn.set
   if drawn.hunt then set[#set + 1] = "hunt" end
-  entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
+  -- CF-69: the pool version it was drawn in, so its points stay that version's.
+  entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime(), pool = ns.Doomsday.POOL_VERSION }
   goals.days[n] = entry
   newDay = started
   f.zone, f.hunts = drawn.zone, drawn.hunt
@@ -157,9 +213,11 @@ local function weekEntry(w)
   local facts, goals = store()
   local entry = goals.weeks[w]
   if entry then return entry end
-  local situation = ns.Goals.situation(own().chars, nil, friendQuestLog(), dungeonInRange())
-  local drawn = ns.Doomsday.goalsForWeek(w, situation)
-  entry = { set = drawn.set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
+  local situation = ns.Goals.situation(own().chars, nil, friendQuestLog(), dungeonInRange(),
+                                       { friends = communityFriends(), now = GetServerTime() })
+  local drawn = ns.Doomsday.goalsForWeek(w, situation, nil, DoomsdayTracker.missionSchedule())
+  entry = { set = drawn.set, swapped = drawn.swapped, done = {}, at = GetServerTime(),
+            pool = ns.Doomsday.POOL_VERSION }
   goals.weeks[w] = entry
   factsFor(facts.weeks, w).zone = drawn.zone
   return entry
@@ -348,6 +406,16 @@ local function fromGoalEvent(reason, a, b)
   end
 end
 
+-- CF-70: a mission module's observation (CF_MISSION_EVENT), for the kinds the modules registered.
+local function fromMission(kind, obs)
+  if type(kind) ~= "string" or not ns.Goals.isModuleKind(kind) then return false end
+  local copy = {}
+  for key, value in pairs(type(obs) == "table" and obs or {}) do copy[key] = value end
+  copy.kind = kind
+  observe(copy)
+  return true
+end
+
 -- An item one of the own characters created (PlayTracker's loot messages).
 function DoomsdayTracker.observeCrafted(id)
   if not addonRef then return end
@@ -471,22 +539,17 @@ function buildState(today, schedule)
     end
     return result
   end
-  -- This week's points: the days of this week and the week's goals, plus this week's kill points.
-  local done = {}
-  for n, e in pairs(goals.days) do
-    if ns.Doomsday.week(n) == week then
-      for id, at in pairs(e.done or {}) do done[n .. ":" .. id] = at end
-    end
-  end
+  -- This week's points: the days of this week and the week's goals, each in its own pool version (CF-69), plus
+  -- this week's kill points.
   local points = { pve = 0, pvp = 0 }
-  for key in pairs(done) do
-    local track, p = ns.Doomsday.goalPoints(key:match(":(.+)$"))
-    if track then points[track] = points[track] + p end
+  local function add(e)
+    local p = ns.Doomsday.points(e.done, 0, 0, ns.Doomsday.entryPool(e))
+    points.pve, points.pvp = points.pve + p.pve, points.pvp + p.pvp
   end
-  for id in pairs(wk.done) do
-    local track, p = ns.Doomsday.goalPoints(id)
-    if track then points[track] = points[track] + p end
+  for n, e in pairs(goals.days) do
+    if ns.Doomsday.week(n) == week then add(e) end
   end
+  add(wk)
   for _, s in ipairs(ns.Doomsday.scoreKills(wf.kills, schedule, community)) do
     if s.track == "pvp" then points.pvp = points.pvp + s.points end
   end
@@ -528,6 +591,13 @@ function DoomsdayTracker.start(addon)
   addonRef = addon
   store()
   DoomsdayTracker.receiveSetting(ns.RunsFile.doomsday())
+  -- CF-68: the site's mission schedule (the runs file's doomsday.schedule), after the setting it is dated by.
+  pruneMissionSchedule()
+  local okFile, raw = pcall(function()
+    local d = ns.RunsFile.doomsday()
+    return type(d) == "table" and d.schedule or nil
+  end)
+  if okFile then DoomsdayTracker.receiveMissionSchedule(raw) end
   events = events or LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.SelfTracker.UPDATED, function()
     fromSnapshot()
@@ -541,6 +611,13 @@ function DoomsdayTracker.start(addon)
     fromGoalEvent(reason, a, b)
     evaluate()
   end)
+  events:RegisterMessage(DoomsdayTracker.MISSION_EVENT, function(_, kind, obs)
+    if fromMission(kind, obs) then evaluate() end
+  end)
+  for _, name in ipairs(MISSION_ADAPTERS) do
+    local adapter = ns.MissionEvents and ns.MissionEvents[name]
+    if adapter and adapter.watch then adapter.watch(addon) end
+  end
   started = false
   fromSnapshot()
   evaluate()

@@ -297,7 +297,8 @@ function wowapi.install(opts)
     redeemed = {},         -- C_Club.RedeemTicket calls
     tooltipPostCalls = {}, -- TooltipDataProcessor.AddTooltipPostCall registrations
     -- state.talentNodes: class talent tree nodes { posX, ranks } (CF-18); nil = not available.
-    -- state.questLog: quest log entries { questID, title, isHeader, isHidden, tagID } (CF-19); nil = not available.
+    -- state.questLog: quest log entries { questID, title, isHeader, isHidden, tagID, level, suggestedGroup } (CF-19,
+    -- CF-71); nil = not available.
     atlases = { ["worldquest-icon-dungeon"] = true }, -- C_Texture.GetAtlasInfo knows these atlas names
     calendarTime = { year = 2026, month = 10, monthDay = 18 }, -- C_DateAndTime.GetCurrentCalendarTime (realm date)
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
@@ -417,8 +418,9 @@ function wowapi.install(opts)
       end,
       GetInfo = function(index)
         local e = state.questLog and state.questLog[index]
-        return e and { questID = e.isHeader and 0 or e.questID, title = e.title, level = 1,
-                       isHeader = e.isHeader or false, isHidden = e.isHidden or false }
+        return e and { questID = e.isHeader and 0 or e.questID, title = e.title, level = e.level,
+                       suggestedGroup = e.suggestedGroup, isHeader = e.isHeader or false,
+                       isHidden = e.isHidden or false }
       end,
       GetQuestTagInfo = function(questID)
         for _, e in ipairs(state.questLog or {}) do

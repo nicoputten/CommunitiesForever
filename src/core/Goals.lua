@@ -27,7 +27,8 @@ Goals.BOSSES = {
 
 -- Profession skill lines (as GetProfessionInfo gives them).
 local SECONDARY = { [185] = true, [129] = true, [356] = true } -- Cooking, First Aid, Fishing
-local FISHING = 356
+local FISHING, COOKING, FIRST_AID = 356, 185, 129
+local GATHERING = { [182] = true, [186] = true, [393] = true } -- Herbalism, Mining, Skinning
 local CRAFTING = { [171] = true, [164] = true, [333] = true, [202] = true, [165] = true, [197] = true }
 local CAPS = { [75] = true, [150] = true, [225] = true, [300] = true }
 
@@ -81,6 +82,79 @@ function Goals.newerSetting(a, b)
   return (b.offsetUntil or 0) > (a.offsetUntil or 0) and b or a
 end
 
+-- ===== The mission schedule from the site (CF-68) =====
+
+Goals.SCHEDULE_DAYS_AHEAD = 16  -- days from yesterday to 16 days ahead are kept
+Goals.SCHEDULE_WEEKS_AHEAD = 3  -- weeks from last week to 3 weeks ahead
+Goals.SCHEDULE_MAX_FUTURE = 300 -- a v further ahead of server time is broken data
+
+local function scheduleId(id)
+  if type(id) ~= "string" or #id < 1 or #id > Goals.MAX_ID or not id:match("^[%w%.]+$") then return nil end
+  return id
+end
+
+-- Exactly 3 valid, distinct ids, or nil.
+local function scheduleList(list)
+  if type(list) ~= "table" then return nil end
+  local result, seen = {}, {}
+  for k = 1, 3 do
+    local id = scheduleId(list[k])
+    if not id or seen[id] then return nil end
+    result[k], seen[id] = id, true
+  end
+  if list[4] ~= nil then return nil end
+  return result
+end
+
+-- An integer day or week number from a key ("20770" or 20770), or nil.
+local function scheduleKey(key)
+  if type(key) == "string" then
+    if not key:match("^%-?%d+$") then return nil end
+    return tonumber(key)
+  end
+  if type(key) == "number" and key == math.floor(key) then return key end
+  return nil
+end
+
+-- The entries of days or weeks in [from, to], each cleaned (nil: dropped); nil when none is left.
+local function cleanEntries(map, from, to, listField, oneField)
+  local result = {}
+  for key, raw in pairs(map or {}) do
+    local n = scheduleKey(key)
+    if n and n >= from and n <= to and type(raw) == "table" then
+      local e = { [listField] = scheduleList(raw[listField]), [oneField] = scheduleId(raw[oneField]) }
+      if next(e) then result[tostring(n)] = e end
+    end
+  end
+  return next(result) and result or nil
+end
+
+--[[ The mission schedule from the runs file, a friend's SCHED or SavedVariables, checked (docs/DOOMSDAY.md
+"Schedule from the site"; golden cases `scheduleCheck`): { v, days = { ["<n>"] = { daily = { id, id, id },
+skirmish } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty } } }. day, week: the reader's current
+Doomsday day and week. nil when raw isn't a table, v isn't an integer > 0, or days or weeks aren't tables. Days
+from day - 1 to day + 16 and weeks from week - 1 to week + 3 are kept; a list counts only as exactly 3 valid,
+distinct ids; any other field is dropped, and so is an entry left empty. days and weeks are left out when empty:
+{ v } alone is a valid schedule that clears an older one. Whether an id is in the pool is decided when it is
+used (Doomsday.scheduledDraw). ]]
+function Goals.cleanMissionSchedule(raw, day, week)
+  if type(raw) ~= "table" then return nil end
+  local v = raw.v
+  if type(v) ~= "number" or v ~= math.floor(v) or v <= 0 or v > 1e11 then return nil end
+  if raw.days ~= nil and type(raw.days) ~= "table" then return nil end
+  if raw.weeks ~= nil and type(raw.weeks) ~= "table" then return nil end
+  return { v = v,
+           days = cleanEntries(raw.days, day - 1, day + Goals.SCHEDULE_DAYS_AHEAD, "daily", "skirmish"),
+           weeks = cleanEntries(raw.weeks, week - 1, week + Goals.SCHEDULE_WEEKS_AHEAD, "weekly", "bounty") }
+end
+
+-- True when incoming (checked) replaces current: a newer v, at most 5 minutes ahead of server time.
+function Goals.newerMissionSchedule(current, incoming, now)
+  if not (incoming and incoming.v) then return false end
+  if now and incoming.v > now + Goals.SCHEDULE_MAX_FUTURE then return false end
+  return incoming.v > (current and current.v or 0)
+end
+
 --[[ The schedule to use at serverTime: { reset, offset, source }. offset: from the game clock (gameOffset, nil
 when not readable), else the setting's offset (offsetAfter once offsetUntil has passed), else CET/CEST. ]]
 function Goals.schedule(setting, gameOffset, serverTime)
@@ -112,6 +186,25 @@ local function push(list, item, max)
   if #list < max then list[#list + 1] = item end
 end
 
+-- The fields of Goals.newFacts and the ones the tracker adds: a mission module's facts never use them.
+local BUILT_IN = { zone = true, hunts = true }
+for key in pairs(Goals.newFacts()) do BUILT_IN[key] = true end
+
+-- CF-70: the observation kinds of the mission modules (src/core/missions/*).
+local KINDS = {}
+
+--[[ A mission module adds its own observation kind: fn(facts, obs, maxKills) adds obs to the facts of one day or
+week (in place), under the module's own key (e.g. facts.quests2), never a built-in one. A built-in kind of
+Goals.observe keeps its own handling. ]]
+function Goals.registerKind(kind, fn)
+  if type(kind) == "string" and type(fn) == "function" then KINDS[kind] = fn end
+end
+
+-- Whether a mission module registered this kind (DoomsdayTracker forwards only those).
+function Goals.isModuleKind(kind)
+  return KINDS[kind] ~= nil
+end
+
 --[[ Adds one observation to facts (in place). obs:
   { kind = "quest", zone } | { kind = "level", guid, count, alt (not your highest), clean (no death since the
   previous level) } | { kind = "run", name, bosses, friends } | { kind = "learned" }
@@ -121,6 +214,7 @@ end
   | { kind = "shared", count } | { kind = "hunt", day }
   | { kind = "fish", count } | { kind = "crafted", id } | { kind = "trade", friend, items = { itemID, ... } }
   | { kind = "discovery" } (CF-56's local trackers for goals that wait for data)
+  | any kind a mission module registered (Goals.registerKind)
 maxKills: the kill list's cap. ]]
 function Goals.observe(f, obs, maxKills)
   local k = obs.kind
@@ -211,6 +305,8 @@ function Goals.observe(f, obs, maxKills)
     end
   elseif k == "discovery" then
     f.discoveries = (f.discoveries or 0) + 1
+  elseif KINDS[k] then
+    KINDS[k](f, obs, maxKills)
   end
 end
 
@@ -221,12 +317,12 @@ local function count(map)
 end
 
 --[[ Facts as Doomsday.progress reads them. ctx = { schedule, community = { [name] = true }, zone, hunts,
-factions }. ]]
+factions }. The mission modules' facts pass through under their own keys (CF-70). ]]
 function Goals.progressFacts(f, ctx)
   ctx = ctx or {}
   local best = 0
   for _, n in pairs(f.altByChar or {}) do best = math.max(best, n) end
-  return {
+  local result = {
     quests = f.quests, sharedMax = f.sharedMax, levels = f.levels, altLevels = f.altLevels, altLevelsMax = best,
     cleanLevels = f.cleanLevels, ilvlGain = f.ilvlGain, runs = f.runs, skill = f.skill, secondary = f.secondary,
     learned = f.learned, capReached = f.capReached, chars = count(f.chars), days = count(f.days),
@@ -235,17 +331,33 @@ function Goals.progressFacts(f, ctx)
     hunts = ctx.hunts, huntDays = count(f.huntDays), duelFriends = count(f.duelFriends), factions = ctx.factions,
     fish = f.fish, trades = f.trades, craftTrade = f.craftTrade, discoveries = f.discoveries,
   }
+  for key, value in pairs(f) do
+    if not BUILT_IN[key] and result[key] == nil then result[key] = value end
+  end
+  return result
 end
 
 -- ===== The situation for swaps =====
 
+-- CF-70: classes with a buff they can cast on others (d.buffFriend).
+local BUFFERS = { DRUID = true, MAGE = true, PALADIN = true, PRIEST = true, SHAMAN = true, WARLOCK = true }
+Goals.IDLE_DAYS = 7 -- d.dustOff: a character not played for a week
+
 --[[ A friend's situation from their characters (Doomsday.goalsForDay): chars = { { level, ilvl, professions =
-{ [skillLine] = { rank, max } } } }, playedToday = { [guid] = true }, friendQuestLog (bool), dungeonInRange
-(bool, from the dungeon list). ]]
-function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange)
+{ [skillLine] = { rank, max } }, riding, classFile, lastPlayed } }, playedToday = { [guid] = true },
+friendQuestLog (bool), dungeonInRange (bool, from the dungeon list), extra (CF-70, optional) = { friends (other
+friends in the community, nil: unknown), now (server time, for idle7) }. riding, canBuff and idle7 stay nil
+(unknown, never swap) unless every character tells: riding needs a riding skill on each (CF-53), canBuff a class,
+idle7 the server time and a lastPlayed on each. ]]
+function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange, extra)
+  extra = extra or {}
   local s = { chars = 0, below60 = 0, altBelow60 = 0, ilvlReadable = false, hasProfession = false,
               hasFishing = false, hasCraftingProfession = false, professionBelow300 = false,
-              friendQuestLog = friendQuestLog == true, dungeonInRange = dungeonInRange ~= false }
+              friendQuestLog = friendQuestLog == true, dungeonInRange = dungeonInRange ~= false,
+              below20 = 0, hasCooking = false, hasFirstAid = false, hasGathering = false }
+  if type(extra.friends) == "number" then s.friends = extra.friends end
+  local now = type(extra.now) == "number" and extra.now or nil
+  local riding, buff, idle, idleUnknown = false, false, 0, now == nil
   local highestGuid
   for guid, c in pairs(chars or {}) do
     s.chars = s.chars + 1
@@ -258,8 +370,22 @@ function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange)
     for line, p in pairs(c.professions or {}) do
       if not SECONDARY[line] then s.hasProfession = true end
       if line == FISHING then s.hasFishing = true end
+      if line == COOKING then s.hasCooking = true end
+      if line == FIRST_AID then s.hasFirstAid = true end
+      if GATHERING[line] then s.hasGathering = true end
       if CRAFTING[line] then s.hasCraftingProfession = true end
       if (p.rank or 0) < 300 then s.professionBelow300 = true end
+    end
+    if riding ~= true then
+      if type(c.riding) ~= "number" then riding = nil elseif c.riding > 0 then riding = true end
+    end
+    if buff ~= true then
+      if type(c.classFile) ~= "string" then buff = nil elseif BUFFERS[c.classFile] then buff = true end
+    end
+    if type(c.lastPlayed) ~= "number" then
+      idleUnknown = true
+    elseif now and now - c.lastPlayed >= Goals.IDLE_DAYS * 86400 then
+      idle = idle + 1
     end
   end
   for guid, c in pairs(chars or {}) do
@@ -267,7 +393,10 @@ function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange)
       s.below60 = s.below60 + 1
       if guid ~= highestGuid then s.altBelow60 = s.altBelow60 + 1 end
     end
+    if (c.level or 0) < 20 then s.below20 = s.below20 + 1 end
   end
+  if idle == 0 and idleUnknown then idle = nil end
+  s.riding, s.canBuff, s.idle7 = riding, buff, idle
   return s
 end
 
@@ -319,7 +448,9 @@ local function cleanEntry(e, maxSet)
     local t = number(at, 0, 1e11)
     if cleanId(id) and t and count(done) < maxSet then done[id] = t end
   end
-  return { set = set, swapped = swapped, done = done, at = number(e.at, 0, 1e11) or 0 }
+  -- CF-69: the pool version the set was drawn in (optional; nil: goals.pool, then 1, Doomsday.entryPool).
+  local pool = number(e.pool, 1, 1e4)
+  return { set = set, swapped = swapped, done = done, at = number(e.at, 0, 1e11) or 0, pool = pool }
 end
 
 local function cleanMap(map, maxEntries, maxSet)
@@ -380,15 +511,24 @@ function Goals.merge(stored, incoming, maxAt)
   return result
 end
 
+-- CF-69: an own entry recorded before entries carried their pool was drawn in pool version 1 (the only one then).
+local function withPool(e)
+  if type(e) ~= "table" or e.pool then return e end
+  local copy = {}
+  for k, v in pairs(e) do copy[k] = v end
+  copy.pool = 1
+  return copy
+end
+
 -- The own goals as RECORD sends them: the last SEND_DAYS days up to today, this and last week.
 function Goals.outgoing(goals, today, week, pool, reset)
   if type(goals) ~= "table" then return nil end
   local days, weeks = {}, {}
   for n, e in pairs(goals.days or {}) do
-    if n > today - Goals.SEND_DAYS and n <= today then days[n] = e end
+    if n > today - Goals.SEND_DAYS and n <= today then days[n] = withPool(e) end
   end
   for w, e in pairs(goals.weeks or {}) do
-    if w >= week - 1 and w <= week then weeks[w] = e end
+    if w >= week - 1 and w <= week then weeks[w] = withPool(e) end
   end
   return { days = days, weeks = weeks, streak = goals.streak and goals.streak.n or 0, best = goals.best or 0,
            pool = pool, reset = reset }

@@ -29,11 +29,143 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V84 | Do `LOOT_OPENED`, `IsFishingLoot()` and `GetNumLootItems()` work for fishing? (CF-56: `d.fish20`) | Fish once: `/run print(IsFishingLoot, GetNumLootItems)` shows two functions; after a catch, `/cf doomsday` with `/dump CommunitiesForeverDB.global.self.doomsday` after `/reload` shows `fish` up by the items looted. | open |
 | V87 | Battle.net "Appear offline": does a friend's `BNSendGameData` still reach us while they appear offline, do `C_BattleNet.GetGameAccountInfoByID(senderID)` (playerGuid, wowProjectID) and `C_BattleNet.GetAccountInfoByGUID(guid)` (battleTag) still tell who it is, can we send back to that game account, and what happens while we ourselves appear offline? (bug fix: hidden friends were Unlinked and never synced) | Two friends, both with CommunitiesForever and FriendProbe. A sets Battle.net to Appear offline and logs in after B. On B: the FriendProbe log line `V87 from hidden game account …` with `playerGuid yes` and `battleTag yes` (the V87 row turns OK). On B, `/cf friends` does not list A, but `/cf` Friends shows A's characters under A (offline, not Unlinked), and A's record arrived (A's levels and professions on the cards). On A: B's record arrived too (B's data on the cards), so sending back to A's game account works. No "A is online" chat line on B. Then swap: B appears offline, A online; same checks. | open |
 | V88 | Which of the game's sounds play for the celebration banners (CF-67)? `PlaySound(SOUNDKIT.<key>, "SFX")` with, per weight, the first key that exists: small `IG_QUEST_LIST_COMPLETE`; medium `UI_EPICLOOT_TOAST`, then `IG_QUEST_LIST_COMPLETE`; big `UI_LEGENDARY_LOOT_TOAST`, then the medium ones. | `/run for _, k in ipairs({"IG_QUEST_LIST_COMPLETE","UI_EPICLOOT_TOAST","UI_LEGENDARY_LOOT_TOAST"}) do print(k, SOUNDKIT[k]) end`: three numbers expected (`nil` means missing: send which). Then `/cf settings`, Celebrations, Preview: a sound plays (the medium one). If a sound is missing, too loud or wrong for the moment, say which. | open |
-| V89 | Does the celebration banner draw and move as on the boards (CF-67)? `GetPhysicalScreenSize()` (the 85 % below 1600 px), `Texture:SetGradient("VERTICAL", CreateColor(...), CreateColor(...))` on the plaque, `Scale` animations (`SetScaleFrom`, `SetScaleTo`, `SetOrder`) on the medallion, a `Rotation` animation (`SetDegrees`) on a big feat's rays, an inline texture (`\|T...\|t`) for the streak's flame, and the friends' lines anchored to `ChatFrame1`. | `/run print(GetPhysicalScreenSize())` shows your screen's pixels. `/cf settings`, Celebrations, Preview: a dark plaque with angled ends and a gold top edge fading to bronze, a round medallion with the Doomsday emblem, "DAY COMPLETE", the day's name, "PvE 15 · PvP 10 · <flame> 6 days"; it rises in and the medallion pops (Ambient effects on). Compare with `docs/design/celebrations-2026-11/CB02Day.dc.html`. A flat plaque without the fade means `SetGradient` is missing; a still medallion means `Scale` is. | open |
+| V89 | Does the celebration banner draw and move as on the boards (CF-67)? `GetPhysicalScreenSize()` (the 85 % below 1600 px), `Texture:SetGradient("VERTICAL", CreateColor(...), CreateColor(...))` on the plaque, a `Rotation` animation (`SetDegrees`) on a big feat's rays, an inline texture (`\|T...\|t`) for the streak's flame, and the friends' lines anchored to `ChatFrame1`. | `/run print(GetPhysicalScreenSize())` shows your screen's pixels. `/cf settings`, Celebrations, Preview: a dark plaque with angled ends and a gold top edge fading to bronze, a round medallion with the Doomsday emblem, "DAY COMPLETE", the day's name, "PvE 15 · PvP 10 · <flame> 6 days"; it rises in with the medallion (Ambient effects on). Compare with `docs/design/celebrations-2026-11/CB02Day.dc.html`. A flat plaque without the fade means `SetGradient` is missing; a still medallion means `Scale` is. | open |
 | V85 | Do `TRADE_SHOW` with `UnitGUID("NPC")`, `TRADE_PLAYER_ITEM_CHANGED` with `GetTradePlayerItemLink(slot)` and `UI_INFO_MESSAGE` with `ERR_TRADE_COMPLETE` tell a completed trade, its partner and what you gave? (CF-56: `d.trade`, `w.craftTrade`) | Trade an item you crafted to a friend's community character; after `/reload` this week's facts have `trades = 1` and `craftTrade = 1`. A cancelled trade adds nothing. | open |
+| V90 | Does `CHAT_MSG_COMBAT_XP_GAIN` arrive with readable text matching `COMBATLOG_XPGAIN_FIRSTPERSON` (and its group variants) once per kill, also in a group? (Doomsday catalogue: combat goals) | FriendProbe (`Missions.lua`): kill an enemy that gives XP, alone and in a group. The checklist ticks V90 with "<name> dies, <n> XP"; the log has `V90 XP message` and `V90 kill` lines (with "seen as <classification> level <n>" when V93 saw it first). | open |
+| V93 | Do `UnitClassification`, `UnitLevel` and `UnitName` read for hostile creatures by target, mouseover and nameplate? (`d.elite`, `d.rareMob`, `d.bigFoe`) | FriendProbe: target and mouse over enemy creatures, one of them elite. V93 ticks with "<name>: <classification>, level <n>"; `V93 creature` lines in the log. | open |
+| V94 | Do `UnitOnTaxi` and `PLAYER_CONTROL_LOST` tell a flight, and does `ERR_NEWTAXIPATH` arrive when a flight path is learned? (`d.flight`, `d.newFlight`) | FriendProbe: take a flight (V94 ticks with "UnitOnTaxi true"); talk to a flight master whose path you don't know (`V94 new flight path message` in the log). | open |
+| V95 | Does `UNIT_SPELLCAST_SUCCEEDED` for `"player"` give a readable spell ID (Hearthstone 8690, a bandage, the campfire)? (`d.hearth`, `d.bandageUp`, `d.campfire`) | FriendProbe: cast any spell, e.g. the Hearthstone. V95 ticks with "spell <id> <name>"; every new spell is a `V95 cast` line. | open |
+| V96 | Do `PLAYER_BINDING_CHANGED` and `GetBindLocation()` work when setting the hearthstone? (`d.bind`) | FriendProbe: make an inn your home. V96 ticks with "GetBindLocation <place>". | open |
+| V98 | Do `IsMounted()` and `IsSwimming()` read true while mounted and swimming? (`d.ride`, `d.swim`) | FriendProbe (polls every 5 s): ride a mount, swim. V98 ticks when both were seen. | open |
+| V99 | Merchant: `MERCHANT_SHOW`, `MERCHANT_CLOSED`, `CanMerchantRepair`, `GetRepairAllCost`, hooks on `RepairAllItems` and `BuyMerchantItem` with `GetMerchantItemLink`? (`d.vendorSale`, `d.vendorBuy`, `d.repair`, `d.restock`) | FriendProbe: at a merchant, buy something (or repair), sell something, close the window. V99 ticks with "buy hook ran" or "repair hook ran"; `V99` lines show the item and its class. | open |
+| V100 | Mail: does a `SendMail` hook see the recipient (a full name with a space), does `MAIL_SEND_SUCCESS` fire, and do the inbox take hooks with `GetInboxHeaderInfo` give the sender? (`d.mailFriend`, `d.mailbox`) | FriendProbe: send a mail to a friend's or your alt's full name (V100 ticks with "sent to <name>"); take an item from the mailbox (`V100 TakeInboxItem ... sender` in the log). | open |
+| V101 | Which auction house does Forever have (`C_AuctionHouse`), and which events or messages tell a posted and a bought auction? (`d.auctionPost`, `d.auctionBuy`) | FriendProbe: post an auction (V101 ticks with the event or `ERR_AUCTION_STARTED`), buy one; send the `V101` lines. | open |
+| V102 | Does `BANKFRAME_OPENED` fire? (`d.bank`) | FriendProbe: talk to a banker. V102 ticks. | open |
+| V103 | Which event or message tells a spell learned at a class trainer (`LEARNED_SPELL_IN_SKILL_LINE`, `LEARNED_SPELL_IN_TAB`, `ERR_LEARN_SPELL_S`)? (`d.trainer`) | FriendProbe: learn a spell or rank at your trainer. V103 ticks with the event or message that came. | open |
+| V104 | Which event or message tells a recipe learned (`NEW_RECIPE_LEARNED`, `ERR_LEARN_RECIPE_S`)? (`d.newRecipe`, `d.cookRecipe`) | FriendProbe: learn a recipe (a cooking recipe from a vendor). V104 ticks with which one came. | open |
+| V105 | `C_Item.GetItemInfoInstant` class and subclass, and `C_Item.GetItemQualityByID`, for a just-created item? (cooking and bandage goals, `d.craftGreen`) | FriendProbe: cook something and make a bandage. V105 ticks with "created <id>: class <c>/<s> (...), quality <q>"; send the `V105` lines (food is expected as 0/5, bandages 0/7). | open |
+| V106 | On `LOOT_OPENED`, is `GetLootSourceInfo(slot)`'s GUID readable (GameObject or Creature), and does `GetLootSlotLink` give item IDs, also for fishing loot? (`d.gather10`, `d.treasure`, `d.fishKinds3`) | FriendProbe: loot an enemy, a herb or ore node, a chest, and fish once. V106 ticks with "loot source Creature" (or GameObject); `V106 loot slot` lines show item, class and source. | open |
+| V107 | Does `CHAT_MSG_SKILL` arrive with `SKILL_RANK_UP` text on a weapon skill-up? (`d.weaponSkill`) | FriendProbe: fight with a weapon whose skill isn't maxed. V107 ticks with the message. | open |
+| V108 | Are whisper-inform targets readable (`CHAT_MSG_WHISPER_INFORM`), and does a `DoEmote` hook see the token, `UnitGUID("target")` and the target's faction? (`d.whisper`, `d.wave`, `p.flex`, `p.boo`) | FriendProbe: whisper someone, then target a player and `/wave` (V108 ticks with both). In world PvP: `/flex` and `/boo` at an enemy-faction player; the `V108 DoEmote` lines say "enemy faction true". | open |
+| V109 | Does `CHAT_MSG_MONEY` arrive with text matching `YOU_LOOT_MONEY` or `LOOT_MONEY_SPLIT`? (`d.coins10`) | FriendProbe: loot coins, alone and in a group. V109 ticks with which one matched. | open |
+| V110 | Are `C_UnitAuras.GetAuraDataByIndex` `spellId` and `sourceUnit` readable out of combat, for the player and party members? (`d.wellFed`, `d.buffFriend`) | FriendProbe: in a group out of combat, buff a party member. V110 ticks with "own buff on party<n>"; `V110 aura` lines list the auras (eat food: "Well Fed" should show). | open |
+| V111 | Does `SCREENSHOT_SUCCEEDED` fire? (`d.groupPic`) | FriendProbe: press Print Screen. V111 ticks. | open |
+| V112 | Does `C_Container.GetContainerItemInfo` give `quality` for bag items? (`d.tidyBags`) | FriendProbe: at login it reads the bags. V112 ticks with "<n> bag items with a readable quality". | open |
+| V113 | Do `PLAYER_EQUIPMENT_CHANGED` (slot) and `GetInventoryItemID` give the item put on? (`d.equipNew`) | FriendProbe: put on or swap a piece of gear. V113 ticks with "slot <n>: item <id>". | open |
+| V114 | Do `CONFIRM_SUMMON` and `C_SummonInfo.GetSummonConfirmSummoner()` name the summoner? (`d.summoned`) | FriendProbe: let a warlock friend summon you. V114 ticks with "summoner <name>". | open |
+| V115 | Do `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS` and `GetSubZoneText()` give the place within a zone? (`d.places10`) | FriendProbe: walk from one place in a zone to another. V115 ticks with "GetSubZoneText <place>". | open |
+| V116 | Does a used potion, scroll, food or bandage show as `UNIT_SPELLCAST_SUCCEEDED` with the spell ID that `C_Item.GetItemSpell` gives for that bag item? (`d.potion`, `d.scrolls10`, `d.eatOwn`, `d.bandageUse3`) | FriendProbe: drink a potion, read a scroll, eat food, use a bandage. V116 ticks with "item <id> (<name>) cast spell <id>: class <c>/<s>"; send the `V116` lines (potions expected 0/1, scrolls 0/4). | open |
+| V117 | Does `UNIT_SPELLCAST_SENT` give the cast's target name? (`d.scrolls10` on yourself, `d.bandageFriend`) | FriendProbe: read a scroll on yourself, bandage a friend. V117 ticks with "target <name>". | open |
+| V118 | Can an addon `hooksecurefunc("JumpOrAscendStart", ...)` without a blocked action, and does it run once per jump? (`d.jump100`) | FriendProbe: jump 3 times. V118 ticks; jump 10 more and check `V118 jumps 10` in the log. A popup "blocked from an action" means it fails: answer No. | open |
+| V119 | The campfire: its spell ID when lit, and its special buff (name, spell ID, stacks or points) as items are added. (`d.campfire`, `d.campfireBuff`) | FriendProbe: light a campfire (Basic Campfire), then add 1, 2 and 3 items. The log has `V119 campfire lit` and `V119 aura near the campfire` lines with stacks and points each time the buff changes. Mark Yes if the buff shows how many items were added, No if not; send the lines. | open |
+| V120 | Does `C_DeathRecap.GetRecapEvents()` give the name and GUID of the player who killed you? Without the combat log it is the only source. (PvP catalogue: `p.revenge`, `p.avenge`, `b.revenge3`, `b.avenge3`) | FriendProbe: die to an enemy player. V120 ticks with "killed by player <name>"; the `V120 recap` lines list the recap's sources. "last recap source ..." without a player means it didn't name the killer: send the lines. | open |
+| V121 | Do `UnitIsPVP("player")` and `PLAYER_FLAGS_CHANGED` tell the PvP flag? (`p.flagUp`, `p.flagHour`, `b.flagged3h`) | FriendProbe: `/pvp` (or walk into a contested zone), wait for the flag, then let it run out. V121 ticks with "UnitIsPVP true"; `V121 UnitIsPVP` lines show each change. | open |
+| V122 | Does the battleground score give your row (`GetBattlefieldScore`: honorable kills) and the battleground's own stats (`GetNumBattlefieldStats`, `GetBattlefieldStatData`: flag captures, bases assaulted or defended)? (`p.bgFlag`, `p.bgBase`, `p.bgTop`, `b.bgFlags3`, `b.bgBases5`) | FriendProbe: play a battleground and open its scoreboard once. V122 ticks with "own honorable kills <n>; <n> battleground stats: ..."; send the `V122` lines from Warsong Gulch and Arathi Basin. | open |
+| V123 | Does `C_PvP.GetZonePVPInfo()` (or `GetZonePVPInfo()`) give the zone's PvP type ("friendly", "hostile", "contested", "sanctuary")? (`p.enemyLand`, `p.homeGuard`, `p.contested`, `b.enemyLand25`) | FriendProbe: travel through an own-faction, an enemy and a contested zone. V123 ticks with "<zone>: <type>"; `V123 zone` lines show each zone. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-77 Pool version 2
+The release day's draw with this build: `/run local D,s=CommunitiesForever.Doomsday,CommunitiesForever.DoomsdayTracker.schedule(); local n=D.day(GetServerTime(),s.offset,s.reset); print(D.POOL_VERSION, table.concat(D.draw(n).dailies," "), table.concat(D.drawWeek(D.week(n)).weeklies," "))` (call it "the draw line" below).
+
+| Step | Expected | Status |
+|---|---|---|
+| Two friends on this build, on the release day: the draw line on both, and compare the Doomsday tab | Both print `2` and the same 3 dailies and 3 weeklies; the tabs show the same 3 dailies (or their swaps). The 3 weeklies are of 3 different kinds. | open |
+| A friend still on v1.1.0, same day: their Doomsday tab | They see pool version 1's dailies (the ones the site shows for version 1), not the new ones. No errors on either side. | open |
+| On this build, a day that was already drawn before the update (log in on v1.1.0, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `pool` nil (read as version 1: its goals score 5 each); the next day's entry prints `2`. | open |
+| Finish a new daily (e.g. Say something in the community chat, if drawn) | Its banner and the week's total show its size (+1, +3 or +5), not +5 for every goal. | open |
+
+### CF-73 Friends and places for Doomsday missions
+The missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the places line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local p=d.places; if p then local z,nz=0,0; for _ in pairs(p.zones) do z=z+1 end; for _ in pairs(p.newZones) do nz=nz+1 end; print(n,'zones',z,'new',nz,'sea',p.crossSea,'nost',p.nostalgia,'dare',p.daredevil,'same',p.sameZone,'online',p.onlineMax,'carry',p.carry,'chat',p.chat) end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| First login with this build, then `/run local n=0; for _,s in pairs(CommunitiesForeverDB.global.self.doomsday.zonesSeen) do for z in pairs(s) do n=n+1 end end; print(n)` | A number above 0 on a character that handed in quests before (the zones of the stored feed). | open |
+| Ride into 2 other zones; the places line | `zones` went up by 2 (the login zone counts too). A zone this character never quested in before counts in `new`; going back to it doesn't count again. | open |
+| Enter a dungeon and leave it | `zones` doesn't count the dungeon (only zones outside instances). | open |
+| Take the boat or zeppelin to the other continent | `sea` true. The Deeprun Tram doesn't count. | open |
+| Zone level names (V46, zones part, unverified): `/run local l=C_LFGList; for _,a in ipairs(l.GetAvailableActivities(116) or {}) do local i=l.GetActivityInfoTable(a); print(i.fullName,'/',i.shortName,i.minLevelSuggestion,i.maxLevelSuggestion,i.difficultyID,i.maxNumPlayers) end` and compare with `/run print(GetRealZoneText())` in a few zones | The zones are listed with their level range, and the full or short name matches `GetRealZoneText()` exactly (e.g. "Elwynn Forest"). Answered: move it to `docs/API-FINDINGS.md`; if names differ, say how. | open |
+| A level 30+ character enters a starting zone (e.g. Elwynn Forest) | `nost` true. | open |
+| A character enters a zone whose lowest suggested level is 5 or more above its level | `dare` true. | open |
+| Club member zone text (V18): with a friend's community character online in your zone, `/run for _,m in pairs(CommunitiesForever.MemberTracker.members()) do print(m.name,m.zone,m.presence) end` | The friend's `zone` is the same text as your `GetRealZoneText()`. | open |
+| With a friend's community character online; the places line | `online` 1 or more; `same` true while both are in the same zone. A friend on the mobile app (presence 2) doesn't count. | open |
+| Group with a friend's community character 5 or more levels lower | `carry` 1 or more; with one 4 levels lower, or your own alt, it stays. | open |
+| Say something in the selected community's chat | `chat` 1 or more; a friend's message doesn't count, nor one in another community. | open |
+| A friend on v1.1.0 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
+
+### CF-79 The weekly and PvP catalogues in code
+The new missions wait for data (no `since`) and their trackers; nothing new is drawn until pool version 2 (CF-77).
+
+| Step | Expected | Status |
+|---|---|---|
+| On this build, Doomsday › Week on the same week as a friend on the previous build | The same 3 weeklies and the same Bounty on both, and the same swaps (pool version 1 unchanged). | open |
+| Doomsday › Today on the same day as that friend | The same Skirmish on both. | open |
+
+### CF-78 Only a real fight ends PvP Virgin
+Taunt and flag goals arrive with pool version 2 and later (CF-79, CF-81); until then the steps check the battleground and that nothing else changed.
+
+| Step | Expected | Status |
+|---|---|---|
+| A friend (or an alt's BattleTag) with no honorable kill and no duel finishes a battleground (won or lost); `/reload`; Doomsday › Ladder | That friend is ranked on the PvP ladder (no longer under "PvP Virgin · not ranked"). | open |
+| A friend who never fought | Still under "PvP Virgin · not ranked"; on Today's mini board "PvP Virgin". | open |
+| A duel between two friends who never fought, then `/reload` | Both ranked on the PvP ladder. | open |
+| Once a taunt goal is in the pool (pool version 2+): a friend who only did that goal | Shows as Conscientious Objector with the PvP points, not ranked; after a duel, ranked. | open |
+
+### CF-71 Quest details for Doomsday missions
+The quest missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the facts line" below): `/run local f=CommunitiesForeverDB.global.self.doomsday.days; for n,d in pairs(f) do local q=d.quests2; if q then print(n,'up',q.up,'group',q.group,'class',q.class,'dungeon',q.dungeon,'duo',q.together,'burst',q.burst,'accepted',q.acceptedCount) end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, `/reload`, then `/run for id,q in pairs(CommunitiesForeverDB.global.self.chars[UnitGUID("player")].quests) do print(id,q.title,q.level,q.suggestedGroup) end` | Each quest has its level; group quests (shown with "Group" in the quest log) have a number, normal quests `nil`. | open |
+| Accept 2 new quests, abandon one, accept it again; the facts line | `accepted` went up by 2 (taking a quest again counts once). | open |
+| `QUEST_ACCEPTED`'s arguments (unverified: `questID` on Mainline, `questLogIndex, questID` on Classic; CF-71 takes the last number): after accepting a quest, `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do for id in pairs(d.quests2 and d.quests2.accepted or {}) do print(n,id) end end` | The accepted quest's ID is listed (its ID on wowhead), not a small log index (1 to 40). Answered: move it to `docs/API-FINDINGS.md`. | open |
+| Hand in a quest whose level is above your character's level; the facts line | `up` 1. A quest at or below your level doesn't count. | open |
+| Hand in a group quest (`suggestedGroup` above 0) | `group` 1. | open |
+| Hand in a class quest (quest log header is your class name) | `class` 1. | open |
+| Hand in a dungeon quest (dungeon header or the Dungeon tag) | `dungeon` 1. | open |
+| Hand in 3 quests within 10 minutes on one character | `burst` 3. | open |
+| In a group with a friend's community character, hand in a quest | `duo` 1; with only your own alt or a stranger, it stays. | open |
+| A friend on v1.1.0 receives your record | No errors; their quest lists (Friends tab, shared quests) look as before. | open |
+
+### CF-69 Points per mission
+Pool version 2 (CF-77) is what turns the sizes on; until then the points stay 5 and 15. These steps check that days carry their pool version and nothing changed.
+
+| Step | Expected | Status |
+|---|---|---|
+| After a reset on this build: `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n, e.pool) end` | The newest day (the highest number) prints `1`; days recorded before this build print `nil`. | open |
+| Finish a PvE daily, then a weekly | Chat line, banner and Today show +5 and +15, as before; the week's total adds them. | open |
+| A friend on v1.1.0 or older syncs while you are online | No errors on either side; their points and yours on Board and Ladder are as before. | open |
+| After CF-77 (pool version 2): finish a 1-point daily (e.g. Light a campfire) | Its chat line and banner show "+1"; the week's total grows by 1. | open |
+
+### CF-72 Records missions: levels, play, dungeons (tracking only, not in the draw yet)
+No new API: `GetInstanceInfo` (V35), the group (V35), `PLAYER_LEVEL_UP`. The missions are not drawn until pool
+version 2 (CF-77), so check the facts. "Today's records" below means:
+`/run local d=CommunitiesForeverDB.global.self.doomsday.days local n=0 for k in pairs(d) do if k>n then n=k end end for k,v in pairs(d[n].records or {}) do print(k,type(v)=="table" and #v or tostring(v)) end`
+(tables print 0: use `/dump CommunitiesForeverDB.global.self.doomsday.days` for their contents).
+
+| Step | Expected | Status |
+|---|---|---|
+| First login with this build; `/dump CommunitiesForeverDB.global.self.doomsday.dungeonsSeen` | The dungeons of your feed's party runs (last 7 days) per character GUID; `{}` without runs. No Lua error. | open |
+| Gain a level on a character below level 20, outside a group; today's records | `lowbie 1`, `dingDungeon 0`, `dingFriend 0`. | open |
+| Gain a level inside a dungeon, grouped with a friend's character from the community; today's records | `dingDungeon 1`, `dingFriend 1`. | open |
+| In a dungeon new to the character, kill the first boss; `/dump CommunitiesForeverDB.global.self.doomsday.dungeonsSeen` and `/dump CommunitiesForeverDB.global.self.doomsday.days` (newest day, `records.newDungeons`) | The dungeon is in the character's set; `newDungeons` has a key with the GUID and the dungeon. Kill a second boss: nothing new added. | open |
+| Kill 3 bosses of one dungeon within 45 minutes of entering; today's records | `speedRun true`. | open |
+| Raise Cooking (or Fishing, First Aid) by a few points; `/dump CommunitiesForeverDB.global.self.doomsday.days` (newest day, `records.skillGain`) | `[185]` (Cooking), `[356]` (Fishing) or `[129]` (First Aid) holds the points gained today. | open |
+| Log in a character you last played 2 or more Doomsday days ago; today's records | `switchUp true`; `dustOff true` only if its last play was 7 or more days ago. The first login of each character with this build counts as unknown (no credit). | open |
+| `/reload` | No change to `switchUp`/`dustOff` (the last login is now), no Lua error. | open |
+
+### CF-68 Doomsday schedule from the site
+Needs the site's Mission pool page (web WEB-78) and the uploader. Pick a day at least 2 days ahead (today and tomorrow are locked on the site).
+
+| Step | Expected | Status |
+|---|---|---|
+| On the site's Mission pool page change that day's dailies and Skirmish; let the uploader write `Data\Runs.lua`; `/reload`; `/run print(CommunitiesForeverDB.global.doomsdaySchedule.v)` | Prints the site's `v` (a server time). | open |
+| On that day (after the reset), `/cf doomsday` and Doomsday › Today | The scheduled dailies and Skirmish show, with swaps only where your characters can't do one. The days before and after show the normal draw. | open |
+| A friend on this build without the uploader logs in while you are online | Within a minute their `/run print(CommunitiesForeverDB.global.doomsdaySchedule.v)` prints the same `v` (HELLO `ds`, SCHEDREQ, SCHED); on that day their Today shows the same missions. | open |
+| Change the same day on the site again before it is locked; uploader; `/reload` | The new `v` replaces the old on you and, within a minute, on the friend. | open |
+| A friend on v1.1.0 (or older) | No errors; on that day they show the normal draw (no schedule support). | open |
+| `/reload` during a scheduled day after the site changed that day again | Today keeps the set it had: a day that has started never changes. | open |
 
 ### Bug hunt: Doomsday refreshes at the reset
 | Step | Expected | Status |
@@ -53,7 +185,7 @@ Compare each banner with its board. Your own banners sit centred low on the scre
 | CB05: several at once (a level that finishes a daily and the day, a feat) | One banner, the heaviest; under it one grey line such as "Day complete · +3 goals · crown". One sound only. | open |
 | CB06: a friend (on this build) finishes the day, a weekly or a special feat while you are online | Bottom left, above the chat: one line with their round class portrait, "<friend> <character> · completed the day" (or "finished a weekly", "is now a Stone Guard", "looted <item>", "reached level 60"), a coloured left edge, no sound, 4 s; up to 3 stack upwards; they wait while your own banner shows. Nothing for what they did before you logged in. | open |
 | CB07: the place at 1920 × 1080 and at 1280 × 720 (or any width below 1600) | The banner centred, its bottom about 190 px above the screen's bottom, clear of the action bars, the chat and the top of the screen (LEVEL UP pill, run banners, crown toast). Below 1600 px wide it is 85 % of its size. | open |
-| CB08: motion; hover, click, right-click | In: rises 16 px and fades in, the medallion pops. Out: fades and sinks 8 px. Ambient effects off: no movement at all. Hovering pauses it and shows "Click to open Doomsday" ("Click to open Feats" on a feat); a click opens the window on Doomsday › Today (goals, day), Week (weeklies), Feats (feats) or Board (a friend's line); right-click closes it at once. | open |
+| CB08: motion; hover, click, right-click | In: rises 16 px and fades in, the medallion with it (no pop). Out: fades and sinks 8 px. Ambient effects off: no movement at all. Hovering pauses it and shows "Click to open Doomsday" ("Click to open Feats" on a feat); a click opens the window on Doomsday › Today (goals, day), Week (weeklies), Feats (feats) or Board (a friend's line); right-click closes it at once. | open |
 | CB08: in combat, a boss fight or a battleground | Finish a goal in combat: nothing until 2 s after combat ends, then the banner (folded with anything else). In a battleground: after you leave. | open |
 | CB09: `/cf settings` | Under Interface a section "Celebrations": "Celebration banners", "Celebration sounds", "Friends' celebrations", all on, and a Preview button; tooltips on each. Banners off: no banners and no sounds, and "Friends' celebrations" greys out (still visible). Sounds off: banners without sound. Preview: a medium sample banner for 5 s with its sound. | open |
 | No doubles | `/reload` right after a banner: it doesn't come again. The first login after updating: no banners for goals or feats you already had. | open |
@@ -296,6 +428,8 @@ Answers V73 to V86 and the older open questions in one go. Unzip `FriendProbe.zi
 | Before launch, a dry run on Retail (same Mainline API and Midnight restrictions): copy the probe into Retail's `Interface\AddOns`, tick "Load out of date AddOns" | It loads without a Lua error and stays silent. `/fp` says "on retail"; the items only Forever can answer (Vanilla honor, ranks, riding, battlegrounds, sync with friends) are greyed "Forever only". Retail results are kept apart (`results.retail`): they never close a VERIFY item by themselves. | open |
 | Log in (any character) | Nothing in chat. `/fp` opens the checklist: the items answered on Retail 12.1.5 are ticked in the Done list at the bottom (CF-61). | open |
 | Play the six sessions over the week (alone, with a friend, questing, a dungeon, world PvP on a level 20+ character with enemy nameplates on, later in the week) | Items tick by themselves as they happen; mark the others Yes or No in `/fp`. | open |
+| First login: `/fp`, press Test: celebration sounds (V88) | Three game sounds 2 s apart, each with a chat line "sound 1: IG_QUEST_LIST_COMPLETE" (2: UI_EPICLOOT_TOAST, 3: UI_LEGENDARY_LOOT_TOAST); "(did not play)" or a missing key means send the log. V64, V88 and V89 show "the APIs are there; check it by eye" or which API is missing. | open |
+| World PvP: before each kill, target or mouse over the enemy player (enemy nameplates on) | The checklist's "The Hunt" item ticks with the victim's race and class ("Ann Example: NightElf DRUID via target"). An info line "named, but not seen with race and class" means the kill message works but the victim wasn't seen first: try again with a target. No tick after several kills: send the log (`V73 honor` and `V74 unit` lines). | open |
 | Copy report | A window with the results as text, ready to copy. | open |
 | After a few days, send `WTF\Account\<account>\SavedVariables\FriendProbe.lua` (and friends theirs) | Claude Code moves the answers to `docs/API-FINDINGS.md`, decides which victim fields CF-55b fills and the next pool version (the Hunt stays or becomes a second Skirmish), fills the boss counts, and proposes the Wanted poster and revenge-kill stories if the killer's name is readable. | open |
 | After 2026-11-18 | The probe stops logging by itself. | open |
