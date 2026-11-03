@@ -13,6 +13,36 @@ describe("Goals (CF-56)", function()
     return Doomsday.dayNumberOf(y, m, d) * 86400 + hour * 3600 + minute * 60
   end
 
+  -- CF-68: the site's mission schedule, checked (golden cases shared with the site).
+  describe("mission schedule", function()
+    local cases = helpers.readJson("tests/fixtures/doomsday-cases.json")
+
+    it("checks it as the golden cases say", function()
+      for _, c in ipairs(cases.scheduleCheck) do
+        local day = Doomsday.day(c.serverTime, c.offset, c.reset)
+        assert.are.same(c.expect, Goals.cleanMissionSchedule(c.input, day, Doomsday.week(day)), c.note)
+      end
+    end)
+
+    it("takes integer keys, and no v below 1 or a fraction", function()
+      assert.are.same({ v = 1, days = { ["20766"] = { skirmish = "p.loneWolf" } } },
+        Goals.cleanMissionSchedule({ v = 1, days = { [20766] = { skirmish = "p.loneWolf" } } }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 0 }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 1.5 }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 1, weeks = 5 }, 20766, 2967))
+    end)
+
+    it("takes a newer v, at most 5 minutes ahead", function()
+      local now = 1000
+      assert.is_true(Goals.newerMissionSchedule(nil, { v = 1 }, now))
+      assert.is_true(Goals.newerMissionSchedule({ v = 10 }, { v = now + 300 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = now + 301 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = 10 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = 9 }, now))
+      assert.is_false(Goals.newerMissionSchedule({ v = 10 }, nil, now))
+    end)
+  end)
+
   describe("schedule", function()
     it("knows CET and CEST by the EU summer-time dates", function()
       assert.are.equal(3600, Goals.cetOffset(utc(2026, 3, 29, 0, 59)))

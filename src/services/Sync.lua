@@ -9,6 +9,8 @@
 --   BYE   {}                (CF-28, community) on logout, best effort: the sender is offline.
 --   RUNS  {runs}            (CF-46) planned runs, to a peer whose HELLO showed an older ru (runs updatedAt).
 --   RUNREQ {}               (CF-46) asks a peer whose HELLO showed a newer ru for its runs.
+--   SCHED {v, days, weeks}  (CF-68) the site's Doomsday mission schedule, answer to SCHEDREQ.
+--   SCHEDREQ {}             (CF-68) asks a peer whose HELLO showed a newer ds (schedule v) for its schedule.
 --   RUNANSWER {run, answer, guid, name, role, note}  (CF-47; note CF-63, optional) your answer to a run, to its
 --     organiser when online.
 -- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua): BattleTags only
@@ -42,6 +44,7 @@ local IN_GAME = { [1] = true, [4] = true, [5] = true } -- community presence Onl
 local addonRef, helloDebounced
 local lastHello, lastReq, lastRuns, noticeShown
 local runsRetry = {} -- CF-46: target -> true while a retry timer is waiting
+local lastSched, schedRetry = {}, {} -- CF-68: as lastRuns and runsRetry, for SCHED
 local releaseNoticeShown -- CF-35: once per session
 local peers = {}   -- CF-28: community peers met by HELLO: name -> { guid, key, at }
 local offline = {} -- CF-28: guid -> true after a BYE or a failed whisper (until the next HELLO)
@@ -100,10 +103,12 @@ local function helloFor(community)
   local ru = ns.Planner.updatedAt()
   -- dd (CF-56): the Doomsday reset setting we use, so friends without the uploader get it; older clients ignore it.
   local dd = ns.DoomsdayTracker.setting()
+  -- ds (CF-68): v of the site's mission schedule we use (0: none); older clients ignore it.
+  local ds = ns.DoomsdayTracker.missionScheduleVersion()
   return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch, ru = ru,
-           dd = dd },
+           dd = dd, ds = ds },
          helloSignature(own().version, known) .. ";" .. tostring(ch) .. ";" .. tostring(ru) .. ";"
-           .. tostring(dd and dd.changedAt) .. ";" .. tostring(dd and dd.offsetUntil)
+           .. tostring(dd and dd.changedAt) .. ";" .. tostring(dd and dd.offsetUntil) .. ";" .. tostring(ds)
 end
 
 local function sendHello(target, force)
@@ -188,6 +193,25 @@ local function sendRuns(target)
   ns.Messenger.send(target, { t = "RUNS", runs = runs })
 end
 
+-- CF-68: our mission schedule to a peer that asked, at most once per v per 60 s; held back like RUNS.
+local function sendSchedule(target)
+  local schedule = ns.DoomsdayTracker.missionSchedule()
+  if not schedule then return end
+  if ns.Instance.messagingRestricted() then
+    if not schedRetry[target] then
+      schedRetry[target] = true
+      C_Timer.NewTimer(RUNS_RETRY, function()
+        schedRetry[target] = nil
+        sendSchedule(target)
+      end)
+    end
+    return
+  end
+  if recentlySent(lastSched, target, schedule.v) then return end
+  remember(lastSched, target, schedule.v)
+  ns.Messenger.send(target, { t = "SCHED", v = schedule.v, days = schedule.days, weeks = schedule.weeks })
+end
+
 local function storedVersion(key)
   local stored = global().people[key]
   return stored and stored.version or 0
@@ -265,6 +289,12 @@ function handlers.HELLO(message, senderKey, target, guid)
       remember(lastRuns, "req:" .. tostring(target), message.ru)
       ns.Messenger.send(target, { t = "RUNREQ" })
     end
+  end
+  -- CF-68: the site's mission schedule, the newer v wins; a HELLO without ds is from a version without it.
+  if type(message.ds) == "number" and message.ds > ns.DoomsdayTracker.missionScheduleVersion()
+     and not recentlySent(lastSched, "req:" .. tostring(target), message.ds) then
+    remember(lastSched, "req:" .. tostring(target), message.ds)
+    ns.Messenger.send(target, { t = "SCHEDREQ" })
   end
   local person = global().people[key]
   -- The owner's record also replaces a relayed copy with a higher version.
@@ -367,6 +397,17 @@ function handlers.RUNREQ(_, _, target)
   sendRuns(target)
 end
 
+-- CF-68: a mission schedule from a peer (checked like the file); a newer one replaces ours and is announced.
+function handlers.SCHED(message)
+  if ns.DoomsdayTracker.receiveMissionSchedule({ v = message.v, days = message.days, weeks = message.weeks }) then
+    helloDebounced()
+  end
+end
+
+function handlers.SCHEDREQ(_, _, target)
+  sendSchedule(target)
+end
+
 -- CF-47: a friend answered a run you organise, in game.
 function handlers.RUNANSWER(message, senderKey)
   ns.Planner.answerReceived(message, senderKey)
@@ -392,6 +433,7 @@ function Sync.start(addon)
   addonRef = addon
   lastHello, lastReq, noticeShown, waitingForMembers, peers, offline = {}, {}, false, {}, {}, {}
   lastRuns, runsRetry = {}, {}
+  lastSched, schedRetry = {}, {}
   releaseNoticeShown = false
   helloDebounced = ns.Timer.debounce(HELLO_DEBOUNCE, function() broadcastHello(false) end)
   ensureAccountId()

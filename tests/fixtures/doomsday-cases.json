@@ -956,6 +956,486 @@
    }
   }
  ],
+ "scheduleCheck": [
+  {
+   "note": "a full day and a full week are kept as they are",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "the window: yesterday to 16 days ahead, last week to 3 weeks ahead",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20764": {
+      "skirmish": "p.loneWolf"
+     },
+     "20765": {
+      "skirmish": "p.loneWolf"
+     },
+     "20782": {
+      "skirmish": "p.loneWolf"
+     },
+     "20783": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2965": {
+      "bounty": "b.spree10"
+     },
+     "2966": {
+      "bounty": "b.spree10"
+     },
+     "2970": {
+      "bounty": "b.spree10"
+     },
+     "2971": {
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20765": {
+      "skirmish": "p.loneWolf"
+     },
+     "20782": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2966": {
+      "bounty": "b.spree10"
+     },
+     "2970": {
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "broken fields are dropped, the rest stays; a day left empty is dropped; unknown ids pass the check",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20767": {
+      "daily": [
+       "d.quests10",
+       "d.level"
+      ],
+      "skirmish": "p.loneWolf"
+     },
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.quests10",
+       "d.level"
+      ],
+      "skirmish": 7
+     },
+     "20769": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.x;y"
+      ],
+      "skirmish": "p.aVeryLongMissionIdThatIsTooLong"
+     },
+     "20770": {
+      "daily": [
+       "d.newer",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.newer",
+      "hunt": "NightElf:DRUID",
+      "zone": "Tanaris"
+     },
+     "20771.5": {
+      "skirmish": "p.loneWolf"
+     },
+     "abc": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf",
+       "w.cap"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20767": {
+      "skirmish": "p.loneWolf"
+     },
+     "20770": {
+      "daily": [
+       "d.newer",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.newer"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "only v: a valid, empty schedule (it clears an older one)",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {},
+    "weeks": {}
+   },
+   "expect": {
+    "v": 1794300000
+   }
+  },
+  {
+   "note": "no v: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "days": {
+     "20768": {
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": null
+  },
+  {
+   "note": "v not an integer: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": "1794300000",
+    "days": {}
+   },
+   "expect": null
+  },
+  {
+   "note": "days not a table: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": "20768"
+   },
+   "expect": null
+  },
+  {
+   "note": "not a table: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": "schedule",
+   "expect": null
+  }
+ ],
+ "scheduled": [
+  {
+   "note": "a day with all slots",
+   "day": 20768,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.quests10",
+     "d.level",
+     "d.dungeon"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "the day after a scheduled day keeps the normal draw, also a mission the scheduled day has",
+   "day": 20769,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.ilvl",
+     "d.dungeon",
+     "d.quests10"
+    ],
+    "skirmish": "p.untouchable"
+   }
+  },
+  {
+   "note": "one slot: the others are the normal draw",
+   "day": 20769,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20769": {
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.ilvl",
+     "d.dungeon",
+     "d.quests10"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "an unknown id: that whole list is the normal draw; an unknown Skirmish too",
+   "day": 20770,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20770": {
+      "daily": [
+       "d.quests20",
+       "d.newer",
+       "d.level"
+      ],
+      "skirmish": "p.newer"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.zones3",
+     "d.skill5",
+     "d.dungeonFriend"
+    ],
+    "skirmish": "p.frontLine"
+   }
+  },
+  {
+   "note": "a catalogue id that isn't in this pool version counts as unknown",
+   "day": 20770,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20770": {
+      "daily": [
+       "d.quests20",
+       "d.cleanLevel",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.zones3",
+     "d.skill5",
+     "d.dungeonFriend"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "a week with all slots",
+   "week": 2968,
+   "schedule": {
+    "v": 1794300000,
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "weeklies": [
+     "w.days5",
+     "w.zones5",
+     "w.newProf"
+    ],
+    "bounty": "b.spree10"
+   }
+  },
+  {
+   "note": "a week with only the Bounty",
+   "week": 2969,
+   "schedule": {
+    "v": 1794300000,
+    "weeks": {
+     "2969": {
+      "bounty": "b.days5"
+     }
+    }
+   },
+   "expect": {
+    "weeklies": [
+     "w.newProf",
+     "w.chars3",
+     "w.skill25"
+    ],
+    "bounty": "b.days5"
+   }
+  },
+  {
+   "note": "swaps apply on top of the scheduled set",
+   "day": 20768,
+   "situation": {
+    "below60": 0
+   },
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.level",
+       "d.quests10",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "set": [
+     "d.quests20",
+     "d.quests10",
+     "d.dungeon",
+     "p.loneWolf"
+    ],
+    "swapped": {
+     "d.quests20": "d.level"
+    }
+   }
+  },
+  {
+   "addonOnly": true,
+   "note": "a day that already has a recorded set keeps it when a schedule arrives later",
+   "day": 20768,
+   "recorded": [
+    "d.skill5",
+    "d.dungeonFriend",
+    "d.chars2",
+    "p.frontLine"
+   ],
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "set": [
+     "d.skill5",
+     "d.dungeonFriend",
+     "d.chars2",
+     "p.frontLine"
+    ]
+   }
+  }
+ ],
  "kills": [
   {
    "note": "every band, a skull, unknown levels, solo, a community victim, the 4th kill of one victim that day, the next day, battleground kills on their own track. Results in time order.",

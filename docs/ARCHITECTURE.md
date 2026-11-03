@@ -227,6 +227,9 @@ global = {
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
   plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
                                                      -- "Planned runs file"; checked again when loaded
+  doomsdaySchedule = { v, days, weeks },             -- CF-68: the site's Doomsday mission schedule (file or a
+                                                     -- friend's SCHED), docs/DOOMSDAY.md "Schedule from the site";
+                                                     -- checked and over days dropped when loaded; nil: none
   pending   = { Item },                              -- CF-47: plans, answers, asks to post, pings (core/Pending.lua;
                                                      -- sample tests/fixtures/pending.lua, read by the site)
 }
@@ -331,6 +334,7 @@ Messages:
 - `REQ {bt, want}`: sent when a peer's advertised `ver` is higher than stored (`want` nil = the peer's own record), or (CF-20) for each `known` entry newer than stored (`want` = that BattleTag). Answered with the own record or the stored record.
 - `RECORD {bt, displayName, version, chars, invite, feed, removed}`: own record with all own characters; `feed` always (CF-58: no sharing setting; a received `false` from a released client means nothing was sent and keeps the stored feed); `removed` only in relayed copies (dropped characters with the time they were dropped).
 - `RUNS {runs}` and `RUNREQ {}` (CF-46): planned runs (the shape of `CF_RUNS`). HELLO carries `ru`, the updatedAt of the sender's runs (0: none); a peer with older runs gets `RUNS`, a peer with newer ones gets `RUNREQ`. The receiver checks them with `PlannedRuns.validate` and keeps them only when newer (at most 5 minutes ahead of server time). Over the community BattleTags are left out. Never sent while `Instance.messagingRestricted()` (an encounter, a keystone, a PvP match): tried again 30 s later. Older clients send no `ru` and get nothing; they ignore `ru` and the new types.
+- `SCHED {v, days, weeks}` and `SCHEDREQ {}` (CF-68): the site's Doomsday mission schedule (`CF_RUNS.doomsday.schedule`, kept in `global.doomsdaySchedule`). HELLO carries `ds`, its `v` (0: none); a peer that sees a newer `ds` sends `SCHEDREQ` and gets `SCHED`. Checked with `Goals.cleanMissionSchedule`, kept only when newer (at most 5 minutes ahead), held back like RUNS. Older clients send no `ds` and ignore the new types: they show the normal draw.
 - `RUNANSWER {run, answer, guid, name, role}` (CF-47): your answer to a run, sent at once to its organiser when they are online (Battle.net by BattleTag, community by the organiser's character). The organiser shows it (in memory) until the site's runs have it; it is also a pending item that reaches the site after `/reload`. Ignored unless the receiver organises that run.
 - `ASK {id, dungeon = {id, name, min, max}, from, char, at, note}` (CF-27; `note` optional, CF-47): "who's up for it now?", sent only to friends online in Forever whose record has a character in the dungeon's range. `char` is the asker's current character (for an invite request).
 - `ANSWER {id, answer = "join"|"later"|"no", from, char}` (CF-27): back to the asker; `char` is the answerer's current character (for the invite). Clients without CF-27 ignore both (unknown `t`).
