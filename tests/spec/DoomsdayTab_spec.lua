@@ -113,7 +113,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     local n = dayWith(D, "d.quests10")
     load(function(s) s.serverTime = D.dayStart(n, CET, RESET) + 3600 end)
     for _ = 1, 10 do quest() end
-    assert.is_true(printed("Daily done: Finish 10 quests (+5 PvE, 1 of 3 today)"))
+    assert.is_true(printed("Daily done: Finish 10 quests (+3 PvE, 1 of 3 today)")) -- CF-77: pool version 2's size
     ns.Settings.options().args.doomsdayChat.set({}, false)
     state.printed = {}
     for _ = 1, 10 do quest() end

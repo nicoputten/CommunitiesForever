@@ -52,7 +52,7 @@ describe("Doomsday (CF-55)", function()
       assert.are.same(cases.pools.catalogue, list)
     end)
 
-    it("has the 118 PvE dailies in 15 categories, sized 1, 3 or 5, the new ones waiting for data", function()
+    it("has the 118 PvE dailies in 15 categories, sized 1, 3 or 5, the untracked ones waiting for data", function()
       local dailies, categories, n = 0, {}, 0
       for _, g in ipairs(Doomsday.GOALS) do
         if g.slot == "daily" then
@@ -63,7 +63,7 @@ describe("Doomsday (CF-55)", function()
       end
       assert.are.equal(118, dailies)
       assert.are.equal(15, n)
-      for _, id in ipairs({ "d.questUp", "d.levels2", "d.cook5", "d.scrolls10", "p.flex", "p.punchDown5" }) do
+      for _, id in ipairs({ "d.cook5", "d.scrolls10", "d.fish20", "d.groupFriend", "p.flex", "p.punchDown5" }) do
         assert.is_nil(Doomsday.goal(id).since, id)
       end
     end)
@@ -183,14 +183,15 @@ describe("Doomsday (CF-55)", function()
     assert.are.equal(Doomsday.weekStart(Doomsday.week(20765)), 20765) -- a Sunday starts its week
   end)
 
+  -- CF-77: a case without `pool` is of pool version 1.
   it("draws the same goals as the file", function()
     for _, c in ipairs(cases.draws.days) do
-      local draw = Doomsday.draw(c.day)
+      local draw = Doomsday.draw(c.day, c.pool or 1)
       assert.are.same(c.expect.dailies, draw.dailies, "day " .. c.day)
       assert.are.equal(c.expect.skirmish, draw.skirmish, "day " .. c.day)
     end
     for _, c in ipairs(cases.draws.weeks) do
-      assert.are.same(c.expect, Doomsday.drawWeek(c.week), "week " .. c.week)
+      assert.are.same(c.expect, Doomsday.drawWeek(c.week, c.pool or 1), "week " .. c.week)
     end
     for _, c in ipairs(cases.draws.zones) do
       assert.are.equal(c.expect, Doomsday.zone(c.n, c.salt, c.level), c.n .. "/" .. c.salt .. "/" .. c.level)
@@ -201,38 +202,71 @@ describe("Doomsday (CF-55)", function()
     assert.is_nil(Doomsday.draw(cases.epoch).hunt)
     Doomsday.HUNT_SINCE = 1
     for _, c in ipairs(cases.draws.hunts) do
-      assert.are.same(c.expect, Doomsday.draw(c.day).hunt, "day " .. c.day)
-      assert.are.same(c.expect.Horde, Doomsday.hunt(c.day, "Horde"))
+      assert.are.same(c.expect, Doomsday.draw(c.day, c.pool or 1).hunt, "day " .. c.day)
+      assert.are.same(c.expect.Horde, Doomsday.hunt(c.day, "Horde", c.pool or 1))
     end
   end)
 
-  it("keeps the draw's rules over 400 days: 3 categories, nothing twice in a row", function()
-    local before = Doomsday.draw(cases.epoch)
-    for n = cases.epoch + 1, cases.epoch + 400 do
-      local draw = Doomsday.draw(n)
-      local categories, previous = {}, set(before.dailies)
-      for _, id in ipairs(draw.dailies) do
-        categories[Doomsday.goal(id).category] = true
-        assert.is_nil(previous[id], "day " .. n)
+  local function categoryCount(ids)
+    local categories, count = {}, 0
+    for _, id in ipairs(ids) do
+      local c = Doomsday.goal(id).category
+      if not categories[c] then categories[c], count = true, count + 1 end
+    end
+    return count
+  end
+
+  for _, version in ipairs({ 1, 2 }) do
+    it("keeps the draw's rules over 400 days in pool version " .. version .. ": 3 categories, nothing twice in a row",
+      function()
+        local before = Doomsday.draw(cases.epoch, version)
+        for n = cases.epoch + 1, cases.epoch + 400 do
+          local draw = Doomsday.draw(n, version)
+          local previous = set(before.dailies)
+          for _, id in ipairs(draw.dailies) do assert.is_nil(previous[id], "day " .. n) end
+          assert.are.equal(3, categoryCount(draw.dailies), "day " .. n)
+          assert.are_not.equal(before.skirmish, draw.skirmish)
+          before = draw
+        end
+        local week = Doomsday.drawWeek(Doomsday.week(cases.epoch), version)
+        for w = Doomsday.week(cases.epoch) + 1, Doomsday.week(cases.epoch) + 60 do
+          local draw = Doomsday.drawWeek(w, version)
+          assert.are.equal(3, #draw.weeklies, "week " .. w)
+          for _, id in ipairs(draw.weeklies) do assert.is_nil(set(week.weeklies)[id], "week " .. w) end
+          -- CF-77: from pool version 2 the weeklies are of 3 different categories.
+          if version >= 2 then assert.are.equal(3, categoryCount(draw.weeklies), "week " .. w) end
+          assert.are_not.equal(week.bounty, draw.bounty)
+          week = draw
+        end
+      end)
+  end
+
+  -- CF-77: pool version 2 takes the missions of the trackers built on verified APIs (CF-71 to CF-73).
+  it("puts the tracked missions in pool version 2, each with its progress", function()
+    local ns = helpers.coreNs()
+    helpers.loadAddonFile("src/core/Doomsday.lua", ns)
+    helpers.loadAddonFile("src/core/Goals.lua", ns)
+    for _, file in ipairs({ "Quests", "Records", "Places" }) do
+      helpers.loadAddonFile("src/core/missions/" .. file .. ".lua", ns)
+    end
+    local joined = 0
+    for _, g in ipairs(ns.Doomsday.GOALS) do
+      if g.since == 2 then
+        joined = joined + 1
+        assert.is_true(g.slot == "daily" or g.slot == "weekly", g.id)
+        assert.is_number(ns.Doomsday.progress(g.id, ns.Goals.progressFacts(ns.Goals.newFacts())), g.id)
       end
-      local count = 0
-      for _ in pairs(categories) do count = count + 1 end
-      assert.are.equal(3, count, "day " .. n)
-      assert.are_not.equal(before.skirmish, draw.skirmish)
-      before = draw
     end
-    local week = Doomsday.drawWeek(Doomsday.week(cases.epoch))
-    for w = Doomsday.week(cases.epoch) + 1, Doomsday.week(cases.epoch) + 60 do
-      local draw = Doomsday.drawWeek(w)
-      for _, id in ipairs(draw.weeklies) do assert.is_nil(set(week.weeklies)[id]) end
-      assert.are_not.equal(week.bounty, draw.bounty)
-      week = draw
-    end
+    assert.are.equal(42, joined)
+    assert.are.same({ 43, 27, 3, 5 }, { #Doomsday.pool("daily", 2), #Doomsday.pool("weekly", 2),
+                                        #Doomsday.pool("skirmish", 2), #Doomsday.pool("bounty", 2) })
   end)
 
   it("swaps goals a friend can't do", function()
     for _, c in ipairs(cases.swaps) do
-      local goals = c.day and Doomsday.goalsForDay(c.day, c.situation) or Doomsday.goalsForWeek(c.week, c.situation)
+      local v = c.pool or 1
+      local goals = c.day and Doomsday.goalsForDay(c.day, c.situation, v)
+        or Doomsday.goalsForWeek(c.week, c.situation, v)
       assert.are.same(c.expect.set, goals.set, c.note)
       assert.are.same(c.expect.swapped, goals.swapped, c.note)
       if c.expect.zone then assert.are.equal(c.expect.zone, goals.zone, c.note) end
@@ -245,15 +279,15 @@ describe("Doomsday (CF-55)", function()
       if not c.addonOnly then
         local e = c.expect
         if e.set then
-          local goals = Doomsday.goalsForDay(c.day, c.situation, nil, c.schedule)
+          local goals = Doomsday.goalsForDay(c.day, c.situation, c.pool or 1, c.schedule)
           assert.are.same(e.set, goals.set, c.note)
           assert.are.same(e.swapped, goals.swapped, c.note)
         elseif e.dailies then
-          local draw = Doomsday.scheduledDraw(c.day, c.schedule)
+          local draw = Doomsday.scheduledDraw(c.day, c.schedule, c.pool or 1)
           assert.are.same(e.dailies, draw.dailies, c.note)
           assert.are.equal(e.skirmish, draw.skirmish, c.note)
         else
-          local draw = Doomsday.scheduledWeek(c.week, c.schedule)
+          local draw = Doomsday.scheduledWeek(c.week, c.schedule, c.pool or 1)
           assert.are.same(e.weeklies, draw.weeklies, c.note)
           assert.are.equal(e.bounty, draw.bounty, c.note)
         end
