@@ -92,7 +92,7 @@ describe("FriendProbe launch checklist (CF-60)", function()
       _G.SlashCmdList = {}
       _G.C_Timer.After = function() end -- the delayed self-whisper burst (V50b) isn't run here
       local ns = {}
-      for _, file in ipairs({ "Checklist.lua", "FriendProbe.lua", "Window.lua" }) do
+      for _, file in ipairs({ "Checklist.lua", "FriendProbe.lua", "Missions.lua", "Window.lua" }) do
         local chunk = assert(loadfile(PROBE .. file))
         chunk("FriendProbe", ns)
       end
@@ -145,8 +145,10 @@ describe("FriendProbe launch checklist (CF-60)", function()
         if item.retail then retail[#retail + 1] = item.id end
       end
       table.sort(retail)
-      assert.are.same({ "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67", "V68", "V69",
-                        "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86", "V88", "V89" }, retail)
+      assert.are.same({ "V100", "V102", "V103", "V108", "V109", "V110", "V111", "V112", "V113", "V115", "V116",
+                        "V117", "V118", "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67",
+                        "V68", "V69", "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86", "V88",
+                        "V89", "V90", "V91", "V93", "V94", "V95", "V96", "V98", "V99" }, retail)
     end)
 
     it("never registers the combat log by itself, only from its button (Blizzard's popup on Retail)", function()
@@ -174,6 +176,34 @@ describe("FriendProbe launch checklist (CF-60)", function()
       local r = ns.results().V67
       assert.are.equal("info", r.status) -- not changed yet (the mock doesn't load ReloadProbe.lua)
       assert.is_truthy(r.detail:find("ReloadProbe.lua mark", 1, true))
+      assert.are.same({}, printed)
+    end)
+
+    -- Every probe frame gets the event, as in the game.
+    local function fire(event, ...)
+      for _, frame in ipairs(state.frames or {}) do
+        local onEvent = frame.scripts.OnEvent
+        if onEvent then onEvent(frame, event, ...) end
+      end
+    end
+
+    it("runs the mission checks at login without errors (V90 to V119)", function()
+      login(1793300000)
+      for _, line in ipairs(_G.FriendProbeDB.log) do
+        assert.is_falsy(line:find("handler error", 1, true), line)
+      end
+      assert.is_truthy(table.concat(_G.FriendProbeDB.log, "\n"):find("V90-V119 MISSION CHECKS", 1, true))
+      assert.are.same({}, printed)
+    end)
+
+    it("ticks a kill from the XP message, also with bonus text (V90)", function()
+      local ns = login(1793300000)
+      _G.COMBATLOG_XPGAIN_FIRSTPERSON = "%s dies, you gain %d experience."
+      fire("CHAT_MSG_COMBAT_XP_GAIN", "Kobold Miner dies, you gain 45 experience. (+22 exp Rested bonus)")
+      _G.COMBATLOG_XPGAIN_FIRSTPERSON = nil
+      local r = ns.results().V90
+      assert.are.equal("pass", r.status)
+      assert.is_truthy(r.detail:find("Kobold Miner dies, 45 XP", 1, true))
       assert.are.same({}, printed)
     end)
 
