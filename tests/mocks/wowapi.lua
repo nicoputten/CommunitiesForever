@@ -166,21 +166,27 @@ local function fakeLibs(state)
 
   -- AceEvent: one handler per (object, event/message), like the real library; function
   -- callbacks receive (eventOrMessage, ...). state.events[event] keeps the last handler.
+  -- The real library calls the objects in table order, which is not fixed; the mock calls them in
+  -- registration order (state.handlerOrder) so a run is reproducible.
+  local function register(handlers, name, object, handler)
+    handlers[name] = handlers[name] or {}
+    if handlers[name][object] == nil then
+      state.handlerOrder[handlers[name]] = state.handlerOrder[handlers[name]] or {}
+      table.insert(state.handlerOrder[handlers[name]], object)
+    end
+    handlers[name][object] = handler
+  end
   local eventMixin = {}
   function eventMixin:RegisterEvent(event, handler)
     state.events[event] = handler
-    state.eventHandlers[event] = state.eventHandlers[event] or {}
-    state.eventHandlers[event][self] = handler
+    register(state.eventHandlers, event, self, handler)
   end
   function eventMixin:RegisterMessage(message, handler)
-    state.messageHandlers[message] = state.messageHandlers[message] or {}
-    state.messageHandlers[message][self] = handler
+    register(state.messageHandlers, message, self, handler)
   end
   function eventMixin:SendMessage(message, ...)
     state.sent[#state.sent + 1] = { message, ... }
-    for _, handler in pairs(state.messageHandlers[message] or {}) do
-      handler(message, ...)
-    end
+    wowapi.dispatch(state, state.messageHandlers[message], message, ...)
   end
   for k, v in pairs(eventMixin) do mixin[k] = v end
 
@@ -264,6 +270,7 @@ function wowapi.install(opts)
     slash = {},
     events = {},
     eventHandlers = {},
+    handlerOrder = {},     -- AceEvent handler tables -> their objects in registration order
     ldbObjects = {},
     messageHandlers = {},
     sent = {},
@@ -682,12 +689,18 @@ function wowapi.install(opts)
   return state
 end
 
+-- Calls the handlers of one event or message (object -> handler) in registration order.
+function wowapi.dispatch(state, handlers, name, ...)
+  for _, object in ipairs(handlers and state.handlerOrder[handlers] or {}) do
+    local handler = handlers[object]
+    if handler then handler(name, ...) end
+  end
+end
+
 -- Fires a registered WoW event handler (as AceEvent would).
 function wowapi.fireEvent(state, event, ...)
   local handlers = assert(state.eventHandlers[event], "no handler registered for " .. event)
-  for _, handler in pairs(handlers) do
-    handler(event, ...)
-  end
+  wowapi.dispatch(state, handlers, event, ...)
 end
 
 -- Runs all pending, non-cancelled C_Timer timers.

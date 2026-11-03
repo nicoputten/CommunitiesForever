@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** a level-up that finishes a Doomsday goal no longer syncs your record twice.
 - **Fixed:** the Doomsday Board's column labels sit centred over their boxes.
 - **Doomsday:** only a real fight ends PvP Virgin: an honorable kill, a duel or a finished battleground. A finished
   battleground now counts too.
