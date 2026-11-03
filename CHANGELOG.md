@@ -6,6 +6,7 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** the Doomsday Board's column labels sit centred over their boxes.
 - **Doomsday:** only a real fight ends PvP Virgin: an honorable kill, a duel or a finished battleground. A finished
   battleground now counts too.
 - **Doomsday:** a new mission pool: 29 new dailies and 13 new weeklies (quests, levels, dungeons, play, friends and
