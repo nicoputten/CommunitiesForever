@@ -336,6 +336,11 @@ The version bumps only when a synced field of the character you are on really ch
 | A new PvP rank (CF-52) right away; kills, honor, deaths and duels with the feed's 60 s bump | |
 | Loot, gold and groups (CF-53) with the feed's 60 s bump; the riding skill like other snapshot fields | A session's start and end (CF-53: they travel with the next bump) |
 
+The feed's 60 s bump is skipped when nobody can hold the change's version yet: the own version is newer than
+the last own `RECORD` this client built to send (or the version stored at login). The change then rides on
+that version. So a level-up that also finishes a Doomsday goal is one version and one HELLO, whatever order
+the level-up's handlers run in.
+
 ## 6. What the receiver checks (accept and merge)
 
 **Sender:**

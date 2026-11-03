@@ -48,6 +48,7 @@ describe("PvP, duels and deaths (CF-52)", function()
     load(nil, { hk = 100, rankID = 7, rankNumber = 3, rankName = "Sergeant" })
     settle()
     local version = addon.db.global.self.version
+    ns.FeedTracker.published(version) -- a friend fetched the record at this version
     state.serverTime = 2000
     state.pvp.hk = 101
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")

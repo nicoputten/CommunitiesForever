@@ -318,6 +318,7 @@ function handlers.REQ(message, _, target)
   if message.want == nil or message.want == wireOwn then
     -- All own characters are always shared (CF-17), so this works on any character.
     local record = ns.Merge.outgoingRecord(own(), ns.DoomsdayTracker.outgoing())
+    ns.FeedTracker.published(record.version)
     record.bt = wireOwn
     ns.Messenger.send(target, record)
   elseif type(message.want) == "string" then
