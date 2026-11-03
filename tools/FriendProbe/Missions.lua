@@ -1,5 +1,5 @@
--- Missions: checks for the Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE-DRAFT.md, VERIFY.md V90 to V119;
--- V97 was dropped with its mission).
+-- Missions: checks for the Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE.md, VERIFY.md V90 to V119;
+-- V91, V92 and V97 were dropped with their missions).
 -- Each logs what the game gives and ticks its checklist item once the API answered. Like the rest of the probe:
 -- silent (nothing in chat), every call guarded, only while ns.running().
 local _, ns = ...
@@ -295,7 +295,7 @@ local function Hooks()
 end
 
 -- ===== Events =====
-local EVENTS = { "CHAT_MSG_COMBAT_XP_GAIN", "PLAYER_XP_UPDATE", "ENCOUNTER_END", "PLAYER_TARGET_CHANGED",
+local EVENTS = { "CHAT_MSG_COMBAT_XP_GAIN", "PLAYER_TARGET_CHANGED",
   "UPDATE_MOUSEOVER_UNIT", "NAME_PLATE_UNIT_ADDED", "PLAYER_CONTROL_LOST", "UI_INFO_MESSAGE", "CHAT_MSG_SYSTEM",
   "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_SENT", "PLAYER_BINDING_CHANGED",
   "MERCHANT_SHOW", "MERCHANT_CLOSED", "MAIL_SHOW", "MAIL_SEND_SUCCESS", "AUCTION_HOUSE_SHOW",
@@ -362,21 +362,6 @@ end
 
 local handlers = {
   CHAT_MSG_COMBAT_XP_GAIN = XpGain,
-  PLAYER_XP_UPDATE = function()
-    local xp, max = UnitXP and UnitXP("player"), UnitXPMax and UnitXPMax("player")
-    log("V91 XP", Val(xp), "of", Val(max))
-    if type(xp) == "number" and type(max) == "number" and readable(xp) then
-      result("V91", "pass", "UnitXP " .. xp .. " of UnitXPMax " .. max)
-    else
-      result("V91", "fail", "UnitXP " .. Val(xp) .. ", UnitXPMax " .. Val(max))
-    end
-  end,
-  ENCOUNTER_END = function(encounterID, name, _, _, success)
-    local _, instanceType = GetInstanceInfo()
-    if instanceType ~= "raid" then return end
-    log("V92 raid ENCOUNTER_END", Val(encounterID), Val(name), "success", Val(success))
-    if success == 1 then result("V92", "pass", "raid boss " .. Val(name) .. " (" .. Val(encounterID) .. ")") end
-  end,
   PLAYER_TARGET_CHANGED = function() Creature("target", "target") end,
   UPDATE_MOUSEOVER_UNIT = function() Creature("mouseover", "mouseover") end,
   NAME_PLATE_UNIT_ADDED = function(unit) Creature(unit, "nameplate") end,
