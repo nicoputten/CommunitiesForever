@@ -1,10 +1,10 @@
 # Doomsday: catalogue of PvE weeklies
 
-**Approved by Nico, 2026-11-03**, line by line on the review page: 49 missions yes as drafted. **#8 (`w.ilvl3`,
-"Raise an item level by 3") is still open:** too easy at low levels. The proposed fix is a blue upgrade: "Put on a
-rare (blue) or better item new to the character" (V113 and V83), with the can't-do "highest character below 15 →
-`w.levels3`". Nico decides; until then #8 stays as drafted below. #7 (`w.altLevels2`) stays next to the daily
-`d.altLevel` (one level on an alt), as decision 3 allows.
+**Approved by Nico, 2026-11-03**, line by line on the review page: 49 missions yes as drafted, and #8 changed (it was
+too easy at low levels). #8 is now "Put on a blue (rare) or better item new to the character" (`w.blueGear`). The
+existing `w.ilvl3` ("Raise an item level by 3", pool version 1) keeps its id and meaning and is **retired from pool
+version 2**, as `DOOMSDAY.md` "Pool version" says for a changed goal: ids are never reused or given a new meaning. #7
+(`w.altLevels2`) stays next to the daily `d.altLevel` (one level on an alt), as decision 3 allows.
 
 50 PvE weekly missions, numbered 1 to 50. It follows the daily catalogue
 (`docs/DOOMSDAY-CATALOGUE.md`) and its decisions: general missions only (no zone, dungeon or place names), mostly new
@@ -24,7 +24,7 @@ are the daily catalogue's; the weekly draw takes 3 different ones (decision 2).
 | Category | Weeklies | Works now | Existing tracker | New, verified API | Needs probe |
 |---|---|---|---|---|---|
 | quests | 5 | 2 |  | 3 |  |
-| levels | 5 | 5 |  |  |  |
+| levels | 5 | 4 |  |  | 1 |
 | dungeons | 8 | 6 | 1 | 1 |  |
 | crafts | 6 | 3 | 1 |  | 2 |
 | cooking | 2 |  |  |  | 2 |
@@ -37,14 +37,14 @@ are the daily catalogue's; the weekly draw takes 3 different ones (decision 2).
 | combat | 3 |  |  |  | 3 |
 | loot | 1 |  | 1 |  |  |
 | care | 1 |  |  |  | 1 |
-| **Total** | **50** | **20** | **12** | **8** | **10** |
+| **Total** | **50** | **19** | **12** | **8** | **11** |
 
-- **Works now** (20): recorded today; 15 of them are pool version 1.
+- **Works now** (19): recorded today; 14 of them are pool version 1.
 - **Existing tracker, waits for its launch check** (12): CF-52, CF-53 and CF-56 trackers, and V83 to V86.
 - **New tracker, verified API** (8): the trackers of CF-71 to CF-73 (E18), which the dailies need anyway.
-- **Needs probe** (10): V90 to V119 of the FriendProbe launch checklist; no new probe checks.
+- **Needs probe** (11): V90 to V119 of the FriendProbe launch checklist; no new probe checks.
 
-So **28 of 50 work without a probe**. Every tracker here is one the daily catalogue already needs: the weeklies add
+So **27 of 50 work without a probe**. Every tracker here is one the daily catalogue already needs: the weeklies add
 no new tracker and no new probe check, only counts over a week.
 
 ## Points: 5, 10 or 15
@@ -94,7 +94,7 @@ Columns: **#** (number for review, 1 to 50, stable) · **Id** (existing ids ★)
 |---|---|---|---|---|---|---|---|---|
 | 6 | ★ `w.levels3` | Gain 3 levels | 3 levels | 10 | levels | 3 levels over all characters | works now (pool 1) | all characters at 60 → `w.quests50` |
 | 7 | ★ `w.altLevels2` | Gain 2 levels on an alt | Alt 2 lvls | 10 | levels | 2 levels on one character that isn't the highest | works now (pool 1) | only one character below 60 → `w.quests50` |
-| 8 | ★ `w.ilvl3` | Raise an item level by 3 | Item lvl+3 | 10 | levels | one character's item level 3 above its first login that week | works now (pool 1) | item level unreadable → `w.quests50` |
+| 8 | `w.blueGear` | Put on a blue item new to the character | Blue gear | 10 | levels | a rare (blue) or better item put on that the character never wore before (`PLAYER_EQUIPMENT_CHANGED`, `GetInventoryItemID`, the item's quality); replaces `w.ilvl3`, retired from pool version 2 | needs probe V113, V83 | highest character below 15 → `w.levels3` |
 | 9 | `w.levels5` | Gain 5 levels | 5 levels | 15 | levels | 5 levels over all characters | works now | all characters at 60 → `w.quests50` |
 | 10 | `w.levelDays3` | Gain a level on 3 days | Level days | 10 | levels | a level gained on 3 Doomsday days of the week | works now | all characters at 60 → `w.quests50` |
 
