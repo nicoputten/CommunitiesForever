@@ -46,12 +46,20 @@ Every Doomsday week each friend gets:
 
 | What | PvE | PvP |
 |---|---|---|
-| A daily done (the PvE dailies, the Hunt, the Skirmish) | 5 | 5 |
-| A weekly done (the PvE weeklies, the Weekly bounty) | 15 | 15 |
+| A daily done (the PvE dailies, the Skirmish) | each goal's points, from the pool: 1, 3 or 5 | 1, 3 or 5 |
+| The Hunt | | 5 |
+| A weekly done (the PvE weeklies, the Weekly bounty) | each goal's points, from the pool: 5, 10 or 15 | 5, 10 or 15 |
 | A kill | | see "Kill points" |
 | A duel, per pair of friends, the first one of the day | | win 3 · loss 1 |
 
-Each goal counts once per day or week. Feats give no points.
+Each goal counts once per day or week. Feats give no points. A day's total varies with the draw.
+
+**Points per goal (CF-69, Nico 2026-11-03).** Every goal scores by its size, the `points` of its catalogue entry (`Doomsday.pointsFor(id, pool)`):
+- **A day keeps the points of the pool version it was drawn in.** Each day and week records it with its set (`goals.days[n].pool`, `goals.weeks[w].pool`, `Doomsday.entryPool`): the entry's `pool`, else the friend's `goals.pool`, else 1. An addon before CF-69 sends no entry `pool`; the addon sends `pool = 1` for its own entries recorded before CF-69, as pool version 1 was the only one then.
+- **Pool version 1** scores flat: 5 for a PvE daily, the Skirmish and the Hunt, 15 for a PvE weekly and the Bounty. From **pool version 2** the goal's own points; a goal without a size yet scores flat; the Hunt stays 5.
+- An unknown id (a newer pool) counts nothing: its track isn't known.
+- Both sides count a friend's points from the `done` ids and the entry's pool version, never from a total. Pinned by the `pointsPerGoal` golden cases.
+- The crown, crossing out and the streak count goals, not points: unchanged.
 
 **The draw.** Goals are computed, never chosen and never sent by the site, so every friend sees the same set without the uploader. One function draws them in the addon (`src/core/Doomsday.lua`) and the site (its TypeScript copy):
 - It draws from the day or week number, a salt per slot, and `Doomsday.POOL_VERSION`. Base: `pick(n, salt, count) = ((n * 2654435761 + salt) % 4294967296) % count + 1`, which is exact in Lua 5.1 doubles and JavaScript numbers.

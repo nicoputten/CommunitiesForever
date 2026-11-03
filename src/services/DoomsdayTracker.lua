@@ -201,7 +201,8 @@ local function dayEntry(n)
   local drawn = ns.Doomsday.goalsForDay(n, situation, nil, DoomsdayTracker.missionSchedule())
   local set = drawn.set
   if drawn.hunt then set[#set + 1] = "hunt" end
-  entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
+  -- CF-69: the pool version it was drawn in, so its points stay that version's.
+  entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime(), pool = ns.Doomsday.POOL_VERSION }
   goals.days[n] = entry
   newDay = started
   f.zone, f.hunts = drawn.zone, drawn.hunt
@@ -215,7 +216,8 @@ local function weekEntry(w)
   local situation = ns.Goals.situation(own().chars, nil, friendQuestLog(), dungeonInRange(),
                                        { friends = communityFriends(), now = GetServerTime() })
   local drawn = ns.Doomsday.goalsForWeek(w, situation, nil, DoomsdayTracker.missionSchedule())
-  entry = { set = drawn.set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
+  entry = { set = drawn.set, swapped = drawn.swapped, done = {}, at = GetServerTime(),
+            pool = ns.Doomsday.POOL_VERSION }
   goals.weeks[w] = entry
   factsFor(facts.weeks, w).zone = drawn.zone
   return entry
@@ -537,22 +539,17 @@ function buildState(today, schedule)
     end
     return result
   end
-  -- This week's points: the days of this week and the week's goals, plus this week's kill points.
-  local done = {}
-  for n, e in pairs(goals.days) do
-    if ns.Doomsday.week(n) == week then
-      for id, at in pairs(e.done or {}) do done[n .. ":" .. id] = at end
-    end
-  end
+  -- This week's points: the days of this week and the week's goals, each in its own pool version (CF-69), plus
+  -- this week's kill points.
   local points = { pve = 0, pvp = 0 }
-  for key in pairs(done) do
-    local track, p = ns.Doomsday.goalPoints(key:match(":(.+)$"))
-    if track then points[track] = points[track] + p end
+  local function add(e)
+    local p = ns.Doomsday.points(e.done, 0, 0, ns.Doomsday.entryPool(e))
+    points.pve, points.pvp = points.pve + p.pve, points.pvp + p.pvp
   end
-  for id in pairs(wk.done) do
-    local track, p = ns.Doomsday.goalPoints(id)
-    if track then points[track] = points[track] + p end
+  for n, e in pairs(goals.days) do
+    if ns.Doomsday.week(n) == week then add(e) end
   end
+  add(wk)
   for _, s in ipairs(ns.Doomsday.scoreKills(wf.kills, schedule, community)) do
     if s.track == "pvp" then points.pvp = points.pvp + s.points end
   end

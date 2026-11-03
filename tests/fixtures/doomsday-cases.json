@@ -5034,6 +5034,113 @@
    }
   }
  ],
+ "pointsPerGoal": [
+  {
+   "note": "a day of pool version 1 (an entry without pool, no goals.pool): flat, 5 per daily, Skirmish and Hunt",
+   "entry": {},
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2,
+    "d.quests20": 3,
+    "p.flex": 4,
+    "hunt": 5
+   },
+   "expect": {
+    "pool": 1,
+    "pve": 15,
+    "pvp": 10,
+    "goals": {
+     "d.quests10": 5,
+     "d.campfire": 5,
+     "d.quests20": 5,
+     "p.flex": 5,
+     "hunt": 5
+    }
+   }
+  },
+  {
+   "note": "a day of pool version 2: each goal's own size (1, 3 or 5); the Hunt stays 5",
+   "entry": {
+    "pool": 2
+   },
+   "goalsPool": 1,
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2,
+    "d.quests20": 3,
+    "p.flex": 4,
+    "hunt": 5
+   },
+   "expect": {
+    "pool": 2,
+    "pve": 9,
+    "pvp": 6,
+    "goals": {
+     "d.quests10": 3,
+     "d.campfire": 1,
+     "d.quests20": 5,
+     "p.flex": 1,
+     "hunt": 5
+    }
+   }
+  },
+  {
+   "note": "an entry without pool takes the friend's goals.pool",
+   "entry": {},
+   "goalsPool": 2,
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2
+   },
+   "expect": {
+    "pool": 2,
+    "pve": 4,
+    "pvp": 0,
+    "goals": {
+     "d.quests10": 3,
+     "d.campfire": 1
+    }
+   }
+  },
+  {
+   "note": "the entry's own pool wins over goals.pool: a day keeps the points of the pool it was drawn in",
+   "entry": {
+    "pool": 1
+   },
+   "goalsPool": 2,
+   "done": {
+    "d.quests10": 1,
+    "d.campfire": 2
+   },
+   "expect": {
+    "pool": 1,
+    "pve": 10,
+    "pvp": 0,
+    "goals": {
+     "d.quests10": 5,
+     "d.campfire": 5
+    }
+   }
+  },
+  {
+   "note": "an unknown id (a newer pool) counts nothing in any pool version",
+   "entry": {
+    "pool": 2
+   },
+   "done": {
+    "x.newer": 1,
+    "d.campfire": 2
+   },
+   "expect": {
+    "pool": 2,
+    "pve": 1,
+    "pvp": 0,
+    "goals": {
+     "d.campfire": 1
+    }
+   }
+  }
+ ],
  "crown": [
   {
    "note": "crossed out = all 3 PvE dailies; the PvP goal doesn't count; the first by the last daily's time; equal times go to the lower friend key",

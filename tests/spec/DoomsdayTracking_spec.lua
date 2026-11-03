@@ -189,6 +189,9 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     local today = ns.DoomsdayTracker.today()
     assert.is_table(record.goals.days[today])
     assert.are.equal(ns.Doomsday.POOL_VERSION, record.goals.pool)
+    -- CF-69: the day and week carry the pool version they were drawn in.
+    assert.are.equal(ns.Doomsday.POOL_VERSION, record.goals.days[today].pool)
+    assert.are.equal(ns.Doomsday.POOL_VERSION, record.goals.weeks[ns.Doomsday.week(today)].pool)
     assert.are.equal(68400, record.goals.reset)
     state.bnSent = {}
     ns.Sync.announce()

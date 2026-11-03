@@ -66,6 +66,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-69 Points per mission
+Pool version 2 (CF-77) is what turns the sizes on; until then the points stay 5 and 15. These steps check that days carry their pool version and nothing changed.
+
+| Step | Expected | Status |
+|---|---|---|
+| After a reset on this build: `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n, e.pool) end` | The newest day (the highest number) prints `1`; days recorded before this build print `nil`. | open |
+| Finish a PvE daily, then a weekly | Chat line, banner and Today show +5 and +15, as before; the week's total adds them. | open |
+| A friend on v1.1.0 or older syncs while you are online | No errors on either side; their points and yours on Board and Ladder are as before. | open |
+| After CF-77 (pool version 2): finish a 1-point daily (e.g. Light a campfire) | Its chat line and banner show "+1"; the week's total grows by 1. | open |
+
 ### CF-68 Doomsday schedule from the site
 Needs the site's Mission pool page (web WEB-78) and the uploader. Pick a day at least 2 days ahead (today and tomorrow are locked on the site).
 
