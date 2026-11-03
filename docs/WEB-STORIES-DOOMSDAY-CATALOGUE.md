@@ -22,6 +22,9 @@ golden cases in `tests/fixtures/doomsday-cases.json` pin both copies.
 - Every place that shows points (the /dailies page, the roster, the ladder, Discord recaps through the bot's data)
   shows the per-goal totals. Points per track stay side by side, never added together.
 - Labels and texts come from the pool, never typed twice.
+- **PvP Virgin (CF-78, Nico 2026-11-03):** a friend stays a PvP Virgin until a real fight: an honorable kill, a duel
+  or a finished battleground. PvP points from goals without a fight (emotes, the PvP flag) count on the PvP track but
+  don't end it. The ladder, the roster and the bot's data use the same rule; golden `ladder` cases pin it.
 
 ## WEB-81 The Mission pool page for 118+ missions (pairs with WEB-78, WEB-79)
 The page was built for 37 missions (14 PvE dailies). With 125 in the catalogue it needs:

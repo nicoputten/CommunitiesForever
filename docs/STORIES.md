@@ -5,7 +5,7 @@ Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
-2. E18, the mission catalogue: CF-69 and CF-70, then CF-71 to CF-73, then CF-77 (pool version 2, with the site). CF-74 to CF-76 as their launch checks pass.
+2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).
@@ -38,14 +38,12 @@ Answers V73 to V78 in one run at launch. The results go to `docs/API-FINDINGS.md
 - If the killer's name is readable, propose stories for a Wanted poster (the enemy who killed us most this week, a bounty on them) and a revenge kill (killing your killer within 10 minutes).
 
 ## E18 The Doomsday mission catalogue (approved by Nico, 2026-11-03)
-`docs/DOOMSDAY-CATALOGUE.md` is the approved list: 118 PvE dailies in 15 categories and 4 Skirmish goals, numbered
-1 to 125 (#16, #27 and #94 removed), each with its id, label, points (1, 3 or 5), "done when", data source and
-fallback. These stories build it in the addon. Read the catalogue first; where a story and the catalogue disagree on a
-mission, the catalogue wins. The site's side is in `docs/WEB-STORIES-DOOMSDAY-CATALOGUE.md` (for the web repo).
-
-Build order: CF-69 and CF-70 first (rules and catalogue in code), then CF-71 to CF-73 (no probe needed), CF-77 pool
-version 2 with the site in the same release. CF-74 to CF-76 follow mission by mission as their launch checks pass, each
-group with its own pool version bump.
+`docs/DOOMSDAY-CATALOGUE.md` is the approved list of dailies: 118 PvE dailies in 15 categories and 4 Skirmish goals,
+numbered 1 to 125 (#16, #27 and #94 removed), each with its id, label, points (1, 3 or 5), "done when", data source
+and fallback. The weekly catalogue (`docs/DOOMSDAY-WEEKLY-CATALOGUE.md`, #177) and the PvP catalogue
+(`docs/DOOMSDAY-PVP-CATALOGUE.md`, #178) are in review; CF-79 builds them once approved. Read the catalogue first;
+where a story and a catalogue disagree on a mission, the catalogue wins. The site's side is in
+`docs/WEB-STORIES-DOOMSDAY-CATALOGUE.md` (for the web repo).
 
 Compatibility (rule 8), for all of E18:
 - Stored data: only new optional local facts (`self.doomsday`, as CF-56) and two new per-character sets (zones and
@@ -55,111 +53,179 @@ Compatibility (rule 8), for all of E18:
 - The draw depends on `POOL_VERSION`: a friend on an older addon draws the older pool. That is the existing rule
   (`goals.pool` is recorded); the release notes ask friends to update on release day.
 
-### CF-69 Points per mission (rule change)
-Nico, 2026-11-03: every goal scores 1, 3 or 5 points by size, so no daily is worth more than today; a day's total
-varies with the draw; the Skirmish and the weeklies get sizes too.
-- `docs/DOOMSDAY.md` "Points": the flat "5 per daily, 15 per weekly" becomes "each goal's points, from the pool"; the
-  table lists the sizes (1 quick, 3 standard, 5 demanding) and says that a day keeps the points of the pool version it
-  was drawn in.
-- `Doomsday.GOALS` entries get `points`. Goals of pool version 1 keep 5 (dailies, Skirmish) and 15 (weeklies, Bounty)
-  for days and weeks of pool version 1; from pool version 2 each goal's catalogue points count. `Doomsday.pointsFor(id,
-  pool)` returns them (nil-safe: an unknown id scores the old flat value).
-- Points of a day or week are computed from its `done` ids and the pool version recorded with it (`goals.pool`), on
-  both sides. The crown, crossing out and the streak don't change: they count goals, not points.
-- Open before building, for Nico: the sizes of the pool-1 Skirmish goals (`p.frontLine`, `p.loneWolf`,
-  `p.untouchable`: proposal 3 each) and of the Bounty and the weeklies (proposal: 5, 10 or 15). The catalogue has
-  the sizes of every PvE daily and the 4 new Skirmish goals.
-- Golden cases: a new `pointsPerGoal` key in `tests/fixtures/doomsday-cases.json` (a day of pool 1, a day of pool 2
-  with 1, 3 and 5 point goals, an unknown id), copied unchanged by the site (WEB story).
-- The addon's Week, Board and Ladder show the new totals; the day-complete banner shows the day's points.
-- Manual (VERIFY.md): a day with a 1-point goal shows "+1" on its banner and in the week's total.
+### Building in parallel
+Nico wants several workers on E18 at once. The stories are cut so that, after CF-70, workers on different lanes never
+edit the same file. Each story lists the files it touches and what it waits for.
 
-### CF-70 The catalogue in code
-- `Doomsday.GOALS` gets every catalogue mission in catalogue order within its slot, with `id`, `slot`, `category`
-  (the 15 categories), `text` (the catalogue's title), `points`, `can` and `fallback`. New goals have no `since`
-  (they wait for data), so pool version 1's draw doesn't change.
+| Lane | Stories, in order | Files only this lane edits |
+|---|---|---|
+| Start (one worker) | CF-70 | sets up everything the other lanes share (below) |
+| Rules | CF-69, then CF-78, then CF-79 (after the reviews) | `src/core/Doomsday.lua`, `src/core/DoomsdayView.lua`, `src/core/Pvp.lua`, `src/ui/DoomsdayTab.lua`, `src/ui/CelebrationBanner.lua`, `docs/DOOMSDAY.md`, `tests/fixtures/doomsday-cases.json` and their specs |
+| Quests | CF-71 | `src/core/missions/Quests.lua`, `src/adapters/missions/QuestEvents.lua`, `src/core/Quests.lua`, `src/adapters/SelfInfo.lua` (the quest log fields), `tests/spec/MissionsQuests_spec.lua`, `tests/fixtures/missions/quests.json` |
+| Records | CF-72 | `src/core/missions/Records.lua`, `src/adapters/missions/RecordEvents.lua`, `tests/spec/MissionsRecords_spec.lua`, `tests/fixtures/missions/records.json` |
+| Friends and places | CF-73 | `src/core/missions/Places.lua`, `src/adapters/missions/PlaceEvents.lua`, `tests/spec/MissionsPlaces_spec.lua`, `tests/fixtures/missions/places.json` |
+| Launch checks | CF-74, CF-75, CF-76 (after the launch run, each in its own module files, `missions/Extended`, `missions/Items`, `missions/World`) | as the lanes above, with their own module, adapter, spec and fixture |
+| End (one worker) | CF-77 | `src/core/Doomsday.lua` (`POOL_VERSION`, `since`, the draw), `tests/fixtures/doomsday-cases.json`, `docs/DOOMSDAY.md` |
+
+Shared by everyone, append only: `VERIFY.md` (each story adds its own section under "Manual test steps per story")
+and `CHANGELOG.md` (each story adds its line under "Unreleased"). A merge conflict there is resolved by keeping both.
+`CommunitiesForever.toc` is edited only by CF-70 (it lists every module file up front), so the lanes don't touch it.
+
+Dependencies: CF-70 before everything. CF-69 → CF-78 → CF-79 in the rules lane. CF-71, CF-72, CF-73 need only CF-70
+and run side by side, and alongside the rules lane. CF-74 to CF-76 need CF-70 and their launch checks
+(`docs/API-FINDINGS.md`). CF-77 needs CF-69 and the tracker stories it puts in the pool, and the site's WEB-80.
+
+### CF-70 The catalogue in code, and the mission modules (first, one worker)
+Touches: `src/core/Doomsday.lua`, `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `CommunitiesForever.toc`,
+`docs/DOOMSDAY.md` (the goal tables and short labels), `tests/fixtures/doomsday-cases.json` (`pools`), the stub files
+below, and their specs. Waits for: nothing.
+- `Doomsday.GOALS` gets every daily catalogue mission in catalogue order within its slot, with `id`, `slot`,
+  `category` (the 15 categories), `text` (the catalogue's title), `points` (the catalogue's; used by CF-69), `can` and
+  `fallback`. New goals have no `since` (they wait for data), so pool version 1's draw doesn't change.
 - Moved categories: `d.groupFriend` and `d.trade` to social, `d.rare` to loot, `d.fish20` to fishing (none of them
   in pool version 1).
 - `Doomsday.SHORT_LABELS` gets every label (at most 10 characters; a spec checks length and uniqueness per slot).
 - The situation (`Goals.situation`) gets the new optional fields: `below20`, `hasCooking`, `hasFirstAid`,
   `hasGathering`, `riding`, `friends`, `canBuff`. A missing field never swaps.
-- `docs/DOOMSDAY.md`: the dailies table and the Skirmish table list the new goals with "Data" (the story that tracks
-  them), the short labels table gets the new labels.
-- Golden cases: `pools` lists the catalogue; the draws of pool version 1 are unchanged (the existing cases pass as
-  they are).
+- **Mission modules**, so the tracker lanes never edit a shared file:
+  - `Goals.registerKind(kind, fn)`: a module adds its own observation kinds to `Goals.observe` (facts stay in the
+    day's and week's facts table under the module's own key, e.g. `facts.quests2`).
+  - `Doomsday.registerProgress(id, fn)`: a module adds the progress function of its missions; `Doomsday.progress`
+    looks there after its own table.
+  - `DoomsdayTracker` forwards every module's internal message (`CF_MISSION_EVENT`, reason = the kind) to
+    `Goals.observe`, with today's and this week's facts.
+  - Stub files, listed in the TOC now, each a module that registers nothing yet: `src/core/missions/Quests.lua`,
+    `Records.lua`, `Places.lua`, `Extended.lua`, `Items.lua`, `World.lua`, and `src/adapters/missions/QuestEvents.lua`,
+    `RecordEvents.lua`, `PlaceEvents.lua`, `ExtendedEvents.lua`, `ItemEvents.lua`, `WorldEvents.lua`; empty fixture
+    files `tests/fixtures/missions/*.json` (addon-only progress cases: the site never computes progress).
+- `docs/DOOMSDAY.md`: the dailies and Skirmish tables list the new goals with "Data" (the story that tracks them).
+- Golden cases: `pools` lists the catalogue; the draws of pool version 1 are unchanged.
 
-### CF-71 Quest details (verified APIs)
+### CF-69 Points per mission (rule change; rules lane)
+Touches: `src/core/Doomsday.lua` (points, ladder), `src/core/DoomsdayView.lua`, `src/ui/DoomsdayTab.lua`,
+`src/ui/CelebrationBanner.lua`, `docs/DOOMSDAY.md` "Points", `tests/fixtures/doomsday-cases.json` (`pointsPerGoal`),
+their specs. Waits for: CF-70.
+- Nico, 2026-11-03: every goal scores by size: dailies and Skirmish 1, 3 or 5; weeklies and Bounty 5, 10 or 15. A
+  day's total varies with the draw.
+- `docs/DOOMSDAY.md` "Points": the flat "5 per daily, 15 per weekly" becomes "each goal's points, from the pool"; a
+  day keeps the points of the pool version it was drawn in.
+- `Doomsday.pointsFor(id, pool)`: pool version 1 keeps 5 (dailies, Skirmish) and 15 (weeklies, Bounty); from pool
+  version 2 the goal's `points`. Nil-safe: an unknown id scores the old flat value.
+- Points of a day or week come from its `done` ids and the pool version recorded with it (`goals.pool`), on both
+  sides. The crown, crossing out and the streak don't change: they count goals, not points.
+- The sizes of the pool-1 Skirmish and Bounty goals and of the weeklies come from the weekly and PvP catalogues once
+  Nico approved them (#177, #178); until then they keep 5 and 15.
+- Golden cases: `pointsPerGoal` (a day of pool 1, a day of pool 2 with 1, 3 and 5 point goals, an unknown id), copied
+  unchanged by the site (WEB-80).
+- The Week, Board and Ladder show the new totals; the day-complete banner shows the day's points.
+- Manual (VERIFY.md): a day with a 1-point goal shows "+1" on its banner and in the week's total.
+
+### CF-78 Only a real fight ends PvP Virgin (rule change; rules lane)
+Touches: `src/core/Pvp.lua` (`Pvp.virgin`), `src/core/DoomsdayView.lua` and `src/core/Doomsday.lua` (the ladder's
+`killedEver`), `docs/DOOMSDAY.md` "Two tracks", `tests/fixtures/doomsday-cases.json` (`ladder`), their specs. Waits
+for: CF-69 (same files).
+- Nico, 2026-11-03 (#178): **a PvP Virgin stays one until a real fight: an honorable kill, a duel, or a finished
+  battleground.** PvP points from goals that need no fight (emotes, the PvP flag) count on the PvP track but don't end
+  PvP Virgin status.
+- `DOOMSDAY.md`: "any PvP point or any kill ends it" becomes "an honorable kill, a duel or a finished battleground on
+  any character ends it; PvP points from goals without a fight don't".
+- `Pvp.virgin` and the ladder's `killedEver` (renamed `foughtEver`, the old name read as a fallback) also count a
+  finished battleground run (`runs`, `kind = "pvp"`, CF-23).
+- Golden `ladder` cases: a friend with only taunt points stays unranked; a friend with one battleground is ranked.
+- Manual: a friend who only flexed shows as Conscientious Objector with the points; after a duel, ranked.
+
+### CF-71 Quest details (verified APIs; quests lane)
+Touches: `src/core/missions/Quests.lua`, `src/adapters/missions/QuestEvents.lua`, `src/core/Quests.lua` and
+`src/adapters/SelfInfo.lua` (the quest log's new fields), `tests/spec/MissionsQuests_spec.lua`,
+`tests/fixtures/missions/quests.json`, VERIFY.md, CHANGELOG.md. Waits for: CF-70.
 Missions: `d.questUp`, `d.groupQuest`, `d.classQuest`, `d.dungeonQuest`, `d.questBurst`, `d.accept5`,
 `d.questTogether` (catalogue #6 to #10, #23, #49).
-- The stored quest log (`Quests`) keeps `level` and `suggestedGroup` from `C_QuestLog.GetInfo` next to `area` and
-  `dungeon` (V23, V31); optional fields, nil on records of older versions.
-- At `QUEST_TURNED_IN` (questID, as CF-22) the tracker looks the quest up in the stored log of that character and
+- The stored quest log keeps `level` and `suggestedGroup` from `C_QuestLog.GetInfo` next to `area` and `dungeon` (V23,
+  V31); optional fields, nil on records of older versions.
+- At `QUEST_TURNED_IN` (questID, as CF-22) the module looks the quest up in the stored log of that character and
   observes `{ kind = "questDone", level, charLevel, group, area, dungeon, grouped }` with the time.
 - `QUEST_ACCEPTED`: distinct quest IDs accepted per Doomsday day.
 - `grouped`: a friend's community character in the group at that moment (CF-53's groups).
-- Progress functions and golden `progress` cases per mission, by its "done when".
-- Manual: one step per mission in VERIFY.md (hand in a group quest, a class quest, 3 quests in 10 minutes, ...).
+- Progress functions registered per mission; progress cases in its fixture file; manual steps in VERIFY.md.
 
-### CF-72 Levels, play and dungeons on recorded data (verified APIs)
+### CF-72 Levels, play and dungeons on recorded data (verified APIs; records lane)
+Touches: `src/core/missions/Records.lua`, `src/adapters/missions/RecordEvents.lua`,
+`tests/spec/MissionsRecords_spec.lua`, `tests/fixtures/missions/records.json`, VERIFY.md, CHANGELOG.md. Waits for:
+CF-70.
 Missions: `d.levels2`, `d.lowbie`, `d.dingDungeon`, `d.dingFriend`, `d.dungeons2`, `d.speedRun`, `d.newDungeon`,
 `d.chars3`, `d.switchUp`, `d.dustOff`, `d.cookSkill5`, `d.fishSkill5`, `d.aidSkill5`.
 - Level-ups observe the instance type (`GetInstanceInfo`, V35) and whether a friend's community character is grouped.
-- Party runs: duration from `startedAt` and `lastAt`; a new stored per-character set of dungeon names
-  (`chars[guid].dungeonsSeen`, local, seeded from the stored feed's runs) for `d.newDungeon`.
-- Skill points per skill line (185 Cooking, 356 Fishing, 129 First Aid) from the professions the addon stores, as
-  `d.skill5` counts all.
+- Party runs: duration from `startedAt` and `lastAt`; a per-character set of dungeon names (local, in
+  `self.doomsday.dungeonsSeen[guid]`, seeded from the stored feed's runs) for `d.newDungeon`.
+- Skill points per skill line (185 Cooking, 356 Fishing, 129 First Aid) from the professions the addon stores.
 - `d.switchUp` and `d.dustOff` from the days' facts and `lastPlayed`.
-- Golden `progress` cases per mission; manual steps in VERIFY.md.
+- Progress cases in its fixture file; manual steps in VERIFY.md.
 
-### CF-73 Friends and places (verified APIs)
+### CF-73 Friends and places (verified APIs; friends and places lane)
+Touches: `src/core/missions/Places.lua`, `src/adapters/missions/PlaceEvents.lua`, `tests/spec/MissionsPlaces_spec.lua`,
+`tests/fixtures/missions/places.json`, VERIFY.md, CHANGELOG.md. Waits for: CF-70.
 Missions: `d.sameZone`, `d.online3`, `d.carry`, `d.chatHello`, `d.roam4`, `d.newZone`, `d.crossSea`, `d.nostalgia`,
 `d.daredevil`.
 - Friends: `C_Club.GetMemberInfo` zone and presence (V17, V18) for "same zone" and "online at once"; party members'
   levels for `d.carry`; own messages in the selected community's channel by sender GUID (V38).
-- Places: `ZONE_CHANGED_NEW_AREA` with `GetRealZoneText` and the continent from `GetInstanceInfo` (V35); a new stored
-  per-character zone set (`chars[guid].zonesSeen`, local, seeded from the feed's quest zones); zone level ranges from
-  Group Finder's "Quests & Zones" activities (V46), matched to the zone name. A zone without a match never counts.
-- Golden `progress` cases; manual steps in VERIFY.md.
+- Places: `ZONE_CHANGED_NEW_AREA` with `GetRealZoneText` and the continent from `GetInstanceInfo` (V35); a
+  per-character zone set (local, `self.doomsday.zonesSeen[guid]`, seeded from the feed's quest zones); zone level
+  ranges from Group Finder's "Quests & Zones" activities (V46), matched to the zone name. A zone without a match never
+  counts.
+- Progress cases in its fixture file; manual steps in VERIFY.md.
 
 ### CF-74 Existing trackers, extended (after their launch checks)
+Touches: `src/core/missions/Extended.lua`, `src/adapters/missions/ExtendedEvents.lua`, its spec and fixture, VERIFY.md,
+CHANGELOG.md. It reads the CF-52, CF-53, CF-55b and CF-56 facts and doesn't edit their trackers. Waits for: CF-70 and
+the launch checks below.
 Missions: `d.fish50`, `d.fishZones`, `d.fishFriend`, `d.fishNight`, `d.nightOwl`, `d.session1h`, `d.deathless`,
 `d.cleanRun`, `d.profit`, `d.green5`, `d.reward`, `d.craft5`, `d.feedFriend`, `d.discover1`, `d.discover3`,
 `p.punchUp5`, `p.punchDown5`, and the existing `d.cleanLevel`, `d.groupFriend`, `d.trade`, `d.rare`, `d.earlyBird`.
-- Each extends a CF-52, CF-53, CF-55b or CF-56 tracker (zone, group, realm clock, counts per item ID) and joins the pool
-  only once its check passed at launch: V84 (fishing), V85 (trades), V83 (loot), V86 (discoveries), V73 and V74
-  (kills), and the CF-52 and CF-53 story steps (deaths, sessions, gold, groups).
-- Golden `progress` cases; manual steps in VERIFY.md.
+- Each mission joins the pool only once its check passed at launch: V84 (fishing), V85 (trades), V83 (loot), V86
+  (discoveries), V73 and V74 (kills), and the CF-52 and CF-53 story steps (deaths, sessions, gold, groups).
 
 ### CF-75 Probe-gated: items, crafting, cooking, First Aid, care
+Touches: `src/core/missions/Items.lua`, `src/adapters/missions/ItemEvents.lua`, its spec and fixture, VERIFY.md,
+CHANGELOG.md. Waits for: CF-70 and the V checks named below.
 Missions: the cooking, firstaid and care missions and `d.gather10`, `d.newRecipe`, `d.craftGreen`, `d.coins10`,
 `d.equipNew`, `d.treasure`, `d.jump100` (catalogue "needs probe" rows with V95, V104 to V106, V110, V112, V113, V116 to
 V119).
 - Built per mission once its V passed (`docs/API-FINDINGS.md`); a mission whose V failed is marked retired in the
   catalogue and stays out.
-- The campfire missions (`d.campfire`, `d.campfireBuff`) take their spell ID, buff and item count from V119; their
-  "done when" is rewritten from the finding before they are built.
-- Every API guarded (rule 3); golden `progress` cases; manual steps in VERIFY.md.
+- The campfire missions take their spell ID, buff and item count from V119; their "done when" is rewritten from the
+  finding before they are built.
 
 ### CF-76 Probe-gated: combat, travel, economy, social
+Touches: `src/core/missions/World.lua`, `src/adapters/missions/WorldEvents.lua`, its spec and fixture, VERIFY.md,
+CHANGELOG.md. Waits for: CF-70 and the V checks named below.
 Missions: the combat, travel and economy missions and `d.whisper`, `d.wave`, `d.groupPic`, `d.places10`, `d.swim`,
 `p.flex`, `p.boo` (catalogue "needs probe" rows with V90, V93, V94, V96, V98 to V103, V107 to V109, V111, V114, V115).
 - As CF-75: built per mission once its V passed; failed ones retired.
 - Kills from the XP message (V90) match the creature last seen by target, mouseover or nameplate (V93), as the Hunt
   does for players.
 
-### CF-77 Pool version 2
+### CF-79 The weekly and PvP catalogues in code (rules lane, after the reviews)
+Touches: `src/core/Doomsday.lua` (the weekly, Skirmish and Bounty entries and labels), `docs/DOOMSDAY.md`,
+`tests/fixtures/doomsday-cases.json` (`pools`). Waits for: CF-78 and Nico's approval of #177 and #178.
+- As CF-70 for the weeklies and the PvP goals: every approved mission with category, points, `can` and fallback, no
+  `since`. Their trackers are written as stories of their own once the catalogues are approved (PvP: V120 to V123 of
+  the launch run).
+
+### CF-77 Pool version 2 (end, one worker)
+Touches: `src/core/Doomsday.lua` (`POOL_VERSION`, `since`, the draw), `tests/fixtures/doomsday-cases.json` (`draws`),
+`docs/DOOMSDAY.md` "The algorithm, exactly", VERIFY.md, CHANGELOG.md. Waits for: CF-69, CF-78, the tracker stories
+whose missions join, and WEB-80 on the site (same release).
 - `Doomsday.POOL_VERSION = 2`; `since = 2` on the missions CF-71 to CF-73 built and on those of CF-74 whose checks
   passed by then; the points of CF-69 count from this version.
 - The 15 categories in the draw; golden `draws` cases for days and weeks of pool version 2 from its first day (the
   release day), and the existing pool-1 cases unchanged.
-- **The weekly draw takes 3 different categories**, as the dailies do (Nico, 2026-11-03,
-  `docs/DOOMSDAY-WEEKLY-CATALOGUE.md`): every weekly gets a category (the weekly catalogue's), and from pool version 2 slot k takes
-  `candidates[pick(week, 20 + k, #candidates)]` from the pool's weeklies whose category isn't taken yet and that weren't
-  in last week's; if none is left, last week's are allowed again (categories still differ). `docs/DOOMSDAY.md` "The
-  algorithm, exactly" says so; weeks of pool version 1 keep the draw without categories. Golden `draws` cases for weeks
-  of both pool versions.
-- The site ships its copy of pool version 2 in the same release (WEB story); the release notes ask friends to update.
-- Later bumps (3, 4, ...) add the missions of CF-74 to CF-76 as their checks pass, one bump per release, with golden
-  cases each.
+- **The weekly draw takes 3 different categories**, as the dailies do (Nico, 2026-11-03, #177): every weekly gets a
+  category, and from pool version 2 slot k takes `candidates[pick(week, 20 + k, #candidates)]` from the pool's
+  weeklies whose category isn't taken yet and that weren't in last week's; if none is left, last week's are allowed
+  again (categories still differ). Weeks of pool version 1 keep the draw without categories. Golden `draws` cases for
+  weeks of both pool versions.
+- The site ships its copy of pool version 2 in the same release (WEB-80); the release notes ask friends to update.
+- Later bumps (3, 4, ...) add the missions of CF-74 to CF-76 and CF-79 as their checks pass, one bump per release,
+  with golden cases each.
 - Manual (VERIFY.md): on the release day, two friends on the new version see the same 3 dailies; a friend on the old
   version sees pool version 1's.
