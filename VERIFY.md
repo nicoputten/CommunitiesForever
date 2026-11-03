@@ -66,6 +66,22 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-71 Quest details for Doomsday missions
+The quest missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the facts line" below): `/run local f=CommunitiesForeverDB.global.self.doomsday.days; for n,d in pairs(f) do local q=d.quests2; if q then print(n,'up',q.up,'group',q.group,'class',q.class,'dungeon',q.dungeon,'duo',q.together,'burst',q.burst,'accepted',q.acceptedCount) end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, `/reload`, then `/run for id,q in pairs(CommunitiesForeverDB.global.self.chars[UnitGUID("player")].quests) do print(id,q.title,q.level,q.suggestedGroup) end` | Each quest has its level; group quests (shown with "Group" in the quest log) have a number, normal quests `nil`. | open |
+| Accept 2 new quests, abandon one, accept it again; the facts line | `accepted` went up by 2 (taking a quest again counts once). | open |
+| `QUEST_ACCEPTED`'s arguments (unverified: `questID` on Mainline, `questLogIndex, questID` on Classic; CF-71 takes the last number): after accepting a quest, `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do for id in pairs(d.quests2 and d.quests2.accepted or {}) do print(n,id) end end` | The accepted quest's ID is listed (its ID on wowhead), not a small log index (1 to 40). Answered: move it to `docs/API-FINDINGS.md`. | open |
+| Hand in a quest whose level is above your character's level; the facts line | `up` 1. A quest at or below your level doesn't count. | open |
+| Hand in a group quest (`suggestedGroup` above 0) | `group` 1. | open |
+| Hand in a class quest (quest log header is your class name) | `class` 1. | open |
+| Hand in a dungeon quest (dungeon header or the Dungeon tag) | `dungeon` 1. | open |
+| Hand in 3 quests within 10 minutes on one character | `burst` 3. | open |
+| In a group with a friend's community character, hand in a quest | `duo` 1; with only your own alt or a stranger, it stays. | open |
+| A friend on v1.1.0 receives your record | No errors; their quest lists (Friends tab, shared quests) look as before. | open |
+
 ### CF-69 Points per mission
 Pool version 2 (CF-77) is what turns the sizes on; until then the points stay 5 and 15. These steps check that days carry their pool version and nothing changed.
 

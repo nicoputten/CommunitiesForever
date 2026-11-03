@@ -18,11 +18,12 @@ Quests.DUNGEON_AREAS = {
   ["Ruins of Ahn'Qiraj"] = true, ["Temple of Ahn'Qiraj"] = true, ["Ahn'Qiraj"] = true, ["Naxxramas"] = true,
 }
 
---[[ Quest log as stored in a Char: { [questID] = { title, area, dungeon } } from raw log entries:
-  entries = { { questID, title, isHeader, isHidden, tagID } } in log order; headers name the area of the
-  quests below them. Hidden entries and entries without a questID are skipped. Returns nil for nil input
-  (quest log not readable), so a snapshot can keep its previous data. An empty log also returns nil
-  (it may not be loaded yet, e.g. right after login) unless allowEmpty: the player just turned in or
+--[[ Quest log as stored in a Char: { [questID] = { title, area, dungeon, level, suggestedGroup } } from raw log
+  entries = { { questID, title, isHeader, isHidden, tagID, level, suggestedGroup } } in log order; headers name
+  the area of the quests below them. Hidden entries and entries without a questID are skipped. CF-71: level (the
+  quest's) and suggestedGroup (only above 0: a group quest) are optional, nil on records of older versions.
+  Returns nil for nil input (quest log not readable), so a snapshot can keep its previous data. An empty log also
+  returns nil (it may not be loaded yet, e.g. right after login) unless allowEmpty: the player just turned in or
   abandoned a quest, so an empty log is real.
 ]]
 function Quests.fromLog(entries, allowEmpty)
@@ -33,7 +34,11 @@ function Quests.fromLog(entries, allowEmpty)
       area = entry.title
     elseif type(entry.questID) == "number" and entry.questID > 0 and not entry.isHidden then
       local dungeon = DUNGEON_TAGS[entry.tagID] == true or (area ~= nil and Quests.DUNGEON_AREAS[area] == true)
-      quests[entry.questID] = { title = entry.title, area = area, dungeon = dungeon }
+      local level = type(entry.level) == "number" and entry.level > 0 and entry.level or nil
+      local group = entry.suggestedGroup
+      group = type(group) == "number" and group > 0 and group or nil
+      quests[entry.questID] = { title = entry.title, area = area, dungeon = dungeon, level = level,
+                                suggestedGroup = group }
     end
   end
   if next(quests) == nil and not allowEmpty then return nil end
