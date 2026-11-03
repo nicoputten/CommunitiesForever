@@ -933,7 +933,7 @@ ns.tests = {
   { text = "Test: celebration sounds (V88)", run = function() SoundTest() end },
 }
 ns.log = log
-ns.S, ns.Val, ns.Vals, ns.Pattern = S, Val, Vals, Pattern -- for Missions.lua
+ns.S, ns.Val, ns.Vals, ns.Pattern, ns.DumpTable = S, Val, Vals, Pattern, DumpTable -- for Missions.lua
 
 -- V87: Battle.net "Appear offline". Data from a friend whose WoW game account isn't in the friend list (they
 -- appear offline): does it still arrive, and does the game still tell who sent it?
