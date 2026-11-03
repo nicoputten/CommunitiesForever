@@ -1,5 +1,5 @@
 -- Missions: checks for the Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE.md, VERIFY.md V90 to V119;
--- V91, V92 and V97 were dropped with their missions).
+-- V91, V92 and V97 were dropped with their missions) and the PvP catalogue (V120 to V123).
 -- Each logs what the game gives and ticks its checklist item once the API answered. Like the rest of the probe:
 -- silent (nothing in chat), every call guarded, only while ns.running().
 local _, ns = ...
@@ -294,6 +294,98 @@ local function Hooks()
   if not jumpHooked then result("V118", "fail", "JumpOrAscendStart or hooksecurefunc missing") end
 end
 
+-- ===== V120-V123: the PvP catalogue (docs/DOOMSDAY-PVP-CATALOGUE.md) =====
+-- V120: who killed you, from the death recap (the combat log is blocked for addons).
+local function Killer()
+  local get = C_DeathRecap and C_DeathRecap.GetRecapEvents
+  if not get then
+    result("V120", "fail", "C_DeathRecap.GetRecapEvents missing")
+    return
+  end
+  local ok, events = pcall(get)
+  if not ok or type(events) ~= "table" then
+    info("V120", "no recap events (" .. S(events) .. ")")
+    return
+  end
+  local last
+  for i, e in ipairs(events) do
+    if type(e) == "table" then
+      log("V120 recap", i, "source", Val(e.sourceName), "guid", Val(e.sourceGUID), "event", Val(e.event),
+        "spell", Val(e.spellName), "amount", Val(e.amount))
+      last = e
+    end
+  end
+  local guid = last and last.sourceGUID
+  if last and str(last.sourceName) and str(guid) and guid:match("^Player%-") then
+    result("V120", "pass", "killed by player " .. last.sourceName)
+  elseif last then
+    info("V120", "last recap source " .. Val(last.sourceName) .. " (" .. Val(guid) .. "); a death to a player still "
+      .. "to see")
+  end
+end
+
+-- V121: the PvP flag.
+local flagSeen
+local function Flag()
+  local flagged = UnitIsPVP and UnitIsPVP("player")
+  if flagged == flagSeen then return end
+  flagSeen = flagged
+  log("V121 UnitIsPVP", Val(flagged), "| freeForAll", Vals(UnitIsPVPFreeForAll, "player"))
+  if flagged == true then
+    result("V121", "pass", "UnitIsPVP true after a flag change")
+  elseif flagged == nil then
+    result("V121", "fail", "UnitIsPVP missing")
+  end
+end
+
+-- V122: the battleground score: the own row and the battleground's own stats (flags, bases).
+local scoreAt
+local function Score()
+  if scoreAt and GetTime() - scoreAt < 60 then return end
+  scoreAt = GetTime()
+  local me = UnitName("player")
+  local count = GetNumBattlefieldScores and GetNumBattlefieldScores()
+  local stats = {}
+  for s = 1, GetNumBattlefieldStats and GetNumBattlefieldStats() or 0 do
+    stats[#stats + 1] = Vals(GetBattlefieldStatInfo, s)
+  end
+  log("V122 scores", Val(count), "stats", table.concat(stats, " / "))
+  for i = 1, type(count) == "number" and count or 0 do
+    local name, killingBlows, honorableKills = GetBattlefieldScore(i)
+    if type(name) == "string" and type(me) == "string" and name:find(me, 1, true) == 1 then
+      local own = {}
+      for s = 1, #stats do own[#own + 1] = Vals(GetBattlefieldStatData, i, s) end
+      log("V122 own row", Val(name), "killing blows", Val(killingBlows), "honorable kills", Val(honorableKills),
+        "stats", table.concat(own, ", "))
+      if C_PvP and C_PvP.GetScoreInfo then
+        local okInfo, scoreInfo = pcall(C_PvP.GetScoreInfo, i)
+        if okInfo and type(scoreInfo) == "table" then ns.DumpTable("V122 C_PvP.GetScoreInfo", scoreInfo) end
+      end
+      if type(honorableKills) == "number" then
+        result("V122", #stats > 0 and "pass" or "info", "own honorable kills " .. honorableKills .. "; "
+          .. #stats .. " battleground stats" .. (#stats > 0 and (": " .. table.concat(stats, " / ")) or ""))
+      end
+    end
+  end
+end
+
+-- V123: the zone's PvP type.
+local function ZonePvp()
+  local get = (C_PvP and C_PvP.GetZonePVPInfo) or GetZonePVPInfo
+  if not get then
+    result("V123", "fail", "GetZonePVPInfo missing")
+    return
+  end
+  local ok, pvpType, isFFA, faction = pcall(get)
+  local zone = S(GetRealZoneText and GetRealZoneText())
+  log("V123 zone", zone, "pvpType", Val(pvpType), "ffa", Val(isFFA), "faction", Val(faction))
+  if ok and str(pvpType) then
+    result("V123", "pass", zone .. ": " .. pvpType)
+  elseif ok then
+    info("V123", "no PvP type in " .. zone .. " (" .. Val(pvpType) .. ")")
+  end
+end
+
 -- ===== Events =====
 local EVENTS = { "CHAT_MSG_COMBAT_XP_GAIN", "PLAYER_TARGET_CHANGED",
   "UPDATE_MOUSEOVER_UNIT", "NAME_PLATE_UNIT_ADDED", "PLAYER_CONTROL_LOST", "UI_INFO_MESSAGE", "CHAT_MSG_SYSTEM",
@@ -303,7 +395,8 @@ local EVENTS = { "CHAT_MSG_COMBAT_XP_GAIN", "PLAYER_TARGET_CHANGED",
   "TRAINER_SHOW", "TRAINER_CLOSED", "LEARNED_SPELL_IN_SKILL_LINE", "LEARNED_SPELL_IN_TAB", "NEW_RECIPE_LEARNED",
   "CHAT_MSG_LOOT", "LOOT_OPENED", "CHAT_MSG_SKILL", "CHAT_MSG_WHISPER_INFORM", "CHAT_MSG_BN_WHISPER_INFORM",
   "CHAT_MSG_MONEY", "UNIT_AURA", "SCREENSHOT_SUCCEEDED", "PLAYER_EQUIPMENT_CHANGED", "CONFIRM_SUMMON",
-  "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "BAG_UPDATE_DELAYED", "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }
+  "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "BAG_UPDATE_DELAYED", "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN",
+  "PLAYER_DEAD", "PLAYER_FLAGS_CHANGED", "UPDATE_BATTLEFIELD_SCORE", "ZONE_CHANGED_NEW_AREA" }
 
 local trainerOpen = false
 local subzones = {}
@@ -474,6 +567,14 @@ local handlers = {
     end
   end,
   BAG_UPDATE_DELAYED = ScanBags,
+  PLAYER_DEAD = function()
+    if C_Timer then C_Timer.After(1, function() pcall(Killer) end) else Killer() end
+  end,
+  PLAYER_FLAGS_CHANGED = function(unit)
+    if unit == "player" then Flag() end
+  end,
+  UPDATE_BATTLEFIELD_SCORE = Score,
+  ZONE_CHANGED_NEW_AREA = ZonePvp,
   ADDON_ACTION_BLOCKED = function(addon, fn)
     if addon == "FriendProbe" then
       log("blocked", Val(fn))
@@ -498,6 +599,8 @@ frame:SetScript("OnEvent", function(_, event, ...)
       log("V101 C_AuctionHouse", C_AuctionHouse and "exists" or "missing", "| V96 GetBindLocation",
         Vals(GetBindLocation))
       Hooks()
+      Flag()
+      ZonePvp()
       ScanBags()
       if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(5, Poll) end
     end)

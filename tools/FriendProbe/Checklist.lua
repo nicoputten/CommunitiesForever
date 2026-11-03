@@ -180,6 +180,16 @@ ns.items = {
     how = "Cook something and make a bandage." },
   { id = "V119", session = 6, title = "The campfire and its special buff",
     how = "Light a campfire (Basic Campfire), add 1, then 2, then 3 items: does the log show the buff and its count?" },
+
+  -- The PvP catalogue (docs/DOOMSDAY-PVP-CATALOGUE.md).
+  { id = "V120", session = 5, auto = true, title = "Who killed you: the killer's name from the death recap",
+    how = "Die to an enemy player (or let a friend on the other faction kill you)." },
+  { id = "V121", retail = true, session = 5, auto = true, title = "The PvP flag (UnitIsPVP)",
+    how = "Flag yourself for PvP (/pvp) or enter a contested zone." },
+  { id = "V122", session = 5, auto = true, title = "Battleground score: your row and the flag and base stats",
+    how = "Play a battleground and open its scoreboard once." },
+  { id = "V123", retail = true, session = 5, auto = true, title = "The zone's PvP type (GetZonePVPInfo)",
+    how = "Travel through an own-faction, an enemy and a contested zone." },
 }
 
 return ns.items

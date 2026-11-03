@@ -146,9 +146,10 @@ describe("FriendProbe launch checklist (CF-60)", function()
       end
       table.sort(retail)
       assert.are.same({ "V100", "V102", "V103", "V108", "V109", "V110", "V111", "V112", "V113", "V115", "V116",
-                        "V117", "V118", "V47", "V48", "V54", "V55", "V61", "V62", "V63", "V64", "V65", "V66", "V67",
-                        "V68", "V69", "V70", "V71", "V72", "V77", "V78", "V81", "V83", "V84", "V85", "V86", "V88",
-                        "V89", "V90", "V93", "V94", "V95", "V96", "V98", "V99" }, retail)
+                        "V117", "V118", "V121", "V123", "V47", "V48", "V54", "V55", "V61", "V62", "V63",
+                        "V64", "V65", "V66", "V67", "V68", "V69", "V70", "V71", "V72", "V77", "V78", "V81",
+                        "V83", "V84", "V85", "V86", "V88", "V89", "V90", "V93", "V94", "V95", "V96", "V98",
+                        "V99" }, retail)
     end)
 
     it("never registers the combat log by itself, only from its button (Blizzard's popup on Retail)", function()
@@ -204,6 +205,19 @@ describe("FriendProbe launch checklist (CF-60)", function()
       local r = ns.results().V90
       assert.are.equal("pass", r.status)
       assert.is_truthy(r.detail:find("Kobold Miner dies, 45 XP", 1, true))
+      assert.are.same({}, printed)
+    end)
+
+    it("ticks the zone's PvP type and the PvP flag (V123, V121)", function()
+      local ns = login(1793300000)
+      _G.C_PvP = { GetZonePVPInfo = function() return "contested" end }
+      _G.UnitIsPVP = function() return true end
+      fire("ZONE_CHANGED_NEW_AREA")
+      fire("PLAYER_FLAGS_CHANGED", "player")
+      _G.C_PvP, _G.UnitIsPVP = nil, nil
+      assert.are.equal("pass", ns.results().V123.status)
+      assert.is_truthy(ns.results().V123.detail:find("contested", 1, true))
+      assert.are.equal("pass", ns.results().V121.status)
       assert.are.same({}, printed)
     end)
 
