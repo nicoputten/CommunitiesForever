@@ -35,8 +35,7 @@ no pronouns.
 - **Existing tracker, waits for its launch check** (77): almost every kill goal reads the raw kills of CF-55b
   (`pvpKills`: victim name, level, class, race, rank, `solo`, zone, time) and so waits for V73, V74 and V76 of the
   launch run; deaths and duels are CF-52's, battlegrounds CF-23's (V35b), the own rank V79.
-- **Needs probe** (22): emotes (V108, already in the probe) and four new checks, to be added to the FriendProbe
-  launch checklist in a follow-up PR:
+- **Needs probe** (22): emotes (V108) and four new checks, in the FriendProbe launch checklist (#179):
   - **V120** the player who killed you: does `C_DeathRecap` (V81 says it exists) give the killer's name? Without the
     combat log it is the only source. Revenge and avenge goals need it.
   - **V121** the PvP flag: `UnitIsPVP("player")` and `PLAYER_FLAGS_CHANGED`.
@@ -58,30 +57,30 @@ The PvE scales, per slot: **Skirmish 1 / 3 / 5** (as a PvE daily), **Bounty 5 / 
   `b.ranked5` 15, `b.hunt3` 10).
 
 ## The PvP Virgin and "never ranked against gankers"
-`DOOMSDAY.md`: a friend with no PvP point (duel points included) and no honorable kill on any character, ever, is a
-**PvP Virgin** and is not ranked on the PvP ladder; any PvP point or kill ends it. The PvP ladder is a ranking of its
-own, so a friend who never does PvP is never ranked against gankers.
-- **Kill, duel and battleground goals** need the fight that ends PvP Virgin status anyway: nothing changes. A PvP
-  Virgin sees the Skirmish and the Bounty as suggestions (recommend, never restrict) and stays unranked until the
-  first kill or PvP point.
-- **Emote and flag goals** (`needs` emote or flag: 5 + 3) score PvP points without a fight. Under today's
-  rule the first one ends PvP Virgin status: a friend who flexes once would then be ranked among the gankers with a
-  single point. See question 1.
+`DOOMSDAY.md` today: a friend with no PvP point (duel points included) and no honorable kill on any character, ever,
+is a **PvP Virgin** and is not ranked on the PvP ladder; any PvP point or kill ends it. The PvP ladder is a ranking
+of its own, so a friend who never does PvP is never ranked against gankers.
+
+**Rule change (Nico, 2026-11-03): only a real fight ends PvP Virgin status:** an honorable kill, a duel, or a finished
+battleground. PvP points from goals that need no fight (`needs` emote or flag: the taunts and the flag goals) count
+on the PvP track as usual but leave PvP Virgin status alone. So a friend who flexes at the other faction now and
+then stays unranked, with the points shown.
+- **Kill, duel and battleground goals** need the fight that ends PvP Virgin status anyway. A PvP Virgin sees the
+  Skirmish and the Bounty as suggestions (recommend, never restrict) and stays unranked until the first fight.
+- **Emote and flag goals** (5 + 3): their points count, the friend stays a PvP Virgin.
+- **Battleground goals** (Nico, 2026-11-03) stay in the Skirmish and the Bounty with normal PvP points. Battleground
+  kills themselves still score only battleground points (`DOOMSDAY.md` "Battleground block"); a finished
+  battleground ends PvP Virgin status.
 - **Gank guard rails:** the counted-kill rules stay (no community characters, no 4th kill of the same name in a day,
   kills 4+ levels below score 0 kill points). Goals that reward fighting up (`p.punchUp5`, `p.skull`, `b.punchUp10`)
   and fair fights (`p.fairFight`, `b.fair10`) outnumber the one that rewards fighting down (`p.punchDown5`, approved).
   `p.nemesis` and `b.nemesis` count the same victim at most twice a day and on 3 different days.
-- **Battleground goals** score PvP points from battleground play, while battleground kills score only battleground
-  points (`DOOMSDAY.md` "Battleground block"). See question 2.
 
-## Design questions for Nico
-1. **Emote and flag goals and PvP Virgin:** should a goal that needs no fight (taunts, the flag) leave PvP Virgin
-   status alone (its points count, but the friend stays unranked until a kill, a duel or a battleground), or end it
-   as any PvP point does today?
-2. **Battleground goals:** keep them in the Skirmish and the Bounty (PvP points for winning or playing a
-   battleground), or move them to the battleground block with their own points?
-3. **The new probe checks V120 to V123:** add them to the FriendProbe launch checklist now, so the launch run answers
-   them? Without V120 the 4 revenge and avenge goals stay out.
+## Decisions (Nico, 2026-11-03)
+1. **Emote and flag goals** score their PvP points but don't end PvP Virgin status; only a kill, a duel or a
+   battleground does. This is a rule change in `DOOMSDAY.md` (stories, #176).
+2. **Battleground goals** stay in the Skirmish and the Bounty with normal PvP points.
+3. **V120 to V123** are in the FriendProbe launch checklist (#179), so the launch run answers them.
 
 ## Hard to track honestly
 - **The killer's name** (V120): without the combat log only the death recap can tell who killed you; if it doesn't,
