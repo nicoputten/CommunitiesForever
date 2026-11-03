@@ -130,8 +130,6 @@ ns.items = {
   -- The Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE-DRAFT.md): Missions.lua ticks these while you play.
   { id = "V95", retail = true, session = 1, auto = true, title = "Own spell casts: a readable spell ID",
     how = "Cast any spell, e.g. the Hearthstone." },
-  { id = "V97", retail = true, session = 1, auto = true, title = "Resting in an inn or city (IsResting)",
-    how = "Walk into an inn." },
   { id = "V99", retail = true, session = 1, auto = true, title = "Merchant: buy and repair seen",
     how = "At a merchant: buy something, or repair." },
   { id = "V102", retail = true, session = 1, auto = true, title = "The bank window opens (BANKFRAME_OPENED)",

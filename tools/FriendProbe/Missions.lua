@@ -1,4 +1,5 @@
--- Missions: checks for the Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE-DRAFT.md, VERIFY.md V90 to V119).
+-- Missions: checks for the Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE-DRAFT.md, VERIFY.md V90 to V119;
+-- V97 was dropped with its mission).
 -- Each logs what the game gives and ticks its checklist item once the API answered. Like the rest of the probe:
 -- silent (nothing in chat), every call guarded, only while ns.running().
 local _, ns = ...
@@ -296,8 +297,8 @@ end
 -- ===== Events =====
 local EVENTS = { "CHAT_MSG_COMBAT_XP_GAIN", "PLAYER_XP_UPDATE", "ENCOUNTER_END", "PLAYER_TARGET_CHANGED",
   "UPDATE_MOUSEOVER_UNIT", "NAME_PLATE_UNIT_ADDED", "PLAYER_CONTROL_LOST", "UI_INFO_MESSAGE", "CHAT_MSG_SYSTEM",
-  "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_SENT", "PLAYER_BINDING_CHANGED", "PLAYER_UPDATE_RESTING",
-  "PLAYER_LOGOUT", "MERCHANT_SHOW", "MERCHANT_CLOSED", "MAIL_SHOW", "MAIL_SEND_SUCCESS", "AUCTION_HOUSE_SHOW",
+  "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_SENT", "PLAYER_BINDING_CHANGED",
+  "MERCHANT_SHOW", "MERCHANT_CLOSED", "MAIL_SHOW", "MAIL_SEND_SUCCESS", "AUCTION_HOUSE_SHOW",
   "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_AUCTION_CREATED", "AUCTION_HOUSE_PURCHASE_COMPLETED", "BANKFRAME_OPENED",
   "TRAINER_SHOW", "TRAINER_CLOSED", "LEARNED_SPELL_IN_SKILL_LINE", "LEARNED_SPELL_IN_TAB", "NEW_RECIPE_LEARNED",
   "CHAT_MSG_LOOT", "LOOT_OPENED", "CHAT_MSG_SKILL", "CHAT_MSG_WHISPER_INFORM", "CHAT_MSG_BN_WHISPER_INFORM",
@@ -389,12 +390,6 @@ local handlers = {
     log("V96 binding changed:", Val(place))
     result("V96", str(place) and "pass" or "fail", "GetBindLocation " .. Val(place))
   end,
-  PLAYER_UPDATE_RESTING = function()
-    local resting = IsResting and IsResting()
-    log("V97 resting", Val(resting))
-    if resting == true then result("V97", "pass", "IsResting true") end
-  end,
-  PLAYER_LOGOUT = function() log("V97 at logout IsResting", Vals(IsResting)) end,
   MERCHANT_SHOW = function()
     merchantOpen, merchantAction = true, nil
     merchantMoney = GetMoney and GetMoney()
@@ -516,7 +511,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
     ok, err = pcall(function()
       log("== V90-V119 MISSION CHECKS ==")
       log("V101 C_AuctionHouse", C_AuctionHouse and "exists" or "missing", "| V96 GetBindLocation",
-        Vals(GetBindLocation), "| V97 IsResting", Vals(IsResting))
+        Vals(GetBindLocation))
       Hooks()
       ScanBags()
       if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(5, Poll) end
