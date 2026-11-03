@@ -8,6 +8,9 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **Doomsday:** each goal is ready to score by its size (1, 3 or 5 for a daily, 5, 10 or 15 for a weekly) once the
   new mission pool arrives; until then every goal keeps its 5 and 15 points.
+- **Doomsday:** the addon now records levels (in a dungeon, with a friend, on a low character), speed runs, dungeons
+  new to a character, Cooking, Fishing and First Aid points, and characters played after a break, for the new
+  missions that join the draw later. Nothing changes in today's goals yet.
 - **Fixed:** the celebration banner's round medallion no longer grows over the text when the banner comes in; it rises and fades with the banner.
 - **Doomsday:** the site's owner can set future days' and weeks' missions on the site; they arrive with the uploader
   and reach friends without it through the addon. Days nobody changed keep the usual goals, and a day that has
