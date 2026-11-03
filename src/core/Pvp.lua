@@ -140,8 +140,11 @@ Pvp.RANK_NAMES = {
                "Grand Marshal" },
 }
 
--- CF-61: never a PvP point: no honorable kill and no duel (a duel always gives a point, disputed ones aside).
-function Pvp.virgin(pvp)
+-- CF-78: never in a real fight: no honorable kill, no duel and no finished battleground (bgRuns: the finished
+-- battleground runs known for the character, optional). PvP points from goals without a fight (emotes, the PvP flag)
+-- don't count. false when the counters are unknown (an older addon) and no battleground is known either.
+function Pvp.virgin(pvp, bgRuns)
+  if (bgRuns or 0) > 0 then return false end
   if type(pvp) ~= "table" then return false end
   return (pvp.hk or 0) == 0 and (pvp.duelsWon or 0) == 0 and (pvp.duelsLost or 0) == 0
 end
