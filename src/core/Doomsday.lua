@@ -82,7 +82,7 @@ end
 
 --[[ Every goal, in pool order (DOOMSDAY.md). slot: daily, weekly, skirmish or bounty. category: the draw's
 category (the 15 of the PvE dailies, docs/DOOMSDAY-CATALOGUE.md). since: the pool version it joined (nil: waits
-for data). points: the catalogue's size (1, 3 or 5; CF-69 scores it from a later pool version). can: the
+for data). points: the catalogue's size (1, 3 or 5; scored from pool version 2, Doomsday.pointsFor). can: the
 situation check (Doomsday.canDo); fallback: replacements in order. The PvE dailies follow the catalogue (CF-70).
 Ids are never reused or renamed; a retired goal stays here with retired = true. ]]
 local GOALS = {
@@ -1110,21 +1110,43 @@ end
 
 local TRACK = { daily = "pve", weekly = "pve", skirmish = "pvp", bounty = "pvp" }
 
--- The track and points of a done goal ("hunt" is a PvP daily). nil for an unknown id (a newer pool).
-function Doomsday.goalPoints(id)
-  if id == "hunt" then return "pvp", Doomsday.POINTS.daily end
+--[[ CF-69: the pool version a day's or week's points count in: the entry's own `pool` (recorded with its set),
+else the friend's `goals.pool`, else 1 (an entry from before CF-69, or an older addon). ]]
+function Doomsday.entryPool(entry, goalsPool)
+  local p = type(entry) == "table" and entry.pool
+  if type(p) == "number" and p >= 1 then return p end
+  if type(goalsPool) == "number" and goalsPool >= 1 then return goalsPool end
+  return 1
+end
+
+--[[ CF-69: a done goal's points in pool version `pool` (nil: 1). Pool version 1 scores flat: 5 for a daily, the
+Skirmish and the Hunt, 15 for a weekly and the Bounty. From pool version 2 the goal's own size (1, 3 or 5; 5, 10 or
+15), flat while it has none; the Hunt stays 5. nil for an unknown id (a newer pool): its track isn't known. ]]
+function Doomsday.pointsFor(id, pool)
+  if id == "hunt" then return Doomsday.POINTS.daily end
   local g = BY_ID[id]
   if not g then return nil end
+  if (pool or 1) >= 2 and type(g.points) == "number" then return g.points end
   local weekly = g.slot == "weekly" or g.slot == "bounty"
-  return TRACK[g.slot], weekly and Doomsday.POINTS.weekly or Doomsday.POINTS.daily
+  return weekly and Doomsday.POINTS.weekly or Doomsday.POINTS.daily
+end
+
+-- The track and points of a done goal ("hunt" is a PvP daily) in pool version `pool` (nil: 1). nil for an unknown
+-- id (a newer pool).
+function Doomsday.goalPoints(id, pool)
+  if id == "hunt" then return "pvp", Doomsday.pointsFor(id, pool) end
+  local g = BY_ID[id]
+  if not g then return nil end
+  return TRACK[g.slot], Doomsday.pointsFor(id, pool)
 end
 
 --[[ A friend's points for a set of done goals: { pve, pvp }. done = { [id] = time } (days and weeks merged
-by the caller); killPoints and duelPoints add to PvP. Goals of a newer pool (unknown ids) count nothing. ]]
-function Doomsday.points(done, killPoints, duelPoints)
+by the caller, all of one pool version: `pool`, nil = 1); killPoints and duelPoints add to PvP. Goals of a newer
+pool (unknown ids) count nothing. ]]
+function Doomsday.points(done, killPoints, duelPoints, pool)
   local total = { pve = 0, pvp = (killPoints or 0) + (duelPoints or 0) }
   for id in pairs(done or {}) do
-    local track, points = Doomsday.goalPoints(id)
+    local track, points = Doomsday.goalPoints(id, pool)
     if track then total[track] = total[track] + points end
   end
   return total

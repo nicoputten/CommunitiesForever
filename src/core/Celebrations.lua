@@ -93,7 +93,7 @@ function Celebrations.goalMoments(input)
         key = "daily:" .. id, kind = "daily", weight = "small", edge = pvp and "pvp" or "pve", icon = "goal",
         kicker = "Daily goal" .. DOT .. (pvp and "PvP" or "PvE"), title = goalTitle(id, input.hunts),
         line = input.dayLabel and (input.dayLabel .. DOT .. count) or count,
-        points = "+" .. Doomsday.POINTS.daily, view = "today",
+        points = "+" .. (Doomsday.pointsFor(id, Doomsday.entryPool(today)) or Doomsday.POINTS.daily), view = "today",
       }
     end
   end
@@ -123,7 +123,7 @@ function Celebrations.goalMoments(input)
         key = "week:" .. id, kind = bounty and "bounty" or "weekly", weight = "medium",
         edge = bounty and "bounty" or "weekly", icon = bounty and "swords" or "hourglass",
         kicker = bounty and "Bounty" or "Weekly goal", title = g.text, line = line or "",
-        points = "+" .. Doomsday.POINTS.weekly, view = "week",
+        points = "+" .. (Doomsday.pointsFor(id, Doomsday.entryPool(week)) or Doomsday.POINTS.weekly), view = "week",
       }
     end
   end
