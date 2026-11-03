@@ -152,6 +152,12 @@ Missions: the combat, travel and economy missions and `d.whisper`, `d.wave`, `d.
   passed by then; the points of CF-69 count from this version.
 - The 15 categories in the draw; golden `draws` cases for days and weeks of pool version 2 from its first day (the
   release day), and the existing pool-1 cases unchanged.
+- **The weekly draw takes 3 different categories**, as the dailies do (Nico, 2026-11-03,
+  `docs/DOOMSDAY-WEEKLY-CATALOGUE.md`): every weekly gets a category (the weekly catalogue's), and from pool version 2 slot k takes
+  `candidates[pick(week, 20 + k, #candidates)]` from the pool's weeklies whose category isn't taken yet and that weren't
+  in last week's; if none is left, last week's are allowed again (categories still differ). `docs/DOOMSDAY.md` "The
+  algorithm, exactly" says so; weeks of pool version 1 keep the draw without categories. Golden `draws` cases for weeks
+  of both pool versions.
 - The site ships its copy of pool version 2 in the same release (WEB story); the release notes ask friends to update.
 - Later bumps (3, 4, ...) add the missions of CF-74 to CF-76 as their checks pass, one bump per release, with golden
   cases each.

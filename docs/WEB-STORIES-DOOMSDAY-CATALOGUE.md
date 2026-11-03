@@ -15,7 +15,8 @@ golden cases in `tests/fixtures/doomsday-cases.json` pin both copies.
   them (`goals.pool`): days of pool version 1 keep 5 per daily and 15 per weekly; from pool version 2 each goal's
   points. An unknown id scores the old flat value. Crown, crossing out and the streak are unchanged (they count goals).
 - Pool version 2 (CF-77) ships in the same release as the addon's: the draw with 15 categories, the new `since`
-  values, `POOL_VERSION = 2`.
+  values, `POOL_VERSION = 2`, and the weekly draw by category (3 different categories, as the dailies; weeks of pool
+  version 1 keep the draw without categories).
 - Golden cases: the new keys `pointsPerGoal` and the pool-2 `draws` are copied byte-identical from the addon's
   `doomsday-cases.json` and pass unchanged; the existing cases keep passing.
 - Every place that shows points (the /dailies page, the roster, the ladder, Discord recaps through the bot's data)
