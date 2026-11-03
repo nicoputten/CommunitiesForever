@@ -2,7 +2,7 @@
 
 Done (merged) stories, moved here from `docs/STORIES.md`, which holds only open stories. Kept for their decisions and acceptance criteria. Open in-game checks for these stories stay in `VERIFY.md`.
 
-Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67. (CF-13 dropped.)
+Build order was: CF-01, 03, 05, 06, 07, 08, 12 (usable solo), 09, 10, 11 (sync), 17, 20, 21, 14, 15, 16, 18, 19, 04, 02 (part 1), 22, 25, 26, 23, 24, 27, 28 (parts 1, 2a, 2b), 02 (part 2), 29, 30, 32, 33, 34, 35, 36, 37, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 55, 58, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68. (CF-13 dropped.)
 
 ## E0 Foundation
 
@@ -1010,3 +1010,25 @@ them in the file. No message changes.
 - **Week label** "Week 44": the calendar week (Sunday first) of the Doomsday week's start.
 - **Sounds** (unverified, V88): small `IG_QUEST_LIST_COMPLETE`; medium `UI_EPICLOOT_TOAST`; big
   `UI_LEGENDARY_LOOT_TOAST`; each falls back to the lighter ones.
+
+## E16 Mission pool schedule (2026-11-03)
+The site's owner can change future Doomsday days and weeks on a Mission pool page (web E10: WEB-78, WEB-79; boards in the web repo, `design/boards/mission-pool*`). The site sends only the changed days and weeks, as a schedule; every other day stays the normal draw (`docs/DOOMSDAY.md` "The algorithm, exactly") on both sides. Today and tomorrow are locked on the site, and a week locks 24 h before it starts, so a change has time to reach everyone.
+
+### CF-68 Doomsday schedule from the site
+- **Read it:** `CF_RUNS.doomsday.schedule` from `Data\Runs.lua` (`RunsFile`, read at login or `/reload`): `{ v, days = { ["<n>"] = { daily = { id, id, id }, skirmish = id, hunt = id } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty = id } } }`. `v` is the site's server time of its last change. The exact shape is agreed with web WEB-78.
+- **Check it** (a pure core function with busted tests): keys are day and week numbers; ids as the goal records allow (at most 24 characters of letters, digits and dots); at most 3 dailies, 3 weeklies, one of each other slot; only days from yesterday to 16 days ahead and weeks from last week to 3 weeks ahead; anything else is dropped. A broken table gives no schedule.
+- **Use it:**
+  - For a day or week the schedule lists, each listed slot takes the scheduled mission; a slot it leaves out, or whose id this addon doesn't know (a newer pool), takes the normal draw's mission. Swaps apply on top, per friend, as today.
+  - Any other day or week is the normal draw. The "never twice in a row" chain stays on the normal draw, so a scheduled day doesn't change the days around it.
+  - A day or week that has started keeps the set already recorded in `goals`; a schedule that arrives later doesn't change it.
+  - The Hunt slot is used only while the Hunt is on (`HUNT_SINCE`).
+- **Keep it:** stored in SavedVariables (`global`), so it lasts without the uploader; days and weeks that are over are dropped. A newer `v` replaces it, from the file or from a friend.
+- **Pass it on,** like planned runs (CF-46): HELLO gains `ds` (the schedule's `v`); a HELLO with a newer `ds` gets a `SCHEDREQ`; the answer is `SCHED { v, days, weeks }`. Accepted only when `v` is newer than ours and at most 5 minutes ahead of server time, then checked as above. Over the community and Battle.net as RUNS.
+- **Compatibility (rule 8):** new optional fields and new message types within `pv` 1. An older addon ignores `ds`, `SCHED` and `SCHEDREQ` and shows the normal draw. The schedule in SavedVariables is a new optional table: no migration; a version without it starts with none. `docs/SYNC.md` and `docs/DOOMSDAY.md` ("The draw": a new "Schedule" part) describe it.
+- **Golden cases:** `tests/fixtures/doomsday-cases.json` gains schedule cases (a day with all slots, one slot, an unknown id, a week, a day already recorded); the site's copy passes them unchanged.
+- **Screens:** no change. A scheduled day looks like any other day.
+- Done when:
+  - busted tests: checking the schedule, using it per slot, the fallbacks, a started day kept, keeping and dropping old days, accepting `SCHED` (newer, older, too far ahead)
+  - the golden cases pass in the addon and on the site
+  - `busted` and `luacheck` pass; `VERIFY.md` gets the in-game steps (a changed day in Runs.lua shows after `/reload`; a friend without the uploader gets it over `SCHED`; an older addon shows the normal draw)
+- Built (2026-11-03): `Goals.cleanMissionSchedule` / `newerMissionSchedule` check it, `Doomsday.scheduledDraw` / `scheduledWeek` put it on the draw (`goalsForDay` and `goalsForWeek` take it as a 4th argument), `global.doomsdaySchedule` keeps it, `DoomsdayTracker.receiveMissionSchedule` takes it from the file and from `SCHED`. Agreed with web WEB-78: `daily` and `weekly` are positional with `""` for the normal draw; `hunt` is `{ Horde = "<Race>.<CLASS>", Alliance = "<Race>.<CLASS>" }` (a combination per hunting faction, not one id); a fallback already scheduled elsewhere in the list takes the first normal-draw id not in it. Golden cases: `scheduled` in `tests/fixtures/doomsday-cases.json`. Rules: `docs/DOOMSDAY.md` "Schedule from the site".

@@ -414,6 +414,80 @@ function Doomsday.hunt(n, faction, version)
   return draw.hunt and draw.hunt[faction] or nil
 end
 
+-- ===== The schedule from the site (CF-68) =====
+
+--[[ The base ids of a list slot (dailies, weeklies) with the scheduled ones on top. A scheduled id counts when it
+is an active goal of that slot and not scheduled earlier in the list; the other slots take the normal draw's id,
+or, when that one is already in the list, the first of the normal draw's ids not in it. ]]
+local function overlayList(base, scheduled, slot, version)
+  if not scheduled then return base end
+  local active = asSet(Doomsday.pool(slot, version))
+  local result, inList = {}, {}
+  for k = 1, #base do
+    local id = scheduled[k]
+    if id and active[id] and not inList[id] then
+      result[k] = id
+      inList[id] = true
+    end
+  end
+  for k = 1, #base do
+    if not result[k] then
+      local id = base[k]
+      if inList[id] then
+        for _, other in ipairs(base) do
+          if not inList[other] then
+            id = other
+            break
+          end
+        end
+      end
+      result[k] = id
+      inList[id] = true
+    end
+  end
+  return result
+end
+
+local function overlayOne(base, scheduled, slot, version)
+  if scheduled and asSet(Doomsday.pool(slot, version))[scheduled] then return scheduled end
+  return base
+end
+
+-- A scheduled Hunt ("<Race>.<CLASS>") for a hunting faction, or the normal draw's combination.
+local function overlayHunt(base, scheduled, faction)
+  if type(scheduled) ~= "string" then return base end
+  for _, c in ipairs(Doomsday.combos(faction)) do
+    if c.race .. "." .. c.class == scheduled then return { race = c.race, class = c.class } end
+  end
+  return base
+end
+
+--[[ The day's draw with the site's schedule on top (Goals.cleanMissionSchedule's shape; nil: none): each slot
+the schedule lists takes the scheduled mission when this pool knows it, every other slot the normal draw's.
+The normal draw (and its "never twice in a row" chain) is never changed by it. ]]
+function Doomsday.scheduledDraw(n, schedule, version)
+  local draw = Doomsday.draw(n, version)
+  local e = schedule and schedule.days and schedule.days[tostring(n)]
+  if type(e) ~= "table" then return draw end
+  local result = { dailies = overlayList(draw.dailies, e.daily, "daily", version),
+                   skirmish = overlayOne(draw.skirmish, e.skirmish, "skirmish", version) }
+  if draw.hunt then
+    local hunt = type(e.hunt) == "table" and e.hunt or {}
+    result.hunt = { Horde = overlayHunt(draw.hunt.Horde, hunt.Horde, "Horde"),
+                    Alliance = overlayHunt(draw.hunt.Alliance, hunt.Alliance, "Alliance") }
+  end
+  return result
+end
+
+-- The week's draw with the site's schedule on top. As Doomsday.scheduledDraw, per week.
+function Doomsday.scheduledWeek(week, schedule, version)
+  local draw = Doomsday.drawWeek(week, version)
+  local e = schedule and schedule.weeks and schedule.weeks[tostring(week)]
+  if type(e) ~= "table" then return draw end
+  return { weeklies = overlayList(draw.weeklies, e.weekly, "weekly", version),
+           bounty = overlayOne(draw.bounty, e.bounty, "bounty", version) }
+end
+
 -- ===== Swaps =====
 
 --[[ situation (one friend, over all their characters): { chars, below60, altBelow60, highest, highestToday,
@@ -485,10 +559,11 @@ end
 
 --[[ One friend's goals for day n: { set = { id, ... }, swapped = { [newId] = originalId }, zone, hunt }.
 set: the 3 PvE dailies, then the Skirmish. zone: the zone of the day (p.frontLine) for that friend's highest
-character that played that day (else the highest). hunt: the base draw's Hunt (both factions). ]]
-function Doomsday.goalsForDay(n, situation, version)
+character that played that day (else the highest). hunt: the draw's Hunt (both factions). schedule (CF-68,
+optional): the site's schedule, put on the draw before the swaps (Doomsday.scheduledDraw). ]]
+function Doomsday.goalsForDay(n, situation, version, schedule)
   situation = situation or {}
-  local draw = Doomsday.draw(n, version)
+  local draw = Doomsday.scheduledDraw(n, schedule, version)
   local swapped = {}
   local list = {}
   for _, id in ipairs(draw.dailies) do list[#list + 1] = id end
@@ -500,10 +575,10 @@ function Doomsday.goalsForDay(n, situation, version)
            zone = Doomsday.zone(n, 4, situation.highestToday or situation.highest) }
 end
 
--- One friend's goals for a week: { set = { weekly, weekly, weekly, bounty }, swapped, zone }.
-function Doomsday.goalsForWeek(week, situation, version)
+-- One friend's goals for a week: { set = { weekly, weekly, weekly, bounty }, swapped, zone }. schedule as above.
+function Doomsday.goalsForWeek(week, situation, version, schedule)
   situation = situation or {}
-  local draw = Doomsday.drawWeek(week, version)
+  local draw = Doomsday.scheduledWeek(week, schedule, version)
   local swapped = {}
   local set = swapList(draw.weeklies, situation, swapped, version)
   if draw.bounty then set[#set + 1] = swapList({ draw.bounty }, situation, swapped, version)[1] end

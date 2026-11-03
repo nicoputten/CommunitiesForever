@@ -123,6 +123,39 @@ describe("Doomsday (CF-55)", function()
     end
   end)
 
+  -- CF-68: the site's schedule on top of the draw, per slot (addonOnly cases are DoomsdayTracking's).
+  it("puts the site's schedule on the draw", function()
+    for _, c in ipairs(cases.scheduled) do
+      if not c.addonOnly then
+        local goals = c.day and Doomsday.goalsForDay(c.day, c.situation, nil, c.schedule)
+          or Doomsday.goalsForWeek(c.week, c.situation, nil, c.schedule)
+        assert.are.same(c.expect.set, goals.set, c.note)
+        assert.are.same(c.expect.swapped, goals.swapped, c.note)
+      end
+    end
+  end)
+
+  it("leaves the normal draw and its chain alone, and other days unscheduled", function()
+    local c = cases.scheduled[1]
+    local normal = Doomsday.draw(c.day + 1)
+    local scheduled = Doomsday.scheduledDraw(c.day, c.schedule)
+    assert.are_not.same(Doomsday.draw(c.day).dailies, scheduled.dailies)
+    assert.are.same(normal, Doomsday.scheduledDraw(c.day + 1, c.schedule))
+    assert.are.equal(Doomsday.draw(c.day), Doomsday.scheduledDraw(c.day, nil))
+    assert.are.same({ "d.zones3", "d.skill5", "d.dungeonFriend" }, Doomsday.draw(c.day).dailies) -- not changed
+  end)
+
+  it("takes a scheduled Hunt per faction once the Hunt is on, and ignores it before", function()
+    local n = cases.epoch + 3
+    local schedule = { v = 1, days = { [tostring(n)] = { hunt = { Horde = "Gnome.MAGE", Alliance = "Elf.MAGE" } } } }
+    assert.is_nil(Doomsday.scheduledDraw(n, schedule).hunt)
+    Doomsday.HUNT_SINCE = 1
+    local hunt = Doomsday.scheduledDraw(n, schedule).hunt
+    assert.are.same({ race = "Gnome", class = "MAGE" }, hunt.Horde)
+    assert.are.same(Doomsday.draw(n).hunt.Alliance, hunt.Alliance) -- not a combination: the normal draw
+    assert.are.same(hunt, Doomsday.goalsForDay(n, {}, nil, schedule).hunt)
+  end)
+
   it("scores kills", function()
     for _, c in ipairs(cases.kills) do
       local result = scored(c)

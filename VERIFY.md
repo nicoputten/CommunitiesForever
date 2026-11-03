@@ -35,6 +35,18 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-68 Doomsday schedule from the site
+Needs the site's Mission pool page (web WEB-78) and the uploader. Pick a day at least 2 days ahead (today and tomorrow are locked on the site).
+
+| Step | Expected | Status |
+|---|---|---|
+| On the site's Mission pool page change that day's dailies and Skirmish; let the uploader write `Data\Runs.lua`; `/reload`; `/run print(CommunitiesForeverDB.global.doomsdaySchedule.v)` | Prints the site's `v` (a server time). | open |
+| On that day (after the reset), `/cf doomsday` and Doomsday › Today | The scheduled dailies and Skirmish show, with swaps only where your characters can't do one. The days before and after show the normal draw. | open |
+| A friend on this build without the uploader logs in while you are online | Within a minute their `/run print(CommunitiesForeverDB.global.doomsdaySchedule.v)` prints the same `v` (HELLO `ds`, SCHEDREQ, SCHED); on that day their Today shows the same missions. | open |
+| Change the same day on the site again before it is locked; uploader; `/reload` | The new `v` replaces the old on you and, within a minute, on the friend. | open |
+| A friend on v1.1.0 (or older) | No errors; on that day they show the normal draw (no schedule support). | open |
+| `/reload` during a scheduled day after the site changed that day again | Today keeps the set it had: a day that has started never changes. | open |
+
 ### Bug hunt: Doomsday refreshes at the reset
 | Step | Expected | Status |
 |---|---|---|

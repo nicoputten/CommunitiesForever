@@ -1,6 +1,7 @@
 -- DoomsdayTracker: the own Doomsday goals (CF-56). Counts facts per Doomsday day and week from what the own
 -- characters do (FeedTracker passes every feed event here; snapshot changes add item level and professions),
--- marks goals done as soon as Doomsday says so, and keeps the reset setting (runs file, friends' HELLO).
+-- marks goals done as soon as Doomsday says so, and keeps the reset setting (runs file, friends' HELLO) and the
+-- site's mission schedule (CF-68: runs file, friends' SCHED; global.doomsdaySchedule).
 -- Local: self.doomsday = { days = { [n] = facts }, weeks = { [w] = facts }, chars = { [guid] = { death, level } } }.
 -- Sent: self.goals = { days = { [n] = { set, swapped, done, at } }, weeks = { ... }, streak = { n, last }, best }.
 local _, ns = ...
@@ -49,6 +50,41 @@ function DoomsdayTracker.receiveSetting(raw)
   global().settings.doomsdayReset = newer
   cache = nil
   return true
+end
+
+-- CF-68: the site's mission schedule in use (Goals.cleanMissionSchedule's shape), or nil.
+function DoomsdayTracker.missionSchedule()
+  return addonRef and global().doomsdaySchedule or nil
+end
+
+-- v of our mission schedule (0: none), for HELLO `ds`.
+function DoomsdayTracker.missionScheduleVersion()
+  local current = DoomsdayTracker.missionSchedule()
+  return current and current.v or 0
+end
+
+-- A mission schedule from the runs file or a friend's SCHED (untrusted): checked, and kept when its v is newer
+-- (at most 5 minutes ahead). Days and weeks already recorded keep their set. Returns true when it was taken.
+function DoomsdayTracker.receiveMissionSchedule(raw)
+  if not addonRef then return false end
+  local today = DoomsdayTracker.today()
+  local ok, incoming = pcall(ns.Goals.cleanMissionSchedule, raw, today, ns.Doomsday.week(today))
+  if not (ok and incoming) then return false end
+  if not ns.Goals.newerMissionSchedule(DoomsdayTracker.missionSchedule(), incoming, GetServerTime()) then
+    return false
+  end
+  global().doomsdaySchedule = incoming
+  cache = nil
+  return true
+end
+
+-- The stored schedule checked again (SavedVariables are a file too), without the days and weeks that are over.
+local function pruneMissionSchedule()
+  local stored = global().doomsdaySchedule
+  if stored == nil then return end
+  local today = DoomsdayTracker.today()
+  local ok, clean = pcall(ns.Goals.cleanMissionSchedule, stored, today, ns.Doomsday.week(today))
+  global().doomsdaySchedule = ok and clean or nil
 end
 
 -- { reset, offset, source } now.
@@ -143,7 +179,7 @@ local function dayEntry(n)
   if entry then return entry end
   local f = factsFor(facts.days, n)
   local situation = ns.Goals.situation(own().chars, f.chars, friendQuestLog(), dungeonInRange())
-  local drawn = ns.Doomsday.goalsForDay(n, situation)
+  local drawn = ns.Doomsday.goalsForDay(n, situation, nil, DoomsdayTracker.missionSchedule())
   local set = drawn.set
   if drawn.hunt then set[#set + 1] = "hunt" end
   entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
@@ -158,7 +194,7 @@ local function weekEntry(w)
   local entry = goals.weeks[w]
   if entry then return entry end
   local situation = ns.Goals.situation(own().chars, nil, friendQuestLog(), dungeonInRange())
-  local drawn = ns.Doomsday.goalsForWeek(w, situation)
+  local drawn = ns.Doomsday.goalsForWeek(w, situation, nil, DoomsdayTracker.missionSchedule())
   entry = { set = drawn.set, swapped = drawn.swapped, done = {}, at = GetServerTime() }
   goals.weeks[w] = entry
   factsFor(facts.weeks, w).zone = drawn.zone
@@ -528,6 +564,13 @@ function DoomsdayTracker.start(addon)
   addonRef = addon
   store()
   DoomsdayTracker.receiveSetting(ns.RunsFile.doomsday())
+  -- CF-68: the site's mission schedule (the runs file's doomsday.schedule), after the setting it is dated by.
+  pruneMissionSchedule()
+  local okFile, raw = pcall(function()
+    local d = ns.RunsFile.doomsday()
+    return type(d) == "table" and d.schedule or nil
+  end)
+  if okFile then DoomsdayTracker.receiveMissionSchedule(raw) end
   events = events or LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.SelfTracker.UPDATED, function()
     fromSnapshot()

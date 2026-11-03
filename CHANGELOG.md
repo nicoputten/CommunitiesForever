@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday:** the site's owner can set future days' and weeks' missions on the site; they arrive with the uploader
+  and reach friends without it through the addon. Days nobody changed keep the usual goals, and a day that has
+  started never changes.
 
 ## v1.1.0 (2026-11-02)
 - **Fixed:** no "is online" chat lines right after you log in for friends who were already online.

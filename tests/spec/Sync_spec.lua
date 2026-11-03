@@ -497,6 +497,92 @@ describe("Sync", function()
     end)
   end)
 
+  -- CF-68: the site's Doomsday mission schedule travels like planned runs; the newer v wins.
+  describe("the mission schedule (CF-68)", function()
+    local NOW = 1794500000 -- Doomsday day 20768 (CET, 19:00 reset), week 2967
+
+    local function schedule(v)
+      return { v = v, days = { ["20771"] = { skirmish = "p.loneWolf" } },
+               weeks = { ["2968"] = { bounty = "b.zone25" } } }
+    end
+
+    local function loadSchedule(stored)
+      load(function(s)
+        s.serverTime = NOW
+        if stored then s.savedVariables = { global = { doomsdaySchedule = stored } } end
+      end)
+    end
+
+    local function hello(ds)
+      return { t = "HELLO", bt = SJAAK, ver = 0, ds = ds }
+    end
+
+    it("says in HELLO how new its schedule is (0: none)", function()
+      loadSchedule(nil)
+      assert.are.equal(0, ofType(outgoing(), "HELLO")[1].ds)
+      wowapi.uninstall()
+      loadSchedule(schedule(NOW - 60))
+      assert.are.equal(NOW - 60, ofType(outgoing(), "HELLO")[1].ds)
+    end)
+
+    it("asks a friend with a newer schedule, takes it and tells the others", function()
+      loadSchedule(schedule(NOW - 600))
+      outgoing()
+      fromSjaak(hello(NOW - 60))
+      assert.are.equal(1, #ofType(outgoing(), "SCHEDREQ"))
+      fromSjaak(hello(NOW - 60)) -- the same again within a minute: not asked again
+      assert.are.equal(0, #ofType(outgoing(), "SCHEDREQ"))
+      local incoming = schedule(NOW - 60)
+      fromSjaak({ t = "SCHED", v = incoming.v, days = incoming.days, weeks = incoming.weeks })
+      assert.are.same(incoming, addon.db.global.doomsdaySchedule)
+      local hellos = ofType(outgoing(), "HELLO")
+      assert.are.equal(NOW - 60, hellos[#hellos].ds)
+    end)
+
+    it("answers SCHEDREQ with its schedule, and asks nothing of a friend with an older one", function()
+      loadSchedule(schedule(NOW - 60))
+      outgoing()
+      fromSjaak(hello(NOW - 600))
+      assert.are.equal(0, #ofType(outgoing(), "SCHEDREQ"))
+      fromSjaak({ t = "SCHEDREQ" })
+      local sent = ofType(outgoing(), "SCHED")
+      assert.are.equal(1, #sent)
+      assert.are.same(schedule(NOW - 60), { v = sent[1].v, days = sent[1].days, weeks = sent[1].weeks })
+    end)
+
+    it("ignores an older, a broken and a far-future schedule", function()
+      loadSchedule(schedule(NOW - 60))
+      fromSjaak({ t = "SCHED", v = NOW - 600, days = {} })
+      fromSjaak({ t = "SCHED", v = "x" })
+      fromSjaak({ t = "SCHED", v = NOW + 301, days = {} })
+      assert.are.equal(NOW - 60, ns.DoomsdayTracker.missionScheduleVersion())
+      fromSjaak({ t = "SCHED", v = NOW + 300, days = {} }) -- an empty newer one clears
+      assert.are.same({ v = NOW + 300, days = {}, weeks = {} }, addon.db.global.doomsdaySchedule)
+    end)
+
+    it("asks nothing of an older client (HELLO without ds) and has nothing to answer without one", function()
+      loadSchedule(nil)
+      outgoing()
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 0 })
+      fromSjaak({ t = "SCHEDREQ" })
+      local sent = outgoing()
+      assert.are.equal(0, #ofType(sent, "SCHEDREQ"))
+      assert.are.equal(0, #ofType(sent, "SCHED"))
+    end)
+
+    it("holds the schedule back during a PvP match and sends it after", function()
+      loadSchedule(schedule(NOW - 60))
+      outgoing()
+      state.instance = { name = "Warsong Gulch", type = "pvp", instanceID = 489 }
+      fromSjaak({ t = "SCHEDREQ" })
+      assert.are.equal(0, #ofType(outgoing(), "SCHED"))
+      state.instance = { name = "Kalimdor", type = "none", instanceID = 1 }
+      state.time = state.time + 30
+      wowapi.runTimers(state)
+      assert.are.equal(1, #ofType(outgoing(), "SCHED"))
+    end)
+  end)
+
   describe("level-up announcements (CF-16)", function()
     -- Sjaak's alt is a community member, so it is visible and linked through his record.
     local function loadWithAlt()
