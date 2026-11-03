@@ -416,73 +416,37 @@ end
 
 -- ===== The schedule from the site (CF-68) =====
 
---[[ The base ids of a list slot (dailies, weeklies) with the scheduled ones on top. A scheduled id counts when it
-is an active goal of that slot and not scheduled earlier in the list; the other slots take the normal draw's id,
-or, when that one is already in the list, the first of the normal draw's ids not in it. ]]
+-- A scheduled list (dailies, weeklies) when all its ids are active goals of that slot, else the normal draw's.
 local function overlayList(base, scheduled, slot, version)
-  if not scheduled then return base end
+  if type(scheduled) ~= "table" or #scheduled ~= 3 then return base end
   local active = asSet(Doomsday.pool(slot, version))
-  local result, inList = {}, {}
-  for k = 1, #base do
-    local id = scheduled[k]
-    if id and active[id] and not inList[id] then
-      result[k] = id
-      inList[id] = true
-    end
+  for _, id in ipairs(scheduled) do
+    if not active[id] then return base end
   end
-  for k = 1, #base do
-    if not result[k] then
-      local id = base[k]
-      if inList[id] then
-        for _, other in ipairs(base) do
-          if not inList[other] then
-            id = other
-            break
-          end
-        end
-      end
-      result[k] = id
-      inList[id] = true
-    end
-  end
-  return result
+  return { scheduled[1], scheduled[2], scheduled[3] }
 end
 
 local function overlayOne(base, scheduled, slot, version)
-  if scheduled and asSet(Doomsday.pool(slot, version))[scheduled] then return scheduled end
+  if scheduled ~= nil and asSet(Doomsday.pool(slot, version))[scheduled] then return scheduled end
   return base
 end
 
--- A scheduled Hunt ("<Race>.<CLASS>") for a hunting faction, or the normal draw's combination.
-local function overlayHunt(base, scheduled, faction)
-  if type(scheduled) ~= "string" then return base end
-  for _, c in ipairs(Doomsday.combos(faction)) do
-    if c.race .. "." .. c.class == scheduled then return { race = c.race, class = c.class } end
-  end
-  return base
-end
-
---[[ The day's draw with the site's schedule on top (Goals.cleanMissionSchedule's shape; nil: none): each slot
-the schedule lists takes the scheduled mission when this pool knows it, every other slot the normal draw's.
-The normal draw (and its "never twice in a row" chain) is never changed by it. ]]
+--[[ The day's draw with the site's schedule on top (Goals.cleanMissionSchedule's shape; nil: none): a listed
+`daily` is used when all 3 ids are in this pool version, a listed `skirmish` when it is; every other slot is the
+normal draw's. The normal draw (and its "never twice in a row" chain) is never changed by it. The Hunt is always
+the normal draw's (the schedule has no Hunt yet). ]]
 function Doomsday.scheduledDraw(n, schedule, version)
   local draw = Doomsday.draw(n, version)
-  local e = schedule and schedule.days and schedule.days[tostring(n)]
+  local e = type(schedule) == "table" and type(schedule.days) == "table" and schedule.days[tostring(n)]
   if type(e) ~= "table" then return draw end
-  local result = { dailies = overlayList(draw.dailies, e.daily, "daily", version),
-                   skirmish = overlayOne(draw.skirmish, e.skirmish, "skirmish", version) }
-  if draw.hunt then
-    local hunt = type(e.hunt) == "table" and e.hunt or {}
-    result.hunt = { Horde = overlayHunt(draw.hunt.Horde, hunt.Horde, "Horde"),
-                    Alliance = overlayHunt(draw.hunt.Alliance, hunt.Alliance, "Alliance") }
-  end
-  return result
+  return { dailies = overlayList(draw.dailies, e.daily, "daily", version),
+           skirmish = overlayOne(draw.skirmish, e.skirmish, "skirmish", version), hunt = draw.hunt }
 end
 
--- The week's draw with the site's schedule on top. As Doomsday.scheduledDraw, per week.
+-- The week's draw with the site's schedule on top. As Doomsday.scheduledDraw, with `weekly` and `bounty`.
 function Doomsday.scheduledWeek(week, schedule, version)
   local draw = Doomsday.drawWeek(week, version)
-  local e = schedule and schedule.weeks and schedule.weeks[tostring(week)]
+  local e = type(schedule) == "table" and type(schedule.weeks) == "table" and schedule.weeks[tostring(week)]
   if type(e) ~= "table" then return draw end
   return { weeklies = overlayList(draw.weeklies, e.weekly, "weekly", version),
            bounty = overlayOne(draw.bounty, e.bounty, "bounty", version) }

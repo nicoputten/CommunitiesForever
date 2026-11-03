@@ -235,18 +235,17 @@ the community every `battleTag` is left out. Not sent during an encounter, a key
 
 ```json
 { "t": "SCHEDREQ", "pv": 1 }
-{ "t": "SCHED", "pv": 1, "v": 1794500000,
-  "days": { "20770": { "daily": ["d.level", "", "d.skill5"], "skirmish": "p.loneWolf",
-                       "hunt": { "Horde": "Human.MAGE", "Alliance": "Orc.ROGUE" } } },
-  "weeks": { "2968": { "weekly": ["w.days5", "w.cap", "w.fullClear"], "bounty": "b.zone25" } } }
+{ "t": "SCHED", "pv": 1, "v": 1794300000,
+  "days": { "20768": { "daily": ["d.quests10", "d.level", "d.dungeon"], "skirmish": "p.loneWolf" } },
+  "weeks": { "2968": { "weekly": ["w.days5", "w.zones5", "w.newProf"], "bounty": "b.spree10" } } }
 ```
 
 The site's schedule as `CF_RUNS.doomsday.schedule` gives it (docs/DOOMSDAY.md "Schedule from the site"), after
 the receiver's check. A HELLO whose `ds` is newer than ours gets `SCHEDREQ` (at most once per target and `ds` per
 60 s), answered with `SCHED` (at most once per target and `v` per 60 s). The receiver checks it like the file
-(`Goals.cleanMissionSchedule`: day and week windows, ids, slots) and keeps it when `v` is newer than its own and
-at most 5 minutes ahead of server time; then it sends a HELLO with the new `ds`. An empty schedule with a newer
-`v` clears the older one. No BattleTags in it, so the same over Battle.net and the community. Not sent during an
+(`Goals.cleanMissionSchedule`: day and week windows, ids, lists of exactly 3) and keeps it when `v` is newer than its own and
+at most 5 minutes ahead of server time; then it sends a HELLO with the new `ds`. A `{ v }` without days and weeks
+with a newer `v` clears the older one; `days` and `weeks` are left out when empty. No BattleTags in it, so the same over Battle.net and the community. Not sent during an
 encounter, a keystone or a PvP match (`Instance.messagingRestricted`, V70): tried again 30 s later. Older clients
 send no `ds`, so they are never asked, and they ignore `SCHED` and `SCHEDREQ` (rule 8): they show the normal draw.
 

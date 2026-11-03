@@ -956,318 +956,483 @@
    }
   }
  ],
- "scheduled": [
+ "scheduleCheck": [
   {
-   "note": "a day with all slots scheduled",
-   "day": 20770,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "schedule": {
-    "v": 1794500000,
+   "note": "a full day and a full week are kept as they are",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
     "days": {
-     "20770": {
+     "20768": {
       "daily": [
+       "d.quests10",
        "d.level",
-       "d.dungeon",
-       "d.quests20"
+       "d.dungeon"
       ],
       "skirmish": "p.loneWolf"
      }
     },
-    "weeks": {}
-   },
-   "expect": {
-    "set": [
-     "d.level",
-     "d.dungeon",
-     "d.quests20",
-     "p.loneWolf"
-    ],
-    "swapped": {}
-   }
-  },
-  {
-   "note": "only the Skirmish; the dailies stay the normal draw",
-   "day": 20771,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "schedule": {
-    "v": 1794500000,
-    "days": {
-     "20771": {
-      "skirmish": "p.frontLine"
-     }
-    },
-    "weeks": {}
-   },
-   "expect": {
-    "set": [
-     "d.bosses3",
-     "d.zone5",
-     "d.ilvl",
-     "p.frontLine"
-    ],
-    "swapped": {}
-   }
-  },
-  {
-   "note": "\"\" and an unknown id (a newer pool) take the normal draw's mission of that slot",
-   "day": 20772,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "schedule": {
-    "v": 1794500000,
-    "days": {
-     "20772": {
-      "daily": [
-       "",
-       "d.future",
-       "d.chars2"
-      ]
-     }
-    },
-    "weeks": {}
-   },
-   "expect": {
-    "set": [
-     "d.dungeonFriend",
-     "d.quests10",
-     "d.chars2",
-     "p.frontLine"
-    ],
-    "swapped": {}
-   }
-  },
-  {
-   "note": "a fallback already scheduled in another slot takes the first normal-draw mission not in the set; an id of another slot is unknown here",
-   "day": 20773,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "schedule": {
-    "v": 1794500000,
-    "days": {
-     "20773": {
-      "daily": [
-       "d.future",
-       "d.zones3"
-      ],
-      "skirmish": "b.zone25"
-     }
-    },
-    "weeks": {}
-   },
-   "expect": {
-    "set": [
-     "d.bosses3",
-     "d.zones3",
-     "d.skill5",
-     "p.untouchable"
-    ],
-    "swapped": {}
-   }
-  },
-  {
-   "note": "a week with all slots scheduled",
-   "week": 2968,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "schedule": {
-    "v": 1794500000,
-    "days": {},
     "weeks": {
      "2968": {
       "weekly": [
        "w.days5",
-       "w.quests50",
-       "w.dungeons3"
+       "w.zones5",
+       "w.newProf"
       ],
       "bounty": "b.spree10"
      }
     }
    },
    "expect": {
-    "set": [
-     "w.days5",
-     "w.quests50",
-     "w.dungeons3",
-     "b.spree10"
-    ],
-    "swapped": {}
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
    }
   },
   {
-   "note": "a week with only slot 2 scheduled",
-   "week": 2969,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "schedule": {
-    "v": 1794500000,
-    "days": {},
+   "note": "the window: yesterday to 16 days ahead, last week to 3 weeks ahead",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {
+     "20764": {
+      "skirmish": "p.loneWolf"
+     },
+     "20765": {
+      "skirmish": "p.loneWolf"
+     },
+     "20782": {
+      "skirmish": "p.loneWolf"
+     },
+     "20783": {
+      "skirmish": "p.loneWolf"
+     }
+    },
     "weeks": {
-     "2969": {
-      "weekly": [
-       "",
-       "w.cap"
-      ]
+     "2965": {
+      "bounty": "b.spree10"
+     },
+     "2966": {
+      "bounty": "b.spree10"
+     },
+     "2970": {
+      "bounty": "b.spree10"
+     },
+     "2971": {
+      "bounty": "b.spree10"
      }
     }
    },
    "expect": {
-    "set": [
-     "w.newProf",
-     "w.cap",
-     "w.skill25",
-     "b.zone25"
-    ],
-    "swapped": {}
+    "v": 1794300000,
+    "days": {
+     "20765": {
+      "skirmish": "p.loneWolf"
+     },
+     "20782": {
+      "skirmish": "p.loneWolf"
+     }
+    },
+    "weeks": {
+     "2966": {
+      "bounty": "b.spree10"
+     },
+     "2970": {
+      "bounty": "b.spree10"
+     }
+    }
    }
   },
   {
-   "note": "swaps apply on top of a scheduled mission",
-   "day": 20774,
-   "situation": {
-    "chars": 1,
-    "below60": 1,
-    "altBelow60": 0,
-    "highest": 30
-   },
-   "schedule": {
-    "v": 1794500000,
+   "note": "broken fields are dropped, the rest stays; a day left empty is dropped; unknown ids pass the check",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
     "days": {
-     "20774": {
+     "20767": {
       "daily": [
-       "d.altLevel"
-      ]
+       "d.quests10",
+       "d.level"
+      ],
+      "skirmish": "p.loneWolf"
+     },
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.quests10",
+       "d.level"
+      ],
+      "skirmish": 7
+     },
+     "20769": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.x;y"
+      ],
+      "skirmish": "p.aVeryLongMissionIdThatIsTooLong"
+     },
+     "20770": {
+      "daily": [
+       "d.newer",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.newer",
+      "hunt": "NightElf:DRUID",
+      "zone": "Tanaris"
+     },
+     "20771.5": {
+      "skirmish": "p.loneWolf"
+     },
+     "abc": {
+      "skirmish": "p.loneWolf"
      }
     },
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf",
+       "w.cap"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "v": 1794300000,
+    "days": {
+     "20767": {
+      "skirmish": "p.loneWolf"
+     },
+     "20770": {
+      "daily": [
+       "d.newer",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.newer"
+     }
+    },
+    "weeks": {
+     "2968": {
+      "bounty": "b.spree10"
+     }
+    }
+   }
+  },
+  {
+   "note": "only v: a valid, empty schedule (it clears an older one)",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": {},
     "weeks": {}
    },
    "expect": {
-    "set": [
-     "d.quests10",
-     "d.ilvl",
-     "d.quests20",
-     "p.frontLine"
-    ],
-    "swapped": {
-     "d.quests10": "d.altLevel"
-    }
+    "v": 1794300000
    }
   },
   {
-   "note": "a day that has started keeps the set recorded then; a schedule that arrives later doesn't change it",
-   "addonOnly": true,
-   "day": 20775,
-   "situation": {
-    "chars": 3,
-    "below60": 2,
-    "altBelow60": 1,
-    "highest": 34,
-    "ilvlReadable": true,
-    "dungeonInRange": true,
-    "hasProfession": true,
-    "hasFishing": true,
-    "hasCraftingProfession": true,
-    "professionBelow300": true,
-    "friendQuestLog": true
-   },
-   "recorded": {
-    "set": [
-     "d.zone5",
-     "d.level",
-     "d.dungeon",
-     "p.loneWolf"
-    ],
-    "swapped": {}
-   },
-   "schedule": {
-    "v": 1794500000,
+   "note": "no v: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
     "days": {
-     "20775": {
+     "20768": {
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": null
+  },
+  {
+   "note": "v not an integer: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": "1794300000",
+    "days": {}
+   },
+   "expect": null
+  },
+  {
+   "note": "days not a table: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": {
+    "v": 1794300000,
+    "days": "20768"
+   },
+   "expect": null
+  },
+  {
+   "note": "not a table: no schedule",
+   "serverTime": 1794333599,
+   "offset": 3600,
+   "reset": 68400,
+   "input": "schedule",
+   "expect": null
+  }
+ ],
+ "scheduled": [
+  {
+   "note": "a day with all slots",
+   "day": 20768,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.quests10",
+     "d.level",
+     "d.dungeon"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "the day after a scheduled day keeps the normal draw, also a mission the scheduled day has",
+   "day": 20769,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.ilvl",
+     "d.dungeon",
+     "d.quests10"
+    ],
+    "skirmish": "p.untouchable"
+   }
+  },
+  {
+   "note": "one slot: the others are the normal draw",
+   "day": 20769,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20769": {
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.ilvl",
+     "d.dungeon",
+     "d.quests10"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "an unknown id: that whole list is the normal draw; an unknown Skirmish too",
+   "day": 20770,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20770": {
       "daily": [
        "d.quests20",
-       "d.ilvl",
-       "d.skill5"
+       "d.newer",
+       "d.level"
       ],
-      "skirmish": "p.untouchable"
+      "skirmish": "p.newer"
      }
-    },
-    "weeks": {}
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.zones3",
+     "d.skill5",
+     "d.dungeonFriend"
+    ],
+    "skirmish": "p.frontLine"
+   }
+  },
+  {
+   "note": "a catalogue id that isn't in this pool version counts as unknown",
+   "day": 20770,
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20770": {
+      "daily": [
+       "d.quests20",
+       "d.cleanLevel",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "dailies": [
+     "d.zones3",
+     "d.skill5",
+     "d.dungeonFriend"
+    ],
+    "skirmish": "p.loneWolf"
+   }
+  },
+  {
+   "note": "a week with all slots",
+   "week": 2968,
+   "schedule": {
+    "v": 1794300000,
+    "weeks": {
+     "2968": {
+      "weekly": [
+       "w.days5",
+       "w.zones5",
+       "w.newProf"
+      ],
+      "bounty": "b.spree10"
+     }
+    }
+   },
+   "expect": {
+    "weeklies": [
+     "w.days5",
+     "w.zones5",
+     "w.newProf"
+    ],
+    "bounty": "b.spree10"
+   }
+  },
+  {
+   "note": "a week with only the Bounty",
+   "week": 2969,
+   "schedule": {
+    "v": 1794300000,
+    "weeks": {
+     "2969": {
+      "bounty": "b.days5"
+     }
+    }
+   },
+   "expect": {
+    "weeklies": [
+     "w.newProf",
+     "w.chars3",
+     "w.skill25"
+    ],
+    "bounty": "b.days5"
+   }
+  },
+  {
+   "note": "swaps apply on top of the scheduled set",
+   "day": 20768,
+   "situation": {
+    "below60": 0
+   },
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.level",
+       "d.quests10",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
    },
    "expect": {
     "set": [
-     "d.zone5",
-     "d.level",
+     "d.quests20",
+     "d.quests10",
      "d.dungeon",
      "p.loneWolf"
     ],
-    "swapped": {}
+    "swapped": {
+     "d.quests20": "d.level"
+    }
+   }
+  },
+  {
+   "addonOnly": true,
+   "note": "a day that already has a recorded set keeps it when a schedule arrives later",
+   "day": 20768,
+   "recorded": [
+    "d.skill5",
+    "d.dungeonFriend",
+    "d.chars2",
+    "p.frontLine"
+   ],
+   "schedule": {
+    "v": 1794300000,
+    "days": {
+     "20768": {
+      "daily": [
+       "d.quests10",
+       "d.level",
+       "d.dungeon"
+      ],
+      "skirmish": "p.loneWolf"
+     }
+    }
+   },
+   "expect": {
+    "set": [
+     "d.skill5",
+     "d.dungeonFriend",
+     "d.chars2",
+     "p.frontLine"
+    ]
    }
   }
  ],

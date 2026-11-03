@@ -87,76 +87,64 @@ Goals.SCHEDULE_DAYS_AHEAD = 16  -- days from yesterday to 16 days ahead are kept
 Goals.SCHEDULE_WEEKS_AHEAD = 3  -- weeks from last week to 3 weeks ahead
 Goals.SCHEDULE_MAX_FUTURE = 300 -- a v further ahead of server time is broken data
 
--- A scheduled id, or "" (the normal draw) for anything that isn't one.
 local function scheduleId(id)
-  if type(id) ~= "string" or #id > Goals.MAX_ID or not id:match("^[%w%.]+$") then return "" end
+  if type(id) ~= "string" or #id < 1 or #id > Goals.MAX_ID or not id:match("^[%w%.]+$") then return nil end
   return id
 end
 
--- Up to 3 positional ids; trailing "" dropped; nil when none is left.
+-- Exactly 3 valid, distinct ids, or nil.
 local function scheduleList(list)
   if type(list) ~= "table" then return nil end
-  local result = {}
-  for k = 1, 3 do result[k] = scheduleId(list[k]) end
-  while #result > 0 and result[#result] == "" do result[#result] = nil end
-  return #result > 0 and result or nil
-end
-
-local function scheduleOne(id)
-  local clean = scheduleId(id)
-  return clean ~= "" and clean or nil
-end
-
--- Integer day or week number from a key ("20770" or 20770), or nil.
-local function scheduleKey(key)
-  local n = tonumber(key)
-  if type(key) == "string" and not key:match("^%d+$") then return nil end
-  if not n or n ~= math.floor(n) then return nil end
-  return n
-end
-
-local function cleanEntries(map, from, to, clean)
-  local result = {}
-  if type(map) ~= "table" then return result end
-  for key, raw in pairs(map) do
-    local n = scheduleKey(key)
-    if n and n >= from and n <= to then
-      local entry = clean(raw)
-      if entry then result[tostring(n)] = entry end
-    end
+  local result, seen = {}, {}
+  for k = 1, 3 do
+    local id = scheduleId(list[k])
+    if not id or seen[id] then return nil end
+    result[k], seen[id] = id, true
   end
+  if list[4] ~= nil then return nil end
   return result
 end
 
-local function cleanDay(raw)
-  if type(raw) ~= "table" then return nil end
-  local e = { daily = scheduleList(raw.daily), skirmish = scheduleOne(raw.skirmish) }
-  if type(raw.hunt) == "table" then
-    local hunt = { Horde = scheduleOne(raw.hunt.Horde), Alliance = scheduleOne(raw.hunt.Alliance) }
-    if next(hunt) then e.hunt = hunt end
+-- An integer day or week number from a key ("20770" or 20770), or nil.
+local function scheduleKey(key)
+  if type(key) == "string" then
+    if not key:match("^%-?%d+$") then return nil end
+    return tonumber(key)
   end
-  return next(e) and e or nil
+  if type(key) == "number" and key == math.floor(key) then return key end
+  return nil
 end
 
-local function cleanWeek(raw)
-  if type(raw) ~= "table" then return nil end
-  local e = { weekly = scheduleList(raw.weekly), bounty = scheduleOne(raw.bounty) }
-  return next(e) and e or nil
+-- The entries of days or weeks in [from, to], each cleaned (nil: dropped); nil when none is left.
+local function cleanEntries(map, from, to, listField, oneField)
+  local result = {}
+  for key, raw in pairs(map or {}) do
+    local n = scheduleKey(key)
+    if n and n >= from and n <= to and type(raw) == "table" then
+      local e = { [listField] = scheduleList(raw[listField]), [oneField] = scheduleId(raw[oneField]) }
+      if next(e) then result[tostring(n)] = e end
+    end
+  end
+  return next(result) and result or nil
 end
 
 --[[ The mission schedule from the runs file, a friend's SCHED or SavedVariables, checked (docs/DOOMSDAY.md
-"Schedule from the site"): { v, days = { ["<n>"] = { daily = { id, id, id }, skirmish, hunt = { Horde,
-Alliance } } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty } } }. Ids are positional in daily and
-weekly ("" = the normal draw for that slot). Days from today - 1 to today + 16 and weeks from week - 1 to week + 3
-are kept, the rest dropped. Whether an id is in the pool is decided when it is used (Doomsday.applySchedule).
-nil without a number v. ]]
-function Goals.cleanMissionSchedule(raw, today, week)
+"Schedule from the site"; golden cases `scheduleCheck`): { v, days = { ["<n>"] = { daily = { id, id, id },
+skirmish } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty } } }. day, week: the reader's current
+Doomsday day and week. nil when raw isn't a table, v isn't an integer > 0, or days or weeks aren't tables. Days
+from day - 1 to day + 16 and weeks from week - 1 to week + 3 are kept; a list counts only as exactly 3 valid,
+distinct ids; any other field is dropped, and so is an entry left empty. days and weeks are left out when empty:
+{ v } alone is a valid schedule that clears an older one. Whether an id is in the pool is decided when it is
+used (Doomsday.scheduledDraw). ]]
+function Goals.cleanMissionSchedule(raw, day, week)
   if type(raw) ~= "table" then return nil end
-  local v = number(raw.v, 0, 1e11)
-  if not v then return nil end
+  local v = raw.v
+  if type(v) ~= "number" or v ~= math.floor(v) or v <= 0 or v > 1e11 then return nil end
+  if raw.days ~= nil and type(raw.days) ~= "table" then return nil end
+  if raw.weeks ~= nil and type(raw.weeks) ~= "table" then return nil end
   return { v = v,
-           days = cleanEntries(raw.days, today - 1, today + Goals.SCHEDULE_DAYS_AHEAD, cleanDay),
-           weeks = cleanEntries(raw.weeks, week - 1, week + Goals.SCHEDULE_WEEKS_AHEAD, cleanWeek) }
+           days = cleanEntries(raw.days, day - 1, day + Goals.SCHEDULE_DAYS_AHEAD, "daily", "skirmish"),
+           weeks = cleanEntries(raw.weeks, week - 1, week + Goals.SCHEDULE_WEEKS_AHEAD, "weekly", "bounty") }
 end
 
 -- True when incoming (checked) replaces current: a newer v, at most 5 minutes ahead of server time.

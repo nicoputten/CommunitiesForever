@@ -13,48 +13,23 @@ describe("Goals (CF-56)", function()
     return Doomsday.dayNumberOf(y, m, d) * 86400 + hour * 3600 + minute * 60
   end
 
-  -- CF-68: the site's mission schedule, checked.
+  -- CF-68: the site's mission schedule, checked (golden cases shared with the site).
   describe("mission schedule", function()
-    local TODAY, WEEK = 20770, 2967
+    local cases = helpers.readJson("tests/fixtures/doomsday-cases.json")
 
-    it("keeps days from yesterday to 16 ahead and weeks from last week to 3 ahead", function()
-      local raw = { v = 100, days = {}, weeks = {} }
-      for n = TODAY - 2, TODAY + 17 do raw.days[tostring(n)] = { skirmish = "p.loneWolf" } end
-      for w = WEEK - 2, WEEK + 4 do raw.weeks[w] = { bounty = "b.zone25" } end -- number keys work too
-      local clean = Goals.cleanMissionSchedule(raw, TODAY, WEEK)
-      assert.are.equal(100, clean.v)
-      assert.is_nil(clean.days[tostring(TODAY - 2)])
-      assert.is_table(clean.days[tostring(TODAY - 1)])
-      assert.is_table(clean.days[tostring(TODAY + 16)])
-      assert.is_nil(clean.days[tostring(TODAY + 17)])
-      assert.is_nil(clean.weeks[tostring(WEEK - 2)])
-      assert.is_table(clean.weeks[tostring(WEEK - 1)])
-      assert.is_table(clean.weeks[tostring(WEEK + 3)])
-      assert.is_nil(clean.weeks[tostring(WEEK + 4)])
+    it("checks it as the golden cases say", function()
+      for _, c in ipairs(cases.scheduleCheck) do
+        local day = Doomsday.day(c.serverTime, c.offset, c.reset)
+        assert.are.same(c.expect, Goals.cleanMissionSchedule(c.input, day, Doomsday.week(day)), c.note)
+      end
     end)
 
-    it("keeps ids as the goal records allow, positions in the lists, one of each other slot", function()
-      local long = string.rep("d", 25)
-      local clean = Goals.cleanMissionSchedule({ v = 1, days = {
-        [tostring(TODAY)] = { daily = { "d.level", 5, "d.ilvl", "d.dungeon" }, skirmish = { "p.loneWolf" },
-                              hunt = { Horde = "Human.MAGE", Alliance = "bad id" }, extra = "x" },
-        [tostring(TODAY + 1)] = { daily = { "", long, "" }, skirmish = "p.frontLine" },
-        [tostring(TODAY + 2)] = { daily = { "no-dash" } },
-        ["20771.5"] = { skirmish = "p.loneWolf" }, ["x"] = { skirmish = "p.loneWolf" },
-      }, weeks = { [tostring(WEEK)] = { weekly = "w.cap", bounty = "b.days5" } } }, TODAY, WEEK)
-      assert.are.same({
-        [tostring(TODAY)] = { daily = { "d.level", "", "d.ilvl" }, hunt = { Horde = "Human.MAGE" } },
-        [tostring(TODAY + 1)] = { skirmish = "p.frontLine" },
-      }, clean.days)
-      assert.are.same({ [tostring(WEEK)] = { bounty = "b.days5" } }, clean.weeks)
-    end)
-
-    it("gives no schedule for a broken table, and an empty one that clears", function()
-      assert.is_nil(Goals.cleanMissionSchedule("nope", TODAY, WEEK))
-      assert.is_nil(Goals.cleanMissionSchedule({ days = {} }, TODAY, WEEK))
-      assert.is_nil(Goals.cleanMissionSchedule({ v = "1" }, TODAY, WEEK))
-      assert.are.same({ v = 5, days = {}, weeks = {} },
-        Goals.cleanMissionSchedule({ v = 5, days = "x", weeks = { [tostring(WEEK)] = "x" } }, TODAY, WEEK))
+    it("takes integer keys, and no v below 1 or a fraction", function()
+      assert.are.same({ v = 1, days = { ["20766"] = { skirmish = "p.loneWolf" } } },
+        Goals.cleanMissionSchedule({ v = 1, days = { [20766] = { skirmish = "p.loneWolf" } } }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 0 }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 1.5 }, 20766, 2967))
+      assert.is_nil(Goals.cleanMissionSchedule({ v = 1, weeks = 5 }, 20766, 2967))
     end)
 
     it("takes a newer v, at most 5 minutes ahead", function()

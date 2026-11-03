@@ -154,14 +154,13 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
         if case.recorded then c = case end
       end
       local start = D.dayStart(c.day, CET, RESET)
-      local recorded = { set = c.recorded.set, swapped = c.recorded.swapped, done = {}, at = start + 60 }
+      local recorded = { set = c.recorded, swapped = {}, done = {}, at = start + 60 }
       load(function(s)
         s.serverTime = start + 3600
         s.savedVariables = { global = { self = { goals = { days = { [c.day] = recorded } } } } }
       end, file(c.schedule))
       assert.are.equal(c.schedule.v, ns.DoomsdayTracker.missionScheduleVersion()) -- taken, but today stays
       assert.are.same(c.expect.set, goals().days[c.day].set)
-      assert.are.same(c.expect.swapped, goals().days[c.day].swapped)
     end)
 
     it("drops days and weeks that are over at login, and starts without one when none is stored", function()
@@ -174,7 +173,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
         s.serverTime = later
         s.savedVariables = { global = { doomsdaySchedule = stored } }
       end)
-      assert.are.same({ v = 7, days = { [tostring(c.day + 3)] = { skirmish = "p.loneWolf" } }, weeks = {} },
+      assert.are.same({ v = 7, days = { [tostring(c.day + 3)] = { skirmish = "p.loneWolf" } } },
         addon.db.global.doomsdaySchedule)
       wowapi.uninstall()
       load()

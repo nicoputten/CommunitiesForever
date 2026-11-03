@@ -556,8 +556,8 @@ describe("Sync", function()
       fromSjaak({ t = "SCHED", v = "x" })
       fromSjaak({ t = "SCHED", v = NOW + 301, days = {} })
       assert.are.equal(NOW - 60, ns.DoomsdayTracker.missionScheduleVersion())
-      fromSjaak({ t = "SCHED", v = NOW + 300, days = {} }) -- an empty newer one clears
-      assert.are.same({ v = NOW + 300, days = {}, weeks = {} }, addon.db.global.doomsdaySchedule)
+      fromSjaak({ t = "SCHED", v = NOW + 300 }) -- an empty newer one clears
+      assert.are.same({ v = NOW + 300 }, addon.db.global.doomsdaySchedule)
     end)
 
     it("asks nothing of an older client (HELLO without ds) and has nothing to answer without one", function()
