@@ -39,13 +39,13 @@ category (below).
 | **Total** | **100** | **23** | **14** | **20** | **43** |
 
 **Data** (the column "Data" in the tables):
-- **A, recorded today** (23): the addon records the facts already. 14 of them are pool version 1; the other 9 need
+- **A, "works now"** (23): the addon records the facts already. 14 of them are pool version 1; the other 9 need
   only the goal (catalogue entry, progress function, golden cases) and can join the next pool version.
-- **B, existing tracker, waiting for its check** (14): CF-52, CF-53 and CF-56 trackers that are built but still
+- **B, "existing tracker, waits for its launch check"** (14): CF-52, CF-53 and CF-56 trackers that are built but still
   unverified on Forever. They join once their `VERIFY.md` item or story steps pass (V-number or story named).
-- **C, new tracker on verified APIs** (20): needs new recording code, but every event and API it reads is in
+- **C, "new tracker, verified API"** (20): needs new recording code, but every event and API it reads is in
   `docs/API-FINDINGS.md`. No probe needed; can join the next pool version.
-- **D, new tracker, needs a probe check** (43): reads an API that is not verified on Forever. Each names its probe
+- **D, "needs probe P…"** (43): reads an API that is not verified on Forever. Each names its probe
   check (P1 to P26 below), which the probe story turns into `VERIFY.md` items (V90 and up) and FriendProbe checks.
 
 So **43 of 100 work without a probe** (A + C), **57 with today's data or verified APIs once B's launch checks pass**
@@ -175,171 +175,176 @@ Forever can.
 
 ## The catalogue
 
-Columns: **Id** (new ids are new; existing ids are marked ★) · **Title** (player copy) · **Label** (at most 10
-characters, `Doomsday.SHORT_LABELS`) · **Done when** (exactly) · **Data** (A, B, C, D as in the summary) · **Can't
-do when → fallback**.
+Columns: **#** (the mission's number for review, 1 to 100 across the whole list; numbers stay stable, a mission
+dropped in review keeps its number as a gap) · **Id** (existing ids are marked ★) · **Title** (player copy) ·
+**Label** (at most 10 characters, `Doomsday.SHORT_LABELS`) · **Category** · **Done when** (exactly) · **Data**
+("works now", "existing tracker, waits for its launch check", "new tracker, verified API" or "needs probe P…", as in
+the summary; P numbers become V90 and up in the probe story) · **Can't do when → fallback**.
+
+The same list is kept as JSON for the review page (`{ n, id, existing, category, title, short, doneWhen, status,
+data, cantDo }`), outside the repo.
 
 "A character" is any of the friend's characters; counts add up across characters unless the text says "one
 character". "That day" is the Doomsday day.
 
 ### quests (10)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.quests10` | Finish 10 quests | 10 quests | 10 quests handed in that day | A (pool 1) | |
-| ★ `d.quests20` | Finish 20 quests | 20 quests | 20 quests handed in that day | A (pool 1) | |
-| ★ `d.zone5` | Finish 5 quests in one zone | 5 in zone | 5 quests handed in in one zone | A (pool 1) | |
-| ★ `d.zones3` | Hand in quests in 3 zones | 3 zones | quests handed in in 3 zones | A (pool 1) | |
-| ★ `d.shared3` | Share 3 quests with a friend | 3 shared | at some moment, the own quest log and one friend's synced log share 3 quests | A (pool 1) | no friend's quest log known → `d.quests10` |
-| `d.questUp` | Finish a quest above the character's level | Hard quest | a quest handed in whose level (from the quest log) is higher than the character's level at the hand-in | C: quest level kept in the stored log | all characters at 60 → `d.quests10` |
-| `d.groupQuest` | Finish a group quest | Group Q | a quest handed in that the quest log marked as a group quest (`suggestedGroup` > 0) | C: `suggestedGroup` kept in the stored log | |
-| `d.classQuest` | Finish a class quest | Class Q | a quest handed in whose quest log header is the character's class name | A: stored log `area` | |
-| `d.questBurst` | Hand in 3 quests within 10 minutes | Quick 3 | 3 quests handed in by one character within 10 minutes | C: turn-in times | |
-| `d.accept5` | Take on 5 new quests | Take 5 | 5 different quests accepted that day (by quest ID; abandoning and taking one again counts once) | C: `QUEST_ACCEPTED` | |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 1 | ★ `d.quests10` | Finish 10 quests | 10 quests | quests | 10 quests handed in that day | works now (pool 1) |  |
+| 2 | ★ `d.quests20` | Finish 20 quests | 20 quests | quests | 20 quests handed in that day | works now (pool 1) |  |
+| 3 | ★ `d.zone5` | Finish 5 quests in one zone | 5 in zone | quests | 5 quests handed in in one zone | works now (pool 1) |  |
+| 4 | ★ `d.zones3` | Hand in quests in 3 zones | 3 zones | quests | quests handed in in 3 zones | works now (pool 1) |  |
+| 5 | ★ `d.shared3` | Share 3 quests with a friend | 3 shared | quests | at some moment, the own quest log and one friend's synced log share 3 quests | works now (pool 1) | no friend's quest log known → `d.quests10` |
+| 6 | `d.questUp` | Finish a quest above the character's level | Hard quest | quests | a quest handed in whose level (from the quest log) is higher than the character's level at the hand-in | new tracker, verified API: quest level kept in the stored log | all characters at 60 → `d.quests10` |
+| 7 | `d.groupQuest` | Finish a group quest | Group Q | quests | a quest handed in that the quest log marked as a group quest (`suggestedGroup` > 0) | new tracker, verified API: `suggestedGroup` kept in the stored log |  |
+| 8 | `d.classQuest` | Finish a class quest | Class Q | quests | a quest handed in whose quest log header is the character's class name | works now: stored log `area` |  |
+| 9 | `d.questBurst` | Hand in 3 quests within 10 minutes | Quick 3 | quests | 3 quests handed in by one character within 10 minutes | new tracker, verified API: turn-in times |  |
+| 10 | `d.accept5` | Take on 5 new quests | Take 5 | quests | 5 different quests accepted that day (by quest ID; abandoning and taking one again counts once) | new tracker, verified API: `QUEST_ACCEPTED` |  |
 
 ### levels (9)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.level` | Gain a level | Level | a character gains a level | A (pool 1) | all characters at 60 → `d.quests20` |
-| ★ `d.altLevel` | Gain a level on an alt | Alt level | a level on any character but the highest | A (pool 1) | only one character below 60 → `d.quests10` |
-| ★ `d.ilvl` | Raise an item level | Item level | a character's item level is higher than at its first login that day | A (pool 1) | item level unreadable → `d.quests10` |
-| ★ `d.cleanLevel` | Gain a level without dying | Clean lvl | a level on a character with no death between that level and the previous one | B: 52 (CF-52 deaths) | all characters at 60 → `d.quests20` |
-| `d.levels2` | Gain 2 levels | 2 levels | 2 levels over all characters | A | all characters at 60 → `d.quests20` |
-| `d.xpQuarter` | Fill a quarter of the XP bar | XP 25% | XP gained that day adds up to a quarter of the bar: the sum over gains of (gain ÷ `UnitXPMax` at the gain) ≥ 0.25 | D: P2 | all characters at 60 → `d.quests20` |
-| `d.dingDungeon` | Gain a level inside a dungeon | Deep ding | a level gained while the instance type is `party` | C: `GetInstanceInfo` at the level-up | all characters at 60 or no character in range of a dungeon → `d.level` |
-| `d.dingFriend` | Gain a level in a group with a friend | Duo ding | a level gained while grouped with a friend's community character | C: group at the level-up (CF-53 groups) | all characters at 60 → `d.groupFriend` |
-| `d.lowbie` | Gain a level on a character below 20 | Lowbie | a level on a character that was below 20 before it | A | no character below 20 → `d.altLevel` |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 11 | ★ `d.level` | Gain a level | Level | levels | a character gains a level | works now (pool 1) | all characters at 60 → `d.quests20` |
+| 12 | ★ `d.altLevel` | Gain a level on an alt | Alt level | levels | a level on any character but the highest | works now (pool 1) | only one character below 60 → `d.quests10` |
+| 13 | ★ `d.ilvl` | Raise an item level | Item level | levels | a character's item level is higher than at its first login that day | works now (pool 1) | item level unreadable → `d.quests10` |
+| 14 | ★ `d.cleanLevel` | Gain a level without dying | Clean lvl | levels | a level on a character with no death between that level and the previous one | existing tracker, waits for its launch check: 52 (CF-52 deaths) | all characters at 60 → `d.quests20` |
+| 15 | `d.levels2` | Gain 2 levels | 2 levels | levels | 2 levels over all characters | works now | all characters at 60 → `d.quests20` |
+| 16 | `d.xpQuarter` | Fill a quarter of the XP bar | XP 25% | levels | XP gained that day adds up to a quarter of the bar: the sum over gains of (gain ÷ `UnitXPMax` at the gain) ≥ 0.25 | needs probe P2 | all characters at 60 → `d.quests20` |
+| 17 | `d.dingDungeon` | Gain a level inside a dungeon | Deep ding | levels | a level gained while the instance type is `party` | new tracker, verified API: `GetInstanceInfo` at the level-up | all characters at 60 or no character in range of a dungeon → `d.level` |
+| 18 | `d.dingFriend` | Gain a level in a group with a friend | Duo ding | levels | a level gained while grouped with a friend's community character | new tracker, verified API: group at the level-up (CF-53 groups) | all characters at 60 → `d.groupFriend` |
+| 19 | `d.lowbie` | Gain a level on a character below 20 | Lowbie | levels | a level on a character that was below 20 before it | works now | no character below 20 → `d.altLevel` |
 
 ### dungeons (9)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.dungeon` | Run a dungeon | Dungeon | a finished party run (feed `runs`) | A (pool 1) | no character in range of a dungeon → `d.quests10` |
-| ★ `d.dungeonFriend` | Run a dungeon with a friend | Group run | a party run with at least one friend's community character (`with`) | A (pool 1) | as `d.dungeon` |
-| ★ `d.bosses3` | Defeat 3 dungeon bosses | 3 bosses | 3 bosses across that day's party runs | A (pool 1) | as `d.dungeon` |
-| `d.dungeonQuest` | Hand in a dungeon quest | Dungeon Q | a quest handed in that the stored quest log marks as a dungeon quest (`dungeon`, V31) | A: stored log `dungeon` | as `d.dungeon` |
-| `d.cleanRun` | Run a dungeon without dying | Clean run | a party run with at least 1 boss and no death of that character between its start and its last boss | B: 52 (deaths) | as `d.dungeon` |
-| `d.speedRun` | Defeat 3 bosses of one dungeon within 45 minutes | Speed run | a party run with 3 or more bosses whose first entry to last boss took 45 minutes or less | A: run `startedAt`, `lastAt` | as `d.dungeon` |
-| `d.newDungeon` | Run a dungeon new to the character | Fresh run | a party run with at least 1 boss in a dungeon that character has no earlier run of | C: per-character dungeon set (new stored data) | as `d.dungeon` |
-| `d.raidBoss` | Defeat a raid boss | Raid boss | a boss killed in a raid run (feed `runs`, instance `raid`) | D: P3 | no character at 60 → `d.bosses3` |
-| `d.dungeons2` | Run 2 dungeons | 2 dungeons | 2 finished party runs | A | as `d.dungeon` |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 20 | ★ `d.dungeon` | Run a dungeon | Dungeon | dungeons | a finished party run (feed `runs`) | works now (pool 1) | no character in range of a dungeon → `d.quests10` |
+| 21 | ★ `d.dungeonFriend` | Run a dungeon with a friend | Group run | dungeons | a party run with at least one friend's community character (`with`) | works now (pool 1) | as `d.dungeon` |
+| 22 | ★ `d.bosses3` | Defeat 3 dungeon bosses | 3 bosses | dungeons | 3 bosses across that day's party runs | works now (pool 1) | as `d.dungeon` |
+| 23 | `d.dungeonQuest` | Hand in a dungeon quest | Dungeon Q | dungeons | a quest handed in that the stored quest log marks as a dungeon quest (`dungeon`, V31) | works now: stored log `dungeon` | as `d.dungeon` |
+| 24 | `d.cleanRun` | Run a dungeon without dying | Clean run | dungeons | a party run with at least 1 boss and no death of that character between its start and its last boss | existing tracker, waits for its launch check: 52 (deaths) | as `d.dungeon` |
+| 25 | `d.speedRun` | Defeat 3 bosses of one dungeon within 45 minutes | Speed run | dungeons | a party run with 3 or more bosses whose first entry to last boss took 45 minutes or less | works now: run `startedAt`, `lastAt` | as `d.dungeon` |
+| 26 | `d.newDungeon` | Run a dungeon new to the character | Fresh run | dungeons | a party run with at least 1 boss in a dungeon that character has no earlier run of | new tracker, verified API: per-character dungeon set (new stored data) | as `d.dungeon` |
+| 27 | `d.raidBoss` | Defeat a raid boss | Raid boss | dungeons | a boss killed in a raid run (feed `runs`, instance `raid`) | needs probe P3 | no character at 60 → `d.bosses3` |
+| 28 | `d.dungeons2` | Run 2 dungeons | 2 dungeons | dungeons | 2 finished party runs | works now | as `d.dungeon` |
 
 ### crafts (10)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.skill5` | Earn 5 profession skill points | Skills | 5 points over all professions since the first login that day | A (pool 1) | no profession on any character → `d.quests10` |
-| ★ `d.secondary` | Raise Cooking, First Aid or Fishing | Secondary | 1 point in one of them, or learning one | A (pool 1) | |
-| ★ `d.fish20` | Catch 20 fish | 20 fish | 20 items from fishing loot | B: 56 (V84) | no character with Fishing → `d.secondary` |
-| `d.craft5` | Craft 5 items | Craft 5 | 5 items created (`LOOT_ITEM_CREATED_SELF`, a stack counts its count) | C: CF-56's crafted tracker, counted (V83) | no profession at all → `d.secondary` |
-| `d.cook5` | Cook 5 meals | Cook 5 | 5 food or drink items created (item class consumable, food and drink) | D: P16 | no character with Cooking → `d.secondary` |
-| `d.bandage3` | Make 3 bandages | Bandages | 3 bandages created (item class consumable, bandage) | D: P16 | no character with First Aid → `d.secondary` |
-| `d.gather10` | Gather 10 herbs, ore or leather | Gather 10 | 10 items of the herb, metal and stone or leather classes looted from a gathering node or a skinned body | D: P17 | no character with Herbalism, Mining or Skinning → `d.skill5` |
-| `d.newRecipe` | Learn a new recipe | Recipe | a recipe, pattern, plan, schematic or formula learned | D: P15 | no profession at all → `d.secondary` |
-| `d.craftGreen` | Craft something uncommon or better | Fine craft | an item of uncommon (green) or better quality created | D: P16 | no crafting profession → `d.craft5` |
-| `d.fishZones` | Fish in 2 zones | Fish spots | fishing loot in 2 different zones | B: 56 (V84) plus the zone | no character with Fishing → `d.secondary` |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 29 | ★ `d.skill5` | Earn 5 profession skill points | Skills | crafts | 5 points over all professions since the first login that day | works now (pool 1) | no profession on any character → `d.quests10` |
+| 30 | ★ `d.secondary` | Raise Cooking, First Aid or Fishing | Secondary | crafts | 1 point in one of them, or learning one | works now (pool 1) |  |
+| 31 | ★ `d.fish20` | Catch 20 fish | 20 fish | crafts | 20 items from fishing loot | existing tracker, waits for its launch check: 56 (V84) | no character with Fishing → `d.secondary` |
+| 32 | `d.craft5` | Craft 5 items | Craft 5 | crafts | 5 items created (`LOOT_ITEM_CREATED_SELF`, a stack counts its count) | new tracker, verified API: CF-56's crafted tracker, counted (V83) | no profession at all → `d.secondary` |
+| 33 | `d.cook5` | Cook 5 meals | Cook 5 | crafts | 5 food or drink items created (item class consumable, food and drink) | needs probe P16 | no character with Cooking → `d.secondary` |
+| 34 | `d.bandage3` | Make 3 bandages | Bandages | crafts | 3 bandages created (item class consumable, bandage) | needs probe P16 | no character with First Aid → `d.secondary` |
+| 35 | `d.gather10` | Gather 10 herbs, ore or leather | Gather 10 | crafts | 10 items of the herb, metal and stone or leather classes looted from a gathering node or a skinned body | needs probe P17 | no character with Herbalism, Mining or Skinning → `d.skill5` |
+| 36 | `d.newRecipe` | Learn a new recipe | Recipe | crafts | a recipe, pattern, plan, schematic or formula learned | needs probe P15 | no profession at all → `d.secondary` |
+| 37 | `d.craftGreen` | Craft something uncommon or better | Fine craft | crafts | an item of uncommon (green) or better quality created | needs probe P16 | no crafting profession → `d.craft5` |
+| 38 | `d.fishZones` | Fish in 2 zones | Fish spots | crafts | fishing loot in 2 different zones | existing tracker, waits for its launch check: 56 (V84) plus the zone | no character with Fishing → `d.secondary` |
 
 ### play (8)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.chars2` | Play 2 characters | 2 chars | 2 characters logged in that day | A (pool 1) | only one character → `d.quests10` |
-| `d.chars3` | Play 3 characters | Play 3 | 3 characters logged in that day | A | fewer than 3 characters → `d.chars2` |
-| `d.switchUp` | Play a character not played the day before | Switch up | a character logged in that day that wasn't logged in the previous Doomsday day | A: facts per day | only one character → `d.quests10` |
-| `d.dustOff` | Play a character after a week away | Dust off | a character logged in whose last login was 7 or more days earlier (`lastPlayed`) | A | no character unplayed for 7 days → `d.chars2` |
-| ★ `d.earlyBird` | Early bird: play before 09:00 | Early bird | logged in before 09:00 local time | B: 53 (CF-53 sessions) | |
-| `d.nightOwl` | Night owl: play after 23:00 | Night owl | logged in at some moment between 23:00 and 03:00 local time | B: 53 (sessions) | |
-| `d.session1h` | Play a 1-hour session | 1h session | one session lasting 60 minutes | B: 53 (sessions) | |
-| `d.deathless` | Play an hour without dying | No deaths | 60 minutes of session time on one character with no death in between | B: 52 + 53 | |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 39 | ★ `d.chars2` | Play 2 characters | 2 chars | play | 2 characters logged in that day | works now (pool 1) | only one character → `d.quests10` |
+| 40 | `d.chars3` | Play 3 characters | Play 3 | play | 3 characters logged in that day | works now | fewer than 3 characters → `d.chars2` |
+| 41 | `d.switchUp` | Play a character not played the day before | Switch up | play | a character logged in that day that wasn't logged in the previous Doomsday day | works now: facts per day | only one character → `d.quests10` |
+| 42 | `d.dustOff` | Play a character after a week away | Dust off | play | a character logged in whose last login was 7 or more days earlier (`lastPlayed`) | works now | no character unplayed for 7 days → `d.chars2` |
+| 43 | ★ `d.earlyBird` | Early bird: play before 09:00 | Early bird | play | logged in before 09:00 local time | existing tracker, waits for its launch check: 53 (CF-53 sessions) |  |
+| 44 | `d.nightOwl` | Night owl: play after 23:00 | Night owl | play | logged in at some moment between 23:00 and 03:00 local time | existing tracker, waits for its launch check: 53 (sessions) |  |
+| 45 | `d.session1h` | Play a 1-hour session | 1h session | play | one session lasting 60 minutes | existing tracker, waits for its launch check: 53 (sessions) |  |
+| 46 | `d.deathless` | Play an hour without dying | No deaths | play | 60 minutes of session time on one character with no death in between | existing tracker, waits for its launch check: 52 + 53 |  |
 
 ### social (10)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.groupFriend` | Group up with a friend | Group up | in a group with a friend's community character | B: 53 (CF-53 groups) | |
-| ★ `d.trade` | Trade with a friend | Trade | a completed trade with a friend's community character | B: 56 (V85) | |
-| `d.questTogether` | Hand in a quest in a group with a friend | Duo quest | a quest handed in while grouped with a friend's community character | C: group at the hand-in | |
-| `d.chatHello` | Say something in the community chat | Chat | an own message in the selected community's channel (by the sender's GUID) | C: V38 | |
-| `d.sameZone` | Be in the same zone as a friend | Neighbours | a character in the same zone as a friend's online community character at the same moment | C: club member `zone` (V18) | no other friend in the community → `d.chars2` |
-| `d.online3` | Be online with 3 friends at once | Full house | 3 other friends online in Forever at the same moment while a character plays | C: presence (V18, V19) | fewer than 3 other friends in the community → `d.groupFriend` |
-| `d.carry` | Group with a friend 5+ levels lower | Carry | grouped with a friend's community character 5 or more levels below the own character | C: party levels | |
-| `d.whisper` | Whisper a friend | Whisper | a whisper sent to a friend's community character or Battle.net account | D: P19 | |
-| `d.wave` | Wave at a friend | Wave | the `/wave` emote with a friend's community character targeted | D: P19 | |
-| `d.groupPic` | Take a screenshot in a group with a friend | Group pic | a screenshot taken while grouped with a friend's community character | D: P22 | |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 47 | ★ `d.groupFriend` | Group up with a friend | Group up | social | in a group with a friend's community character | existing tracker, waits for its launch check: 53 (CF-53 groups) |  |
+| 48 | ★ `d.trade` | Trade with a friend | Trade | social | a completed trade with a friend's community character | existing tracker, waits for its launch check: 56 (V85) |  |
+| 49 | `d.questTogether` | Hand in a quest in a group with a friend | Duo quest | social | a quest handed in while grouped with a friend's community character | new tracker, verified API: group at the hand-in |  |
+| 50 | `d.chatHello` | Say something in the community chat | Chat | social | an own message in the selected community's channel (by the sender's GUID) | new tracker, verified API: V38 |  |
+| 51 | `d.sameZone` | Be in the same zone as a friend | Neighbours | social | a character in the same zone as a friend's online community character at the same moment | new tracker, verified API: club member `zone` (V18) | no other friend in the community → `d.chars2` |
+| 52 | `d.online3` | Be online with 3 friends at once | Full house | social | 3 other friends online in Forever at the same moment while a character plays | new tracker, verified API: presence (V18, V19) | fewer than 3 other friends in the community → `d.groupFriend` |
+| 53 | `d.carry` | Group with a friend 5+ levels lower | Carry | social | grouped with a friend's community character 5 or more levels below the own character | new tracker, verified API: party levels |  |
+| 54 | `d.whisper` | Whisper a friend | Whisper | social | a whisper sent to a friend's community character or Battle.net account | needs probe P19 |  |
+| 55 | `d.wave` | Wave at a friend | Wave | social | the `/wave` emote with a friend's community character targeted | needs probe P19 |  |
+| 56 | `d.groupPic` | Take a screenshot in a group with a friend | Group pic | social | a screenshot taken while grouped with a friend's community character | needs probe P22 |  |
 
 ### exploration (8)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| `d.discover1` | Discover a new place | Discover | one of the game's "Discovered" messages | B: 56 (V86, answered on Retail) | |
-| `d.discover3` | Discover 3 new places | Discover 3 | 3 "Discovered" messages | B: 56 (V86) | |
-| `d.roam4` | Visit 4 zones | Roam 4 | 4 different zones entered (on any characters) | C: `ZONE_CHANGED_NEW_AREA` | |
-| `d.newZone` | Set foot in a zone new to the character | New zone | a zone entered that the character has never been in (per-character zone set, seeded from its feed) | C: new stored data | |
-| `d.places10` | Visit 10 places within zones | 10 places | 10 different subzones entered | D: P26 | |
-| `d.swim` | Swim for 2 minutes | Swim | 2 minutes swimming in total, on one character | D: P9 | |
-| `d.nostalgia` | Visit a zone far below the character's level | Nostalgia | a zone entered whose highest suggested level is 20 or more below the character's | C: zone levels (V46) | highest character below 30 → `d.roam4` |
-| `d.daredevil` | Visit a zone above the character's level | Daredevil | a zone entered whose lowest suggested level is 5 or more above the character's | C: zone levels (V46) | all characters at 60 → `d.roam4` |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 57 | `d.discover1` | Discover a new place | Discover | exploration | one of the game's "Discovered" messages | existing tracker, waits for its launch check: 56 (V86, answered on Retail) |  |
+| 58 | `d.discover3` | Discover 3 new places | Discover 3 | exploration | 3 "Discovered" messages | existing tracker, waits for its launch check: 56 (V86) |  |
+| 59 | `d.roam4` | Visit 4 zones | Roam 4 | exploration | 4 different zones entered (on any characters) | new tracker, verified API: `ZONE_CHANGED_NEW_AREA` |  |
+| 60 | `d.newZone` | Set foot in a zone new to the character | New zone | exploration | a zone entered that the character has never been in (per-character zone set, seeded from its feed) | new tracker, verified API: new stored data |  |
+| 61 | `d.places10` | Visit 10 places within zones | 10 places | exploration | 10 different subzones entered | needs probe P26 |  |
+| 62 | `d.swim` | Swim for 2 minutes | Swim | exploration | 2 minutes swimming in total, on one character | needs probe P9 |  |
+| 63 | `d.nostalgia` | Visit a zone far below the character's level | Nostalgia | exploration | a zone entered whose highest suggested level is 20 or more below the character's | new tracker, verified API: zone levels (V46) | highest character below 30 → `d.roam4` |
+| 64 | `d.daredevil` | Visit a zone above the character's level | Daredevil | exploration | a zone entered whose lowest suggested level is 5 or more above the character's | new tracker, verified API: zone levels (V46) | all characters at 60 → `d.roam4` |
 
 ### travel (7)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| `d.flight` | Take a flight | Fly | a flight on a flight master's route | D: P5 | |
-| `d.newFlight` | Learn a new flight path | New flight | a new flight path learned | D: P5 | |
-| `d.hearth` | Use the hearthstone | Hearth | the Hearthstone cast finished | D: P6 | |
-| `d.bind` | Make a new inn home | New home | the hearthstone set to a place other than the one it was set to | D: P7 | |
-| `d.ride` | Ride a mount for 15 minutes | Ride | 15 minutes mounted in total, on one character | D: P9 | no character with riding (CF-53) → `d.roam4` |
-| `d.crossSea` | Cross the sea | Cross sea | a character changes continent (`GetInstanceInfo` instance ID 0 and 1 outside instances) | C: V35 | |
-| `d.summoned` | Get summoned by a friend | Summoned | a summon accepted whose summoner is a friend's community character | D: P25 | |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 65 | `d.flight` | Take a flight | Fly | travel | a flight on a flight master's route | needs probe P5 |  |
+| 66 | `d.newFlight` | Learn a new flight path | New flight | travel | a new flight path learned | needs probe P5 |  |
+| 67 | `d.hearth` | Use the hearthstone | Hearth | travel | the Hearthstone cast finished | needs probe P6 |  |
+| 68 | `d.bind` | Make a new inn home | New home | travel | the hearthstone set to a place other than the one it was set to | needs probe P7 |  |
+| 69 | `d.ride` | Ride a mount for 15 minutes | Ride | travel | 15 minutes mounted in total, on one character | needs probe P9 | no character with riding (CF-53) → `d.roam4` |
+| 70 | `d.crossSea` | Cross the sea | Cross sea | travel | a character changes continent (`GetInstanceInfo` instance ID 0 and 1 outside instances) | new tracker, verified API: V35 |  |
+| 71 | `d.summoned` | Get summoned by a friend | Summoned | travel | a summon accepted whose summoner is a friend's community character | needs probe P25 |  |
 
 ### combat (7)
 Kills come from the XP message, so they count only kills that give XP (no grey enemies, no level 60).
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| `d.kills30` | Defeat 30 enemies | 30 foes | 30 kill XP messages | D: P1 | all characters at 60 → `d.bosses3` |
-| `d.elite` | Defeat an elite | Elite | a kill XP message naming a creature last seen as elite or rare elite | D: P1, P4 | all characters at 60 → `d.bosses3` |
-| `d.rareMob` | Defeat a rare enemy | Rare hunt | a kill XP message naming a creature last seen as rare or rare elite | D: P1, P4 | all characters at 60 → `d.bosses3` |
-| `d.bigFoe` | Defeat an enemy 3+ levels higher | Big foe | a kill XP message naming a creature last seen 3 or more levels above the character, or as a skull | D: P1, P4 | all characters at 60 → `d.bosses3` |
-| `d.streak20` | Defeat 20 enemies without dying | Streak 20 | 20 kill XP messages on one character with no death in between | D: P1 (+ 52) | all characters at 60 → `d.bosses3` |
-| `d.weaponSkill` | Raise a weapon skill 5 times | Weapon +5 | 5 weapon or defense skill-up messages | D: P18 | |
-| `d.duoHunt` | Defeat 15 enemies in a group with a friend | Duo hunt | 15 kill XP messages while grouped with a friend's community character | D: P1 | all characters at 60 → `d.dungeonFriend` |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 72 | `d.kills30` | Defeat 30 enemies | 30 foes | combat | 30 kill XP messages | needs probe P1 | all characters at 60 → `d.bosses3` |
+| 73 | `d.elite` | Defeat an elite | Elite | combat | a kill XP message naming a creature last seen as elite or rare elite | needs probe P1, P4 | all characters at 60 → `d.bosses3` |
+| 74 | `d.rareMob` | Defeat a rare enemy | Rare hunt | combat | a kill XP message naming a creature last seen as rare or rare elite | needs probe P1, P4 | all characters at 60 → `d.bosses3` |
+| 75 | `d.bigFoe` | Defeat an enemy 3+ levels higher | Big foe | combat | a kill XP message naming a creature last seen 3 or more levels above the character, or as a skull | needs probe P1, P4 | all characters at 60 → `d.bosses3` |
+| 76 | `d.streak20` | Defeat 20 enemies without dying | Streak 20 | combat | 20 kill XP messages on one character with no death in between | needs probe P1 (+ 52) | all characters at 60 → `d.bosses3` |
+| 77 | `d.weaponSkill` | Raise a weapon skill 5 times | Weapon +5 | combat | 5 weapon or defense skill-up messages | needs probe P18 |  |
+| 78 | `d.duoHunt` | Defeat 15 enemies in a group with a friend | Duo hunt | combat | 15 kill XP messages while grouped with a friend's community character | needs probe P1 | all characters at 60 → `d.dungeonFriend` |
 
 ### loot (6)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| ★ `d.rare` | Loot a rare item | Rare loot | a rare (blue) or better item looted | B: 53 (V83) | |
-| `d.green5` | Loot 5 uncommon items | 5 greens | 5 uncommon (green) or better items looted or received | C: CF-53's loot parser, counted (V83) | |
-| `d.reward` | Earn an uncommon quest reward | Reward | a quest reward of uncommon (green) or better quality | C: `LOOT_ITEM_PUSHED_SELF` (V83) | |
-| `d.coins10` | Loot coins from 10 enemies | 10 purses | 10 money loot messages | D: P20 | |
-| `d.equipNew` | Wear a new find | New gear | an item equipped that the character looted or received that day | D: P24 | |
-| `d.treasure` | Open a treasure chest | Treasure | loot from a game object that isn't a herb, ore or fishing node | D: P17 | |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 79 | ★ `d.rare` | Loot a rare item | Rare loot | loot | a rare (blue) or better item looted | existing tracker, waits for its launch check: 53 (V83) |  |
+| 80 | `d.green5` | Loot 5 uncommon items | 5 greens | loot | 5 uncommon (green) or better items looted or received | new tracker, verified API: CF-53's loot parser, counted (V83) |  |
+| 81 | `d.reward` | Earn an uncommon quest reward | Reward | loot | a quest reward of uncommon (green) or better quality | new tracker, verified API: `LOOT_ITEM_PUSHED_SELF` (V83) |  |
+| 82 | `d.coins10` | Loot coins from 10 enemies | 10 purses | loot | 10 money loot messages | needs probe P20 |  |
+| 83 | `d.equipNew` | Wear a new find | New gear | loot | an item equipped that the character looted or received that day | needs probe P24 |  |
+| 84 | `d.treasure` | Open a treasure chest | Treasure | loot | loot from a game object that isn't a herb, ore or fishing node | needs probe P17 |  |
 
 ### economy (7)
 Gold is never shown as an amount; the goals count actions.
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| `d.vendorSale` | Sell to a merchant | Sell | money gained while a merchant window is open | D: P10 | |
-| `d.vendorBuy` | Buy from a merchant | Shopping | an item bought from a merchant (not a repair) | D: P10 | |
-| `d.auctionPost` | Put an item up for auction | Auction | an auction posted | D: P12 | |
-| `d.auctionBuy` | Buy at the auction house | Bargain | an auction bought or won | D: P12 | |
-| `d.mailFriend` | Send mail to a friend | Mail pal | mail sent to a friend's community character | D: P11 | |
-| `d.mailbox` | Empty the mailbox | Mailbox | an item or money taken from the mailbox | D: P11 | |
-| `d.profit` | End a session in profit | In profit | a session that ends with more money than it started with | B: 53 (gold, sessions) | |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 85 | `d.vendorSale` | Sell to a merchant | Sell | economy | money gained while a merchant window is open | needs probe P10 |  |
+| 86 | `d.vendorBuy` | Buy from a merchant | Shopping | economy | an item bought from a merchant (not a repair) | needs probe P10 |  |
+| 87 | `d.auctionPost` | Put an item up for auction | Auction | economy | an auction posted | needs probe P12 |  |
+| 88 | `d.auctionBuy` | Buy at the auction house | Bargain | economy | an auction bought or won | needs probe P12 |  |
+| 89 | `d.mailFriend` | Send mail to a friend | Mail pal | economy | mail sent to a friend's community character | needs probe P11 |  |
+| 90 | `d.mailbox` | Empty the mailbox | Mailbox | economy | an item or money taken from the mailbox | needs probe P11 |  |
+| 91 | `d.profit` | End a session in profit | In profit | economy | a session that ends with more money than it started with | existing tracker, waits for its launch check: 53 (gold, sessions) |  |
 
 ### care (9)
 
-| Id | Title | Label | Done when | Data | Can't do when → fallback |
-|---|---|---|---|---|---|
-| `d.repair` | Repair gear | Repair | a repair paid at a merchant | D: P10 | |
-| `d.trainer` | Learn a spell at a trainer | Train | a spell or rank learned from a class trainer | D: P14 | all characters at 60 → `d.repair` |
-| `d.inn` | Log out rested | Tuck in | a logout in a rested area (inn or city) | D: P8 | |
-| `d.wellFed` | Get Well Fed | Well fed | the "Well Fed" aura on a character | D: P21 | |
-| `d.buffFriend` | Buff a friend | Buff pal | an aura cast by the own character on a friend's community character | D: P21 | no character that can buff others → `d.groupFriend` |
-| `d.restock` | Restock food or drink | Restock | food or drink bought from a merchant | D: P10, P16 | |
-| `d.bank` | Visit the bank | Bank | the bank window opened | D: P13 | |
-| `d.tidyBags` | Clear the junk from the bags | Tidy bags | a character that had poor (grey) items in its bags has none left | D: P23 | |
-| `d.bandageUp` | Use a bandage | Bandage up | a First Aid bandage cast finished | D: P6 | no character with First Aid → `d.secondary` |
+| # | Id | Title | Label | Category | Done when | Data | Can't do when → fallback |
+|---|---|---|---|---|---|---|---|
+| 92 | `d.repair` | Repair gear | Repair | care | a repair paid at a merchant | needs probe P10 |  |
+| 93 | `d.trainer` | Learn a spell at a trainer | Train | care | a spell or rank learned from a class trainer | needs probe P14 | all characters at 60 → `d.repair` |
+| 94 | `d.inn` | Log out rested | Tuck in | care | a logout in a rested area (inn or city) | needs probe P8 |  |
+| 95 | `d.wellFed` | Get Well Fed | Well fed | care | the "Well Fed" aura on a character | needs probe P21 |  |
+| 96 | `d.buffFriend` | Buff a friend | Buff pal | care | an aura cast by the own character on a friend's community character | needs probe P21 | no character that can buff others → `d.groupFriend` |
+| 97 | `d.restock` | Restock food or drink | Restock | care | food or drink bought from a merchant | needs probe P10, P16 |  |
+| 98 | `d.bank` | Visit the bank | Bank | care | the bank window opened | needs probe P13 |  |
+| 99 | `d.tidyBags` | Clear the junk from the bags | Tidy bags | care | a character that had poor (grey) items in its bags has none left | needs probe P23 |  |
+| 100 | `d.bandageUp` | Use a bandage | Bandage up | care | a First Aid bandage cast finished | needs probe P6 | no character with First Aid → `d.secondary` |
