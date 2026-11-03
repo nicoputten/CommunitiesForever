@@ -129,10 +129,29 @@ describe("Feats, scores and sprees (CF-57b)", function()
     assert.are.same({ pve = 5, pvp = 5 + 1 }, s.today)
     local daysInWeek = D.week(day - 1) == week and 5 or 0
     assert.are.same({ pve = 5 + 15 + daysInWeek, pvp = 5 + 1 }, s.week)
-    assert.are.same({ 1, 1, true, 4 }, { s.kills, s.perChar.G1, s.killedEver, s.streak })
+    assert.are.same({ 1, 1, true, 4 }, { s.kills, s.perChar.G1, s.foughtEver, s.streak })
     assert.are.same({ won = 1, lost = 0, points = 1 }, s.bg["Warsong Gulch"])
     assert.are.same({ "Ashenvale", 1 }, { V.topZone(s.killsByZone) })
     assert.are.same({ "+2", "-1", "new", "" }, { V.moveText(2), V.moveText(-1), V.moveText("new"), V.moveText(0) })
     assert.are.equal("\226\150\1782", V.moveText(2, true))
+  end)
+
+  -- CF-78: only a real fight ends PvP Virgin: an honorable kill, a duel or a finished battleground, on any day.
+  it("ends PvP Virgin only with a real fight", function()
+    local day = 20767
+    local week = D.week(day)
+    local function fought(feed, chars, goals)
+      return V.score({ goals = goals or {}, feed = feed or {}, chars = chars or {}, schedule = {}, community = {},
+                       day = day, week = week }).foughtEver
+    end
+    assert.is_false(fought(nil, { G1 = { pvp = { hk = 0 } } }))
+    -- PvP points from goals alone (a taunt) don't end it.
+    assert.is_false(fought(nil, { G1 = { pvp = { hk = 0 } } }, { days = { [day] = { done = { ["p.flex"] = 1 } } } }))
+    assert.is_true(fought(nil, { G1 = { pvp = { hk = 0, duelsWon = 1 } } }))
+    -- A finished battleground weeks ago counts; one left early (won unknown) doesn't.
+    local bg = { [day - 30] = { G1 = { runs = { { name = "Warsong Gulch", kind = "pvp", won = false } } } } }
+    assert.is_true(fought(bg, { G1 = { pvp = { hk = 0 } } }))
+    assert.is_false(fought({ [day] = { G1 = { runs = { { name = "Warsong Gulch", kind = "pvp" } } } } }))
+    assert.is_true(fought({ [day] = { G1 = { pvpKills = { { t = 1, name = "V" } } } } }))
   end)
 end)

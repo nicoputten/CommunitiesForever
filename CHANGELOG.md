@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday:** only a real fight ends PvP Virgin: an honorable kill, a duel or a finished battleground. A finished
+  battleground now counts too.
 - **Doomsday:** each goal is ready to score by its size (1, 3 or 5 for a daily, 5, 10 or 15 for a weekly) once the
   new mission pool arrives; until then every goal keeps its 5 and 15 points.
 - **Doomsday:** the addon now records levels (in a dungeon, with a friend, on a low character), speed runs, dungeons

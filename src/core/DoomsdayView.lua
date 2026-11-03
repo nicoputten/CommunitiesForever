@@ -263,14 +263,14 @@ end
 --[[ One friend's points and counts for a day and a week from their synced data:
 d = { goals = { days, weeks, streak }, feed, chars, schedule, community, day, week }.
 Returns { day = entry, today = { pve, pvp }, week = { pve, pvp }, goals (done this week), kills (counted PvP this
-week), perChar = { [guid] = pvp points this week }, killedEver (CF-61: any honorable kill or PvP point ever, duels
-included: not a PvP Virgin), streak, killsByZone, bg = { [name] = { won, lost, points } } }. Duel points are the
-caller's (they need everyone's records). ]]
+week), perChar = { [guid] = pvp points this week }, foughtEver (CF-78: a real fight on any character: an honorable
+kill, a duel or a finished battleground; not a PvP Virgin), streak, killsByZone, bg = { [name] = { won, lost,
+points } } }. Duel points and the Duel slot's fights are the caller's (they need everyone's records). ]]
 function DoomsdayView.score(d)
   local D = ns.Doomsday
   local goals = type(d.goals) == "table" and d.goals or {}
   local r = { day = goals.days and goals.days[d.day], today = { pve = 0, pvp = 0 }, week = { pve = 0, pvp = 0 },
-              goals = 0, kills = 0, perChar = {}, killedEver = false, streak = goals.streak, killsByZone = {}, bg = {} }
+              goals = 0, kills = 0, perChar = {}, foughtEver = false, streak = goals.streak, killsByZone = {}, bg = {} }
   -- CF-69: each day and week in the pool version it was drawn in.
   local function count(e, into)
     local pool = D.entryPool(e, goals.pool)
@@ -287,15 +287,20 @@ function DoomsdayView.score(d)
     if n == d.day then count(e, r.today) end
   end
   if goals.weeks and goals.weeks[d.week] then count(goals.weeks[d.week], r.week) end
-  local kills = {}
+  local kills, bgRuns = {}, {}
   for feedDay, chars in pairs(d.feed or {}) do
     for guid, e in pairs(type(chars) == "table" and chars or {}) do
-      -- Battleground results (CF-23) by the feed's realm day, which is close enough to the Doomsday week.
-      for _, run in ipairs(type(feedDay) == "number" and D.week(feedDay) == d.week and e.runs or {}) do
-        if run.kind == "pvp" and run.won ~= nil then
-          r.bg[run.name] = r.bg[run.name] or { won = 0, lost = 0, points = 0 }
-          local b = r.bg[run.name]
-          if run.won then b.won = b.won + 1 else b.lost = b.lost + 1 end
+      local thisWeek = type(feedDay) == "number" and D.week(feedDay) == d.week
+      for _, run in ipairs(type(e.runs) == "table" and e.runs or {}) do
+        -- A finished battleground (CF-23: won or lost) on any day is a real fight (CF-78).
+        if type(run) == "table" and run.kind == "pvp" and run.won ~= nil then
+          bgRuns[guid] = (bgRuns[guid] or 0) + 1
+          -- Battleground results by the feed's realm day, which is close enough to the Doomsday week.
+          if thisWeek then
+            r.bg[run.name] = r.bg[run.name] or { won = 0, lost = 0, points = 0 }
+            local b = r.bg[run.name]
+            if run.won then b.won = b.won + 1 else b.lost = b.lost + 1 end
+          end
         end
       end
       for _, k in ipairs(e.pvpKills or {}) do
@@ -306,10 +311,10 @@ function DoomsdayView.score(d)
       end
     end
   end
-  for _, c in pairs(d.chars or {}) do
-    if c.pvp and not ns.Pvp.virgin(c.pvp) then r.killedEver = true end
+  for guid, c in pairs(d.chars or {}) do
+    if c.pvp and not ns.Pvp.virgin(c.pvp, bgRuns[guid]) then r.foughtEver = true end
   end
-  if #kills > 0 then r.killedEver = true end
+  if #kills > 0 or next(bgRuns) then r.foughtEver = true end
   for _, s in ipairs(D.scoreKills(kills, d.schedule, d.community)) do
     if D.week(s.day) == d.week then
       if s.track == "pvp" then

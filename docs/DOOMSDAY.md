@@ -13,7 +13,7 @@ Product rule: **recommend, never restrict.** Goals are suggestions with points, 
 - **PvE:** quests, levels, dungeons, professions, playing together.
 - **PvP:** kills, duels, the Hunt.
 
-The two are always shown side by side ("PvE 85 · PvP 240"), **never added together**, and each has its own ranking. A friend who never does PvP is never ranked against gankers: a friend with no PvP point (duel points included) and no honorable kill on any character, ever, is a **PvP Virgin** and is not ranked on the PvP ladder. Any PvP point or any kill ends it (Nico, live test 2026-10-29).
+The two are always shown side by side ("PvE 85 · PvP 240"), **never added together**, and each has its own ranking. A friend who never does PvP is never ranked against gankers: a friend who never fought, on any character, is a **PvP Virgin** and is not ranked on the PvP ladder. An honorable kill, a duel or a finished battleground (won or lost, `runs` with `kind = "pvp"`, CF-23) on any character ends it; PvP points from goals without a fight (emotes, the PvP flag) count on the PvP track but don't end it (Nico, 2026-11-03, CF-78). A PvP Virgin with such points shows as Conscientious Objector with the points. The ladder's input is `foughtEver` (the older name `killedEver` is read when it is missing).
 
 ## Per friend
 Everything counts per friend (BattleTag): any of your characters counts, and progress adds up across characters (6 quests on one, 4 on another = 10). "Another friend" means a character of a different BattleTag, as the `with` lists of runs already use; your own alts don't count as a friend.

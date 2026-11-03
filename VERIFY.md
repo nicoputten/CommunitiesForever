@@ -66,6 +66,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-78 Only a real fight ends PvP Virgin
+Taunt and flag goals arrive with pool version 2 and later (CF-79, CF-81); until then the steps check the battleground and that nothing else changed.
+
+| Step | Expected | Status |
+|---|---|---|
+| A friend (or an alt's BattleTag) with no honorable kill and no duel finishes a battleground (won or lost); `/reload`; Doomsday › Ladder | That friend is ranked on the PvP ladder (no longer under "PvP Virgin · not ranked"). | open |
+| A friend who never fought | Still under "PvP Virgin · not ranked"; on Today's mini board "PvP Virgin". | open |
+| A duel between two friends who never fought, then `/reload` | Both ranked on the PvP ladder. | open |
+| Once a taunt goal is in the pool (pool version 2+): a friend who only did that goal | Shows as Conscientious Objector with the PvP points, not ranked; after a duel, ranked. | open |
+
 ### CF-71 Quest details for Doomsday missions
 The quest missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the facts line" below): `/run local f=CommunitiesForeverDB.global.self.doomsday.days; for n,d in pairs(f) do local q=d.quests2; if q then print(n,'up',q.up,'group',q.group,'class',q.class,'dungeon',q.dungeon,'duo',q.together,'burst',q.burst,'accepted',q.acceptedCount) end end`
 

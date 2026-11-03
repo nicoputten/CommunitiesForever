@@ -5390,6 +5390,94 @@
      "Cy#1003"
     ]
    }
+  },
+  {
+   "note": "CF-78: only a real fight (an honorable kill, a duel, a finished battleground: foughtEver) ranks on PvP; a friend with only PvP points from goals without a fight (emotes, the flag) stays a PvP Virgin with the points; foughtEver wins over the older killedEver, which is read when foughtEver is missing",
+   "friends": [
+    {
+     "friend": "Ada#1001",
+     "name": "Ada",
+     "pve": 10,
+     "pvp": 2,
+     "goals": 2,
+     "kills": 0,
+     "foughtEver": false
+    },
+    {
+     "friend": "Bob#1002",
+     "name": "Bob",
+     "pve": 10,
+     "pvp": 0,
+     "goals": 1,
+     "kills": 0,
+     "foughtEver": true
+    },
+    {
+     "friend": "Cy#1003",
+     "name": "Cy",
+     "pve": 5,
+     "pvp": 6,
+     "goals": 1,
+     "kills": 3,
+     "killedEver": true
+    },
+    {
+     "friend": "Mira#1004",
+     "name": "Mira",
+     "pve": 0,
+     "pvp": 1,
+     "goals": 1,
+     "kills": 0,
+     "foughtEver": false,
+     "killedEver": true
+    }
+   ],
+   "expect": {
+    "pve": [
+     {
+      "friend": "Ada#1001",
+      "rank": 1,
+      "points": 10,
+      "move": "new"
+     },
+     {
+      "friend": "Bob#1002",
+      "rank": 2,
+      "points": 10,
+      "move": "new"
+     },
+     {
+      "friend": "Cy#1003",
+      "rank": 3,
+      "points": 5,
+      "move": "new"
+     },
+     {
+      "friend": "Mira#1004",
+      "rank": 4,
+      "points": 0,
+      "move": "new"
+     }
+    ],
+    "pvp": [
+     {
+      "friend": "Cy#1003",
+      "rank": 1,
+      "points": 6,
+      "move": "new"
+     },
+     {
+      "friend": "Bob#1002",
+      "rank": 2,
+      "points": 0,
+      "move": "new"
+     }
+    ],
+    "virgins": [
+     "Ada#1001",
+     "Mira#1004"
+    ]
+   }
   }
  ]
 }

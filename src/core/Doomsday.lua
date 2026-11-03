@@ -1215,12 +1215,13 @@ end
 
 -- ===== Ladder =====
 
---[[ The week's ladder, one ranking per track. friends = { { friend, name, pve, pvp, goals, kills, killedEver } }
-(goals: goals done this week; kills: counted kills this week; killedEver: any kill on any character ever).
+--[[ The week's ladder, one ranking per track. friends = { { friend, name, pve, pvp, goals, kills, foughtEver } }
+(goals: goals done this week; kills: counted kills this week; foughtEver, CF-78: an honorable kill, a duel or a
+finished battleground on any character ever; the older name killedEver is read when foughtEver is missing).
 previous (optional): { pve = { [friend] = rank }, pvp = { [friend] = rank } } of last week.
 Returns { pve = rows, pvp = rows, virgins = { friend, ... } } with rows { friend, rank, points, move }:
 move = positions gained since last week (negative: lost), "new" when not ranked last week.
-PvE ties: more goals done, then the name. PvP: friends who never killed anyone (PvP Virgins) aren't ranked;
+PvE ties: more goals done, then the name. PvP: friends who never fought (PvP Virgins) aren't ranked;
 ties: more goals done, then more counted kills, then the name. ]]
 function Doomsday.ladder(friends, previous)
   previous = previous or {}
@@ -1243,7 +1244,9 @@ function Doomsday.ladder(friends, previous)
     local row = { friend = f.friend, name = f.name, pve = f.pve or 0, pvp = f.pvp or 0, goals = f.goals,
                   kills = f.kills }
     pve[#pve + 1] = row
-    if f.killedEver then pvp[#pvp + 1] = row else virgins[#virgins + 1] = f.friend end
+    local fought = f.foughtEver
+    if fought == nil then fought = f.killedEver end
+    if fought then pvp[#pvp + 1] = row else virgins[#virgins + 1] = f.friend end
   end
   table.sort(virgins)
   return { pve = rank("pve", pve), pvp = rank("pvp", pvp), virgins = virgins }
