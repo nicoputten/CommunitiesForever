@@ -1,10 +1,11 @@
 ## Interface: 16001, 120105
 ## Title: FriendProbe
 ## Notes: Launch checklist for CommunitiesForever (runs by itself until 18 Nov 2026; send the saved file to Nico)
-## Version: 2026-10-29
+## Version: 2026-11-03
 ## SavedVariables: FriendProbeDB
 
 ReloadProbe.lua
 Checklist.lua
 FriendProbe.lua
+Missions.lua
 Window.lua
