@@ -66,6 +66,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-77 Pool version 2
+The release day's draw with this build: `/run local D,s=CommunitiesForever.Doomsday,CommunitiesForever.DoomsdayTracker.schedule(); local n=D.day(GetServerTime(),s.offset,s.reset); print(D.POOL_VERSION, table.concat(D.draw(n).dailies," "), table.concat(D.drawWeek(D.week(n)).weeklies," "))` (call it "the draw line" below).
+
+| Step | Expected | Status |
+|---|---|---|
+| Two friends on this build, on the release day: the draw line on both, and compare the Doomsday tab | Both print `2` and the same 3 dailies and 3 weeklies; the tabs show the same 3 dailies (or their swaps). The 3 weeklies are of 3 different kinds. | open |
+| A friend still on v1.1.0, same day: their Doomsday tab | They see pool version 1's dailies (the ones the site shows for version 1), not the new ones. No errors on either side. | open |
+| On this build, a day that was already drawn before the update (log in on v1.1.0, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `pool` nil (read as version 1: its goals score 5 each); the next day's entry prints `2`. | open |
+| Finish a new daily (e.g. Say something in the community chat, if drawn) | Its banner and the week's total show its size (+1, +3 or +5), not +5 for every goal. | open |
+
 ### CF-73 Friends and places for Doomsday missions
 The missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the places line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local p=d.places; if p then local z,nz=0,0; for _ in pairs(p.zones) do z=z+1 end; for _ in pairs(p.newZones) do nz=nz+1 end; print(n,'zones',z,'new',nz,'sea',p.crossSea,'nost',p.nostalgia,'dare',p.daredevil,'same',p.sameZone,'online',p.onlineMax,'carry',p.carry,'chat',p.chat) end end`
 

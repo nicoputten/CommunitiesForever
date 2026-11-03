@@ -8,20 +8,22 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **Doomsday:** only a real fight ends PvP Virgin: an honorable kill, a duel or a finished battleground. A finished
   battleground now counts too.
-- **Doomsday:** each goal is ready to score by its size (1, 3 or 5 for a daily, 5, 10 or 15 for a weekly) once the
-  new mission pool arrives; until then every goal keeps its 5 and 15 points.
+- **Doomsday:** a new mission pool: 29 new dailies and 13 new weeklies (quests, levels, dungeons, play, friends and
+  places) join the draw, and each goal scores by its size (1, 3 or 5 for a daily, 5, 10 or 15 for a weekly). The 3
+  weeklies are now of different kinds, as the dailies. Days and weeks drawn before you update keep their goals and
+  points. **Everyone should update on release day:** friends on the older version draw the old goals.
 - **Doomsday:** the addon now records levels (in a dungeon, with a friend, on a low character), speed runs, dungeons
   new to a character, Cooking, Fishing and First Aid points, and characters played after a break, for the new
-  missions that join the draw later. Nothing changes in today's goals yet.
+  missions.
 - **Fixed:** the celebration banner's round medallion no longer grows over the text when the banner comes in; it rises and fades with the banner.
 - **Doomsday:** the site's owner can set future days' and weeks' missions on the site; they arrive with the uploader
   and reach friends without it through the addon. Days nobody changed keep the usual goals, and a day that has
   started never changes.
 - **Doomsday:** quest hand-ins and new quests are now tracked in detail (quests above your level, group, class and
-  dungeon quests, quick hand-ins, quests with a friend) for the coming quest missions.
+  dungeon quests, quick hand-ins, quests with a friend) for the new quest missions.
 - **Doomsday:** the addon now records zones visited (new to a character, far below or above its level, across the
   sea), friends online at once and in your zone, grouping with a lower friend and your community chat messages, for
-  the friends and places missions that join the draw later. Nothing changes in today's goals yet.
+  the new friends and places missions.
 
 ## v1.1.0 (2026-11-02)
 - **Fixed:** no "is online" chat lines right after you log in for friends who were already online.
