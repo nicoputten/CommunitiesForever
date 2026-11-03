@@ -40,6 +40,78 @@ describe("Doomsday (CF-55)", function()
     for id in pairs(Doomsday.SHORT_LABELS) do assert.is_table(Doomsday.goal(id), id) end
   end)
 
+  -- CF-70: the catalogue in code (docs/DOOMSDAY-CATALOGUE.md), pinned for the site's copy.
+  describe("the catalogue", function()
+    it("matches the file's catalogue, in pool order", function()
+      local list = {}
+      for i, g in ipairs(Doomsday.GOALS) do
+        list[i] = { id = g.id, slot = g.slot, category = g.category, since = g.since, points = g.points,
+                    text = g.text, short = g.shortLabel, can = g.can, fallback = g.fallback }
+      end
+      assert.are.same(cases.pools.catalogue, list)
+    end)
+
+    it("has the 118 PvE dailies in 15 categories, sized 1, 3 or 5, the new ones waiting for data", function()
+      local dailies, categories, n = 0, {}, 0
+      for _, g in ipairs(Doomsday.GOALS) do
+        if g.slot == "daily" then
+          dailies = dailies + 1
+          if not categories[g.category] then categories[g.category], n = true, n + 1 end
+          assert.is_true(g.points == 1 or g.points == 3 or g.points == 5, g.id)
+        end
+      end
+      assert.are.equal(118, dailies)
+      assert.are.equal(15, n)
+      for _, id in ipairs({ "d.questUp", "d.levels2", "d.cook5", "d.scrolls10", "p.flex", "p.punchDown5" }) do
+        assert.is_nil(Doomsday.goal(id).since, id)
+      end
+    end)
+
+    it("gives labels unique within a slot", function()
+      local seen = {}
+      for _, g in ipairs(Doomsday.GOALS) do
+        local key = g.slot .. ":" .. g.shortLabel
+        assert.is_nil(seen[key], g.id .. " and " .. tostring(seen[key]))
+        seen[key] = g.id
+      end
+    end)
+
+    it("names known goals as fallbacks and known situation checks", function()
+      for _, g in ipairs(Doomsday.GOALS) do
+        for _, f in ipairs(g.fallback or {}) do
+          assert.are.equal(g.slot, Doomsday.goal(f).slot, g.id .. " -> " .. f)
+        end
+        assert.is_true(Doomsday.canDo(g.id, {}), g.id) -- a missing field never swaps
+      end
+    end)
+
+    it("swaps on the catalogue's situation fields", function()
+      local cases_ = {
+        { "d.lowbie", { below20 = 0 } }, { "d.cook5", { hasCooking = false } },
+        { "d.bandage3", { hasFirstAid = false } }, { "d.gather10", { hasGathering = false } },
+        { "d.ride", { riding = false } }, { "d.buffFriend", { canBuff = false } },
+        { "d.sameZone", { friends = 0 } }, { "d.online3", { friends = 2 } }, { "d.dustOff", { idle7 = 0 } },
+        { "d.nostalgia", { highest = 29 } }, { "d.dingDungeon", { dungeonInRange = false } },
+        { "d.dingDungeon", { below60 = 0 } },
+        { "d.craft5", { hasProfession = false, hasCooking = false, hasFirstAid = false, hasFishing = false } },
+      }
+      for _, c in ipairs(cases_) do
+        assert.is_false(Doomsday.canDo(c[1], c[2]), c[1])
+      end
+      assert.is_true(Doomsday.canDo("d.online3", { friends = 3 }))
+      assert.is_true(Doomsday.canDo("d.nostalgia", { highest = 30 }))
+      assert.is_true(Doomsday.canDo("d.craft5", { hasProfession = false, hasCooking = true }))
+    end)
+
+    it("takes a module's progress function, never over a built-in one", function()
+      assert.is_nil(Doomsday.progress("d.levels2", {}))
+      Doomsday.registerProgress("d.levels2", function(f) return f.levels or 0, 2 end)
+      Doomsday.registerProgress("d.level", function() return 9, 1 end)
+      assert.are.same({ 2, 2, true }, { Doomsday.progress("d.levels2", { levels = 2 }) })
+      assert.are.same({ 0, 1, false }, { Doomsday.progress("d.level", {}) })
+    end)
+  end)
+
   it("picks", function()
     for _, c in ipairs(cases.pick) do
       assert.are.equal(c.expect, Doomsday.pick(c.n, c.salt, c.count), c.n .. "/" .. c.salt)

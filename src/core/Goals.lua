@@ -27,7 +27,8 @@ Goals.BOSSES = {
 
 -- Profession skill lines (as GetProfessionInfo gives them).
 local SECONDARY = { [185] = true, [129] = true, [356] = true } -- Cooking, First Aid, Fishing
-local FISHING = 356
+local FISHING, COOKING, FIRST_AID = 356, 185, 129
+local GATHERING = { [182] = true, [186] = true, [393] = true } -- Herbalism, Mining, Skinning
 local CRAFTING = { [171] = true, [164] = true, [333] = true, [202] = true, [165] = true, [197] = true }
 local CAPS = { [75] = true, [150] = true, [225] = true, [300] = true }
 
@@ -185,6 +186,25 @@ local function push(list, item, max)
   if #list < max then list[#list + 1] = item end
 end
 
+-- The fields of Goals.newFacts and the ones the tracker adds: a mission module's facts never use them.
+local BUILT_IN = { zone = true, hunts = true }
+for key in pairs(Goals.newFacts()) do BUILT_IN[key] = true end
+
+-- CF-70: the observation kinds of the mission modules (src/core/missions/*).
+local KINDS = {}
+
+--[[ A mission module adds its own observation kind: fn(facts, obs, maxKills) adds obs to the facts of one day or
+week (in place), under the module's own key (e.g. facts.quests2), never a built-in one. A built-in kind of
+Goals.observe keeps its own handling. ]]
+function Goals.registerKind(kind, fn)
+  if type(kind) == "string" and type(fn) == "function" then KINDS[kind] = fn end
+end
+
+-- Whether a mission module registered this kind (DoomsdayTracker forwards only those).
+function Goals.isModuleKind(kind)
+  return KINDS[kind] ~= nil
+end
+
 --[[ Adds one observation to facts (in place). obs:
   { kind = "quest", zone } | { kind = "level", guid, count, alt (not your highest), clean (no death since the
   previous level) } | { kind = "run", name, bosses, friends } | { kind = "learned" }
@@ -194,6 +214,7 @@ end
   | { kind = "shared", count } | { kind = "hunt", day }
   | { kind = "fish", count } | { kind = "crafted", id } | { kind = "trade", friend, items = { itemID, ... } }
   | { kind = "discovery" } (CF-56's local trackers for goals that wait for data)
+  | any kind a mission module registered (Goals.registerKind)
 maxKills: the kill list's cap. ]]
 function Goals.observe(f, obs, maxKills)
   local k = obs.kind
@@ -284,6 +305,8 @@ function Goals.observe(f, obs, maxKills)
     end
   elseif k == "discovery" then
     f.discoveries = (f.discoveries or 0) + 1
+  elseif KINDS[k] then
+    KINDS[k](f, obs, maxKills)
   end
 end
 
@@ -294,12 +317,12 @@ local function count(map)
 end
 
 --[[ Facts as Doomsday.progress reads them. ctx = { schedule, community = { [name] = true }, zone, hunts,
-factions }. ]]
+factions }. The mission modules' facts pass through under their own keys (CF-70). ]]
 function Goals.progressFacts(f, ctx)
   ctx = ctx or {}
   local best = 0
   for _, n in pairs(f.altByChar or {}) do best = math.max(best, n) end
-  return {
+  local result = {
     quests = f.quests, sharedMax = f.sharedMax, levels = f.levels, altLevels = f.altLevels, altLevelsMax = best,
     cleanLevels = f.cleanLevels, ilvlGain = f.ilvlGain, runs = f.runs, skill = f.skill, secondary = f.secondary,
     learned = f.learned, capReached = f.capReached, chars = count(f.chars), days = count(f.days),
@@ -308,17 +331,33 @@ function Goals.progressFacts(f, ctx)
     hunts = ctx.hunts, huntDays = count(f.huntDays), duelFriends = count(f.duelFriends), factions = ctx.factions,
     fish = f.fish, trades = f.trades, craftTrade = f.craftTrade, discoveries = f.discoveries,
   }
+  for key, value in pairs(f) do
+    if not BUILT_IN[key] and result[key] == nil then result[key] = value end
+  end
+  return result
 end
 
 -- ===== The situation for swaps =====
 
+-- CF-70: classes with a buff they can cast on others (d.buffFriend).
+local BUFFERS = { DRUID = true, MAGE = true, PALADIN = true, PRIEST = true, SHAMAN = true, WARLOCK = true }
+Goals.IDLE_DAYS = 7 -- d.dustOff: a character not played for a week
+
 --[[ A friend's situation from their characters (Doomsday.goalsForDay): chars = { { level, ilvl, professions =
-{ [skillLine] = { rank, max } } } }, playedToday = { [guid] = true }, friendQuestLog (bool), dungeonInRange
-(bool, from the dungeon list). ]]
-function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange)
+{ [skillLine] = { rank, max } }, riding, classFile, lastPlayed } }, playedToday = { [guid] = true },
+friendQuestLog (bool), dungeonInRange (bool, from the dungeon list), extra (CF-70, optional) = { friends (other
+friends in the community, nil: unknown), now (server time, for idle7) }. riding, canBuff and idle7 stay nil
+(unknown, never swap) unless every character tells: riding needs a riding skill on each (CF-53), canBuff a class,
+idle7 the server time and a lastPlayed on each. ]]
+function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange, extra)
+  extra = extra or {}
   local s = { chars = 0, below60 = 0, altBelow60 = 0, ilvlReadable = false, hasProfession = false,
               hasFishing = false, hasCraftingProfession = false, professionBelow300 = false,
-              friendQuestLog = friendQuestLog == true, dungeonInRange = dungeonInRange ~= false }
+              friendQuestLog = friendQuestLog == true, dungeonInRange = dungeonInRange ~= false,
+              below20 = 0, hasCooking = false, hasFirstAid = false, hasGathering = false }
+  if type(extra.friends) == "number" then s.friends = extra.friends end
+  local now = type(extra.now) == "number" and extra.now or nil
+  local riding, buff, idle, idleUnknown = false, false, 0, now == nil
   local highestGuid
   for guid, c in pairs(chars or {}) do
     s.chars = s.chars + 1
@@ -331,8 +370,22 @@ function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange)
     for line, p in pairs(c.professions or {}) do
       if not SECONDARY[line] then s.hasProfession = true end
       if line == FISHING then s.hasFishing = true end
+      if line == COOKING then s.hasCooking = true end
+      if line == FIRST_AID then s.hasFirstAid = true end
+      if GATHERING[line] then s.hasGathering = true end
       if CRAFTING[line] then s.hasCraftingProfession = true end
       if (p.rank or 0) < 300 then s.professionBelow300 = true end
+    end
+    if riding ~= true then
+      if type(c.riding) ~= "number" then riding = nil elseif c.riding > 0 then riding = true end
+    end
+    if buff ~= true then
+      if type(c.classFile) ~= "string" then buff = nil elseif BUFFERS[c.classFile] then buff = true end
+    end
+    if type(c.lastPlayed) ~= "number" then
+      idleUnknown = true
+    elseif now and now - c.lastPlayed >= Goals.IDLE_DAYS * 86400 then
+      idle = idle + 1
     end
   end
   for guid, c in pairs(chars or {}) do
@@ -340,7 +393,10 @@ function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange)
       s.below60 = s.below60 + 1
       if guid ~= highestGuid then s.altBelow60 = s.altBelow60 + 1 end
     end
+    if (c.level or 0) < 20 then s.below20 = s.below20 + 1 end
   end
+  if idle == 0 and idleUnknown then idle = nil end
+  s.riding, s.canBuff, s.idle7 = riding, buff, idle
   return s
 end
 

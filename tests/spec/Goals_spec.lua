@@ -143,7 +143,69 @@ describe("Goals (CF-56)", function()
     local s = Goals.situation(chars, { B = true }, false, true)
     assert.are.same({ chars = 2, below60 = 1, altBelow60 = 1, highest = 60, highestToday = 24, ilvlReadable = true,
                       hasProfession = true, hasFishing = true, hasCraftingProfession = false,
-                      professionBelow300 = true, friendQuestLog = false, dungeonInRange = true }, s)
+                      professionBelow300 = true, friendQuestLog = false, dungeonInRange = true,
+                      below20 = 0, hasCooking = true, hasFirstAid = false, hasGathering = true }, s)
+  end)
+
+  -- CF-70: the catalogue's swap fields; riding, canBuff and idle7 only when every character tells.
+  it("builds the catalogue's situation fields, unknown left out", function()
+    local now, day = 2000000000, 86400
+    local chars = {
+      A = { level = 60, classFile = "WARRIOR", riding = 0, lastPlayed = now - 8 * day,
+            professions = { [129] = { rank = 10 } } },
+      B = { level = 12, classFile = "ROGUE", riding = 0, lastPlayed = now - day },
+    }
+    local s = Goals.situation(chars, nil, false, true, { friends = 2, now = now })
+    assert.are.same({ 1, true, false, false, false, 2, false, 1 },
+                    { s.below20, s.hasFirstAid, s.hasCooking, s.hasGathering, s.riding, s.friends, s.canBuff,
+                      s.idle7 })
+    chars.B.classFile, chars.B.riding = "PRIEST", 75
+    s = Goals.situation(chars, nil, false, true, { now = now })
+    assert.are.same({ true, true }, { s.riding, s.canBuff })
+    assert.is_nil(s.friends)
+    -- Not readable on one character: unknown, unless another one already tells.
+    chars.B.classFile, chars.B.riding, chars.B.lastPlayed = nil, nil, nil
+    chars.A.lastPlayed = now
+    s = Goals.situation(chars, nil, false, true, { now = now })
+    assert.is_nil(s.riding)
+    assert.is_nil(s.canBuff)
+    assert.is_nil(s.idle7)
+    chars.A.lastPlayed = now - 7 * day
+    assert.are.equal(1, Goals.situation(chars, nil, false, true, { now = now }).idle7)
+    assert.is_nil(Goals.situation(chars, nil, false, true).idle7) -- no server time
+    assert.are.equal(false, Goals.situation({}, nil, false, true, { now = now }).riding)
+  end)
+
+  describe("mission modules (CF-70)", function()
+    it("adds a module's kind to the facts under its own key, never a built-in one", function()
+      Goals.registerKind("questDone", function(f, obs)
+        f.quests2 = f.quests2 or { n = 0 }
+        f.quests2.n = f.quests2.n + (obs.count or 1)
+      end)
+      Goals.registerKind("quest", function(f) f.hijacked = true end)
+      assert.is_true(Goals.isModuleKind("questDone"))
+      assert.is_false(Goals.isModuleKind("nope"))
+      local f = Goals.newFacts()
+      Goals.observe(f, { kind = "questDone", count = 2 })
+      Goals.observe(f, { kind = "questDone" })
+      Goals.observe(f, { kind = "quest", zone = "Westfall" })
+      Goals.observe(f, { kind = "nope" })
+      assert.are.same({ n = 3 }, f.quests2)
+      assert.are.same({ Westfall = 1 }, f.quests)
+      assert.is_nil(f.hijacked)
+      local pf = Goals.progressFacts(f, {})
+      assert.are.same({ n = 3 }, pf.quests2)
+      assert.is_nil(pf.kills) -- built-in raw facts stay out
+      assert.are.equal(0, pf.chars)
+    end)
+
+    it("reads a module goal's progress from its facts", function()
+      Goals.registerKind("questDone", function(f) f.quests2 = (f.quests2 or 0) + 1 end)
+      Doomsday.registerProgress("d.questBurst", function(pf) return pf.quests2 or 0, 3 end)
+      local f = Goals.newFacts()
+      for _ = 1, 3 do Goals.observe(f, { kind = "questDone" }) end
+      assert.are.same({ 3, 3, true }, { Doomsday.progress("d.questBurst", Goals.progressFacts(f, {})) })
+    end)
   end)
 
   it("marks goals done once, with the time", function()

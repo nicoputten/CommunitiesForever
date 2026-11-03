@@ -80,41 +80,226 @@ end
 
 -- ===== Catalogue =====
 
---[[ Every goal, in pool order (DOOMSDAY.md). slot: daily, weekly, skirmish or bounty. since: the pool version
-it joined (nil: waits for data). can: the situation check (Doomsday.canDo); fallback: replacements in order.
+--[[ Every goal, in pool order (DOOMSDAY.md). slot: daily, weekly, skirmish or bounty. category: the draw's
+category (the 15 of the PvE dailies, docs/DOOMSDAY-CATALOGUE.md). since: the pool version it joined (nil: waits
+for data). points: the catalogue's size (1, 3 or 5; CF-69 scores it from a later pool version). can: the
+situation check (Doomsday.canDo); fallback: replacements in order. The PvE dailies follow the catalogue (CF-70).
 Ids are never reused or renamed; a retired goal stays here with retired = true. ]]
 local GOALS = {
-  { id = "d.quests10", slot = "daily", category = "quests", since = 1, text = "Finish 10 quests" },
-  { id = "d.quests20", slot = "daily", category = "quests", since = 1, text = "Finish 20 quests" },
-  { id = "d.zone5", slot = "daily", category = "quests", since = 1, text = "Finish 5 quests in one zone" },
-  { id = "d.zones3", slot = "daily", category = "quests", since = 1, text = "Hand in quests in 3 zones" },
-  { id = "d.shared3", slot = "daily", category = "quests", since = 1, text = "Share 3 quests with a friend",
+  -- quests
+  { id = "d.quests10", slot = "daily", category = "quests", since = 1, points = 3, text = "Finish 10 quests" },
+  { id = "d.quests20", slot = "daily", category = "quests", since = 1, points = 5, text = "Finish 20 quests" },
+  { id = "d.zone5", slot = "daily", category = "quests", since = 1, points = 3, text = "Finish 5 quests in one zone" },
+  { id = "d.zones3", slot = "daily", category = "quests", since = 1, points = 3, text = "Hand in quests in 3 zones" },
+  { id = "d.shared3", slot = "daily", category = "quests", since = 1, points = 3, text = "Share 3 quests with a friend",
     can = "friendQuestLog", fallback = { "d.quests10" } },
-  { id = "d.level", slot = "daily", category = "levels", since = 1, text = "Gain a level",
+  { id = "d.questUp", slot = "daily", category = "quests", points = 3,
+    text = "Finish a quest above the character's level", can = "below60", fallback = { "d.quests10" } },
+  { id = "d.groupQuest", slot = "daily", category = "quests", points = 3, text = "Finish a group quest" },
+  { id = "d.classQuest", slot = "daily", category = "quests", points = 3, text = "Finish a class quest" },
+  { id = "d.questBurst", slot = "daily", category = "quests", points = 3, text = "Hand in 3 quests within 10 minutes" },
+  { id = "d.accept5", slot = "daily", category = "quests", points = 3, text = "Take on 5 new quests" },
+
+  -- levels
+  { id = "d.level", slot = "daily", category = "levels", since = 1, points = 3, text = "Gain a level",
     can = "below60", fallback = { "d.quests20" } },
-  { id = "d.altLevel", slot = "daily", category = "levels", since = 1, text = "Gain a level on an alt",
+  { id = "d.altLevel", slot = "daily", category = "levels", since = 1, points = 3, text = "Gain a level on an alt",
     can = "altBelow60", fallback = { "d.quests10" } },
-  { id = "d.ilvl", slot = "daily", category = "levels", since = 1, text = "Raise an item level",
+  { id = "d.ilvl", slot = "daily", category = "levels", since = 1, points = 3, text = "Raise an item level",
     can = "ilvlReadable", fallback = { "d.quests10" } },
-  { id = "d.cleanLevel", slot = "daily", category = "levels", text = "Gain a level without dying",
+  { id = "d.cleanLevel", slot = "daily", category = "levels", points = 3, text = "Gain a level without dying",
     can = "below60", fallback = { "d.quests20" } },
-  { id = "d.dungeon", slot = "daily", category = "dungeons", since = 1, text = "Run a dungeon",
+  { id = "d.levels2", slot = "daily", category = "levels", points = 5, text = "Gain 2 levels",
+    can = "below60", fallback = { "d.quests20" } },
+  { id = "d.dingDungeon", slot = "daily", category = "levels", points = 3, text = "Gain a level inside a dungeon",
+    can = "below60Dungeon", fallback = { "d.level" } },
+  { id = "d.dingFriend", slot = "daily", category = "levels", points = 3,
+    text = "Gain a level in a group with a friend", can = "below60", fallback = { "d.groupFriend" } },
+  { id = "d.lowbie", slot = "daily", category = "levels", points = 3, text = "Gain a level on a character below 20",
+    can = "below20", fallback = { "d.altLevel" } },
+
+  -- dungeons
+  { id = "d.dungeon", slot = "daily", category = "dungeons", since = 1, points = 5, text = "Run a dungeon",
     can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.dungeonFriend", slot = "daily", category = "dungeons", since = 1, text = "Run a dungeon with a friend",
+  { id = "d.dungeonFriend", slot = "daily", category = "dungeons", since = 1, points = 5,
+    text = "Run a dungeon with a friend", can = "dungeonInRange", fallback = { "d.quests10" } },
+  { id = "d.bosses3", slot = "daily", category = "dungeons", since = 1, points = 5, text = "Defeat 3 dungeon bosses",
     can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.bosses3", slot = "daily", category = "dungeons", since = 1, text = "Defeat 3 dungeon bosses",
+  { id = "d.dungeonQuest", slot = "daily", category = "dungeons", points = 3, text = "Hand in a dungeon quest",
     can = "dungeonInRange", fallback = { "d.quests10" } },
-  { id = "d.skill5", slot = "daily", category = "crafts", since = 1, text = "Earn 5 profession skill points",
-    can = "hasProfession", fallback = { "d.quests10" } },
-  { id = "d.secondary", slot = "daily", category = "crafts", since = 1, text = "Raise Cooking, First Aid or Fishing" },
-  { id = "d.fish20", slot = "daily", category = "crafts", text = "Catch 20 fish",
+  { id = "d.cleanRun", slot = "daily", category = "dungeons", points = 5, text = "Run a dungeon without dying",
+    can = "dungeonInRange", fallback = { "d.quests10" } },
+  { id = "d.speedRun", slot = "daily", category = "dungeons", points = 5,
+    text = "Defeat 3 bosses of one dungeon within 45 minutes", can = "dungeonInRange", fallback = { "d.quests10" } },
+  { id = "d.newDungeon", slot = "daily", category = "dungeons", points = 5, text = "Run a dungeon new to the character",
+    can = "dungeonInRange", fallback = { "d.quests10" } },
+  { id = "d.dungeons2", slot = "daily", category = "dungeons", points = 5, text = "Run 2 dungeons",
+    can = "dungeonInRange", fallback = { "d.quests10" } },
+
+  -- crafts
+  { id = "d.skill5", slot = "daily", category = "crafts", since = 1, points = 3,
+    text = "Earn 5 profession skill points", can = "hasProfession", fallback = { "d.quests10" } },
+  { id = "d.secondary", slot = "daily", category = "crafts", since = 1, points = 3,
+    text = "Raise Cooking, First Aid or Fishing" },
+  { id = "d.craft5", slot = "daily", category = "crafts", points = 3, text = "Craft 5 items",
+    can = "anyProfession", fallback = { "d.secondary" } },
+  { id = "d.gather10", slot = "daily", category = "crafts", points = 3, text = "Gather 10 herbs, ore or leather",
+    can = "hasGathering", fallback = { "d.skill5" } },
+  { id = "d.newRecipe", slot = "daily", category = "crafts", points = 3, text = "Learn a new recipe",
+    can = "anyProfession", fallback = { "d.secondary" } },
+  { id = "d.craftGreen", slot = "daily", category = "crafts", points = 3, text = "Craft something uncommon or better",
+    can = "hasCraftingProfession", fallback = { "d.craft5" } },
+
+  -- cooking
+  { id = "d.cook5", slot = "daily", category = "cooking", points = 3, text = "Cook 5 meals",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.cook15", slot = "daily", category = "cooking", points = 5, text = "Cook 15 dishes",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.cookSkill5", slot = "daily", category = "cooking", points = 3, text = "Raise Cooking by 5 points",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.cookKinds3", slot = "daily", category = "cooking", points = 3, text = "Cook 3 different dishes",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.campfire", slot = "daily", category = "cooking", points = 1, text = "Light a campfire",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.campfireBuff", slot = "daily", category = "cooking", points = 3,
+    text = "Sit at a campfire fed with 3 or more items" },
+  { id = "d.eatOwn", slot = "daily", category = "cooking", points = 3, text = "Eat a dish cooked that day",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.cookRecipe", slot = "daily", category = "cooking", points = 3, text = "Learn a cooking recipe",
+    can = "hasCooking", fallback = { "d.secondary" } },
+  { id = "d.feedFriend", slot = "daily", category = "cooking", points = 3,
+    text = "Give a friend a dish cooked by an own character", can = "hasCooking", fallback = { "d.trade" } },
+
+  -- fishing
+  { id = "d.fish20", slot = "daily", category = "fishing", points = 3, text = "Catch 20 fish",
     can = "hasFishing", fallback = { "d.secondary" } },
-  { id = "d.chars2", slot = "daily", category = "play", since = 1, text = "Play 2 of your characters",
+  { id = "d.fishZones", slot = "daily", category = "fishing", points = 3, text = "Fish in 2 zones",
+    can = "hasFishing", fallback = { "d.secondary" } },
+  { id = "d.fish50", slot = "daily", category = "fishing", points = 5, text = "Catch 50 fish",
+    can = "hasFishing", fallback = { "d.secondary" } },
+  { id = "d.fishSkill5", slot = "daily", category = "fishing", points = 3, text = "Raise Fishing by 5 points",
+    can = "hasFishing", fallback = { "d.secondary" } },
+  { id = "d.fishKinds3", slot = "daily", category = "fishing", points = 3, text = "Catch 3 kinds of fish",
+    can = "hasFishing", fallback = { "d.secondary" } },
+  { id = "d.fishFriend", slot = "daily", category = "fishing", points = 3, text = "Fish in a group with a friend",
+    can = "hasFishing", fallback = { "d.groupFriend" } },
+  { id = "d.fishNight", slot = "daily", category = "fishing", points = 3, text = "Fish at night",
+    can = "hasFishing", fallback = { "d.secondary" } },
+
+  -- firstaid
+  { id = "d.bandage3", slot = "daily", category = "firstaid", points = 3, text = "Make 3 bandages",
+    can = "hasFirstAid", fallback = { "d.secondary" } },
+  { id = "d.bandageUp", slot = "daily", category = "firstaid", points = 3, text = "Use a bandage",
+    can = "hasFirstAid", fallback = { "d.secondary" } },
+  { id = "d.bandage10", slot = "daily", category = "firstaid", points = 3, text = "Make 10 bandages",
+    can = "hasFirstAid", fallback = { "d.secondary" } },
+  { id = "d.bandageUse3", slot = "daily", category = "firstaid", points = 3, text = "Use 3 bandages",
+    can = "hasFirstAid", fallback = { "d.secondary" } },
+  { id = "d.bandageFriend", slot = "daily", category = "firstaid", points = 3, text = "Bandage a friend",
+    can = "hasFirstAid", fallback = { "d.groupFriend" } },
+  { id = "d.aidSkill5", slot = "daily", category = "firstaid", points = 3, text = "Raise First Aid by 5 points",
+    can = "hasFirstAid", fallback = { "d.secondary" } },
+  { id = "d.bandageKinds2", slot = "daily", category = "firstaid", points = 3, text = "Make 2 kinds of bandages",
+    can = "hasFirstAid", fallback = { "d.secondary" } },
+
+  -- play
+  { id = "d.chars2", slot = "daily", category = "play", since = 1, points = 1, text = "Play 2 characters",
     can = "chars2", fallback = { "d.quests10" } },
-  { id = "d.groupFriend", slot = "daily", category = "play", text = "Group up with a friend" },
-  { id = "d.trade", slot = "daily", category = "play", text = "Trade with a friend" },
-  { id = "d.rare", slot = "daily", category = "play", text = "Loot a rare item" },
-  { id = "d.earlyBird", slot = "daily", category = "play", text = "Early bird: play before 09:00" },
+  { id = "d.chars3", slot = "daily", category = "play", points = 3, text = "Play 3 characters",
+    can = "chars3", fallback = { "d.chars2" } },
+  { id = "d.switchUp", slot = "daily", category = "play", points = 3,
+    text = "Play a character not played the day before", can = "chars2", fallback = { "d.quests10" } },
+  { id = "d.dustOff", slot = "daily", category = "play", points = 3, text = "Play a character after a week away",
+    can = "idle7", fallback = { "d.chars2" } },
+  { id = "d.earlyBird", slot = "daily", category = "play", points = 3, text = "Early bird: play before 09:00" },
+  { id = "d.nightOwl", slot = "daily", category = "play", points = 3, text = "Night owl: play after 23:00" },
+  { id = "d.session1h", slot = "daily", category = "play", points = 5, text = "Play a 1-hour session" },
+  { id = "d.deathless", slot = "daily", category = "play", points = 5, text = "Play an hour without dying" },
+  { id = "d.jump100", slot = "daily", category = "play", points = 1, text = "Jump 100 times" },
+
+  -- social
+  { id = "d.groupFriend", slot = "daily", category = "social", points = 3, text = "Group up with a friend" },
+  { id = "d.trade", slot = "daily", category = "social", points = 3, text = "Trade with a friend" },
+  { id = "d.questTogether", slot = "daily", category = "social", points = 3,
+    text = "Hand in a quest in a group with a friend" },
+  { id = "d.chatHello", slot = "daily", category = "social", points = 1, text = "Say something in the community chat" },
+  { id = "d.sameZone", slot = "daily", category = "social", points = 3, text = "Be in the same zone as a friend",
+    can = "friends1", fallback = { "d.chars2" } },
+  { id = "d.online3", slot = "daily", category = "social", points = 3, text = "Be online with 3 friends at once",
+    can = "friends3", fallback = { "d.groupFriend" } },
+  { id = "d.carry", slot = "daily", category = "social", points = 3, text = "Group with a friend 5+ levels lower" },
+  { id = "d.whisper", slot = "daily", category = "social", points = 1, text = "Whisper a friend" },
+  { id = "d.wave", slot = "daily", category = "social", points = 1, text = "Wave at a friend" },
+  { id = "d.groupPic", slot = "daily", category = "social", points = 1,
+    text = "Take a screenshot in a group with a friend" },
+
+  -- exploration
+  { id = "d.discover1", slot = "daily", category = "exploration", points = 3, text = "Discover a new place" },
+  { id = "d.discover3", slot = "daily", category = "exploration", points = 3, text = "Discover 3 new places" },
+  { id = "d.roam4", slot = "daily", category = "exploration", points = 3, text = "Visit 4 zones" },
+  { id = "d.newZone", slot = "daily", category = "exploration", points = 3,
+    text = "Set foot in a zone new to the character" },
+  { id = "d.places10", slot = "daily", category = "exploration", points = 3, text = "Visit 10 places within zones" },
+  { id = "d.swim", slot = "daily", category = "exploration", points = 3, text = "Swim for 2 minutes" },
+  { id = "d.nostalgia", slot = "daily", category = "exploration", points = 3,
+    text = "Visit a zone far below the character's level", can = "level30", fallback = { "d.roam4" } },
+  { id = "d.daredevil", slot = "daily", category = "exploration", points = 3,
+    text = "Visit a zone above the character's level", can = "below60", fallback = { "d.roam4" } },
+
+  -- travel
+  { id = "d.flight", slot = "daily", category = "travel", points = 1, text = "Take a flight" },
+  { id = "d.newFlight", slot = "daily", category = "travel", points = 3, text = "Learn a new flight path" },
+  { id = "d.hearth", slot = "daily", category = "travel", points = 1, text = "Use the hearthstone" },
+  { id = "d.bind", slot = "daily", category = "travel", points = 1, text = "Make a new inn home" },
+  { id = "d.ride", slot = "daily", category = "travel", points = 3, text = "Ride a mount for 15 minutes",
+    can = "riding", fallback = { "d.roam4" } },
+  { id = "d.crossSea", slot = "daily", category = "travel", points = 3, text = "Cross the sea" },
+  { id = "d.summoned", slot = "daily", category = "travel", points = 3, text = "Get summoned by a friend" },
+
+  -- combat
+  { id = "d.kills30", slot = "daily", category = "combat", points = 3, text = "Defeat 30 enemies",
+    can = "below60", fallback = { "d.bosses3" } },
+  { id = "d.elite", slot = "daily", category = "combat", points = 3, text = "Defeat an elite",
+    can = "below60", fallback = { "d.bosses3" } },
+  { id = "d.rareMob", slot = "daily", category = "combat", points = 5, text = "Defeat a rare enemy",
+    can = "below60", fallback = { "d.bosses3" } },
+  { id = "d.bigFoe", slot = "daily", category = "combat", points = 3, text = "Defeat an enemy 3+ levels higher",
+    can = "below60", fallback = { "d.bosses3" } },
+  { id = "d.streak20", slot = "daily", category = "combat", points = 5, text = "Defeat 20 enemies without dying",
+    can = "below60", fallback = { "d.bosses3" } },
+  { id = "d.weaponSkill", slot = "daily", category = "combat", points = 3, text = "Raise a weapon skill 5 times" },
+  { id = "d.duoHunt", slot = "daily", category = "combat", points = 3,
+    text = "Defeat 15 enemies in a group with a friend", can = "below60", fallback = { "d.dungeonFriend" } },
+
+  -- loot
+  { id = "d.rare", slot = "daily", category = "loot", points = 3, text = "Loot a rare item" },
+  { id = "d.green5", slot = "daily", category = "loot", points = 3, text = "Loot 5 uncommon items" },
+  { id = "d.reward", slot = "daily", category = "loot", points = 3, text = "Earn an uncommon quest reward" },
+  { id = "d.coins10", slot = "daily", category = "loot", points = 3, text = "Loot coins from 10 enemies" },
+  { id = "d.equipNew", slot = "daily", category = "loot", points = 3, text = "Wear a new find" },
+  { id = "d.treasure", slot = "daily", category = "loot", points = 3, text = "Open a treasure chest" },
+
+  -- economy
+  { id = "d.vendorSale", slot = "daily", category = "economy", points = 1, text = "Sell to a merchant" },
+  { id = "d.vendorBuy", slot = "daily", category = "economy", points = 1, text = "Buy from a merchant" },
+  { id = "d.auctionPost", slot = "daily", category = "economy", points = 3, text = "Put an item up for auction" },
+  { id = "d.auctionBuy", slot = "daily", category = "economy", points = 3, text = "Buy at the auction house" },
+  { id = "d.mailFriend", slot = "daily", category = "economy", points = 1, text = "Send mail to a friend" },
+  { id = "d.mailbox", slot = "daily", category = "economy", points = 1, text = "Empty the mailbox" },
+  { id = "d.profit", slot = "daily", category = "economy", points = 3, text = "End a session in profit" },
+
+  -- care
+  { id = "d.repair", slot = "daily", category = "care", points = 1, text = "Repair gear" },
+  { id = "d.trainer", slot = "daily", category = "care", points = 3, text = "Learn a spell at a trainer",
+    can = "below60", fallback = { "d.repair" } },
+  { id = "d.wellFed", slot = "daily", category = "care", points = 1, text = "Get Well Fed" },
+  { id = "d.buffFriend", slot = "daily", category = "care", points = 3, text = "Buff a friend",
+    can = "canBuff", fallback = { "d.groupFriend" } },
+  { id = "d.restock", slot = "daily", category = "care", points = 1, text = "Restock food or drink" },
+  { id = "d.bank", slot = "daily", category = "care", points = 1, text = "Visit the bank" },
+  { id = "d.tidyBags", slot = "daily", category = "care", points = 1, text = "Clear the junk from the bags" },
+  { id = "d.potion", slot = "daily", category = "care", points = 1, text = "Drink a potion" },
+  { id = "d.scrolls10", slot = "daily", category = "care", points = 3, text = "Read 10 scrolls on the own character" },
 
   { id = "w.days3", slot = "weekly", since = 1, text = "Play on 3 days" },
   { id = "w.days5", slot = "weekly", since = 1, text = "Play on 5 days" },
@@ -155,6 +340,12 @@ local GOALS = {
   { id = "p.untouchable", slot = "skirmish", since = 1, text = "Untouchable: 5 kills without dying" },
   { id = "p.variety", slot = "skirmish", text = "Variety: kills of 3 different classes" },
   { id = "p.ranked", slot = "skirmish", text = "Ranked bounty: kill a ranked player" },
+  { id = "p.flex", slot = "skirmish", category = "emote", points = 1, text = "Flex at a player of the other faction" },
+  { id = "p.boo", slot = "skirmish", category = "emote", points = 1, text = "Boo a player of the other faction" },
+  { id = "p.punchUp5", slot = "skirmish", category = "kill", points = 5,
+    text = "Kill an enemy player 5+ levels higher" },
+  { id = "p.punchDown5", slot = "skirmish", category = "kill", points = 3,
+    text = "Kill an enemy player 5+ levels lower" },
 
   { id = "b.zone25", slot = "bounty", since = 1, text = "25 kills in the zone of the week" },
   { id = "b.allClasses", slot = "bounty", text = "A kill of every enemy class" },
@@ -170,20 +361,49 @@ local GOALS = {
 -- CF-61: each goal's column title on the Board, at most 10 characters; the site uses the same (DOOMSDAY.md).
 Doomsday.SHORT_LABELS = {
   ["d.quests10"] = "10 quests", ["d.quests20"] = "20 quests", ["d.zone5"] = "5 in zone", ["d.zones3"] = "3 zones",
-  ["d.shared3"] = "3 shared", ["d.level"] = "Level", ["d.altLevel"] = "Alt level", ["d.ilvl"] = "Item level",
-  ["d.cleanLevel"] = "Clean lvl", ["d.dungeon"] = "Dungeon", ["d.dungeonFriend"] = "Group run",
-  ["d.bosses3"] = "3 bosses", ["d.skill5"] = "Skills", ["d.secondary"] = "Secondary", ["d.fish20"] = "20 fish",
-  ["d.chars2"] = "2 chars", ["d.groupFriend"] = "Group up", ["d.trade"] = "Trade", ["d.rare"] = "Rare loot",
-  ["d.earlyBird"] = "Early bird", ["w.days3"] = "3 days", ["w.days5"] = "5 days", ["w.chars3"] = "3 chars",
-  ["w.levels3"] = "3 levels", ["w.altLevels2"] = "Alt 2 lvls", ["w.quests50"] = "50 quests", ["w.zones5"] = "5 zones",
-  ["w.dungeons3"] = "3 dungeons", ["w.dungeonsDiff3"] = "3 distinct", ["w.dungeonFriends2"] = "Trio run",
-  ["w.fullClear"] = "Full clear", ["w.skill25"] = "25 skill", ["w.cap"] = "Skill cap", ["w.newProf"] = "New prof",
-  ["w.ilvl3"] = "Item lvl+3", ["w.friends3"] = "3 friends", ["w.rare5"] = "5 rares", ["w.session2h"] = "2h session",
+  ["d.shared3"] = "3 shared", ["d.questUp"] = "Hard quest", ["d.groupQuest"] = "Group Q", ["d.classQuest"] = "Class Q",
+  ["d.questBurst"] = "Quick 3", ["d.accept5"] = "Take 5", ["d.level"] = "Level", ["d.altLevel"] = "Alt level",
+  ["d.ilvl"] = "Item level", ["d.cleanLevel"] = "Clean lvl", ["d.levels2"] = "2 levels",
+  ["d.dingDungeon"] = "Deep ding", ["d.dingFriend"] = "Duo ding", ["d.lowbie"] = "Lowbie", ["d.dungeon"] = "Dungeon",
+  ["d.dungeonFriend"] = "Group run", ["d.bosses3"] = "3 bosses", ["d.dungeonQuest"] = "Dungeon Q",
+  ["d.cleanRun"] = "Clean run", ["d.speedRun"] = "Speed run", ["d.newDungeon"] = "Fresh run",
+  ["d.dungeons2"] = "2 dungeons", ["d.skill5"] = "Skills", ["d.secondary"] = "Secondary", ["d.craft5"] = "Craft 5",
+  ["d.gather10"] = "Gather 10", ["d.newRecipe"] = "Recipe", ["d.craftGreen"] = "Fine craft", ["d.cook5"] = "Cook 5",
+  ["d.cook15"] = "Cook 15", ["d.cookSkill5"] = "Cooking +5", ["d.cookKinds3"] = "3 dishes",
+  ["d.campfire"] = "Campfire", ["d.campfireBuff"] = "Cozy fire", ["d.eatOwn"] = "Home meal",
+  ["d.cookRecipe"] = "New dish", ["d.feedFriend"] = "Feed pal", ["d.fish20"] = "20 fish",
+  ["d.fishZones"] = "Fish spots", ["d.fish50"] = "50 fish", ["d.fishSkill5"] = "Fishing +5",
+  ["d.fishKinds3"] = "Fish kinds", ["d.fishFriend"] = "Fish buddy", ["d.fishNight"] = "Night fish",
+  ["d.bandage3"] = "Bandages", ["d.bandageUp"] = "Bandage up", ["d.bandage10"] = "10 bandage",
+  ["d.bandageUse3"] = "Bandage x3", ["d.bandageFriend"] = "Medic", ["d.aidSkill5"] = "Aid +5",
+  ["d.bandageKinds2"] = "2 bandages", ["d.chars2"] = "2 chars", ["d.chars3"] = "Play 3", ["d.switchUp"] = "Switch up",
+  ["d.dustOff"] = "Dust off", ["d.earlyBird"] = "Early bird", ["d.nightOwl"] = "Night owl",
+  ["d.session1h"] = "1h session", ["d.deathless"] = "No deaths", ["d.jump100"] = "100 jumps",
+  ["d.groupFriend"] = "Group up", ["d.trade"] = "Trade", ["d.questTogether"] = "Duo quest", ["d.chatHello"] = "Chat",
+  ["d.sameZone"] = "Neighbours", ["d.online3"] = "Full house", ["d.carry"] = "Carry", ["d.whisper"] = "Whisper",
+  ["d.wave"] = "Wave", ["d.groupPic"] = "Group pic", ["d.discover1"] = "Discover", ["d.discover3"] = "Discover 3",
+  ["d.roam4"] = "Roam 4", ["d.newZone"] = "New zone", ["d.places10"] = "10 places", ["d.swim"] = "Swim",
+  ["d.nostalgia"] = "Nostalgia", ["d.daredevil"] = "Daredevil", ["d.flight"] = "Fly", ["d.newFlight"] = "New flight",
+  ["d.hearth"] = "Hearth", ["d.bind"] = "New home", ["d.ride"] = "Ride", ["d.crossSea"] = "Cross sea",
+  ["d.summoned"] = "Summoned", ["d.kills30"] = "30 foes", ["d.elite"] = "Elite", ["d.rareMob"] = "Rare hunt",
+  ["d.bigFoe"] = "Big foe", ["d.streak20"] = "Streak 20", ["d.weaponSkill"] = "Weapon +5", ["d.duoHunt"] = "Duo hunt",
+  ["d.rare"] = "Rare loot", ["d.green5"] = "5 greens", ["d.reward"] = "Reward", ["d.coins10"] = "10 purses",
+  ["d.equipNew"] = "New gear", ["d.treasure"] = "Treasure", ["d.vendorSale"] = "Sell", ["d.vendorBuy"] = "Shopping",
+  ["d.auctionPost"] = "Auction", ["d.auctionBuy"] = "Bargain", ["d.mailFriend"] = "Mail pal",
+  ["d.mailbox"] = "Mailbox", ["d.profit"] = "In profit", ["d.repair"] = "Repair", ["d.trainer"] = "Train",
+  ["d.wellFed"] = "Well fed", ["d.buffFriend"] = "Buff pal", ["d.restock"] = "Restock", ["d.bank"] = "Bank",
+  ["d.tidyBags"] = "Tidy bags", ["d.potion"] = "Potion", ["d.scrolls10"] = "10 scrolls", ["w.days3"] = "3 days",
+  ["w.days5"] = "5 days", ["w.chars3"] = "3 chars", ["w.levels3"] = "3 levels", ["w.altLevels2"] = "Alt 2 lvls",
+  ["w.quests50"] = "50 quests", ["w.zones5"] = "5 zones", ["w.dungeons3"] = "3 dungeons",
+  ["w.dungeonsDiff3"] = "3 distinct", ["w.dungeonFriends2"] = "Trio run", ["w.fullClear"] = "Full clear",
+  ["w.skill25"] = "25 skill", ["w.cap"] = "Skill cap", ["w.newProf"] = "New prof", ["w.ilvl3"] = "Item lvl+3",
+  ["w.friends3"] = "3 friends", ["w.rare5"] = "5 rares", ["w.session2h"] = "2h session",
   ["w.discover5"] = "Discover 5", ["w.craftTrade"] = "Craft gift", ["p.frontLine"] = "Front line",
-  ["p.punchUp"] = "Punch up", ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouched",
-  ["p.variety"] = "Variety", ["p.ranked"] = "Ranked", ["b.zone25"] = "Zone 25", ["b.allClasses"] = "Classes",
-  ["b.allRaces"] = "Races", ["b.ranked5"] = "5 ranked", ["b.kills50"] = "50 kills", ["b.spree10"] = "Spree 10",
-  ["b.hunt3"] = "3 hunts", ["b.duels3"] = "3 duels", ["b.days5"] = "Kill days",
+  ["p.punchUp"] = "Punch up", ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouched", ["p.variety"] = "Variety",
+  ["p.ranked"] = "Ranked", ["p.flex"] = "Flex", ["p.boo"] = "Boo", ["p.punchUp5"] = "Punch up 5",
+  ["p.punchDown5"] = "Punch down", ["b.zone25"] = "Zone 25", ["b.allClasses"] = "Classes", ["b.allRaces"] = "Races",
+  ["b.ranked5"] = "5 ranked", ["b.kills50"] = "50 kills", ["b.spree10"] = "Spree 10", ["b.hunt3"] = "3 hunts",
+  ["b.duels3"] = "3 duels", ["b.days5"] = "Kill days",
 }
 
 Doomsday.GOALS = GOALS
@@ -456,12 +676,32 @@ end
 
 --[[ situation (one friend, over all their characters): { chars, below60, altBelow60, highest, highestToday,
 ilvlReadable, dungeonInRange, hasProfession, hasFishing, hasCraftingProfession, professionBelow300,
-friendQuestLog }. chars: number of characters; below60: characters below 60; altBelow60: characters below 60
-other than the highest one; highest: the highest level; highestToday: the highest level that played that day
-(nil: none yet); the rest booleans. A missing field counts as "can do" (unknown never swaps). ]]
+friendQuestLog, below20, hasCooking, hasFirstAid, hasGathering, riding, friends, canBuff, idle7 }. chars: number
+of characters; below60, below20: characters below 60, below 20; altBelow60: characters below 60 other than the
+highest one; highest: the highest level; highestToday: the highest level that played that day (nil: none yet);
+friends: other friends in the community; idle7: characters not played for 7 days or more; the rest booleans
+(riding: a character with riding; canBuff: a character of a class with a buff it can cast on others). A missing
+field counts as "can do" (unknown never swaps). ]]
+local function atLeast(value, n) return value == nil or value >= n end
+
 local CAN = {
   friendQuestLog = function(s) return s.friendQuestLog ~= false end,
   below60 = function(s) return s.below60 == nil or s.below60 > 0 end,
+  below60Dungeon = function(s) return (s.below60 == nil or s.below60 > 0) and s.dungeonInRange ~= false end,
+  below20 = function(s) return s.below20 == nil or s.below20 > 0 end,
+  -- Any profession, secondary ones included.
+  anyProfession = function(s)
+    return s.hasProfession ~= false or s.hasCooking ~= false or s.hasFirstAid ~= false or s.hasFishing ~= false
+  end,
+  hasCooking = function(s) return s.hasCooking ~= false end,
+  hasFirstAid = function(s) return s.hasFirstAid ~= false end,
+  hasGathering = function(s) return s.hasGathering ~= false end,
+  riding = function(s) return s.riding ~= false end,
+  canBuff = function(s) return s.canBuff ~= false end,
+  friends1 = function(s) return atLeast(s.friends, 1) end,
+  friends3 = function(s) return atLeast(s.friends, 3) end,
+  idle7 = function(s) return atLeast(s.idle7, 1) end,
+  level30 = function(s) return atLeast(s.highest, 30) end,
   altBelow60 = function(s) return s.altBelow60 == nil or s.altBelow60 > 0 end,
   ilvlReadable = function(s) return s.ilvlReadable ~= false end,
   dungeonInRange = function(s) return s.dungeonInRange ~= false end,
@@ -849,9 +1089,18 @@ local PROGRESS = {
   end,
 }
 
+-- CF-70: progress functions of the mission modules (src/core/missions/*), looked up after PROGRESS.
+local MODULE_PROGRESS = {}
+
+-- A mission module adds the progress function of one of its goals: fn(facts) returns value, target (facts as
+-- Goals.progressFacts gives them, with the module's own facts under its own key). A goal of PROGRESS keeps its own.
+function Doomsday.registerProgress(id, fn)
+  if type(id) == "string" and type(fn) == "function" and not PROGRESS[id] then MODULE_PROGRESS[id] = fn end
+end
+
 -- value, target, done of a goal ("hunt" for the Hunt) from facts. nil for an unknown id.
 function Doomsday.progress(id, facts)
-  local fn = PROGRESS[id]
+  local fn = PROGRESS[id] or MODULE_PROGRESS[id]
   if not fn then return nil end
   local value, target = fn(facts or {})
   return value, target, value >= target
