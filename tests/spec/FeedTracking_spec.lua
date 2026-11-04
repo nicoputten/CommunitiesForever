@@ -66,6 +66,7 @@ describe("activity feed (CF-22)", function()
     load()
     settle()
     local before = addon.db.global.self.version
+    ns.FeedTracker.published(before) -- a friend fetched the record at this version
     state.serverTime = 2000
     wowapi.fireEvent(state, "QUEST_TURNED_IN", 101, 500, 0) -- log not changed yet: no snapshot change
     wowapi.fireEvent(state, "QUEST_TURNED_IN", 102, 500, 0)
@@ -75,6 +76,17 @@ describe("activity feed (CF-22)", function()
     local after = addon.db.global.self.version
     settle()
     assert.are.equal(after, addon.db.global.self.version)
+  end)
+
+  it("does not bump the version for a change while the own version was never sent", function()
+    load()
+    settle()
+    local before = addon.db.global.self.version -- the login snapshot's, no friend fetched it
+    state.serverTime = 2000
+    wowapi.fireEvent(state, "QUEST_TURNED_IN", 101, 500, 0)
+    settle()
+    assert.are.equal(before, addon.db.global.self.version)
+    assert.are.same({ Westfall = 1 }, mine().quests) -- rides on that version
   end)
 
   it("always sends the feed with the record (CF-58: no sharing setting)", function()

@@ -66,6 +66,20 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-82 The hidden launch probe
+On Forever with this build (not FriendProbe), play as usual for a while: target or mouse over enemy players, loot, die
+once, open a merchant. The probe's checks are FriendProbe's automatic ones (V35b to V123), so their answers close the
+same open questions above.
+
+| Step | Expected | Status |
+|---|---|---|
+| Play for 10 minutes, including a fight and a loot | Nothing from the probe in chat, no window, sound or popup, no Lua error (`/console scriptErrors 1` first). | open |
+| `/cf help` | No `/cf fp` line. | open |
+| `/cf fp` | One chat line `Probe (forever): N pass, N fail, N info, N open; running until 18 November.` and a "Launch probe" dialog with one line per check, selected; it scrolls (`UIPanelScrollFrameTemplate`, unverified: without it the text still copies whole with Ctrl+A, Ctrl+C). Esc leaves the field. | open |
+| `/reload`, then open `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` | `["probe"]` under `global` with `["results"]` > `["forever"]`, items with `status`, `detail`, `at`, `build`; no chat text, no player names except the Hunt's victim and the V120 killer. Section well under 30 KB. | open |
+| The uploader sends the file; the site's upload page | The upload is accepted as usual (the site ignores `probe`). | open |
+| `/run print(CommunitiesForever.Probe.running(CommunitiesForever.Probe.STOP_AT, {}))` | `false`: from 2026-11-18 00:00 UTC the probe registers nothing at login and keeps its results. | open |
+
 ### CF-77 Pool version 2
 The release day's draw with this build: `/run local D,s=CommunitiesForever.Doomsday,CommunitiesForever.DoomsdayTracker.schedule(); local n=D.day(GetServerTime(),s.offset,s.reset); print(D.POOL_VERSION, table.concat(D.draw(n).dailies," "), table.concat(D.drawWeek(D.week(n)).weeklies," "))` (call it "the draw line" below).
 

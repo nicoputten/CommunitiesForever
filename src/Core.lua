@@ -59,6 +59,7 @@ function addon:OnEnable()
   ns.DoomsdayAlerts.start(self) -- CF-57: Doomsday chat lines and the crown toast (after Sync: PEOPLE_UPDATED)
   ns.Celebrate.start(self) -- CF-67: celebration banners (after DoomsdayBoard: FEATS, and Sync: PEOPLE_UPDATED)
   ns.Setup.start(self) -- CF-26: onboarding wizard on the first login, Community tab prompt on other characters
+  pcall(ns.LaunchProbe.start, self) -- CF-82: the hidden launch probe (silent; never in the way of the addon)
 end
 
 -- Prints why a community command can't run here, or returns true when it can.
@@ -112,6 +113,18 @@ local function activityCommand(self, argument)
   self:Print(run and string.format("In %s (%s) for %d min, %d bosses killed.", tostring(run.name),
     tostring(run.kind), math.floor((GetServerTime() - (run.startedAt or 0)) / 60), run.bossCount or 0)
     or "Not in a dungeon, raid or battleground.")
+end
+
+-- CF-82: /cf fp, hidden (not in the help, for Nico): the launch probe's summary and its report to copy.
+local function probeCommand(self)
+  local results = ns.LaunchProbe.results()
+  if not results then
+    self:Print("Probe: no results.")
+    return
+  end
+  local client, running = ns.LaunchProbe.client(), ns.LaunchProbe.running()
+  self:Print(ns.Probe.summaryLine(results, client, running))
+  ns.ProbeReport.show(ns.Probe.report(results, client, running, function(t) return date("%Y-%m-%d %H:%M", t) end))
 end
 
 local function debugCommand(self, _, _, command) -- hidden: not in the help
@@ -179,6 +192,7 @@ local COMMANDS = {
   { name = "settings", help = { "/cf settings - open the settings" }, run = function() ns.Settings.open() end },
   { name = "setup", help = { "/cf setup - run the setup again" }, run = function() ns.Setup.open() end },
   { name = "ask", help = { "/cf ask <dungeon> - ask friends who's up for a dungeon now" }, run = askCommand },
+  { name = "fp", run = probeCommand },
   { name = "debugon", run = debugCommand },
   { name = "debugoff", run = debugCommand },
 }

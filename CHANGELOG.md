@@ -5,6 +5,12 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.2.1 (2026-11-04)
+- The addon collects some data about which game features work on Forever and sends it with your uploads, so we can
+  add more features. Nothing shows in the game, and it reads only what the game tells the addon, no chat text. This
+  collection will be removed in a later version.
+- **Fixed:** a level-up that finishes a Doomsday goal no longer syncs your record twice.
+
 ## v1.2.0 (2026-11-03)
 - **Fixed:** the Doomsday Board's column labels sit centred over their boxes.
 - **Doomsday:** only a real fight ends PvP Virgin: an honorable kill, a duel or a finished battleground. A finished
