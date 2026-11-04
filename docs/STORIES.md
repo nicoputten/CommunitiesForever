@@ -7,6 +7,31 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-82 The hidden launch probe (v1.2.1)
+Friends answer FriendProbe's automatic checks without installing it: the addon runs them silently and the results
+reach Nico in the saved file the uploader already sends to the site (an owner-only download there is a web story).
+Touches: `src/core/Probe.lua`, `src/services/LaunchProbe.lua`, `src/services/LaunchProbeMissions.lua`, `src/Core.lua`
+(`/cf fp`), `tests/spec/Probe_spec.lua`, `tests/spec/LaunchProbe_spec.lua`, VERIFY.md, CHANGELOG.md, ARCHITECTURE.md.
+- Only the checks FriendProbe ticks by itself (`auto` in `tools/FriendProbe/Checklist.lua`): V35b, V55, V63, V70,
+  V71, V73, V74, V76, V77, V78, V79, V80, V81, V82, V83, V84, V85, V86, V87, the Hunt, and the automatic mission and
+  PvP checks (V90, V93 to V96, V98 to V117, V120 to V123).
+- Left out, because they can show something or act: the combat-log registration (V75, Blizzard's popup), the
+  self-whisper burst (V50b), whispers, invites and link tests (V47, V48, V51, V69), reloads (V67, V68), the jump hook
+  (V118: a "blocked" popup is a possible answer), the Yes/No items and the hints for them.
+- Results in `CommunitiesForeverDB.global.probe.results[<client>][<id>]` = `{ status, detail, at, build, later, log }`
+  (client: `forever`, `retail` or `project <n>`, as FriendProbe). A pass stays; a later non-pass goes to `later`.
+  `detail` at most 120 characters, `log` the last 3 lines of the item, the whole section at most 30 KB (oldest log
+  lines go first). No raw chat text, no event log; player names only for the Hunt's victim and the killer (V120).
+- Runs from login until 2026-11-18 00:00 UTC, then registers nothing and keeps the results.
+- Invisible: nothing in chat, no window, sound or popup; post-hooks only; every handler in `pcall`, secret values
+  logged as `secret`, missing APIs as `missing`. Cheap in combat: units throttled per GUID (60 s), auras skipped in
+  combat and throttled, a check's scan stops once it passed.
+- Hidden `/cf fp` (not in `/cf help`): one summary line and a dialog with the copyable report.
+- Compatibility (rule 8): a new optional section, no migration, schema stays 2; older versions and the site ignore it.
+  The section stays far below the site's upload limit (25 MiB).
+- Manual (VERIFY.md): `/cf fp` after a play session on Forever shows ticks; the saved file has `probe`; nothing shows
+  in chat or on screen while playing.
+
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).
 

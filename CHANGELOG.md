@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- The addon checks which game features work on Forever and sends the results with your uploads (until 18
+  November). Nothing shows in the game; it reads only what the game tells the addon, no chat text.
 - **Fixed:** a level-up that finishes a Doomsday goal no longer syncs your record twice.
 
 ## v1.2.0 (2026-11-03)

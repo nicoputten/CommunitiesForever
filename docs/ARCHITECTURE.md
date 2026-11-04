@@ -232,6 +232,10 @@ global = {
                                                      -- checked and over days dropped when loaded; nil: none
   pending   = { Item },                              -- CF-47: plans, answers, asks to post, pings (core/Pending.lua;
                                                      -- sample tests/fixtures/pending.lua, read by the site)
+  probe     = { results = { [client] = { [id] = { status, detail, at, build, later, log } } } },
+                                                     -- CF-82: the hidden launch probe (core/Probe.lua), until
+                                                     -- 2026-11-18; client "forever"/"retail"; at most 30 KB; the
+                                                     -- site keeps the raw file, its reader ignores this section
 }
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
