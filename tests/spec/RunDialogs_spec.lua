@@ -7,7 +7,7 @@ describe("Run dialogs (CF-47)", function()
   local CLUB = "23125681"
   local NOW = 1793120000
   local VES, GARRAKA = "Player-4619-01627852", "Player-4619-01789956"
-  local SJAAK, SJAAK_GA = "Sjaakovich#2232", 5
+  local SJAAK, SJAAK_GA = "Solvar#2032", 5
 
   local function load(runs)
     state = wowapi.install()

@@ -13,7 +13,7 @@ describe("Quiet chat (CF-91)", function()
       s.friends[1].gameAccounts[1].isOnline = false
     end })
     -- Garraka was seen online before (presence link), so Sjaak is linked in the community.
-    addon.db.global.presence["Player-4619-01789956"] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
+    addon.db.global.presence["Player-4619-01789956"] = { battleTag = "Solvar#2032", lastSeen = 1 }
     state.printed = {}
     state.serverTime = state.serverTime + 60 -- well past the login baseline
   end

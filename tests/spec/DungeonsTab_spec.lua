@@ -195,7 +195,7 @@ describe("Dungeons tab (CF-24)", function()
     -- Five group rows: nobody tanks; the healer Garraka; Ves organises; Ada maybe; an open damage slot.
     assert.are.equal(5, #ns.DungeonsTab.groupRows())
     assert.is_truthy(all:find("\nTank \194\183 nobody fits\n", 1, true))
-    assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Sjaakovich\n", 1, true))
+    assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Solvar\n", 1, true))
     assert.is_truthy(all:find("\nVes Doombringer\n20 \194\183 you\norganiser\n", 1, true))
     assert.is_truthy(all:find("\nAda Lovewell\nAda\nmaybe\n", 1, true))
     assert.is_truthy(all:find("\nDamage \194\183 open\n", 1, true))
@@ -222,7 +222,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nYour answer\n", 1, true))
     assert.is_truthy(ns.DungeonsTab.buttons()["I\226\128\153m in"] and ns.DungeonsTab.buttons()["Maybe"]
       and ns.DungeonsTab.buttons()["Can\226\128\153t"])
-    assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Sjaakovich\n", 1, true)) -- online, fits
+    assert.is_truthy(all:find("\nGarraka Doombringer\n20 \194\183 Solvar\n", 1, true)) -- online, fits
     assert.is_truthy(ns.DungeonsTab.buttons()["Whisper:1"])
     assert.is_truthy(all:find("\nOn the website\n", 1, true))
   end)
@@ -248,7 +248,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_true(menu.buttons[3].enabled)
     menu.buttons[3].fn()
     -- Show in Friends: the Friends tab on Garraka (Sjaak's card, his character).
-    assert.are.equal(ns.Format.path("Sjaakovich#2232", GARRAKA), addon.db.global.settings.tree.selected)
+    assert.are.equal(ns.Format.path("Solvar#2032", GARRAKA), addon.db.global.settings.tree.selected)
     ns.MainFrame.selectTab("dungeons")
     -- Your own row has no menu.
     for _, g in ipairs(ns.DungeonsTab.groupRows()) do

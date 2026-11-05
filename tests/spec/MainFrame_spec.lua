@@ -4,7 +4,7 @@ local wowapi = require("mocks.wowapi")
 describe("MainFrame", function()
   local state, ns, addon
 
-  local SJAAK = "Sjaakovich#2232"
+  local SJAAK = "Solvar#2032"
   local GARRAKA = "Player-4619-01789956"
 
   local function load(storedClubId)
@@ -72,7 +72,7 @@ describe("MainFrame", function()
     ns.MainFrame.toggle()
     assert.are.same({ SJAAK, "Vestras#1000" }, tab().paths("group"))
     local sjaak = tab().row(SJAAK)
-    assert.are.equal("Sjaakovich", sjaak.name:GetText())
+    assert.are.equal("Solvar", sjaak.name:GetText())
     assert.are.equal("1", sjaak.count:GetText())
     assert.are.same({ ns.Theme.color("online") }, sjaak.dot.vertexColor)
     local garraka = tab().row(SJAAK .. "\001" .. GARRAKA)
@@ -131,7 +131,7 @@ describe("MainFrame", function()
     load("23125681")
     ns.MainFrame.toggle()
     assert.are.equal(SJAAK, addon.db.global.settings.tree.selected)
-    assert.is_true(hasText("Sjaakovich"))
+    assert.is_true(hasText("Solvar"))
     assert.is_true(hasText("Online on Garraka Doombringer"))
     assert.is_true(hasText("Characters"))
     tab().click(tab().row("Vestras#1000"))

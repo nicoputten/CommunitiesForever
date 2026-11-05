@@ -5,7 +5,7 @@ describe("Sync", function()
   local state, ns, addon, codec
 
   local CLUB = "23125681"
-  local ME, SJAAK, SJAAK_GA = "Vestras#1000", "Sjaakovich#2232", 5
+  local ME, SJAAK, SJAAK_GA = "Vestras#1000", "Solvar#2032", 5
   local VES = "Player-4619-01627852"
   local SJAAK_ALT = "Player-4619-0000ALT1"
 
@@ -422,9 +422,9 @@ describe("Sync", function()
       end
       assert.are.equal("Bram", bram.displayName)
       assert.are.equal("record", bram.chars[1].linkSource)
-      assert.are.equal("Sjaakovich", bram.viaName)
+      assert.are.equal("Solvar", bram.viaName)
       local detail = ns.Card.detail(view, BRAM, 3000 + 3 * 3600)
-      assert.are.equal("Updated 3 h ago via Sjaakovich", detail.source)
+      assert.are.equal("Updated 3 h ago via Solvar", detail.source)
     end)
 
     it("rejects relayed records of our own BattleTag, far-future versions and outsiders", function()

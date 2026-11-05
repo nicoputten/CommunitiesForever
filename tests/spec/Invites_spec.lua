@@ -5,7 +5,7 @@ describe("Invites (CF-21)", function()
   local state, ns, addon
 
   local CLUB = "23125681"
-  local SJAAK = "Sjaakovich#2232"
+  local SJAAK = "Solvar#2032"
   local LINK = "https://blizzard.com/invite/AbC123xyz"
 
   local function load(setup)

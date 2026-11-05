@@ -34,7 +34,7 @@ describe("Protocol", function()
   describe("encode and decode", function()
     it("round-trips messages from 10 bytes to 50 KB", function()
       for _, size in ipairs({ 10, 100, 1000, 3400, 3600, 10000, 50000 }) do
-        local message = { t = "RECORD", bt = "Sjaakovich#2232", data = noise(size, size) }
+        local message = { t = "RECORD", bt = "Solvar#2032", data = noise(size, size) }
         local decoded, chunks = sendAndReceive(message)
         assert.are.same(message, decoded, "size " .. size)
         assert.are.equal(1, decoded.pv)
@@ -43,7 +43,7 @@ describe("Protocol", function()
     end)
 
     it("round-trips nested tables like a record", function()
-      local record = { t = "RECORD", bt = "Sjaakovich#2232", displayName = "Sjaak", version = 1760000000,
+      local record = { t = "RECORD", bt = "Solvar#2032", displayName = "Sjaak", version = 1760000000,
                        chars = { ["Player-4619-01789956"] = { name = "Garraka Doombringer", level = 11, ilvl = 20,
                                  professions = { [186] = { name = "Mining", rank = 64, max = 150 } } } } }
       assert.are.same(record, (sendAndReceive(record)))
