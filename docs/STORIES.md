@@ -10,7 +10,7 @@ Build order:
 ### CF-85 No community: quiet Doomsday, a clean Dungeons tab
 Two bugs Nico found at launch (v1.2.1) on a character with no community (none could be made, so none was selected).
 Builds on CF-83: a character in a guild only is no longer passive. Touches: `src/services/Celebrate.lua`,
-`src/services/DoomsdayAlerts.lua`, `src/ui/DungeonsTab.lua`, `tests/spec/Celebrate_spec.lua`,
+`src/services/DoomsdayAlerts.lua`, `src/ui/DungeonsTab.lua`, `src/ui/kit/Theme.lua`, `tests/spec/Celebrate_spec.lua`,
 `tests/spec/DungeonsTab_spec.lua`, VERIFY.md, CHANGELOG.md.
 - Doomsday is tracked quietly without a community this character is in (`CommunitySelection.active()` nil, the
   same gate as the chat lines): goals, points and feats are recorded, but no celebration banner, banner sound,
@@ -22,9 +22,12 @@ Builds on CF-83: a character in a guild only is no longer passive. Touches: `src
   No dungeon fits yet). While passive the right pane shows "Nothing planned yet" and the explainer only, no Ask now
   and no Copy website link. Wherever those buttons show, they sit below the text, measured with `GetStringHeight`
   (tests).
+- The window background (`Theme` `panel`, also the toasts') is opaque: at 0.96 the game world's nameplates and
+  frames showed faintly through it, best seen in the empty state (Nico's screenshot).
 - Compatibility (rule 8): nothing stored or sent changes.
 - Manual (VERIFY.md CF-85).
-- Decided by Nico (2026-11-05): track quietly without a community; hide Ask now and Copy website link while passive.
+- Decided by Nico (2026-11-05): track quietly without a community; hide Ask now and Copy website link while passive;
+  an opaque window background.
 
 ### CF-83 The guild as the community
 On Forever no community can be created at launch (`docs/API-FINDINGS.md` "Creating a community"), so Nico's group

@@ -13,6 +13,7 @@ tagging; the release stops if the tag has no section.
   finish today!" popup until you pick a community or your guild. Today's progress counts as soon as you do.
 - **Fixed:** the Dungeons tab without a community shows just the explanation, without buttons drawn over it or
   leftovers of the list behind it.
+- **Fixed:** the window's background is solid: names and frames of the game no longer show faintly through it.
 
 ## v1.2.1 (2026-11-04)
 - The addon collects some data about which game features work on Forever and sends it with your uploads, so we can

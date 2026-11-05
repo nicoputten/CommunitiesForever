@@ -12,7 +12,7 @@ local function hex(h, a)
 end
 
 Theme.COLORS = {
-  panel = hex("090F1B", 0.96),      -- window background
+  panel = hex("090F1B"),            -- window background (CF-85: opaque, the game no longer shows through)
   list = hex("050910", 0.6),        -- list column background
   input = hex("070D17"),            -- search box and inputs
   outline = hex("02050A"),          -- dark line inside the gold border, diamond outline
