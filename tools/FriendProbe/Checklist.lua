@@ -84,6 +84,10 @@ ns.items = {
     how = "Start panel of a run, Whisper on a friend on another character." },
   { id = "V8", session = 2, friend = true, title = "The community's clubId is the same on two clients",
     how = "Both send the saved file: the probe logs the IDs (V8 COMMUNITIES)." },
+  { id = "V124", retail = true, session = 2, friend = true, title = "The guild as the community: club, members, events",
+    how = "In a guild: Test: guild. A guild member logs in or out within a minute." },
+  { id = "V125", retail = true, session = 2, friend = true, title = "Guild chat tells who wrote (CHAT_MSG_GUILD)",
+    how = "After Test: guild, say something in guild chat." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 

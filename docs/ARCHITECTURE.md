@@ -15,6 +15,10 @@ Consequences:
 - Transport is BNet only (`BNSendGameData`). Addon whispers are not used in V1.
 - Membership is per character, not per account (verified). An alt that is not invited is only visible as a non-member alt of a person who has at least one member character (CF-17).
 - Nothing depends on `clubId` being identical across clients (unverified). Filtering is by GUID membership.
+- The community can be a character community or the guild (CF-83: a guild is a club of `Enum.ClubType.Guild`, 2;
+  Battle.net communities never). For a guild, guild chat (`CHAT_MSG_GUILD`) is its chat for the chat missions, it has
+  no invite links and the community chat features (color, tab) leave it alone. Sync is the same: the hidden
+  channel is named after the guild's name.
 
 ## Layering
 ```
@@ -39,7 +43,7 @@ CommunitiesForever/
       Format.lua             view model -> tree nodes, last seen, footers, empty states, menus, tooltips
       Card.lua               the Friends tab's card models: person, character (tiles, professions, talents, shared
                              quests, the PvP line), Unlinked (split from Format in CF-59)
-      Clubs.lua              selectable communities, stored-selection status
+      Clubs.lua              selectable communities (character and guild), stored-selection status
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
@@ -186,6 +190,7 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 global = {
   schemaVersion = 2,                                 -- 2: CF-47 pending
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
+                clubType = nil,                      -- CF-83: its club type, remembered like the name (2: guild)
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks

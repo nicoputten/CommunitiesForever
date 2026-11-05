@@ -923,6 +923,88 @@ loader:SetScript("OnEvent", function(_, event, name)
   if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then C_ChatInfo.RegisterAddonMessagePrefix(COMM_PREFIX) end
 end)
 
+-- ===== V124, V125 (CF-83): the guild as the community =====
+-- On Retail a guild is a club of type Enum.ClubType.Guild (2). Does Forever list it in GetSubscribedClubs, give its
+-- members' GUID, name and presence, fire the CLUB_MEMBER_* events for it (V124), and does CHAT_MSG_GUILD carry the
+-- sender's GUID as argument 12 (V125)? Only from the button: it needs a character in a guild.
+local GUILD_EVENTS = { "CLUB_MEMBERS_UPDATED", "CLUB_MEMBER_ADDED", "CLUB_MEMBER_REMOVED",
+  "CLUB_MEMBER_PRESENCE_UPDATED", "CLUB_MEMBER_UPDATED", "CHAT_MSG_GUILD" }
+local guildFrame = CreateFrame("Frame")
+local guildClubId -- the guild's clubId once the button found it
+local guildSeen = {}
+
+local function GuildType()
+  return Enum and Enum.ClubType and Enum.ClubType.Guild or 2
+end
+
+guildFrame:SetScript("OnEvent", function(_, event, ...)
+  local ok, err = pcall(function(...)
+    if event == "CHAT_MSG_GUILD" then
+      local guid = select(12, ...)
+      local readable = type(guid) == "string" and guid:find("^Player%-") ~= nil
+      log("V125 CHAT_MSG_GUILD sender guid", readable and "yes" or S(guid), "own",
+        S(readable and guid == UnitGUID("player")))
+      result("V125", readable and "pass" or "fail",
+        "CHAT_MSG_GUILD argument 12: " .. (readable and "a GUID" or S(guid)))
+      return
+    end
+    local clubId = ...
+    guildSeen[event] = (guildSeen[event] or 0) + 1
+    log("V124 event", event, "clubId", S(clubId), "guild", S(guildClubId ~= nil and clubId == guildClubId))
+  end, ...)
+  if not ok then log("handler error", event, S(err)) end
+end)
+
+local function GuildTest()
+  log("== V124/V125 GUILD (button) ==")
+  if not (C_Club and C_Club.GetSubscribedClubs) then
+    result("V124", "fail", "C_Club.GetSubscribedClubs missing")
+    return
+  end
+  local guild
+  for _, club in ipairs(C_Club.GetSubscribedClubs() or {}) do
+    log("V124 club", S(club.clubId), S(club.name), "clubType", S(club.clubType))
+    if club.clubType == GuildType() then guild = club end
+  end
+  log("V124 Enum.ClubType.Guild", S(Enum and Enum.ClubType and Enum.ClubType.Guild), "IsInGuild", Vals(IsInGuild))
+  if not guild then
+    result("V124", "fail", "no club with clubType " .. S(GuildType()) .. " (in a guild: " .. Vals(IsInGuild) .. ")")
+    return
+  end
+  guildClubId = guild.clubId
+  if C_Club.FocusMembers then pcall(C_Club.FocusMembers, guild.clubId) end
+  local ids = C_Club.GetClubMembers and C_Club.GetClubMembers(guild.clubId) or {}
+  local withGuid, shown = 0, 0
+  for _, memberId in ipairs(ids) do
+    local m = C_Club.GetMemberInfo and C_Club.GetMemberInfo(guild.clubId, memberId)
+    if type(m) == "table" then
+      if m.guid then withGuid = withGuid + 1 end
+      if shown < 5 then
+        shown = shown + 1
+        log("V124 member", S(m.name), "guid", m.guid and "yes" or "no", "presence", S(m.presence), "level",
+          S(m.level), "classID", S(m.classID), "role", S(m.role), "zone", S(m.zone), "self", S(m.isSelf))
+      end
+    end
+  end
+  for _, st in ipairs(C_Club.GetStreams and C_Club.GetStreams(guild.clubId) or {}) do
+    log("V124 stream", S(st.streamId), S(st.name), "streamType", S(st.streamType))
+  end
+  for _, event in ipairs(GUILD_EVENTS) do
+    if not pcall(guildFrame.RegisterEvent, guildFrame, event) then log("V124 unknown event", event) end
+  end
+  local detail = string.format("guild %s (clubType %s): %d members, %d with a GUID", S(guild.name),
+    S(guild.clubType), #ids, withGuid)
+  log("V124 " .. detail)
+  result("V124", #ids > 0 and withGuid == #ids and "pass" or "fail", detail)
+  C_Timer.After(60, function()
+    local seen = {}
+    for event, n in pairs(guildSeen) do seen[#seen + 1] = event .. " " .. n end
+    table.sort(seen)
+    log("V124 member events in 60 s:", #seen > 0 and table.concat(seen, ", ") or "none")
+  end)
+  log("V124/V125 now say something in guild chat, and let a guild member log in or out; then /reload and send the log")
+end
+
 -- The test buttons of the checklist window.
 ns.tests = {
   { text = "Test: reload", run = function() ReloadButtons() end },
@@ -931,6 +1013,7 @@ ns.tests = {
   { text = "Test: file reload (V67)", run = function() ReloadFile() end },
   { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
   { text = "Test: celebration sounds (V88)", run = function() SoundTest() end },
+  { text = "Test: guild (V124, V125)", run = function() GuildTest() end },
 }
 ns.log = log
 ns.S, ns.Val, ns.Vals, ns.Pattern, ns.DumpTable = S, Val, Vals, Pattern, DumpTable -- for Missions.lua

@@ -129,7 +129,7 @@ function Settings.options()
       communityHelp = {
         type = "description",
         order = 2,
-        name = "Only character communities are listed. Guilds and Battle.net communities are not supported.",
+        name = "Character communities and your guild are listed. Battle.net communities are not supported.",
       },
       inviteLink = {
         type = "input",

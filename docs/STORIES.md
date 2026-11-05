@@ -7,6 +7,34 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-83 The guild as the community
+On Forever no community can be created at launch (`docs/API-FINDINGS.md` "Creating a community"), so Nico's group
+uses a guild for now and may move to a community once Blizzard fixes creation. The player can pick the guild as "the
+community", next to the character communities. On Retail a guild is a club of type `Enum.ClubType.Guild` (2), so the
+club path stays the one path: no guild-roster fallback. Unverified on Forever (V124, V125): the PR waits on that check.
+Touches: `src/core/Clubs.lua`, `src/adapters/Community.lua`, `src/adapters/ChatFrames.lua`,
+`src/adapters/missions/PlaceEvents.lua`, `src/services/CommunitySelection.lua`, `src/services/CommunityChat.lua`,
+`src/services/Invites.lua`, `src/ui/Settings.lua`, `src/ui/Setup.lua`, `src/core/Format.lua`,
+`tools/FriendProbe/`, `tests/spec/Guild_spec.lua`, VERIFY.md, API-FINDINGS.md, ARCHITECTURE.md, CHANGELOG.md.
+- The picker (settings, setup) lists the guild and the character communities, never Battle.net communities. The
+  guild type comes from `Enum.ClubType.Guild`, guarded, with 2 as the fallback (as `characterType()`).
+- A character in a guild only is no longer passive; with nothing picked, the guild is picked as the only community.
+- Switching guild, community, guild works without a reload and loses nothing: data stays keyed by character GUID and
+  friend, only the member list changes (test).
+- The wording stays "community". Only the texts that said guilds are not supported change.
+- With the guild picked, own guild chat (`CHAT_MSG_GUILD`, guarded) counts for "Say something in the community chat"
+  and "Chat in the community on 5 days". Same missions and texts; the Doomsday draw and pool do not change.
+- With the guild picked, every invite-link option and text is hidden (no settings field, no How to join, no Post
+  invite link), also on alts outside the guild (`settings.clubType` remembers the type).
+- With the guild picked, the community chat features (color, tab flash and sound, Community tab and its prompt) leave
+  guild chat alone; Create a community chat tab says why.
+- Sync is unchanged: the hidden channel is named after the guild's name, members are whispered as before.
+- FriendProbe: Test: guild (V124, V125) logs the guild club, its members, streams, the member events and guild chat.
+- Compatibility (rule 8): one new optional local setting (`settings.clubType`, nil = unknown), no migration, schema
+  stays 2; nothing new is sent. An older version with a guild `clubId` stored shows the community as not available
+  on every character and keeps all data; picking a community there works as before.
+- Manual (VERIFY.md CF-83, V124, V125).
+
 ### CF-82 The hidden launch probe (v1.2.1)
 Friends answer FriendProbe's automatic checks without installing it: the addon runs them silently and the results
 reach Nico in the saved file the uploader already sends to the site (an owner-only download there is a web story).

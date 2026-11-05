@@ -84,8 +84,8 @@ describe("settings window (CF-43)", function()
     assert.are.equal("Nightfall", addon.db.global.self.displayName)
     local community = control("community")
     assert.are.equal("Forever Friends", community.text:GetText())
-    assert.are.same({ { value = "23125681", text = "Forever Friends" }, { value = "777", text = "Other Friends" } },
-      community.list)
+    assert.are.same({ { value = "23125681", text = "Forever Friends" }, { value = "999", text = "My Guild" },
+                      { value = "777", text = "Other Friends" } }, community.list)
   end)
 
   it("resets the chat colour and opens the colour picker when there is one", function()

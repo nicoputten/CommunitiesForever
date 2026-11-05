@@ -7,6 +7,9 @@ local ChatFrames = {}
 -- Internal message: (channel, senderGuid) for each community chat message (text is hidden, V38).
 ChatFrames.MESSAGE = "CF_COMMUNITY_CHAT_MESSAGE"
 
+-- CF-83: the channel of guild chat messages in ChatFrames.MESSAGE (CHAT_MSG_GUILD has no channel name).
+ChatFrames.GUILD = "GUILD"
+
 -- Channel name of a community's General stream ("Community:<clubId>:<streamId>"), or nil.
 function ChatFrames.channel(clubId)
   if not (clubId and C_Club and C_Club.GetStreams and Chat_GetCommunitiesChannelName) then return nil end
@@ -97,6 +100,11 @@ function ChatFrames.watch(addon)
     -- arg 9: channel name, arg 12: sender GUID (V38)
     local channel, guid = select(9, ...), select(12, ...)
     addon:SendMessage(ChatFrames.MESSAGE, channel, guid)
+  end)
+  -- CF-83: guild chat, for a guild picked as the community. Arg 12 as the sender GUID is unverified on Forever
+  -- (VERIFY.md V125); a missing GUID counts as nobody's.
+  ns.Events.register(addon, "CHAT_MSG_GUILD", function(_, ...)
+    addon:SendMessage(ChatFrames.MESSAGE, ChatFrames.GUILD, (select(12, ...)))
   end)
 end
 

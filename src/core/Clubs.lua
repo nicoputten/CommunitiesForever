@@ -4,12 +4,20 @@ local _, ns = ...
 
 local Clubs = {}
 
--- Selectable clubs (only characterType, see ARCHITECTURE), sorted by name, then clubId.
-function Clubs.selectable(clubs, characterType)
+-- types: the selectable club types, a set { [clubType] = true } (CF-83: character communities and the guild)
+-- or a single clubType.
+local function allowed(types, clubType)
+  if type(types) == "table" then return clubType ~= nil and types[clubType] == true end
+  return clubType == types
+end
+
+-- Selectable clubs (character communities and the guild, see ARCHITECTURE), sorted by name, then clubId.
+-- Entries: { clubId, name, clubType }.
+function Clubs.selectable(clubs, types)
   local list = {}
   for _, club in ipairs(clubs or {}) do
-    if club.clubType == characterType and club.clubId ~= nil then
-      list[#list + 1] = { clubId = club.clubId, name = club.name or tostring(club.clubId) }
+    if allowed(types, club.clubType) and club.clubId ~= nil then
+      list[#list + 1] = { clubId = club.clubId, name = club.name or tostring(club.clubId), clubType = club.clubType }
     end
   end
   table.sort(list, function(a, b)
@@ -24,11 +32,11 @@ end
 --   "ok"      stored club is selectable
 --   "missing" club data is loaded and the stored club is not among the selectable clubs
 --   "unknown" stored club not found, but club data may not be loaded yet (empty list, not loaded)
-function Clubs.status(storedId, clubs, characterType, loaded)
+function Clubs.status(storedId, clubs, types, loaded)
   if storedId == nil then
     return "none"
   end
-  local selectable = Clubs.selectable(clubs, characterType)
+  local selectable = Clubs.selectable(clubs, types)
   for _, club in ipairs(selectable) do
     if club.clubId == storedId then return "ok" end
   end
@@ -39,10 +47,10 @@ function Clubs.status(storedId, clubs, characterType, loaded)
 end
 
 -- True when the addon has nothing to work with: no community chosen for the account and this character is
--- in no character community either. The addon then stays passive (no setup, sync, notices or minimap
+-- in no character community and no guild either. The addon then stays passive (no setup, sync, notices or minimap
 -- button) until a community appears.
-function Clubs.passive(storedId, clubs, characterType)
-  return storedId == nil and #Clubs.selectable(clubs, characterType) == 0
+function Clubs.passive(storedId, clubs, types)
+  return storedId == nil and #Clubs.selectable(clubs, types) == 0
 end
 
 ns.Clubs = Clubs
