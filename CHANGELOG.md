@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.3.0 (2026-11-05)
 - **Only your group syncs:** the addon now syncs only with friends who have a character in the community or guild
   you picked, also while they play an alt outside it. Other Battle.net friends who run the addon are left alone:
   nothing is sent to them or stored about them, and what earlier versions stored about them is removed once your
