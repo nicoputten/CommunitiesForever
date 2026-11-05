@@ -92,8 +92,8 @@ CommunitiesForever/
       Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded),
                              whether addon messages may be restricted now (CF-46, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
-      Guild.lua              guild invite calls: CFGuild prefix, GUILD addon messages, C_GuildInfo.Invite, AcceptGuild,
-                             GUILD_INVITE_REQUEST, blocked actions, "You have invited" (CF-84, guarded)
+      Guild.lua              guild invite events: CFGuild prefix, GUILD addon messages, GUILD_INVITE_REQUEST, combat,
+                             "You have invited", chat input (CF-84; never C_GuildInfo.Invite or AcceptGuild, CF-87)
       Vault.lua              CommunitiesForeverVaultDB, the companion folder's SavedVariables (CF-84)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
@@ -122,8 +122,8 @@ CommunitiesForever/
       CommunityChat.lua      community chat color (always), tab flash and sound, Community chat tab (CF-25)
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       Invites.lua            shared invite link: set (owner/leaders/moderators), newest, post as chat link (CF-21)
-      GuildInvites.lua       guild code (set, spread, newest), member list for alts, alt requests, member invites,
-                             auto-accept (CF-84)
+      GuildInvites.lua       guild code (set, spread, newest), member list for alts, alt requests, the member's
+                             invite popup, "Click Accept" on the alt (CF-84, CF-87)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
@@ -149,7 +149,7 @@ CommunitiesForever/
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
-      GuildInvitePopup.lua   "Invite <alt> (<friend>'s alt)?" with one button, when an invite needs a click (CF-84)
+      GuildInvitePopup.lua   "Invite <alt> (<friend>'s alt)?": a secure /ginvite macro button, Put in chat (CF-87)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
     helpers.lua              loads addon files in TOC order with (addonName, ns) varargs

@@ -329,7 +329,7 @@ end
 
 -- CF-84: the line under the guild code field. Never the code itself.
 Settings.GUILD_CODE_SET = "A guild code is set (%s). Type a new one to replace it for the whole guild."
-Settings.GUILD_CODE_NONE = "No guild code yet: alts outside the guild are not invited by themselves."
+Settings.GUILD_CODE_NONE = "No guild code yet: alts outside the guild don't ask members for an invite."
 Settings.GUILD_CODE_NO_VAULT = "Guild invites are off: the CommunitiesForever_Vault folder is missing or disabled."
 Settings.GUILD_CODE_NO_MASK = "This game client can't hide what you type, so the guild code can't be set here."
 

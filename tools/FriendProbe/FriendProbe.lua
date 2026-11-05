@@ -291,12 +291,22 @@ local function ButtonWindow(title, buttons)
   local label = window:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
   label:SetPoint("TOP", 0, -6)
   label:SetText(title)
+  window.buttons = {}
   for i, b in ipairs(buttons) do
-    local button = CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
+    -- b.template (CF-87): extra template, e.g. "SecureActionButtonTemplate"; its OnClick stays the template's own,
+    -- b.click then runs as PostClick.
+    local template = "UIPanelButtonTemplate" .. (b.template and ("," .. b.template) or "")
+    local button = CreateFrame("Button", nil, window, template)
     button:SetSize(240, 26)
     button:SetPoint("TOP", 0, -36 - 32 * (i - 1))
     button:SetText(b.text)
-    button:SetScript("OnClick", b.click)
+    if b.template then
+      button:RegisterForClicks("AnyUp", "AnyDown")
+      if b.click then button:SetScript("PostClick", b.click) end
+    else
+      button:SetScript("OnClick", b.click)
+    end
+    window.buttons[i] = button
   end
   return window
 end
@@ -1017,14 +1027,17 @@ local function GuildTest()
   log("V124/V125 now say something in guild chat, and let a guild member log in or out; then /reload and send the log")
 end
 
--- ===== V126-V130 (CF-84): automatic guild invites for alts =====
--- V126: does C_GuildInfo.Invite (or GuildInvite) work from an addon without a click, and with one?
+-- ===== V127-V135 (CF-84, CF-87): automatic guild invites for alts =====
+-- V126 (answered, CF-87): C_GuildInfo.Invite / GuildInvite are forbidden for addons, also inside a click
+-- (ADDON_ACTION_FORBIDDEN, Blizzard's "blocked" dialog). Its two buttons are gone; V134/V135 test the ways around it.
 -- V127: may an addon accept a guild invite (AcceptGuild) without a click; what does GUILD_INVITE_REQUEST pass?
 -- V128: do addon messages on "GUILD" reach the other guild members?
 -- V129: does a CHAT_MSG_SYSTEM filter hide "No player named ... is currently playing." after an addon whisper?
 -- V130: does EditBox:SetPassword(true) mask what you type?
 -- V131: which name forms (with a space, with or without "-Realm") whispers and invites take, as the game reports them.
 -- V132: the game's texts when a guild invite is refused (no rights, other faction, already in a guild).
+-- V134 (CF-87): may a SecureActionButtonTemplate macro button run "/ginvite <name>"?
+-- V135 (CF-87): does "/ginvite <name>" put in the chat input by an addon (ChatFrameUtil.OpenChat) invite on Enter?
 local GINV_EVENTS = { "GUILD_INVITE_REQUEST", "GUILD_INVITE_CANCEL", "PLAYER_GUILD_UPDATE", "CHAT_MSG_SYSTEM",
   "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN", "UI_ERROR_MESSAGE" }
 local ginvFrame = CreateFrame("Frame")
@@ -1075,34 +1088,64 @@ local function WatchGuildInvites()
   end
 end
 
--- V126: invites the target. noClick: from a timer 1 s later (no hardware event), like the addon's automatic invite.
--- withRealm (V131): the name as "First Last-Realm", the form CHAT_MSG_ADDON reports senders in (the addon invites
--- with the sender's name exactly as reported). Built here only to test the form; the addon never builds names.
-local function GuildInviteTarget(noClick, withRealm)
+-- The target's name for /ginvite; withRealm (V131): as "First Last-Realm", the form CHAT_MSG_ADDON reports senders
+-- in (the addon invites with the sender's name exactly as reported). Built here only to test the form; the addon
+-- never builds names.
+local function GuildTargetName(withRealm)
   local name = GetUnitName and GetUnitName("target", true)
-  if not name then
-    log("V126 target a character outside your guild first (a friend's alt)")
-    return
-  end
+  if not name then return nil end
   if withRealm and not name:find("-", 1, true) and GetNormalizedRealmName then
     name = name .. "-" .. S(GetNormalizedRealmName())
   end
-  local how = (noClick and "no click" or "click") .. (withRealm and ", with realm" or "")
-  local function run()
-    ginvBlocked = {}
-    if C_GuildInfo and C_GuildInfo.Invite then
-      LogCall("V126 C_GuildInfo.Invite " .. name .. " (" .. how .. ")", C_GuildInfo.Invite, name)
-    else
-      LogCall("V126 GuildInvite " .. name .. " (" .. how .. ")", GuildInvite, name)
-    end
-    C_Timer.After(3, function()
-      local blocked = #ginvBlocked > 0 and table.concat(ginvBlocked, ", ") or "nothing"
-      log("V126", how, "blocked", blocked)
-      result("V126", "info", "invite " .. name .. " (" .. how .. "): blocked " .. blocked
-        .. "; did they get the invite?")
-    end)
+  return name
+end
+
+-- V134: the secure buttons' macro follows the target, set out of combat only (as the addon's popup does when it
+-- shows). secureInvites = { { button, withRealm } }.
+local secureInvites = {}
+local function UpdateSecureInvites()
+  if InCombatLockdown and InCombatLockdown() then return end
+  for _, s in ipairs(secureInvites) do
+    local name = GuildTargetName(s.withRealm)
+    s.button:SetAttribute("type", "macro")
+    s.button:SetAttribute("macrotext", name and ("/ginvite " .. name) or "")
   end
-  if noClick then C_Timer.After(1, run) else run() end
+end
+local targetFrame = CreateFrame("Frame")
+pcall(targetFrame.RegisterEvent, targetFrame, "PLAYER_TARGET_CHANGED")
+pcall(targetFrame.RegisterEvent, targetFrame, "PLAYER_REGEN_ENABLED")
+targetFrame:SetScript("OnEvent", function() if #secureInvites > 0 then UpdateSecureInvites() end end)
+
+-- After a click on a secure button (PostClick: the macro already ran): logs what ran and what got blocked.
+local function SecureInviteClicked(button, tag)
+  ginvBlocked = {}
+  local macro = S(button:GetAttribute("macrotext"))
+  log(tag .. " secure button clicked, macrotext [" .. macro .. "]")
+  C_Timer.After(3, function()
+    local blocked = #ginvBlocked > 0 and table.concat(ginvBlocked, ", ") or "nothing"
+    log(tag, "secure /ginvite blocked", blocked)
+    result(tag, "info", "secure button ran [" .. macro .. "]: blocked " .. blocked
+      .. "; did the invite arrive, and did Blizzard's 'blocked' dialog show?")
+  end)
+end
+
+-- V135: puts "/ginvite <target>" in the chat input; the tester presses Enter.
+local function GuildInviteViaChat()
+  local name = GuildTargetName(false)
+  if not name then
+    log("V135 target a character outside your guild first (a friend's alt)")
+    return
+  end
+  local open = (ChatFrameUtil and ChatFrameUtil.OpenChat) or ChatFrame_OpenChat
+  ginvBlocked = {}
+  LogCall("V135 OpenChat /ginvite " .. name, open, "/ginvite " .. name)
+  log("V135 now press Enter in the chat input")
+  C_Timer.After(15, function()
+    local blocked = #ginvBlocked > 0 and table.concat(ginvBlocked, ", ") or "nothing"
+    log("V135 15 s later: blocked", blocked)
+    result("V135", "info", "/ginvite " .. name .. " put in chat: blocked " .. blocked
+      .. "; did the invite arrive after Enter, and did a 'blocked' dialog show?")
+  end)
 end
 
 -- V131: the forms character names come in. Two whispers to yourself: the name as GetUnitName gives it, and with
@@ -1178,7 +1221,7 @@ local function MaskedField(parent)
 end
 
 local function GuildInviteTest()
-  log("== V126-V130 GUILD INVITES (button) ==")
+  log("== V127-V135 GUILD INVITES (button) ==")
   for _, name in ipairs({ "C_GuildInfo.Invite", "GuildInvite", "AcceptGuild", "DeclineGuild", "StaticPopup_Hide",
                           "IsInGuild", "CanGuildInvite" }) do
     local ns1, fn = name:match("^(.-)%.(.+)$")
@@ -1189,9 +1232,10 @@ local function GuildInviteTest()
     Vals(IsInGuild), "GetGuildInfo", Vals(GetGuildInfo, "player"))
   WatchGuildInvites()
   if ginvWindow then ginvWindow:Show() return end
-  ginvWindow = ButtonWindow("V126-V132: guild invites", {
-    { text = "Invite target, no click (V126)", click = function() GuildInviteTarget(true) end },
-    { text = "Invite target with this click (V126)", click = function() GuildInviteTarget(false) end },
+  ginvWindow = ButtonWindow("V127-V135: guild invites", {
+    { text = "Invite target via a secure /ginvite button (V134)", template = "SecureActionButtonTemplate",
+      click = function(self) SecureInviteClicked(self, "V134") end },
+    { text = "Put /ginvite target in the chat input (V135)", click = function() GuildInviteViaChat() end },
     { text = "Accept the next invite by itself (V127)", click = function()
       ginvArmed = true
       log("V127 armed: the next GUILD_INVITE_REQUEST is accepted from a timer, without a click")
@@ -1201,11 +1245,16 @@ local function GuildInviteTest()
     end },
     { text = "Whisper an offline name (V129)", click = function() OfflineWhisper() end },
     { text = "Name forms (V131)", click = function() NameForms() end },
-    { text = "Invite target as Name-Realm (V131)", click = function() GuildInviteTarget(false, true) end },
+    { text = "Secure /ginvite Name-Realm (V131)", template = "SecureActionButtonTemplate",
+      click = function(self) SecureInviteClicked(self, "V131") end },
     { text = "Refusal texts (V132)", click = function() RefusalTexts() end },
   })
   ginvWindow:SetHeight(ginvWindow:GetHeight() + 40)
   MaskedField(ginvWindow)
+  ginvWindow:SetWidth(380) -- the V134 label is long
+  for _, button in ipairs(ginvWindow.buttons) do button:SetWidth(340) end
+  secureInvites = { { button = ginvWindow.buttons[1] }, { button = ginvWindow.buttons[7], withRealm = true } }
+  UpdateSecureInvites()
 end
 
 -- The test buttons of the checklist window.
@@ -1217,7 +1266,7 @@ ns.tests = {
   { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
   { text = "Test: celebration sounds (V88)", run = function() SoundTest() end },
   { text = "Test: guild (V124, V125)", run = function() GuildTest() end },
-  { text = "Test: guild invites (V126-V132)", run = function() GuildInviteTest() end },
+  { text = "Test: guild invites (V127-V135)", run = function() GuildInviteTest() end },
 }
 ns.log = log
 ns.S, ns.Val, ns.Vals, ns.Pattern, ns.DumpTable = S, Val, Vals, Pattern, DumpTable -- for Missions.lua

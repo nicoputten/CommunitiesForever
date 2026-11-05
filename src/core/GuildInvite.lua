@@ -18,8 +18,8 @@ GuildInvite.RETRY_SECONDS = 300      -- a new attempt this long after one that g
 GuildInvite.MAX_ATTEMPTS = 3         -- attempts per login
 GuildInvite.LOGIN_DELAY = 15         -- seconds after login before the alt checks (club data needs to load)
 GuildInvite.HANDLE_COOLDOWN = 60     -- a member handles one request per requester this often
-GuildInvite.ACCEPT_WINDOW = 180      -- an invite is accepted by itself this long after our last request
-GuildInvite.CONFIRM_WAIT = 3         -- seconds the member waits for "You have invited ..." before the popup
+GuildInvite.ACCEPT_WINDOW = 180      -- an invite this long after our last request gets "Click Accept"
+GuildInvite.CONFIRM_WAIT = 3         -- a refusal text counts as ours this long (times 3) after the Invite click
 GuildInvite.KEY_ANSWER_MIN = 1       -- a member answers an older code after a random delay in this range,
 GuildInvite.KEY_ANSWER_MAX = 5       -- unless another member's answer came first
 GuildInvite.KEY_ANSWER_COOLDOWN = 60 -- and at most this often
@@ -270,8 +270,8 @@ function GuildInvite.candidates(roster, exclude, max)
   return names
 end
 
--- True when a guild invite should be accepted by itself: we asked for one (requestedAt) less than ACCEPT_WINDOW ago,
--- and it is for the remembered guild.
+-- True when a guild invite is the one we asked for: we asked (requestedAt) less than ACCEPT_WINDOW ago, and it is
+-- for the remembered guild. Then the alt is told to click Accept (CF-87: no AcceptGuild from addon code).
 function GuildInvite.shouldAccept(requestedAt, inviteGuild, rememberedGuild, now)
   if type(requestedAt) ~= "number" or type(now) ~= "number" then return false end
   if now - requestedAt > GuildInvite.ACCEPT_WINDOW or now < requestedAt then return false end
@@ -295,7 +295,16 @@ function GuildInvite.altLabel(characterName, friendName)
   return characterName
 end
 
--- The member's popup line when the invite needs a click: "Invite Bram Lovewell (Ada's alt)?".
+-- CF-87: the slash command the member's popup runs (a secure macro button, or put in the chat input): the name
+-- exactly as the game reported it (V131), never built from parts. nil for an empty name or one with a control
+-- character or "|" (a macro line must stay one line, without escapes).
+GuildInvite.INVITE_COMMAND = "/ginvite %s"
+function GuildInvite.inviteCommand(name)
+  if type(name) ~= "string" or name == "" or name:find("[%c|]") then return nil end
+  return string.format(GuildInvite.INVITE_COMMAND, name)
+end
+
+-- The member's popup line: "Invite Bram Lovewell (Ada's alt)?".
 function GuildInvite.popupText(characterName, friendName)
   return string.format(GuildInvite.POPUP, GuildInvite.altLabel(characterName, friendName))
 end

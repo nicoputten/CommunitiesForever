@@ -304,8 +304,8 @@ channel. Only while the community picked is a guild (CF-83).
 | `GKEY` | `GUILD` (V128) | `k` the guild code, `v` its version (1, 2, …), `at` server time it was set | a member sets the code; after login when it has one; as an answer to an older `GKEY` or a `GKEYHI` (random 1-5 s later, skipped when someone else answered, at most once a minute) |
 | `GKEYHI` | `GUILD` | `v` of the code the sender has (0: none) | after login, by a member without a code |
 | `GINVREQ` | `WHISPER` to one member | `id` (8 hex), `at` server time, `p` proof, `guid` the alt's GUID, `dn` its display name (optional) | an alt outside the guild, 15 s after login, one stored member after another |
-| `GINVACK` | `WHISPER` back to the alt | `id` | a member took the request (before inviting) |
-| `GINVFAIL` | `WHISPER` back to the alt | `id`, `r` the refusal (`rights`, `faction`, `member`, `invited`, `notfound`) | the game refused the member's invite (V132); the alt asks the next member with a new `id`, or stops for good on `faction` |
+| `GINVACK` | `WHISPER` back to the alt | `id` | a member took the request (and shows its Invite popup, CF-87) |
+| `GINVFAIL` | `WHISPER` back to the alt | `id`, `r` the refusal (`rights`, `faction`, `member`, `invited`, `notfound`) | the game refused the member's invite within 9 s of a click on the popup (V132); the alt asks the next member with a new `id`, or stops for good on `faction` |
 | `GINVCLAIM` | `GUILD` | `id`, `n` the alt's name | the same moment, so other members drop that request |
 | `GKICK` | `GUILD` | `g` GUID, `n` name, `at` | a member's client saw a character leave the guild list; receivers that do not see it in the guild remember it as removed (never invited by itself) |
 
@@ -324,6 +324,10 @@ channel. Only while the community picked is a guild (CF-83).
   in the guild; not removed from the guild (GKICK or seen leaving); not the same requester within 60 s.
 - **Names:** the alt whispers members by the name the guild list gives; the member answers and invites with the
   sender's name exactly as `CHAT_MSG_ADDON` reported it (V131). Names are never built from parts.
+- **The invite itself (CF-87):** addons may not call `C_GuildInfo.Invite` / `GuildInvite` or `AcceptGuild` on
+  Forever, not even from a click (V126). The member's popup runs `/ginvite <name>` through a secure macro button
+  (V134), or puts it in the chat input for Enter (V135); the alt clicks Blizzard's Accept. The messages are
+  unchanged.
 - **Traffic:** one GKEY or GKEYHI per member login, answers rate-limited; an alt sends at most 10 whispers per attempt
   (one every 6 s, or at once after "No player named"), 3 attempts per login, 5 minutes apart.
 - **Older versions:** they do not register `CFGuild` and get none of these. A member on an older version neither

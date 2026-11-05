@@ -278,6 +278,16 @@ describe("GuildInvite (CF-84)", function()
     assert.are.equal("Bram Lovewell (Ada's alt)", G.altLabel("Bram Lovewell", "Ada"))
   end)
 
+  -- CF-87: the popup's /ginvite line, with the name exactly as given (a space, a realm), one line, no escapes.
+  it("makes the /ginvite command from the name as the game reported it", function()
+    assert.are.equal("/ginvite Bram Lovewell-ClassicBetaPvP", G.inviteCommand("Bram Lovewell-ClassicBetaPvP"))
+    assert.are.equal("/ginvite Bram Lovewell", G.inviteCommand("Bram Lovewell"))
+    assert.is_nil(G.inviteCommand(""))
+    assert.is_nil(G.inviteCommand(nil))
+    assert.is_nil(G.inviteCommand("Bram\n/script x()"))
+    assert.is_nil(G.inviteCommand("Bram|cffff"))
+  end)
+
   it("cleans a requester's display name", function()
     assert.are.equal("Ada", G.cleanDisplayName(" Ada "))
     assert.are.equal("Adacffff", G.cleanDisplayName("Ada|cffff"))

@@ -52,6 +52,18 @@ No community can be created on Forever at launch (CF-83 picks the guild instead)
 - `CommunitiesCreateDialog` is a forbidden frame: touching it from `/run` gives "Attempt to access forbidden object
   from code tainted by an AddOn".
 
+### Guild invites (Forever, 2026-11-05, V126)
+FriendProbe on Forever, build 9 of the addon (develop 5598ec0), with a friend's alt (CF-87):
+- `C_GuildInfo.Invite(name)` / `GuildInvite(name)` are **forbidden for addon code, also inside a button click**:
+  both "Invite target, no click" and "Invite target with this click" give `ADDON_ACTION_FORBIDDEN` and Blizzard's
+  dialog "<Addon> has been blocked from an action only available to the Blizzard UI. You can disable this addon and
+  reload the UI." No invite is sent. The addon's automatic invite (CF-84) showed the same dialog for
+  CommunitiesForever, and the popup's plain Invite button sent nothing.
+- Typing `/ginvite <alt name>` in chat by hand works: the invite arrives. The alt's name was "First Last" (with the
+  space), on another realm id of the same mega-realm.
+- So the addon never calls these functions. Still open: a secure macro button running `/ginvite` (V134) and
+  `/ginvite` put in the chat input by the addon (V135).
+
 ## Verified during development
 Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | API | Result |
