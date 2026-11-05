@@ -141,6 +141,110 @@ describe("MemberTracker", function()
     assert.are.same({}, Tracker.members())
   end)
 
+  describe("the roster (CF-89)", function()
+    local function loadWith(storedClubId, prepare)
+      state = wowapi.install()
+      if prepare then prepare(state) end
+      ns = helpers.loadAddon()
+      Tracker = ns.MemberTracker
+      addon = state.addon
+      addon:OnInitialize()
+      addon.db.global.settings.clubId = storedClubId
+      if state.stored then state.stored(addon.db.global) end
+      addon:OnEnable()
+    end
+
+    it("stores the members as name and time seen, replaced as a whole on every update", function()
+      load(CLUB)
+      assert.are.same({ [VES] = { name = "Ves Doombringer", seenAt = 1000 },
+                        [GARRAKA] = { name = "Garraka Doombringer", seenAt = 1000 } }, addon.db.global.members)
+      table.remove(members(CLUB), 2)
+      state.serverTime = 1100
+      wowapi.fireEvent(state, "CLUB_MEMBER_REMOVED", CLUB, 2)
+      wowapi.runTimers(state)
+      assert.are.same({ [VES] = { name = "Ves Doombringer", seenAt = 1100 } }, addon.db.global.members)
+    end)
+
+    it("is empty without a selected community", function()
+      load(nil)
+      assert.are.same({}, addon.db.global.members)
+      assert.are.same({}, Tracker.roster())
+      assert.is_false(Tracker.belongs("Sjaakovich#2232"))
+    end)
+
+    it("is not replaced from a member list that does not list you yet (login)", function()
+      loadWith(CLUB, function(s)
+        table.remove(s.clubMembers[CLUB], 1) -- only Garraka loaded so far
+        s.stored = function(global) global.members = { [VES] = { name = "Ves Doombringer", seenAt = 1 } } end
+      end)
+      assert.are.same({ [VES] = { name = "Ves Doombringer", seenAt = 1 } }, addon.db.global.members)
+    end)
+
+    it("keeps the last roster on a character outside the community", function()
+      loadWith(CLUB, function(s)
+        s.clubs = { { clubId = "999", name = "My Guild", clubType = 2 } } -- this character is in another one only
+        s.stored = function(global)
+          global.members = { [GARRAKA] = { name = "Garraka Doombringer", seenAt = 1 } }
+          global.people["Sjaakovich#2232"] = { version = 1, chars = { [GARRAKA] = { name = "Garraka Doombringer" } } }
+        end
+      end)
+      assert.is_nil(ns.CommunitySelection.active())
+      assert.is_not_nil(addon.db.global.members[GARRAKA])
+      assert.is_true(Tracker.belongs("Sjaakovich#2232"))
+      assert.is_not_nil(addon.db.global.people["Sjaakovich#2232"])
+    end)
+
+    it("is not known yet on the first login before the members load, so nobody is dropped", function()
+      loadWith(CLUB, function(s)
+        s.later = s.clubMembers[CLUB]
+        s.clubMembers[CLUB] = nil
+        s.stored = function(global)
+          global.people["Out#1"] = { version = 1, chars = { ["Player-1-0000OUT1"] = { name = "Out Example" } } }
+          global.presence["Player-1-0000OUT1"] = { battleTag = "Out#1", lastSeen = 1 }
+        end
+      end)
+      assert.is_nil(Tracker.roster())
+      assert.is_nil(Tracker.belongs("Out#1"))
+      assert.is_not_nil(addon.db.global.people["Out#1"])
+      -- The members load: the one-time cleanup removes the friend outside the community.
+      state.clubMembers[CLUB] = state.later
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+      wowapi.runTimers(state)
+      assert.is_false(Tracker.belongs("Out#1"))
+      assert.is_nil(addon.db.global.people["Out#1"])
+      assert.is_nil(addon.db.global.presence["Player-1-0000OUT1"])
+    end)
+
+    it("cleans up stored data from before CF-89 once the members are known", function()
+      loadWith(CLUB, function(s)
+        s.stored = function(global)
+          global.people["Sjaakovich#2232"] = { version = 1, chars = { ["Player-4619-0000ALT1"] = { name = "Alt" } } }
+          global.people["Out#1"] = { version = 1, chars = { ["Player-1-0000OUT1"] = { name = "Out Example" } } }
+          global.people["aid:aaaaaaaaaaaa"] = { version = 1, chars = { [GARRAKA] = { name = "Garraka Doombringer" } } }
+          global.presence[GARRAKA] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
+          global.presence["Player-4619-0000ALT1"] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
+          global.presence["Player-1-0000OUT1"] = { battleTag = "Out#1", lastSeen = 1 }
+        end
+      end)
+      local g = addon.db.global
+      assert.is_not_nil(g.people["Sjaakovich#2232"]) -- belongs through the link of Garraka, even on an alt
+      assert.is_not_nil(g.people["aid:aaaaaaaaaaaa"])
+      assert.is_nil(g.people["Out#1"])
+      assert.is_not_nil(g.presence["Player-4619-0000ALT1"])
+      assert.is_nil(g.presence["Player-1-0000OUT1"])
+    end)
+
+    it("is not known after choosing another community until its members load", function()
+      load(CLUB)
+      ns.CommunitySelection.select("777")
+      assert.is_nil(Tracker.roster())
+      state.clubMembers["777"] = { members(CLUB)[1] }
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", "777")
+      wowapi.runTimers(state)
+      assert.are.same({ [VES] = { name = "Ves Doombringer", seenAt = 1000 } }, Tracker.roster())
+    end)
+  end)
+
   describe("/cf members", function()
     it("prints members sorted by name", function()
       load(CLUB)

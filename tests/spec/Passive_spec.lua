@@ -16,9 +16,12 @@ describe("passive without a community", function()
     wowapi.runTimers(state)
   end
 
+  -- The new community has you and Garraka, the character the mock's Battle.net friend is on (CF-89: they belong).
   local function join()
     table.insert(state.clubs, { clubId = "555", name = "New Friends", clubType = 1 })
+    state.clubMembers["555"] = state.clubMembers["23125681"]
     wowapi.fireEvent(state, "CLUB_ADDED", "555")
+    wowapi.runTimers(state)
   end
 
   after_each(function()

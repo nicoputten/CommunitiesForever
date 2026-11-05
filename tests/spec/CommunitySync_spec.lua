@@ -8,10 +8,15 @@ describe("sync over the community (CF-28 part 2b)", function()
   local DEE_AID = "aid:dddddddddddd"
   local counter = 0
 
-  local function load(prepare)
+  -- others: { { guid, name } } more community members (CF-89: stored people need a character in it), offline.
+  local function load(prepare, others)
     state = wowapi.install()
     table.insert(state.clubMembers[CLUB], { memberId = 3, guid = DEE_GUID, name = DEE, classID = 4, level = 20,
       zone = "Durotar", presence = 1, race = 2, faction = 0, isSelf = false, clubType = 1, role = 4 })
+    for i, other in ipairs(others or {}) do
+      table.insert(state.clubMembers[CLUB], { memberId = 10 + i, guid = other[1], name = other[2], classID = 8,
+        level = 30, presence = 2, race = 2, faction = 0, isSelf = false, clubType = 1, role = 4 })
+    end
     ns = helpers.loadAddon()
     addon = state.addon
     addon:OnInitialize()
@@ -136,7 +141,7 @@ describe("sync over the community (CF-28 part 2b)", function()
     load(function(global)
       global.people["aid:eeeeeeeeeeee"] = { version = 100, aid = "eeeeeeeeeeee", displayName = "Eve",
         chars = { ["Player-1-0000EEE1"] = { name = "Eve Example", level = 30, updatedAt = 800 } } }
-    end)
+    end, { { "Player-1-0000EEE1", "Eve Example" } })
     flush()
     -- Dee claims Eve's account ID, with only Dee's character in the record.
     fromDee(deeRecord(200, nil, { bt = "aid:eeeeeeeeeeee", aid = "eeeeeeeeeeee" }))
@@ -192,7 +197,7 @@ describe("sync over the community (CF-28 part 2b)", function()
     end
 
     it("sends it under the account ID, with nothing that shows a BattleTag", function()
-      load(withBram(BRAM_AID))
+      load(withBram(BRAM_AID), { { BRAM_GUID, "Bram Example" } })
       flush()
       state.whispers = {}
       fromDee({ t = "REQ", bt = DEE_AID, want = "aid:" .. BRAM_AID })

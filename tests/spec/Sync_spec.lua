@@ -9,8 +9,8 @@ describe("Sync", function()
   local VES = "Player-4619-01627852"
   local SJAAK_ALT = "Player-4619-0000ALT1"
 
-  -- setup(state) runs before OnEnable to change mock data.
-  local function load(setup)
+  -- setup(state) runs before OnEnable to change mock data; prepare(global) to change stored data.
+  local function load(setup, prepare)
     state = wowapi.install()
     if setup then setup(state) end
     ns = helpers.loadAddon()
@@ -18,7 +18,14 @@ describe("Sync", function()
     addon = state.addon
     addon:OnInitialize()
     addon.db.global.settings.clubId = CLUB
+    if prepare then prepare(addon.db.global) end
     addon:OnEnable()
+  end
+
+  -- CF-89: the roster stored at an earlier login (you and Garraka, the character Sjaak is on).
+  local function storedRoster(global)
+    global.members = { [VES] = { name = "Ves Doombringer", seenAt = 1 },
+                       ["Player-4619-01789956"] = { name = "Garraka Doombringer", seenAt = 1 } }
   end
 
   -- Runs timers (debounces, throttled sends) until nothing is pending.
@@ -147,6 +154,90 @@ describe("Sync", function()
     end)
   end)
 
+  -- CF-89: Battle.net friends without a character in the selected community are left alone.
+  describe("members only", function()
+    local OUT_GA = 9
+
+    -- A second Battle.net friend in Forever, on a character outside the community.
+    local function withOutsider(s)
+      s.friends[#s.friends + 1] = { battleTag = "Out#4444", gameAccounts = {
+        { clientProgram = "WoW", wowProjectID = 18, isOnline = true, characterName = "Out Example",
+          playerGuid = "Player-4619-0000OUT1", gameAccountID = OUT_GA, characterLevel = 20 } } }
+    end
+
+    local function to(messages, target)
+      local found = {}
+      for _, m in ipairs(messages) do if m.to == target then found[#found + 1] = m end end
+      return found
+    end
+
+    it("sends no HELLO to a friend outside the community", function()
+      load(withOutsider)
+      local sent = outgoing()
+      assert.are.equal(1, #ofType(to(sent, SJAAK_GA), "HELLO"))
+      assert.are.same({}, to(sent, OUT_GA))
+      state.slash.cf("sync")
+      assert.are.same({}, to(outgoing(), OUT_GA))
+    end)
+
+    it("ignores their HELLO and records, and stores nothing of them", function()
+      load(withOutsider)
+      outgoing()
+      fromSjaak({ t = "HELLO", bt = "Out#4444", ver = 5000, known = {} }, OUT_GA)
+      fromSjaak({ t = "RECORD", bt = "Out#4444", version = 5000,
+                  chars = { ["Player-4619-0000OUT1"] = { name = "Out Example", level = 20 } } }, OUT_GA)
+      fromSjaak({ t = "REQ", bt = "Out#4444" }, OUT_GA)
+      assert.are.same({}, to(outgoing(), OUT_GA))
+      assert.is_nil(addon.db.global.people["Out#4444"])
+      assert.is_nil(addon.db.global.presence["Player-4619-0000OUT1"])
+    end)
+
+    it("syncs with a friend who belongs while they play an alt outside the community", function()
+      load(function(s)
+        s.friends[1].gameAccounts[1].playerGuid = SJAAK_ALT
+      end, function(global)
+        global.presence["Player-4619-01789956"] = { battleTag = SJAAK, lastSeen = 1 } -- seen on Garraka before
+      end)
+      assert.are.equal(1, #ofType(to(outgoing(), SJAAK_GA), "HELLO"))
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 2000, known = {} })
+      assert.are.equal(1, #ofType(outgoing(), "REQ"))
+      assert.are.equal(SJAAK, addon.db.global.presence[SJAAK_ALT].battleTag)
+    end)
+
+    it("sends nothing at all without a selected community", function()
+      state = wowapi.install()
+      ns = helpers.loadAddon()
+      addon = state.addon
+      addon:OnInitialize()
+      addon.db.global.settings.clubId = nil
+      addon:OnEnable()
+      codec = ns.Protocol.codec(helpers.lib("LibSerialize"), helpers.lib("LibDeflate"))
+      assert.are.same({}, outgoing())
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 2000, known = {} })
+      assert.are.same({}, outgoing())
+      assert.is_nil(addon.db.global.people[SJAAK])
+    end)
+
+    it("on the first login keeps a HELLO until the members have loaded, then answers friends who belong", function()
+      local later
+      load(function(s)
+        withOutsider(s)
+        later = s.clubMembers[CLUB]
+        s.clubMembers[CLUB] = nil
+      end)
+      assert.are.same({}, outgoing()) -- not known yet who belongs: nothing sent
+      fromSjaak({ t = "HELLO", bt = SJAAK, ver = 2000, known = {} })
+      fromSjaak({ t = "HELLO", bt = "Out#4444", ver = 5000, known = {} }, OUT_GA)
+      assert.are.same({}, outgoing())
+      state.clubMembers[CLUB] = later
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+      local sent = outgoing()
+      assert.are.equal(1, #ofType(to(sent, SJAAK_GA), "REQ"))
+      assert.are.equal(1, #ofType(to(sent, SJAAK_GA), "HELLO"))
+      assert.are.same({}, to(sent, OUT_GA))
+    end)
+  end)
+
   describe("REQ", function()
     it("is sent when a friend advertises a newer version", function()
       load()
@@ -197,8 +288,8 @@ describe("Sync", function()
       assert.is_not_nil(records[1].chars["Player-4619-0000NOTM"])
     end)
 
-    it("answers right away, even before community member data has loaded", function()
-      load(function(s) s.clubMembers[CLUB] = nil end)
+    it("answers right away at login, before community member data has loaded (roster stored last time)", function()
+      load(function(s) s.clubMembers[CLUB] = nil end, storedRoster)
       outgoing()
       fromSjaak({ t = "REQ", bt = SJAAK })
       local records = ofType(outgoing(), "RECORD")
@@ -356,7 +447,7 @@ describe("Sync", function()
       load(function(s)
         members = s.clubMembers[CLUB]
         s.clubMembers[CLUB] = nil -- login: community members not loaded yet
-      end)
+      end, storedRoster)
       table.insert(members, { memberId = 7, guid = BRAM_CHAR, name = "Bram Stonefist", classID = 1, level = 40,
                               presence = 3 })
       outgoing()

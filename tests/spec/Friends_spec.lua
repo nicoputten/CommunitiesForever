@@ -137,6 +137,29 @@ describe("Friends", function()
         5000)
       assert.are.same({ battleTag = "New#2", lastSeen = 5000 }, presence.A)
     end)
+
+    -- CF-89: only characters on the roster and people who belong.
+    it("links only roster characters and the characters of people who belong", function()
+      local presence = {}
+      Friends.recordPresence(presence, snap({
+        { battleTag = "In#1", gameAccounts = { ga({ gameAccountID = 1, playerGuid = "Alt" }) } },
+        { battleTag = "New#2", gameAccounts = { ga({ gameAccountID = 2, playerGuid = "Member" }) } },
+        { battleTag = "Out#3", gameAccounts = { ga({ gameAccountID = 3, playerGuid = "Other" }) } },
+      }), 5000, { Member = { name = "M" } }, { ["In#1"] = true })
+      assert.are.same({ Alt = { battleTag = "In#1", lastSeen = 5000 },
+                        Member = { battleTag = "New#2", lastSeen = 5000 } }, presence)
+    end)
+
+    it("links nobody for an empty roster, and everyone while the roster is not known", function()
+      local function friendOn(guid)
+        return snap({ { battleTag = "Out#3", gameAccounts = { ga({ playerGuid = guid }) } } })
+      end
+      local presence = {}
+      Friends.recordPresence(presence, friendOn("Other"), 5000, {}, {})
+      assert.are.same({}, presence)
+      Friends.recordPresence(presence, friendOn("Other"), 5000, nil, nil)
+      assert.are.same({ Other = { battleTag = "Out#3", lastSeen = 5000 } }, presence)
+    end)
   end)
   describe("a friend who appears offline (Battle.net)", function()
     local friends = { ["Ada#1001"] = true }

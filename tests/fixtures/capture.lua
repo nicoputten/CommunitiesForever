@@ -122,6 +122,8 @@ end
 table.sort(wire, function(a, b) return a.name < b.name end)
 
 local saved = world.clients.A.addon.db.global
+-- CF-89: the roster (global.members) is part of the file the site reads; every fixture from now on carries it.
+assert(type(saved.members) == "table" and next(saved.members) ~= nil, "no roster (global.members) to capture")
 local dir = "tests/fixtures/" .. label
 if package.config:sub(1, 1) == "\\" then
   os.execute('if not exist "' .. dir:gsub("/", "\\") .. '" mkdir "' .. dir:gsub("/", "\\") .. '"')

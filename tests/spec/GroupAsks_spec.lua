@@ -22,6 +22,8 @@ describe("Who's up for it? (CF-27)", function()
     addon.db.global.people[FRIEND] = { displayName = "Ben", version = 1,
       chars = { ["Player-1-B1"] = { name = "Ben Main", level = 50 },
                 ["Player-1-B2"] = { name = "Bob Alt", level = 20 } } }
+    -- CF-89: they belong: seen before on Garraka, the mock community's member.
+    addon.db.global.presence["Player-4619-01789956"] = { battleTag = FRIEND, lastSeen = 1 }
     addon:OnEnable()
     sent = {}
     ns.Messenger.send = function(gameAccountID, message)
