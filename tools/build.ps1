@@ -9,7 +9,8 @@
      working tree has uncommitted changes). Release builds get their version
      from the git tag via the packager instead (CF-02).
   4. Zips it to dist/CommunitiesForever-<version>.zip.
-  Copy dist/CommunitiesForever into your WoW Interface/AddOns folder, or pass -AddOnsPath.
+  Copy dist/CommunitiesForever and dist/CommunitiesForever_Vault (CF-84) into your WoW Interface/AddOns folder,
+  or pass -AddOnsPath.
 
 .PARAMETER RefreshLibs
   Re-download all libraries.
@@ -48,10 +49,18 @@ $toc = Get-Content -Raw (Join-Path $root "$addonName.toc")
 $toc = $toc.Replace('@project-version@', $version)
 [IO.File]::WriteAllText((Join-Path $stage "$addonName.toc"), $toc)
 
+# CF-84: the vault, its own addon folder next to the addon (as .pkgmeta move-folders packages it).
+$vaultName = 'CommunitiesForever_Vault'
+$vaultStage = Join-Path $dist $vaultName
+New-Item -ItemType Directory -Force $vaultStage | Out-Null
+Copy-Item (Join-Path $root "$vaultName\Vault.lua") $vaultStage
+$vaultToc = (Get-Content -Raw (Join-Path $root "$vaultName\$vaultName.toc")).Replace('@project-version@', $version)
+[IO.File]::WriteAllText((Join-Path $vaultStage "$vaultName.toc"), $vaultToc)
+
 $zip = Join-Path $dist "$addonName-$version.zip"
 # Windows tar (bsdtar) writes zip entries with forward slashes; Compress-Archive in Windows PowerShell 5.1
 # writes backslashes, which other unzip tools (and possibly the CurseForge app) extract as flat file names.
-& "$env:SystemRoot\System32\tar.exe" -a -c -f $zip -C $dist $addonName
+& "$env:SystemRoot\System32\tar.exe" -a -c -f $zip -C $dist $addonName $vaultName
 if ($LASTEXITCODE -ne 0) { throw 'zip failed' }
 
 Write-Host "Built $addonName $version"
@@ -64,4 +73,8 @@ if ($AddOnsPath) {
   if (Test-Path $target) { Remove-Item -Recurse -Force $target }
   Copy-Item -Recurse $stage $target
   Write-Host "  installed: $target"
+  $vaultTarget = Join-Path $AddOnsPath $vaultName
+  if (Test-Path $vaultTarget) { Remove-Item -Recurse -Force $vaultTarget }
+  Copy-Item -Recurse $vaultStage $vaultTarget
+  Write-Host "  installed: $vaultTarget"
 }

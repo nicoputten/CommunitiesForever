@@ -145,6 +145,23 @@ function Settings.options()
           if not ok then ns:Print(message) end
         end,
       },
+      -- CF-84: the guild code, only while the guild is picked. Masked and never shown: get is always empty.
+      guildCode = {
+        type = "input",
+        order = 6.5,
+        width = "full",
+        name = "Guild code",
+        desc = "A code of your own, the same for the whole guild. With it, your alts outside the guild ask online "
+          .. "members for an invite and get in by themselves. Members' addons share it in the guild.",
+        masked = true,
+        hidden = function() return not ns.CommunitySelection.isGuild() end,
+        status = function() return Settings.guildCodeStatus() end,
+        get = function() return "" end,
+        set = function(_, value)
+          local ok, message = ns.GuildInvites.setCode(value)
+          if ok then ns:Print(ns.GuildInvites.SET) elseif message then ns:Print(message) end
+        end,
+      },
       notifications = {
         type = "toggle",
         order = 4,
@@ -302,6 +319,19 @@ function Settings.options()
     }
   end
   return options
+end
+
+-- CF-84: the line under the guild code field. Never the code itself.
+Settings.GUILD_CODE_SET = "A guild code is set (%s). Type a new one to replace it for the whole guild."
+Settings.GUILD_CODE_NONE = "No guild code yet: alts outside the guild are not invited by themselves."
+Settings.GUILD_CODE_NO_VAULT = "Guild invites are off: the CommunitiesForever_Vault folder is missing or disabled."
+Settings.GUILD_CODE_NO_MASK = "This game client can't hide what you type, so the guild code can't be set here."
+
+function Settings.guildCodeStatus()
+  if not ns.GuildInvites.available() then return Settings.GUILD_CODE_NO_VAULT end
+  local at = ns.GuildInvites.codeSetAt()
+  if not at then return Settings.GUILD_CODE_NONE end
+  return string.format(Settings.GUILD_CODE_SET, date("%Y-%m-%d %H:%M", at))
 end
 
 -- CF-48: the planned-run chat lines that can be turned off.

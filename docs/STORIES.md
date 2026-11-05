@@ -29,6 +29,79 @@ Builds on CF-83: a character in a guild only is no longer passive. Touches: `src
 - Decided by Nico (2026-11-05): track quietly without a community; hide Ask now and Copy website link while passive;
   an opaque window background.
 
+### CF-84 Automatic guild invites for alts
+Builds on CF-83 (branch `feature/cf-83-guild`). When a member logs in on an alt that is not in the guild, the alt gets
+into the guild with as little clicking as possible. Every member has invite rights (Nico's guild setting). Design by
+Nico (2026-11-05). Touches: `src/core/GuildInvite.lua`, `src/adapters/Guild.lua`, `src/adapters/Vault.lua`,
+`src/services/GuildInvites.lua`, `src/ui/GuildInvitePopup.lua`, `src/ui/Settings.lua`, `src/ui/SettingsWindow.lua`,
+`src/Core.lua`, the new `CommunitiesForever_Vault/` folder, `.pkgmeta`, `tools/build.ps1`, `tools/FriendProbe/`,
+`tests/spec/GuildInvite_spec.lua`, `tests/spec/GuildInvites_spec.lua`, VERIFY.md, SYNC.md, ARCHITECTURE.md,
+CHANGELOG.md.
+- **Not over Battle.net, never a custom channel:** the alt sends its request as an addon WHISPER
+  (`C_ChatInfo.SendAddonMessage`, verified) to guild members; the guild code spreads on the guild's own addon channel
+  (`"GUILD"`, V128). Own prefix `CFGuild`, single-part messages, `pv` 1: GKEY, GKEYHI, GINVREQ, GINVACK, GINVCLAIM
+  (`docs/SYNC.md` "Guild invites").
+- **The guild code:** never hardcoded or generated. A member types it in `/cf settings` in a masked field (V130) shown
+  only while the guild is picked; the field is empty again after Enter and the code is never printed or shown (the
+  line under the field gives only when it was set). 6 to 64 characters, no `|` or line breaks. An empty field changes
+  nothing. Without a code the feature is off. It does not rotate when someone leaves.
+- **Newest code wins:** by a version counter (see edge case 5 below), then the server time it was typed, then the
+  code that sorts last, so all clients end on the same code.
+- **Spread:** after login a member in the guild sends its code (GKEY) or asks (GKEYHI with `at` 0); a member with a
+  newer code answers after a random 1 to 5 s unless another member's answer came first, at most once a minute.
+- **Kept out of the upload:** the code and the member list live in `CommunitiesForeverVaultDB`, the SavedVariables of
+  a companion folder `CommunitiesForever_Vault` shipped in the same package (`.pkgmeta` `move-folders`). Its file is
+  `CommunitiesForever_Vault.lua`; the uploader reads only `CommunitiesForever.lua`, which gets nothing new. Without the
+  vault folder the feature is off and the settings line says so.
+- **Member list for alts:** a member's client keeps the picked guild's members `{ name, seen }` (last seen online) in
+  the vault, at most 500, members who left dropped.
+- **Alt:** 15 s after login, when the guild is picked, the character is in no guild and a code is known: whisper
+  GINVREQ to the stored members, most recently online first (never your own characters), one at a time, at most 10
+  per attempt, 6 s each; "No player named ..." (hidden by Transport's filter, V129) moves to the next at once. A
+  GINVACK waits for the invite (60 s); a GINVFAIL moves on at once. No ack: again after 5 minutes, 3 attempts per
+  login, then one chat line (at most once a day).
+- **Proof, not the code:** the request carries a 64-bit digest of code, guild name, the requesting character's name
+  and the request time (not a cryptographic hash). The member computes it with the name the game reports for the
+  whisper and invites only that sender (only at the request of the character itself), only when it is not in the
+  guild, within 5 minutes of the request time, once a minute per requester.
+- **One handler:** the member that accepts a request whispers GINVACK to the alt and posts GINVCLAIM on the guild
+  channel; others drop that request id.
+- **Member invites:** `C_GuildInfo.Invite(name)` or `GuildInvite(name)` (guarded, V126). Confirmed by "You have
+  invited ..." (`ERR_GUILD_INVITE_S`); when the game blocks it (`ADDON_ACTION_BLOCKED`/`_FORBIDDEN`) or no
+  confirmation comes in 3 s, a small window "Invite <alt> (<friend>'s alt)?" with one Invite button; the rest of the
+  session goes straight to that window.
+- **Auto-accept:** `GUILD_INVITE_REQUEST` for the remembered guild within 3 minutes of our request: `AcceptGuild()`
+  (guarded, V127); Blizzard's popup is hidden once the guild shows in the club list. Blocked: Blizzard's popup stays,
+  with a chat line to click Accept. Any other invite is left alone.
+- **Compatibility (rule 8):** nothing new in CommunitiesForeverDB (no migration, schema stays 2); the vault has its
+  own `v = 1`. New message types only, on a new prefix that older versions never register, so they never see them.
+- **Edge cases (asked by Nico, 2026-11-05):**
+  1. **Another guild:** the account-wide pick only changes when none exists (CF-83's auto-pick); a bank alt in another
+     guild leaves it alone and shows the community as not available; such an alt never asks (test).
+  2. **Names with a space:** the alt whispers each member by the name the guild's member list gives
+     (`C_Club.GetMemberInfo`); the member whispers back and invites with the sender's name exactly as `CHAT_MSG_ADDON`
+     reported it (with "-Realm" when the game adds it). No name is built from parts. Which forms work: V131.
+  3. **Another faction or realm:** members store the guild's faction and realm (`UnitFactionGroup`, `GetRealmName`)
+     with the member list; an alt that differs, or whose request a member's game refuses as the other faction, stops
+     for good with one chat line, remembered per character in the vault. An alt that can reach nobody (another
+     ruleset) says "No member … answered" at most once a day.
+  4. **No invite rights:** the member's client reads the game's refusal (`ERR_GUILD_PERMISSIONS` and others, V132) and
+     whispers GINVFAIL; the alt asks the next member at once with a new request id. An acknowledged invite that never
+     comes (popup ignored) moves on after 60 s.
+  5. **Old codes coming back:** newest by a version counter `v` (one more than the highest known), not by time; time
+     and code only break a tie of two codes set at the same version.
+  6. **Removed characters:** a character that leaves the guild (kicked or left) is remembered in the vault
+     (`removed[guid] = { name, at }`, at most 200) by every member that sees it go, and shared as GKICK on the guild
+     channel. Members never invite it by themselves. Lifted when it is back in the guild list, or by a manual invite
+     from that member ("You have invited <name>" that was not ours). A list that looks half loaded (more than 5 and a
+     fifth gone at once) counts nobody as gone.
+- FriendProbe: Test: guild invites (V126-V132).
+- Manual (VERIFY.md CF-84, V126 to V132).
+- Decided by Nico (2026-11-05): the vault folder and its global `CommunitiesForeverVaultDB` are OK; the code can only
+  be replaced, never cleared; the code in plain text on the guild channel and the checksum (not the code) in requests
+  are fine; the alt accepts any invite to the remembered guild within 3 minutes of its request; a one-time "action
+  blocked" error on the member's side before the Invite button takes over is acceptable.
+
 ### CF-83 The guild as the community
 On Forever no community can be created at launch (`docs/API-FINDINGS.md` "Creating a community"), so Nico's group
 uses a guild for now and may move to a community once Blizzard fixes creation. The player can pick the guild as "the

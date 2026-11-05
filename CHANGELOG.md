@@ -9,6 +9,12 @@ tagging; the release stops if the tag has no section.
 - **Your guild can be the community:** `/cf settings` lists your guild next to your character communities. Pick it
   to see your guild's members grouped per friend; switch back to a community at any time, nothing is lost. With the
   guild picked, guild chat counts for the community chat goals, and the invite link options are hidden.
+- **Your alts get into the guild by themselves:** set a guild code in `/cf settings` (shown with your guild picked).
+  Members' addons share it in the guild. When you log in on an alt outside the guild, it asks an online member for an
+  invite and accepts it; the member's addon invites it, or shows one Invite button when the game wants a click. The
+  code is saved in the new `CommunitiesForever_Vault` folder that comes with the addon, never in the file you upload.
+  Someone who left or was kicked from the guild is never invited again by itself; a member can still invite them
+  by hand.
 - **Fixed:** without a community, Doomsday keeps counting your goals quietly: no celebration banner or "First to
   finish today!" popup until you pick a community or your guild. Today's progress counts as soon as you do.
 - **Fixed:** the Dungeons tab without a community shows just the explanation, without buttons drawn over it or
