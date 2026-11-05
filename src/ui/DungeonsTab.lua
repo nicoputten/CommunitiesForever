@@ -22,7 +22,6 @@ local LIST_WIDTH = 290
 local RUN_ROW = 50
 local GROUP_ROW = 36
 local ONLINE_ROW = 30
-local LINK_WIDTH = 236 -- CF-63: Edit or cancel / On the website
 local ROLE_LABEL = { tank = "Tank", heal = "Healer", dps = "Damage" }
 local ROSTER_TIP = "Online members whose current character fits %s." -- CF-63 board CF63RunDetail
 local SUGGEST_TIP = "Friends\226\128\153 and your characters whose level fits, online or not." -- CF-63c
@@ -330,7 +329,24 @@ local function onlineRow(parent)
   o.button = Kit.button(o, "", nil)
   o.button:SetPoint("RIGHT", 0, 0)
   if o.button.SetMotionScriptsWhileDisabled then o.button:SetMotionScriptsWhileDisabled(true) end
+  for _, fs in ipairs({ o.name, o.info }) do
+    if fs.SetWordWrap then fs:SetWordWrap(false) end -- CF-94: cut with "...", never a second line
+  end
   return o
+end
+
+-- CF-94: the name and "level · friend" of an online row end 8 px before Whisper (and Invite when shown); the name
+-- gets what is left after a short info, what doesn't fit is cut ("...").
+local function fitOnlineRow(o, width, inviteShown)
+  o.name:SetWidth(0)
+  o.info:SetWidth(0)
+  local buttons = (o.button:GetWidth() or 60) + (inviteShown and ((o.invite:GetWidth() or 60) + 6) or 0)
+  local room = width - 26 - buttons - 8
+  local infoW = natural(o.info)
+  local nameW = math.min(natural(o.name), math.max(60, room - math.min(infoW, 120) - 8))
+  nameW = math.max(1, math.min(nameW, room))
+  o.name:SetWidth(nameW)
+  o.info:SetWidth(math.max(1, math.min(infoW, room - nameW - 8)))
 end
 
 -- A slot of a group: portrait (or "?" / "+" / an initial), name and level, role and who, a state line.
@@ -703,6 +719,7 @@ local function onlineList(parent, x, y, width, fits, dungeon, open)
       o.invite:Hide()
       o.button:SetPoint("RIGHT", 0, 0)
     end
+    fitOnlineRow(o, width, open)
     y = y + ONLINE_ROW
   end
   return y + 4
@@ -775,7 +792,8 @@ local function divider(parent, y, width)
 end
 
 -- One run (CF-46; CF-62 board AG02Dungeons A to C; CF-63 board CF63RunDetail): the header, the group at full
--- width, your answer (or the organiser's start), then Online now, fits beside Edit or cancel / On the website.
+-- width, your answer (or the organiser's start), then Online now, fits and below it Edit or cancel /
+-- On the website (CF-94).
 local function renderRun(run, me, candidates)
   local parent = detail.child
   local width = math.max(560, (detail:GetWidth() or 0) - 6) - 2 * PAD
@@ -989,29 +1007,32 @@ local function renderRun(run, me, candidates)
     answerDrawn = true
   end
 
-  -- One row: Online now, fits (left); Edit or cancel or On the website (right, 236 px).
+  -- CF-94: Online now, fits at full width, then Edit or cancel or On the website below it, also at full width
+  -- (beside each other the rows had too little room and Whisper covered their text).
+  -- The run view is laid out at least 520 px wide; in a window near its 700 px minimum the detail shows less, so
+  -- these two follow the width that shows (never below 300 px), keeping Whisper in view.
+  local shown = detail:GetWidth()
+  local full = (shown and shown > 0) and math.min(width, math.max(300, shown - 6 - 2 * PAD)) or width
   y = divider(parent, y + 6, width) + 12
-  local leftWidth = width - LINK_WIDTH - 24
-  local rightX = PAD + leftWidth + 24
-  local ly = onlineList(parent, PAD, y, leftWidth, fits, dungeon, open)
-  local heading = placeText(pools.section, parent, rightX, y, LINK_WIDTH,
+  y = onlineList(parent, PAD, y, full, fits, dungeon, open) + 8
+  local heading = placeText(pools.section, parent, PAD, y, full,
     isOrganiser and "Edit or cancel" or "On the website", "goldLight")
   local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 120
   local info = Kit.take(pools.infos, parent)
-  info:SetPoint("TOPLEFT", rightX + hw + 6, -(y + 3))
+  info:SetPoint("TOPLEFT", PAD + hw + 6, -(y + 3))
   info.tip = LINK_TIP
-  local ry = y + 26
+  y = y + 26
   if run.url then
     linkBox:ClearAllPoints()
     linkBox:SetParent(parent)
-    linkBox:SetPoint("TOPLEFT", rightX, -ry)
-    linkBox:SetWidth(LINK_WIDTH - 16)
+    linkBox:SetPoint("TOPLEFT", PAD, -y)
+    linkBox:SetWidth(full)
     linkBox:SetText(run.url)
     linkBox:Show()
     linkPlaced = true
-    ry = ry + 34
+    y = y + 34
   end
-  parent:SetHeight(math.max(ly, ry) + PAD)
+  parent:SetHeight(y + PAD)
   detail:Update()
 end
 
@@ -1509,6 +1530,12 @@ end
 function DungeonsTab.questRows()
   local out = {}
   for i = 1, pools and pools.quests.used or 0 do out[i] = pools.quests.items[i] end
+  return out
+end
+
+function DungeonsTab.onlineRows() -- CF-94
+  local out = {}
+  for i = 1, pools and pools.onlineRows.used or 0 do out[i] = pools.onlineRows.items[i] end
   return out
 end
 

@@ -97,6 +97,20 @@ Two accounts with this build, A and B, in the community (or guild) picked on bot
 6. Still in chat: `/cf ask Deadmines` with nobody in range ("Nobody with CommunitiesForever is online ..."), the
    guild invite lines (CF-87 steps), `/cf version`, and `/cf sync debug` lines.
 
+### CF-94 Run detail layout
+This build, `/console scriptErrors 1`. Plan a run on the website for a dungeon whose range fits a few guild members who
+are online now (the more the better; at least one with a long name), as organiser. Upload, then `/reload` so
+`Data\Runs.lua` has it. `/cf`, Dungeons tab, click the run in the list.
+
+| Step | Expected | Status |
+|---|---|---|
+| Window at its normal size: look at "Online now, fits" | The heading, its ⓘ and the rows span the full width under the divider. Each row: icon, name, "level · owner" (e.g. "15 · Basilisk") whole, Whisper at the right edge; nothing overlaps. "Edit or cancel" with its ⓘ (tooltip "Copy with Ctrl+C. Edit or cancel happens on the website.") and the link box below the last row, the box as wide as the list. | open |
+| Drag the window's corner to its smallest width (it stops at 700 px) | The rows narrow with the window: Whisper stays fully visible at the right; a long name or owner is cut with "..." before Whisper, never under it. The link box narrows too and still copies with Ctrl+C. Make it wide again: the texts are whole again. | open |
+| Many online (5 or more, or a short window height) | The detail scrolls; "Edit or cancel" is below the last row, nothing overlaps. | open |
+| From 15 minutes before the start (Invite shows beside Whisper), at normal and at the smallest width | Name and info end before Invite; Invite and Whisper side by side at the right, neither covering text. | open |
+| A run someone else organises | Same layout; the lower part is "On the website" with the link box. Your answer buttons above unchanged. | open |
+| Nobody else online fits (e.g. a run for a range nobody online is in) | "Nobody else online fits" under the heading, "Edit or cancel" below it, full width. | open |
+
 ### CF-93 Ctrl+C in the guild invite window
 Two people with this build, as in CF-87/CF-88: Bo online in the guild with invite rights and the guild code set, Ada's
 alt outside any guild. `/console scriptErrors 1` and `/cf sync debug` on Bo (prints `[guild] invite window focus ...`
