@@ -146,7 +146,8 @@ describe("FriendProbe launch checklist (CF-60)", function()
       end
       table.sort(retail)
       assert.are.same({ "V100", "V102", "V103", "V108", "V109", "V110", "V111", "V112", "V113", "V115", "V116",
-                        "V117", "V118", "V121", "V123", "V124", "V125", "V47", "V48", "V54", "V55", "V61", "V62", "V63",
+                        "V117", "V118", "V121", "V123", "V124", "V125", "V126", "V127", "V128", "V129", "V130",
+                        "V47", "V48", "V54", "V55", "V61", "V62", "V63",
                         "V64", "V65", "V66", "V67", "V68", "V69", "V70", "V71", "V72", "V77", "V78", "V81",
                         "V83", "V84", "V85", "V86", "V88", "V89", "V90", "V93", "V94", "V95", "V96", "V98",
                         "V99" }, retail)
@@ -167,6 +168,15 @@ describe("FriendProbe launch checklist (CF-60)", function()
           wowapi.uninstall()
         end
       end
+    end)
+
+    it("opens the guild invite test without errors and asks about the masked field (CF-84)", function()
+      local ns = login(1793300000)
+      for _, t in ipairs(ns.tests) do
+        if t.text:find("guild invites", 1, true) then t.run() end
+      end
+      assert.are.equal("info", ns.results().V130.status)
+      assert.are.same({}, printed)
     end)
 
     it("shows what a test button found on its row (CF-62: V67 only logged)", function()

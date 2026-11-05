@@ -57,4 +57,18 @@ describe("release contents (CF-02)", function()
     assert.is_truthy(read(".github/workflows/release.yml")
       :find("lua tools/release-notes.lua \"$TAG\" > RELEASE_NOTES.md", 1, true))
   end)
+
+  -- CF-84: the vault folder ships next to the addon, for the same game, with its own SavedVariables file.
+  it("packages the CommunitiesForever_Vault folder with the addon", function()
+    assert.is_truthy(read(".pkgmeta"):find("move%-folders:%s+CommunitiesForever/CommunitiesForever_Vault: "
+      .. "CommunitiesForever_Vault"))
+    local VAULT_TOC = "CommunitiesForever_Vault/CommunitiesForever_Vault.toc"
+    local toc, vault = read(helpers.ADDON_NAME .. ".toc"), read(VAULT_TOC)
+    assert.are.equal(toc:match("## Interface: (%d+)"), vault:match("## Interface: (%d+)"))
+    assert.is_truthy(vault:find("## SavedVariables: CommunitiesForeverVaultDB\n", 1, true))
+    assert.is_truthy(toc:find("## OptionalDeps: [^\n]*CommunitiesForever_Vault"))
+    for _, path in ipairs({ VAULT_TOC, "CommunitiesForever_Vault/Vault.lua" }) do
+      assert.is_nil(read(path):find("Doombringer", 1, true), path)
+    end
+  end)
 end)

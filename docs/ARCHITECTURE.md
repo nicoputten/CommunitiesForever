@@ -46,6 +46,8 @@ CommunitiesForever/
       Clubs.lua              selectable communities (character and guild), stored-selection status
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
+      GuildInvite.lua        guild invites for alts: the code, newest-code rule, proof, request check, member list
+                             for alts and the order they are asked in (CF-84)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
       Queue.lua              first-in, first-out list with a limit (CF-44: level-up announcements)
@@ -89,6 +91,9 @@ CommunitiesForever/
       Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded),
                              whether addon messages may be restricted now (CF-46, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
+      Guild.lua              guild invite calls: CFGuild prefix, GUILD addon messages, C_GuildInfo.Invite, AcceptGuild,
+                             GUILD_INVITE_REQUEST, blocked actions, "You have invited" (CF-84, guarded)
+      Vault.lua              CommunitiesForeverVaultDB, the companion folder's SavedVariables (CF-84)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
       PvpInfo.lua            PvP counters and rank, death statistic and recap, duel/honor format strings, PvP and
@@ -116,6 +121,8 @@ CommunitiesForever/
       CommunityChat.lua      community chat color (always), tab flash and sound, Community chat tab (CF-25)
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       Invites.lua            shared invite link: set (owner/leaders/moderators), newest, post as chat link (CF-21)
+      GuildInvites.lua       guild code (set, spread, newest), member list for alts, alt requests, member invites,
+                             auto-accept (CF-84)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
@@ -141,11 +148,14 @@ CommunitiesForever/
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
+      GuildInvitePopup.lua   "Invite <alt> (<friend>'s alt)?" with one button, when an invite needs a click (CF-84)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
     helpers.lua              loads addon files in TOC order with (addonName, ns) varargs
     mocks/wowapi.lua
     spec/*_spec.lua
+  CommunitiesForever_Vault/  companion addon folder, packaged next to the addon (.pkgmeta move-folders): only the
+                             SavedVariables CommunitiesForeverVaultDB, in its own file the uploader never reads (CF-84)
   tools/FriendProbe/         diagnostic addon (not packaged)
   tools/*.ps1                setup-lua, fetch-libs, build (dev only)
   .github/workflows/         test.yml, release.yml
@@ -241,6 +251,14 @@ global = {
                                                      -- CF-82: the hidden launch probe (core/Probe.lua), until
                                                      -- 2026-11-18; client "forever"/"retail"; at most 30 KB; the
                                                      -- site keeps the raw file, its reader ignores this section
+}
+
+-- CF-84: SavedVariables of the CommunitiesForever_Vault folder, its own file (CommunitiesForever_Vault.lua), which
+-- the uploader never sends. Never synced as a whole: the code goes out only as GKEY on the guild channel.
+CommunitiesForeverVaultDB = {
+  v = 1,                                             -- the vault's own format; a newer one is left alone (feature off)
+  guilds = { [guild name, lower case] = { code, at,  -- the guild code and when it was set (newest wins)
+                                          roster = { [guid] = { name, seen } } } }, -- members for alts; seen: last online
 }
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
