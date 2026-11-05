@@ -7,6 +7,30 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-93 Ctrl+C in the guild invite window copies the command
+Live feedback (v1.3.1, a guild member, 2026-11-05): "I couldn't CTRL-C the guild invite string that popped up. I had
+to manually type it in… Ctrl-C just pops open my character page." The copy box (CF-88) had no keyboard focus, so C
+went to the character window's key binding. Not known yet: whether the text was highlighted or grey, whether they
+clicked the box first, whether their chat is IM style. Touches: `src/core/GuildInvite.lua`, `src/adapters/Guild.lua`,
+`src/ui/GuildInvitePopup.lua`, `src/services/GuildInvites.lua`, the GuildInvite specs, VERIFY.md, CHANGELOG.md.
+- **Focus rule:** a chat input only blocks the focus while it is shown and has the keyboard (`HasFocus`); one that is
+  merely open or active (IM-style chat keeps it on screen) does not. Another edit box blocks only when
+  `GetCurrentKeyBoardFocus` returns one that is shown and isn't the copy box. Combat and moving still block. Every
+  call is guarded.
+- **A click always focuses and selects:** on the box, the window body or the key row; selected again on mouse up.
+  Taking the focus moves it off a chat input without the addon touching that input (V135).
+- **Unfocused state:** besides the mouse cap, "Click here, then Ctrl+C" inside the box (right, gold) while it isn't
+  focused and nothing is copied yet; hidden once focused. The window makes room for it when it arrives unfocused.
+- **Focus again:** while the window waits unfocused since its arrival (never clicked, nothing copied), it checks every
+  0.3 s and takes the focus after two free checks in a row (standing still, out of combat, nobody typing). A focus
+  the player let go of (a key, Enter, a click elsewhere) is never taken back.
+- Shift and Alt alone no longer release the focus.
+- **Debug:** `/cf sync debug` prints each focus decision and why as a `[guild]` line ("invite window focus on
+  arrival: no (moving): combat no, speed 7, chat open yes, chat typing no, other box no"), on a retry, on a click,
+  and the key that let go of the focus.
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-93.
+
 ### CF-91 Quiet chat: no "CommunitiesForever:" lines a banner already shows
 Nico (2026-11-05, live on Forever): "I want to remove all of those CommunitiesForever consoles. We show banners for
 login and level up, don't wanna double up like that. No need for the reload also." The addon prints only what has no
@@ -42,7 +66,7 @@ GuildInvite specs, `tools/FriendProbe/`, VERIFY.md, CHANGELOG.md.
   1 px edges, 3 px bottom edge; done gold fill, next gold outline, upcoming grey); tooltip "Copy · open chat · paste
   · send". `TOP` of UIParent, 0, −262; strata DIALOG; not movable; `SOUNDKIT.IG_MAINMENU_OPEN` once on arrival.
 - **Focus:** the box takes the focus only out of combat, standing still, with no chat input open and no other box
-  focused; else it arrives unfocused (grey text, a mouse cap first) and one click focuses and selects. While
+  focused (CF-93: only a chat input being typed in counts); else it arrives unfocused (grey text, a mouse cap first) and one click focuses and selects. While
   focused, Ctrl, C, Enter and Esc work; any other key releases the focus.
 - **Keys light only on events:** Ctrl+C on the box's OnKeyDown; Enter on its OnEnterPressed (it releases the focus,
   the window stays, nothing opens the chat: deviation A); Ctrl+V when a chat input's text becomes the command

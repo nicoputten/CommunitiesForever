@@ -97,6 +97,22 @@ Two accounts with this build, A and B, in the community (or guild) picked on bot
 6. Still in chat: `/cf ask Deadmines` with nobody in range ("Nobody with CommunitiesForever is online ..."), the
    guild invite lines (CF-87 steps), `/cf version`, and `/cf sync debug` lines.
 
+### CF-93 Ctrl+C in the guild invite window
+Two people with this build, as in CF-87/CF-88: Bo online in the guild with invite rights and the guild code set, Ada's
+alt outside any guild. `/console scriptErrors 1` and `/cf sync debug` on Bo (prints `[guild] invite window focus ...`
+lines; `/cf sync debug` again to stop). Each step: Ada's alt logs in (or `/reload`s) to send the request.
+
+| Step | Expected | Status |
+|---|---|---|
+| **The reported case, IM-style chat:** Bo sets Esc › Interface › Social › Chat Style "IM" (Classic style hides the input). Bo presses Enter to open chat, types nothing, presses Esc (or sends a word), stands still. Then the window comes. | The command is highlighted in the box, no mouse cap, no hint. `[guild] invite window focus on arrival: yes (free): ... chat open yes, chat typing no ...` (chat open may be `no`). Ctrl+C lights the first cap and the character window does not open; Ctrl+V into chat pastes `/ginvite <name>`. | open |
+| Same, but Bo is **typing in chat** (input open with the cursor in it) when the window comes | The box stays unfocused (grey text, mouse cap, "Click here, then Ctrl+C" right in the box); Bo's typing goes on in chat. Line: `... no (typing in chat) ...`. Bo presses Enter or Esc to leave chat, stands still: within about a second the box takes the focus and selects the command; mouse cap and hint go (`focus on retry: yes`). | open |
+| Bo **moving** (hold W) when the window comes, keeps moving for 5 s, then stops | Unfocused with the hint while moving; Bo walks on, no key is eaten. About 0.6 s after stopping the box has the focus with the command selected. Line: `... on arrival: no (moving) ...`, then `... on retry: yes ...`. | open |
+| Bo in **combat** when the window comes; combat ends | Unfocused with the hint during combat; once out of combat and standing still the box takes the focus. | open |
+| Box unfocused (moving, as above): Bo clicks the window's **title area or the name line** (not the box), then again with the key row | The box takes the focus and the command is selected; Ctrl+C works. Line: `invite window focus on click: yes`. | open |
+| Box unfocused while Bo types in chat: Bo **clicks the box** | The box takes the focus with the command selected; the chat input keeps what Bo typed (open it again: the text is still there, or it closed as the game does when it loses focus). Ctrl+C copies. | open |
+| Box focused: Bo presses **Shift**, then Alt, then Ctrl+C | The box keeps the focus; Ctrl+C lights the first cap. | open |
+| Box focused: Bo presses **W**, then stands still for 5 s | The box lets go (`[guild] invite window: W let go of the focus`); it does not take the focus back by itself; the hint shows again. A click focuses and selects. | open |
+
 ### CF-88 The guild invite window (designer's flow)
 Two people with this build, as in CF-87: Bo online in the guild with invite rights and the guild code set, Ada's alt
 outside any guild. `/console scriptErrors 1` on both. No addon whisper (menu or Whisper button) before the steps,
@@ -105,7 +121,7 @@ these are the steps it did not cover.
 
 | Step | Expected | Status |
 |---|---|---|
-| Again with Bo **moving** (or in combat, or with the chat input open) when the window comes | The box is not focused, its text grey and not highlighted, and a mouse cap comes first (outlined). Bo's keys keep working for the game. One click on the box: text highlighted, the mouse cap gold, Ctrl+C outlined. Then the flow as above. | open |
+| Again with Bo **moving** (or in combat, or typing in chat) when the window comes | The box is not focused, its text grey and not highlighted, and a mouse cap comes first (outlined). Bo's keys keep working for the game. One click on the box: text highlighted, the mouse cap gold, Ctrl+C outlined. Then the flow as above. (CF-93: it now also takes the focus by itself once Bo is free, see CF-93.) | open |
 | Box focused: Bo presses **W** | The box lets go of the focus (the W is lost once, Bo doesn't walk); the text stays. Typing into the box after a click puts the command back. | open |
 | Window open: **Esc** (box focused, then again with it unfocused out of combat), and the **X** | The window closes; nothing in chat, nothing sent; the alt asks the next member after 2 minutes. | open |
 | Bo without invite rights: Ctrl+C, Enter, Enter, Ctrl+V, Enter | The game's red "You don't have permission to do that."; the window closes at once; Bo's chat: "<alt> (Ada's alt) will ask someone else."; the alt at once: "Asked <next member> for an invite into <guild>." | open |

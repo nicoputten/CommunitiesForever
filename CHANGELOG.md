@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
+  The box takes the keyboard also when your chat input stays on screen (IM-style chat), takes it once you stand
+  still, and says "Click here, then Ctrl+C" until it has it. A click anywhere on the window selects the command.
 - **Quieter chat:** the addon no longer prints "CommunitiesForever:" lines for what a banner or window already
   shows: friends logging in or switching character, friends' level-ups (the LEVEL UP announcement stays), Doomsday
   goals, kills and crowns (the celebration banners and the crown toast stay), planned-run reminders, answers and
