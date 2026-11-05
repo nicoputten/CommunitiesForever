@@ -4,7 +4,7 @@ local wowapi = require("mocks.wowapi")
 describe("Messenger", function()
   local state, ns, addon, Messenger, Protocol, baseline
 
-  local SJAAK, SJAAK_GA = "Sjaakovich#2232", 5
+  local SJAAK, SJAAK_GA = "Solvar#2032", 5
 
   local function load()
     state = wowapi.install()
@@ -155,12 +155,12 @@ describe("Messenger", function()
       local before = #state.bnSent
       deliverSent(SJAAK_GA)
       flush()
-      assert.are.equal("Ping from Ves Doombringer (Sjaakovich#2232), 5000 bytes padding.", state.printed[2])
+      assert.are.equal("Ping from Ves Doombringer (Solvar#2032), 5000 bytes padding.", state.printed[2])
       assert.is_true(#state.bnSent > before)
 
       -- The PONG comes back too.
       deliverSent(SJAAK_GA, before + 1)
-      assert.are.equal("Pong from Ves Doombringer (Sjaakovich#2232) for 5000 bytes.", state.printed[3])
+      assert.are.equal("Pong from Ves Doombringer (Solvar#2032) for 5000 bytes.", state.printed[3])
     end)
 
     it("says when no friend is online", function()

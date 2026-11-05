@@ -2,7 +2,7 @@ local helpers = require("helpers")
 
 describe("Merge", function()
   local Merge
-  local SJAAK = "Sjaakovich#2232"
+  local SJAAK = "Solvar#2032"
 
   local function record(overrides)
     local r = { t = "RECORD", bt = SJAAK, displayName = "Sjaak", version = 2000,

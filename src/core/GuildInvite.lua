@@ -333,12 +333,32 @@ function GuildInvite.isPasted(text, command)
   return trimmed:lower() == command:lower()
 end
 
--- May the copy box take the keyboard focus? Only out of combat, standing still, with no chat input open and no
--- other edit box focused, so it never eats a keypress. ctx = { combat, speed, chatOpen, otherFocus }.
+-- May the copy box take the keyboard focus? Only out of combat, standing still, and while nobody types: no chat input
+-- and no other edit box has the keyboard, so it never eats a keypress. A chat input that is merely open (IM-style chat
+-- keeps it on screen) does not count (CF-93). ctx = { combat, speed, chatOpen, chatTyping, otherFocus }: chatOpen
+-- only for the debug line. Returns ok and the reason: "free", "combat", "moving", "typing in chat", "other box".
+function GuildInvite.focusDecision(ctx)
+  ctx = type(ctx) == "table" and ctx or {}
+  if ctx.combat then return false, "combat" end
+  if type(ctx.speed) == "number" and ctx.speed > 0 then return false, "moving" end
+  if ctx.chatTyping then return false, "typing in chat" end
+  if ctx.otherFocus then return false, "other box" end
+  return true, "free"
+end
+
 function GuildInvite.canFocus(ctx)
-  ctx = ctx or {}
-  if ctx.combat or ctx.chatOpen or ctx.otherFocus then return false end
-  return not (type(ctx.speed) == "number" and ctx.speed > 0)
+  return (GuildInvite.focusDecision(ctx))
+end
+
+-- CF-93: the focus decision as one debug line, e.g. "focus no (moving): combat no, speed 7, chat open yes, ...".
+function GuildInvite.focusText(ctx, when)
+  ctx = type(ctx) == "table" and ctx or {}
+  local ok, reason = GuildInvite.focusDecision(ctx)
+  local function yn(v) return v and "yes" or "no" end
+  return string.format("invite window focus%s: %s (%s): combat %s, speed %s, chat open %s, chat typing %s, "
+    .. "other box %s", when and (" on " .. tostring(when)) or "", yn(ok), reason, yn(ctx.combat),
+    tostring(type(ctx.speed) == "number" and ctx.speed or 0), yn(ctx.chatOpen), yn(ctx.chatTyping),
+    yn(ctx.otherFocus))
 end
 
 -- The window's width for the copy text's width: 400 px, growing with the text up to 520.

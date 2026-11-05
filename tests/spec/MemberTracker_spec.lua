@@ -169,7 +169,7 @@ describe("MemberTracker", function()
       load(nil)
       assert.are.same({}, addon.db.global.members)
       assert.are.same({}, Tracker.roster())
-      assert.is_false(Tracker.belongs("Sjaakovich#2232"))
+      assert.is_false(Tracker.belongs("Solvar#2032"))
     end)
 
     it("is not replaced from a member list that does not list you yet (login)", function()
@@ -185,13 +185,13 @@ describe("MemberTracker", function()
         s.clubs = { { clubId = "999", name = "My Guild", clubType = 2 } } -- this character is in another one only
         s.stored = function(global)
           global.members = { [GARRAKA] = { name = "Garraka Doombringer", seenAt = 1 } }
-          global.people["Sjaakovich#2232"] = { version = 1, chars = { [GARRAKA] = { name = "Garraka Doombringer" } } }
+          global.people["Solvar#2032"] = { version = 1, chars = { [GARRAKA] = { name = "Garraka Doombringer" } } }
         end
       end)
       assert.is_nil(ns.CommunitySelection.active())
       assert.is_not_nil(addon.db.global.members[GARRAKA])
-      assert.is_true(Tracker.belongs("Sjaakovich#2232"))
-      assert.is_not_nil(addon.db.global.people["Sjaakovich#2232"])
+      assert.is_true(Tracker.belongs("Solvar#2032"))
+      assert.is_not_nil(addon.db.global.people["Solvar#2032"])
     end)
 
     it("is not known yet on the first login before the members load, so nobody is dropped", function()
@@ -218,16 +218,16 @@ describe("MemberTracker", function()
     it("cleans up stored data from before CF-89 once the members are known", function()
       loadWith(CLUB, function(s)
         s.stored = function(global)
-          global.people["Sjaakovich#2232"] = { version = 1, chars = { ["Player-4619-0000ALT1"] = { name = "Alt" } } }
+          global.people["Solvar#2032"] = { version = 1, chars = { ["Player-4619-0000ALT1"] = { name = "Alt" } } }
           global.people["Out#1"] = { version = 1, chars = { ["Player-1-0000OUT1"] = { name = "Out Example" } } }
           global.people["aid:aaaaaaaaaaaa"] = { version = 1, chars = { [GARRAKA] = { name = "Garraka Doombringer" } } }
-          global.presence[GARRAKA] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
-          global.presence["Player-4619-0000ALT1"] = { battleTag = "Sjaakovich#2232", lastSeen = 1 }
+          global.presence[GARRAKA] = { battleTag = "Solvar#2032", lastSeen = 1 }
+          global.presence["Player-4619-0000ALT1"] = { battleTag = "Solvar#2032", lastSeen = 1 }
           global.presence["Player-1-0000OUT1"] = { battleTag = "Out#1", lastSeen = 1 }
         end
       end)
       local g = addon.db.global
-      assert.is_not_nil(g.people["Sjaakovich#2232"]) -- belongs through the link of Garraka, even on an alt
+      assert.is_not_nil(g.people["Solvar#2032"]) -- belongs through the link of Garraka, even on an alt
       assert.is_not_nil(g.people["aid:aaaaaaaaaaaa"])
       assert.is_nil(g.people["Out#1"])
       assert.is_not_nil(g.presence["Player-4619-0000ALT1"])

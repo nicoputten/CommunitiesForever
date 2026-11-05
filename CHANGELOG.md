@@ -5,6 +5,18 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.3.2 (2026-11-05)
+- **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
+  The box takes the keyboard also when your chat input stays on screen (IM-style chat), takes it once you stand
+  still, and says "Click here, then Ctrl+C" until it has it. A click anywhere on the window selects the command.
+- **Quieter chat:** the addon no longer prints "CommunitiesForever:" lines for what a banner or window already
+  shows: friends logging in or switching character, friends' level-ups (the LEVEL UP announcement stays), Doomsday
+  goals, kills and crowns (the celebration banners and the crown toast stay), planned-run reminders, answers and
+  updates (the run banners and the start panel stay), and the community picked for you. Their switches are gone from
+  the settings. Guild invite lines, answers to your own commands and clicks, and errors stay in chat.
+- **Fixed:** a friend no longer shows twice in the list, once live and once under "From the website", when the
+  website knows them by another name: a website friend with a character already in your list is not listed again.
+
 ## v1.3.1 (2026-11-05)
 - **Guild members by their Battle.net name:** guild and community members who run the addon now know each other by
   BattleTag, also when they aren't Battle.net friends. Each addon shares only your own BattleTag, and only with the

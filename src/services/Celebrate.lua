@@ -22,7 +22,7 @@ function Celebrate.soundsOn() return addonRef ~= nil and settings().celebrationS
 function Celebrate.friendsOn() return Celebrate.bannersOn() and settings().celebrationFriends ~= false end
 
 -- CF-85: without a community this character is in (none selected, or not a member), Doomsday is tracked quietly:
--- moments are remembered as shown, but no banner, line or sound comes up (the same gate as DoomsdayAlerts' lines).
+-- moments are remembered as shown, but no banner, line or sound comes up (the same gate as the crown toast).
 function Celebrate.quiet() return ns.CommunitySelection.active() == nil end
 
 local function store()

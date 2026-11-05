@@ -30,15 +30,15 @@ describe("Tooltip (CF-14)", function()
 
   it("names the friend and counts their characters", function()
     load()
-    assert.are.same({ "Sjaakovich \194\183 1 character" }, texts(wowapi.hoverUnit(state, GARRAKA)))
+    assert.are.same({ "Solvar \194\183 1 character" }, texts(wowapi.hoverUnit(state, GARRAKA)))
   end)
 
   it("uses the plural and counts alts outside the community too", function()
     load()
-    addon.db.global.people["Sjaakovich#2232"] = { version = 5, displayName = "Sjaak", chars = {
+    addon.db.global.people["Solvar#2032"] = { version = 5, displayName = "Sjaak", chars = {
       ["Player-4619-0000ALT1"] = { name = "Alt One", classFile = "MAGE", level = 3 },
     } }
-    addon:SendMessage(ns.Sync.PEOPLE_UPDATED, "Sjaakovich#2232")
+    addon:SendMessage(ns.Sync.PEOPLE_UPDATED, "Solvar#2032")
     assert.are.same({ "Sjaak \194\183 2 characters" }, texts(wowapi.hoverUnit(state, GARRAKA)))
   end)
 
@@ -59,7 +59,7 @@ describe("Tooltip (CF-14)", function()
   it("falls back to the tooltip's unit when data has no guid", function()
     load()
     _G.UnitGUID = function(unit) return unit == "mouseover" and GARRAKA or VES end
-    assert.are.same({ "Sjaakovich \194\183 1 character" }, texts(wowapi.hoverUnit(state, nil, {})))
+    assert.are.same({ "Solvar \194\183 1 character" }, texts(wowapi.hoverUnit(state, nil, {})))
   end)
 
   it("skips secret GUIDs instead of erroring", function()

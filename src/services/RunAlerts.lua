@@ -1,10 +1,10 @@
 -- RunAlerts: what a planned run brings up in game (CF-48; design docs/design/runs-2026-10/run-start.html).
--- Every RunStart.TICK seconds it checks the runs you organise or answered I'm in or Maybe: at the site's
--- reminder time a chat line; at start time the organiser gets the start panel, everyone else a "Starting now"
--- line with Request invite. CF-63d: banners at the top of the screen 30 and 15 minutes before and at the start
--- (RunBanner, a soft chime), held during combat and battlegrounds (RunStart.release). Chat lines (each kind can be
--- turned off) also say when someone answered your run, a friend is on another character, a Discord ping was
--- queued and runs arrived from a friend. Clickable parts are addon chat links (V47).
+-- Every RunStart.TICK seconds it checks the runs you organise or answered I'm in or Maybe: at start time the
+-- organiser gets the start panel. CF-63d: banners at the top of the screen 30 and 15 minutes before and at the
+-- start (RunBanner, a soft chime; a click opens the run, where everyone else finds Request invite), held during
+-- combat and battlegrounds (RunStart.release). CF-91: no chat lines any more (reminder, starting now, a friend on
+-- another character, answers to your run, a Discord ping queued, runs updated): the banners, the start panel and
+-- the Dungeons tab show them. Only the answers to your own clicks (Request invite) are still said in chat.
 local _, ns = ...
 
 local RunAlerts = {}
@@ -12,34 +12,12 @@ local RunAlerts = {}
 local addonRef, timer
 local last          -- server time of the last check
 local held = {}     -- CF-63d: banners that came due during combat or a battleground
-local links = {}    -- chat link number -> function
-local linkCount = 0
-local ANSWER_LINES = { ["in"] = "%s is in for %s (%s).", maybe = "%s is a maybe for %s (%s).",
-                       cant = "%s can't make %s (%s)." }
-local VIA = { game = "answered in game", discord = "answered on Discord", site = "answered on the website" }
 
 local function settings() return addonRef.db.global.settings end
 local function now() return GetServerTime() end
 
-local function lineOn(kind) return ns.Settings.runLine(kind) end
-
-local function say(kind, text)
-  if lineOn(kind) then addonRef:Print(text) end
-end
-
--- A clickable part of a chat line that runs fn when clicked.
-local function link(text, fn)
-  linkCount = linkCount + 1
-  links[linkCount] = fn
-  return ns.ChatLinks.link("run:" .. linkCount, text)
-end
-
 local function dungeonName(run)
   return ns.Dungeons.runName(run) -- CF-63
-end
-
-local function clock(at)
-  return date and ns.PlannedRuns.clock(at, date) or ""
 end
 
 local function who(a)
@@ -96,13 +74,10 @@ function RunAlerts.inviteReady(run)
   return count
 end
 
--- Queues a Discord ping for a friend who is missing (posted after /reload).
+-- Queues a Discord ping for a friend who is missing (posted after /reload; the start panel says so and has
+-- Reload now).
 function RunAlerts.ping(run, a)
   ns.Planner.ping(run, a)
-  say("ping", string.format("Discord ping for %s queued. It reaches Discord after /reload. %s", who(a),
-    link("Reload now", function()
-      if not ns.Panels.reload() then addonRef:Print("Type /reload to post it now.") end
-    end)))
 end
 
 -- An editable whisper to a friend on another character.
@@ -111,37 +86,6 @@ function RunAlerts.whisperSwitch(run, s)
   if not p then return false end
   local text = ns.RunStart.switchText(dungeonName(run), p.name, s.answer.name or "the character you signed up with")
   return ns.ContextMenu.whisperText(p.name, text)
-end
-
-local function reminder(run, organiser)
-  local mine = ns.PlannedRuns.yourAnswer(run, ns.Planner.me())
-  local yours = organiser and "You organise." or (mine and mine.name and ("You're in as " .. mine.name .. ".")
-    or "You're in.")
-  if mine and mine.answer == "maybe" then yours = "You said maybe." end
-  local minutes = math.floor((run.startsAt - now()) / 60 + 0.5)
-  say("reminder", string.format("%s starts in %d min (%s). %s %s", dungeonName(run), minutes, clock(run.startsAt),
-    yours, link("Open", function() ns.MainFrame.showRun(run.id) end)))
-end
-
-local function starting(run, organiser)
-  if organiser then
-    say("starting", string.format("%s is starting now. %s", dungeonName(run),
-      link("Open the start panel", function() ns.StartPanel.open(run.id) end)))
-    ns.StartPanel.open(run.id)
-    -- Friends on another character, with what to do about it.
-    for _, s in ipairs(ns.RunStart.states(run, ns.Planner.me(), RunAlerts.context())) do
-      if s.state == "other" then
-        say("otherChar", string.format("%s is online on %s, signed up as %s. %s %s", who(s.answer),
-          tostring(s.presence.name), tostring(s.answer.name), link("Whisper", function()
-            RunAlerts.whisperSwitch(run, s)
-          end), link("Invite " .. tostring(s.presence.name), function() RunAlerts.invite(s) end)))
-      end
-    end
-    return
-  end
-  say("starting", string.format("%s is starting now. Invites go out from %s. %s", dungeonName(run),
-    tostring(run.organiser and run.organiser.name or who(run.organiser)),
-    link("Request invite", function() RunAlerts.requestInvite(run) end)))
 end
 
 -- CF-63d: not now: in combat, during an encounter or in a battleground (the banner waits).
@@ -182,7 +126,8 @@ function RunAlerts.check()
   for _, event in ipairs(ns.RunStart.banners(upcoming, me, last, t)) do held[#held + 1] = event end
   last = t
   for _, event in ipairs(due) do
-    if event.kind == "reminder" then reminder(event.run, event.organiser) else starting(event.run, event.organiser) end
+    -- The organiser's start panel; the reminder and everyone else's start are the banners (CF-91).
+    if event.kind == "start" and event.organiser then ns.StartPanel.open(event.run.id) end
   end
   releaseBanners(t)
 end
@@ -199,24 +144,11 @@ end
 
 function RunAlerts.start(addon)
   addonRef = addon
-  last, links, linkCount, held = now(), {}, 0, {}
+  last, held = now(), {}
   if timer then timer:Cancel() end
   timer = nil
   local events = LibStub("AceEvent-3.0"):Embed({})
   events:RegisterMessage(ns.Planner.UPDATED, function() schedule() end)
-  events:RegisterMessage(ns.Planner.ANSWERED, function(_, run, a)
-    local line = ANSWER_LINES[a.answer]
-    if line then
-      say("answered", string.format(line, who(a), dungeonName(run), VIA[a.source] or VIA.game))
-    end
-  end)
-  events:RegisterMessage(ns.Planner.RECEIVED, function(_, updatedAt)
-    say("updated", string.format("Runs updated at %s. Type /reload for newer.", clock(updatedAt)))
-  end)
-  events:RegisterMessage(ns.ChatLinks.CLICKED, function(_, path)
-    local n = tonumber(path:match("^run:(%d+)$") or "")
-    if n and links[n] then links[n]() end
-  end)
   schedule()
 end
 

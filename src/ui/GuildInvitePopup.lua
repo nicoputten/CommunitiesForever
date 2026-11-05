@@ -8,8 +8,11 @@
 --             then opens chat; that key has no cap of its own;
 --   3 Ctrl+V: a chat input's text becomes the command (a post-hook, PASTE_HOOK, V137);
 --   4 Enter:  the game's "You have invited <name>" (the service calls sent()).
--- The copy box takes the focus only when that can't eat a keypress (core/GuildInvite.canFocus); else it arrives
--- unfocused with a mouse cap first, and one click focuses it. Nothing here is secure: no combat handling needed.
+-- The copy box takes the focus only when that can't eat a keypress (core/GuildInvite.focusDecision); else it arrives
+-- unfocused with a mouse cap first and "Click here, then Ctrl+C" in the box, and one click on the box or the window
+-- focuses it. Until then it checks again every 0.3 s and takes the focus once the player has been free (standing
+-- still, out of combat, not typing) for two checks in a row (CF-93). /cf sync debug prints the decisions as [guild]
+-- lines. Nothing here is secure: no combat handling needed.
 local _, ns = ...
 
 local GuildInvitePopup = {}
@@ -20,6 +23,8 @@ local Theme = ns.Theme
 GuildInvitePopup.TITLE = "Guild invite"
 GuildInvitePopup.KEYS_TOOLTIP = "Copy · open chat · paste · send"
 GuildInvitePopup.CTRL, GuildInvitePopup.C, GuildInvitePopup.V, GuildInvitePopup.ENTER = "Ctrl", "C", "V", "Enter"
+-- CF-93: in the box while it isn't focused and nothing is copied yet.
+GuildInvitePopup.HINT = "Click here, then Ctrl+C"
 
 -- CF-88: the Ctrl+V step's chat input hook (V137). Off: that cap stays unlit and step 4 still lands.
 local PASTE_HOOK = true
@@ -28,10 +33,13 @@ local TOP_OFFSET = -262       -- GI02Screen: under the red error lines and the r
 local TITLE_HEIGHT, PAD, GAP, BOX_HEIGHT, CAP_HEIGHT = 30, 12, 10, 32, 22
 local CHECK_AT, FADE_FROM, FADE_TO = 0.15, 0.9, 1.2 -- seconds after "sent"
 local FLASH_SECONDS = 0.4                            -- the gold edge when a request replaces another
+local RETRY_SECONDS, RETRY_CALM = 0.3, 2             -- CF-93: focus again after 2 free checks in a row
 local MOUSE_ATLAS = "newplayertutorial-icon-mouse-leftbutton" -- unverified (V136); a cursor texture without it
 local CHECK_TEXTURE = "Interface\\RaidFrame\\ReadyCheck-Ready"
--- Keys the focused box lets through; any other one releases the focus (that key is lost once).
-local ALLOWED_KEYS = { LCTRL = true, RCTRL = true, CTRL = true, C = true, ENTER = true, ESCAPE = true }
+-- Keys the focused box lets through; any other one releases the focus (that key is lost once). Shift and Alt alone
+-- don't (CF-93: a stray modifier must not cost the focus before Ctrl+C).
+local ALLOWED_KEYS = { LCTRL = true, RCTRL = true, CTRL = true, C = true, ENTER = true, ESCAPE = true,
+                       LSHIFT = true, RSHIFT = true, SHIFT = true, LALT = true, RALT = true, ALT = true }
 
 local popup
 
@@ -155,11 +163,33 @@ end
 
 -- ===== The copy box =====
 
+-- CF-93: a [guild] debug line (/cf sync debug).
+local function trace(text)
+  if ns.GuildInvites and ns.GuildInvites.trace then ns.GuildInvites.trace(text) end
+end
+
+-- May the box take the focus now? when ("arrival", "retry"): also print the decision and why.
+local function decide(when)
+  local ctx = ns.Guild.focusContext(popup.box)
+  local ok = ns.GuildInvite.focusDecision(ctx)
+  if when then trace(ns.GuildInvite.focusText(ctx, when)) end
+  return ok
+end
+
+local function hintWidth()
+  local width = popup.hint.GetStringWidth and popup.hint:GetStringWidth() or 0
+  return (width and width > 0) and width or 140
+end
+
 local function paintBox()
   local box = popup.box
   local focused = box:HasFocus()
   for _, t in ipairs(box.edges) do t:SetColorTexture(Theme.color(focused and "capDoneEdge" or "capEdge")) end
   box:SetTextColor(Theme.color((popup.needsClick and not popup.clicked) and "muted" or "heading"))
+  -- CF-93: "Click here, then Ctrl+C" while unfocused and nothing copied yet; the command keeps clear of it.
+  local hint = not focused and (popup.progress or 0) == 0 and not popup.fading
+  popup.hint:SetShown(hint)
+  box:SetTextInsets(8, hint and (hintWidth() + 16) or 8, 0, 0)
 end
 
 local function focusBox()
@@ -168,6 +198,16 @@ local function focusBox()
   box:SetFocus()
   box:HighlightText()
   paintBox()
+end
+
+-- A click on the box or the window body always focuses and selects. Taking the focus moves it off a chat input
+-- without touching that input (V135).
+local function clickFocus()
+  if not (popup and popup:IsShown()) or popup.fading then return end
+  if not popup.box:HasFocus() then trace("invite window focus on click: yes") end
+  popup.clicked = true
+  focusBox()
+  paintKeys()
 end
 
 -- A step's event: light it (and the ones before it).
@@ -195,12 +235,46 @@ end
 
 local function close() popup:Hide() end
 
+-- ===== CF-93: focus again once the player is free =====
+
+local function stopRetry()
+  if popup.retryTimer then popup.retryTimer:Cancel() end
+  popup.retryTimer, popup.calm = nil, 0
+end
+
+-- Unfocused since arrival, never clicked, nothing copied: a focus the player let go of is never taken back.
+local function waiting()
+  return popup:IsShown() and not popup.fading and popup.needsClick and not popup.clicked
+    and (popup.progress or 0) == 0 and not popup.box:HasFocus()
+end
+
+local function retry()
+  popup.retryTimer = nil
+  if not waiting() then return end
+  popup.calm = decide() and (popup.calm or 0) + 1 or 0
+  if popup.calm >= RETRY_CALM then
+    decide("retry")
+    popup.needsClick, popup.calm = false, 0
+    layoutKeys()
+    focusBox()
+    paintKeys()
+    return
+  end
+  popup.retryTimer = C_Timer.NewTimer(RETRY_SECONDS, retry)
+end
+
+local function startRetry()
+  stopRetry()
+  if waiting() then popup.retryTimer = C_Timer.NewTimer(RETRY_SECONDS, retry) end
+end
+
 local function build()
   popup = CreateFrame("Frame", nil, UIParent)
   popup:SetFrameStrata("DIALOG")
   popup:SetToplevel(true)
   popup:SetClampedToScreen(true)
   popup:EnableMouse(true)
+  popup:SetScript("OnMouseDown", clickFocus) -- CF-93: a click anywhere on the body focuses the box
   popup:SetPoint("TOP", UIParent, "TOP", 0, TOP_OFFSET)
   popup:Hide()
   local bg = Theme.fill(popup, "panel", "BACKGROUND")
@@ -258,11 +332,9 @@ local function build()
     paintBox()
   end)
   box:SetScript("OnEditFocusLost", function() paintBox() end)
-  box:SetScript("OnMouseDown", function()
-    popup.clicked = true
-    focusBox()
-    paintKeys()
-  end)
+  box:SetScript("OnMouseDown", clickFocus)
+  -- The click's own cursor placement can drop the selection: select again when the button comes up.
+  box:SetScript("OnMouseUp", function(self) if self:HasFocus() then self:HighlightText() end end)
   box:SetScript("OnTextChanged", function(self, userInput)
     if userInput and self:GetText() ~= popup.command then
       self:SetText(popup.command or "")
@@ -273,6 +345,7 @@ local function build()
     if key == "C" and ns.Guild.controlDown() then
       step(ns.GuildInvite.STEP_COPY)
     elseif not ALLOWED_KEYS[key] then
+      trace("invite window: " .. tostring(key) .. " let go of the focus")
       self:ClearFocus()
     end
   end)
@@ -282,6 +355,10 @@ local function build()
   end)
   box:SetScript("OnEscapePressed", close)
   popup.box = box
+  popup.hint = Theme.text(box, "small", "goldLight")
+  popup.hint:SetPoint("RIGHT", box, "RIGHT", -8, 0)
+  popup.hint:SetText(GuildInvitePopup.HINT)
+  popup.hint:Hide()
   -- Measures the command's width (the window grows with it).
   popup.measure = popup:CreateFontString(nil, "OVERLAY")
   Theme.font(popup.measure, "body")
@@ -293,6 +370,7 @@ local function build()
   row:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -GAP)
   row:SetPoint("RIGHT", popup, "RIGHT", -PAD, 0)
   row:EnableMouse(true)
+  row:SetScript("OnMouseDown", clickFocus)
   row:SetScript("OnEnter", function(self)
     if not GameTooltip then return end
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
@@ -324,6 +402,7 @@ local function build()
   popup.check:Hide()
 
   popup:SetScript("OnHide", function()
+    stopRetry()
     popup.box:ClearFocus()
     stopFade()
     local onClose = popup.onClose
@@ -336,7 +415,9 @@ end
 -- Size: 400 px wide, growing with the command up to 520; height from the name line (one or two lines).
 local function layout()
   popup.measure:SetText(popup.command)
-  local width = ns.GuildInvite.windowWidth(popup.measure.GetStringWidth and popup.measure:GetStringWidth() or 0)
+  local textWidth = popup.measure.GetStringWidth and popup.measure:GetStringWidth() or 0
+  if popup.needsClick then textWidth = (textWidth or 0) + hintWidth() + 8 end -- CF-93: room for the hint
+  local width = ns.GuildInvite.windowWidth(textWidth)
   popup.who:SetWidth(width - 2 * PAD)
   local whoHeight = popup.who.GetStringHeight and popup.who:GetStringHeight() or 0
   if not whoHeight or whoHeight <= 0 then whoHeight = 18 end
@@ -374,6 +455,7 @@ function GuildInvitePopup.show(opts)
   local name = Theme.rgbCode(r, g, b) .. tostring(opts.name or opts.target) .. "|r"
   popup.who:SetText(ns.GuildInvite.popupText(name, opts.friend))
   popup.box:SetText(command)
+  popup.needsClick = not decide("arrival")
   layout()
   popup:Show()
   if not replacing then
@@ -382,11 +464,11 @@ function GuildInvitePopup.show(opts)
   else
     flash()
   end
-  popup.needsClick = not ns.GuildInvite.canFocus(ns.Guild.focusContext(popup.box))
   if popup.needsClick then popup.box:ClearFocus() else focusBox() end
   layoutKeys()
   paintKeys()
   paintBox()
+  startRetry()
   return true
 end
 
@@ -401,8 +483,10 @@ function GuildInvitePopup.sent()
   if not (popup and popup:IsShown()) or popup.fading then return end
   popup.progress = ns.GuildInvite.STEPS
   paintKeys()
+  stopRetry()
   popup.box:ClearFocus()
   popup.fading, popup.fadeAt = true, 0
+  paintBox()
   popup.checkTimer = C_Timer.NewTimer(CHECK_AT, function()
     popup.checkTimer = nil
     popup.veil:Show()

@@ -25,7 +25,7 @@ Cooking appeared in slot 5 (`2/75`, skillLine 185). First Aid: unknown (no chara
 ## Battle.net presence
 `C_BattleNet.GetFriendAccountInfo(i)` + `C_BattleNet.GetFriendNumGameAccounts(i)` + `C_BattleNet.GetFriendGameAccountInfo(i, j)` work. Example game account:
 `clientProgram="WoW", wowProjectID=18, isOnline=true, characterName="Garraka Doombringer", realmName="ClassicBetaPvP", realmDisplayName="Classic Beta PvP", className="Mage" (LOCALIZED), characterLevel=11, factionName="Horde", playerGuid="Player-4619-01789956", gameAccountID=5`
-`accountInfo.battleTag` = `"Sjaakovich#2232"`.
+`accountInfo.battleTag` = `"Solvar#2032"`.
 
 ## Messaging
 - `C_ChatInfo.RegisterAddonMessagePrefix` works.

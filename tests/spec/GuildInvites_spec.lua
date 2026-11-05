@@ -315,14 +315,21 @@ describe("GuildInvites (CF-84)", function()
       assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
     end)
 
-    it("arrives unfocused in combat, while moving or with chat open: a click focuses and selects", function()
-      for _, case in ipairs({ "combat", "moving", "chat" }) do
+    -- A chat input on screen; typing: it has the keyboard.
+    local function chatInput(typing)
+      return { IsShown = function() return true end, HasFocus = function() return typing end }
+    end
+
+    it("arrives unfocused in combat, while moving or typing in chat: a click focuses and selects", function()
+      for _, case in ipairs({ "combat", "moving", "chat", "other" }) do
         member()
         if case == "combat" then state.inCombat = true end
         if case == "moving" then _G.GetUnitSpeed = function() return 7 end end
-        if case == "chat" then _G.ChatEdit_GetActiveWindow = function() return {} end end
+        if case == "chat" then _G.ChatEdit_GetActiveWindow = function() return chatInput(true) end end
+        if case == "other" then _G.GetCurrentKeyBoardFocus = function() return chatInput(true) end end
         receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
         _G.GetUnitSpeed, _G.ChatEdit_GetActiveWindow, state.inCombat = nil, nil, false
+        _G.GetCurrentKeyBoardFocus = nil
         local box = popup().box
         assert.is_false(box:HasFocus(), case)
         assert.is_falsy(box.highlighted, case)
@@ -331,14 +338,110 @@ describe("GuildInvites (CF-84)", function()
         assert.is_true(popup().mouse.frame:IsShown(), case)
         assert.are.equal("next", popup().mouse.state)
         assert.are.same({ "upcoming", "upcoming", "upcoming", "upcoming" }, caps())
+        -- CF-93: the hint in the box until it is focused.
+        assert.is_true(popup().hint:IsShown(), case)
+        assert.are.equal("Click here, then Ctrl+C", popup().hint:GetText())
         box:RunScript("OnMouseDown")
         assert.is_true(box:HasFocus())
         assert.is_true(box.highlighted)
+        assert.is_false(popup().hint:IsShown(), case)
         assert.are.equal("done", popup().mouse.state)
         assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
         wowapi.uninstall()
       end
       install({ people = PEOPLE }) -- for after_each
+    end)
+
+    -- CF-93: IM-style chat keeps the input on screen (and active) when nobody types in it.
+    it("takes the focus with a chat input on screen that nobody types in, or a hidden box focused", function()
+      member()
+      _G.ChatEdit_GetActiveWindow = function() return chatInput(false) end
+      local hidden = chatInput(true)
+      hidden.IsShown = function() return false end
+      _G.GetCurrentKeyBoardFocus = function() return hidden end
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      _G.ChatEdit_GetActiveWindow, _G.GetCurrentKeyBoardFocus = nil, nil
+      assert.is_true(popup().box:HasFocus())
+      assert.is_true(popup().box.highlighted)
+      assert.is_false(popup().mouse.frame:IsShown())
+      assert.is_false(popup().hint:IsShown())
+    end)
+
+    it("a click on the window body or the key row focuses and selects, also over a chat input", function()
+      for _, part in ipairs({ "body", "row" }) do
+        member()
+        _G.ChatEdit_GetActiveWindow = function() return chatInput(true) end
+        receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+        local box = popup().box
+        assert.is_false(box:HasFocus(), part)
+        local frame = part == "body" and popup() or popup().row
+        frame:RunScript("OnMouseDown")
+        _G.ChatEdit_GetActiveWindow = nil
+        assert.is_true(box:HasFocus(), part)
+        assert.is_true(box.highlighted, part)
+        box.highlighted = false
+        box:RunScript("OnMouseUp") -- the click's cursor placement can drop the selection
+        assert.is_true(box.highlighted, part)
+        wowapi.uninstall()
+      end
+      install({ people = PEOPLE }) -- for after_each
+    end)
+
+    it("takes the focus once the player has stopped moving, never while moving or typing", function()
+      member()
+      local speed = 7
+      _G.GetUnitSpeed = function() return speed end
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local box = popup().box
+      for _ = 1, 4 do wowapi.runTimers(state) end
+      assert.is_false(box:HasFocus()) -- still moving
+      speed = 0
+      _G.ChatEdit_GetActiveWindow = function() return chatInput(true) end
+      for _ = 1, 4 do wowapi.runTimers(state) end
+      assert.is_false(box:HasFocus()) -- typing in chat
+      _G.ChatEdit_GetActiveWindow = nil
+      wowapi.runTimers(state)
+      assert.is_false(box:HasFocus()) -- one free check is not enough
+      wowapi.runTimers(state)
+      assert.is_true(box:HasFocus())
+      assert.is_true(box.highlighted)
+      assert.is_false(popup().mouse.frame:IsShown())
+      assert.is_false(popup().hint:IsShown())
+      assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
+      _G.GetUnitSpeed = nil
+    end)
+
+    it("never takes back a focus the player let go of", function()
+      member()
+      _G.GetUnitSpeed = function() return 7 end
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      _G.GetUnitSpeed = nil
+      local box = popup().box
+      box:RunScript("OnMouseDown")
+      box:RunScript("OnKeyDown", "W")
+      box:RunScript("OnEditFocusLost")
+      assert.is_false(box:HasFocus())
+      for _ = 1, 4 do wowapi.runTimers(state) end
+      assert.is_false(box:HasFocus())
+      assert.is_true(popup().hint:IsShown()) -- nothing copied yet: a click is needed
+    end)
+
+    it("keeps the focus on Shift or Alt alone", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local box = popup().box
+      for _, key in ipairs({ "LSHIFT", "RALT" }) do box:RunScript("OnKeyDown", key) end
+      assert.is_true(box:HasFocus())
+    end)
+
+    it("prints the focus decision and why with /cf sync debug on", function()
+      member()
+      ns.GuildInvites.setDebug(true)
+      _G.GetUnitSpeed = function() return 7 end
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      _G.GetUnitSpeed = nil
+      ns.GuildInvites.setDebug(false)
+      assert.is_true(printed("[guild]|r invite window focus on arrival: no (moving): combat no, speed 7"))
     end)
 
     it("lights each key only on its own event", function()

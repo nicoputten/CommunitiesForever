@@ -329,7 +329,7 @@ describe("sync over the community (CF-28 part 2b)", function()
 
     it("merges a stored aid: copy into a BattleTag person that lists the character", function()
       load(function(global)
-        global.people[DEE_TAG] = { version = 800, via = "Sjaakovich#2232",
+        global.people[DEE_TAG] = { version = 800, via = "Solvar#2032",
           chars = { [DEE_GUID] = { name = DEE, classFile = "ROGUE", level = 19, updatedAt = 800 } } }
         global.people[DEE_AID] = { version = 900, aid = "dddddddddddd",
           chars = { [DEE_GUID] = { name = DEE, classFile = "ROGUE", level = 20, updatedAt = 900 } } }
@@ -345,10 +345,10 @@ describe("sync over the community (CF-28 part 2b)", function()
     it("never lets a member take a Battle.net friend's BattleTag", function()
       load()
       flush()
-      fromDee(deeRecord(950, nil, { btag = "Sjaakovich#2232" }))
+      fromDee(deeRecord(950, nil, { btag = "Solvar#2032" }))
       local people = addon.db.global.people
       assert.is_not_nil(people[DEE_AID])
-      assert.is_nil(people["Sjaakovich#2232"])
+      assert.is_nil(people["Solvar#2032"])
     end)
 
     it("never lets a member take a BattleTag another account has", function()

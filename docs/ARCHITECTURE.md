@@ -66,7 +66,7 @@ CommunitiesForever/
       Feats.lua              the own characters' feats with the site's thresholds and titles, first-seen times (CF-57b)
       Goals.lua              own Doomsday goals: realm offset fallbacks, the reset setting, facts per day and week,
                              the situation for swaps, done marks, cleaning and merging received goals (CF-56)
-      DoomsdayView.lua       what the Doomsday tab, its chat lines and the character card's PvP line show (CF-57)
+      DoomsdayView.lua       what the Doomsday tab and the character card's PvP line show (CF-57)
       Celebrations.lua       celebration banners: moments from goals, feats and friends' records, weights, folding,
                              the waiting queue, remembered keys (CF-67)
       Runs.lua               dungeon/raid/battleground run of the current character: start, bosses, companions,
@@ -106,9 +106,10 @@ CommunitiesForever/
       RunsFile.lua           reads CF_RUNS from Data\Runs.lua once per load, then clears the global (CF-45)
     services/
       FeedTracker.lua        records own activity into self.feed, debounced version bump, share setting (CF-22)
-      DoomsdayAlerts.lua     Doomsday chat lines (goals done, bonus kills, the crown, swaps) and the crown toast (CF-57)
+      DoomsdayAlerts.lua     the crown toast (CF-57; its chat lines are gone, CF-91)
       Celebrate.lua          celebration banners: your goals and feats, friends' big moments, waiting while busy (CF-67)
-      RunAlerts.lua          run reminders and start (15 s checks while runs exist), chat lines with links (CF-48)
+      RunAlerts.lua          run banners and the organiser's start panel (15 s checks while runs exist; CF-48,
+                             CF-63d; no chat lines since CF-91)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
       PvpTracker.lua         chars[guid].pvp, kills by zone, deaths with their cause, duels into the feed (CF-52)
@@ -129,8 +130,8 @@ CommunitiesForever/
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
       Ping.lua               /cf ping test messages (PING/PONG)
       Sync.lua               HELLO / REQ / RECORD flow, dedupe, shared-set version bumps
-      Notify.lua             login notifications in chat (30 s per person, settings.notifications); level-ups
-                             as a chat line (CF-16) and the announcement at the top of the screen (CF-44)
+      Notify.lua             friends' level-ups as the announcement at the top of the screen (CF-16, CF-44;
+                             the login and level-up chat lines are gone, CF-91)
     ui/
       MainFrame.lua          the window (kit shell, CF-39) and its tabs Friends, Activity (CF-22), Dungeons (CF-24)
       FriendsTab.lua         Friends tab on native kit frames (CF-40): search, people and characters, card
@@ -222,7 +223,8 @@ global = {
   schemaVersion = 2,                                 -- 2: CF-47 pending
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 clubType = nil,                      -- CF-83: its club type, remembered like the name (2: guild)
-                notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
+                notifications = true,                -- CF-15 (and levelUps, CF-16): chat lines; unused since CF-91
+                minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
                 chatColor = { r, g, b },             -- CF-25: community chat color (nil: default purple)
@@ -236,11 +238,10 @@ global = {
                 openOnLogin = false,                 -- CF-43: open the window after login
                 ambientEffects = true,               -- CF-43: title shimmer and LEVEL UP shine
                 levelUpToast = true,                 -- CF-44: the level-up announcement
-                doomsdayChat = true,                 -- CF-57: Doomsday's chat lines (nil = on)
+                doomsdayChat = true,                 -- CF-57: Doomsday's chat lines; unused since CF-91
                 doomsdayReset,                       -- CF-56: the reset setting (runs file or a friend's HELLO)
                 runToasts, runSound,                 -- CF-48: run notes and their chime (nil = on)
-                runLines = { [kind] = false },       -- CF-48: run chat lines turned off (reminder, answered, starting,
-                                                     -- otherChar, ping, updated)
+                runLines = { [kind] = false },       -- CF-48: run chat lines turned off; unused since CF-91
                 celebrations, celebrationSounds, celebrationFriends }, -- CF-67: banners, sounds, friends' lines
                                                      -- (nil = on)
   self      = { battleTag, displayName, version, chars = { [guid] = Char },

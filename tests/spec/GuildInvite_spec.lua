@@ -304,12 +304,30 @@ describe("GuildInvite (CF-84)", function()
     assert.is_false(G.isPasted(nil, "/ginvite Bram Lovewell"))
   end)
 
-  it("takes the focus only out of combat, standing still, with no chat or other box open", function()
+  it("takes the focus only out of combat, standing still, with nobody typing", function()
     assert.is_true(G.canFocus({ speed = 0 }))
+    assert.is_true(G.canFocus(nil))
     assert.is_false(G.canFocus({ combat = true }))
     assert.is_false(G.canFocus({ speed = 7 }))
-    assert.is_false(G.canFocus({ chatOpen = true }))
     assert.is_false(G.canFocus({ otherFocus = true }))
+  end)
+
+  -- CF-93: IM-style chat keeps the input on screen; only typing in it (keyboard focus) blocks.
+  it("takes the focus with a chat input open but not typed in, never while typing in chat", function()
+    assert.is_true(G.canFocus({ speed = 0, chatOpen = true, chatTyping = false }))
+    assert.is_false(G.canFocus({ speed = 0, chatOpen = true, chatTyping = true }))
+    assert.are.same({ false, "typing in chat" }, { G.focusDecision({ chatOpen = true, chatTyping = true }) })
+    assert.are.same({ false, "moving" }, { G.focusDecision({ speed = 7, chatTyping = true }) })
+    assert.are.same({ false, "combat" }, { G.focusDecision({ combat = true }) })
+    assert.are.same({ false, "other box" }, { G.focusDecision({ otherFocus = true }) })
+    assert.are.same({ true, "free" }, { G.focusDecision({ chatOpen = true }) })
+  end)
+
+  it("says the focus decision and why in one debug line", function()
+    assert.are.equal("invite window focus on arrival: no (moving): combat no, speed 7, chat open yes, "
+      .. "chat typing no, other box no", G.focusText({ speed = 7, chatOpen = true }, "arrival"))
+    assert.are.equal("invite window focus: yes (free): combat no, speed 0, chat open no, chat typing no, "
+      .. "other box no", G.focusText(nil))
   end)
 
   it("makes the window 400 px wide, growing with the command up to 520", function()

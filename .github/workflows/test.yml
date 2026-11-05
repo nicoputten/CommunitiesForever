@@ -45,6 +45,13 @@ jobs:
       - name: Release notes placeholder (.pkgmeta manual-changelog)
         run: echo "Dry run" > RELEASE_NOTES.md
 
+      # On a commit that carries a release tag (a back-merge of main), the packager stops with
+      # "Found future tag vX, not packaging" and builds nothing. This dry run only checks the folders,
+      # so drop the local tags on HEAD; the release workflow keeps using the tag.
+      - name: Ignore tags on this commit (dry run only)
+        run: |
+          for t in $(git tag --points-at HEAD); do git tag -d "$t"; done
+
       - name: Package (dry run)
         uses: BigWigsMods/packager@v2
         with:

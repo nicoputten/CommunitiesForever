@@ -7,6 +7,52 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-93 Ctrl+C in the guild invite window copies the command
+Live feedback (v1.3.1, a guild member, 2026-11-05): "I couldn't CTRL-C the guild invite string that popped up. I had
+to manually type it in… Ctrl-C just pops open my character page." The copy box (CF-88) had no keyboard focus, so C
+went to the character window's key binding. Not known yet: whether the text was highlighted or grey, whether they
+clicked the box first, whether their chat is IM style. Touches: `src/core/GuildInvite.lua`, `src/adapters/Guild.lua`,
+`src/ui/GuildInvitePopup.lua`, `src/services/GuildInvites.lua`, the GuildInvite specs, VERIFY.md, CHANGELOG.md.
+- **Focus rule:** a chat input only blocks the focus while it is shown and has the keyboard (`HasFocus`); one that is
+  merely open or active (IM-style chat keeps it on screen) does not. Another edit box blocks only when
+  `GetCurrentKeyBoardFocus` returns one that is shown and isn't the copy box. Combat and moving still block. Every
+  call is guarded.
+- **A click always focuses and selects:** on the box, the window body or the key row; selected again on mouse up.
+  Taking the focus moves it off a chat input without the addon touching that input (V135).
+- **Unfocused state:** besides the mouse cap, "Click here, then Ctrl+C" inside the box (right, gold) while it isn't
+  focused and nothing is copied yet; hidden once focused. The window makes room for it when it arrives unfocused.
+- **Focus again:** while the window waits unfocused since its arrival (never clicked, nothing copied), it checks every
+  0.3 s and takes the focus after two free checks in a row (standing still, out of combat, nobody typing). A focus
+  the player let go of (a key, Enter, a click elsewhere) is never taken back.
+- Shift and Alt alone no longer release the focus.
+- **Debug:** `/cf sync debug` prints each focus decision and why as a `[guild]` line ("invite window focus on
+  arrival: no (moving): combat no, speed 7, chat open yes, chat typing no, other box no"), on a retry, on a click,
+  and the key that let go of the focus.
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-93.
+
+### CF-91 Quiet chat: no "CommunitiesForever:" lines a banner already shows
+Nico (2026-11-05, live on Forever): "I want to remove all of those CommunitiesForever consoles. We show banners for
+login and level up, don't wanna double up like that. No need for the reload also." The addon prints only what has no
+other place.
+- No chat line when a friend comes online or switches character, or a friend's character levels up (CF-15, CF-16).
+  The level-up announcement (CF-44) stays.
+- No Doomsday chat lines (goal done, bonus kill, someone else's crown, a swapped goal). The celebration banners and
+  the crown toast stay.
+- No run chat lines (reminder, starting now, a friend on another character, answers to your run, Discord ping
+  queued, "Runs updated ... /reload"). The run banners and the start panel stay.
+- No "Showing community ..." line when the addon picks the only community by itself.
+- Kept: the guild invite lines (CF-87/88), answers to `/cf` commands and to the player's own clicks, errors and
+  refusals, `/reload` hints where the player otherwise waits for nothing (an ask posted on Discord, a failed Reload
+  now), and debug output (`/cf sync debug`, `/cf activity debug`, `/cf ping`).
+- Decided by Nico (2026-11-05): keep a friend's group ask with [Join] [Later] [No], the answers to your own ask
+  (with [Invite]) and the update notices ("A newer version … is available", "A friend uses a newer … version");
+  dropping "Showing community …" is fine.
+- Switches that only turned a removed line on or off are gone from the settings window, the options and the setup
+  (When friends log in, Announce friends' level-ups, Doomsday in chat, the six run chat lines). Their stored values
+  stay, unused (rule 8: older versions still read them).
+- Manual: VERIFY.md CF-91.
+
 ### CF-88 The guild invite window (designer's flow)
 Stacked on CF-87 (PR #201). The designer's boards GI01Window (the member's window, all states), GI02Screen (placement
 at 1920×1080 and 3440×1440) and GI03Alt (the alt's chat lines), and the designer's brief, with Nico's deviations
@@ -20,7 +66,7 @@ GuildInvite specs, `tools/FriendProbe/`, VERIFY.md, CHANGELOG.md.
   1 px edges, 3 px bottom edge; done gold fill, next gold outline, upcoming grey); tooltip "Copy · open chat · paste
   · send". `TOP` of UIParent, 0, −262; strata DIALOG; not movable; `SOUNDKIT.IG_MAINMENU_OPEN` once on arrival.
 - **Focus:** the box takes the focus only out of combat, standing still, with no chat input open and no other box
-  focused; else it arrives unfocused (grey text, a mouse cap first) and one click focuses and selects. While
+  focused (CF-93: only a chat input being typed in counts); else it arrives unfocused (grey text, a mouse cap first) and one click focuses and selects. While
   focused, Ctrl, C, Enter and Esc work; any other key releases the focus.
 - **Keys light only on events:** Ctrl+C on the box's OnKeyDown; Enter on its OnEnterPressed (it releases the focus,
   the window stays, nothing opens the chat: deviation A); Ctrl+V when a chat input's text becomes the command
@@ -66,6 +112,14 @@ API-FINDINGS.md, CHANGELOG.md.
 - No change to stored data or message fields (rule 8).
 - Manual (VERIFY.md CF-87).
 
+### CF-92 A website friend listed twice
+Nico (2026-11-05): a Battle.net friend without the addon showed twice in the Friends list: live (Battle.net and
+the guild) and under "From the website", because the site names them by their site display name and the addon only
+matched display names. Now a website friend with a character (by name, any case) already in the list (people or
+Unlinked) is not listed again (`Format.tree`). No change to stored data or messages (rule 8).
+- [x] A website friend with another name but a known character is not listed under "From the website"
+- [x] Unit test in `Format_spec`
+
 ### CF-90 Guild members known by their BattleTag
 From Nico at launch (2026-11-05): a member reached only over the guild or community (not a Battle.net friend) is
 stored under `aid:<accountId>`, because no BattleTag travels over the community (CF-28). The site can't group them
@@ -88,6 +142,8 @@ VERIFY.md, CHANGELOG.md.
 - Manual (VERIFY.md CF-90).
 - Decided by Nico (2026-11-05): each addon shares its own BattleTag over the guild or community; guild members may
   see each other's BattleTags.
+- Decided by Nico (2026-11-05): guild members known by BattleTag take part in the Doomsday Board, Ladder and
+  celebration banners like friends (those skip only `aid:` keys).
 
 ### CF-89 Only the group takes part
 Bug from Nico at launch (2026-11-05): `PresenceTracker` / `Friends.recordPresence` wrote `presence` for every

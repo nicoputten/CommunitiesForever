@@ -150,8 +150,25 @@ function Format.tree(view, siteFriends)
   for _, n in ipairs(online) do nodes[#nodes + 1] = n end
   for _, n in ipairs(offline) do nodes[#nodes + 1] = n end
   -- CF-62: friends the website knows who haven't synced (CF-65: under "From the website", their character count).
+  -- CF-92: the site names people by their site display name, which can differ from the one the addon knows
+  -- ("Ada Lovelace" vs "Ada"), so a friend with a character already in the list is not listed again.
+  local knownChars = {}
+  for _, person in ipairs(view.people) do
+    for _, c in ipairs(person.chars) do
+      if type(c.name) == "string" then knownChars[c.name:lower()] = true end
+    end
+  end
+  for _, c in ipairs(view.unlinked) do
+    if type(c.name) == "string" then knownChars[c.name:lower()] = true end
+  end
+  local function hasKnownChar(f)
+    for _, c in ipairs(f.chars or {}) do
+      if type(c.name) == "string" and knownChars[c.name:lower()] then return true end
+    end
+    return false
+  end
   for _, f in ipairs(siteFriends or {}) do
-    if not synced[f.name:lower()] then
+    if not synced[f.name:lower()] and not hasKnownChar(f) then
       nodes[#nodes + 1] = { value = Format.SITE .. f.name, text = f.name, website = true, count = #f.chars,
                             children = {}, section = "website" }
     end
@@ -310,21 +327,6 @@ function Format.contextMenu(view, path)
     end
   end
   return nil
-end
-
--- Login notification (CF-15): "Alice is online on Alice Example (Mage 11)".
--- character = { name, className, level }; className and level are left out when unknown.
-function Format.loginNotice(displayName, character)
-  local details = {}
-  if character.className and character.className ~= "" then details[#details + 1] = character.className end
-  if character.level then details[#details + 1] = tostring(character.level) end
-  local suffix = #details > 0 and (" (" .. table.concat(details, " ") .. ")") or ""
-  return string.format("%s is online on %s%s", tostring(displayName), tostring(character.name), suffix)
-end
-
--- Level-up announcement (CF-16): "Alice's Alice Example reached level 12".
-function Format.levelUpNotice(displayName, characterName, level)
-  return string.format("%s's %s reached level %s", tostring(displayName), tostring(characterName), tostring(level))
 end
 
 Format.TOOLTIP_UNLINKED = "CommunitiesForever member"
