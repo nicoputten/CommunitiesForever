@@ -88,6 +88,8 @@ VERIFY.md, CHANGELOG.md.
 - Manual (VERIFY.md CF-90).
 - Decided by Nico (2026-11-05): each addon shares its own BattleTag over the guild or community; guild members may
   see each other's BattleTags.
+- Decided by Nico (2026-11-05): guild members known by BattleTag take part in the Doomsday Board, Ladder and
+  celebration banners like friends (those skip only `aid:` keys).
 
 ### CF-89 Only the group takes part
 Bug from Nico at launch (2026-11-05): `PresenceTracker` / `Friends.recordPresence` wrote `presence` for every
