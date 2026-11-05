@@ -52,17 +52,6 @@ describe("Run alerts (CF-48)", function()
     return "\n" .. table.concat(list, "\n") .. "\n"
   end
 
-  local function clickLink(label)
-    for _, line in ipairs(state.printed) do
-      local path = line:match("|Haddon:CommunitiesForever:([^|]+)|h%[" .. label:gsub("%p", "%%%0") .. "%]|h")
-      if path then
-        addon:SendMessage(ns.ChatLinks.CLICKED, path)
-        return true
-      end
-    end
-    return false
-  end
-
   -- Ves organises the Deadmines at NOW + 1 h; Sjaak (Garraka) is in. Sjaak organises Wailing Caverns at
   -- NOW + 2 h; Ves is in.
   local function runs(garrakaGuid)
@@ -84,13 +73,11 @@ describe("Run alerts (CF-48)", function()
     _G.CF_RUNS, _G.C_PartyInfo, _G.ReloadUI = nil, nil, nil
   end)
 
-  it("reminds at the site's reminder time: a chat line, the banner (CF-63d) and its Open", function()
+  it("reminds with the banner (CF-63d) and its Open, not in chat (CF-91)", function()
     load(runs())
     state.printed = {}
     advance(NOW + 3600 - 1800)
-    local all = printed()
-    assert.is_truthy(all:find("The Deadmines starts in 30 min (" .. os.date("%H:%M", NOW + 3600) .. "). "
-      .. "You organise. [Open]", 1, true))
+    assert.are.same({}, state.printed)
     local banner = ns.RunBanner.frame()
     assert.is_true(banner.shown)
     assert.are.same({ "In 30 minutes", "The Deadmines", "Ves Doombringer \194\183 " .. os.date("%H:%M", NOW + 3600) },
@@ -102,24 +89,16 @@ describe("Run alerts (CF-48)", function()
     assert.are.same({ "invites", true }, { shown[#shown].kind, shown[#shown].invite })
     banner:RunScript("OnClick")
     assert.are.equal("run:r1", addon.db.global.settings.dungeonTree.selected)
-    assert.is_truthy(clickLink("Open"))
-    -- Only once.
-    state.printed = {}
-    advance(NOW + 3600 - 1700)
-    assert.is_falsy(printed():find("starts in", 1, true))
+    assert.are.same({}, state.printed)
   end)
 
-  it("leaves out the note and the line when turned off", function()
-    load(runs(), function(g)
-      g.settings.runToasts = false
-      g.settings.runLines = { reminder = false }
-    end)
+  it("leaves out the note when turned off", function()
+    load(runs(), function(g) g.settings.runToasts = false end)
     state.printed = {}
     advance(NOW + 3600 - 1800)
-    assert.is_falsy(printed():find("starts in", 1, true))
+    assert.are.same({}, state.printed)
     assert.is_nil(ns.RunBanner.frame())
-    ns.Settings.option("runLine_reminder").set({}, true)
-    assert.is_nil(addon.db.global.settings.runLines.reminder)
+    assert.is_nil(ns.Settings.option("runLine_reminder")) -- CF-91: the run chat line switches are gone
   end)
 
   it("opens the start panel for the organiser: invite everyone ready, ping the missing", function()
@@ -136,8 +115,7 @@ describe("Run alerts (CF-48)", function()
     ns.StartPanel.buttons()["Ping on Discord"]:RunScript("OnClick")
     local ping = addon.db.global.pending[1]
     assert.are.same({ "ping", "r1", "Ada#1001" }, { ping.kind, ping.run, ping.battleTag })
-    assert.is_truthy(printed():find("Discord ping for Ada Lovewell queued. It reaches Discord after /reload. "
-      .. "[Reload now]", 1, true))
+    assert.are.same({}, state.printed) -- CF-91: the panel says it, not chat
     assert.is_truthy(panelText():find("ping queued", 1, true))
     assert.is_truthy(ns.StartPanel.buttons()["Reload now"])
     assert.is_false(ns.StartPanel.buttons()["Ping everyone missing on Discord"].enabled)
@@ -152,28 +130,31 @@ describe("Run alerts (CF-48)", function()
     assert.is_false(ns.StartPanel.buttons()["Invite everyone ready (0)"].enabled)
   end)
 
-  it("says when a friend is on another character, with Whisper and Invite instead", function()
+  it("shows a friend on another character in the start panel, with Whisper and Invite instead", function()
     load(runs("Player-4619-0000ALT1"))
     state.printed = {}
     advance(NOW + 3600)
-    local all = printed()
-    assert.is_truthy(all:find("Garraka Doombringer is online on Garraka Doombringer, signed up as Garraka Doombringer. "
-      .. "[Whisper] [Invite Garraka Doombringer]", 1, true))
+    assert.are.same({}, state.printed) -- CF-91: no chat line
     assert.is_truthy(panelText():find("online, but on Garraka Doombringer (20)", 1, true))
-    assert.is_truthy(clickLink("Invite Garraka Doombringer"))
-    assert.are.same({ "Garraka Doombringer" }, invited)
+    local whisper
+    for label in pairs(ns.StartPanel.buttons()) do
+      if label:find("^Whisper ") then whisper = label end
+    end
+    assert.is_truthy(whisper)
   end)
 
-  it("tells everyone else it starts, with Request invite", function()
+  it("shows everyone else the start banner; the run's start panel has Request invite", function()
     load(runs())
+    state.printed = {}
     advance(NOW + 7200)
     local shown = ns.RunBanner.shown()
     assert.are.same({ "start", "Starting now", "Wailing Caverns", false },
       { shown[#shown].kind, shown[#shown].title, shown[#shown].name, shown[#shown].invite })
-    assert.is_truthy(printed():find("Wailing Caverns is starting now. Invites go out from Garraka Doombringer. "
-      .. "[Request invite]", 1, true))
-    assert.is_truthy(clickLink("Request invite"))
+    assert.are.same({}, state.printed) -- CF-91: no "starting now" line
+    ns.StartPanel.open("r2")
+    ns.StartPanel.buttons()["Request invite"]:RunScript("OnClick")
     assert.are.same({ "Garraka Doombringer" }, requested)
+    assert.is_truthy(printed():find("Asked Garraka Doombringer for an invite.", 1, true)) -- the click's answer
   end)
 
   it("holds banners during combat, then shows only the latest still worth showing (CF-63d)", function()
@@ -189,7 +170,7 @@ describe("Run alerts (CF-48)", function()
     assert.are.equal("invites", shown[1].kind) -- the 30-minute one is not shown any more
   end)
 
-  it("announces answers to your run and runs from a friend", function()
+  it("says nothing in chat about answers to your run or runs from a friend (CF-91)", function()
     load(runs())
     state.printed = {}
     addon:SendMessage(ns.Messenger.RECEIVED, { t = "RUNANSWER", run = "r1", answer = "maybe", guid = GARRAKA,
@@ -198,9 +179,6 @@ describe("Run alerts (CF-48)", function()
     newer.updatedAt = NOW
     newer.runs[1].answers[3] = { battleTag = "Ada#1001", name = "Ada Lovewell", answer = "cant", source = "discord" }
     ns.Planner.receive(newer)
-    local all = printed()
-    assert.is_truthy(all:find("Garraka Doombringer is a maybe for The Deadmines (answered in game).", 1, true))
-    assert.is_truthy(all:find("Ada Lovewell can't make The Deadmines (answered on Discord).", 1, true))
-    assert.is_truthy(all:find("Runs updated at " .. os.date("%H:%M", NOW) .. ". Type /reload for newer.", 1, true))
+    assert.are.same({}, state.printed)
   end)
 end)

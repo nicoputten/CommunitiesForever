@@ -713,10 +713,24 @@ describe("Sync", function()
                                                        updatedAt = updatedAt or version } }))
     end
 
-    it("announces a friend's character reaching a new level", function()
+    -- CF-44: the announcement at the top of the screen. CF-91: no chat line any more.
+    local function toasts()
+      local list = {}
+      for i, text in ipairs(ns.LevelUpToast.shown()) do
+        list[i] = (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+      end
+      return list
+    end
+
+    it("announces a friend's character reaching a new level at the top of the screen, not in chat", function()
       loadWithAlt()
       levelTo(31, 5000)
-      assert.are.same({ "Sjaak's Alt Doombringer reached level 31" }, state.printed)
+      assert.are.same({ "Sjaak's Alt Doombringer reached level 31" }, toasts())
+      assert.are.same({}, state.printed)
+      local toast = ns.LevelUpToast.frame()
+      assert.are.equal("LEVEL UP", toast.chip.text:GetText())
+      assert.are.equal("ROGUE", toast.portrait.classFile) -- from the member's classID
+      assert.is_false(toast.shown) -- gone after its 6 seconds (the spec ran the timers)
     end)
 
     it("stays quiet for unchanged levels and characters seen for the first time", function()
@@ -726,56 +740,21 @@ describe("Sync", function()
         [SJAAK_ALT] = { guid = SJAAK_ALT, name = "Alt Doombringer", level = 30, updatedAt = 5001 },
         ["Player-4619-0000NEW9"] = { guid = "Player-4619-0000NEW9", name = "Brand New", level = 9, updatedAt = 5001 },
       }))
-      assert.are.same({}, state.printed)
+      assert.are.same({}, toasts())
     end)
 
-    it("stays quiet for level-ups older than 15 minutes (late relayed records)", function()
-      loadWithAlt()
-      state.serverTime = 5000 + 16 * 60
-      levelTo(31, 5001, 5000)
-      assert.are.same({}, state.printed)
-    end)
-
-    it("can be switched off in settings", function()
-      loadWithAlt()
-      ns.Settings.options().args.levelUps.set({}, false)
-      levelTo(31, 5000)
-      assert.are.same({}, state.printed)
-    end)
-
-    -- CF-44: the announcement at the top of the screen, by the same rules as the chat line.
-    local function toasts()
-      local list = {}
-      for i, text in ipairs(ns.LevelUpToast.shown()) do
-        list[i] = (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
-      end
-      return list
-    end
-
-    it("shows the level-up at the top of the screen too", function()
-      loadWithAlt()
-      levelTo(31, 5000)
-      assert.are.same({ "Sjaak's Alt Doombringer reached level 31" }, toasts())
-      local toast = ns.LevelUpToast.frame()
-      assert.are.equal("LEVEL UP", toast.chip.text:GetText())
-      assert.are.equal("ROGUE", toast.portrait.classFile) -- from the member's classID
-      assert.is_false(toast.shown) -- gone after its 6 seconds (the spec ran the timers)
-    end)
-
-    it("shows no announcement when it is off or old, and works without the chat line", function()
+    it("shows no announcement when it is off or old", function()
       loadWithAlt()
       ns.Settings.options().args.levelUpToast.set({}, false)
       levelTo(31, 5000)
       assert.are.same({}, toasts())
-      assert.are.same({ "Sjaak's Alt Doombringer reached level 31" }, state.printed) -- the chat line stays
       ns.Settings.options().args.levelUpToast.set({}, true)
-      ns.Settings.options().args.levelUps.set({}, false)
       state.serverTime = 5000 + 16 * 60
       levelTo(32, 5002, 5001)
-      assert.are.same({}, toasts()) -- older than 15 minutes
+      assert.are.same({}, toasts()) -- older than 15 minutes (late relayed records)
       levelTo(33, 5003, state.serverTime)
       assert.are.same({ "Sjaak's Alt Doombringer reached level 33" }, toasts())
-      assert.are.equal(1, #state.printed) -- no second chat line
+      assert.are.same({}, state.printed)
     end)
   end)
 

@@ -11,8 +11,6 @@ CommunitySelection.CHANGED = "CF_COMMUNITY_CHANGED"
 -- Internal message: (passive). Sent when the addon turns passive or active (see Clubs.passive).
 CommunitySelection.PASSIVE_CHANGED = "CF_PASSIVE_CHANGED"
 
-CommunitySelection.AUTO_NOTICE = "Showing community %s. Change it with /cf settings."
-
 local addonRef
 local initialClubsLoaded = false
 local available = true
@@ -68,9 +66,9 @@ local function setClub(clubId)
   refreshAvailability()
 end
 
+-- CF-91: quietly (the window shows the community; the "Showing community ..." chat line is gone).
 local function autoSelect(club)
   setClub(club.clubId)
-  addonRef:Print(string.format(CommunitySelection.AUTO_NOTICE, tostring(club.name)))
 end
 
 -- With nothing selected: pick the one just joined, or the only community (a character community or the guild).

@@ -168,25 +168,8 @@ function Settings.options()
           if ok then ns:Print(ns.GuildInvites.SET) elseif message then ns:Print(message) end
         end,
       },
-      notifications = {
-        type = "toggle",
-        order = 4,
-        width = "full",
-        name = "When friends log in", -- CF-43: the design's words
-        desc = "A chat line when a friend in the community comes online in Forever or switches character.",
-        get = function() return ns.db.global.settings.notifications ~= false end,
-        set = function(_, value) ns.db.global.settings.notifications = value end,
-      },
-      levelUps = {
-        type = "toggle",
-        order = 5,
-        width = "full",
-        name = "Announce friends' level-ups",
-        desc = "A chat line when a character of a friend in the community reaches a new level "
-          .. "(friends running CommunitiesForever).",
-        get = function() return ns.db.global.settings.levelUps ~= false end,
-        set = function(_, value) ns.db.global.settings.levelUps = value end,
-      },
+      -- CF-91: "When friends log in" and "Announce friends' level-ups" (chat lines) are gone; the stored
+      -- settings.notifications and settings.levelUps stay, unused.
       -- CF-44: the announcement at the top of the screen.
       levelUpToast = {
         type = "toggle",
@@ -197,18 +180,7 @@ function Settings.options()
         get = function() return ns.db.global.settings.levelUpToast ~= false end,
         set = function(_, value) ns.db.global.settings.levelUpToast = value end,
       },
-      -- CF-57: Doomsday's chat lines (goals done, bonus kills, the crown, swaps).
-      doomsdayChat = {
-        type = "toggle",
-        order = 5.15,
-        width = "full",
-        name = "Doomsday in chat",
-        desc = "Chat lines when you finish a Doomsday goal, a kill is worth bonus points, someone takes the crown "
-          .. "or a goal is swapped for you.",
-        help = "Goals done, bonus kills, the crown",
-        get = function() return ns.db.global.settings.doomsdayChat ~= false end,
-        set = function(_, value) ns.db.global.settings.doomsdayChat = value end,
-      },
+      -- CF-91: "Doomsday in chat" is gone (settings.doomsdayChat stays stored, unused).
       -- CF-67: the celebration banners (board CB09); `tip` is the switch's tooltip.
       celebrations = {
         type = "toggle",
@@ -309,21 +281,7 @@ function Settings.options()
   }
   options.args.roles = Settings.rolesGroup()
   options.args.chat = Settings.chatGroup()
-  -- CF-48: one switch per kind of planned-run chat line (settings.runLines[kind] = false when off).
-  for i, line in ipairs(Settings.RUN_LINES) do
-    options.args["runLine_" .. line.kind] = {
-      type = "toggle",
-      order = 7 + i / 10,
-      width = "full",
-      name = line.name,
-      get = function() return Settings.runLine(line.kind) end,
-      set = function(_, value)
-        local s = ns.db.global.settings
-        s.runLines = s.runLines or {}
-        if value then s.runLines[line.kind] = nil else s.runLines[line.kind] = false end
-      end,
-    }
-  end
+  -- CF-91: the switches per planned-run chat line are gone (settings.runLines stays stored, unused).
   return options
 end
 
@@ -338,21 +296,6 @@ function Settings.guildCodeStatus()
   local at = ns.GuildInvites.codeSetAt()
   if not at then return Settings.GUILD_CODE_NONE end
   return string.format(Settings.GUILD_CODE_SET, date("%Y-%m-%d %H:%M", at))
-end
-
--- CF-48: the planned-run chat lines that can be turned off.
-Settings.RUN_LINES = {
-  { kind = "reminder", name = "Run starts soon" },
-  { kind = "answered", name = "Someone answered your run" },
-  { kind = "starting", name = "Run starting now" },
-  { kind = "otherChar", name = "Friend on another character" },
-  { kind = "ping", name = "Discord ping queued" },
-  { kind = "updated", name = "Runs updated" },
-}
-
-function Settings.runLine(kind)
-  local lines = ns.db.global.settings.runLines
-  return not (type(lines) == "table" and lines[kind] == false)
 end
 
 -- CF-43: the page under Options › AddOns: a line and a button that opens the settings window.

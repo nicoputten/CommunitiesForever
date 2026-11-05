@@ -108,19 +108,18 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     assert.is_truthy(texts():find("in 23 h 59 m\n", 1, true))
   end)
 
-  it("says a daily is done in chat, and keeps quiet with the setting off", function()
+  it("says nothing in chat when a daily is done (CF-91: the banner shows it)", function()
     local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local n = dayWith(D, "d.quests10")
     load(function(s) s.serverTime = D.dayStart(n, CET, RESET) + 3600 end)
-    for _ = 1, 10 do quest() end
-    assert.is_true(printed("Daily done: Finish 10 quests (+3 PvE, 1 of 3 today)")) -- CF-77: pool version 2's size
-    ns.Settings.options().args.doomsdayChat.set({}, false)
     state.printed = {}
     for _ = 1, 10 do quest() end
+    assert.is_true(addon.db.global.self.goals.days[n].done["d.quests10"] ~= nil)
     assert.are.same({}, state.printed)
+    assert.is_nil(ns.Settings.options().args.doomsdayChat) -- CF-91: the switch is gone
   end)
 
-  it("shows the toast when you take the crown, and says it when someone else has it", function()
+  it("shows the toast when you take the crown, and nothing when someone else has it", function()
     local D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
     local n = dayWith(D, "d.quests10")
     local start = D.dayStart(n, CET, RESET)
@@ -149,7 +148,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     local goals = { days = { [n] = { set = set, done = done, at = start + 10 } }, weeks = {} }
     addon.db.global.people[bt] = { displayName = "Mira", version = 1, chars = {}, goals = goals }
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
-    assert.is_true(printed("Mira finished Doomsday first today. You're at 0 of 5.")) -- CF-61: with the Duel slot
+    assert.is_false(printed("Mira finished Doomsday first today. You're at 0 of 5.")) -- CF-91: no chat line
     assert.are.equal(0, #ns.CrownToast.shown())
   end)
 

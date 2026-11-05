@@ -1,19 +1,12 @@
--- Notify: chat lines for linked friends: coming online or switching character (CF-15), and their
--- characters levelling up (CF-16, from accepted records).
---   "Alice is online on Alice Example (Mage 11)"
--- Only for people linked in the selected community, never for yourself, at most once per person
--- per 30 s, and only when settings.notifications is on (default). Friends already online at login
--- are the baseline and produce no message (CF-07).
+-- Notify: friends' characters levelling up (CF-16, from accepted records), as the announcement at the top of the
+-- screen (CF-44, settings.levelUpToast). Only for people linked in the selected community, never for yourself.
+-- CF-91: no chat lines any more (the "came online", "switched character" and level-up lines are gone: Battle.net's
+-- own toast and the announcement show them already).
 local _, ns = ...
 
 local Notify = {}
 
-local REPEAT_SECONDS = 30
--- Friends already online at login are the baseline, but Battle.net can fill in their game accounts a few seconds
--- later (PresenceTracker reads them again 5 and 30 s after login): no "came online" lines until then.
-Notify.LOGIN_QUIET = 35
-
-local addonRef, lastNotified, startedAt
+local addonRef
 
 local function linkedPerson(battleTag)
   for _, person in ipairs(ns.ViewModel.build(addonRef).people) do
@@ -21,45 +14,19 @@ local function linkedPerson(battleTag)
   end
 end
 
-local function notify(battleTag)
-  if addonRef.db.global.settings.notifications == false then return end
-  if ns.CommunitySelection.passive() then return end
-  local now = GetServerTime()
-  if now - startedAt < Notify.LOGIN_QUIET then return end
-  local last = lastNotified[battleTag]
-  if last and now - last < REPEAT_SECONDS then return end
-
-  local person = linkedPerson(battleTag)
-  local online = ns.Sync.online()[battleTag] -- CF-28: also community peers
-  if not person or not online then return end
-  local className = online.className or select(2, ns.Classes.info(nil, online.classID))
-
-  lastNotified[battleTag] = now
-  addonRef:Print(ns.Format.loginNotice(person.displayName,
-    { name = online.name, className = className, level = online.level }))
-end
-
 -- Level-ups older than this are not announced: relayed records (CF-20) can arrive hours later.
 local LEVEL_UP_MAX_AGE = 15 * 60
 
--- CF-16: "Alice's Alice Example reached level 12" for characters of linked people, in chat
--- (settings.levelUps) and, CF-44, as the announcement at the top of the screen (settings.levelUpToast).
 local function announceLevelUp(battleTag, up)
-  local s = addonRef.db.global.settings
-  local chat, toast = s.levelUps ~= false, s.levelUpToast ~= false
-  if not chat and not toast then return end
+  if addonRef.db.global.settings.levelUpToast == false then return end
   if not up.updatedAt or GetServerTime() - up.updatedAt > LEVEL_UP_MAX_AGE then return end
   local person = linkedPerson(battleTag)
   if not person then return end
   for _, row in ipairs(person.chars) do
     if row.guid == up.guid then
-      local name = row.name or up.name
-      if chat then addonRef:Print(ns.Format.levelUpNotice(person.displayName, name, up.level)) end
-      if toast then
-        local classFile = ns.Classes.info(row.classFile, row.classID)
-        ns.LevelUpToast.announce({ displayName = person.displayName, name = name, classFile = classFile,
-                                   level = up.level })
-      end
+      local classFile = ns.Classes.info(row.classFile, row.classID)
+      ns.LevelUpToast.announce({ displayName = person.displayName, name = row.name or up.name,
+                                 classFile = classFile, level = up.level })
       return
     end
   end
@@ -68,13 +35,8 @@ end
 function Notify.start(addon)
   addonRef = addon
   ns.LevelUpToast.reset()
-  lastNotified = {}
-  startedAt = GetServerTime()
   local events = LibStub("AceEvent-3.0"):Embed({})
-  events:RegisterMessage(ns.PresenceTracker.FRIEND_ONLINE, function(_, battleTag) notify(battleTag) end)
-  events:RegisterMessage(ns.PresenceTracker.FRIEND_SWITCHED, function(_, battleTag) notify(battleTag) end)
   events:RegisterMessage(ns.Sync.LEVEL_UP, function(_, battleTag, up) announceLevelUp(battleTag, up) end)
-  events:RegisterMessage(ns.Sync.PEER_ONLINE, function(_, key) notify(key) end) -- CF-28
 end
 
 ns.Notify = Notify

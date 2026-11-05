@@ -1,9 +1,7 @@
--- DoomsdayAlerts: Doomsday's chat lines and the crown toast (CF-57; board DD07AddonToday, parts 4 and 5).
--- Chat lines (setting "Doomsday in chat", on by default): a daily, the Hunt, the Skirmish or a weekly done, a
--- kill worth bonus points, someone else took the crown, a goal swapped for you. The toast "First to finish
--- today!" when you take the crown (always, but only with a community this character is in, CF-85). Each crown
--- and swap line once per day; swaps are told when the day turns while you play or with the first goal done that
--- day, never at login (three lines at every login is noise).
+-- DoomsdayAlerts: Doomsday's crown toast (CF-57; board DD07AddonToday, part 5). The toast "First to finish today!"
+-- when you take the crown (only with a community this character is in, CF-85), once per day.
+-- CF-91: no chat lines any more (goals done, bonus kills, someone else's crown, swaps): the celebration banners
+-- (CF-67) and the Doomsday tab show them.
 local _, ns = ...
 
 local DoomsdayAlerts = {}
@@ -11,15 +9,6 @@ local DoomsdayAlerts = {}
 local addonRef, events
 
 local function settings() return addonRef.db.global.settings end
-
--- Lines only with the setting on and a community this character is in (passive: no lines at all).
-function DoomsdayAlerts.chatOn()
-  return addonRef ~= nil and settings().doomsdayChat ~= false and ns.CommunitySelection.active() ~= nil
-end
-
-local function say(text)
-  if text and DoomsdayAlerts.chatOn() then addonRef:Print(text) end
-end
 
 -- What was announced today: { day, keys = { [key] = true } } (local, reset when the day turns).
 local function announced(day)
@@ -36,83 +25,25 @@ local function once(day, key)
   return true
 end
 
-local function arrow() return ns.Theme.bundledFonts() and "\226\134\146" or "to" end
-
--- Swaps of today not told yet.
-local function swaps(state)
-  for new, original in pairs(state.today.swapped or {}) do
-    if once(state.day, "swap:" .. new) then
-      say(ns.DoomsdayView.swapLine(ns.DoomsdayView.goalText(original), ns.DoomsdayView.goalText(new), arrow()))
-    end
-  end
-end
-
--- The crown: the toast when it's yours, a chat line when someone else has it.
+-- The crown: the toast when it's yours.
 local function crown(state)
   local c = state.crown
   if not c or not once(state.day, "crown") then return end
-  if c.mine then
-    -- CF-85: no toast without a community this character is in (tracked quietly; told once, so not later either).
-    if ns.CommunitySelection.active() == nil then return end
-    ns.CrownToast.show({
-      title = "First to finish today!",
-      line = "All three dailies done at " .. (date and c.at and ns.DoomsdayView.timeText(c.at, state.dayStart, date)
-        or "?"),
-      flavour = string.format("The crown is yours until %s. Others have been told, gently.",
-        date and ns.DoomsdayView.timeText(ns.Doomsday.dayStart(state.day + 1, ns.DoomsdayTracker.schedule().offset,
-          state.reset), state.dayStart, date) or "the reset"),
-    }, settings().ambientEffects ~= false)
-  else
-    local done, total = ns.DoomsdayView.doneCount(ns.DoomsdayView.rows(state.today, state.progress, state.hunts),
-      #state.duels.done > 0)
-    say(ns.DoomsdayView.crownLine(c.name, done, total))
-  end
+  if not c.mine then return end
+  -- CF-85: no toast without a community this character is in (tracked quietly; told once, so not later either).
+  if ns.CommunitySelection.active() == nil then return end
+  ns.CrownToast.show({
+    title = "First to finish today!",
+    line = "All three dailies done at " .. (date and c.at and ns.DoomsdayView.timeText(c.at, state.dayStart, date)
+      or "?"),
+    flavour = string.format("The crown is yours until %s. Others have been told, gently.",
+      date and ns.DoomsdayView.timeText(ns.Doomsday.dayStart(state.day + 1, ns.DoomsdayTracker.schedule().offset,
+        state.reset), state.dayStart, date) or "the reset"),
+  }, settings().ambientEffects ~= false)
 end
 
-local function currentCharName()
-  local guid = ns.SelfInfo.guid()
-  local c = guid and addonRef.db.global.self.chars[guid]
-  return c and c.name or "you"
-end
-
--- Goals just done (DoomsdayTracker.CHANGED).
-local function goalsDone(newly, weekly)
-  local state = ns.DoomsdayTracker.state()
-  if not state then return end
-  local dailies, doneDailies = 0, 0
-  for _, id in ipairs(state.today.set) do
-    local g = ns.Doomsday.goal(id)
-    if g and g.slot == "daily" then
-      dailies = dailies + 1
-      if state.today.done[id] then doneDailies = doneDailies + 1 end
-    end
-  end
-  -- CF-69: each goal's points in the pool version of its day or week.
-  local dayPool, weekPool = ns.Doomsday.entryPool(state.today), ns.Doomsday.entryPool(state.thisWeek)
-  for _, id in ipairs(newly or {}) do
-    local g = ns.Doomsday.goal(id)
-    local points = ns.Doomsday.pointsFor(id, dayPool)
-    if id == "hunt" then
-      say(ns.DoomsdayView.huntDoneLine(state.hunts and state.hunts[1], currentCharName(), points))
-    elseif g and g.slot == "daily" then
-      say(ns.DoomsdayView.dailyDoneLine(g.text, doneDailies, dailies, points))
-    elseif g and g.slot == "skirmish" then
-      say(ns.DoomsdayView.skirmishDoneLine(g.text, points))
-    end
-  end
-  for _, id in ipairs(weekly or {}) do
-    local g = ns.Doomsday.goal(id)
-    if g then
-      say(ns.DoomsdayView.weeklyDoneLine(g.text, g.slot == "bounty" and "pvp" or "pve",
-        ns.Doomsday.pointsFor(id, weekPool)))
-    end
-  end
-  crown(state)
-  swaps(state)
-end
-
--- A friend's record arrived: they may have taken the crown.
-local function peopleUpdated()
+-- Goals done (DoomsdayTracker.CHANGED) or a friend's record arrived (they may have taken the crown).
+local function check()
   local state = ns.DoomsdayTracker.state()
   if state then crown(state) end
 end
@@ -120,9 +51,8 @@ end
 function DoomsdayAlerts.start(addon)
   addonRef = addon
   events = events or LibStub("AceEvent-3.0"):Embed({})
-  events:RegisterMessage(ns.DoomsdayTracker.CHANGED, function(_, newly, weekly) goalsDone(newly, weekly) end)
-  events:RegisterMessage(ns.DoomsdayTracker.KILL, function(_, scored) say(ns.DoomsdayView.killLine(scored)) end)
-  events:RegisterMessage(ns.Sync.PEOPLE_UPDATED, peopleUpdated)
+  events:RegisterMessage(ns.DoomsdayTracker.CHANGED, check)
+  events:RegisterMessage(ns.Sync.PEOPLE_UPDATED, check)
 end
 
 ns.DoomsdayAlerts = DoomsdayAlerts

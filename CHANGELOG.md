@@ -5,6 +5,13 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Quieter chat:** the addon no longer prints "CommunitiesForever:" lines for what a banner or window already
+  shows: friends logging in or switching character, friends' level-ups (the LEVEL UP announcement stays), Doomsday
+  goals, kills and crowns (the celebration banners and the crown toast stay), planned-run reminders, answers and
+  updates (the run banners and the start panel stay), and the community picked for you. Their switches are gone from
+  the settings. Guild invite lines, answers to your own commands and clicks, and errors stay in chat.
+
 ## v1.3.1 (2026-11-05)
 - **Guild members by their Battle.net name:** guild and community members who run the addon now know each other by
   BattleTag, also when they aren't Battle.net friends. Each addon shares only your own BattleTag, and only with the

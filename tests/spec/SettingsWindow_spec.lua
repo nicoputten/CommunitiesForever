@@ -25,7 +25,8 @@ describe("settings window (CF-43)", function()
 
   it("finds an option by key, also in the Community chat group", function()
     load()
-    assert.are.equal("When friends log in", ns.Settings.option("notifications").name)
+    assert.are.equal("Level-up announcement", ns.Settings.option("levelUpToast").name)
+    assert.is_nil(ns.Settings.option("notifications")) -- CF-91: gone with its chat line
     assert.are.equal("Chat color", ns.Settings.option("color").name)
     assert.is_nil(ns.Settings.option("nope"))
   end)
@@ -55,7 +56,7 @@ describe("settings window (CF-43)", function()
     load()
     ns.Settings.open()
     local args = ns.Settings.options().args
-    for _, key in ipairs({ "groupAsks", "notifications", "levelUps", "alert", "sound",
+    for _, key in ipairs({ "groupAsks", "levelUpToast", "alert", "sound",
                            "keepGeneral", "openOnLogin", "ambientEffects" }) do
       local opt = args[key] or args.chat.args[key]
       local box = control(key)

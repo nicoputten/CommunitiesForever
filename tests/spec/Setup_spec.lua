@@ -157,12 +157,13 @@ describe("setup wizard and Community tab prompt (CF-26)", function()
       assert.are.equal(ns.Onboarding.DEFAULTS[default], box:GetChecked(), key)
     end
     forward()
-    for _, key in ipairs({ "notifications", "levelUps", "minimap" }) do
+    for _, key in ipairs({ "levelUpToast", "minimap" }) do
       local box = ns.Setup.checkbox(ns.Settings.options().args[key].name)
       assert.are.equal(ns.Onboarding.DEFAULTS[key], box:GetChecked(), key)
     end
-    ns.Setup.checkbox("When friends log in"):RunScript("OnClick")
-    assert.is_false(settings().notifications)
+    assert.is_nil(ns.Setup.checkbox("When friends log in")) -- CF-91: the chat line switches are gone
+    ns.Setup.checkbox("Level-up announcement"):RunScript("OnClick")
+    assert.is_false(settings().levelUpToast)
   end)
 
   it("asks other characters once about the Community tab: one Create button, closing is no", function()

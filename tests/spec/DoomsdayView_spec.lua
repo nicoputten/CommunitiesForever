@@ -60,23 +60,6 @@ describe("DoomsdayView (CF-57)", function()
     assert.is_nil(V.stillNeeded("b.kills50", list, { "Horde" }))
   end)
 
-  it("writes the chat lines", function()
-    assert.are.equal("Daily done: Finish 10 quests (+5 PvE, 2 of 3 today)", V.dailyDoneLine("Finish 10 quests", 2, 3))
-    assert.are.equal("Weekly done: Run 3 dungeons (+15 PvE)", V.weeklyDoneLine("Run 3 dungeons", "pve"))
-    assert.are.equal("Skirmish done: Lone wolf: 3 solo kills (+5 PvP)", V.skirmishDoneLine("Lone wolf: 3 solo kills"))
-    assert.are.equal("Hunt done: a Night Elf Druid fell to Ada Nightshade (+5 PvP)",
-      V.huntDoneLine({ race = "NightElf", class = "DRUID" }, "Ada Nightshade"))
-    assert.are.equal("Kill: +2 PvP \194\183 3 levels above you, and solo (+1)",
-      V.killLine(scored({ lvl = 33, myLvl = 30, solo = true }, 3)))
-    assert.are.equal("Kill: +3 PvP \194\183 a skull", V.killLine(scored({ lvl = -1, myLvl = 30 }, 3)))
-    assert.are.equal("Kill: +1 PvP \194\183 solo (+1)", V.killLine(scored({ lvl = 30, myLvl = 30, solo = true }, 2)))
-    assert.is_nil(V.killLine(scored({ lvl = 30, myLvl = 30 }, 1)))
-    assert.is_nil(V.killLine(scored({ lvl = 33, myLvl = 30 }, 2, { track = "bg" })))
-    assert.are.equal("Mira finished Doomsday first today. You're at 3 of 5.", V.crownLine("Mira", 3, 5))
-    assert.are.equal("Swapped for you: \"Gain a level on an alt\" to \"Finish 10 quests\"",
-      V.swapLine("Gain a level on an alt", "Finish 10 quests"))
-  end)
-
   it("names the day by its start and shows times after midnight with the weekday (CF-61, your clock)", function()
     assert.are.equal("morning", V.partOfDay(5))
     assert.are.equal("afternoon", V.partOfDay(12))
