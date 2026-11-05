@@ -4,7 +4,7 @@ local wowapi = require("mocks.wowapi")
 describe("PresenceTracker", function()
   local state, ns, addon, Tracker
 
-  local SJAAK = "Sjaakovich#2232"
+  local SJAAK = "Solvar#2032"
   local GARRAKA = "Player-4619-01789956"
   local CLUB = "23125681" -- the mock's community: Ves (you) and Garraka (CF-89: Sjaak belongs)
 
@@ -162,9 +162,9 @@ describe("PresenceTracker", function()
       state.slash.cf("friends")
       assert.are.same({
         "3 Battle.net friend(s), 1 online in Forever",
-        "Sjaakovich#2232: Garraka Doombringer (Mage 11), game account 5, Player-4619-01789956",
+        "Solvar#2032: Garraka Doombringer (Mage 11), game account 5, Player-4619-01789956",
         "Presence links: 1",
-        "  Player-4619-01789956 -> Sjaakovich#2232, seen 0s ago",
+        "  Player-4619-01789956 -> Solvar#2032, seen 0s ago",
       }, state.printed)
     end)
   end)

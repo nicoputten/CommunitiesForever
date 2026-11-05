@@ -315,7 +315,7 @@ function wowapi.install(opts)
     calendarTime = { year = 2026, month = 10, monthDay = 18 }, -- C_DateAndTime.GetCurrentCalendarTime (realm date)
     -- Battle.net friends: { battleTag, gameAccounts = { C_BattleNet game account infos } }
     friends = {
-      { battleTag = "Sjaakovich#2232", gameAccounts = {
+      { battleTag = "Solvar#2032", gameAccounts = {
         { clientProgram = "WoW", wowProjectID = 18, isOnline = true, characterName = "Garraka Doombringer",
           realmName = "ClassicBetaPvP", realmDisplayName = "Classic Beta PvP", className = "Mage",
           characterLevel = 11, factionName = "Horde", playerGuid = "Player-4619-01789956", gameAccountID = 5 },

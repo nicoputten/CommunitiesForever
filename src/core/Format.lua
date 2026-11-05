@@ -151,7 +151,7 @@ function Format.tree(view, siteFriends)
   for _, n in ipairs(offline) do nodes[#nodes + 1] = n end
   -- CF-62: friends the website knows who haven't synced (CF-65: under "From the website", their character count).
   -- CF-92: the site names people by their site display name, which can differ from the one the addon knows
-  -- ("Khronicle Wolf" vs "KhronoWolf"), so a friend with a character already in the list is not listed again.
+  -- ("Ada Lovelace" vs "Ada"), so a friend with a character already in the list is not listed again.
   local knownChars = {}
   for _, person in ipairs(view.people) do
     for _, c in ipairs(person.chars) do

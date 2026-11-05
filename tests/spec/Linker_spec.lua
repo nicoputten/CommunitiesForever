@@ -3,7 +3,7 @@ local helpers = require("helpers")
 describe("Linker", function()
   local Linker
 
-  local ME, SJAAK, OTHER = "Vestras#1000", "Sjaakovich#2232", "Other#4444"
+  local ME, SJAAK, OTHER = "Vestras#1000", "Solvar#2032", "Other#4444"
 
   local function member(name, presence, extra)
     local m = { name = name, classID = 8, level = 11, zone = "Durotar", presence = presence or 3, raceID = 2 }
@@ -217,7 +217,7 @@ describe("Linker", function()
       })
       assert.is_not_nil(person(Linker.build(data), OTHER))
       data.people[OTHER].chars.G1.updatedAt = 100
-      assert.is_not_nil(person(Linker.build(data), OTHER)) -- "Other#..." < "Sjaakovich#..."
+      assert.is_not_nil(person(Linker.build(data), OTHER)) -- "Other#..." < "Solvar#..."
     end)
 
     it("links own characters to self, ahead of presence and records", function()
@@ -392,8 +392,8 @@ describe("Linker", function()
   describe("display name", function()
     it("prefers the owner's displayName, then the BattleTag name part", function()
       assert.are.equal("Sjaakie", Linker.displayName(SJAAK, "Sjaakie"))
-      assert.are.equal("Sjaakovich", Linker.displayName(SJAAK, nil))
-      assert.are.equal("Sjaakovich", Linker.displayName(SJAAK, ""))
+      assert.are.equal("Solvar", Linker.displayName(SJAAK, nil))
+      assert.are.equal("Solvar", Linker.displayName(SJAAK, ""))
     end)
 
     it("applies the rule in the view model", function()

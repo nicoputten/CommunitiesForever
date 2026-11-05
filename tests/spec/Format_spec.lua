@@ -14,7 +14,7 @@ describe("Format", function()
   end
 
   local function person(overrides)
-    local p = { battleTag = "Sjaakovich#2232", displayName = "Sjaak", isSelf = false, online = true,
+    local p = { battleTag = "Solvar#2032", displayName = "Sjaak", isSelf = false, online = true,
                 chars = { charRow(), charRow({ guid = "G2", name = "Grom", classFile = "WARRIOR", online = false,
                                                lastSeen = NOW - 7200, ilvl = false, professions = {} }) } }
     p.currentChar = p.chars[1]
@@ -127,10 +127,10 @@ describe("Format", function()
 
   describe("paths", function()
     it("joins and splits group and character", function()
-      local path = Format.path("Sjaakovich#2232", "G1")
-      assert.are.equal("Sjaakovich#2232\001G1", path)
-      assert.are.same({ "Sjaakovich#2232", "G1" }, { Format.splitPath(path) })
-      assert.are.same({ "Sjaakovich#2232" }, { Format.splitPath("Sjaakovich#2232") })
+      local path = Format.path("Solvar#2032", "G1")
+      assert.are.equal("Solvar#2032\001G1", path)
+      assert.are.same({ "Solvar#2032", "G1" }, { Format.splitPath(path) })
+      assert.are.same({ "Solvar#2032" }, { Format.splitPath("Solvar#2032") })
     end)
   end)
 
@@ -138,7 +138,7 @@ describe("Format", function()
     it("lists people with their characters, then Unlinked", function()
       local nodes = Format.tree({ people = { person(), me() }, unlinked = unlinked })
       assert.are.equal(3, #nodes)
-      assert.are.same({ "Sjaakovich#2232", "Sjaak", true, false },
+      assert.are.same({ "Solvar#2032", "Sjaak", true, false },
         { nodes[1].value, nodes[1].text, nodes[1].online, nodes[1].isSelf })
       assert.are.equal(2, nodes[1].count)
       assert.are.same({ value = "G1", name = "Garraka", classFile = "MAGE", classID = 8, level = 11, online = true,
@@ -215,15 +215,15 @@ describe("Format", function()
 
     it("says under the name who plays it and where it is", function()
       local view = { people = { person(), me() }, unlinked = unlinked }
-      local grom = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      local grom = Card.detail(view, Format.path("Solvar#2032", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen 2 h ago", grom.subtitle)
       view.people[1].chars[2].lastZone = "The Barrens"
-      grom = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      grom = Card.detail(view, Format.path("Solvar#2032", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen in The Barrens 2 h ago", grom.subtitle)
       local ves = Card.detail(view, Format.path("Vestras#1000", "G-ME"), NOW)
       assert.are.equal("your character \194\183 online in Orgrimmar", ves.subtitle)
       view.people[1].chars[1].outside = true
-      local garraka = Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
+      local garraka = Card.detail(view, Format.path("Solvar#2032", "G1"), NOW)
       assert.are.equal("played by Sjaak \194\183 online in Orgrimmar \194\183 not in community", garraka.subtitle)
     end)
 
@@ -233,12 +233,12 @@ describe("Format", function()
                                           { name = "Protection", points = 0 } }
       view.people[1].chars[2].role = "tank"
       view.people[1].chars[2].roleOverride = "tank"
-      local d = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      local d = Card.detail(view, Format.path("Solvar#2032", "G2"), NOW)
       assert.are.same({ label = "Item level", value = "-" }, d.tiles[2])
       assert.are.equal("Role", d.tiles[3].label)
       assert.is_string(d.tiles[3].note)
       assert.are.equal(3, #d.talentBars)
-      assert.is_nil(Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).talentBars)
+      assert.is_nil(Card.detail(view, Format.path("Solvar#2032", "G1"), NOW).talentBars)
     end)
 
     it("sums up the sync state for the footer (CF-62: friends synced this session)", function()
@@ -283,7 +283,7 @@ describe("Format", function()
     end)
 
     it("describes a person with status and characters", function()
-      local d = Card.detail(view, "Sjaakovich#2232", NOW)
+      local d = Card.detail(view, "Solvar#2032", NOW)
       assert.are.equal("person", d.kind)
       assert.are.equal("Sjaak", d.title)
       assert.is_nil(d.battleTag) -- CF-62: no BattleTag in the window
@@ -297,9 +297,9 @@ describe("Format", function()
 
     it("says on the card whether they run the addon (CF-34), not on your own", function()
       view.people[1] = person({ usesAddon = true })
-      assert.are.equal(Card.USES_ADDON, Card.detail(view, "Sjaakovich#2232", NOW).addon)
+      assert.are.equal(Card.USES_ADDON, Card.detail(view, "Solvar#2032", NOW).addon)
       view.people[1] = person({ usesAddon = false })
-      assert.are.equal(Card.NO_ADDON, Card.detail(view, "Sjaakovich#2232", NOW).addon)
+      assert.are.equal(Card.NO_ADDON, Card.detail(view, "Solvar#2032", NOW).addon)
       local mine = Card.detail(view, view.people[2].battleTag, NOW)
       assert.is_nil(mine.addon)
       local nodes = Format.tree(view)
@@ -308,13 +308,13 @@ describe("Format", function()
 
     it("describes an offline person and one on a character outside the community", function()
       view.people[1] = person({ online = false, currentChar = false })
-      assert.are.equal("Offline - last seen on Grom, 2 h ago", Card.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Offline - last seen on Grom, 2 h ago", Card.detail(view, "Solvar#2032", NOW).status)
       view.people[1] = person({ currentChar = { name = "Alt", visible = false } })
-      assert.are.equal("Online on Alt (not in community)", Card.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Online on Alt (not in community)", Card.detail(view, "Solvar#2032", NOW).status)
     end)
 
     it("describes a character with its subtitle, tiles and professions", function()
-      local d = Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW)
+      local d = Card.detail(view, Format.path("Solvar#2032", "G1"), NOW)
       assert.are.same({
         kind = "character", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, online = true,
         outside = false,
@@ -327,7 +327,7 @@ describe("Format", function()
     end)
 
     it("shows missing item level and offline characters", function()
-      local d = Card.detail(view, Format.path("Sjaakovich#2232", "G2"), NOW)
+      local d = Card.detail(view, Format.path("Solvar#2032", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen 2 h ago", d.subtitle)
       assert.are.equal("-", d.tiles[2].value)
       assert.are.same({}, d.professions)
@@ -346,9 +346,9 @@ describe("Format", function()
       p.chars[1].lastZone, p.chars[1].lastZoneAt = "The Barrens", NOW - 600
       view.people[1] = p
       assert.are.equal("Offline - last seen in The Barrens on Garraka, 10 min ago",
-        Card.detail(view, "Sjaakovich#2232", NOW).status)
+        Card.detail(view, "Solvar#2032", NOW).status)
       assert.are.equal("played by Sjaak \194\183 offline, last seen in The Barrens 10 min ago",
-        Card.detail(view, Format.path("Sjaakovich#2232", "G1"), NOW).subtitle)
+        Card.detail(view, Format.path("Solvar#2032", "G1"), NOW).subtitle)
     end)
 
     it("says \"played\" for your own characters", function()
@@ -365,12 +365,12 @@ describe("Format", function()
       local p = person({ online = false, currentChar = false,
                          chars = { charRow({ online = false }) } })
       view.people[1] = p
-      assert.are.equal("Offline", Card.detail(view, "Sjaakovich#2232", NOW).status)
+      assert.are.equal("Offline", Card.detail(view, "Solvar#2032", NOW).status)
     end)
 
     it("falls back to the message for paths that no longer exist", function()
       assert.are.equal("message", Card.detail(view, "Gone#1", NOW).kind)
-      assert.are.equal("message", Card.detail(view, Format.path("Sjaakovich#2232", "G9"), NOW).kind)
+      assert.are.equal("message", Card.detail(view, Format.path("Solvar#2032", "G9"), NOW).kind)
     end)
   end)
 
