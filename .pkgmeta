@@ -1,5 +1,10 @@
 package-as: CommunitiesForever
 
+# CF-84: the vault is its own addon folder in the same package, so the guild code is saved in its own file
+# (CommunitiesForever_Vault.lua), never in CommunitiesForever.lua, which the uploader sends to the website.
+move-folders:
+  CommunitiesForever/CommunitiesForever_Vault: CommunitiesForever_Vault
+
 externals:
   Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk
   Libs/CallbackHandler-1.0: https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0

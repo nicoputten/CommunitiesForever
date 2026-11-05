@@ -16,9 +16,12 @@ describe("passive without a community", function()
     wowapi.runTimers(state)
   end
 
+  -- The new community has you and Garraka, the character the mock's Battle.net friend is on (CF-89: they belong).
   local function join()
     table.insert(state.clubs, { clubId = "555", name = "New Friends", clubType = 1 })
+    state.clubMembers["555"] = state.clubMembers["23125681"]
     wowapi.fireEvent(state, "CLUB_ADDED", "555")
+    wowapi.runTimers(state)
   end
 
   after_each(function()
@@ -33,8 +36,15 @@ describe("passive without a community", function()
     assert.are.same({}, state.bnSent)
   end)
 
-  it("stays passive in a guild only", function()
+  -- CF-83: a guild counts as a community; a Battle.net community does not.
+  it("turns active in a guild only, with the guild picked", function()
     load({ { clubId = "999", name = "Some Guild", clubType = 2 } })
+    assert.is_false(ns.CommunitySelection.passive())
+    assert.are.equal("999", ns.CommunitySelection.selected())
+  end)
+
+  it("stays passive in a Battle.net community only", function()
+    load({ { clubId = "4", name = "Some Friends", clubType = 0 } })
     assert.is_true(ns.CommunitySelection.passive())
     assert.is_false(ns.Setup.isShown())
   end)

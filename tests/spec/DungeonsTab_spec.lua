@@ -601,4 +601,62 @@ describe("Dungeons tab (CF-24)", function()
       .. "level 13.", D.emptyText("Seqari", 9, true))
     assert.are.equal("No dungeon fits level 75.", D.emptyText("Seqari", 75, true))
   end)
+
+  -- CF-85: the window's empty state. Passive (no community): the text only, no Ask now or website link, and the
+  -- list no parts drawn from empty data. Otherwise the buttons sit below the text, however long it is.
+  describe("empty state (CF-85)", function()
+    -- The top of a pooled text's holder (its y below the parent's top) and of a button.
+    local function topOf(region) return -region.points[1][3] end
+    local function holderOf(message, parent) -- in the pane (the Friends tab shows the same text)
+      for _, f in ipairs(state.frames) do
+        if f.parent == parent and type(f.text) == "table" and f.text.GetText and f.text:GetText() == message then
+          return f
+        end
+      end
+    end
+
+    it("shows only the explainer while passive", function()
+      state = wowapi.install()
+      state.clubs = {}
+      ns = helpers.loadAddon()
+      addon = state.addon
+      addon:OnInitialize()
+      addon:OnEnable()
+      assert.is_true(ns.CommunitySelection.passive())
+      open()
+      assert.is_truthy(text():find("\nNothing planned yet\n", 1, true))
+      assert.is_truthy(text():find(ns.Format.PASSIVE_TEXT, 1, true))
+      local buttons = ns.DungeonsTab.buttons()
+      assert.is_nil(buttons["Ask now\226\128\166"])
+      assert.is_nil(buttons["Copy website link"])
+      assert.is_nil(buttons["select:1"])
+      assert.is_nil(buttons["Show all dungeons"])
+      assert.is_falsy(text():find("In range for", 1, true))
+      assert.is_falsy(text():find("No runs planned", 1, true))
+      assert.is_falsy(text():find("No dungeon fits yet", 1, true))
+      assert.is_truthy(text():find("\nDungeons\n", 1, true)) -- the list's title stays
+    end)
+
+    it("puts Ask now and the website link below a long text", function()
+      local runs = sampleRuns()
+      runs.runs, runs.site = {}, "https://wow.example.org"
+      load(20, runs)
+      state.clubs = {} -- the selected community, but this character is not a member
+      wowapi.fireEvent(state, "CLUB_REMOVED", CLUB)
+      assert.is_false(ns.CommunitySelection.passive())
+      assert.is_nil(ns.CommunitySelection.active())
+      -- A long empty-state text (the passive one's length) while not passive: where the buttons go.
+      local message = ns.Format.PASSIVE_TEXT
+      ns.Format.emptyState = function() return message end
+      open()
+      local buttons = ns.DungeonsTab.buttons()
+      local ask, copy = buttons["Ask now\226\128\166"], buttons["Copy website link"]
+      assert.is_table(ask)
+      assert.is_table(copy)
+      local body = assert(holderOf(message, ask.parent))
+      -- The text wraps to at least eight lines (14 each) at the pane's width; the buttons start below them.
+      assert.is_true(topOf(ask) >= topOf(body) + 8 * 14, topOf(ask) .. " vs " .. topOf(body))
+      assert.are.equal(ask, copy.points[1][2]) -- beside Ask now, so below the text too
+    end)
+  end)
 end)

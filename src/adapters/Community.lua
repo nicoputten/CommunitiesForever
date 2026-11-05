@@ -25,6 +25,19 @@ function Community.characterType()
   return 1
 end
 
+-- Enum.ClubType.Guild (CF-83); 2 is Retail's value. Unverified on Forever (VERIFY.md V124).
+function Community.guildType()
+  if Enum and Enum.ClubType and Enum.ClubType.Guild then
+    return Enum.ClubType.Guild
+  end
+  return 2
+end
+
+-- The club types that can be picked as the community: character communities and the guild (CF-83).
+function Community.selectableTypes()
+  return { [Community.characterType()] = true, [Community.guildType()] = true }
+end
+
 -- Subscribed clubs as { clubId, name, clubType }; empty if the API is missing.
 function Community.subscribedClubs()
   local list = {}

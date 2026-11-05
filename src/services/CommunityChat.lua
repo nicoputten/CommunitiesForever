@@ -14,8 +14,10 @@ local function settings() return addonRef.db.global.settings end
 
 local function say(text) addonRef:Print(text) end
 
--- Channel of the selected community, or nil (no selection, or not visible on this character).
+-- Channel of the selected community, or nil (no selection, or not visible on this character). nil for a guild
+-- (CF-83): guild chat is Blizzard's own (color, tabs), so the community chat features leave it alone.
 function CommunityChat.channel()
+  if ns.CommunitySelection.isGuild() then return nil end
   return ns.ChatFrames.channel(ns.CommunitySelection.active())
 end
 
@@ -84,10 +86,12 @@ function CommunityChat.tab()
   return ns.Chat.findTab(ns.ChatFrames.windows(CommunityChat.channel()), CommunityChat.tabName())
 end
 
--- Creates the Community tab on this character (chat windows are saved per character).
+-- Creates the Community tab on this character (chat windows are saved per character). CF-86: for a guild the
+-- tab, named after the guild, shows guild chat (the GUILD message group); color, flash and General stay Blizzard's.
 function CommunityChat.createTab()
+  local guild = ns.CommunitySelection.isGuild()
   local channel = CommunityChat.channel()
-  if not channel then
+  if not (guild and ns.CommunitySelection.active() or channel) then
     say("Select a community first (and log in on a character that is a member).")
     return false
   end
@@ -95,7 +99,12 @@ function CommunityChat.createTab()
     say(string.format("This character already has a %s chat tab.", CommunityChat.tabName()))
     return false
   end
-  local index = ns.ChatFrames.createTab(CommunityChat.tabName(), channel)
+  local index
+  if guild then
+    index = ns.ChatFrames.createGroupTab(CommunityChat.tabName(), ns.ChatFrames.GUILD)
+  else
+    index = ns.ChatFrames.createTab(CommunityChat.tabName(), channel)
+  end
   if not index then
     say("Could not create the chat tab.")
     return false

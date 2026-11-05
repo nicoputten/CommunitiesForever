@@ -29,10 +29,11 @@ describe("CommunitySelection", function()
     wowapi.uninstall()
   end)
 
-  it("lists only character communities", function()
+  it("lists character communities and the guild (CF-83)", function()
     load(nil)
-    assert.are.same({ { clubId = "23125681", name = "Forever Friends" }, { clubId = "777", name = "Other Friends" } },
-      Selection.list())
+    assert.are.same({ { clubId = "23125681", name = "Forever Friends", clubType = 1 },
+                      { clubId = "999", name = "My Guild", clubType = 2 },
+                      { clubId = "777", name = "Other Friends", clubType = 1 } }, Selection.list())
   end)
 
   it("stores the selection and announces it", function()
@@ -106,7 +107,7 @@ describe("CommunitySelection", function()
   describe("auto-select", function()
     local function onlyOne(s)
       s.clubs = { { clubId = "23125681", name = "Forever Friends", clubType = 1 },
-                  { clubId = "999", name = "My Guild", clubType = 2 } }
+                  { clubId = "4", name = "Battle.net Friends", clubType = 0 } }
     end
 
     it("selects the only character community when nothing is selected", function()
@@ -136,10 +137,24 @@ describe("CommunitySelection", function()
       assert.are.equal("23125681", settings().clubId)
     end)
 
-    it("does not select a joined guild", function()
+    -- CF-83: a guild counts as a community.
+    it("selects a guild you join while nothing is selected", function()
       load(nil)
       wowapi.fireEvent(state, "CLUB_ADDED", "999")
+      assert.are.equal("999", settings().clubId)
+      assert.is_true(Selection.isGuild())
+    end)
+
+    it("selects the guild when it is the only community", function()
+      load(nil, function(s) s.clubs = { { clubId = "999", name = "My Guild", clubType = 2 } } end)
+      assert.are.equal("999", settings().clubId)
+      assert.are.same({ "Showing community My Guild. Change it with /cf settings." }, state.printed)
+    end)
+
+    it("never selects a Battle.net community", function()
+      load(nil, function(s) s.clubs = { { clubId = "4", name = "Battle.net Friends", clubType = 0 } } end)
       assert.is_nil(settings().clubId)
+      assert.is_true(Selection.passive())
     end)
   end)
 
@@ -177,11 +192,12 @@ describe("CommunitySelection", function()
       assert.is_false(ns.Settings.registered)
     end)
 
-    it("offers character communities and writes the selection", function()
+    it("offers character communities and the guild, and writes the selection", function()
       load(nil)
       local option = ns.Settings.options().args.community
-      assert.are.same({ ["23125681"] = "Forever Friends", ["777"] = "Other Friends" }, option.values())
-      assert.are.same({ "23125681", "777" }, option.sorting())
+      assert.are.same({ ["23125681"] = "Forever Friends", ["999"] = "My Guild", ["777"] = "Other Friends" },
+        option.values())
+      assert.are.same({ "23125681", "999", "777" }, option.sorting())
       option.set({}, "23125681")
       assert.are.equal("23125681", option.get())
     end)

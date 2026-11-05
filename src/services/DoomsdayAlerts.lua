@@ -1,8 +1,9 @@
 -- DoomsdayAlerts: Doomsday's chat lines and the crown toast (CF-57; board DD07AddonToday, parts 4 and 5).
 -- Chat lines (setting "Doomsday in chat", on by default): a daily, the Hunt, the Skirmish or a weekly done, a
 -- kill worth bonus points, someone else took the crown, a goal swapped for you. The toast "First to finish
--- today!" when you take the crown (always). Each crown and swap line once per day; swaps are told when the day
--- turns while you play or with the first goal done that day, never at login (three lines at every login is noise).
+-- today!" when you take the crown (always, but only with a community this character is in, CF-85). Each crown
+-- and swap line once per day; swaps are told when the day turns while you play or with the first goal done that
+-- day, never at login (three lines at every login is noise).
 local _, ns = ...
 
 local DoomsdayAlerts = {}
@@ -51,6 +52,8 @@ local function crown(state)
   local c = state.crown
   if not c or not once(state.day, "crown") then return end
   if c.mine then
+    -- CF-85: no toast without a community this character is in (tracked quietly; told once, so not later either).
+    if ns.CommunitySelection.active() == nil then return end
     ns.CrownToast.show({
       title = "First to finish today!",
       line = "All three dailies done at " .. (date and c.at and ns.DoomsdayView.timeText(c.at, state.dayStart, date)

@@ -61,10 +61,135 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V120 | Does `C_DeathRecap.GetRecapEvents()` give the name and GUID of the player who killed you? Without the combat log it is the only source. (PvP catalogue: `p.revenge`, `p.avenge`, `b.revenge3`, `b.avenge3`) | FriendProbe: die to an enemy player. V120 ticks with "killed by player <name>"; the `V120 recap` lines list the recap's sources. "last recap source ..." without a player means it didn't name the killer: send the lines. | open |
 | V121 | Do `UnitIsPVP("player")` and `PLAYER_FLAGS_CHANGED` tell the PvP flag? (`p.flagUp`, `p.flagHour`, `b.flagged3h`) | FriendProbe: `/pvp` (or walk into a contested zone), wait for the flag, then let it run out. V121 ticks with "UnitIsPVP true"; `V121 UnitIsPVP` lines show each change. | open |
 | V122 | Does the battleground score give your row (`GetBattlefieldScore`: honorable kills) and the battleground's own stats (`GetNumBattlefieldStats`, `GetBattlefieldStatData`: flag captures, bases assaulted or defended)? (`p.bgFlag`, `p.bgBase`, `p.bgTop`, `b.bgFlags3`, `b.bgBases5`) | FriendProbe: play a battleground and open its scoreboard once. V122 ticks with "own honorable kills <n>; <n> battleground stats: ..."; send the `V122` lines from Warsong Gulch and Arathi Basin. | open |
+| V124 | Is a guild a club on Forever: does `C_Club.GetSubscribedClubs()` list it with `clubType = 2` (`Enum.ClubType.Guild`), do `C_Club.GetClubMembers(id)` and `C_Club.GetMemberInfo(id, memberId)` give each guild member's `guid`, `name` and `presence`, and do the `CLUB_MEMBER_*` events (`CLUB_MEMBERS_UPDATED`, `CLUB_MEMBER_ADDED`, `CLUB_MEMBER_REMOVED`, `CLUB_MEMBER_PRESENCE_UPDATED`, `CLUB_MEMBER_UPDATED`) fire for it? (CF-83: the guild as the community) | On a character in a guild: `/dump C_Club.GetSubscribedClubs()`: the guild shows with `clubType = 2`; note its `clubId`. `/dump C_Club.GetClubMembers(<clubId>)`: a list of member ids. `/dump C_Club.GetMemberInfo(<clubId>, <one of those ids>)`: `guid` (`Player-…`), `name`, `presence` (1 online, 0 offline), `level`, `classID`, `role`. Then FriendProbe: `/fp`, Test: guild (V124, V125), and let a guild member log in or out within a minute: V124 ticks with "guild <name> (clubType 2): N members, N with a GUID"; the log has `V124 member` lines and `V124 member events in 60 s: CLUB_MEMBER_PRESENCE_UPDATED …` (`none` means the events don't fire for a guild). Send the `V124` lines. | open |
+| V125 | Does `CHAT_MSG_GUILD` carry the sender's GUID as argument 12 (as `CHAT_MSG_COMMUNITIES_CHANNEL`, V38)? (CF-83: guild chat counts for the community chat missions) | After Test: guild (V124, V125), say something in guild chat: V125 ticks with "CHAT_MSG_GUILD argument 12: a GUID"; the log line `V125 CHAT_MSG_GUILD sender guid yes own true`. Or by hand: `/run local f=CreateFrame("Frame") f:RegisterEvent("CHAT_MSG_GUILD") f:SetScript("OnEvent", function(_, _, ...) print(select(12, ...), UnitGUID("player")) end)`, then say something in guild chat: two equal `Player-…` values. | open |
 | V123 | Does `C_PvP.GetZonePVPInfo()` (or `GetZonePVPInfo()`) give the zone's PvP type ("friendly", "hostile", "contested", "sanctuary")? (`p.enemyLand`, `p.homeGuard`, `p.contested`, `b.enemyLand25`) | FriendProbe: travel through an own-faction, an enemy and a contested zone. V123 ticks with "<zone>: <type>"; `V123 zone` lines show each zone. | open |
+| V127 | Does `GUILD_INVITE_REQUEST` pass the inviter and the guild's name as arguments 1 and 2? (CF-84/CF-87: the alt says "Click Accept to join <guild>." only for the guild it asked for.) For later only: may an addon accept with `AcceptGuild()`? CF-87 no longer calls it (V126 makes a "blocked" dialog likely). | On the alt outside the guild with FriendProbe: `/fp`, Test: guild invites. A member invites the alt (`/ginvite <alt name>`). V127 shows "GUILD_INVITE_REQUEST arg1 <inviter>, arg2 <guild name>". Optional, may show Blizzard's "FriendProbe has been blocked" dialog (click Ignore): before the invite click **Accept the next invite by itself (V127)**; `fail` with "blocked AcceptGuild()" means addons can't accept. Send the `V127` and `V126/V127 EVENT` lines. | open |
+| V128 | Does `C_ChatInfo.SendAddonMessage(prefix, text, "GUILD")` reach the other guild members online (`CHAT_MSG_ADDON` with channel `GUILD`), and does it come back to the sender? (CF-84: the guild code is spread on the guild channel) | Two guild members with FriendProbe, both online: one presses Test: guild invites, **Guild addon message (V128)**. The other's V128 ticks with "guild addon message from <name> arrived". The sender's log: `V128 GUILD send len … -> 0` (0 is Success, 10 NotInGuild) and maybe `V128 own guild addon message came back`. Send both `V128` lines. | open |
+| V129 | Does a `CHAT_MSG_SYSTEM` filter (`ChatFrameUtil.AddMessageEventFilter` or `ChatFrame_AddMessageEventFilter`) hide "No player named '…' is currently playing." after an addon whisper to a name that is offline? (CF-84: the alt whispers members who may be offline; also CF-28's V53) | Alone: `/fp`, Test: guild invites, **Whisper an offline name (V129)**. Expected no "No player named 'Nobody Atall' is currently playing." line in chat, and V129 ticks with "the filter hid 1 line(s)". `info` "the filter saw no … line" means the game printed nothing or another text: say whether a line showed. Send the `V129` lines. | open |
+| V131 | Which name forms do addon whispers and guild invites take on Forever, where names have a space ("First Last")? How does `CHAT_MSG_ADDON` report the sender (with "-Realm"?), how do `C_Club.GetMemberInfo` and `GUILD_INVITE_REQUEST` give names, and does `C_GuildInfo.Invite("First Last-Realm")` work? (CF-84: the alt whispers the name the guild list gives; the member whispers back and invites with the sender's name exactly as reported, never a name built from parts) | `/fp`, Test: guild invites, **Name forms (V131)**: V131 ticks with "whisper to the name arrived true, with -Realm true; sender reported as <exact text>"; the log has `V131 V131:plain sender exactly [<text>]`. Then type `/ginvite First Last-<realm>` by hand for a friend's alt outside the guild (the form the V131 line reported): did the invite arrive? Also send the `V124 member` lines (guild names) and the `V126/V127 EVENT GUILD_INVITE_REQUEST` line (inviter's name). | open |
+| V132 | Which texts does the game show when a guild invite is refused, and do they match `ERR_GUILD_PERMISSIONS`, `ERR_GUILD_NOT_ALLIED`, `ERR_ALREADY_IN_GUILD_S`, `ERR_ALREADY_INVITED_TO_GUILD_S`, `ERR_GUILD_PLAYER_NOT_FOUND_S`? Do they come as `CHAT_MSG_SYSTEM` or `UI_ERROR_MESSAGE`? (CF-84: a refused invite tells the alt to ask the next member at once) | `/fp`, Test: guild invites, **Refusal texts (V132)** (logs the six texts). Then type `/ginvite <name>` by hand for a character already in a guild, and, on a character without invite rights, on anyone. The log's `V126/V127 EVENT CHAT_MSG_SYSTEM …` or `… UI_ERROR_MESSAGE …` lines should show the same text as one of the `V132 ERR_…` lines. Send them. | open |
+| V133 | Does `ChatFrame_AddMessageGroup(frame, "GUILD")` exist on Forever and add guild chat to a chat window (or, if not, does `frame:AddMessageGroup("GUILD")`)? (CF-86: the guild chat tab) | `/run print(ChatFrame_AddMessageGroup, ChatFrame1.AddMessageGroup)`: which is a function? Then the CF-86 steps: the new tab shows guild chat. | open |
+| V130 | Does `EditBox:SetPassword(true)` show dots instead of the typed letters? (CF-84: the guild code field in `/cf settings`) | `/fp`, Test: guild invites: type in the box at the bottom of the window. Mark Yes when it shows dots (or stars), No when it shows the letters. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-88 The guild invite window (designer's flow)
+Two people with this build, as in CF-87: Bo online in the guild with invite rights and the guild code set, Ada's alt
+outside any guild. `/console scriptErrors 1` on both. No addon whisper (menu or Whisper button) before the steps,
+else `/reload`. The main flow (window, the four keys, sent, Accept) passed in Nico's test of build 12 (2026-11-05);
+these are the steps it did not cover.
+
+| Step | Expected | Status |
+|---|---|---|
+| Again with Bo **moving** (or in combat, or with the chat input open) when the window comes | The box is not focused, its text grey and not highlighted, and a mouse cap comes first (outlined). Bo's keys keep working for the game. One click on the box: text highlighted, the mouse cap gold, Ctrl+C outlined. Then the flow as above. | open |
+| Box focused: Bo presses **W** | The box lets go of the focus (the W is lost once, Bo doesn't walk); the text stays. Typing into the box after a click puts the command back. | open |
+| Window open: **Esc** (box focused, then again with it unfocused out of combat), and the **X** | The window closes; nothing in chat, nothing sent; the alt asks the next member after 2 minutes. | open |
+| Bo without invite rights: Ctrl+C, Enter, Enter, Ctrl+V, Enter | The game's red "You don't have permission to do that."; the window closes at once; Bo's chat: "<alt> (Ada's alt) will ask someone else."; the alt at once: "Asked <next member> for an invite into <guild>." | open |
+| Two of Ada's alts ask within seconds (log one in, then another) | One window; the second request replaces the first in place: new name and command, caps reset, a gold edge for a moment. No second window. | open |
+| At 3440×1440 (or the largest resolution you have) | The window sits top centre, larger with the UI, not over the action bars, the red error line or the run reminder banner. | open |
+| A long name (e.g. a "First Last-Realm" sender) | The window grows wider (up to 520 px at UI scale 1); the name line wraps to at most two lines. | open |
+
+### CF-87 Guild invites by copy and paste
+Two people with this build, as in the CF-84 steps: Bo online in the guild with invite rights and the guild code set,
+Ada's alt outside any guild. `/console scriptErrors 1` on both. Do not use the addon's whisper menu or Whisper buttons
+before these steps (`/reload` if you did): they fill the chat input from addon code (see the PR).
+
+| Step | Expected | Status |
+|---|---|---|
+| Bo types a letter into the box, then clicks in it | The text stays `/ginvite <alt name>` and is highlighted again each time. | open |
+| Kick the alt and invite it again by hand once (`/gremove <alt name>`, `/ginvite <alt name>`, alt declines), log the alt out and in again; Bo presses **Esc** in the window | The window closes; nothing is sent. The X closes it too. | open |
+| Bo without invite rights: the window comes, Bo pastes and sends within a minute | The game's "no permission" line; with `/cf sync debug` on Bo: `[guild] invite … refused: rights`; the alt asks the next member at once. | open |
+| Bo waits more than 2 minutes before pasting | The alt has already asked the next member (if one is online); Bo's later invite still arrives and still confirms. | open |
+
+### CF-89 Only the group takes part
+Two accounts with the addon on this build, both in the guild picked as the community (A and B), plus a Battle.net
+friend C who runs the addon (any version) and has **no** character in the guild. All three online in Forever, with
+`/console scriptErrors 1`. Before updating A, note what A has stored about C:
+`/run local n=0 for g,p in pairs(CommunitiesForeverDB.global.presence) do if p.battleTag=="<C's BattleTag>" then n=n+1 end end print(n, CommunitiesForeverDB.global.people["<C's BattleTag>"] ~= nil)`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Update A to this build, log in, wait ~10 s, then run the line above again | `0 false`: C's links and record are gone. | open |
+| On A: `/run local n=0 for _ in pairs(CommunitiesForeverDB.global.members) do n=n+1 end print(n)` | The guild's member count (as in `/cf members`). | open |
+| On A: `/cf sync debug`, then `/cf sync` | Lines `to <B's BattleTag>: HELLO ...` for B; for C only `not to <C>: not in the community`, never `to <C>: HELLO`. `/cf sync debug` again to stop. | open |
+| On C: `/reload` (C greets A) | A's chat shows nothing from C; A's window does not list C. | open |
+| On A: `/reload`, then the line from the top again | Still `0 false`. | open |
+| On C (if C runs this build): the same line with A's BattleTag | `0 false`: C stores nothing about A either. | open |
+| B logs in on an alt **outside** the guild | A and B still sync: B's alt shows under B in A's window after B levels or `/cf sync`. | open |
+| On A: `/cf ping` | "Ping sent to N game account(s)" counts only friends in the guild (B), not C. | open |
+| Upload A's SavedVariables to the site | C is not a site member; B is. | open |
+
+### CF-86 A chat tab for the guild
+On a character in the guild, with the guild picked in `/cf settings` and `/console scriptErrors 1`. Answers V133.
+Remove an earlier test tab first (right-click its tab, Close Window) if one named after the guild exists.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/run print(ChatFrame_AddMessageGroup, ChatFrame1.AddMessageGroup)` | At least one prints `function: ...` (V133). | open |
+| `/cf setup`, Next to the "Community chat" step | It says "Your community is a guild: give guild chat its own chat tab, so you never miss it."; no colored sample line, no flash, sound or "Keep community messages in General too" switches; the buttons are "Not now" and "Create chat tab". | open |
+| Click "Create chat tab" | A new chat tab named after the guild; chat says "Created the <guild> chat tab." The setup moves on to Notifications. | open |
+| Let a guild member write in guild chat (or write yourself) | The message shows in the new tab, in Blizzard's guild green, and still in General. No officer chat or achievements in the new tab. The tab does not flash and no sound plays. | open |
+| Right-click the new tab, Settings (or Chat tab settings) | Only "Guild" is ticked under the chat types; no channels. | open |
+| `/cf setup`, Next to the chat step again | "This character has a <guild> chat tab."; the buttons are Next and Skip setup, no "Create chat tab". | open |
+| `/cf settings`, Community chat | Only the "Create a community chat tab" button; no chat color, Reset, flash, sound or General switch. Click the button: chat says "This character already has a <guild> chat tab."; no second tab. | open |
+| `/reload` | The tab is still there and still shows guild chat. | open |
+| Log in on another character of yours in the guild (that never answered the tab prompt) | After ~5 s: "Create a Community tab on this character too?" with "A tab with only your guild chat."; Create tab makes the guild tab there. | open |
+| An alt **not** in the guild: `/cf settings`, Create a community chat tab | Chat says "Select a community first (and log in on a character that is a member)."; no tab. | open |
+| Pick a character community in `/cf settings` | The color, Reset, flash, sound and General switches are back; "Create a community chat tab" makes the community tab as before (purple community chat only). | open |
+
+### CF-85 No community: quiet Doomsday, a clean Dungeons tab
+On a character in no guild and no character community, with `/console scriptErrors 1`. Clear the account's pick
+first: `/run CommunitiesForeverDB.global.settings.clubId = nil`, then `/reload` (pick it again in `/cf settings` on
+your main afterwards).
+
+| Step | Expected | Status |
+|---|---|---|
+| Finish a Doomsday daily (or all three, for the crown) | No celebration banner, no banner sound, no "First to finish today!" popup under the minimap, no Doomsday chat line. `/cf`, Doomsday tab: the goal is ticked with its points. | open |
+| `/cf settings`, Preview (next to Celebration banners) | The sample banner still shows (you asked for it). | open |
+| `/cf`, Dungeons tab | Left: only the "Dungeons" title, no chips, "No runs planned", "In range for" or "Show all dungeons". Right: "Nothing planned yet" and the explanation "You're not in a community yet. ...", no "Ask now..." or "Copy website link" button and nothing faded behind the text. | open |
+| Stand where nameplates or other characters are behind the window, `/cf` | The window's background is solid on every tab: no faint names, nameplates or frames of the game show through it. The level-up and crown toasts are solid too. | open |
+| Join a guild (or a character community) with this character | Chat says `Showing community <name>. Change it with /cf settings.`; no banner or popup for the goals already done; the Doomsday tab still shows them done and today's points count. The next goal you finish shows its banner as usual. | open |
+| On a character outside the selected community (the account has one picked), `/cf`, Dungeons tab | Right: the "isn't a member" text, then "Ask now..." (and "Copy website link" when the runs file has the site) below it, not on top of it. | open |
+
+### CF-84 Automatic guild invites for alts
+Needs V124 (the guild as the community) and the build's `CommunitiesForever_Vault` folder next to `CommunitiesForever`
+in `Interface\AddOns` (`tools\build.ps1` copies both). Two people: you (Ada) with a main in the guild and an alt outside
+any guild, the other (Bo) online in the guild with invite rights, both on this build with the guild picked in
+`/cf settings`. `/console scriptErrors 1`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Ada's main: `/cf settings` | Under the invite area a **GUILD CODE** field; the line under it says "No guild code yet: alts outside the guild don't ask members for an invite." Pick a character community instead: the field is gone; pick the guild again. | open |
+| Type `abc` in GUILD CODE, Enter | Chat: "The guild code needs at least 6 characters."; nothing saved. | open |
+| Type a code of your own (6 or more characters), Enter | The field shows dots while typing (V130) and is empty after Enter; chat: "Guild code saved. Members' addons share it with each other in the guild."; the line says "A guild code is set (<date time>). …". The code shows nowhere: not in chat, not in the field. | open |
+| `/reload`, then open `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua` and `CommunitiesForever_Vault.lua` (after a logout or `/reload`) | `CommunitiesForever.lua` does not contain the code. `CommunitiesForever_Vault.lua` has it under `guilds["<guild name, lower case>"]` with `at` and a `roster` of the guild's members. | open |
+| Bo, within a minute of Ada setting the code (or after Bo's next login): `/cf settings` | Bo's line says "A guild code is set (<same date time>)": the code came over the guild channel (V128). | open |
+| Ada logs out the main and logs in the alt outside the guild; Bo stays online | Within ~20 s chat on the alt: "Asked Bo <name> for an invite into <guild>." On Bo's side a small window "Invite <alt> (Ada's alt)?" with `/ginvite <alt name>` to copy into chat (CF-87 steps). After Bo's invite: Blizzard's invite popup on the alt and the chat line "Click Accept to join <guild>." (V127); Accept, and the alt is in the guild. Bo's chat: "Invited <alt> (Ada's alt) into the guild." No "blocked from an action" dialog on either side. | open |
+| Same, with the member who was online most recently before now offline | No "No player named ... is currently playing." line on the alt (V129); the next member is asked at once. | open |
+| A third guild member (Cy) online too, with this build | Only one of Bo and Cy gets the Invite window (the other sees the claim). | open |
+| An alt in another guild, or the guild picked without a code | Nothing is whispered (with `/cf sync debug` on before the login timer, about 15 s: no `[guild] to …: GINVREQ` line); a hand invite from anyone gives no "Click Accept" line. | open |
+| A bank alt of Ada's in **another** guild logs in (the account's pick is the guild) | The pick stays: `/cf settings` still shows the guild; no "Showing community" line; `/cf members` says the character is not a member. Nothing is whispered. | open |
+| An alt of the **other faction** (or on another ruleset realm) logs in, outside the guild, code known | One chat line: "This character can't join <guild>: the guild is on the other faction. It won't ask for an invite again." (or "… on another realm …"). No whispers. `/reload`: no line, no whispers. | open |
+| Bo has **no invite rights** (take them away for the test); Cy has them; Ada's alt logs in | Bo pastes the window's `/ginvite` line into chat and sends it: the game's own "no permission" line; the alt then asks the next member at once (with `/cf sync debug` on Bo: `[guild] invite … refused: rights`), and Cy gets the window; Cy's pasted invite arrives. | open |
+| Ada sets a new code on her main while Bo is **offline**; Bo logs in later with the old code | Bo's code is replaced by Ada's (Bo's settings line shows Ada's time); Ada's is not replaced by Bo's old one, whatever the PC clocks say. | open |
+| Kick Ada's alt from the guild (or let it leave), then log it in again | No Invite window: members ignore its request ("No member … answered" once a day at most). The removed character is in `CommunitiesForever_Vault.lua` under `removed` on every member's account that saw it (GKICK). | open |
+| Bo invites that alt by hand (`/ginvite <alt name>`) | The invite arrives; after the alt joins, its removal is lifted on every member's account (it is back in the guild list). Kick it again, and the next automatic request is ignored again. | open |
+| Ada changes the code on her main to a new one; Bo has the old one | Within a few seconds Bo's line shows the new time. Ada's alt (next login) gets in with the new code; a member still holding the old code ignores the request (the next member answers). | open |
+
+### CF-83 The guild as the community
+On a character in a guild that is also in a character community (or in a guild only, for the first step), with
+`/console scriptErrors 1`. Answers V124 and V125 first: without `clubType = 2` in the club list the guild never shows.
+
+| Step | Expected | Status |
+|---|---|---|
+| A character in a guild and in no community, nothing picked yet (`/run CommunitiesForeverDB.global.settings.clubId = nil`, `/reload`) | Chat says `Showing community <guild name>. Change it with /cf settings.`; `/cf` shows the guild members, grouped per Battle.net friend. | open |
+| `/cf settings`, Community | The list has the guild next to the character communities; the line below says "Character communities and your guild are listed. Battle.net communities are not supported." | open |
+| Pick the guild, then the community, then the guild again (no `/reload`) | Each time `/cf` shows that club's members at once; friends' characters, levels, professions and Doomsday points stay. | open |
+| With the guild picked: say something in guild chat | The Doomsday goal "Say something in the community chat" ticks (if drawn today); "Chat in the community on 5 days" counts the day. | open |
+| With the guild picked, as guild master: `/cf settings` | No "Community invite link" field. An alt outside the guild sees no "How to join" steps and no "Post invite link in chat". | open |
+| A friend with the guild picked, both online | Their characters sync as before (`/cf sync debug` shows the HELLO on the hidden `cf…` channel). | open |
 
 ### CF-82 The hidden launch probe
 On Forever with this build (not FriendProbe), play as usual for a while: target or mouse over enemy players, loot, die

@@ -22,7 +22,8 @@ end
 -- True when this character may set the link: a member of the selected community with role
 -- Owner, Leader or Moderator (role from the verified C_Club member fields).
 function Invites.canSet()
-  if not ns.CommunitySelection.active() then return false end
+  -- CF-83: a guild has no invite links (guild invites are Blizzard's own).
+  if not ns.CommunitySelection.active() or ns.CommunitySelection.isGuild() then return false end
   local me = ns.MemberTracker.members()[ns.SelfInfo.read().guid]
   return me ~= nil and ns.Invite.canManage(me.role)
 end
@@ -59,7 +60,7 @@ end
 -- Newest known invite for the selected community: { code, setAt, setBy, setByName } or nil.
 function Invites.current()
   local clubId = ns.CommunitySelection.selected()
-  if not clubId then return nil end
+  if not clubId or ns.CommunitySelection.isGuild() then return nil end
   local own = global().self
   local sources = { { battleTag = own.battleTag, displayName = own.displayName or "you", invite = own.invite } }
   for bt, person in pairs(global().people) do

@@ -7,6 +7,244 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-88 The guild invite window (designer's flow)
+Stacked on CF-87 (PR #201). The designer's boards GI01Window (the member's window, all states), GI02Screen (placement
+at 1920×1080 and 3440×1440) and GI03Alt (the alt's chat lines), and the designer's brief, with Nico's deviations
+(2026-11-05). Touches: `src/ui/GuildInvitePopup.lua`, `src/services/GuildInvites.lua`, `src/core/GuildInvite.lua`,
+`src/adapters/Guild.lua`, `src/adapters/Sounds.lua`, `src/ui/kit/Theme.lua`, `.luacheckrc`, the WoW mock, the
+GuildInvite specs, `tools/FriendProbe/`, VERIFY.md, CHANGELOG.md.
+- **Window:** 400 px wide, growing with the command up to 520; title bar 30 px with the shield, "Guild invite" and
+  an X; padding 12, gaps 10. "Invite <Name> (<Owner>'s alt)?" with the name in its class colour (white when
+  unknown) and the owner's display name, never a BattleTag; at most two lines. A 32 px copy box with exactly
+  `/ginvite <name as reported>`, read-only in effect. Key caps [Ctrl]+[C] › [Enter] › [Ctrl]+[V] › [Enter] (22 px,
+  1 px edges, 3 px bottom edge; done gold fill, next gold outline, upcoming grey); tooltip "Copy · open chat · paste
+  · send". `TOP` of UIParent, 0, −262; strata DIALOG; not movable; `SOUNDKIT.IG_MAINMENU_OPEN` once on arrival.
+- **Focus:** the box takes the focus only out of combat, standing still, with no chat input open and no other box
+  focused; else it arrives unfocused (grey text, a mouse cap first) and one click focuses and selects. While
+  focused, Ctrl, C, Enter and Esc work; any other key releases the focus.
+- **Keys light only on events:** Ctrl+C on the box's OnKeyDown; Enter on its OnEnterPressed (it releases the focus,
+  the window stays, nothing opens the chat: deviation A); Ctrl+V when a chat input's text becomes the command
+  (post-hook, `PASTE_HOOK`, V137: deviation B); Enter on "You have invited <name>".
+- **States:** sent (all lit, a check at 150 ms, faded out by 1.2 s; chat "Invited <Name> (<Owner>'s alt) into the
+  guild."); refused while the window shows the request (closes at once, chat "<Name> (<Owner>'s alt) will ask
+  someone else.", GINVFAIL to the alt; no line for another faction); closed with X or Esc (nothing printed or sent);
+  a new request replaces the shown one in place (keys reset, a gold edge for 400 ms; no queue).
+- **Alt:** chat lines only, with the shield and in gold: "Asked …", "Click Accept to join …", "No member of …
+  answered …". No waiting window (GI03 option B).
+- Deviations from the brief: A (no chat input opened: 5 key presses, 4 caps; Nico, 2026-11-05: keep 4 caps), B (the paste hook behind a switch),
+  C (no locale table, rule 6), D (no new protocol: the refusal is GINVFAIL), E (unverified APIs guarded, V136),
+  G (Esc through the frame's own keyboard handler, not `UISpecialFrames`, which needs a named global, rule 5).
+- Decided (Nico, 2026-11-05): keep 4 caps; the window stays open after the first Enter (players close it with X or
+  Esc); the whisper buttons (Dungeons tab and menus) that open the chat input stay as they are (tested in game).
+- No change to stored data or messages (rule 8).
+- Manual (VERIFY.md CF-88, V136, V137).
+
+### CF-87 Guild invites by copy and paste
+Bug from Nico's in-game tests with a friend, 2026-11-05: CF-84's guild invite does not work at all. On Forever an
+addon cannot send a guild invite in any way (`docs/API-FINDINGS.md` "Guild invites"): `C_GuildInfo.Invite` /
+`GuildInvite` are forbidden also inside a click (V126, build 9), a secure macro button with `/ginvite` gives "Macro
+script disabled" (V134, build 10), and `/ginvite` put in the chat input by the addon is forbidden on Enter (V135,
+build 10). Typing `/ginvite <alt name>` by hand works. Copy and paste is the only way (Nico, 2026-11-05). Blocks the
+guild release. Touches: `src/adapters/Guild.lua`, `src/core/GuildInvite.lua`, `src/services/GuildInvites.lua`,
+`src/ui/GuildInvitePopup.lua`, `tests/mocks/wowapi.lua`, the GuildInvite specs, `tools/FriendProbe/`, VERIFY.md,
+API-FINDINGS.md, CHANGELOG.md.
+- Addon code never calls `C_GuildInfo.Invite`, `GuildInvite` or `AcceptGuild`, has no secure button, and never opens
+  or fills the chat input in the invite flow (`ChatFrameUtil.OpenChat`, `ChatFrame_OpenChat`, `ChatEdit_*`, or text
+  set on a chat edit box).
+- Every request that passes `checkRequest` shows the member's popup at once: "Invite <alt> (<friend>'s alt)?", an
+  edit box in our own window with `/ginvite <name exactly as the whisper's sender was reported>`, focused and
+  highlighted so Ctrl+C copies it at once, and the line "Ctrl+C, Enter. Then Enter, Ctrl+V, Enter." The explanation
+  is the box's tooltip. Typing restores the text and selects it again; a click selects it all. Enter, Esc or X
+  closes the window.
+- "Invited %s into the guild." confirms the member's own pasted invite through `ERR_GUILD_INVITE_S`, matched by name
+  to the pending request. A refusal text within `REFUSAL_WINDOW` (60 s) of the popup showing or closing is reported
+  to the alt (GINVFAIL). The alt waits `INVITE_WAIT` 120 s (was 60) after an ack before asking the next member.
+- The alt never accepts by itself: after its request, an invite into the remembered guild prints "Click Accept to
+  join %s." and the alt clicks Blizzard's Accept.
+- Minimal look with the Kit; the designer's board for this window and the alt's side follows as its own change.
+- FriendProbe: the V126 invite buttons are gone (V126, V134, V135 answered).
+- No change to stored data or message fields (rule 8).
+- Manual (VERIFY.md CF-87).
+
+### CF-89 Only the group takes part
+Bug from Nico at launch (2026-11-05): `PresenceTracker` / `Friends.recordPresence` wrote `presence` for every
+Battle.net friend seen in Forever, and `Sync` HELLOed every Forever game account of every friend, so records were
+exchanged with friends outside the group and stored in `people`. The upload carried them all, and the site made
+every BattleTag in `people` and `presence` a site member ("has no addon data yet"). The site's side is WEB-85.
+Touches: `src/core/Belongs.lua` (new), `src/core/Friends.lua`, `src/services/MemberTracker.lua`,
+`src/services/PresenceTracker.lua`, `src/services/Messenger.lua`, `src/services/Sync.lua`, specs,
+`tests/fixtures/capture.lua`, ARCHITECTURE.md ("Who belongs"), SYNC.md, VERIFY.md, CHANGELOG.md.
+- A person belongs when at least one of their characters is a member of the selected community or guild, also while
+  they play an alt outside it; their characters come from presence links, the character they are on now and their
+  own record. You always belong. Without a selected community nobody belongs: no sync at all (tests).
+- Over Battle.net nothing is sent to a friend who does not belong (HELLO, REQ, RECORD, relays, RUNS, SCHED, asks,
+  pings) and nothing from them is accepted or stored (tests).
+- `presence` keeps only links of member characters and of people who belong; `people` only people who belong. What
+  earlier versions stored is removed at run time once the members are known (tests).
+- `CommunitiesForeverDB.global.members = { [guid] = { name, seenAt } }`: the selected community's members as last seen
+  by this client, replaced whole on every member update, `{}` without a community (the site's proof of who is in
+  the group); in the golden fixtures from the next release on (tests).
+- Login timing: the roster is only replaced from a member list that lists your own character; until a roster is
+  known (first login with this version, or after choosing another community) nobody is dropped and nothing is
+  sent over Battle.net; a HELLO received meanwhile is answered once it is known, if the friend belongs (tests).
+- Compatibility (rule 8): no message changes; `members` is a new optional key (no migration, no schema bump: the
+  cleanup needs the members, which a migration cannot know).
+- Manual (VERIFY.md CF-89).
+- Decided by Nico (2026-11-05): stop exchanging, not just hide; prune `presence` and `people`; the `members` key as
+  the contract with the site.
+
+### CF-86 A chat tab for the guild
+Bug from Nico's in-game test of build 8 (develop 4d648b0): with the guild picked, the setup's chat step asks for the
+community chat tab, but none is made. Cause: CF-83 made `CommunityChat.createTab` stop for a guild ("Your community is
+a guild: guild chat already has its place in your chat windows."); the channel lookup is never reached (it would be
+nil anyway: guild chat is the `GUILD` message group, not a `Community:<clubId>:<streamId>` channel). Builds on CF-83.
+Touches: `src/adapters/ChatFrames.lua`, `src/services/CommunityChat.lua`, `src/ui/Setup.lua`, `src/ui/Settings.lua`,
+`src/ui/SettingsWindow.lua`, `tests/mocks/wowapi.lua`, `tests/spec/Guild_spec.lua`, `.luacheckrc`, VERIFY.md,
+ARCHITECTURE.md, CHANGELOG.md.
+- With the guild picked, the setup's "Create chat tab", `/cf settings` "Create a community chat tab" and the
+  once-per-character prompt make a chat tab named after the guild: `FCF_OpenNewWindow(name)`,
+  `ChatFrame_RemoveAllMessageGroups(frame)`, then the `GUILD` message group (`ChatFrame_AddMessageGroup`, or
+  `frame:AddMessageGroup`; unverified, V133). Without either no tab is opened ("Could not create the chat tab.")
+  (tests).
+- "Already has a tab" works for the guild tab (found by name, as for a community): the setup's chat step then says
+  "This character has a <guild> chat tab." and offers no Create button; a second Create says it is there (tests).
+- A character not in the selected guild gets "Select a community first ..." and no tab (tests).
+- Guild chat only: no officer chat or guild achievements. No color, flash or sound for guild chat, and General keeps
+  guild chat: with the guild picked, the chat color, Reset, flash, sound and "Keep community messages in General too"
+  options are hidden (`/cf settings`, the Options panel, the setup's chat step) (tests).
+- Other characters in the guild get the "Create a Community tab on this character too?" prompt once, with the line
+  "A tab with only your guild chat." (CF-83 left it out) (tests).
+- Communities work as before (the existing CF-25/CF-26 tests).
+- Compatibility (rule 8): nothing stored or sent changes; `chatTab[guid]` is set as for a community.
+- Manual (VERIFY.md CF-86, V133).
+- Decided by Nico (2026-11-05): guild chat only; no color, flash or sound for guild chat (hide those options);
+  "Keep community messages in General too" hidden for a guild; alts in the guild get the tab prompt.
+
+### CF-85 No community: quiet Doomsday, a clean Dungeons tab
+Two bugs Nico found at launch (v1.2.1) on a character with no community (none could be made, so none was selected).
+Builds on CF-83: a character in a guild only is no longer passive. Touches: `src/services/Celebrate.lua`,
+`src/services/DoomsdayAlerts.lua`, `src/ui/DungeonsTab.lua`, `src/ui/kit/Theme.lua`, `tests/spec/Celebrate_spec.lua`,
+`tests/spec/DungeonsTab_spec.lua`, VERIFY.md, CHANGELOG.md.
+- Doomsday is tracked quietly without a community this character is in (`CommunitySelection.active()` nil, the
+  same gate as the chat lines): goals, points and feats are recorded, but no celebration banner, banner sound,
+  friends' line or crown toast comes up. Each moment is still remembered as told, so picking a community or the
+  guild later brings up nothing old; today's progress counts at once (tests). The settings' Preview still shows its
+  sample banner (you asked for it).
+- Dungeons tab, the window's empty states (no community, none selected, not a member): the list shows only its
+  "Dungeons" title, none of its parts drawn from empty data (chips, No runs planned, In range for, Show all dungeons,
+  No dungeon fits yet). While passive the right pane shows "Nothing planned yet" and the explainer only, no Ask now
+  and no Copy website link. Wherever those buttons show, they sit below the text, measured with `GetStringHeight`
+  (tests).
+- The window background (`Theme` `panel`, also the toasts') is opaque: at 0.96 the game world's nameplates and
+  frames showed faintly through it, best seen in the empty state (Nico's screenshot).
+- Compatibility (rule 8): nothing stored or sent changes.
+- Manual (VERIFY.md CF-85).
+- Decided by Nico (2026-11-05): track quietly without a community; hide Ask now and Copy website link while passive;
+  an opaque window background.
+
+### CF-84 Automatic guild invites for alts
+Builds on CF-83 (branch `feature/cf-83-guild`). When a member logs in on an alt that is not in the guild, the alt gets
+into the guild with as little clicking as possible. Every member has invite rights (Nico's guild setting). Design by
+Nico (2026-11-05). Touches: `src/core/GuildInvite.lua`, `src/adapters/Guild.lua`, `src/adapters/Vault.lua`,
+`src/services/GuildInvites.lua`, `src/ui/GuildInvitePopup.lua`, `src/ui/Settings.lua`, `src/ui/SettingsWindow.lua`,
+`src/Core.lua`, the new `CommunitiesForever_Vault/` folder, `.pkgmeta`, `tools/build.ps1`, `tools/FriendProbe/`,
+`tests/spec/GuildInvite_spec.lua`, `tests/spec/GuildInvites_spec.lua`, VERIFY.md, SYNC.md, ARCHITECTURE.md,
+CHANGELOG.md.
+- **Not over Battle.net, never a custom channel:** the alt sends its request as an addon WHISPER
+  (`C_ChatInfo.SendAddonMessage`, verified) to guild members; the guild code spreads on the guild's own addon channel
+  (`"GUILD"`, V128). Own prefix `CFGuild`, single-part messages, `pv` 1: GKEY, GKEYHI, GINVREQ, GINVACK, GINVCLAIM
+  (`docs/SYNC.md` "Guild invites").
+- **The guild code:** never hardcoded or generated. A member types it in `/cf settings` in a masked field (V130) shown
+  only while the guild is picked; the field is empty again after Enter and the code is never printed or shown (the
+  line under the field gives only when it was set). 6 to 64 characters, no `|` or line breaks. An empty field changes
+  nothing. Without a code the feature is off. It does not rotate when someone leaves.
+- **Newest code wins:** by a version counter (see edge case 5 below), then the server time it was typed, then the
+  code that sorts last, so all clients end on the same code.
+- **Spread:** after login a member in the guild sends its code (GKEY) or asks (GKEYHI with `at` 0); a member with a
+  newer code answers after a random 1 to 5 s unless another member's answer came first, at most once a minute.
+- **Kept out of the upload:** the code and the member list live in `CommunitiesForeverVaultDB`, the SavedVariables of
+  a companion folder `CommunitiesForever_Vault` shipped in the same package (`.pkgmeta` `move-folders`). Its file is
+  `CommunitiesForever_Vault.lua`; the uploader reads only `CommunitiesForever.lua`, which gets nothing new. Without the
+  vault folder the feature is off and the settings line says so.
+- **Member list for alts:** a member's client keeps the picked guild's members `{ name, seen }` (last seen online) in
+  the vault, at most 500, members who left dropped.
+- **Alt:** 15 s after login, when the guild is picked, the character is in no guild and a code is known: whisper
+  GINVREQ to the stored members, most recently online first (never your own characters), one at a time, at most 10
+  per attempt, 6 s each; "No player named ..." (hidden by Transport's filter, V129) moves to the next at once. A
+  GINVACK waits for the invite (60 s); a GINVFAIL moves on at once. No ack: again after 5 minutes, 3 attempts per
+  login, then one chat line (at most once a day).
+- **Proof, not the code:** the request carries a 64-bit digest of code, guild name, the requesting character's name
+  and the request time (not a cryptographic hash). The member computes it with the name the game reports for the
+  whisper and invites only that sender (only at the request of the character itself), only when it is not in the
+  guild, within 5 minutes of the request time, once a minute per requester.
+- **One handler:** the member that accepts a request whispers GINVACK to the alt and posts GINVCLAIM on the guild
+  channel; others drop that request id.
+- **Member invites:** `C_GuildInfo.Invite(name)` or `GuildInvite(name)` (guarded, V126). Confirmed by "You have
+  invited ..." (`ERR_GUILD_INVITE_S`); when the game blocks it (`ADDON_ACTION_BLOCKED`/`_FORBIDDEN`) or no
+  confirmation comes in 3 s, a small window "Invite <alt> (<friend>'s alt)?" with one Invite button; the rest of the
+  session goes straight to that window.
+- **Auto-accept:** `GUILD_INVITE_REQUEST` for the remembered guild within 3 minutes of our request: `AcceptGuild()`
+  (guarded, V127); Blizzard's popup is hidden once the guild shows in the club list. Blocked: Blizzard's popup stays,
+  with a chat line to click Accept. Any other invite is left alone.
+- **Compatibility (rule 8):** nothing new in CommunitiesForeverDB (no migration, schema stays 2); the vault has its
+  own `v = 1`. New message types only, on a new prefix that older versions never register, so they never see them.
+- **Edge cases (asked by Nico, 2026-11-05):**
+  1. **Another guild:** the account-wide pick only changes when none exists (CF-83's auto-pick); a bank alt in another
+     guild leaves it alone and shows the community as not available; such an alt never asks (test).
+  2. **Names with a space:** the alt whispers each member by the name the guild's member list gives
+     (`C_Club.GetMemberInfo`); the member whispers back and invites with the sender's name exactly as `CHAT_MSG_ADDON`
+     reported it (with "-Realm" when the game adds it). No name is built from parts. Which forms work: V131.
+  3. **Another faction or realm:** members store the guild's faction and realm (`UnitFactionGroup`, `GetRealmName`)
+     with the member list; an alt that differs, or whose request a member's game refuses as the other faction, stops
+     for good with one chat line, remembered per character in the vault. An alt that can reach nobody (another
+     ruleset) says "No member … answered" at most once a day.
+  4. **No invite rights:** the member's client reads the game's refusal (`ERR_GUILD_PERMISSIONS` and others, V132) and
+     whispers GINVFAIL; the alt asks the next member at once with a new request id. An acknowledged invite that never
+     comes (popup ignored) moves on after 60 s.
+  5. **Old codes coming back:** newest by a version counter `v` (one more than the highest known), not by time; time
+     and code only break a tie of two codes set at the same version.
+  6. **Removed characters:** a character that leaves the guild (kicked or left) is remembered in the vault
+     (`removed[guid] = { name, at }`, at most 200) by every member that sees it go, and shared as GKICK on the guild
+     channel. Members never invite it by themselves. Lifted when it is back in the guild list, or by a manual invite
+     from that member ("You have invited <name>" that was not ours). A list that looks half loaded (more than 5 and a
+     fifth gone at once) counts nobody as gone.
+- FriendProbe: Test: guild invites (V126-V132).
+- Manual (VERIFY.md CF-84, V126 to V132).
+- Decided by Nico (2026-11-05): the vault folder and its global `CommunitiesForeverVaultDB` are OK; the code can only
+  be replaced, never cleared; the code in plain text on the guild channel and the checksum (not the code) in requests
+  are fine; the alt accepts any invite to the remembered guild within 3 minutes of its request; a one-time "action
+  blocked" error on the member's side before the Invite button takes over is acceptable.
+
+### CF-83 The guild as the community
+On Forever no community can be created at launch (`docs/API-FINDINGS.md` "Creating a community"), so Nico's group
+uses a guild for now and may move to a community once Blizzard fixes creation. The player can pick the guild as "the
+community", next to the character communities. On Retail a guild is a club of type `Enum.ClubType.Guild` (2), so the
+club path stays the one path: no guild-roster fallback. Unverified on Forever (V124, V125): the PR waits on that check.
+Touches: `src/core/Clubs.lua`, `src/adapters/Community.lua`, `src/adapters/ChatFrames.lua`,
+`src/adapters/missions/PlaceEvents.lua`, `src/services/CommunitySelection.lua`, `src/services/CommunityChat.lua`,
+`src/services/Invites.lua`, `src/ui/Settings.lua`, `src/ui/Setup.lua`, `src/core/Format.lua`,
+`tools/FriendProbe/`, `tests/spec/Guild_spec.lua`, VERIFY.md, API-FINDINGS.md, ARCHITECTURE.md, CHANGELOG.md.
+- The picker (settings, setup) lists the guild and the character communities, never Battle.net communities. The
+  guild type comes from `Enum.ClubType.Guild`, guarded, with 2 as the fallback (as `characterType()`).
+- A character in a guild only is no longer passive; with nothing picked, the guild is picked as the only community.
+- Switching guild, community, guild works without a reload and loses nothing: data stays keyed by character GUID and
+  friend, only the member list changes (test).
+- The wording stays "community". Only the texts that said guilds are not supported change.
+- With the guild picked, own guild chat (`CHAT_MSG_GUILD`, guarded) counts for "Say something in the community chat"
+  and "Chat in the community on 5 days". Same missions and texts; the Doomsday draw and pool do not change.
+- With the guild picked, every invite-link option and text is hidden (no settings field, no How to join, no Post
+  invite link), also on alts outside the guild (`settings.clubType` remembers the type).
+- With the guild picked, the community chat features (color, tab flash and sound, Community tab and its prompt) leave
+  guild chat alone; Create a community chat tab says why.
+- Sync is unchanged: the hidden channel is named after the guild's name, members are whispered as before.
+- FriendProbe: Test: guild (V124, V125) logs the guild club, its members, streams, the member events and guild chat.
+- Compatibility (rule 8): one new optional local setting (`settings.clubType`, nil = unknown), no migration, schema
+  stays 2; nothing new is sent. An older version with a guild `clubId` stored shows the community as not available
+  on every character and keeps all data; picking a community there works as before.
+- Manual (VERIFY.md CF-83, V124, V125).
+- Decided by Nico (2026-11-05): with a guild picked, guild chat is left alone (no recolor, flash, sound or tab);
+  a character that is only in a guild turns the addon on and auto-picks the guild.
+
 ### CF-82 The hidden launch probe (v1.2.1)
 Friends answer FriendProbe's automatic checks without installing it: the addon runs them silently and the results
 reach Nico in the saved file the uploader already sends to the site (an owner-only download there is a web story).

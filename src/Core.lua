@@ -50,6 +50,7 @@ function addon:OnEnable()
   ns.Ping.start(self)
   ns.Sync.start(self)
   ns.Invites.start(self)
+  ns.GuildInvites.start(self) -- CF-84: after Messenger (Transport's whisper filter) and MemberTracker
   ns.Tooltip.start(self)
   ns.Notify.start(self)
   ns.ChatLinks.watch(self) -- CF-27: clickable chat links
@@ -164,6 +165,7 @@ local COMMANDS = {
     run = function(self, argument)
       if argument == "debug" then -- CF-28: trace parts, missing parts and resends
         ns.Messenger.setDebug(not ns.Messenger.debugOn())
+        ns.GuildInvites.setDebug(ns.Messenger.debugOn()) -- CF-84: guild invite traffic as [guild] lines
         self:Print(ns.Messenger.debugOn() and "Sync debug on until /reload: message parts, missing parts and resends "
           .. "are printed."
           or "Sync debug off.")

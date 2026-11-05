@@ -7,7 +7,7 @@
 ## X-Wago-ID: b6XyqbKp
 ## IconTexture: Interface\AddOns\CommunitiesForever\media\textures\mapicon
 ## SavedVariables: CommunitiesForeverDB
-## OptionalDeps: QuestieDB
+## OptionalDeps: QuestieDB, CommunitiesForever_Vault
 
 embeds.xml
 
@@ -39,7 +39,9 @@ src\core\Snapshot.lua
 src\core\Describe.lua
 src\core\Clubs.lua
 src\core\Members.lua
+src\core\Belongs.lua
 src\core\Invite.lua
+src\core\GuildInvite.lua
 src\core\Talents.lua
 src\core\Onboarding.lua
 src\core\Quests.lua
@@ -80,6 +82,8 @@ src\adapters\RunsFile.lua
 src\adapters\ContextMenu.lua
 src\adapters\Channels.lua
 src\adapters\Transport.lua
+src\adapters\Vault.lua
+src\adapters\Guild.lua
 src\adapters\Panels.lua
 src\adapters\Classes.lua
 src\adapters\PvpInfo.lua
@@ -115,6 +119,7 @@ src\services\Messenger.lua
 src\services\Ping.lua
 src\services\Sync.lua
 src\services\Invites.lua
+src\services\GuildInvites.lua
 src\services\Notify.lua
 src\services\Planner.lua
 src\services\GroupAsks.lua
@@ -142,6 +147,7 @@ src\ui\ActivityTab.lua
 src\ui\MainFrame.lua
 src\ui\Minimap.lua
 src\ui\Tooltip.lua
+src\ui\GuildInvitePopup.lua
 src\ui\Setup.lua
 src\ui\LevelUpToast.lua
 src\ui\ProbeReport.lua

@@ -39,40 +39,46 @@ function Settings.rolesGroup()
 end
 
 -- CF-25: community chat. The color is always applied; the rest are switches and the tab button.
+-- CF-86: with the guild picked only the tab button shows (guild chat keeps Blizzard's color, flash and General).
 function Settings.chatGroup()
   local s = function() return ns.db.global.settings end
+  local guild = function() return ns.CommunitySelection.isGuild() end
   return {
     type = "group", inline = true, order = 9, name = "Community chat",
     args = {
       info = { type = "description", order = 0, fontSize = "medium",
                name = "Make the community chat easy to spot in your chat windows." },
       color = {
-        type = "color", order = 1, name = "Chat color",
+        type = "color", order = 1, hidden = guild, name = "Chat color",
         get = function() local c = ns.Chat.color(s()) return c.r, c.g, c.b end,
         set = function(_, r, g, b) ns.CommunityChat.setColor({ r = r, g = g, b = b }) end,
       },
       resetColor = {
-        type = "execute", order = 2, name = "Reset",
+        type = "execute", order = 2, hidden = guild, name = "Reset",
         func = function() ns.CommunityChat.setColor(nil) end,
       },
       alert = {
-        type = "toggle", order = 3, width = "full", name = "Flash the chat tab on new messages",
+        type = "toggle", order = 3, hidden = guild, width = "full", name = "Flash the chat tab on new messages",
         desc = "When someone else writes in the community, chat tabs that show it flash (not the one you look at).",
         get = function() return s().chatAlert ~= false end,
         set = function(_, value) s().chatAlert = value end,
       },
       sound = {
-        type = "toggle", order = 4, width = "full", name = "Play a sound on new messages",
+        type = "toggle", order = 4, hidden = guild, width = "full", name = "Play a sound on new messages",
         get = function() return s().chatSound == true end,
         set = function(_, value) s().chatSound = value end,
       },
       createTab = {
         type = "execute", order = 5, width = "double", name = "Create a community chat tab",
-        desc = "Opens a chat tab that shows only the community chat. Chat tabs are saved per character.",
+        desc = function()
+          local shows = guild() and "named after your guild that shows only guild chat" or "that shows only the "
+            .. "community chat"
+          return "Opens a chat tab " .. shows .. ". Chat tabs are saved per character."
+        end,
         func = function() ns.CommunityChat.createTab() end,
       },
       keepGeneral = {
-        type = "toggle", order = 6, width = "full", name = "Keep community messages in General too",
+        type = "toggle", order = 6, hidden = guild, width = "full", name = "Keep community messages in General too",
         desc = "Off: with a Community tab, the community chat shows only there.",
         get = function() return s().chatKeepGeneral ~= false end,
         set = function(_, value) ns.CommunityChat.setKeepGeneral(value) end,
@@ -129,7 +135,7 @@ function Settings.options()
       communityHelp = {
         type = "description",
         order = 2,
-        name = "Only character communities are listed. Guilds and Battle.net communities are not supported.",
+        name = "Character communities and your guild are listed. Battle.net communities are not supported.",
       },
       inviteLink = {
         type = "input",
@@ -143,6 +149,23 @@ function Settings.options()
         set = function(_, value)
           local ok, message = ns.Invites.set(value)
           if not ok then ns:Print(message) end
+        end,
+      },
+      -- CF-84: the guild code, only while the guild is picked. Masked and never shown: get is always empty.
+      guildCode = {
+        type = "input",
+        order = 6.5,
+        width = "full",
+        name = "Guild code",
+        desc = "A code of your own, the same for the whole guild. With it, your alts outside the guild ask online "
+          .. "members for an invite and get in by themselves. Members' addons share it in the guild.",
+        masked = true,
+        hidden = function() return not ns.CommunitySelection.isGuild() end,
+        status = function() return Settings.guildCodeStatus() end,
+        get = function() return "" end,
+        set = function(_, value)
+          local ok, message = ns.GuildInvites.setCode(value)
+          if ok then ns:Print(ns.GuildInvites.SET) elseif message then ns:Print(message) end
         end,
       },
       notifications = {
@@ -302,6 +325,19 @@ function Settings.options()
     }
   end
   return options
+end
+
+-- CF-84: the line under the guild code field. Never the code itself.
+Settings.GUILD_CODE_SET = "A guild code is set (%s). Type a new one to replace it for the whole guild."
+Settings.GUILD_CODE_NONE = "No guild code yet: alts outside the guild don't ask members for an invite."
+Settings.GUILD_CODE_NO_VAULT = "Guild invites are off: the CommunitiesForever_Vault folder is missing or disabled."
+Settings.GUILD_CODE_NO_MASK = "This game client can't hide what you type, so the guild code can't be set here."
+
+function Settings.guildCodeStatus()
+  if not ns.GuildInvites.available() then return Settings.GUILD_CODE_NO_VAULT end
+  local at = ns.GuildInvites.codeSetAt()
+  if not at then return Settings.GUILD_CODE_NONE end
+  return string.format(Settings.GUILD_CODE_SET, date("%Y-%m-%d %H:%M", at))
 end
 
 -- CF-48: the planned-run chat lines that can be turned off.

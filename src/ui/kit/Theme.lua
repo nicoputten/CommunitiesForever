@@ -12,7 +12,7 @@ local function hex(h, a)
 end
 
 Theme.COLORS = {
-  panel = hex("090F1B", 0.96),      -- window background
+  panel = hex("090F1B"),            -- window background (CF-85: opaque, the game no longer shows through)
   list = hex("050910", 0.6),        -- list column background
   input = hex("070D17"),            -- search box and inputs
   outline = hex("02050A"),          -- dark line inside the gold border, diamond outline
@@ -59,6 +59,18 @@ Theme.COLORS = {
   plaqueBottom = hex("0A111D"),
   celebLine = hex("C9CFD9"),        -- the banner's line, a friend's line
   friendLine = hex("0A111D", 0.88), -- a friend's line's background
+  -- CF-88: the guild invite window (board GI01Window)
+  giTitleTop = hex("121B2B"),       -- its title bar, top to bottom
+  giTitleBottom = hex("0B1220"),
+  giLine = hex("2A3348"),           -- the line under the title bar
+  giCopy = hex("05090F"),           -- the copy box
+  capEdge = hex("4A5468"),          -- a key cap (and the copy box's edge), upcoming
+  capFill = hex("141C2A"),
+  capText = hex("C9CFD9"),
+  capDoneEdge = hex("B8975A"),      -- a done key cap (and the focused copy box's edge)
+  capDoneFill = hex("3A2F18"),
+  keySep = hex("6E7888"),           -- "›" and an upcoming "+"
+  giVeil = hex("090F1A", 0.82),     -- over the body behind the "sent" check
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).

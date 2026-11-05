@@ -15,6 +15,11 @@ Consequences:
 - Transport is BNet only (`BNSendGameData`). Addon whispers are not used in V1.
 - Membership is per character, not per account (verified). An alt that is not invited is only visible as a non-member alt of a person who has at least one member character (CF-17).
 - Nothing depends on `clubId` being identical across clients (unverified). Filtering is by GUID membership.
+- The community can be a character community or the guild (CF-83: a guild is a club of `Enum.ClubType.Guild`, 2;
+  Battle.net communities never). For a guild, guild chat (`CHAT_MSG_GUILD`) is its chat for the chat missions, it has
+  no invite links and the community chat's color, flash and General option leave it alone; its chat tab (CF-86) is
+  a new chat window with only the `GUILD` message group, named after the guild. Sync is the same: the hidden
+  channel is named after the guild's name.
 
 ## Layering
 ```
@@ -39,9 +44,11 @@ CommunitiesForever/
       Format.lua             view model -> tree nodes, last seen, footers, empty states, menus, tooltips
       Card.lua               the Friends tab's card models: person, character (tiles, professions, talents, shared
                              quests, the PvP line), Unlinked (split from Format in CF-59)
-      Clubs.lua              selectable communities, stored-selection status
+      Clubs.lua              selectable communities (character and guild), stored-selection status
       Members.lua            member map by GUID, change compare
       Invite.lua             invite link parsing, newest invite, role check (CF-21)
+      GuildInvite.lua        guild invites for alts: the code, newest-code rule, proof, request check, member list
+                             for alts and the order they are asked in (CF-84)
       Talents.lua            talent split per Vanilla tree (columns of the C_Traits tree), auto role (CF-18)
       Onboarding.lua         which setup steps to show: first run, new steps, Community tab prompt (CF-26)
       Queue.lua              first-in, first-out list with a limit (CF-44: level-up announcements)
@@ -85,6 +92,9 @@ CommunitiesForever/
       Instance.lua           GetInstanceInfo, group GUIDs, battleground winner/team, instance events (CF-23, guarded),
                              whether addon messages may be restricted now (CF-46, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
+      Guild.lua              guild invite events: CFGuild prefix, GUILD addon messages, GUILD_INVITE_REQUEST, combat,
+                             "You have invited" (CF-84; never an invite, accept or chat input, CF-87)
+      Vault.lua              CommunitiesForeverVaultDB, the companion folder's SavedVariables (CF-84)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
       PvpInfo.lua            PvP counters and rank, death statistic and recap, duel/honor format strings, PvP and
@@ -112,6 +122,8 @@ CommunitiesForever/
       CommunityChat.lua      community chat color (always), tab flash and sound, Community chat tab (CF-25)
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
       Invites.lua            shared invite link: set (owner/leaders/moderators), newest, post as chat link (CF-21)
+      GuildInvites.lua       guild code (set, spread, newest), member list for alts, alt requests, the member's
+                             invite popup, "Click Accept" on the alt (CF-84, CF-87)
       PresenceTracker.lua    friends in Forever, gameAccountID -> BattleTag, writes presence
       ViewModel.lua          gathers tracker + DB state, runs the Linker (UI input)
       Messenger.lua          send: encode, chunk, throttle, combat hold; receive: reassemble, decode, sender BattleTag
@@ -137,11 +149,14 @@ CommunitiesForever/
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
+      GuildInvitePopup.lua   "Invite <alt> (<friend>'s alt)?" with /ginvite <name> to copy into chat (CF-87)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
     helpers.lua              loads addon files in TOC order with (addonName, ns) varargs
     mocks/wowapi.lua
     spec/*_spec.lua
+  CommunitiesForever_Vault/  companion addon folder, packaged next to the addon (.pkgmeta move-folders): only the
+                             SavedVariables CommunitiesForeverVaultDB, in its own file the uploader never reads (CF-84)
   tools/FriendProbe/         diagnostic addon (not packaged)
   tools/*.ps1                setup-lua, fetch-libs, build (dev only)
   .github/workflows/         test.yml, release.yml
@@ -152,6 +167,26 @@ Module sharing: every file reads the WoW private addon table via `local ADDON_NA
 Internal event bus: AceEvent messages on the addon object (`SendMessage` / `RegisterMessage`), named `CF_*` and defined as constants in the emitting module (e.g. `SelfInfo.CHANGED`, `SelfTracker.UPDATED`).
 
 Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
+
+## Who belongs (CF-89)
+Only people with a character in the selected community or guild take part; Battle.net friends outside it are left
+alone. A person (BattleTag or `aid:` key) **belongs** when at least one of their characters is on the roster
+(`global.members`), also while they play an alt outside it. Their characters are known from presence links, the
+characters they are on now (Battle.net presence) and their own record's `chars` (`core/Belongs.lua`, decided in
+`MemberTracker.belongs`). You always belong.
+- The roster is replaced only from a member list of the selected community that lists your own character (the
+  list loads late and can be partial at login). On a character that cannot see the selected community, the last
+  roster stays. Without a selected community it is `{}`: nobody belongs, nothing is synced. After choosing another
+  community it is `nil` (not known) until that community's members load.
+- Not known (`nil`, the first login with this version or after choosing another community): nothing is pruned and
+  nothing is sent over Battle.net; a Battle.net HELLO is kept and answered once the roster is known (if the friend
+  belongs).
+- Over Battle.net, `Messenger` sends nothing to and drops everything from a friend who does not belong; `Sync`
+  sends them no HELLO, REQ, RECORD, RUNS or SCHED. Community messages come from members already.
+- Stored data: `presence` keeps links of roster characters and of people who belong (`Friends.recordPresence`);
+  every roster update removes the other links and the `people` records of those who do not belong. That is also
+  the one-time cleanup of data stored before CF-89. It runs at run time and not as a `Store.MIGRATIONS` step,
+  because a migration cannot know the members; no schema bump (`members` is a new optional key).
 
 ## Compatibility
 CLAUDE.md rule 8. Friends run different versions for days, and everyone keeps their SavedVariables across
@@ -186,6 +221,7 @@ SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 global = {
   schemaVersion = 2,                                 -- 2: CF-47 pending
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
+                clubType = nil,                      -- CF-83: its club type, remembered like the name (2: guild)
                 notifications = true, minimap = {}, window = {}, tree = {},  -- window: size, position; tree: Friends tab
                                                      -- selected path, groups (false = folded); AceGUI's keys
                 sendInterval = 0.2,                  -- seconds between outgoing chunks
@@ -222,7 +258,12 @@ global = {
                                 removed = { [guid] = time },                       -- CF-28: dropped characters
                                 aid,                                               -- CF-28: account ID (community key)
                                 goals } },                                         -- CF-56: their Doomsday goals
-  presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
+  presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence (CF-89: only roster
+                                                     -- characters and characters of people who belong)
+  members   = { [guid] = { name, seenAt } },         -- CF-89: the roster, the selected community's members as last
+                                                     -- seen here; replaced whole on every member update; {} without
+                                                     -- a selected community; nil until first known. Read by the site
+                                                     -- as proof of who is in the group. See "Who belongs".
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
   plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
@@ -236,6 +277,19 @@ global = {
                                                      -- CF-82: the hidden launch probe (core/Probe.lua), until
                                                      -- 2026-11-18; client "forever"/"retail"; at most 30 KB; the
                                                      -- site keeps the raw file, its reader ignores this section
+}
+
+-- CF-84: SavedVariables of the CommunitiesForever_Vault folder, its own file (CommunitiesForever_Vault.lua), which
+-- the uploader never sends. Never synced as a whole: the code goes out only as GKEY on the guild channel.
+CommunitiesForeverVaultDB = {
+  v = 1,                                             -- the vault's own format; a newer one is left alone (feature off)
+  guilds = { [guild name, lower case] = {
+    code, v, at,                                     -- the guild code, its version (newest wins) and when it was set
+    roster = { [guid] = { name, seen } },            -- members for alts; seen: last online
+    faction, realm,                                  -- the guild's, from a member (an alt on another one stops)
+    removed = { [guid] = { name, at } },             -- left or kicked: never invited by itself (GKICK)
+    stopped = { [guid] = "faction"|"realm" },        -- own alts told once that they can't join
+    quiet = { [guid] = at } } },                     -- own alts: last "No member answered" line
 }
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.

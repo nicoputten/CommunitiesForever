@@ -11,6 +11,7 @@ local addonGlobals = {
   "CommunitiesForever",
   "CommunitiesForeverDB",
   "CF_RUNS", -- CF-45: set by Data\Runs.lua (written by the uploader), cleared by adapters/RunsFile.lua
+  "CommunitiesForeverVaultDB", -- CF-84: SavedVariables of the CommunitiesForever_Vault folder (the guild code)
   "SlashCmdList",
   "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE", -- CF-32 (Bindings.xml)
 }
@@ -23,7 +24,7 @@ stds.wow = {
     -- chat windows (CF-25)
     "Chat_GetCommunitiesChannelName", "GetChannelName", "ChangeChatColor", "NUM_CHAT_WINDOWS", "GetChatWindowInfo",
     "GetChatWindowChannels", "SELECTED_CHAT_FRAME", "FCF_StartAlertFlash", "FCF_OpenNewWindow",
-    "ChatFrame_RemoveAllMessageGroups", "PlaySound", "SOUNDKIT",
+    "ChatFrame_RemoveAllMessageGroups", "ChatFrame_AddMessageGroup", "PlaySound", "SOUNDKIT",
     -- libraries
     "LibStub",
     -- C_ namespaces
@@ -67,6 +68,12 @@ stds.wow = {
     "GetSubZoneText", "C_SummonInfo", "GetInventoryItemID", "GetLootSourceInfo", "GetSpellInfo", "C_Spell",
     "GetBindLocation", "ERR_NEWTAXIPATH", "IsSwimming", "IsMounted", "C_UnitAuras", "C_Container",
     "issecretvalue",
+    -- CF-87: C_GuildInfo, GuildInvite, AcceptGuild and the chat input calls are left out on purpose: addon code must
+    -- never call them (V126, V134, V135), so luacheck flags any use.
+    "ERR_GUILD_INVITE_S", -- CF-84
+    "GetUnitSpeed", "ChatEdit_GetActiveWindow", "GetCurrentKeyBoardFocus", "IsControlKeyDown", -- CF-88 (V136)
+    "ERR_GUILD_PERMISSIONS", "ERR_GUILD_NOT_ALLIED", "ERR_ALREADY_IN_GUILD_S", "ERR_ALREADY_INVITED_TO_GUILD_S",
+    "ERR_GUILD_PLAYER_NOT_FOUND_S", -- CF-84 (V132)
     "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",
     "ScrollUtil", "CreateScrollBoxListLinearView", "RAID_CLASS_COLORS",

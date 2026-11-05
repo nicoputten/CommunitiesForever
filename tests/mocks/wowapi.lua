@@ -92,6 +92,11 @@ function regionMethods.GetTop(self) return self.top end
 function regionMethods.GetLeft(self) return self.left end
 function regionMethods.GetParent(self) return self.parent end
 function regionMethods.SetParent(self, parent) self.parent = parent end
+-- CF-87: edit box focus and selection (no scripts run; specs run OnEditFocusLost etc. themselves).
+function regionMethods.SetFocus(self) self.focused = true end
+function regionMethods.ClearFocus(self) self.focused = false end
+function regionMethods.HasFocus(self) return self.focused == true end
+function regionMethods.HighlightText(self) self.highlighted = true end
 function regionMethods.SetText(self, text) self.text = text end
 function regionMethods.GetText(self) return self.text end
 function regionMethods.GetStringWidth(self) return #(tostring(self.text or "")) * 7 end
@@ -541,6 +546,8 @@ function wowapi.install(opts)
     return f
   end
   for i = 1, 10 do globals["ChatFrame" .. i] = chatFrame(i) end
+  -- CF-88: the chat inputs (the invite window reads their text through a post-hook).
+  for i = 1, 10 do globals["ChatFrame" .. i .. "EditBox"] = newRegion(state, "EditBox") end
   globals.NUM_CHAT_WINDOWS = 10
   globals.SELECTED_CHAT_FRAME = globals.ChatFrame1
   globals.SOUNDKIT = { TELL_MESSAGE = 3081 }
@@ -581,7 +588,14 @@ function wowapi.install(opts)
     state.chatWindows[#state.chatWindows + 1] = { name = name, channels = {} }
     return globals["ChatFrame" .. #state.chatWindows]
   end
-  globals.ChatFrame_RemoveAllMessageGroups = function() end
+  -- CF-86: message groups per window in state.chatWindows[i].groups (General starts with GUILD).
+  state.chatWindows[1].groups = { "GUILD" }
+  globals.ChatFrame_RemoveAllMessageGroups = function(frame) state.chatWindows[frame.id].groups = {} end
+  globals.ChatFrame_AddMessageGroup = function(frame, group)
+    local w = state.chatWindows[frame.id]
+    w.groups = w.groups or {}
+    table.insert(w.groups, group)
+  end
   globals.C_Club.GetStreams = function() return { { streamId = 1, name = "General", streamType = 0 } } end
   globals.Enum = globals.Enum or {}
   globals.Enum.ClubStreamType = { General = 0 }
@@ -739,7 +753,7 @@ end
 
 -- Several clients in one spec (tests/net.lua): the globals of the current install and the addon, to put
 -- back later with activate(), so each client runs against its own mock.
-local ADDON_GLOBALS = { "CommunitiesForever", "CommunitiesForeverDB",
+local ADDON_GLOBALS = { "CommunitiesForever", "CommunitiesForeverDB", "CommunitiesForeverVaultDB",
                         "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE" }
 
 function wowapi.snapshot()
@@ -762,6 +776,7 @@ function wowapi.uninstall()
   installed = {}
   _G.CommunitiesForever = nil
   _G.CommunitiesForeverDB = nil
+  _G.CommunitiesForeverVaultDB = nil
 end
 
 return wowapi

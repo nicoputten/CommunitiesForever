@@ -5,6 +5,31 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.3.0 (2026-11-05)
+- **Only your group syncs:** the addon now syncs only with friends who have a character in the community or guild
+  you picked, also while they play an alt outside it. Other Battle.net friends who run the addon are left alone:
+  nothing is sent to them or stored about them, and what earlier versions stored about them is removed once your
+  community's members have loaded. Without a community picked, nothing syncs.
+- **Your guild can be the community:** `/cf settings` lists your guild next to your character communities. Pick it
+  to see your guild's members grouped per friend; switch back to a community at any time, nothing is lost. With the
+  guild picked, guild chat counts for the community chat goals, and the invite link options are hidden.
+- **A chat tab for your guild:** with the guild picked, the setup's chat step and "Create a community chat tab" in
+  `/cf settings` make a chat tab named after your guild that shows only guild chat, and your other characters in the
+  guild are offered it once. Guild chat keeps its own color and stays in General too.
+- **Your alts get into the guild with one copy and paste:** set a guild code in `/cf settings` (shown with your guild
+  picked). Members' addons share it in the guild. When you log in on an alt outside the guild, it asks an online
+  member for an invite: the member gets a small window "Invite <alt> (<your name>'s alt)?" with the `/ginvite` line
+  ready to copy into chat and keys that light up as they go (Ctrl+C, Enter, Ctrl+V, Enter), and you click Accept
+  on the game's invite. The game doesn't let addons send or accept
+  guild invites. The code is saved in the new `CommunitiesForever_Vault` folder that comes with the addon, never in
+  the file you upload. Someone who left or was kicked from the guild gets no invite window; a member can still invite
+  them by hand.
+- **Fixed:** without a community, Doomsday keeps counting your goals quietly: no celebration banner or "First to
+  finish today!" popup until you pick a community or your guild. Today's progress counts as soon as you do.
+- **Fixed:** the Dungeons tab without a community shows just the explanation, without buttons drawn over it or
+  leftovers of the list behind it.
+- **Fixed:** the window's background is solid: names and frames of the game no longer show faintly through it.
+
 ## v1.2.1 (2026-11-04)
 - The addon collects some data about which game features work on Forever and sends it with your uploads, so we can
   add more features. Nothing shows in the game, and it reads only what the game tells the addon, no chat text. This

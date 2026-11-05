@@ -21,6 +21,10 @@ function Celebrate.bannersOn() return addonRef ~= nil and settings().celebration
 function Celebrate.soundsOn() return addonRef ~= nil and settings().celebrationSounds ~= false end
 function Celebrate.friendsOn() return Celebrate.bannersOn() and settings().celebrationFriends ~= false end
 
+-- CF-85: without a community this character is in (none selected, or not a member), Doomsday is tracked quietly:
+-- moments are remembered as shown, but no banner, line or sound comes up (the same gate as DoomsdayAlerts' lines).
+function Celebrate.quiet() return ns.CommunitySelection.active() == nil end
+
 local function store()
   local s = own()
   s.doomsday = s.doomsday or {}
@@ -70,11 +74,14 @@ end
 function check()
   if not addonRef then return end
   local busy = Celebrate.busy()
+  local quiet = Celebrate.quiet()
   if not ns.CelebrationBanner.isShown() then
     local b = ns.Celebrations.take(queue, now(), busy)
-    if b and Celebrate.bannersOn() then showBanner(b) end
+    if b and Celebrate.bannersOn() and not quiet then showBanner(b) end
   end
-  if not busy and not ns.CelebrationBanner.isShown() then
+  if quiet then
+    for i = #waiting, 1, -1 do waiting[i] = nil end
+  elseif not busy and not ns.CelebrationBanner.isShown() then
     while #waiting > 0 and Celebrate.friendsOn() do
       if not ns.CelebrationBanner.showFriend(waiting[1], { ambient = ambient(), onClick = open,
                                                           onDone = function() check() end }) then
@@ -100,7 +107,7 @@ local function add(moments, guid)
     if ns.Celebrations.once(c.own, ns.Celebrations.ownKey(m, day, week, m.guid or guid)) then list[#list + 1] = m end
   end
   ns.Celebrations.prune(c.own, day, week)
-  if #list == 0 then return end
+  if #list == 0 or Celebrate.quiet() then return end -- CF-85: quiet, yet known: nothing comes up later
   ns.Celebrations.push(queue, list, now())
   check()
 end
@@ -170,7 +177,7 @@ local function peopleUpdated()
   end
   local lines = ns.Celebrations.friendMoments(store().friends, people, { day = day, week = ns.Doomsday.week(day),
                                               now = GetServerTime(), since = since, derive = ns.Feats.derive })
-  if #lines == 0 or not Celebrate.friendsOn() then return end
+  if #lines == 0 or not Celebrate.friendsOn() or Celebrate.quiet() then return end
   ns.Celebrations.pushFriends(waiting, lines)
   check()
 end
