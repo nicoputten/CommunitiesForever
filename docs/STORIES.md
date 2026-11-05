@@ -88,6 +88,14 @@ API-FINDINGS.md, CHANGELOG.md.
 - No change to stored data or message fields (rule 8).
 - Manual (VERIFY.md CF-87).
 
+### CF-92 A website friend listed twice
+Nico (2026-11-05): a Battle.net friend without the addon showed twice in the Friends list: live (Battle.net and
+the guild) and under "From the website", because the site names them by their site display name and the addon only
+matched display names. Now a website friend with a character (by name, any case) already in the list (people or
+Unlinked) is not listed again (`Format.tree`). No change to stored data or messages (rule 8).
+- [x] A website friend with another name but a known character is not listed under "From the website"
+- [x] Unit test in `Format_spec`
+
 ### CF-90 Guild members known by their BattleTag
 From Nico at launch (2026-11-05): a member reached only over the guild or community (not a Battle.net friend) is
 stored under `aid:<accountId>`, because no BattleTag travels over the community (CF-28). The site can't group them

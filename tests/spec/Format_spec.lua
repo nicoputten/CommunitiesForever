@@ -167,6 +167,22 @@ describe("Format", function()
       assert.are.equal("Mira Sunstrider", d.characters[1].name)
     end)
 
+    it("does not list a website friend again when one of their characters is known (CF-92)", function()
+      local friend = person({ battleTag = "Ada#1001", displayName = "Ada" })
+      local site = {
+        -- another name, but a character already in the list (any case)
+        { name = "Ada Lovelace", chars = { { name = "grom", classFile = "WARRIOR", level = 10 } } },
+        { name = "Mira", chars = { { name = "Mira Sunstrider", classFile = "PRIEST", level = 28 } } },
+        { name = "Stranger's owner", chars = { { name = "Stranger", level = 9 } } }, -- an unlinked character
+      }
+      local nodes = Format.tree({ people = { friend, me() }, unlinked = unlinked }, site)
+      local website = {}
+      for _, n in ipairs(nodes) do
+        if n.section == "website" then website[#website + 1] = n.text end
+      end
+      assert.are.same({ "Mira" }, website)
+    end)
+
     it("has no Unlinked group without unlinked characters", function()
       assert.are.equal(1, #Format.tree({ people = { person() }, unlinked = {} }))
     end)

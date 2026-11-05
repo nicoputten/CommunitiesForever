@@ -11,6 +11,8 @@ tagging; the release stops if the tag has no section.
   goals, kills and crowns (the celebration banners and the crown toast stay), planned-run reminders, answers and
   updates (the run banners and the start panel stay), and the community picked for you. Their switches are gone from
   the settings. Guild invite lines, answers to your own commands and clicks, and errors stay in chat.
+- **Fixed:** a friend no longer shows twice in the list, once live and once under "From the website", when the
+  website knows them by another name: a website friend with a character already in your list is not listed again.
 
 ## v1.3.1 (2026-11-05)
 - **Guild members by their Battle.net name:** guild and community members who run the addon now know each other by
