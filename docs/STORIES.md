@@ -66,6 +66,29 @@ API-FINDINGS.md, CHANGELOG.md.
 - No change to stored data or message fields (rule 8).
 - Manual (VERIFY.md CF-87).
 
+### CF-90 Guild members known by their BattleTag
+From Nico at launch (2026-11-05): a member reached only over the guild or community (not a Battle.net friend) is
+stored under `aid:<accountId>`, because no BattleTag travels over the community (CF-28). The site can't group them
+under a Battle.net account or give them access ("Played by Unknown player"). The site's side is WEB-86.
+Touches: `src/core/Identity.lua`, `src/core/Linker.lua`, `src/services/Sync.lua`, specs, SYNC.md, ARCHITECTURE.md,
+VERIFY.md, CHANGELOG.md.
+- Each addon sends its **own** BattleTag over the guild or community: an optional `btag` in its HELLO and in its own
+  RECORD there, only when known. Relayed records never carry one (tests).
+- A HELLO or own record over the community with a valid `btag` re-keys that person from `aid:<id>` to the BattleTag,
+  keeps `aid = <id>`, and merges anything stored under the `aid:` key (`Merge.absorb`). Later messages under the
+  `aid:` key land on the BattleTag; over the community the person is still sent as `aid:` (tests).
+- Spoofing guards (`Identity.claimBattleTag`): only from the account's own character (the sending character is in
+  that account's record, or the account is new, and in no one else's record); never your own BattleTag, never a
+  current Battle.net friend's (Battle.net decides for them), never against a presence link of the sending character
+  to another BattleTag, never a BattleTag another account ID already has, never an account ID already known under
+  another BattleTag. The first account that claims a BattleTag keeps it (tests).
+- CF-89 stays: only people with a character in the selected community are stored or synced (tests).
+- Compatibility (rule 8): `btag` is optional within `pv` 1. Older clients send none and ignore ours; they keep
+  `aid:` keys. No stored shape change, no migration: `people` holds BattleTag and `aid:` keys as before.
+- Manual (VERIFY.md CF-90).
+- Decided by Nico (2026-11-05): each addon shares its own BattleTag over the guild or community; guild members may
+  see each other's BattleTags.
+
 ### CF-89 Only the group takes part
 Bug from Nico at launch (2026-11-05): `PresenceTracker` / `Friends.recordPresence` wrote `presence` for every
 Battle.net friend seen in Forever, and `Sync` HELLOed every Forever game account of every friend, so records were

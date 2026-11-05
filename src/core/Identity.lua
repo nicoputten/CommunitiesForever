@@ -1,7 +1,9 @@
 -- Identity: who a record belongs to when it travels over the community (CF-28 part 2b). Pure Lua.
 -- People are keyed by BattleTag when we know it (Battle.net friends, relays) and by "aid:<accountId>"
--- otherwise. On the community wire every person key is an "aid:" key: BattleTags never leave Battle.net.
--- Each account makes a random account ID once and sends it with its record (`aid`).
+-- otherwise. On the community wire every person key is an "aid:" key. Each account makes a random account ID
+-- once and sends it with its record (`aid`). CF-90: an owner's own HELLO and record over the community also carry
+-- its own BattleTag (`btag`), so guild members who are not Battle.net friends know each other by it
+-- (Identity.claimBattleTag); a relay never sends someone else's.
 local _, ns = ...
 
 local Identity = {}
@@ -73,6 +75,57 @@ function Identity.bindAccountId(people, senderKey, wireKey)
     if key ~= senderKey and other.aid == id then return false end
   end
   person.aid = id
+  return true
+end
+
+-- CF-90: a BattleTag as it may come from the community wire: a name without "#", ":", spaces or control
+-- characters, "#", then 3 to 10 digits; at most 40 bytes (names may hold non-ASCII letters).
+function Identity.isBattleTag(text)
+  return type(text) == "string" and #text <= 40 and text:match("^[^#:%s%c]+#%d%d%d%d?%d?%d?%d?%d?%d?%d?$") ~= nil
+end
+
+--[[ CF-90: a community HELLO or own record (wire key "aid:<id>", sent by the character guid) says its owner's
+BattleTag is btag. Re-keys that person from "aid:<id>" to the BattleTag (keeping aid = id), in place, and returns
+true when people changed (the caller then runs Merge.absorb(people, btag, now), which merges a stored "aid:" copy
+into an existing BattleTag person). Returns false when there is nothing to change or the claim is refused.
+ctx = { ownBattleTag, ownAccountId, friends = { [bt] = true }, presence = { [guid] = { battleTag } },
+        characters = { [guid] = bt } (live Battle.net presence) }.
+Refused (spoofing guards): not a valid BattleTag; your own BattleTag or account ID; a current Battle.net friend
+(Battle.net links them: their own record over Battle.net carries the account ID); the sending character linked by
+Battle.net presence to another BattleTag; the account ID already known under another BattleTag; the sending character
+in another person's record; an "aid:" person whose record does not list the sending character; a stored person with
+that BattleTag who has another account ID, or none and does not list the sending character. The first owner of a
+BattleTag keeps it. ]]
+function Identity.claimBattleTag(people, wireKey, btag, guid, ctx)
+  ctx = ctx or {}
+  local id = Identity.accountIdOf(wireKey)
+  if not id or type(people) ~= "table" or type(guid) ~= "string" or not Identity.isBattleTag(btag) then
+    return false
+  end
+  if btag == ctx.ownBattleTag or id == ctx.ownAccountId or (ctx.friends and ctx.friends[btag]) then return false end
+  local link = ctx.presence and ctx.presence[guid]
+  link = (type(link) == "table" and link.battleTag) or (ctx.characters and ctx.characters[guid])
+  if link ~= nil and link ~= btag then return false end
+  local aidKey = Identity.aidKey(id)
+  for key, person in pairs(people) do
+    if key ~= aidKey and key ~= btag and type(person) == "table" then
+      if person.aid == id then return false end -- known under another BattleTag
+      if person.chars and person.chars[guid] then return false end -- someone else's character
+    end
+  end
+  local aidPerson = people[aidKey]
+  if type(aidPerson) == "table" and next(aidPerson.chars or {}) and not aidPerson.chars[guid] then return false end
+  local target = people[btag]
+  if type(target) == "table" then
+    if target.aid == id then return false end -- already known by it
+    if target.aid ~= nil or not (target.chars and target.chars[guid]) then return false end
+    target.aid = id
+    return true
+  end
+  if type(aidPerson) ~= "table" then return false end -- nothing stored yet: their record carries it too
+  aidPerson.aid = id
+  people[btag] = aidPerson
+  people[aidKey] = nil
   return true
 end
 

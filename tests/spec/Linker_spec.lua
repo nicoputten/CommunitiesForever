@@ -354,6 +354,24 @@ describe("Linker", function()
       assert.is_true(person(view, RELAYED).chars[1].online)
     end)
 
+    it("links and shows online a BattleTag person met over the community (CF-90)", function()
+      local GUILDIE = "Dee#4444"
+      local data = input({
+        members = { G5 = member("Dee", 1), G6 = member("Dee Alt", 1) },
+        people = { [GUILDIE] = { version = 1, aid = "dddddddddddd",
+          chars = { G5 = char("Dee", { guid = "G5" }), G6 = char("Dee Alt", { guid = "G6" }) } } },
+        online = { [GUILDIE] = { guid = "G6", name = "Dee Alt", target = "Dee Alt" } },
+      })
+      local dee = person(Linker.build(data), GUILDIE)
+      assert.are.equal("Dee", dee.displayName) -- the BattleTag's name part
+      assert.is_true(dee.online)
+      local rows = {}
+      for _, row in ipairs(dee.chars) do rows[row.guid] = row.online end
+      assert.are.same({ G5 = false, G6 = true }, rows) -- the HELLO's character, not the community presence
+      data.people[GUILDIE].aid = nil -- no account ID and not a friend: not trusted
+      assert.is_nil(person(Linker.build(data), GUILDIE))
+    end)
+
     it("has no current character for an offline friend", function()
       local view = Linker.build(input({
         members = { G1 = member("Garraka") },

@@ -76,22 +76,32 @@ describe("sharing end to end", function()
   end)
 
   describe("community members who are not Battle.net friends", function()
-    it("exchange their characters over whispers under account IDs, never a BattleTag", function()
+    -- CF-90: keyed by account ID on the wire; each sends only its own BattleTag (btag), so both store the other
+    -- under their BattleTag.
+    it("exchange their characters over whispers and know each other by BattleTag", function()
       people(false)
       world:login("A")
       world:login("B")
       world:settle()
       local bobAtAda, key = storedFor("A", B_GUID)
       assert.is_not_nil(bobAtAda, "Ada has Bob's record over the community")
-      assert.is_truthy(key:match("^aid:%x+$"))
+      assert.are.equal("Bob#2002", key)
+      assert.is_truthy(bobAtAda.aid:match("^%x+$"))
       assert.are.equal(22, bobAtAda.chars[B_GUID].level)
+      local _, adaKey = storedFor("B", A_GUID)
+      assert.are.equal("Ada#1001", adaKey)
+      local own = { A = "Ada#1001", B = "Bob#2002" }
       for _, client in ipairs({ "A", "B" }) do
         local sent = world:sentBy(client)
         assert.is_true(#sent > 0)
         for _, s in ipairs(sent) do
           assert.are.equal("whisper", s.channel)
           assert.is_true(#s.raw <= 255, "whisper part over 255 bytes")
-          assert.is_false(hasBattleTag(s.message), "a BattleTag went over the community")
+          local copy = {}
+          for k, v in pairs(s.message) do copy[k] = v end
+          assert.is_true(copy.btag == nil or copy.btag == own[client], "someone else's BattleTag was sent")
+          copy.btag = nil
+          assert.is_false(hasBattleTag(copy), "a BattleTag went over the community")
         end
       end
     end)

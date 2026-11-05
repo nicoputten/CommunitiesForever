@@ -13,8 +13,8 @@
 --   SCHEDREQ {}             (CF-68) asks a peer whose HELLO showed a newer ds (schedule v) for its schedule.
 --   RUNANSWER {run, answer, guid, name, role, note}  (CF-47; note CF-63, optional) your answer to a run, to its
 --     organiser when online.
--- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua): BattleTags only
--- travel over Battle.net.
+-- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua). CF-90: the owner's own
+-- HELLO and RECORD there also carry its own BattleTag (btag); relayed records never carry one.
 local _, ns = ...
 
 local Sync = {}
@@ -105,10 +105,13 @@ local function helloFor(community)
   local dd = ns.DoomsdayTracker.setting()
   -- ds (CF-68): v of the site's mission schedule we use (0: none); older clients ignore it.
   local ds = ns.DoomsdayTracker.missionScheduleVersion()
+  -- btag (CF-90): our own BattleTag over the community, once known; older clients ignore it.
+  local btag = community and own().battleTag or nil
   return { t = "HELLO", bt = key, ver = own().version, known = known, av = addonRef.version, ch = ch, ru = ru,
-           dd = dd, ds = ds },
+           dd = dd, ds = ds, btag = btag },
          helloSignature(own().version, known) .. ";" .. tostring(ch) .. ";" .. tostring(ru) .. ";"
-           .. tostring(dd and dd.changedAt) .. ";" .. tostring(dd and dd.offsetUntil) .. ";" .. tostring(ds)
+           .. tostring(dd and dd.changedAt) .. ";" .. tostring(dd and dd.offsetUntil) .. ";" .. tostring(ds) .. ";"
+           .. tostring(btag)
 end
 
 -- CF-89: a Battle.net target only when its friend belongs (has a character in the selected community); community
@@ -259,6 +262,24 @@ local function peerGone(name)
   end
 end
 
+-- CF-90: a community HELLO or own record from the character guid says its owner's BattleTag (btag): re-key that
+-- person from "aid:<id>" to it (Identity.claimBattleTag has the guards). Returns the sender key to use from now on.
+local function learnBattleTag(wireKey, btag, guid, senderKey)
+  if btag == nil or not guid then return senderKey end
+  local people = global().people
+  local ctx = { ownBattleTag = own().battleTag, ownAccountId = own().accountId, friends = ns.PresenceTracker.friends(),
+                presence = global().presence, characters = ns.PresenceTracker.characters() }
+  if not ns.Identity.claimBattleTag(people, wireKey, btag, guid, ctx) then return senderKey end
+  ns.Merge.absorb(people, btag, now())
+  for _, peer in pairs(peers) do
+    if peer.key == wireKey then peer.key = btag end
+  end
+  addonRef:SendMessage(Sync.PEOPLE_UPDATED, btag)
+  addonRef:SendMessage(Sync.PEERS_CHANGED)
+  if senderKey == wireKey or senderKey == "member:" .. guid then return btag end
+  return senderKey
+end
+
 local handlers = {}
 
 function handlers.HELLO(message, senderKey, target, guid)
@@ -267,6 +288,13 @@ function handlers.HELLO(message, senderKey, target, guid)
   -- and merge anything stored under that "aid:" key into them.
   if guid and ns.Identity.bindAccountId(global().people, senderKey, message.bt) then
     ns.Merge.absorb(global().people, senderKey, now())
+  end
+  -- CF-90: their own BattleTag, only from a sender that is the key's owner or unknown so far.
+  if guid and type(message.btag) == "string" then
+    local pre = fromWire(message.bt)
+    if senderKey:sub(1, 7) == "member:" or senderKey == pre or senderKey == message.btag then
+      senderKey = learnBattleTag(message.bt, message.btag, guid, senderKey)
+    end
   end
   local key, isOwn = fromWire(message.bt)
   if isOwn then return end
@@ -331,6 +359,8 @@ function handlers.REQ(message, _, target)
     local record = ns.Merge.outgoingRecord(own(), ns.DoomsdayTracker.outgoing())
     ns.FeedTracker.published(record.version)
     record.bt = wireOwn
+    -- CF-90: over the community our own record also says our BattleTag (over Battle.net it is bt already).
+    if isCommunity(target) then record.btag = own().battleTag end
     ns.Messenger.send(target, record)
   elseif type(message.want) == "string" then
     local key = fromWire(message.want)
@@ -383,6 +413,10 @@ local function receiveRecord(message, senderKey, guid)
   local previous = people[key]
   ns.Merge.store(people, record, now(), accept)
   if not ns.Identity.isAidKey(key) then ns.Merge.absorb(people, key, now()) end
+  -- CF-90: the owner's own record over the community says its BattleTag: known by it from now on.
+  if guid and accept == key and ns.Identity.isAidKey(key) and type(message.btag) == "string" then
+    if learnBattleTag(message.bt, message.btag, guid, accept) ~= accept then key = message.btag end
+  end
   -- Level-ups from the merged characters (CF-28: an older copy inside the record is not a change).
   local levelUps = ns.Merge.levelUps(previous and previous.chars, people[key].chars)
   addonRef:SendMessage(Sync.PEOPLE_UPDATED, key)
