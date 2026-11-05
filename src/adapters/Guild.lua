@@ -60,19 +60,38 @@ function Guild.place()
   return { faction = UnitFactionGroup and (UnitFactionGroup("player")) or nil, realm = GetRealmName and GetRealmName() }
 end
 
--- CF-88: what decides whether the invite window's copy box may take the keyboard focus (core/GuildInvite.canFocus).
--- own: the copy box (focus on it is not "other").
--- InCombatLockdown is verified (V24); GetUnitSpeed, ChatEdit_GetActiveWindow (or ChatFrameUtil.GetActiveWindow) and
--- GetCurrentKeyBoardFocus are unverified (V136): a missing one counts as "no".
+-- CF-88, CF-93: what decides whether the invite window's copy box may take the keyboard focus
+-- (core/GuildInvite.focusDecision). own: the copy box (focus on it is not "other"). Only reads: nothing here opens,
+-- fills or unfocuses a chat input (V135).
+-- InCombatLockdown is verified (V24); GetUnitSpeed, ChatEdit_GetActiveWindow (or ChatFrameUtil.GetActiveWindow),
+-- GetCurrentKeyBoardFocus are unverified (V136): a missing one counts as "no". IsShown and HasFocus are plain frame
+-- methods, read guarded.
+local function ask(object, method)
+  local fn = type(object) == "table" and object[method]
+  if type(fn) ~= "function" then return nil end
+  local ok, value = pcall(fn, object)
+  if ok then return value end
+  return nil
+end
+
 function Guild.focusContext(own)
   local active = (ChatFrameUtil and ChatFrameUtil.GetActiveWindow) or ChatEdit_GetActiveWindow
-  local chat = active and select(2, pcall(active))
+  local chat
+  if active then
+    local ok, box = pcall(active)
+    if ok and type(box) == "table" then chat = box end
+  end
   local focus = GetCurrentKeyBoardFocus and GetCurrentKeyBoardFocus()
+  if type(focus) ~= "table" or focus == own then focus = nil end
+  local speed = GetUnitSpeed and GetUnitSpeed("player")
   return {
-    combat = InCombatLockdown and InCombatLockdown() or false,
-    speed = GetUnitSpeed and GetUnitSpeed("player") or 0,
-    chatOpen = chat and true or false,
-    otherFocus = (focus and focus ~= own) and true or false,
+    combat = InCombatLockdown and InCombatLockdown() and true or false,
+    speed = type(speed) == "number" and speed or 0,
+    chatOpen = chat ~= nil,
+    -- IM-style chat keeps the input on screen: only a shown chat input with the keyboard means typing.
+    chatTyping = (chat ~= nil and ask(chat, "IsShown") and ask(chat, "HasFocus")) and true or false,
+    -- Another edit box with the keyboard, unless it is hidden.
+    otherFocus = (focus ~= nil and ask(focus, "IsShown") ~= false) and true or false,
   }
 end
 

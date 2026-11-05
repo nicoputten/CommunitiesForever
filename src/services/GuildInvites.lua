@@ -60,6 +60,8 @@ end
 
 function GuildInvites.setDebug(on) debugging = on and true or false end
 function GuildInvites.debugOn() return debugging end
+-- CF-93: a [guild] line from the invite window (its focus decisions), only while /cf sync debug is on.
+function GuildInvites.trace(text) trace("%s", tostring(text)) end
 
 -- The picked guild's name (remembered account-wide, CF-83), or nil when the community is not a guild.
 local function rememberedGuild()
