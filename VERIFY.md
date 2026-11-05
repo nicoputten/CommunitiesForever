@@ -103,6 +103,23 @@ before these steps (`/reload` if you did): they fill the chat input from addon c
 | Bo without invite rights: the window comes, Bo pastes and sends within a minute | The game's "no permission" line; with `/cf sync debug` on Bo: `[guild] invite … refused: rights`; the alt asks the next member at once. | open |
 | Bo waits more than 2 minutes before pasting | The alt has already asked the next member (if one is online); Bo's later invite still arrives and still confirms. | open |
 
+### CF-90 Guild members known by their BattleTag
+Two accounts with this build, A and B, both in the guild picked as the community, **not** Battle.net friends of each
+other. Both online in Forever, with `/console scriptErrors 1`. Replace `<B's BattleTag>` with B's real one (as in
+B's `/run print(CommunitiesForeverDB.global.self.battleTag)`).
+
+| Step | Expected | Status |
+|---|---|---|
+| On A before updating (any older version that synced with B): `/run for k in pairs(CommunitiesForeverDB.global.people) do print(k) end` | B is listed as `aid:<12 hex>`. | open |
+| Update A and B to this build, log both in, wait ~15 s (or `/cf sync` on both) | Nothing in chat. | open |
+| On A: `/run local p=CommunitiesForeverDB.global.people["<B's BattleTag>"] print(p ~= nil, p and p.aid)` | `true` and B's 12-hex account ID. | open |
+| On A: `/run local n=0 for k in pairs(CommunitiesForeverDB.global.people) do if k:sub(1,4)=="aid:" then n=n+1 end end print(n)` | `0` (or only members on an older version). | open |
+| On A: `/cf` | B shows once, named by B's display name or the name part of B's BattleTag (not B's first character), with B's character online. | open |
+| The same three `/run` lines on B with A's BattleTag | The same: A under A's BattleTag. | open |
+| B levels up or changes gear; on A after ~15 s: `/run print(CommunitiesForeverDB.global.people["<B's BattleTag>"].version)` | A newer version; no `aid:` entry for B appears again. | open |
+| A third member C on an **older** version, online with A | A keeps C under `aid:`, C keeps A under `aid:`; both still sync (C's level-up reaches A). | open |
+| Upload A's SavedVariables to the site | B shows under B's Battle.net account (WEB-86), not as "Unknown player". | open |
+
 ### CF-89 Only the group takes part
 Two accounts with the addon on this build, both in the guild picked as the community (A and B), plus a Battle.net
 friend C who runs the addon (any version) and has **no** character in the guild. All three online in Forever, with

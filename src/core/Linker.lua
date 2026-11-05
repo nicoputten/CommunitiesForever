@@ -27,8 +27,10 @@ local function viaDisplayName(via, input)
   return Linker.displayName(via, input.people[via] and input.people[via].displayName)
 end
 
+-- CF-90: a BattleTag person with an account ID (aid) reached us over the community too (or is a friend whose own
+-- record carries it): the same trust as an "aid:" key.
 local function trusted(bt, person, input)
-  return input.friends[bt] or person.via or (type(bt) == "string" and bt:sub(1, 4) == "aid:")
+  return input.friends[bt] or person.via or (type(bt) == "string" and bt:sub(1, 4) == "aid:") or person.aid ~= nil
 end
 
 -- Picks the BattleTag a visible character links to, or nil (unlinked), plus the link source.
@@ -197,7 +199,8 @@ function Linker.build(raw)
     -- is online: only the one they are on, none when they are not in Forever. People linked without a
     -- friendship (relayed records, CF-20) keep the community presence, the only one there is.
     -- CF-28: the same for people met over the community (HELLO says which character they are on).
-    if bt == selfKey or input.friends[bt] or (bt:sub(1, 4) == "aid:" and input.online[bt]) then
+    -- CF-90: also a BattleTag person met over the community (online only from their HELLO).
+    if bt == selfKey or input.friends[bt] or input.online[bt] then
       local onGuid = bt == selfKey and input.selfGuid or (input.online[bt] and input.online[bt].guid)
       for _, row in ipairs(rows) do row.online = onGuid ~= nil and row.guid == onGuid end
     end
