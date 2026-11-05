@@ -288,6 +288,36 @@ describe("GuildInvite (CF-84)", function()
     assert.is_nil(G.inviteCommand("Bram|cffff"))
   end)
 
+  -- CF-88: the member window's key steps, the paste check, the focus rule and the width.
+  it("lights the key steps in order and never goes back", function()
+    assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, G.capStates(0))
+    assert.are.same({ "done", "done", "next", "upcoming" }, G.capStates(2))
+    assert.are.same({ "done", "done", "done", "done" }, G.capStates(4))
+    assert.are.equal(3, G.advance(1, G.STEP_PASTE)) -- a later event lights the earlier steps too
+    assert.are.equal(3, G.advance(3, G.STEP_COPY))
+    assert.are.equal(4, G.advance(nil, 9))
+  end)
+
+  it("sees the command pasted into a chat input, trimmed and in any case", function()
+    assert.is_true(G.isPasted("  /GINVITE bram lovewell ", "/ginvite Bram Lovewell"))
+    assert.is_false(G.isPasted("/ginvite Bram", "/ginvite Bram Lovewell"))
+    assert.is_false(G.isPasted(nil, "/ginvite Bram Lovewell"))
+  end)
+
+  it("takes the focus only out of combat, standing still, with no chat or other box open", function()
+    assert.is_true(G.canFocus({ speed = 0 }))
+    assert.is_false(G.canFocus({ combat = true }))
+    assert.is_false(G.canFocus({ speed = 7 }))
+    assert.is_false(G.canFocus({ chatOpen = true }))
+    assert.is_false(G.canFocus({ otherFocus = true }))
+  end)
+
+  it("makes the window 400 px wide, growing with the command up to 520", function()
+    assert.are.equal(400, G.windowWidth(150))
+    assert.are.equal(470, G.windowWidth(428))
+    assert.are.equal(520, G.windowWidth(800))
+  end)
+
   it("cleans a requester's display name", function()
     assert.are.equal("Ada", G.cleanDisplayName(" Ada "))
     assert.are.equal("Adacffff", G.cleanDisplayName("Ada|cffff"))

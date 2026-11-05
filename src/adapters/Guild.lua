@@ -60,6 +60,49 @@ function Guild.place()
   return { faction = UnitFactionGroup and (UnitFactionGroup("player")) or nil, realm = GetRealmName and GetRealmName() }
 end
 
+-- CF-88: what decides whether the invite window's copy box may take the keyboard focus (core/GuildInvite.canFocus).
+-- own: the copy box (focus on it is not "other").
+-- InCombatLockdown is verified (V24); GetUnitSpeed, ChatEdit_GetActiveWindow (or ChatFrameUtil.GetActiveWindow) and
+-- GetCurrentKeyBoardFocus are unverified (V136): a missing one counts as "no".
+function Guild.focusContext(own)
+  local active = (ChatFrameUtil and ChatFrameUtil.GetActiveWindow) or ChatEdit_GetActiveWindow
+  local chat = active and select(2, pcall(active))
+  local focus = GetCurrentKeyBoardFocus and GetCurrentKeyBoardFocus()
+  return {
+    combat = InCombatLockdown and InCombatLockdown() or false,
+    speed = GetUnitSpeed and GetUnitSpeed("player") or 0,
+    chatOpen = chat and true or false,
+    otherFocus = (focus and focus ~= own) and true or false,
+  }
+end
+
+-- CF-88: Ctrl held (IsControlKeyDown, unverified, V136).
+function Guild.controlDown()
+  return IsControlKeyDown and IsControlKeyDown() and true or false
+end
+
+-- CF-88: calls fn(text) after the text of a chat input changes (the Ctrl+V step). A post-hook on the chat frames'
+-- edit boxes (ChatFrame<i>EditBox, HookScript "OnTextChanged"); it only reads the text, never sets it. Unverified
+-- whether the hook taints the send (V137): the window can switch it off. Hooks once; returns how many boxes.
+local textWatchers, hooked = {}, false
+function Guild.watchChatInput(fn)
+  textWatchers[#textWatchers + 1] = fn
+  if hooked then return 0 end
+  hooked = true
+  local count = 0
+  for i = 1, NUM_CHAT_WINDOWS or 10 do
+    local box = _G["ChatFrame" .. i .. "EditBox"]
+    if box and box.HookScript and box.GetText then
+      box:HookScript("OnTextChanged", function(self)
+        local text = self:GetText()
+        for _, watcher in ipairs(textWatchers) do watcher(text) end
+      end)
+      count = count + 1
+    end
+  end
+  return count
+end
+
 function Guild.watch(addon, prefix)
   local events = LibStub("AceEvent-3.0"):Embed({})
   -- CHAT_MSG_ADDON(prefix, text, channel, sender) is verified (V50); the "GUILD" channel is V128.

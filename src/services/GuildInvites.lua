@@ -4,9 +4,9 @@
 --   Code: a member types it in /cf settings; members' addons spread it over the guild's addon channel (GKEY,
 --     GKEYHI); the newest version wins (GuildInvite.newer). Without a code everything here stays off.
 --   Members: keep the guild member list for alts and the characters removed from the guild (Vault, GKICK), answer a
---     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and show the popup with
---     "/ginvite <name>" to copy into chat (CF-87: addons can't invite in any way, V126, V134, V135); a refused
---     invite is reported back (GINVFAIL).
+--     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and show the window with
+--     "/ginvite <name>" to copy into chat (CF-87, CF-88: addons can't invite in any way, V126, V134, V135); a
+--     refused invite is reported back (GINVFAIL).
 --   Alt: a character outside the picked guild whispers a request to the stored members, most recently online
 --     first, one at a time, until one invites; then says "Click Accept" (CF-87: no AcceptGuild from addon code).
 --     Another faction or realm stops it for good, with one chat line.
@@ -29,6 +29,7 @@ GuildInvites.ASKED = "Asked %s for an invite into %s."
 GuildInvites.NO_ANSWER = "No member of %s answered your guild invite request. /reload tries again."
 GuildInvites.CLICK_ACCEPT = "Click Accept to join %s."
 GuildInvites.INVITED = "Invited %s into the guild."
+GuildInvites.WILL_ASK = "%s will ask someone else." -- CF-88: the member's line when the game refused the invite
 -- Shown once per character, then it never asks again.
 GuildInvites.STOPPED = {
   faction = "This character can't join %s: the guild is on the other faction. It won't ask for an invite again.",
@@ -40,13 +41,18 @@ local events -- own AceEvent object for internal messages
 local alt    -- the alt's request in progress: { id, guild, code, candidates, index, timer, attempts, done }
 local requestedAt   -- server time of our last request or ack ("Click Accept" window)
 local seen, lastHandled = {}, {} -- member side: request ids handled or claimed; requester -> time
--- member side: [lower-case name] = { name, raw, friend, id, at } popups shown, waiting for "You have invited"
--- (at: when the popup showed or closed, for refusal texts)
+-- member side: [lower-case name] = { name, raw, friend, classFile, id } windows shown, waiting for "You have
+-- invited"
 local pending = {}
 local answerTimer, lastAnswerAt
 local debugging = false
 
 local function now() return GetServerTime() end
+
+-- CF-88: the flow's own chat lines (GI01, GI03): the shield and the text in gold.
+local function say(text)
+  addonRef:Print(ns.GuildInvitePopup.chatLine(text))
+end
 
 local function trace(text, ...)
   if debugging then addonRef:Print("|cffa0a0a0[guild]|r " .. string.format(text, ...)) end
@@ -257,7 +263,7 @@ local function stopForGood(guild, reason)
   entry.stopped = type(entry.stopped) == "table" and entry.stopped or {}
   if entry.stopped[guid] then return end
   entry.stopped[guid] = reason
-  addonRef:Print(string.format(GuildInvites.STOPPED[reason], guild))
+  say(string.format(GuildInvites.STOPPED[reason], guild))
 end
 
 local function startAttempt()
@@ -296,7 +302,7 @@ local function attemptFailed()
       if type(last) == "number" and now() - last < ns.GuildInvite.NO_ANSWER_QUIET then return end
       entry.quiet[guid] = now()
     end
-    addonRef:Print(string.format(GuildInvites.NO_ANSWER, alt.guild))
+    say(string.format(GuildInvites.NO_ANSWER, alt.guild))
     return
   end
   alt.timer = C_Timer.NewTimer(ns.GuildInvite.RETRY_SECONDS, function()
@@ -339,7 +345,7 @@ local function onAck(message, sender)
   if not alt or alt.done or message.id ~= alt.id then return end
   stopTimer()
   requestedAt = now()
-  addonRef:Print(string.format(GuildInvites.ASKED, sender, alt.guild))
+  say(string.format(GuildInvites.ASKED, sender, alt.guild))
   alt.timer = C_Timer.NewTimer(ns.GuildInvite.INVITE_WAIT, function()
     alt.timer = nil
     trace("no invite from %s: asking the next member", sender)
@@ -376,34 +382,32 @@ local function onInvited(_, guildName)
   if not ns.GuildInvite.shouldAccept(requestedAt, guildName, guild, now()) then return end
   stopTimer()
   if alt then alt.done = true end
-  addonRef:Print(string.format(GuildInvites.CLICK_ACCEPT, guild))
+  say(string.format(GuildInvites.CLICK_ACCEPT, guild))
 end
 
 -- ===== The member's side =====
 
+-- The alt's owner as the member knows them: their display name (CF-88: never the BattleTag), else the display name
+-- the request carried; and the alt's class when the member's addon has its record. Returns name or nil, classFile.
 local function friendOf(message)
   local people = addonRef.db.global.people
   local key = type(message.guid) == "string" and ns.Identity.personOfGuid(people, message.guid)
   local person = key and people[key]
   local name = person and ns.GuildInvite.cleanDisplayName(person.displayName)
-  if not name and key and not key:find("^aid:") and not key:find("^member:") then
-    name = key:match("^([^#]+)#") -- the BattleTag's name part, as the Friends tab shows people
-  end
-  return name or ns.GuildInvite.cleanDisplayName(message.dn)
+  local char = person and person.chars and person.chars[message.guid]
+  local classFile = type(char) == "table" and type(char.classFile) == "string" and char.classFile or nil
+  return name or ns.GuildInvite.cleanDisplayName(message.dn), classFile
 end
 
--- The member's popup: /ginvite <name> to copy and paste into chat (CF-87). The entry waits in pending for the
--- member's own invite: "You have invited" (the confirmation line, matched by name) or a refusal text within
--- REFUSAL_WINDOW (GINVFAIL to the alt).
+-- The member's window (CF-87, CF-88): /ginvite <name> to copy and paste into chat. The entry waits in pending for
+-- the member's own invite: "You have invited" (the confirmation line, matched by name), or a refusal text while the
+-- window shows this request (GINVFAIL to the alt). Closed with X or Esc: nothing printed, nothing sent.
 local function invite(entry)
-  entry.at = ns.Transport.now()
   -- The name exactly as the game reported the whisper's sender (V131).
-  local shown = ns.GuildInvitePopup.show(entry.raw, entry.friend, entry.name, function()
-    entry.at = ns.Transport.now() -- closed after copying: the paste comes now
-    trace("popup for %s closed", entry.raw)
-  end)
+  local shown = ns.GuildInvitePopup.show({ target = entry.raw, name = entry.name, friend = entry.friend,
+    classFile = entry.classFile, onClose = function() trace("window for %s closed", entry.raw) end })
   if shown then pending[entry.name:lower()] = entry end
-  trace("popup for %s: %s", entry.raw, tostring(shown))
+  trace("window for %s: %s", entry.raw, tostring(shown))
 end
 
 local function onRequest(message, sender, raw)
@@ -426,7 +430,8 @@ local function onRequest(message, sender, raw)
   lastHandled[sender:lower()] = now()
   whisper(raw, { t = "GINVACK", id = message.id })
   sendGuild({ t = "GINVCLAIM", id = message.id, n = sender })
-  invite({ name = sender, raw = raw, friend = friendOf(message), id = message.id })
+  local friend, classFile = friendOf(message)
+  invite({ name = sender, raw = raw, friend = friend, classFile = classFile, id = message.id })
 end
 
 local function onClaim(message, sender)
@@ -447,25 +452,26 @@ local function onInviteSent(name)
     return
   end
   pending[short:lower()] = nil
-  addonRef:Print(string.format(GuildInvites.INVITED, ns.GuildInvite.altLabel(entry.name, entry.friend)))
+  if ns.GuildInvitePopup.current() == entry.raw then ns.GuildInvitePopup.sent() end
+  say(string.format(GuildInvites.INVITED, ns.GuildInvite.altLabel(entry.name, entry.friend)))
 end
 
--- The game refused one of our invites (no rights, other faction, already in a guild, ...): tell the alt, so it asks
--- the next member at once (or stops, for another faction). Without a name: our most recent invite.
+-- The game refused one of our invites (no rights, other faction, already in a guild, ...), only while the window
+-- shows that request ("no permission" is a generic text the game shows for other things too): the window goes at
+-- once, one line, and the alt hears it so it asks the next member at once (or stops, for another faction).
+-- Without a name in the text: the request on screen.
 local function onInviteFailed(kind, name)
-  local entry
-  local short = name and ns.Transport.shortName(name)
-  if short then
-    entry = pending[short:lower()]
-  else
-    for _, e in pairs(pending) do
-      if e.at and (not entry or e.at > entry.at) then entry = e end
-    end
-  end
-  -- Only soon after our popup: "no permission" is a generic text the game shows for other things too.
-  if not (entry and entry.at) or ns.Transport.now() - entry.at > ns.GuildInvite.REFUSAL_WINDOW then return end
+  local current = ns.GuildInvitePopup.current()
+  if not current then return end
+  local short = ns.Transport.shortName(name or current)
+  local entry = short and pending[short:lower()]
+  if not entry or entry.raw ~= current then return end
   pending[entry.name:lower()] = nil
+  ns.GuildInvitePopup.refused()
   trace("invite %s refused: %s", entry.raw, tostring(kind))
+  if kind ~= "faction" then
+    say(string.format(GuildInvites.WILL_ASK, ns.GuildInvite.altLabel(entry.name, entry.friend)))
+  end
   whisper(entry.raw, { t = "GINVFAIL", id = entry.id, r = kind })
 end
 

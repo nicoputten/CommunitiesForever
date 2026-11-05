@@ -546,6 +546,8 @@ function wowapi.install(opts)
     return f
   end
   for i = 1, 10 do globals["ChatFrame" .. i] = chatFrame(i) end
+  -- CF-88: the chat inputs (the invite window reads their text through a post-hook).
+  for i = 1, 10 do globals["ChatFrame" .. i .. "EditBox"] = newRegion(state, "EditBox") end
   globals.NUM_CHAT_WINDOWS = 10
   globals.SELECTED_CHAT_FRAME = globals.ChatFrame1
   globals.SOUNDKIT = { TELL_MESSAGE = 3081 }
