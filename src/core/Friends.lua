@@ -78,13 +78,20 @@ end
 -- A GUID seen under a different BattleTag is reassigned (latest observation wins). A hidden friend's character
 -- (snap.hiddenCharacters, they appear offline) gets its BattleTag for linking, but its lastSeen is not moved:
 -- the window must not tell that they are on.
-function Friends.recordPresence(presence, snap, now)
+-- CF-89 (optional roster, keys): only characters on the roster or of a BattleTag in keys (Belongs.keys) are
+-- written; keys == nil (roster not known yet) writes all.
+function Friends.recordPresence(presence, snap, now, roster, keys)
+  local function wanted(guid, bt)
+    return keys == nil or keys[bt] == true or (roster ~= nil and roster[guid] ~= nil)
+  end
   for guid, bt in pairs(snap.characters) do
-    presence[guid] = { battleTag = bt, lastSeen = now }
+    if wanted(guid, bt) then presence[guid] = { battleTag = bt, lastSeen = now } end
   end
   for guid, bt in pairs(snap.hiddenCharacters or {}) do
-    local before = presence[guid]
-    presence[guid] = { battleTag = bt, lastSeen = before and before.battleTag == bt and before.lastSeen or nil }
+    if wanted(guid, bt) then
+      local before = presence[guid]
+      presence[guid] = { battleTag = bt, lastSeen = before and before.battleTag == bt and before.lastSeen or nil }
+    end
   end
 end
 

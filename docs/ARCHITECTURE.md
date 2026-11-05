@@ -168,6 +168,26 @@ Internal event bus: AceEvent messages on the addon object (`SendMessage` / `Regi
 
 Data flow: adapters emit internal events -> services and core compute -> Linker builds a view model -> UI renders the view model. UI never calls adapters for data.
 
+## Who belongs (CF-89)
+Only people with a character in the selected community or guild take part; Battle.net friends outside it are left
+alone. A person (BattleTag or `aid:` key) **belongs** when at least one of their characters is on the roster
+(`global.members`), also while they play an alt outside it. Their characters are known from presence links, the
+characters they are on now (Battle.net presence) and their own record's `chars` (`core/Belongs.lua`, decided in
+`MemberTracker.belongs`). You always belong.
+- The roster is replaced only from a member list of the selected community that lists your own character (the
+  list loads late and can be partial at login). On a character that cannot see the selected community, the last
+  roster stays. Without a selected community it is `{}`: nobody belongs, nothing is synced. After choosing another
+  community it is `nil` (not known) until that community's members load.
+- Not known (`nil`, the first login with this version or after choosing another community): nothing is pruned and
+  nothing is sent over Battle.net; a Battle.net HELLO is kept and answered once the roster is known (if the friend
+  belongs).
+- Over Battle.net, `Messenger` sends nothing to and drops everything from a friend who does not belong; `Sync`
+  sends them no HELLO, REQ, RECORD, RUNS or SCHED. Community messages come from members already.
+- Stored data: `presence` keeps links of roster characters and of people who belong (`Friends.recordPresence`);
+  every roster update removes the other links and the `people` records of those who do not belong. That is also
+  the one-time cleanup of data stored before CF-89. It runs at run time and not as a `Store.MIGRATIONS` step,
+  because a migration cannot know the members; no schema bump (`members` is a new optional key).
+
 ## Compatibility
 CLAUDE.md rule 8. Friends run different versions for days, and everyone keeps their SavedVariables across
 updates, so data from an earlier version must keep working. One pattern for both:
@@ -238,7 +258,12 @@ global = {
                                 removed = { [guid] = time },                       -- CF-28: dropped characters
                                 aid,                                               -- CF-28: account ID (community key)
                                 goals } },                                         -- CF-56: their Doomsday goals
-  presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence
+  presence  = { [guid] = { battleTag, lastSeen } },  -- links observed via BNet presence (CF-89: only roster
+                                                     -- characters and characters of people who belong)
+  members   = { [guid] = { name, seenAt } },         -- CF-89: the roster, the selected community's members as last
+                                                     -- seen here; replaced whole on every member update; {} without
+                                                     -- a selected community; nil until first known. Read by the site
+                                                     -- as proof of who is in the group. See "Who belongs".
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
   plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
