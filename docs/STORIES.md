@@ -31,7 +31,7 @@ GuildInvite specs, `tools/FriendProbe/`, VERIFY.md, CHANGELOG.md.
   a new request replaces the shown one in place (keys reset, a gold edge for 400 ms; no queue).
 - **Alt:** chat lines only, with the shield and in gold: "Asked …", "Click Accept to join …", "No member of …
   answered …". No waiting window (GI03 option B).
-- Deviations from the brief: A (no chat input opened: 5 key presses, 4 caps), B (the paste hook behind a switch),
+- Deviations from the brief: A (no chat input opened: 5 key presses, 4 caps; Nico, 2026-11-05: keep 4 caps), B (the paste hook behind a switch),
   C (no locale table, rule 6), D (no new protocol: the refusal is GINVFAIL), E (unverified APIs guarded, V136),
   G (Esc through the frame's own keyboard handler, not `UISpecialFrames`, which needs a named global, rule 5).
 - No change to stored data or messages (rule 8).
