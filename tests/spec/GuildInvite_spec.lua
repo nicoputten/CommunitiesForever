@@ -6,6 +6,7 @@ describe("GuildInvite (CF-84)", function()
 
   before_each(function()
     local ns = helpers.coreNs()
+    helpers.loadAddonFile("src/core/GameText.lua", ns)
     helpers.loadAddonFile("src/core/GuildInvite.lua", ns)
     G = ns.GuildInvite
   end)
@@ -28,31 +29,46 @@ describe("GuildInvite (CF-84)", function()
   end)
 
   describe("the newest code wins", function()
-    it("by the time it was set, then by the code that sorts last", function()
-      assert.is_true(G.newer({ code = "aaaaaa", at = 200 }, { code = "zzzzzz", at = 100 }))
-      assert.is_false(G.newer({ code = "zzzzzz", at = 100 }, { code = "aaaaaa", at = 200 }))
-      assert.is_true(G.newer({ code = "bbbbbb", at = 100 }, { code = "aaaaaa", at = 100 }))
-      assert.is_false(G.newer({ code = "aaaaaa", at = 100 }, { code = "bbbbbb", at = 100 }))
-      assert.is_false(G.newer({ code = "aaaaaa", at = 100 }, { code = "aaaaaa", at = 100 }))
-      assert.is_true(G.newer({ code = "aaaaaa", at = 1 }, nil))
+    it("by version first, whatever the times say (edge case 5)", function()
+      assert.is_true(G.newer({ code = "aaaaaa", v = 3, at = 100 }, { code = "zzzzzz", v = 2, at = 9999 }))
+      assert.is_false(G.newer({ code = "zzzzzz", v = 2, at = 9999 }, { code = "aaaaaa", v = 3, at = 100 }))
+      assert.is_true(G.newer({ code = "aaaaaa", v = 1, at = 1 }, { code = "zzzzzz", at = 100 })) -- no v: 0
+    end)
+
+    it("on the same version by the time it was set, then by the code that sorts last", function()
+      assert.is_true(G.newer({ code = "aaaaaa", v = 2, at = 200 }, { code = "zzzzzz", v = 2, at = 100 }))
+      assert.is_true(G.newer({ code = "bbbbbb", v = 2, at = 100 }, { code = "aaaaaa", v = 2, at = 100 }))
+      assert.is_false(G.newer({ code = "aaaaaa", v = 2, at = 100 }, { code = "bbbbbb", v = 2, at = 100 }))
+      assert.is_false(G.newer({ code = "aaaaaa", v = 2, at = 100 }, { code = "aaaaaa", v = 2, at = 100 }))
+      assert.is_true(G.newer({ code = "aaaaaa", v = 1, at = 1 }, nil))
+    end)
+
+    it("gives a code set here the next version", function()
+      assert.are.equal(1, G.nextVersion(nil))
+      assert.are.equal(1, G.nextVersion({ code = "abcdefg", at = 5 }))
+      assert.are.equal(8, G.nextVersion({ code = "abcdefg", v = 7, at = 5 }))
     end)
 
     it("takes a received code only when valid and newer", function()
-      local stored = { code = "oldcode1", at = 1000 }
-      assert.are.same({ code = "newcode1", at = 1001 }, G.acceptKey(stored, { code = "newcode1", at = 1001 }, 2000))
-      assert.is_nil(G.acceptKey(stored, { code = "newcode1", at = 999 }, 2000))
-      assert.is_nil(G.acceptKey(stored, { code = "oldcode1", at = 1000 }, 2000)) -- the same: nothing to do
-      assert.are.same({ code = "first1", at = 5 }, G.acceptKey(nil, { code = "first1", at = 5 }, 2000))
+      local stored = { code = "oldcode1", v = 4, at = 1000 }
+      assert.are.same({ code = "newcode1", v = 5, at = 900 },
+        G.acceptKey(stored, { code = "newcode1", v = 5, at = 900 }, 2000))
+      assert.is_nil(G.acceptKey(stored, { code = "newcode1", v = 3, at = 1999 }, 2000))
+      assert.is_nil(G.acceptKey(stored, { code = "oldcode1", v = 4, at = 1000 }, 2000)) -- the same: nothing to do
+      assert.are.same({ code = "first1", v = 1, at = 5 }, G.acceptKey(nil, { code = "first1", v = 1, at = 5 }, 2000))
     end)
 
-    it("never takes a time from the future, a bad time or a code that is not clean", function()
-      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", at = 2000 + G.FUTURE_SLACK + 1 }, 2000))
-      assert.is_table(G.acceptKey(nil, { code = "abcdefg", at = 2000 + G.FUTURE_SLACK }, 2000))
-      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", at = 10.5 }, 2000))
-      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", at = 0 }, 2000))
-      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", at = "10" }, 2000))
-      assert.is_nil(G.acceptKey(nil, { code = " abcdefg", at = 10 }, 2000))
-      assert.is_nil(G.acceptKey(nil, { code = "abc", at = 10 }, 2000))
+    it("never takes a bad version, a time from the future, a bad time or a code that is not clean", function()
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", at = 10 }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", v = 0, at = 10 }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", v = 1.5, at = 10 }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", v = 1, at = 2000 + G.FUTURE_SLACK + 1 }, 2000))
+      assert.is_table(G.acceptKey(nil, { code = "abcdefg", v = 1, at = 2000 + G.FUTURE_SLACK }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", v = 1, at = 10.5 }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", v = 1, at = 0 }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abcdefg", v = 1, at = "10" }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = " abcdefg", v = 1, at = 10 }, 2000))
+      assert.is_nil(G.acceptKey(nil, { code = "abc", v = 1, at = 10 }, 2000))
       assert.is_nil(G.acceptKey(nil, "abcdefg", 2000))
     end)
   end)
@@ -124,6 +140,7 @@ describe("GuildInvite (CF-84)", function()
       function()
       local members = { ["bram lovewell"] = true }
       assert.are.same({ nil, "member" }, { G.checkRequest(request(), ctx({ memberNames = members })) })
+      assert.are.same({ nil, "removed" }, { G.checkRequest(request(), ctx({ removedNames = members })) })
       assert.are.same({ nil, "seen" }, { G.checkRequest(request(), ctx({ seen = { ["1a2b3c4d"] = true } })) })
       assert.are.same({ nil, "cooldown" },
         { G.checkRequest(request(), ctx({ lastHandled = { ["bram lovewell"] = NOW - 30 } })) })
@@ -147,10 +164,11 @@ describe("GuildInvite (CF-84)", function()
                         ["Player-2"] = { name = "Cora Lovewell", seen = 200 } }, roster)
     end)
 
-    it("drops members who left, and the longest unseen beyond the limit", function()
+    it("drops members who left and names them, and the longest unseen beyond the limit", function()
       local roster = G.updateRoster(nil, { ["Player-1"] = { name = "Ada Lovewell", online = true } }, 100)
-      G.updateRoster(roster, { ["Player-2"] = { name = "Cora Lovewell", online = true } }, 200)
+      local _, gone = G.updateRoster(roster, { ["Player-2"] = { name = "Cora Lovewell", online = true } }, 200)
       assert.are.same({ ["Player-2"] = { name = "Cora Lovewell", seen = 200 } }, roster)
+      assert.are.same({ ["Player-1"] = "Ada Lovewell" }, gone)
       local members, big = {}, {}
       for i = 1, G.ROSTER_MAX + 5 do
         members["Player-" .. i] = { name = "Member " .. i, online = false }
@@ -162,6 +180,19 @@ describe("GuildInvite (CF-84)", function()
       assert.are.equal(G.ROSTER_MAX, count)
       assert.is_nil(big["Player-1"])
       assert.is_table(big["Player-" .. (G.ROSTER_MAX + 5)])
+    end)
+
+    it("does not count anyone as gone when the list looks half loaded", function()
+      local roster, members = {}, {}
+      for i = 1, 20 do roster["Player-" .. i] = { name = "Member " .. i, seen = i } end
+      for i = 1, 10 do members["Player-" .. i] = { name = "Member " .. i, online = false } end
+      local _, gone = G.updateRoster(roster, members, 300)
+      assert.are.same({}, gone)
+      assert.is_table(roster["Player-20"]) -- kept until the list is complete
+      members = {}
+      for i = 1, 18 do members["Player-" .. i] = { name = "Member " .. i, online = false } end
+      _, gone = G.updateRoster(roster, members, 300)
+      assert.are.same({ ["Player-19"] = "Member 19", ["Player-20"] = "Member 20" }, gone)
     end)
 
     it("asks the most recently online first, without your own characters, at most ten", function()
@@ -179,6 +210,55 @@ describe("GuildInvite (CF-84)", function()
       for i = 1, 20 do many["g" .. i] = { name = "Member " .. i, seen = i } end
       assert.are.equal(G.CANDIDATES_MAX, #G.candidates(many))
       assert.are.same({}, G.candidates(nil))
+    end)
+  end)
+
+  describe("characters removed from the guild (edge case 6)", function()
+    it("are remembered, matched by name, and lifted by GUID back in the guild or a manual invite by name", function()
+      local removed = G.markRemoved(nil, "Player-9", "Bram Lovewell", 100)
+      G.markRemoved(removed, "Player-8", "Cora Lovewell", 110)
+      assert.are.same({ ["bram lovewell"] = true, ["cora lovewell"] = true }, G.removedNames(removed))
+      assert.is_true(G.liftRemoved(removed, { ["Player-9"] = { name = "Bram Lovewell" } }))
+      assert.is_true(G.liftRemoved(removed, nil, "cora lovewell"))
+      assert.are.same({}, removed)
+      assert.is_false(G.liftRemoved(removed, nil, "Nobody"))
+      assert.is_false(G.liftRemoved(nil, nil, "Nobody"))
+    end)
+
+    it("ignores bad entries and keeps the newest when full", function()
+      assert.are.same({}, G.markRemoved(nil, nil, "Bram Lovewell", 1))
+      assert.are.same({}, G.markRemoved(nil, "Player-1", "", 1))
+      local removed = {}
+      for i = 1, G.REMOVED_MAX + 3 do G.markRemoved(removed, "Player-" .. i, "Member " .. i, i) end
+      local count = 0
+      for _ in pairs(removed) do count = count + 1 end
+      assert.are.equal(G.REMOVED_MAX, count)
+      assert.is_nil(removed["Player-1"])
+    end)
+  end)
+
+  describe("faction and realm (edge case 3)", function()
+    it("tells another faction or realm, and is fine when equal or unknown", function()
+      local guild = { faction = "Horde", realm = "Classic Beta PvP" }
+      assert.are.equal("faction", G.placeMismatch(guild, { faction = "Alliance", realm = "Classic Beta PvP" }))
+      assert.are.equal("realm", G.placeMismatch(guild, { faction = "Horde", realm = "Classic Beta RP" }))
+      assert.is_nil(G.placeMismatch(guild, { faction = "Horde", realm = "Classic Beta PvP" }))
+      assert.is_nil(G.placeMismatch({}, { faction = "Horde" }))
+      assert.is_nil(G.placeMismatch(nil, { faction = "Horde" }))
+    end)
+  end)
+
+  describe("the game's refusals (edge case 4)", function()
+    local FORMATS = { rights = "You don't have permission to do that.",
+                      member = "%s is already in a guild.",
+                      faction = "You cannot invite players from the opposing alliance" }
+
+    it("are read through the game's own texts, with the name when they give one", function()
+      assert.are.same({ "rights" }, { G.inviteError("You don't have permission to do that.", FORMATS) })
+      assert.are.same({ "member", "Bram Lovewell" }, { G.inviteError("Bram Lovewell is already in a guild.", FORMATS) })
+      assert.are.same({ "faction" }, { G.inviteError("You cannot invite players from the opposing alliance", FORMATS) })
+      assert.is_nil(G.inviteError("You have invited Bram Lovewell to join your guild.", FORMATS))
+      assert.is_nil(G.inviteError(nil, FORMATS))
     end)
   end)
 

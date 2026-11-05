@@ -2,11 +2,13 @@
 -- adapters/Guild.lua; the code and member list: adapters/Vault.lua (never CommunitiesForeverDB: the uploader sends
 -- that file to the website). Wire reference: docs/SYNC.md "Guild invites (CF-84)".
 --   Code: a member types it in /cf settings; members' addons spread it over the guild's addon channel (GKEY,
---     GKEYHI); the newest wins (GuildInvite.newer). Without a code everything here stays off.
---   Members: keep the guild member list for alts (Vault), answer a valid request (GINVREQ) with GINVACK, claim it on
---     the guild channel (GINVCLAIM) and invite, or show a one-button popup when the invite needs a click.
+--     GKEYHI); the newest version wins (GuildInvite.newer). Without a code everything here stays off.
+--   Members: keep the guild member list for alts and the characters removed from the guild (Vault, GKICK), answer a
+--     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and invite, or show a
+--     one-button popup when the invite needs a click; a refused invite is reported back (GINVFAIL).
 --   Alt: a character outside the picked guild whispers a request to the stored members, most recently online
---     first, one at a time, until one acknowledges; then accepts the guild's invite by itself.
+--     first, one at a time, until one invites; then accepts the guild's invite by itself. Another faction or realm
+--     stops it for good, with one chat line.
 local _, ns = ...
 
 local GuildInvites = {}
@@ -27,13 +29,19 @@ GuildInvites.NO_ANSWER = "No member of %s answered your guild invite request. /r
 GuildInvites.ACCEPTING = "Joining %s: accepting the invite from %s."
 GuildInvites.CLICK_ACCEPT = "Click Accept to join %s."
 GuildInvites.INVITED = "Invited %s into the guild."
+-- Shown once per character, then it never asks again.
+GuildInvites.STOPPED = {
+  faction = "This character can't join %s: the guild is on the other faction. It won't ask for an invite again.",
+  realm = "This character can't join %s: the guild is on another realm. It won't ask for an invite again.",
+}
 
 local addonRef, codec
 local events -- own AceEvent object for internal messages
-local alt    -- the alt's request in progress: { id, guild, candidates, index, timer, attempts, done }
-local requestedAt   -- server time of our last request (auto-accept window)
+local alt    -- the alt's request in progress: { id, guild, code, candidates, index, timer, attempts, done }
+local requestedAt   -- server time of our last request or ack (auto-accept window)
 local seen, lastHandled = {}, {} -- member side: request ids handled or claimed; requester -> time
-local pending = {}  -- member side: [lower-case name] = { name, friend, timer } invites waiting for "You have invited"
+-- member side: [lower-case name] = { name, raw, friend, id, timer, at } invites waiting for "You have invited"
+local pending = {}
 local needsClick = false -- the game blocked an invite without a click this session
 local answerTimer, lastAnswerAt
 local debugging = false
@@ -76,7 +84,7 @@ end
 local function storedKey(guild)
   local entry = entryOf(guild)
   if entry and type(entry.code) == "string" and type(entry.at) == "number" then
-    return { code = entry.code, at = entry.at }
+    return { code = entry.code, v = type(entry.v) == "number" and entry.v or 0, at = entry.at }
   end
   return nil
 end
@@ -109,7 +117,7 @@ end
 
 local function sendKey(guild)
   local key = storedKey(guild)
-  if key then sendGuild({ t = "GKEY", k = key.code, at = key.at }) end
+  if key then sendGuild({ t = "GKEY", k = key.code, v = key.v, at = key.at }) end
 end
 
 -- Another member has an older code (or none): answer with ours after a random moment, unless someone else's answer
@@ -135,15 +143,15 @@ local function onKey(message)
   local guild = memberGuild()
   if not guild then return end
   local stored = storedKey(guild)
-  local key = ns.GuildInvite.acceptKey(stored, { code = message.k, at = message.at }, now())
+  local key = ns.GuildInvite.acceptKey(stored, { code = message.k, v = message.v, at = message.at }, now())
   if key then
     local entry = entryOf(guild, true)
     if not entry then return end
-    entry.code, entry.at = key.code, key.at
+    entry.code, entry.v, entry.at = key.code, key.v, key.at
     cancelKeyAnswer()
-    trace("guild code from %s taken (newer)", tostring(message.at))
+    trace("guild code version %s taken (newer)", tostring(key.v))
     addonRef:SendMessage(GuildInvites.CHANGED)
-  elseif stored and stored.code == message.k and stored.at == message.at then
+  elseif stored and stored.code == message.k and stored.v == message.v and stored.at == message.at then
     cancelKeyAnswer() -- someone else already answered with the same code
   elseif stored then
     scheduleKeyAnswer(guild) -- theirs is older (or not valid): answer with ours
@@ -153,7 +161,7 @@ end
 local function onKeyHello(message)
   local guild = memberGuild()
   local stored = guild and storedKey(guild)
-  if stored and not (type(message.at) == "number" and message.at >= stored.at) then scheduleKeyAnswer(guild) end
+  if stored and not (type(message.v) == "number" and message.v >= stored.v) then scheduleKeyAnswer(guild) end
 end
 
 -- True when the vault (the companion folder) is there: without it the feature is off.
@@ -168,7 +176,7 @@ function GuildInvites.codeSetAt()
 end
 
 -- Sets the picked guild's code (typed in /cf settings). Returns true, or nil and a message (GuildInvites.SET_ERRORS).
--- Its time is now, or one second after the stored one when the clock says otherwise, so it is always the newest.
+-- Its version is one more than the stored one, so it beats every code this client knows of, whatever the clocks say.
 function GuildInvites.setCode(text)
   if not GuildInvites.available() then return nil, GuildInvites.SET_ERRORS.novault end
   local guild = rememberedGuild()
@@ -178,18 +186,16 @@ function GuildInvites.setCode(text)
     if reason == "empty" then return nil end -- an empty field changes nothing
     return nil, GuildInvites.SET_ERRORS[reason]
   end
-  local stored = storedKey(guild)
-  local at = now()
-  if stored and stored.at >= at then at = stored.at + 1 end
   local entry = entryOf(guild, true)
-  entry.code, entry.at = code, at
+  entry.v = ns.GuildInvite.nextVersion(storedKey(guild))
+  entry.code, entry.at = code, now()
   cancelKeyAnswer()
   if memberGuild() then sendKey(guild) end
   addonRef:SendMessage(GuildInvites.CHANGED)
   return true
 end
 
--- ===== The member list for alts =====
+-- ===== The member list for alts, and removed characters =====
 
 local IN_GAME = { [1] = true, [4] = true, [5] = true } -- Online, Away, Busy (as core/Linker.lua)
 
@@ -202,7 +208,26 @@ local function keepRoster()
   end
   if next(members) == nil then return end -- not loaded yet: keep what we have
   local entry = entryOf(guild, true)
-  entry.roster = ns.GuildInvite.updateRoster(entry.roster, members, now())
+  local place = ns.Guild.place()
+  entry.faction, entry.realm = place.faction, place.realm -- an alt compares its own (another faction or realm)
+  local roster, gone = ns.GuildInvite.updateRoster(entry.roster, members, now())
+  entry.roster = roster
+  ns.GuildInvite.liftRemoved(entry.removed, members) -- back in the guild: invited by hand, so lifted
+  for guid, name in pairs(gone) do
+    entry.removed = ns.GuildInvite.markRemoved(entry.removed, guid, name, now())
+    trace("%s left the guild: never invited by itself again", name)
+    sendGuild({ t = "GKICK", g = guid, n = name, at = now() })
+  end
+end
+
+-- Another member saw a character leave the guild (GKICK).
+local function onKick(message)
+  local guild = memberGuild()
+  if not guild or type(message.g) ~= "string" or type(message.n) ~= "string" then return end
+  if ns.MemberTracker.members()[message.g] then return end -- in the guild as far as we see
+  local entry = entryOf(guild, true)
+  if not entry then return end
+  entry.removed = ns.GuildInvite.markRemoved(entry.removed, message.g, message.n, now())
 end
 
 -- ===== The alt's request =====
@@ -222,12 +247,32 @@ local function stopTimer()
   if alt then alt.timer = nil end
 end
 
+-- This character can't join (another faction or realm): one chat line, then it never asks again.
+local function stopForGood(guild, reason)
+  stopTimer()
+  if alt then alt.done = true end
+  local entry = entryOf(guild, true)
+  local guid = ns.SelfInfo.guid()
+  if not (entry and guid) then return end
+  entry.stopped = type(entry.stopped) == "table" and entry.stopped or {}
+  if entry.stopped[guid] then return end
+  entry.stopped[guid] = reason
+  addonRef:Print(string.format(GuildInvites.STOPPED[reason], guild))
+end
+
 local function startAttempt()
   local guild = rememberedGuild()
   local key = storedKey(guild)
   if not (guild and key) or currentGuild() then return end
   local entry = entryOf(guild)
-  local candidates = ns.GuildInvite.candidates(entry and entry.roster, ownGuids())
+  local guid = ns.SelfInfo.guid()
+  if type(entry.stopped) == "table" and guid and entry.stopped[guid] then return end -- told once already
+  local mismatch = ns.GuildInvite.placeMismatch(entry, ns.Guild.place())
+  if mismatch then
+    stopForGood(guild, mismatch)
+    return
+  end
+  local candidates = ns.GuildInvite.candidates(entry.roster, ownGuids())
   if #candidates == 0 then
     trace("no guild members stored to ask")
     return
@@ -243,6 +288,14 @@ end
 local function attemptFailed()
   if alt.attempts >= ns.GuildInvite.MAX_ATTEMPTS then
     alt.done = true
+    -- Once a day per character: an alt that can't reach anyone (another ruleset, members never online) stays quiet.
+    local entry, guid = entryOf(alt.guild, true), ns.SelfInfo.guid()
+    if entry and guid then
+      entry.quiet = type(entry.quiet) == "table" and entry.quiet or {}
+      local last = entry.quiet[guid]
+      if type(last) == "number" and now() - last < ns.GuildInvite.NO_ANSWER_QUIET then return end
+      entry.quiet[guid] = now()
+    end
     addonRef:Print(string.format(GuildInvites.NO_ANSWER, alt.guild))
     return
   end
@@ -264,6 +317,7 @@ function askNext()
   local at = now()
   local selfInfo = ns.SelfInfo.read()
   requestedAt = at
+  -- The name exactly as the guild's member list gave it (C_Club.GetMemberInfo), never built from parts (V131).
   whisper(name, { t = "GINVREQ", id = alt.id, at = at,
                   p = ns.GuildInvite.proof(alt.code, alt.guild, selfInfo.name, at), guid = selfInfo.guid,
                   dn = ns.GuildInvite.cleanDisplayName(addonRef.db.global.self.displayName) })
@@ -273,12 +327,34 @@ function askNext()
   end)
 end
 
+-- The member that took our request could not invite (refused, no rights, popup ignored): ask the next one with a
+-- new request id (the old one is claimed in the guild).
+local function askNextMember()
+  if not alt or alt.done then return end
+  alt.id = randomId()
+  askNext()
+end
+
 local function onAck(message, sender)
   if not alt or alt.done or message.id ~= alt.id then return end
   stopTimer()
-  alt.done = true
   requestedAt = now()
   addonRef:Print(string.format(GuildInvites.ASKED, sender, alt.guild))
+  alt.timer = C_Timer.NewTimer(ns.GuildInvite.INVITE_WAIT, function()
+    alt.timer = nil
+    trace("no invite from %s: asking the next member", sender)
+    askNextMember()
+  end)
+end
+
+local function onFail(message, sender)
+  if not alt or alt.done or message.id ~= alt.id then return end
+  trace("%s could not invite: %s", sender, tostring(message.r))
+  if message.r == "faction" then
+    stopForGood(alt.guild, "faction")
+  else
+    askNextMember()
+  end
 end
 
 -- "No player named X is currently playing" after our whisper: that member is offline, ask the next one at once.
@@ -299,6 +375,8 @@ local function onInvited(inviter, guildName)
   local guild = rememberedGuild()
   if not ns.GuildInvite.shouldAccept(requestedAt, guildName, guild, now()) then return end
   acceptingGuild = guild
+  stopTimer()
+  if alt then alt.done = true end
   if ns.Guild.accept() then
     addonRef:Print(string.format(GuildInvites.ACCEPTING, guild, tostring(inviter)))
   else
@@ -319,44 +397,46 @@ local function friendOf(message)
   return name or ns.GuildInvite.cleanDisplayName(message.dn)
 end
 
-local function popup(name, friend)
-  pending[name:lower()] = nil
-  ns.GuildInvitePopup.show(name, friend)
+local function popup(entry)
+  pending[entry.name:lower()] = nil
+  ns.GuildInvitePopup.show(entry.raw, entry.friend, entry.name)
 end
 
-local function invite(name, friend)
+local function invite(entry)
   if needsClick then
-    popup(name, friend)
+    popup(entry)
     return
   end
-  local how = ns.Guild.invite(name)
-  trace("invite %s: %s", name, tostring(how))
+  -- The name exactly as the game reported the whisper's sender (V131).
+  local how = ns.Guild.invite(entry.raw)
+  trace("invite %s: %s", entry.raw, tostring(how))
   if not how then
-    popup(name, friend)
+    popup(entry)
     return
   end
+  pending[entry.name:lower()] = entry
+  entry.at = ns.Transport.now()
   if not ns.Guild.canConfirm() then return end -- no "You have invited" text to wait for (V126)
-  local entry = { name = name, friend = friend }
   entry.timer = C_Timer.NewTimer(ns.GuildInvite.CONFIRM_WAIT, function()
     entry.timer = nil
-    if pending[name:lower()] == entry then
+    if pending[entry.name:lower()] == entry then
       needsClick = true -- nothing came of it: the invite needs a click on this client
-      popup(name, friend)
+      popup(entry)
     end
   end)
-  pending[name:lower()] = entry
 end
 
-local function onRequest(message, sender)
+local function onRequest(message, sender, raw)
   local guild = memberGuild()
   local key = guild and storedKey(guild)
+  local entry = guild and entryOf(guild)
   local names = {}
   for _, m in pairs(ns.MemberTracker.members()) do
     if type(m.name) == "string" then names[m.name:lower()] = true end
   end
   local ok, reason = ns.GuildInvite.checkRequest(message, {
     code = key and key.code, guildName = guild, sender = sender, now = now(), memberNames = names, seen = seen,
-    lastHandled = lastHandled,
+    lastHandled = lastHandled, removedNames = ns.GuildInvite.removedNames(entry and entry.removed),
   })
   if not ok then
     trace("request from %s refused: %s", tostring(sender), tostring(reason))
@@ -364,9 +444,9 @@ local function onRequest(message, sender)
   end
   seen[message.id] = true
   lastHandled[sender:lower()] = now()
-  whisper(sender, { t = "GINVACK", id = message.id })
+  whisper(raw, { t = "GINVACK", id = message.id })
   sendGuild({ t = "GINVCLAIM", id = message.id, n = sender })
-  invite(sender, friendOf(message))
+  invite({ name = sender, raw = raw, friend = friendOf(message), id = message.id })
 end
 
 local function onClaim(message, sender)
@@ -377,11 +457,38 @@ local function onClaim(message, sender)
 end
 
 local function onInviteSent(name)
-  local entry = type(name) == "string" and pending[name:lower()]
-  if not entry then return end
+  local short = ns.Transport.shortName(name)
+  local entry = short and pending[short:lower()]
+  if not entry then
+    -- A manual invite (not one of ours): it lifts a removal of that character (Nico, 2026-11-05).
+    local guild = memberGuild()
+    local stored = guild and entryOf(guild)
+    if stored and short then ns.GuildInvite.liftRemoved(stored.removed, nil, short) end
+    return
+  end
   if entry.timer then entry.timer:Cancel() end
-  pending[name:lower()] = nil
+  pending[short:lower()] = nil
   addonRef:Print(string.format(GuildInvites.INVITED, ns.GuildInvite.altLabel(entry.name, entry.friend)))
+end
+
+-- The game refused one of our invites (no rights, other faction, already in a guild, ...): tell the alt, so it asks
+-- the next member at once (or stops, for another faction). Without a name: our most recent invite.
+local function onInviteFailed(kind, name)
+  local entry
+  local short = name and ns.Transport.shortName(name)
+  if short then
+    entry = pending[short:lower()]
+  else
+    for _, e in pairs(pending) do
+      if not entry or (e.at or 0) > (entry.at or 0) then entry = e end
+    end
+  end
+  -- Only right after our invite: "no permission" is a generic text the game shows for other things too.
+  if not entry or ns.Transport.now() - (entry.at or 0) > ns.GuildInvite.CONFIRM_WAIT * 3 then return end
+  if entry.timer then entry.timer:Cancel() end
+  pending[entry.name:lower()] = nil
+  trace("invite %s refused: %s", entry.raw, tostring(kind))
+  whisper(entry.raw, { t = "GINVFAIL", id = entry.id, r = kind })
 end
 
 local function onBlocked(functionName)
@@ -395,21 +502,24 @@ local function onBlocked(functionName)
     needsClick = true
     for _, entry in pairs(pending) do
       if entry.timer then entry.timer:Cancel() end
-      popup(entry.name, entry.friend)
+      popup(entry)
     end
   end
 end
 
 -- ===== Wiring =====
 
-local function onWhisper(text, sender)
+local function onWhisper(text, sender, raw)
   if not sender or sender == "" then return end
   local message = decode(text)
   if not message then return end
+  raw = type(raw) == "string" and raw ~= "" and raw or sender
   if message.t == "GINVREQ" then
-    onRequest(message, sender)
+    onRequest(message, sender, raw)
   elseif message.t == "GINVACK" then
     onAck(message, sender)
+  elseif message.t == "GINVFAIL" then
+    onFail(message, sender)
   end
 end
 
@@ -423,6 +533,8 @@ local function onGuildMessage(text, sender)
     onKeyHello(message)
   elseif message.t == "GINVCLAIM" then
     onClaim(message, sender)
+  elseif message.t == "GKICK" then
+    onKick(message)
   end
 end
 
@@ -432,7 +544,8 @@ local function afterLogin()
   keepRoster()
   local guild = memberGuild()
   if guild then
-    if storedKey(guild) then sendKey(guild) else sendGuild({ t = "GKEYHI", at = 0 }) end
+    local key = storedKey(guild)
+    if key then sendKey(guild) else sendGuild({ t = "GKEYHI", v = 0 }) end
   elseif not currentGuild() then
     startAttempt()
   end
@@ -447,11 +560,12 @@ function GuildInvites.start(addon)
   events = LibStub("AceEvent-3.0"):Embed({})
   ns.Guild.registerPrefix(ns.GuildInvite.PREFIX)
   ns.Guild.watch(addon, ns.GuildInvite.PREFIX)
-  events:RegisterMessage(ns.Guild.WHISPER_RECEIVED, function(_, text, sender) onWhisper(text, sender) end)
+  events:RegisterMessage(ns.Guild.WHISPER_RECEIVED, function(_, text, sender, raw) onWhisper(text, sender, raw) end)
   events:RegisterMessage(ns.Guild.GUILD_RECEIVED, function(_, text, sender) onGuildMessage(text, sender) end)
   events:RegisterMessage(ns.Guild.INVITED, function(_, inviter, guildName) onInvited(inviter, guildName) end)
   events:RegisterMessage(ns.Guild.BLOCKED, function(_, fn) onBlocked(fn) end)
   events:RegisterMessage(ns.Guild.INVITE_SENT, function(_, name) onInviteSent(name) end)
+  events:RegisterMessage(ns.Guild.INVITE_FAILED, function(_, kind, name) onInviteFailed(kind, name) end)
   events:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name) onWhisperFailed(name) end)
   events:RegisterMessage(ns.MemberTracker.UPDATED, function() keepRoster() end)
   -- Joined: the guild's club appears. The popup goes once the invite was accepted.

@@ -28,6 +28,9 @@ describe("GuildInvites (CF-84)", function()
     _G.AcceptGuild = function() accepted = accepted + 1 end
     _G.StaticPopup_Hide = function() end
     _G.ERR_GUILD_INVITE_S = "You have invited %s to join your guild."
+    _G.ERR_GUILD_PERMISSIONS = "You don't have permission to do that."
+    _G.ERR_GUILD_NOT_ALLIED = "You cannot invite players from the opposing alliance"
+    if opts.members then state.clubMembers[GUILD_CLUB] = opts.members end
     if opts.vault ~= false then _G.CommunitiesForeverVaultDB = opts.vault or {} end
     ns = helpers.loadAddon()
     addon = state.addon
@@ -41,6 +44,7 @@ describe("GuildInvites (CF-84)", function()
 
   after_each(function()
     _G.C_GuildInfo, _G.AcceptGuild, _G.StaticPopup_Hide, _G.ERR_GUILD_INVITE_S = nil, nil, nil, nil
+    _G.ERR_GUILD_PERMISSIONS, _G.ERR_GUILD_NOT_ALLIED = nil, nil
     wowapi.uninstall()
   end)
 
@@ -91,7 +95,8 @@ describe("GuildInvites (CF-84)", function()
       local keys = sentOfType("GKEY")
       assert.are.equal(1, #keys)
       assert.are.equal("GUILD", keys[1].channel)
-      assert.are.same({ "Open Sesame", state.serverTime }, { keys[1].message.k, keys[1].message.at })
+      assert.are.same({ "Open Sesame", 1, state.serverTime }, { keys[1].message.k, keys[1].message.v,
+        keys[1].message.at })
     end)
 
     it("is never shown: the settings field reads empty, the status line has only the time", function()
@@ -144,26 +149,45 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal(ns.Settings.GUILD_CODE_NO_VAULT, ns.Settings.guildCodeStatus())
     end)
 
-    it("replaced by a member always gets a newer time, also on the same second", function()
+    it("replaced by a member gets the next version, also on the same second", function()
       install()
       ns.GuildInvites.setCode("Open Sesame")
       ns.GuildInvites.setCode("Close Sesame")
       local entry = _G.CommunitiesForeverVaultDB.guilds["my guild"]
-      assert.are.same({ "Close Sesame", state.serverTime + 1 }, { entry.code, entry.at })
+      assert.are.same({ "Close Sesame", 2 }, { entry.code, entry.v })
     end)
 
     it("takes a newer code from a guild member", function()
-      install({ vault = { guilds = { ["my guild"] = { code = "Old Sesame", at = 500 } } } })
-      receive({ t = "GKEY", k = "New Sesame", at = 900 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
+      install({ vault = { guilds = { ["my guild"] = { code = "Old Sesame", v = 1, at = 500 } } } })
+      receive({ t = "GKEY", k = "New Sesame", v = 2, at = 900 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
       assert.are.equal("New Sesame", _G.CommunitiesForeverVaultDB.guilds["my guild"].code)
-      assert.are.equal(900, _G.CommunitiesForeverVaultDB.guilds["my guild"].at)
+      assert.are.equal(2, _G.CommunitiesForeverVaultDB.guilds["my guild"].v)
+    end)
+
+    -- Edge case 5: newest by version, not by clock.
+    it("keeps a newer version when a member comes back with an old code, whatever its clock says", function()
+      install({ vault = { guilds = { ["my guild"] = { code = "New Sesame", v = 3, at = 500 } } } })
+      wowapi.runTimers(state)
+      local before = #sentOfType("GKEY")
+      receive({ t = "GKEY", k = "Old Sesame", v = 2, at = state.serverTime + 100 }, "GUILD",
+        "Ada Lovewell-ClassicBetaPvP")
+      assert.are.equal("New Sesame", _G.CommunitiesForeverVaultDB.guilds["my guild"].code)
+      wowapi.runTimers(state)
+      local answer = sentOfType("GKEY")[before + 1]
+      assert.are.same({ "New Sesame", 3 }, { answer.message.k, answer.message.v })
+    end)
+
+    it("refuses a code without a version", function()
+      install({ vault = { guilds = { ["my guild"] = { code = "Old Sesame", v = 1, at = 500 } } } })
+      receive({ t = "GKEY", k = "New Sesame", at = 900 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
+      assert.are.equal("Old Sesame", _G.CommunitiesForeverVaultDB.guilds["my guild"].code)
     end)
 
     it("answers an older code, or a member without one, with its own after a moment", function()
-      install({ vault = { guilds = { ["my guild"] = { code = "New Sesame", at = 900 } } } })
+      install({ vault = { guilds = { ["my guild"] = { code = "New Sesame", v = 2, at = 900 } } } })
       wowapi.runTimers(state) -- after login: our own GKEY once
       local before = #sentOfType("GKEY")
-      receive({ t = "GKEY", k = "Old Sesame", at = 500 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
+      receive({ t = "GKEY", k = "Old Sesame", v = 1, at = 500 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
       assert.are.equal("New Sesame", _G.CommunitiesForeverVaultDB.guilds["my guild"].code)
       assert.are.equal(before, #sentOfType("GKEY"))
       wowapi.runTimers(state)
@@ -179,11 +203,11 @@ describe("GuildInvites (CF-84)", function()
     end)
 
     it("does not answer when another member answered first", function()
-      install({ vault = { guilds = { ["my guild"] = { code = "New Sesame", at = 900 } } } })
+      install({ vault = { guilds = { ["my guild"] = { code = "New Sesame", v = 2, at = 900 } } } })
       wowapi.runTimers(state)
       local before = #sentOfType("GKEY")
-      receive({ t = "GKEYHI", at = 0 }, "GUILD", "Cora Lovewell-ClassicBetaPvP")
-      receive({ t = "GKEY", k = "New Sesame", at = 900 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
+      receive({ t = "GKEYHI", v = 0 }, "GUILD", "Cora Lovewell-ClassicBetaPvP")
+      receive({ t = "GKEY", k = "New Sesame", v = 2, at = 900 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
       wowapi.runTimers(state)
       assert.are.equal(before, #sentOfType("GKEY"))
     end)
@@ -210,7 +234,7 @@ describe("GuildInvites (CF-84)", function()
     end
 
     local function member()
-      install({ people = PEOPLE, vault = { guilds = { ["my guild"] = { code = "Open Sesame", at = 900 } } } })
+      install({ people = PEOPLE, vault = { guilds = { ["my guild"] = { code = "Open Sesame", v = 1, at = 900 } } } })
       wowapi.runTimers(state)
     end
 
@@ -219,11 +243,13 @@ describe("GuildInvites (CF-84)", function()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
       local ack = sentOfType("GINVACK")
       assert.are.equal(1, #ack)
-      assert.are.same({ "WHISPER", "Bram Lovewell", "1a2b3c4d" }, { ack[1].channel, ack[1].target, ack[1].message.id })
+      -- Edge case 2: whispered back and invited with the name exactly as the game reported it (with the realm).
+      assert.are.same({ "WHISPER", "Bram Lovewell-ClassicBetaPvP", "1a2b3c4d" },
+        { ack[1].channel, ack[1].target, ack[1].message.id })
       local claim = sentOfType("GINVCLAIM")
       assert.are.same({ "GUILD", "1a2b3c4d", "Bram Lovewell" },
         { claim[1].channel, claim[1].message.id, claim[1].message.n })
-      assert.are.same({ "Bram Lovewell" }, invited)
+      assert.are.same({ "Bram Lovewell-ClassicBetaPvP" }, invited)
       wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "You have invited Bram Lovewell to join your guild.")
       assert.is_true(printed("Invited Bram Lovewell (Ada's alt) into the guild."))
       wowapi.runTimers(state)
@@ -238,7 +264,7 @@ describe("GuildInvites (CF-84)", function()
       assert.is_true(popup:IsShown())
       assert.are.equal("Invite Bram Lovewell (Ada's alt)?", popup.line:GetText())
       popup.button:RunScript("OnClick")
-      assert.are.same({ "Bram Lovewell", "Bram Lovewell" }, invited)
+      assert.are.same({ "Bram Lovewell-ClassicBetaPvP", "Bram Lovewell-ClassicBetaPvP" }, invited)
       assert.is_false(popup:IsShown())
     end)
 
@@ -272,6 +298,76 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal(1, #invited)
     end)
 
+    -- Edge case 4: the game refuses the invite (no rights): the alt hears it at once, no popup.
+    it("tells the alt when the game refuses the invite", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      wowapi.fireEvent(state, "UI_ERROR_MESSAGE", 1, "You don't have permission to do that.")
+      local fail = sentOfType("GINVFAIL")
+      assert.are.equal(1, #fail)
+      assert.are.same({ "Bram Lovewell-ClassicBetaPvP", "1a2b3c4d", "rights" },
+        { fail[1].target, fail[1].message.id, fail[1].message.r })
+      wowapi.runTimers(state)
+      assert.is_nil(ns.GuildInvitePopup.frame())
+    end)
+
+    -- Edge case 6: a character removed from the guild is never invited by itself again; a manual invite lifts it.
+    describe("a character removed from the guild", function()
+      local MEMBERS
+      before_each(function()
+        MEMBERS = {
+          { memberId = 1, guid = "Player-4619-01627852", name = "Ves Doombringer", presence = 1, isSelf = true,
+            clubType = 2, role = 4 },
+          { memberId = 2, guid = "Player-4619-0AAAAAAA", name = "Ada Lovewell", presence = 1, clubType = 2, role = 4 },
+          { memberId = 4, guid = ALT_GUID, name = "Bram Lovewell", presence = 3, clubType = 2, role = 4 },
+        }
+      end)
+
+      local function kickBram()
+        table.remove(state.clubMembers[GUILD_CLUB], 3)
+        wowapi.fireEvent(state, "CLUB_MEMBER_REMOVED", GUILD_CLUB, 4)
+        wowapi.runTimers(state)
+      end
+
+      it("is remembered, shared in the guild, and not invited by itself", function()
+        install({ people = PEOPLE, members = MEMBERS,
+                  vault = { guilds = { ["my guild"] = { code = "Open Sesame", v = 1, at = 900 } } } })
+        wowapi.runTimers(state)
+        kickBram()
+        local removed = _G.CommunitiesForeverVaultDB.guilds["my guild"].removed
+        assert.are.equal("Bram Lovewell", removed[ALT_GUID].name)
+        local kick = sentOfType("GKICK")
+        assert.are.same({ "GUILD", ALT_GUID, "Bram Lovewell" },
+          { kick[1].channel, kick[1].message.g, kick[1].message.n })
+        receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+        assert.are.same({}, invited)
+        assert.are.same({}, sentOfType("GINVACK"))
+      end)
+
+      it("is lifted by a manual invite", function()
+        install({ people = PEOPLE, members = MEMBERS,
+                  vault = { guilds = { ["my guild"] = { code = "Open Sesame", v = 1, at = 900 } } } })
+        wowapi.runTimers(state)
+        kickBram()
+        wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "You have invited Bram Lovewell to join your guild.")
+        assert.is_nil(_G.CommunitiesForeverVaultDB.guilds["my guild"].removed[ALT_GUID])
+        receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+        assert.are.equal(1, #invited)
+      end)
+
+      it("is learned from another member's GKICK, and lifted when the character is back in the guild", function()
+        member()
+        receive({ t = "GKICK", g = ALT_GUID, n = "Bram Lovewell", at = 950 }, "GUILD", "Ada Lovewell-ClassicBetaPvP")
+        receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+        assert.are.same({}, invited)
+        table.insert(state.clubMembers[GUILD_CLUB], { memberId = 4, guid = ALT_GUID, name = "Bram Lovewell",
+          presence = 1, clubType = 2, role = 4 })
+        wowapi.fireEvent(state, "CLUB_MEMBER_ADDED", GUILD_CLUB, 4)
+        wowapi.runTimers(state)
+        assert.is_nil(_G.CommunitiesForeverVaultDB.guilds["my guild"].removed[ALT_GUID])
+      end)
+    end)
+
     it("does nothing without a code", function()
       install({ people = PEOPLE })
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
@@ -280,10 +376,33 @@ describe("GuildInvites (CF-84)", function()
     end)
   end)
 
+  -- Edge case 1: a bank alt in another guild must not move the account's pick.
+  describe("the guild pick", function()
+    it("stays on the picked guild when a character is only in another guild", function()
+      install({ inGuild = false, vault = {} })
+      state.clubs = { { clubId = "555", name = "Bank Guild", clubType = 2 } }
+      wowapi.fireEvent(state, "INITIAL_CLUBS_LOADED")
+      wowapi.fireEvent(state, "CLUB_ADDED", "555")
+      wowapi.runTimers(state)
+      local s = addon.db.global.settings
+      assert.are.same({ GUILD_CLUB, "My Guild", 2 }, { s.clubId, s.clubName, s.clubType })
+      assert.is_nil(ns.CommunitySelection.active())
+      assert.is_false(printed("Showing community"))
+    end)
+
+    it("is made only when there is none yet", function()
+      install({ inGuild = false, vault = {} })
+      addon.db.global.settings.clubId = nil
+      state.clubs = { { clubId = "555", name = "Bank Guild", clubType = 2 } }
+      wowapi.fireEvent(state, "CLUB_ADDED", "555")
+      assert.are.equal("555", addon.db.global.settings.clubId)
+    end)
+  end)
+
   describe("an alt outside the guild", function()
     local VAULT
     before_each(function()
-      VAULT = { guilds = { ["my guild"] = { code = "Open Sesame", at = 900, roster = {
+      VAULT = { guilds = { ["my guild"] = { code = "Open Sesame", v = 1, at = 900, roster = {
         ["Player-4619-0AAAAAAA"] = { name = "Ada Lovewell", seen = 500 },
         ["Player-4619-0CCCCCCC"] = { name = "Cora Lovewell", seen = 900 },
         ["Player-4619-01627852"] = { name = "Ves Doombringer", seen = 950 }, -- this character: never asked
@@ -320,7 +439,7 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal(r[1].message.id, r[2].message.id)
     end)
 
-    it("asks the next member when one does not answer, and stops at the first acknowledgement", function()
+    it("asks the next member when one does not answer, and stops once the acknowledged invite arrives", function()
       install({ inGuild = false, vault = VAULT })
       wowapi.runTimers(state)
       wowapi.runTimers(state) -- Cora does not answer within ACK_WAIT
@@ -328,8 +447,75 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal("Ada Lovewell", r[2].target)
       receive({ t = "GINVACK", id = r[2].message.id }, "WHISPER", "Ada Lovewell-ClassicBetaPvP")
       assert.is_true(printed("Asked Ada Lovewell for an invite into My Guild."))
+      wowapi.fireEvent(state, "GUILD_INVITE_REQUEST", "Ada Lovewell", "My Guild")
+      assert.are.equal(1, accepted)
       for _ = 1, 5 do wowapi.runTimers(state) end
       assert.are.equal(2, #requests())
+    end)
+
+    -- Edge case 4: a member without invite rights, or whose invite fails, must not hold the alt up.
+    it("asks the next member at once, with a new request, when the member's invite was refused", function()
+      install({ inGuild = false, vault = VAULT })
+      wowapi.runTimers(state)
+      local r = requests()
+      receive({ t = "GINVACK", id = r[1].message.id }, "WHISPER", "Cora Lovewell-ClassicBetaPvP")
+      receive({ t = "GINVFAIL", id = r[1].message.id, r = "rights" }, "WHISPER", "Cora Lovewell-ClassicBetaPvP")
+      r = requests()
+      assert.are.equal(2, #r)
+      assert.are.equal("Ada Lovewell", r[2].target)
+      assert.are_not.equal(r[1].message.id, r[2].message.id) -- the old one is claimed in the guild
+    end)
+
+    it("asks the next member when an acknowledged invite never comes", function()
+      install({ inGuild = false, vault = VAULT })
+      wowapi.runTimers(state)
+      local r = requests()
+      receive({ t = "GINVACK", id = r[1].message.id }, "WHISPER", "Cora Lovewell-ClassicBetaPvP")
+      wowapi.runTimers(state) -- INVITE_WAIT passes
+      r = requests()
+      assert.are.equal(2, #r)
+      assert.are.equal("Ada Lovewell", r[2].target)
+    end)
+
+    -- Edge case 3: another faction or realm can never join: one line, then quiet for good.
+    for _, case in ipairs({
+      { what = "faction", place = { faction = "Alliance" }, line = "the guild is on the other faction" },
+      { what = "realm", place = { realm = "Classic Beta RP" }, line = "the guild is on another realm" },
+    }) do
+      it("stops for good, with one line, when the guild is on another " .. case.what, function()
+        for k, v in pairs(case.place) do VAULT.guilds["my guild"][k] = v end
+        install({ inGuild = false, vault = VAULT })
+        wowapi.runTimers(state)
+        assert.are.same({}, requests())
+        assert.is_true(printed("This character can't join My Guild: " .. case.line))
+        local vault = _G.CommunitiesForeverVaultDB
+        wowapi.uninstall()
+        install({ inGuild = false, vault = vault }) -- the next login
+        wowapi.runTimers(state)
+        assert.are.same({}, requests())
+        assert.are.same({}, state.printed)
+      end)
+    end
+
+    it("stops for good when a member's invite says the other faction", function()
+      install({ inGuild = false, vault = VAULT })
+      wowapi.runTimers(state)
+      local r = requests()
+      receive({ t = "GINVFAIL", id = r[1].message.id, r = "faction" }, "WHISPER", "Cora Lovewell-ClassicBetaPvP")
+      assert.is_true(printed("the guild is on the other faction"))
+      for _ = 1, 10 do wowapi.runTimers(state) end
+      assert.are.equal(1, #requests())
+    end)
+
+    it("says that nobody answered at most once a day", function()
+      install({ inGuild = false, vault = VAULT })
+      for _ = 1, 30 do wowapi.runTimers(state) end
+      assert.is_true(printed("No member of My Guild answered"))
+      local vault = _G.CommunitiesForeverVaultDB
+      wowapi.uninstall()
+      install({ inGuild = false, vault = vault })
+      for _ = 1, 30 do wowapi.runTimers(state) end
+      assert.is_false(printed("No member of My Guild answered"))
     end)
 
     it("accepts the invite into the remembered guild by itself, not another guild's", function()

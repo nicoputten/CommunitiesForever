@@ -292,7 +292,7 @@ Every receiver keeps it as a Pending `ask` item with the asker's `item` id, `at`
 { "t": "PONG", "pv": 1, "from": "Ben Example", "at": 1730000420, "size": 4000 }
 ```
 
-### Guild invites (CF-84): GKEY, GKEYHI, GINVREQ, GINVACK, GINVCLAIM
+### Guild invites (CF-84): GKEY, GKEYHI, GINVREQ, GINVACK, GINVFAIL, GINVCLAIM, GKICK
 
 Own addon prefix **`CFGuild`** (`core/GuildInvite.lua`, `services/GuildInvites.lua`), not `CommForever`: versions
 before CF-84 never register it, so they never receive these. Same encoding (LibSerialize, LibDeflate, `pv` 1), always
@@ -301,23 +301,29 @@ channel. Only while the community picked is a guild (CF-83).
 
 | Type | Channel | Fields | Sent when |
 |---|---|---|---|
-| `GKEY` | `GUILD` (V128) | `k` the guild code, `at` server time it was set | a member sets the code; after login when it has one; as an answer to an older `GKEY` or a `GKEYHI` (random 1-5 s later, skipped when someone else answered, at most once a minute) |
-| `GKEYHI` | `GUILD` | `at` of the code the sender has (0: none) | after login, by a member without a code |
+| `GKEY` | `GUILD` (V128) | `k` the guild code, `v` its version (1, 2, …), `at` server time it was set | a member sets the code; after login when it has one; as an answer to an older `GKEY` or a `GKEYHI` (random 1-5 s later, skipped when someone else answered, at most once a minute) |
+| `GKEYHI` | `GUILD` | `v` of the code the sender has (0: none) | after login, by a member without a code |
 | `GINVREQ` | `WHISPER` to one member | `id` (8 hex), `at` server time, `p` proof, `guid` the alt's GUID, `dn` its display name (optional) | an alt outside the guild, 15 s after login, one stored member after another |
 | `GINVACK` | `WHISPER` back to the alt | `id` | a member took the request (before inviting) |
+| `GINVFAIL` | `WHISPER` back to the alt | `id`, `r` the refusal (`rights`, `faction`, `member`, `invited`, `notfound`) | the game refused the member's invite (V132); the alt asks the next member with a new `id`, or stops for good on `faction` |
 | `GINVCLAIM` | `GUILD` | `id`, `n` the alt's name | the same moment, so other members drop that request |
+| `GKICK` | `GUILD` | `g` GUID, `n` name, `at` | a member's client saw a character leave the guild list; receivers that do not see it in the guild remember it as removed (never invited by itself) |
 
 - **The code is sent in the clear on the guild channel.** Only the guild's members receive it, and they are the
   people it is for. It is never whispered: a request carries the proof `p` = 16 hex characters of a 64-bit digest
   (two 32-bit polynomial hashes) of code, guild name, the alt's name (lower case) and `at`. Not a cryptographic hash:
   enough to keep the code out of whispers to members who may have left, and to bind a request to one character, one
   guild and five minutes.
-- **Newest code:** larger `at` wins; the same `at`: the code that sorts last. `at` more than 300 s ahead of server
-  time is refused. A received code that is not a clean 6-64 character code is refused.
+- **Newest code:** the larger version `v` wins (a new code gets the highest known `v` + 1), so a member coming back
+  with an old code never wins, whatever the clocks say. The same `v`: larger `at`, then the code that sorts last. A
+  code without a whole `v` of 1 or more, or with `at` more than 300 s ahead of server time, or not a clean 6-64
+  character code, is refused.
 - **Receiver checks (`GuildInvite.checkRequest`):** the member holds a code and is in the picked guild; the request
   is well formed; its id was not handled or claimed; `at` within 300 s of server time; the proof matches with the
   sender name **as the game reports it** (the character to invite is never read from the message); the sender is not
-  in the guild; not the same requester within 60 s.
+  in the guild; not removed from the guild (GKICK or seen leaving); not the same requester within 60 s.
+- **Names:** the alt whispers members by the name the guild list gives; the member answers and invites with the
+  sender's name exactly as `CHAT_MSG_ADDON` reported it (V131). Names are never built from parts.
 - **Traffic:** one GKEY or GKEYHI per member login, answers rate-limited; an alt sends at most 10 whispers per attempt
   (one every 6 s, or at once after "No player named"), 3 attempts per login, 5 minutes apart.
 - **Older versions:** they do not register `CFGuild` and get none of these. A member on an older version neither

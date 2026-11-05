@@ -23,9 +23,8 @@ CHANGELOG.md.
   only while the guild is picked; the field is empty again after Enter and the code is never printed or shown (the
   line under the field gives only when it was set). 6 to 64 characters, no `|` or line breaks. An empty field changes
   nothing. Without a code the feature is off. It does not rotate when someone leaves.
-- **Newest code wins:** the server time it was typed (`at`, the same clock everywhere); on the same second the code
-  that sorts last, so all clients end on the same code. A member replacing it gets at least the stored `at` + 1. A
-  time more than 5 minutes ahead of server time is refused (a skewed clock cannot win forever).
+- **Newest code wins:** by a version counter (see edge case 5 below), then the server time it was typed, then the
+  code that sorts last, so all clients end on the same code.
 - **Spread:** after login a member in the guild sends its code (GKEY) or asks (GKEYHI with `at` 0); a member with a
   newer code answers after a random 1 to 5 s unless another member's answer came first, at most once a minute.
 - **Kept out of the upload:** the code and the member list live in `CommunitiesForeverVaultDB`, the SavedVariables of
@@ -36,8 +35,9 @@ CHANGELOG.md.
   the vault, at most 500, members who left dropped.
 - **Alt:** 15 s after login, when the guild is picked, the character is in no guild and a code is known: whisper
   GINVREQ to the stored members, most recently online first (never your own characters), one at a time, at most 10
-  per attempt, 6 s each; "No player named ..." (hidden by Transport's filter, V129) moves to the next at once. Stops at
-  the first GINVACK. No ack: again after 5 minutes, 3 attempts per login, then one chat line.
+  per attempt, 6 s each; "No player named ..." (hidden by Transport's filter, V129) moves to the next at once. A
+  GINVACK waits for the invite (60 s); a GINVFAIL moves on at once. No ack: again after 5 minutes, 3 attempts per
+  login, then one chat line (at most once a day).
 - **Proof, not the code:** the request carries a 64-bit digest of code, guild name, the requesting character's name
   and the request time (not a cryptographic hash). The member computes it with the name the game reports for the
   whisper and invites only that sender (only at the request of the character itself), only when it is not in the
@@ -53,8 +53,28 @@ CHANGELOG.md.
   with a chat line to click Accept. Any other invite is left alone.
 - **Compatibility (rule 8):** nothing new in CommunitiesForeverDB (no migration, schema stays 2); the vault has its
   own `v = 1`. New message types only, on a new prefix that older versions never register, so they never see them.
-- FriendProbe: Test: guild invites (V126-V130).
-- Manual (VERIFY.md CF-84, V126 to V130).
+- **Edge cases (asked by Nico, 2026-11-05):**
+  1. **Another guild:** the account-wide pick only changes when none exists (CF-83's auto-pick); a bank alt in another
+     guild leaves it alone and shows the community as not available; such an alt never asks (test).
+  2. **Names with a space:** the alt whispers each member by the name the guild's member list gives
+     (`C_Club.GetMemberInfo`); the member whispers back and invites with the sender's name exactly as `CHAT_MSG_ADDON`
+     reported it (with "-Realm" when the game adds it). No name is built from parts. Which forms work: V131.
+  3. **Another faction or realm:** members store the guild's faction and realm (`UnitFactionGroup`, `GetRealmName`)
+     with the member list; an alt that differs, or whose request a member's game refuses as the other faction, stops
+     for good with one chat line, remembered per character in the vault. An alt that can reach nobody (another
+     ruleset) says "No member … answered" at most once a day.
+  4. **No invite rights:** the member's client reads the game's refusal (`ERR_GUILD_PERMISSIONS` and others, V132) and
+     whispers GINVFAIL; the alt asks the next member at once with a new request id. An acknowledged invite that never
+     comes (popup ignored) moves on after 60 s.
+  5. **Old codes coming back:** newest by a version counter `v` (one more than the highest known), not by time; time
+     and code only break a tie of two codes set at the same version.
+  6. **Removed characters:** a character that leaves the guild (kicked or left) is remembered in the vault
+     (`removed[guid] = { name, at }`, at most 200) by every member that sees it go, and shared as GKICK on the guild
+     channel. Members never invite it by themselves. Lifted when it is back in the guild list, or by a manual invite
+     from that member ("You have invited <name>" that was not ours). A list that looks half loaded (more than 5 and a
+     fifth gone at once) counts nobody as gone.
+- FriendProbe: Test: guild invites (V126-V132).
+- Manual (VERIFY.md CF-84, V126 to V132).
 - Decided by Nico (2026-11-05): the vault folder and its global `CommunitiesForeverVaultDB` are OK; the code can only
   be replaced, never cleared; the code in plain text on the guild channel and the checksum (not the code) in requests
   are fine; the alt accepts any invite to the remembered guild within 3 minutes of its request; a one-time "action

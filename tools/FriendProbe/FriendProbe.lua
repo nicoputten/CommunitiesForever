@@ -450,6 +450,11 @@ commFrame:SetScript("OnEvent", function(_, _, prefix, text, channel, sender, tar
     if commReceived[tag] == 30 then result("V50b", "pass", "all 30 burst whispers arrived") end
   else
     if tag == "V51:whisper" then result("V51", "pass", "whisper from " .. S(sender) .. " arrived") end
+    -- V131 (CF-84): the sender of our own whispers, exactly as the game reports it.
+    if (tag == "V131:plain" or tag == "V131:realm") and ns.nameFormsSeen then
+      ns.nameFormsSeen(tag:sub(6), sender)
+      log("V131", tag, "sender exactly", "[" .. S(sender) .. "]", "target", S(target))
+    end
     -- V128 (CF-84): a guild addon message from another member (your own may come back too: not counted).
     local short = S(sender):match("^(.-)%-[^%-]+$") or S(sender)
     if tag == "V128:guild" and channel == "GUILD" and short ~= S(GetUnitName and GetUnitName("player", true)) then
@@ -1018,6 +1023,8 @@ end
 -- V128: do addon messages on "GUILD" reach the other guild members?
 -- V129: does a CHAT_MSG_SYSTEM filter hide "No player named ... is currently playing." after an addon whisper?
 -- V130: does EditBox:SetPassword(true) mask what you type?
+-- V131: which name forms (with a space, with or without "-Realm") whispers and invites take, as the game reports them.
+-- V132: the game's texts when a guild invite is refused (no rights, other faction, already in a guild).
 local GINV_EVENTS = { "GUILD_INVITE_REQUEST", "GUILD_INVITE_CANCEL", "PLAYER_GUILD_UPDATE", "CHAT_MSG_SYSTEM",
   "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN", "UI_ERROR_MESSAGE" }
 local ginvFrame = CreateFrame("Frame")
@@ -1069,13 +1076,18 @@ local function WatchGuildInvites()
 end
 
 -- V126: invites the target. noClick: from a timer 1 s later (no hardware event), like the addon's automatic invite.
-local function GuildInviteTarget(noClick)
+-- withRealm (V131): the name as "First Last-Realm", the form CHAT_MSG_ADDON reports senders in (the addon invites
+-- with the sender's name exactly as reported). Built here only to test the form; the addon never builds names.
+local function GuildInviteTarget(noClick, withRealm)
   local name = GetUnitName and GetUnitName("target", true)
   if not name then
     log("V126 target a character outside your guild first (a friend's alt)")
     return
   end
-  local how = noClick and "no click" or "click"
+  if withRealm and not name:find("-", 1, true) and GetNormalizedRealmName then
+    name = name .. "-" .. S(GetNormalizedRealmName())
+  end
+  local how = (noClick and "no click" or "click") .. (withRealm and ", with realm" or "")
   local function run()
     ginvBlocked = {}
     if C_GuildInfo and C_GuildInfo.Invite then
@@ -1091,6 +1103,35 @@ local function GuildInviteTarget(noClick)
     end)
   end
   if noClick then C_Timer.After(1, run) else run() end
+end
+
+-- V131: the forms character names come in. Two whispers to yourself: the name as GetUnitName gives it, and with
+-- "-Realm"; CHAT_MSG_ADDON logs each sender exactly as the game reports it.
+local nameFormsSeen = {}
+local function NameForms()
+  nameFormsSeen = {}
+  log("V131 UnitFullName", Vals(UnitFullName, "player"), "GetUnitName", Vals(GetUnitName, "player", true),
+    "GetNormalizedRealmName", Vals(GetNormalizedRealmName))
+  local me = GetUnitName and GetUnitName("player", true)
+  SendAddon("V131 WHISPER plain", "V131:plain", "WHISPER", me)
+  if GetNormalizedRealmName then
+    SendAddon("V131 WHISPER realm", "V131:realm", "WHISPER", S(me) .. "-" .. S(GetNormalizedRealmName()))
+  end
+  C_Timer.After(3, function()
+    local plain, realm = nameFormsSeen.plain, nameFormsSeen.realm
+    result("V131", plain and realm and "pass" or "info", "whisper to the name arrived " .. S(plain ~= nil)
+      .. ", with -Realm " .. S(realm ~= nil) .. "; sender reported as " .. S(plain or realm))
+  end)
+end
+ns.nameFormsSeen = function(tag, sender) nameFormsSeen[tag] = S(sender) end
+
+-- V132: the game's own texts when a guild invite fails (the addon recognises them through these globals).
+local function RefusalTexts()
+  for _, g in ipairs({ "ERR_GUILD_INVITE_S", "ERR_GUILD_PERMISSIONS", "ERR_GUILD_NOT_ALLIED", "ERR_ALREADY_IN_GUILD_S",
+                       "ERR_ALREADY_INVITED_TO_GUILD_S", "ERR_GUILD_PLAYER_NOT_FOUND_S" }) do
+    log("V132", g, S(_G[g]))
+  end
+  result("V132", "info", "texts logged; now invite someone already in a guild, and (without rights) anyone")
 end
 
 -- V129: whispers a name nobody has; the filter counts the "No player named" line it hides.
@@ -1148,7 +1189,7 @@ local function GuildInviteTest()
     Vals(IsInGuild), "GetGuildInfo", Vals(GetGuildInfo, "player"))
   WatchGuildInvites()
   if ginvWindow then ginvWindow:Show() return end
-  ginvWindow = ButtonWindow("V126-V130: guild invites", {
+  ginvWindow = ButtonWindow("V126-V132: guild invites", {
     { text = "Invite target, no click (V126)", click = function() GuildInviteTarget(true) end },
     { text = "Invite target with this click (V126)", click = function() GuildInviteTarget(false) end },
     { text = "Accept the next invite by itself (V127)", click = function()
@@ -1159,6 +1200,9 @@ local function GuildInviteTest()
       SendAddon("V128 GUILD send", "V128:guild from " .. S(GetUnitName and GetUnitName("player", true)), "GUILD")
     end },
     { text = "Whisper an offline name (V129)", click = function() OfflineWhisper() end },
+    { text = "Name forms (V131)", click = function() NameForms() end },
+    { text = "Invite target as Name-Realm (V131)", click = function() GuildInviteTarget(false, true) end },
+    { text = "Refusal texts (V132)", click = function() RefusalTexts() end },
   })
   ginvWindow:SetHeight(ginvWindow:GetHeight() + 40)
   MaskedField(ginvWindow)
@@ -1173,7 +1217,7 @@ ns.tests = {
   { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
   { text = "Test: celebration sounds (V88)", run = function() SoundTest() end },
   { text = "Test: guild (V124, V125)", run = function() GuildTest() end },
-  { text = "Test: guild invites (V126-V130)", run = function() GuildInviteTest() end },
+  { text = "Test: guild invites (V126-V132)", run = function() GuildInviteTest() end },
 }
 ns.log = log
 ns.S, ns.Val, ns.Vals, ns.Pattern, ns.DumpTable = S, Val, Vals, Pattern, DumpTable -- for Missions.lua

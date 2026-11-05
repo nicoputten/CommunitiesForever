@@ -13,6 +13,8 @@ tagging; the release stops if the tag has no section.
   Members' addons share it in the guild. When you log in on an alt outside the guild, it asks an online member for an
   invite and accepts it; the member's addon invites it, or shows one Invite button when the game wants a click. The
   code is saved in the new `CommunitiesForever_Vault` folder that comes with the addon, never in the file you upload.
+  Someone who left or was kicked from the guild is never invited again by itself; a member can still invite them
+  by hand.
 
 ## v1.2.1 (2026-11-04)
 - The addon collects some data about which game features work on Forever and sends it with your uploads, so we can

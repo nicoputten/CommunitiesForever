@@ -23,6 +23,9 @@ GuildInvite.CONFIRM_WAIT = 3         -- seconds the member waits for "You have i
 GuildInvite.KEY_ANSWER_MIN = 1       -- a member answers an older code after a random delay in this range,
 GuildInvite.KEY_ANSWER_MAX = 5       -- unless another member's answer came first
 GuildInvite.KEY_ANSWER_COOLDOWN = 60 -- and at most this often
+GuildInvite.INVITE_WAIT = 60         -- after an ack, the alt waits this long for the invite before asking the next
+GuildInvite.REMOVED_MAX = 200        -- removed characters remembered per guild
+GuildInvite.NO_ANSWER_QUIET = 86400  -- "No member answered" shows once a day per character
 
 GuildInvite.DISPLAY_MAX = 24         -- a requester's display name in the popup (as Merge caps display names)
 
@@ -49,24 +52,34 @@ function GuildInvite.cleanCode(text)
   return code
 end
 
---[[ The newest code wins. "Newest" is the server time the member typed it (`at`, GetServerTime, the same clock on
-every client); on the same second the code that sorts last wins, so every client ends on the same code. a and b
-are { code, at }; true when a replaces b (b nil: always). ]]
+--[[ The newest code wins, by a version counter, not by clocks: each new code gets `v` = the highest version the
+member's client knows + 1, so a member coming back with an old code (a lower `v`) never overwrites a newer one,
+whatever the clocks say. Only two codes set at the same version (two members at once, before they heard of each
+other) fall back to the time it was typed (`at`, server time), then to the code that sorts last, so every client ends
+on the same code. a and b are { code, v, at } (v nil counts as 0); true when a replaces b (b nil: always). ]]
 function GuildInvite.newer(a, b)
   if not b or not b.code then return true end
-  if a.at ~= b.at then return a.at > b.at end
+  local av, bv = a.v or 0, b.v or 0
+  if av ~= bv then return av > bv end
+  if (a.at or 0) ~= (b.at or 0) then return (a.at or 0) > (b.at or 0) end
   return a.code > b.code
 end
 
--- A received code { code, at } checked against the stored one: the cleaned { code, at } to store, or nil (not a
--- valid code, a time from the future, or not newer).
+-- The version a member gives a code it sets now: one more than the stored one.
+function GuildInvite.nextVersion(stored)
+  return ((stored and integer(stored.v) and stored.v) or 0) + 1
+end
+
+-- A received code { code, v, at } checked against the stored one: the cleaned { code, v, at } to store, or nil (not
+-- a valid code, a bad version or time, a time from the future, or not newer).
 function GuildInvite.acceptKey(stored, received, now)
   if type(received) ~= "table" then return nil end
   local code = GuildInvite.cleanCode(received.code)
-  local at = received.at
+  local v, at = received.v, received.at
   if not code or code ~= received.code or not integer(at) or at <= 0 then return nil end
+  if not integer(v) or v < 1 then return nil end
   if type(now) == "number" and at > now + GuildInvite.FUTURE_SLACK then return nil end
-  local key = { code = code, at = at }
+  local key = { code = code, v = v, at = at }
   if not GuildInvite.newer(key, stored) then return nil end
   return key
 end
@@ -101,10 +114,11 @@ end
                from the message)
   now          server time
   memberNames  { [lower-case name] = true } of the guild's members (already in the guild: nothing to do)
+  removedNames { [lower-case name] = true } of characters removed from the guild (never invited by themselves)
   seen         { [request id] = true } requests handled or claimed by someone already
   lastHandled  { [lower-case name] = server time } of the last request handled per requester
 }. Returns true, or nil and the reason: "nocode", "noguild", "malformed", "seen", "stale", "proof", "member",
-"cooldown". ]]
+"removed", "cooldown". ]]
 function GuildInvite.checkRequest(message, ctx)
   if not ctx.code then return nil, "nocode" end
   if type(ctx.guildName) ~= "string" or ctx.guildName == "" then return nil, "noguild" end
@@ -117,18 +131,34 @@ function GuildInvite.checkRequest(message, ctx)
   if message.p ~= GuildInvite.proof(ctx.code, ctx.guildName, ctx.sender, message.at) then return nil, "proof" end
   local lower = ctx.sender:lower()
   if ctx.memberNames and ctx.memberNames[lower] then return nil, "member" end
+  if ctx.removedNames and ctx.removedNames[lower] then return nil, "removed" end
   local last = ctx.lastHandled and ctx.lastHandled[lower]
   if last and ctx.now - last < GuildInvite.HANDLE_COOLDOWN then return nil, "cooldown" end
   return true
 end
 
 --[[ Keeps the guild member list for alts: roster[guid] = { name, seen } with seen the last server time the member was
-seen online (0: not yet). members[guid] = { name, online } as the guild shows them now. Members who left are
-dropped; with more than ROSTER_MAX the longest unseen go. Returns the roster (changed in place; a new one when nil). ]]
+seen online (0: not yet). members[guid] = { name, online } as the guild shows them now. Members who left (kicked or
+left themselves) are dropped and returned as gone[guid] = name, unless so many vanish at once that the list looks
+half loaded (more than 5 and more than a fifth): then nobody counts as gone and the old entries stay. With more than
+ROSTER_MAX the longest unseen go (not "gone"). Returns roster (changed in place; a new one when nil), gone. ]]
 function GuildInvite.updateRoster(roster, members, now)
   roster = type(roster) == "table" and roster or {}
-  for guid in pairs(roster) do
-    if not members[guid] then roster[guid] = nil end
+  local gone, size, vanished = {}, 0, 0
+  for guid, entry in pairs(roster) do
+    size = size + 1
+    if not members[guid] then
+      vanished = vanished + 1
+      gone[guid] = type(entry) == "table" and entry.name or nil
+    end
+  end
+  if vanished > 5 and vanished > size / 5 then
+    gone = {}
+  else
+    for guid in pairs(gone) do roster[guid] = nil end
+    for guid in pairs(roster) do
+      if not members[guid] then roster[guid] = nil end -- an entry without a name
+    end
   end
   for guid, m in pairs(members) do
     if type(m.name) == "string" and m.name ~= "" then
@@ -148,7 +178,77 @@ function GuildInvite.updateRoster(roster, members, now)
     end)
     for i = GuildInvite.ROSTER_MAX + 1, #list do roster[list[i].guid] = nil end
   end
-  return roster
+  return roster, gone
+end
+
+--[[ Characters removed from the guild (Nico, 2026-11-05: kicked or left, never invited again by themselves; a manual
+invite still works). removed[guid] = { name, at }. Returns the list (changed in place; a new one when nil). ]]
+function GuildInvite.markRemoved(removed, guid, name, at)
+  removed = type(removed) == "table" and removed or {}
+  if type(guid) ~= "string" or guid == "" or type(name) ~= "string" or name == "" then return removed end
+  removed[guid] = { name = name, at = integer(at) and at or 0 }
+  local list = {}
+  for g, entry in pairs(removed) do list[#list + 1] = { guid = g, at = type(entry) == "table" and entry.at or 0 } end
+  if #list > GuildInvite.REMOVED_MAX then
+    table.sort(list, function(a, b)
+      if a.at ~= b.at then return a.at > b.at end
+      return a.guid < b.guid
+    end)
+    for i = GuildInvite.REMOVED_MAX + 1, #list do removed[list[i].guid] = nil end
+  end
+  return removed
+end
+
+-- Lifts removals: every GUID back in the guild (members[guid]) and, when given, the character `name` (a manual
+-- invite). Returns true when something was lifted.
+function GuildInvite.liftRemoved(removed, members, name)
+  if type(removed) ~= "table" then return false end
+  local lifted = false
+  for guid, entry in pairs(removed) do
+    if (members and members[guid]) or (name and type(entry) == "table" and same(entry.name, name)) then
+      removed[guid] = nil
+      lifted = true
+    end
+  end
+  return lifted
+end
+
+-- { [lower-case name] = true } of the removed characters, for checkRequest.
+function GuildInvite.removedNames(removed)
+  local names = {}
+  for _, entry in pairs(type(removed) == "table" and removed or {}) do
+    if type(entry) == "table" and type(entry.name) == "string" then names[entry.name:lower()] = true end
+  end
+  return names
+end
+
+--[[ Can this character join the guild at all? Guild members share a faction and (mega-realms) a realm per ruleset.
+guild = { faction, realm } as a member's client stored them; here = { faction, realm } of this character (the
+same game functions on both sides). Returns "faction", "realm" or nil (fine, or unknown). ]]
+function GuildInvite.placeMismatch(guild, here)
+  if type(guild) ~= "table" or type(here) ~= "table" then return nil end
+  if type(guild.faction) == "string" and type(here.faction) == "string" and guild.faction ~= here.faction then
+    return "faction"
+  end
+  if type(guild.realm) == "string" and type(here.realm) == "string" and guild.realm ~= here.realm then
+    return "realm"
+  end
+  return nil
+end
+
+--[[ A system or error message after a guild invite, read through the game's own format strings (no English text).
+formats = { [kind] = format string } (kinds: "rights", "faction", "member", "invited", "notfound"). Returns kind and
+the character's name when the format names one, or nil. ]]
+function GuildInvite.inviteError(message, formats)
+  if type(message) ~= "string" then return nil end
+  for kind, format in pairs(formats or {}) do
+    if type(format) == "string" then
+      if format == message then return kind end
+      local args = ns.GameText.parse(message, format)
+      if args then return kind, args[1] end
+    end
+  end
+  return nil
 end
 
 -- Names to ask, most recently seen online first (then by name), without the GUIDs in `exclude` (your own

@@ -98,6 +98,10 @@ ns.items = {
     how = "Test: guild invites, Whisper an offline name: no 'No player named' line in chat?" },
   { id = "V130", retail = true, session = 1, title = "A masked field: typing shows dots (EditBox:SetPassword)",
     how = "Test: guild invites: type in the box at the bottom of its window. Dots, not letters?" },
+  { id = "V131", retail = true, session = 2, friend = true, title = "Name forms: whispers and invites with a space and -Realm",
+    how = "Test: guild invites, Name forms; then Invite target as Name-Realm on a friend's alt. Did it arrive?" },
+  { id = "V132", retail = true, session = 2, friend = true, title = "The game's texts when a guild invite is refused",
+    how = "Test: guild invites, Refusal texts; then invite someone already in a guild. Send the V132 lines." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 

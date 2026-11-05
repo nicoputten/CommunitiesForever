@@ -69,6 +69,8 @@ stds.wow = {
     "GetBindLocation", "ERR_NEWTAXIPATH", "IsSwimming", "IsMounted", "C_UnitAuras", "C_Container",
     "issecretvalue",
     "C_GuildInfo", "GuildInvite", "AcceptGuild", "StaticPopup_Hide", "ERR_GUILD_INVITE_S", -- CF-84 (V126, V127)
+    "ERR_GUILD_PERMISSIONS", "ERR_GUILD_NOT_ALLIED", "ERR_ALREADY_IN_GUILD_S", "ERR_ALREADY_INVITED_TO_GUILD_S",
+    "ERR_GUILD_PLAYER_NOT_FOUND_S", -- CF-84 (V132)
     "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "GameFontHighlight", "GameFontHighlightSmall", "GameFontHighlightLarge",
     "GameFontDisable",
     "ScrollUtil", "CreateScrollBoxListLinearView", "RAID_CLASS_COLORS",

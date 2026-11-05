@@ -2,17 +2,33 @@
 -- core/GuildInvite.lua and services/GuildInvites.lua. Unverified on Forever (VERIFY.md V126 to V129):
 -- `C_GuildInfo.Invite` / `GuildInvite` without a click, `AcceptGuild` from an addon, `GUILD_INVITE_REQUEST` and its
 -- arguments, addon messages on "GUILD", `ADDON_ACTION_BLOCKED` / `ADDON_ACTION_FORBIDDEN`, `ERR_GUILD_INVITE_S`,
--- `StaticPopup_Hide`.
+-- `StaticPopup_Hide`; the name forms (V131) and the refusal texts (V132).
 local ADDON_NAME, ns = ...
 
 local Guild = {}
 
 -- Internal messages.
-Guild.WHISPER_RECEIVED = "CF_GUILD_WHISPER_RECEIVED" -- (text, senderName) for our prefix
-Guild.GUILD_RECEIVED = "CF_GUILD_CHANNEL_RECEIVED"   -- (text, senderName) for our prefix on the guild channel
+-- (text, senderName, rawSender): senderName without "-Realm" (as the community lists names), rawSender exactly as
+-- the game reported it, used as it is to whisper back and to invite (names have a space: never built, V131).
+Guild.WHISPER_RECEIVED = "CF_GUILD_WHISPER_RECEIVED"
+Guild.GUILD_RECEIVED = "CF_GUILD_CHANNEL_RECEIVED"   -- (text, senderName, rawSender) on the guild channel
 Guild.INVITED = "CF_GUILD_INVITED"                   -- (inviterName, guildName): GUILD_INVITE_REQUEST
 Guild.BLOCKED = "CF_GUILD_BLOCKED"                   -- (functionName): the game blocked one of our calls
 Guild.INVITE_SENT = "CF_GUILD_INVITE_SENT"           -- (name): "You have invited <name> to join your guild."
+Guild.INVITE_FAILED = "CF_GUILD_INVITE_FAILED"       -- (kind, name or nil): the game refused an invite (V132)
+
+-- The game's messages when a guild invite fails, by kind (core/GuildInvite.inviteError). Read at the moment of use;
+-- each one guarded (V132): missing ones are simply not recognised.
+local function inviteErrorFormats()
+  local formats = {}
+  local function add(kind, value) if type(value) == "string" and value ~= "" then formats[kind] = value end end
+  add("rights", ERR_GUILD_PERMISSIONS)
+  add("faction", ERR_GUILD_NOT_ALLIED)
+  add("member", ERR_ALREADY_IN_GUILD_S)
+  add("invited", ERR_ALREADY_INVITED_TO_GUILD_S)
+  add("notfound", ERR_GUILD_PLAYER_NOT_FOUND_S)
+  return formats
+end
 
 -- C_ChatInfo.RegisterAddonMessagePrefix is verified (API-FINDINGS.md).
 function Guild.registerPrefix(prefix)
@@ -56,6 +72,12 @@ function Guild.accept()
   return pcall(AcceptGuild) == true
 end
 
+-- This character's faction and realm, from the same verified calls the snapshot uses (UnitFactionGroup, GetRealmName):
+-- members store the guild's, an alt compares with its own (core/GuildInvite.placeMismatch).
+function Guild.place()
+  return { faction = UnitFactionGroup and (UnitFactionGroup("player")) or nil, realm = GetRealmName and GetRealmName() }
+end
+
 -- Hides Blizzard's guild invite popup, once the invite was accepted (V127). Guarded.
 function Guild.hideInvitePopup()
   if StaticPopup_Hide then pcall(StaticPopup_Hide, "GUILD_INVITE") end
@@ -67,9 +89,9 @@ function Guild.watch(addon, prefix)
   ns.Events.register(events, "CHAT_MSG_ADDON", function(_, messagePrefix, text, channel, sender)
     if messagePrefix ~= prefix then return end
     if channel == "WHISPER" then
-      addon:SendMessage(Guild.WHISPER_RECEIVED, text, ns.Transport.shortName(sender))
+      addon:SendMessage(Guild.WHISPER_RECEIVED, text, ns.Transport.shortName(sender), sender)
     elseif channel == "GUILD" then
-      addon:SendMessage(Guild.GUILD_RECEIVED, text, ns.Transport.shortName(sender))
+      addon:SendMessage(Guild.GUILD_RECEIVED, text, ns.Transport.shortName(sender), sender)
     end
   end)
   -- GUILD_INVITE_REQUEST(inviter, guildName, ...) as on Retail (V127).
@@ -82,13 +104,20 @@ function Guild.watch(addon, prefix)
       if addonName == ADDON_NAME then addon:SendMessage(Guild.BLOCKED, functionName) end
     end)
   end
-  -- "You have invited <name> to join your guild." (ERR_GUILD_INVITE_S): the invite went out.
-  if type(ERR_GUILD_INVITE_S) == "string" then
-    ns.Events.register(events, "CHAT_MSG_SYSTEM", function(_, message)
-      local args = type(message) == "string" and ns.GameText.parse(message, ERR_GUILD_INVITE_S)
-      if args and args[1] then addon:SendMessage(Guild.INVITE_SENT, args[1]) end
-    end)
+  -- "You have invited <name> to join your guild." (ERR_GUILD_INVITE_S): the invite went out. Or one of the game's
+  -- refusals (no rights, other faction, already in a guild, ...), as a system line or a UI error (V132).
+  local function onText(message)
+    if type(message) ~= "string" then return end
+    local args = type(ERR_GUILD_INVITE_S) == "string" and ns.GameText.parse(message, ERR_GUILD_INVITE_S)
+    if args and args[1] then
+      addon:SendMessage(Guild.INVITE_SENT, args[1])
+      return
+    end
+    local kind, name = ns.GuildInvite.inviteError(message, inviteErrorFormats())
+    if kind then addon:SendMessage(Guild.INVITE_FAILED, kind, name) end
   end
+  ns.Events.register(events, "CHAT_MSG_SYSTEM", function(_, message) onText(message) end)
+  ns.Events.register(events, "UI_ERROR_MESSAGE", function(_, _, message) onText(message) end)
 end
 
 ns.Guild = Guild

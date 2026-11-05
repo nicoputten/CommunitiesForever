@@ -24,10 +24,11 @@ local function build()
   popup.button:SetPoint("BOTTOMRIGHT", -20, 14)
 end
 
-function GuildInvitePopup.show(name, friend)
+-- target: the name to invite exactly as the game reported it (V131); name: how to show it (default target).
+function GuildInvitePopup.show(target, friend, name)
   if not popup then build() end
-  popup.name = name
-  popup.line:SetText(ns.GuildInvite.popupText(name, friend))
+  popup.name = target
+  popup.line:SetText(ns.GuildInvite.popupText(name or target, friend))
   popup:Show()
 end
 

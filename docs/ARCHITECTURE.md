@@ -257,8 +257,13 @@ global = {
 -- the uploader never sends. Never synced as a whole: the code goes out only as GKEY on the guild channel.
 CommunitiesForeverVaultDB = {
   v = 1,                                             -- the vault's own format; a newer one is left alone (feature off)
-  guilds = { [guild name, lower case] = { code, at,  -- the guild code and when it was set (newest wins)
-                                          roster = { [guid] = { name, seen } } } }, -- members for alts; seen: last online
+  guilds = { [guild name, lower case] = {
+    code, v, at,                                     -- the guild code, its version (newest wins) and when it was set
+    roster = { [guid] = { name, seen } },            -- members for alts; seen: last online
+    faction, realm,                                  -- the guild's, from a member (an alt on another one stops)
+    removed = { [guid] = { name, at } },             -- left or kicked: never invited by itself (GKICK)
+    stopped = { [guid] = "faction"|"realm" },        -- own alts told once that they can't join
+    quiet = { [guid] = at } } },                     -- own alts: last "No member answered" line
 }
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
