@@ -34,6 +34,8 @@ Touches: `src/core/Clubs.lua`, `src/adapters/Community.lua`, `src/adapters/ChatF
   stays 2; nothing new is sent. An older version with a guild `clubId` stored shows the community as not available
   on every character and keeps all data; picking a community there works as before.
 - Manual (VERIFY.md CF-83, V124, V125).
+- Decided by Nico (2026-11-05): with a guild picked, guild chat is left alone (no recolor, flash, sound or tab);
+  a character that is only in a guild turns the addon on and auto-picks the guild.
 
 ### CF-82 The hidden launch probe (v1.2.1)
 Friends answer FriendProbe's automatic checks without installing it: the addon runs them silently and the results
