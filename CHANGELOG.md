@@ -9,6 +9,8 @@ tagging; the release stops if the tag has no section.
 - **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
   "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
   names are cut with "..." before the buttons, also in a narrow window.
+
+## v1.3.2 (2026-11-05)
 - **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
   The box takes the keyboard also when your chat input stays on screen (IM-style chat), takes it once you stand
   still, and says "Click here, then Ctrl+C" until it has it. A click anywhere on the window selects the command.
