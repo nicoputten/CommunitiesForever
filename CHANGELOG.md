@@ -9,6 +9,9 @@ tagging; the release stops if the tag has no section.
 - **Your guild can be the community:** `/cf settings` lists your guild next to your character communities. Pick it
   to see your guild's members grouped per friend; switch back to a community at any time, nothing is lost. With the
   guild picked, guild chat counts for the community chat goals, and the invite link options are hidden.
+- **A chat tab for your guild:** with the guild picked, the setup's chat step and "Create a community chat tab" in
+  `/cf settings` make a chat tab named after your guild that shows only guild chat, and your other characters in the
+  guild are offered it once. Guild chat keeps its own color and stays in General too.
 - **Your alts get into the guild by themselves:** set a guild code in `/cf settings` (shown with your guild picked).
   Members' addons share it in the guild. When you log in on an alt outside the guild, it asks an online member for an
   invite and accepts it; the member's addon invites it, or shows one Invite button when the game wants a click. The

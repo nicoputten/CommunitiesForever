@@ -39,40 +39,46 @@ function Settings.rolesGroup()
 end
 
 -- CF-25: community chat. The color is always applied; the rest are switches and the tab button.
+-- CF-86: with the guild picked only the tab button shows (guild chat keeps Blizzard's color, flash and General).
 function Settings.chatGroup()
   local s = function() return ns.db.global.settings end
+  local guild = function() return ns.CommunitySelection.isGuild() end
   return {
     type = "group", inline = true, order = 9, name = "Community chat",
     args = {
       info = { type = "description", order = 0, fontSize = "medium",
                name = "Make the community chat easy to spot in your chat windows." },
       color = {
-        type = "color", order = 1, name = "Chat color",
+        type = "color", order = 1, hidden = guild, name = "Chat color",
         get = function() local c = ns.Chat.color(s()) return c.r, c.g, c.b end,
         set = function(_, r, g, b) ns.CommunityChat.setColor({ r = r, g = g, b = b }) end,
       },
       resetColor = {
-        type = "execute", order = 2, name = "Reset",
+        type = "execute", order = 2, hidden = guild, name = "Reset",
         func = function() ns.CommunityChat.setColor(nil) end,
       },
       alert = {
-        type = "toggle", order = 3, width = "full", name = "Flash the chat tab on new messages",
+        type = "toggle", order = 3, hidden = guild, width = "full", name = "Flash the chat tab on new messages",
         desc = "When someone else writes in the community, chat tabs that show it flash (not the one you look at).",
         get = function() return s().chatAlert ~= false end,
         set = function(_, value) s().chatAlert = value end,
       },
       sound = {
-        type = "toggle", order = 4, width = "full", name = "Play a sound on new messages",
+        type = "toggle", order = 4, hidden = guild, width = "full", name = "Play a sound on new messages",
         get = function() return s().chatSound == true end,
         set = function(_, value) s().chatSound = value end,
       },
       createTab = {
         type = "execute", order = 5, width = "double", name = "Create a community chat tab",
-        desc = "Opens a chat tab that shows only the community chat. Chat tabs are saved per character.",
+        desc = function()
+          local shows = guild() and "named after your guild that shows only guild chat" or "that shows only the "
+            .. "community chat"
+          return "Opens a chat tab " .. shows .. ". Chat tabs are saved per character."
+        end,
         func = function() ns.CommunityChat.createTab() end,
       },
       keepGeneral = {
-        type = "toggle", order = 6, width = "full", name = "Keep community messages in General too",
+        type = "toggle", order = 6, hidden = guild, width = "full", name = "Keep community messages in General too",
         desc = "Off: with a Community tab, the community chat shows only there.",
         get = function() return s().chatKeepGeneral ~= false end,
         set = function(_, value) ns.CommunityChat.setKeepGeneral(value) end,

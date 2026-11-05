@@ -129,13 +129,14 @@ local function build()
   swatch:SetPoint("TOPLEFT", left, -(ly + 2))
   controls.color = swatch
   refreshers[#refreshers + 1] = function() swatch:SetColor(chatColor()) end
-  label(body, left + 28, ly + 4, option("color").name, "body", "text")
+  local colorLabel = label(body, left + 28, ly + 4, option("color").name, "body", "text")
   local reset = Kit.button(body, option("resetColor").name, function()
     option("resetColor").func()
     swatch:SetColor(chatColor())
   end, "ghost")
   reset:SetPoint("TOPLEFT", left + COLUMN - 70, -ly)
   controls.resetColor = reset
+  local chatTop = ly
   ly = ly + 32
   ly = ly + toggle(body, "alert", left, ly)
   ly = ly + toggle(body, "sound", left, ly)
@@ -143,6 +144,17 @@ local function build()
   local createTab = Kit.button(body, option("createTab").name, function() option("createTab").func() end)
   createTab:SetPoint("TOPLEFT", left, -(ly + 2))
   controls.createTab = createTab
+  -- CF-86: with the guild picked only the tab button shows, right under the section title. The column on the
+  -- right is longer either way, so nothing below moves.
+  local tabY = ly
+  refreshers[#refreshers + 1] = function()
+    local guild = option("alert").hidden()
+    for _, c in ipairs({ swatch, colorLabel, reset, controls.alert, controls.sound, controls.keepGeneral }) do
+      if guild then c:Hide() else c:Show() end
+    end
+    createTab:ClearAllPoints()
+    createTab:SetPoint("TOPLEFT", left, -((guild and chatTop or tabY) + 2))
+  end
   ly = ly + 36
   ry = ry + toggle(body, "minimap", right, ry)
   ry = ry + toggle(body, "openOnLogin", right, ry)

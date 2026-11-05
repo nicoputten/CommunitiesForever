@@ -17,7 +17,8 @@ Consequences:
 - Nothing depends on `clubId` being identical across clients (unverified). Filtering is by GUID membership.
 - The community can be a character community or the guild (CF-83: a guild is a club of `Enum.ClubType.Guild`, 2;
   Battle.net communities never). For a guild, guild chat (`CHAT_MSG_GUILD`) is its chat for the chat missions, it has
-  no invite links and the community chat features (color, tab) leave it alone. Sync is the same: the hidden
+  no invite links and the community chat's color, flash and General option leave it alone; its chat tab (CF-86) is
+  a new chat window with only the `GUILD` message group, named after the guild. Sync is the same: the hidden
   channel is named after the guild's name.
 
 ## Layering

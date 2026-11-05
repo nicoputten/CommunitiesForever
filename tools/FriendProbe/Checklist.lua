@@ -102,6 +102,8 @@ ns.items = {
     how = "Test: guild invites, Name forms; then Invite target as Name-Realm on a friend's alt. Did it arrive?" },
   { id = "V132", retail = true, session = 2, friend = true, title = "The game's texts when a guild invite is refused",
     how = "Test: guild invites, Refusal texts; then invite someone already in a guild. Send the V132 lines." },
+  { id = "V133", retail = true, session = 1, title = "A chat tab with only guild chat (ChatFrame_AddMessageGroup)",
+    how = "/run print(ChatFrame_AddMessageGroup, ChatFrame1.AddMessageGroup), then VERIFY.md CF-86 in CF." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 
