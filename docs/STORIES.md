@@ -7,6 +7,28 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-91 Quiet chat: no "CommunitiesForever:" lines a banner already shows
+Nico (2026-11-05, live on Forever): "I want to remove all of those CommunitiesForever consoles. We show banners for
+login and level up, don't wanna double up like that. No need for the reload also." The addon prints only what has no
+other place.
+- No chat line when a friend comes online or switches character, or a friend's character levels up (CF-15, CF-16).
+  The level-up announcement (CF-44) stays.
+- No Doomsday chat lines (goal done, bonus kill, someone else's crown, a swapped goal). The celebration banners and
+  the crown toast stay.
+- No run chat lines (reminder, starting now, a friend on another character, answers to your run, Discord ping
+  queued, "Runs updated ... /reload"). The run banners and the start panel stay.
+- No "Showing community ..." line when the addon picks the only community by itself.
+- Kept: the guild invite lines (CF-87/88), answers to `/cf` commands and to the player's own clicks, errors and
+  refusals, `/reload` hints where the player otherwise waits for nothing (an ask posted on Discord, a failed Reload
+  now), and debug output (`/cf sync debug`, `/cf activity debug`, `/cf ping`).
+- Decided by Nico (2026-11-05): keep a friend's group ask with [Join] [Later] [No], the answers to your own ask
+  (with [Invite]) and the update notices ("A newer version … is available", "A friend uses a newer … version");
+  dropping "Showing community …" is fine.
+- Switches that only turned a removed line on or off are gone from the settings window, the options and the setup
+  (When friends log in, Announce friends' level-ups, Doomsday in chat, the six run chat lines). Their stored values
+  stay, unused (rule 8: older versions still read them).
+- Manual: VERIFY.md CF-91.
+
 ### CF-88 The guild invite window (designer's flow)
 Stacked on CF-87 (PR #201). The designer's boards GI01Window (the member's window, all states), GI02Screen (placement
 at 1920×1080 and 3440×1440) and GI03Alt (the alt's chat lines), and the designer's brief, with Nico's deviations

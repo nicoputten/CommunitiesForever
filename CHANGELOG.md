@@ -6,6 +6,11 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Quieter chat:** the addon no longer prints "CommunitiesForever:" lines for what a banner or window already
+  shows: friends logging in or switching character, friends' level-ups (the LEVEL UP announcement stays), Doomsday
+  goals, kills and crowns (the celebration banners and the crown toast stay), planned-run reminders, answers and
+  updates (the run banners and the start panel stay), and the community picked for you. Their switches are gone from
+  the settings. Guild invite lines, answers to your own commands and clicks, and errors stay in chat.
 - **Fixed:** a friend no longer shows twice in the list, once live and once under "From the website", when the
   website knows them by another name: a website friend with a character already in your list is not listed again.
 

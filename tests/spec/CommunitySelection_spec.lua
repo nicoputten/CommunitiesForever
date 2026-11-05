@@ -113,7 +113,7 @@ describe("CommunitySelection", function()
     it("selects the only character community when nothing is selected", function()
       load(nil, onlyOne)
       assert.are.equal("23125681", settings().clubId)
-      assert.are.same({ "Showing community Forever Friends. Change it with /cf settings." }, state.printed)
+      assert.are.same({}, state.printed) -- CF-91: no chat line
       assert.are.same({ { "23125681" } }, changes())
     end)
 
@@ -148,7 +148,7 @@ describe("CommunitySelection", function()
     it("selects the guild when it is the only community", function()
       load(nil, function(s) s.clubs = { { clubId = "999", name = "My Guild", clubType = 2 } } end)
       assert.are.equal("999", settings().clubId)
-      assert.are.same({ "Showing community My Guild. Change it with /cf settings." }, state.printed)
+      assert.are.same({}, state.printed) -- CF-91: no chat line
     end)
 
     it("never selects a Battle.net community", function()

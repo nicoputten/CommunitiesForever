@@ -102,20 +102,14 @@ local function build()
   -- Sharing | Notifications.
   local ly, ry = section(body, left, y, "Sharing"), section(body, right, y, "Notifications")
   ly = ly + toggle(body, "groupAsks", left, ly)
-  ry = ry + toggle(body, "notifications", right, ry)
-  ry = ry + toggle(body, "levelUps", right, ry)
   ry = ry + toggle(body, "levelUpToast", right, ry) -- CF-44
-  ly = ly + toggle(body, "doomsdayChat", left, ly) -- CF-57
   y = math.max(ly, ry) + 12
 
-  -- CF-48: Planned runs: the notes and chime | the chat lines per kind.
-  ly, ry = section(body, left, y, "Planned runs"), section(body, right, y, "Run chat lines")
+  -- CF-48: Planned runs: the notes and chime (CF-91: the run chat lines and their switches are gone).
+  ly = section(body, left, y, "Planned runs")
   ly = ly + toggle(body, "runToasts", left, ly)
   ly = ly + toggle(body, "runSound", left, ly)
-  for _, line in ipairs(ns.Settings.RUN_LINES) do
-    ry = ry + toggle(body, "runLine_" .. line.kind, right, ry)
-  end
-  y = math.max(ly, ry) + 12
+  y = ly + 12
 
   -- Community chat | Interface.
   ly, ry = section(body, left, y, "Community chat"), section(body, right, y, "Interface")

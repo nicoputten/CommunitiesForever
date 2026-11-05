@@ -75,6 +75,28 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-91 Quiet chat
+Two accounts with this build, A and B, in the community (or guild) picked on both, B a Battle.net friend of A.
+`/console scriptErrors 1` on both. Watch A's chat for lines starting with "CommunitiesForever:".
+1. A online, B logs in (wait a minute after A's own login). Expected on A: no "B is online on ..." line (the game's
+   own Battle.net toast may show). B switches character: again no line.
+2. B gains a level. Expected on A: the LEVEL UP announcement at the top of the screen, no "... reached level ..."
+   chat line.
+3. A finishes a Doomsday daily (or any goal). Expected: the celebration banner, no "Daily done: ..." line. When A
+   finishes all three dailies first: the "First to finish today!" toast, no chat line. When B took the crown first:
+   nothing in chat on A.
+4. `/cf settings`: no "When friends log in", "Announce friends' level-ups", "Doomsday in chat" or "Run chat lines"
+   switches; "Level-up announcement" and the Planned runs switches are there, and the window has no empty gap or
+   overlap where they were. `/cf setup`, Sharing and notifications step: only Level-up announcement and the minimap
+   switch.
+5. A planned run that A answered I'm in (from the site), starting within the hour, organised by B. Expected on A:
+   the banners at 30 and 15 minutes and at the start, no chat lines; clicking the start banner opens the run, and its
+   start panel has Request invite (clicking it says "Asked ... for an invite." in chat). On B (the organiser): the
+   start panel opens at the start, no "is starting now" line; "Ping on Discord" there shows "ping queued · after
+   /reload" and Reload now in the panel, no chat line.
+6. Still in chat: `/cf ask Deadmines` with nobody in range ("Nobody with CommunitiesForever is online ..."), the
+   guild invite lines (CF-87 steps), `/cf version`, and `/cf sync debug` lines.
+
 ### CF-88 The guild invite window (designer's flow)
 Two people with this build, as in CF-87: Bo online in the guild with invite rights and the guild code set, Ada's alt
 outside any guild. `/console scriptErrors 1` on both. No addon whisper (menu or Whisper button) before the steps,
