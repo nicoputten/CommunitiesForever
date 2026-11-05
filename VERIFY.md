@@ -75,6 +75,20 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-85 No community: quiet Doomsday, a clean Dungeons tab
+On a character in no guild and no character community, with `/console scriptErrors 1`. Clear the account's pick
+first: `/run CommunitiesForeverDB.global.settings.clubId = nil`, then `/reload` (pick it again in `/cf settings` on
+your main afterwards).
+
+| Step | Expected | Status |
+|---|---|---|
+| Finish a Doomsday daily (or all three, for the crown) | No celebration banner, no banner sound, no "First to finish today!" popup under the minimap, no Doomsday chat line. `/cf`, Doomsday tab: the goal is ticked with its points. | open |
+| `/cf settings`, Preview (next to Celebration banners) | The sample banner still shows (you asked for it). | open |
+| `/cf`, Dungeons tab | Left: only the "Dungeons" title, no chips, "No runs planned", "In range for" or "Show all dungeons". Right: "Nothing planned yet" and the explanation "You're not in a community yet. ...", no "Ask now..." or "Copy website link" button and nothing faded behind the text. | open |
+| Stand where nameplates or other characters are behind the window, `/cf` | The window's background is solid on every tab: no faint names, nameplates or frames of the game show through it. The level-up and crown toasts are solid too. | open |
+| Join a guild (or a character community) with this character | Chat says `Showing community <name>. Change it with /cf settings.`; no banner or popup for the goals already done; the Doomsday tab still shows them done and today's points count. The next goal you finish shows its banner as usual. | open |
+| On a character outside the selected community (the account has one picked), `/cf`, Dungeons tab | Right: the "isn't a member" text, then "Ask now..." (and "Copy website link" when the runs file has the site) below it, not on top of it. | open |
+
 ### CF-84 Automatic guild invites for alts
 Needs V124 (the guild as the community) and the build's `CommunitiesForever_Vault` folder next to `CommunitiesForever`
 in `Interface\AddOns` (`tools\build.ps1` copies both). Two people: you (Ada) with a main in the guild and an alt outside

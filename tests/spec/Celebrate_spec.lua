@@ -169,4 +169,71 @@ describe("Celebration banners in game (CF-67)", function()
     assert.are.equal("First in the group", b.badge)
     assert.are.same({ 540, 98 }, { ns.CelebrationBanner.frame():GetWidth(), ns.CelebrationBanner.frame():GetHeight() })
   end)
+
+  -- CF-85: without a community this character is in, Doomsday is tracked quietly: no banner, sound, friends' line
+  -- or crown toast; picking one counts today's progress right away and brings up nothing old.
+  describe("without a community (CF-85)", function()
+    local function loadPassive()
+      D = helpers.loadAddonFile("src/core/Doomsday.lua", helpers.coreNs())
+      local n = dayWith("d.quests10")
+      state, ns, addon = helpers.client({ clubId = false, setup = function(s)
+        s.serverTime = D.dayStart(n, CET, RESET) + 3600
+        s.clubs = {}
+      end })
+      _G.SOUNDKIT.IG_QUEST_LIST_COMPLETE = 878
+      _G.SOUNDKIT.UI_EPICLOOT_TOAST = 31578
+      assert.is_true(ns.CommunitySelection.passive())
+      return n
+    end
+
+    it("records a daily but shows no banner and plays no sound; joining counts it and shows nothing old", function()
+      local n = loadPassive()
+      quests(10)
+      wait(5)
+      assert.are.equal(0, #shown())
+      assert.are.same({}, state.sounds)
+      assert.is_number(addon.db.global.self.goals.days[n].done["d.quests10"]) -- tracked
+      -- A community appears: picked, today's goal counts at once, the old moment stays quiet.
+      table.insert(state.clubs, { clubId = "555", name = "New Friends", clubType = 1 })
+      wowapi.fireEvent(state, "CLUB_ADDED", "555")
+      assert.are.equal("555", ns.CommunitySelection.active())
+      assert.is_number(ns.DoomsdayTracker.state().today.done["d.quests10"])
+      wait(10)
+      assert.are.equal(0, #shown())
+      assert.are.same({}, state.sounds)
+    end)
+
+    it("shows no crown toast and no friends' lines", function()
+      local n = loadPassive()
+      local start = D.dayStart(n, CET, RESET)
+      local day = addon.db.global.self.goals.days[n]
+      for i, id in ipairs(day.set) do
+        if ns.Doomsday.goal(id).slot == "daily" then day.done[id] = start + 60 * i end
+      end
+      ns.DoomsdayTracker.invalidate() -- the goals were changed by hand
+      addon:SendMessage(ns.DoomsdayTracker.CHANGED, {}, {})
+      assert.are.equal(0, #ns.CrownToast.shown())
+      -- Told once a day: picking a community later doesn't bring it up.
+      table.insert(state.clubs, { clubId = "555", name = "New Friends", clubType = 1 })
+      wowapi.fireEvent(state, "CLUB_ADDED", "555")
+      addon:SendMessage(ns.DoomsdayTracker.CHANGED, {}, {})
+      assert.are.equal(0, #ns.CrownToast.shown())
+      ns.CrownToast.reset()
+
+      -- A friend's record (from before the switch to passive) brings no line either.
+      wowapi.uninstall()
+      n = loadPassive()
+      local bt = state.friends[1].battleTag
+      local set = addon.db.global.self.goals.days[n].set
+      local done = {}
+      for _, id in ipairs(set) do done[id] = state.serverTime end
+      addon.db.global.people[bt] = { displayName = "Mira", version = 1, goals = { days = { [n] = { set = set,
+        done = done, at = start } }, weeks = {} },
+        chars = { G1 = { name = "Mira Sunstrider", classFile = "MAGE", level = 30, updatedAt = 1 } } }
+      addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
+      wait(5)
+      assert.are.same({}, ns.CelebrationBanner.friendTexts())
+      assert.are.equal(0, #ns.Celebrate.waiting())
+    end)
+  end)
 end)

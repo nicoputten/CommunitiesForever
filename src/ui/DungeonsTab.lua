@@ -400,8 +400,9 @@ local function rangeMenu(owner)
   end)
 end
 
--- rangeChar: the character "In range for" follows ({ guid, name, level }).
-local function renderList(runs, overview, me, candidates, rangeChar)
+-- rangeChar: the character "In range for" follows ({ guid, name, level }). bare (CF-85): the window's empty state
+-- (no community etc.): only the title, none of the list's parts drawn from empty data.
+local function renderList(runs, overview, me, candidates, rangeChar, bare)
   Kit.recycle(pools.rows)
   Kit.recycle(pools.listText)
   Kit.recycle(pools.runRows)
@@ -434,6 +435,11 @@ local function renderList(runs, overview, me, candidates, rangeChar)
   -- row. CF-65 (Nico): no "Ask now…" here; asks start from a dungeon, a run or /cf ask.
   placeText(pools.listTitle, parent, 12, y + 6, width - 24, "Dungeons", "goldLight") -- CF-62 (board AG05)
   y = y + 36
+  if bare then
+    parent:SetHeight(y)
+    list:Update()
+    return
+  end
   local cx = 12
   for _, def in ipairs(ns.PlannedRuns.FILTERS) do
     local c = Kit.take(pools.chips, parent)
@@ -1009,7 +1015,20 @@ local function renderRun(run, me, candidates)
   detail:Update()
 end
 
--- CF-62 (board D): no runs and no dungeon in range: what's going on, Ask now… and Copy website link.
+-- CF-85: the height of a wrapped text (GetStringHeight, used since CF-26); without it, an estimate from its length.
+local function textHeight(fs, text, width)
+  local h = fs.GetStringHeight and fs:GetStringHeight()
+  if type(h) == "number" and h > 0 then return h end
+  local lines = 0
+  for paragraph in (tostring(text) .. "\n"):gmatch("([^\n]*)\n") do
+    lines = lines + math.max(1, math.ceil(#paragraph * 6 / math.max(1, width)))
+  end
+  return lines * 14
+end
+
+-- CF-62 (board D): no runs and no dungeon in range: what's going on, Ask now… and Copy website link. CF-85: the
+-- buttons go below the text however long it is, and not at all while the addon is passive (no community: asks
+-- and the runs need one).
 local function renderEmpty(messageText)
   local parent = detail.child
   local width = math.max(420, (detail:GetWidth() or 0) - 6) - 2 * PAD
@@ -1018,8 +1037,13 @@ local function renderEmpty(messageText)
   y = y + 40
   local body = messageText or "Plan a run on the website and it shows up here after your next upload, or use Ask "
     .. "now to see who is up for a dungeon right now."
-  placeText(pools.small, parent, PAD, y, width, body, "textDim", "CENTER")
-  y = y + 44
+  local holder = placeText(pools.small, parent, PAD, y, width, body, "textDim", "CENTER")
+  y = y + math.max(30, math.ceil(textHeight(holder.text, body, width))) + 14
+  if ns.CommunitySelection.passive() then
+    parent:SetHeight(y + PAD)
+    detail:Update()
+    return
+  end
   local site = ns.RunsFile.site()
   local ask = Kit.take(pools.primary, parent)
   ask:SetLabel("Ask now\226\128\166")
@@ -1353,7 +1377,7 @@ local function draw(view, messageText)
   clearDetail()
   local me = ns.SelfInfo.read()
   if messageText then
-    renderList({}, {}, me, {}, { guid = me.guid, name = me.name, level = me.level })
+    renderList({}, {}, me, {}, { guid = me.guid, name = me.name, level = me.level }, true)
     renderDetail(nil, messageText, {}, {})
     return
   end
