@@ -32,3 +32,32 @@ jobs:
 
       - name: Test
         run: busted
+
+  # CF-84: packages with the real packager (no upload, no externals, no zip) and checks the layout CurseForge and
+  # Wago get: the addon and the CommunitiesForever_Vault folder side by side, both TOCs with the version filled in.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the packager reads the history for the version
+
+      - name: Release notes placeholder (.pkgmeta manual-changelog)
+        run: echo "Dry run" > RELEASE_NOTES.md
+
+      - name: Package (dry run)
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -d -e -z
+
+      - name: Check the packaged folders
+        run: |
+          set -e
+          ls .release
+          test -f .release/CommunitiesForever/CommunitiesForever.toc
+          test -f .release/CommunitiesForever_Vault/CommunitiesForever_Vault.toc
+          test -f .release/CommunitiesForever_Vault/Vault.lua
+          test ! -e .release/CommunitiesForever/CommunitiesForever_Vault
+          grep -q "## SavedVariables: CommunitiesForeverVaultDB" .release/CommunitiesForever_Vault/CommunitiesForever_Vault.toc
+          ! grep -q "@project-version@" .release/CommunitiesForever_Vault/CommunitiesForever_Vault.toc
+          ! grep -q "@project-version@" .release/CommunitiesForever/CommunitiesForever.toc

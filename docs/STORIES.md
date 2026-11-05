@@ -31,7 +31,7 @@ CHANGELOG.md.
 - **Kept out of the upload:** the code and the member list live in `CommunitiesForeverVaultDB`, the SavedVariables of
   a companion folder `CommunitiesForever_Vault` shipped in the same package (`.pkgmeta` `move-folders`). Its file is
   `CommunitiesForever_Vault.lua`; the uploader reads only `CommunitiesForever.lua`, which gets nothing new. Without the
-  vault folder the feature is off and the settings line says so. (Nico to confirm, see the PR.)
+  vault folder the feature is off and the settings line says so.
 - **Member list for alts:** a member's client keeps the picked guild's members `{ name, seen }` (last seen online) in
   the vault, at most 500, members who left dropped.
 - **Alt:** 15 s after login, when the guild is picked, the character is in no guild and a code is known: whisper
@@ -55,6 +55,10 @@ CHANGELOG.md.
   own `v = 1`. New message types only, on a new prefix that older versions never register, so they never see them.
 - FriendProbe: Test: guild invites (V126-V130).
 - Manual (VERIFY.md CF-84, V126 to V130).
+- Decided by Nico (2026-11-05): the vault folder and its global `CommunitiesForeverVaultDB` are OK; the code can only
+  be replaced, never cleared; the code in plain text on the guild channel and the checksum (not the code) in requests
+  are fine; the alt accepts any invite to the remembered guild within 3 minutes of its request; a one-time "action
+  blocked" error on the member's side before the Invite button takes over is acceptable.
 
 ### CF-83 The guild as the community
 On Forever no community can be created at launch (`docs/API-FINDINGS.md` "Creating a community"), so Nico's group

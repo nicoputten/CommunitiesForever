@@ -18,6 +18,9 @@ describe("release contents (CF-02)", function()
   local function releasedFiles()
     local files = { helpers.ADDON_NAME .. ".toc", "embeds.xml", "Bindings.xml", "LICENSE", "CHANGELOG.md" }
     for _, path in ipairs(helpers.tocFiles()) do files[#files + 1] = path end
+    -- CF-84: the vault folder ships too (.pkgmeta move-folders).
+    files[#files + 1] = "CommunitiesForever_Vault/CommunitiesForever_Vault.toc"
+    files[#files + 1] = "CommunitiesForever_Vault/Vault.lua"
     return files
   end
 
@@ -67,8 +70,9 @@ describe("release contents (CF-02)", function()
     assert.are.equal(toc:match("## Interface: (%d+)"), vault:match("## Interface: (%d+)"))
     assert.is_truthy(vault:find("## SavedVariables: CommunitiesForeverVaultDB\n", 1, true))
     assert.is_truthy(toc:find("## OptionalDeps: [^\n]*CommunitiesForever_Vault"))
-    for _, path in ipairs({ VAULT_TOC, "CommunitiesForever_Vault/Vault.lua" }) do
-      assert.is_nil(read(path):find("Doombringer", 1, true), path)
+    -- Every file the vault's TOC lists exists (its names are also checked by "ships no personal names").
+    for line in vault:gmatch("[^\r\n]+") do
+      if not line:match("^##") then read("CommunitiesForever_Vault/" .. line) end
     end
   end)
 end)
