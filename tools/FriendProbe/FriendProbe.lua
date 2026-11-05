@@ -1017,8 +1017,10 @@ local function GuildTest()
   log("V124/V125 now say something in guild chat, and let a guild member log in or out; then /reload and send the log")
 end
 
--- ===== V126-V130 (CF-84): automatic guild invites for alts =====
--- V126: does C_GuildInfo.Invite (or GuildInvite) work from an addon without a click, and with one?
+-- ===== V127-V132 (CF-84, CF-87): automatic guild invites for alts =====
+-- V126, V134, V135 (answered, CF-87): an addon can't send a guild invite on Forever in any way: C_GuildInfo.Invite /
+-- GuildInvite are forbidden also in a click, a secure macro button gives "Macro script disabled", /ginvite in a chat
+-- input the addon filled is forbidden on Enter. Their buttons are gone; only a hand-typed or pasted /ginvite works.
 -- V127: may an addon accept a guild invite (AcceptGuild) without a click; what does GUILD_INVITE_REQUEST pass?
 -- V128: do addon messages on "GUILD" reach the other guild members?
 -- V129: does a CHAT_MSG_SYSTEM filter hide "No player named ... is currently playing." after an addon whisper?
@@ -1073,36 +1075,6 @@ local function WatchGuildInvites()
   for _, event in ipairs(GINV_EVENTS) do
     if not pcall(ginvFrame.RegisterEvent, ginvFrame, event) then log("V126 unknown event", event) end
   end
-end
-
--- V126: invites the target. noClick: from a timer 1 s later (no hardware event), like the addon's automatic invite.
--- withRealm (V131): the name as "First Last-Realm", the form CHAT_MSG_ADDON reports senders in (the addon invites
--- with the sender's name exactly as reported). Built here only to test the form; the addon never builds names.
-local function GuildInviteTarget(noClick, withRealm)
-  local name = GetUnitName and GetUnitName("target", true)
-  if not name then
-    log("V126 target a character outside your guild first (a friend's alt)")
-    return
-  end
-  if withRealm and not name:find("-", 1, true) and GetNormalizedRealmName then
-    name = name .. "-" .. S(GetNormalizedRealmName())
-  end
-  local how = (noClick and "no click" or "click") .. (withRealm and ", with realm" or "")
-  local function run()
-    ginvBlocked = {}
-    if C_GuildInfo and C_GuildInfo.Invite then
-      LogCall("V126 C_GuildInfo.Invite " .. name .. " (" .. how .. ")", C_GuildInfo.Invite, name)
-    else
-      LogCall("V126 GuildInvite " .. name .. " (" .. how .. ")", GuildInvite, name)
-    end
-    C_Timer.After(3, function()
-      local blocked = #ginvBlocked > 0 and table.concat(ginvBlocked, ", ") or "nothing"
-      log("V126", how, "blocked", blocked)
-      result("V126", "info", "invite " .. name .. " (" .. how .. "): blocked " .. blocked
-        .. "; did they get the invite?")
-    end)
-  end
-  if noClick then C_Timer.After(1, run) else run() end
 end
 
 -- V131: the forms character names come in. Two whispers to yourself: the name as GetUnitName gives it, and with
@@ -1178,7 +1150,7 @@ local function MaskedField(parent)
 end
 
 local function GuildInviteTest()
-  log("== V126-V130 GUILD INVITES (button) ==")
+  log("== V127-V132 GUILD INVITES (button) ==")
   for _, name in ipairs({ "C_GuildInfo.Invite", "GuildInvite", "AcceptGuild", "DeclineGuild", "StaticPopup_Hide",
                           "IsInGuild", "CanGuildInvite" }) do
     local ns1, fn = name:match("^(.-)%.(.+)$")
@@ -1189,9 +1161,7 @@ local function GuildInviteTest()
     Vals(IsInGuild), "GetGuildInfo", Vals(GetGuildInfo, "player"))
   WatchGuildInvites()
   if ginvWindow then ginvWindow:Show() return end
-  ginvWindow = ButtonWindow("V126-V132: guild invites", {
-    { text = "Invite target, no click (V126)", click = function() GuildInviteTarget(true) end },
-    { text = "Invite target with this click (V126)", click = function() GuildInviteTarget(false) end },
+  ginvWindow = ButtonWindow("V127-V132: guild invites", {
     { text = "Accept the next invite by itself (V127)", click = function()
       ginvArmed = true
       log("V127 armed: the next GUILD_INVITE_REQUEST is accepted from a timer, without a click")
@@ -1201,7 +1171,6 @@ local function GuildInviteTest()
     end },
     { text = "Whisper an offline name (V129)", click = function() OfflineWhisper() end },
     { text = "Name forms (V131)", click = function() NameForms() end },
-    { text = "Invite target as Name-Realm (V131)", click = function() GuildInviteTarget(false, true) end },
     { text = "Refusal texts (V132)", click = function() RefusalTexts() end },
   })
   ginvWindow:SetHeight(ginvWindow:GetHeight() + 40)
@@ -1217,7 +1186,7 @@ ns.tests = {
   { text = "Test the combat log: Blizzard shows a warning", run = function() CombatLogTest() end },
   { text = "Test: celebration sounds (V88)", run = function() SoundTest() end },
   { text = "Test: guild (V124, V125)", run = function() GuildTest() end },
-  { text = "Test: guild invites (V126-V132)", run = function() GuildInviteTest() end },
+  { text = "Test: guild invites (V127-V132)", run = function() GuildInviteTest() end },
 }
 ns.log = log
 ns.S, ns.Val, ns.Vals, ns.Pattern, ns.DumpTable = S, Val, Vals, Pattern, DumpTable -- for Missions.lua

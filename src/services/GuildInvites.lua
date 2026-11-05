@@ -4,11 +4,12 @@
 --   Code: a member types it in /cf settings; members' addons spread it over the guild's addon channel (GKEY,
 --     GKEYHI); the newest version wins (GuildInvite.newer). Without a code everything here stays off.
 --   Members: keep the guild member list for alts and the characters removed from the guild (Vault, GKICK), answer a
---     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and invite, or show a
---     one-button popup when the invite needs a click; a refused invite is reported back (GINVFAIL).
+--     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and show the popup with
+--     "/ginvite <name>" to copy into chat (CF-87: addons can't invite in any way, V126, V134, V135); a refused
+--     invite is reported back (GINVFAIL).
 --   Alt: a character outside the picked guild whispers a request to the stored members, most recently online
---     first, one at a time, until one invites; then accepts the guild's invite by itself. Another faction or realm
---     stops it for good, with one chat line.
+--     first, one at a time, until one invites; then says "Click Accept" (CF-87: no AcceptGuild from addon code).
+--     Another faction or realm stops it for good, with one chat line.
 local _, ns = ...
 
 local GuildInvites = {}
@@ -24,9 +25,8 @@ GuildInvites.SET_ERRORS = {
   novault = "Guild invites need the CommunitiesForever_Vault folder in Interface\\AddOns (it comes with the addon).",
   noguild = "Pick your guild as the community first.",
 }
-GuildInvites.ASKED = "Asked %s for an invite into %s. It is accepted by itself."
+GuildInvites.ASKED = "Asked %s for an invite into %s."
 GuildInvites.NO_ANSWER = "No member of %s answered your guild invite request. /reload tries again."
-GuildInvites.ACCEPTING = "Joining %s: accepting the invite from %s."
 GuildInvites.CLICK_ACCEPT = "Click Accept to join %s."
 GuildInvites.INVITED = "Invited %s into the guild."
 -- Shown once per character, then it never asks again.
@@ -38,11 +38,11 @@ GuildInvites.STOPPED = {
 local addonRef, codec
 local events -- own AceEvent object for internal messages
 local alt    -- the alt's request in progress: { id, guild, code, candidates, index, timer, attempts, done }
-local requestedAt   -- server time of our last request or ack (auto-accept window)
+local requestedAt   -- server time of our last request or ack ("Click Accept" window)
 local seen, lastHandled = {}, {} -- member side: request ids handled or claimed; requester -> time
--- member side: [lower-case name] = { name, raw, friend, id, timer, at } invites waiting for "You have invited"
+-- member side: [lower-case name] = { name, raw, friend, id, at } popups shown, waiting for "You have invited"
+-- (at: when the popup showed or closed, for refusal texts)
 local pending = {}
-local needsClick = false -- the game blocked an invite without a click this session
 local answerTimer, lastAnswerAt
 local debugging = false
 
@@ -369,19 +369,14 @@ local function onWhisperFailed(name)
   end
 end
 
--- GUILD_INVITE_REQUEST on the alt: accept it by itself for the remembered guild, shortly after our request.
-local acceptingGuild
-local function onInvited(inviter, guildName)
+-- GUILD_INVITE_REQUEST on the alt, shortly after our request, for the remembered guild: Blizzard's popup has the
+-- Accept button; one chat line says to click it (CF-87: AcceptGuild is not called from addon code, V127).
+local function onInvited(_, guildName)
   local guild = rememberedGuild()
   if not ns.GuildInvite.shouldAccept(requestedAt, guildName, guild, now()) then return end
-  acceptingGuild = guild
   stopTimer()
   if alt then alt.done = true end
-  if ns.Guild.accept() then
-    addonRef:Print(string.format(GuildInvites.ACCEPTING, guild, tostring(inviter)))
-  else
-    addonRef:Print(string.format(GuildInvites.CLICK_ACCEPT, guild))
-  end
+  addonRef:Print(string.format(GuildInvites.CLICK_ACCEPT, guild))
 end
 
 -- ===== The member's side =====
@@ -397,33 +392,18 @@ local function friendOf(message)
   return name or ns.GuildInvite.cleanDisplayName(message.dn)
 end
 
-local function popup(entry)
-  pending[entry.name:lower()] = nil
-  ns.GuildInvitePopup.show(entry.raw, entry.friend, entry.name)
-end
-
+-- The member's popup: /ginvite <name> to copy and paste into chat (CF-87). The entry waits in pending for the
+-- member's own invite: "You have invited" (the confirmation line, matched by name) or a refusal text within
+-- REFUSAL_WINDOW (GINVFAIL to the alt).
 local function invite(entry)
-  if needsClick then
-    popup(entry)
-    return
-  end
-  -- The name exactly as the game reported the whisper's sender (V131).
-  local how = ns.Guild.invite(entry.raw)
-  trace("invite %s: %s", entry.raw, tostring(how))
-  if not how then
-    popup(entry)
-    return
-  end
-  pending[entry.name:lower()] = entry
   entry.at = ns.Transport.now()
-  if not ns.Guild.canConfirm() then return end -- no "You have invited" text to wait for (V126)
-  entry.timer = C_Timer.NewTimer(ns.GuildInvite.CONFIRM_WAIT, function()
-    entry.timer = nil
-    if pending[entry.name:lower()] == entry then
-      needsClick = true -- nothing came of it: the invite needs a click on this client
-      popup(entry)
-    end
+  -- The name exactly as the game reported the whisper's sender (V131).
+  local shown = ns.GuildInvitePopup.show(entry.raw, entry.friend, entry.name, function()
+    entry.at = ns.Transport.now() -- closed after copying: the paste comes now
+    trace("popup for %s closed", entry.raw)
   end)
+  if shown then pending[entry.name:lower()] = entry end
+  trace("popup for %s: %s", entry.raw, tostring(shown))
 end
 
 local function onRequest(message, sender, raw)
@@ -466,7 +446,6 @@ local function onInviteSent(name)
     if stored and short then ns.GuildInvite.liftRemoved(stored.removed, nil, short) end
     return
   end
-  if entry.timer then entry.timer:Cancel() end
   pending[short:lower()] = nil
   addonRef:Print(string.format(GuildInvites.INVITED, ns.GuildInvite.altLabel(entry.name, entry.friend)))
 end
@@ -480,31 +459,19 @@ local function onInviteFailed(kind, name)
     entry = pending[short:lower()]
   else
     for _, e in pairs(pending) do
-      if not entry or (e.at or 0) > (entry.at or 0) then entry = e end
+      if e.at and (not entry or e.at > entry.at) then entry = e end
     end
   end
-  -- Only right after our invite: "no permission" is a generic text the game shows for other things too.
-  if not entry or ns.Transport.now() - (entry.at or 0) > ns.GuildInvite.CONFIRM_WAIT * 3 then return end
-  if entry.timer then entry.timer:Cancel() end
+  -- Only soon after our popup: "no permission" is a generic text the game shows for other things too.
+  if not (entry and entry.at) or ns.Transport.now() - entry.at > ns.GuildInvite.REFUSAL_WINDOW then return end
   pending[entry.name:lower()] = nil
   trace("invite %s refused: %s", entry.raw, tostring(kind))
   whisper(entry.raw, { t = "GINVFAIL", id = entry.id, r = kind })
 end
 
+-- Nothing of ours should be blocked any more (CF-87); /cf sync debug shows it if something is.
 local function onBlocked(functionName)
-  local fn = tostring(functionName)
-  trace("blocked: %s", fn)
-  if fn:find("AcceptGuild", 1, true) then
-    if acceptingGuild then addonRef:Print(string.format(GuildInvites.CLICK_ACCEPT, acceptingGuild)) end
-    return
-  end
-  if fn:find("Invite", 1, true) then
-    needsClick = true
-    for _, entry in pairs(pending) do
-      if entry.timer then entry.timer:Cancel() end
-      popup(entry)
-    end
-  end
+  trace("blocked: %s", tostring(functionName))
 end
 
 -- ===== Wiring =====
@@ -554,9 +521,9 @@ end
 function GuildInvites.start(addon)
   addonRef = addon
   codec = ns.Protocol.codec(LibStub("LibSerialize"), LibStub("LibDeflate"))
-  alt, requestedAt, acceptingGuild = nil, nil, nil
+  alt, requestedAt = nil, nil
   seen, lastHandled, pending = {}, {}, {}
-  needsClick, answerTimer, lastAnswerAt, debugging = false, nil, nil, false
+  answerTimer, lastAnswerAt, debugging = nil, nil, false
   events = LibStub("AceEvent-3.0"):Embed({})
   ns.Guild.registerPrefix(ns.GuildInvite.PREFIX)
   ns.Guild.watch(addon, ns.GuildInvite.PREFIX)
@@ -568,13 +535,6 @@ function GuildInvites.start(addon)
   events:RegisterMessage(ns.Guild.INVITE_FAILED, function(_, kind, name) onInviteFailed(kind, name) end)
   events:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name) onWhisperFailed(name) end)
   events:RegisterMessage(ns.MemberTracker.UPDATED, function() keepRoster() end)
-  -- Joined: the guild's club appears. The popup goes once the invite was accepted.
-  events:RegisterMessage(ns.Community.CLUBS_CHANGED, function()
-    if acceptingGuild and ns.GuildInvite.same(currentGuild(), acceptingGuild) then
-      ns.Guild.hideInvitePopup()
-      acceptingGuild = nil
-    end
-  end)
   C_Timer.NewTimer(ns.GuildInvite.LOGIN_DELAY, afterLogin)
 end
 

@@ -92,6 +92,11 @@ function regionMethods.GetTop(self) return self.top end
 function regionMethods.GetLeft(self) return self.left end
 function regionMethods.GetParent(self) return self.parent end
 function regionMethods.SetParent(self, parent) self.parent = parent end
+-- CF-87: edit box focus and selection (no scripts run; specs run OnEditFocusLost etc. themselves).
+function regionMethods.SetFocus(self) self.focused = true end
+function regionMethods.ClearFocus(self) self.focused = false end
+function regionMethods.HasFocus(self) return self.focused == true end
+function regionMethods.HighlightText(self) self.highlighted = true end
 function regionMethods.SetText(self, text) self.text = text end
 function regionMethods.GetText(self) return self.text end
 function regionMethods.GetStringWidth(self) return #(tostring(self.text or "")) * 7 end

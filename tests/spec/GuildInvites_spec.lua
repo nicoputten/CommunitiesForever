@@ -2,12 +2,14 @@ local helpers = require("helpers")
 local wowapi = require("mocks.wowapi")
 
 -- CF-84: automatic guild invites for alts (src/services/GuildInvites.lua) against the WoW mock: the code in the
--- vault, spread on the guild channel; a member answering a request; an alt asking and accepting.
+-- vault, spread on the guild channel; a member answering a request; an alt asking and accepting. CF-87: addon code
+-- never calls the game's guild invite or accept functions (forbidden on Forever, V126): the member's popup runs
+-- /ginvite (a secure macro button, or the chat input), the alt clicks Blizzard's Accept.
 describe("GuildInvites (CF-84)", function()
   local state, ns, addon, codec
   local GUILD_CLUB = "999"   -- the mock's "My Guild" (clubType 2)
   local ALT_GUID = "Player-4619-0BBBBBBB"
-  local invited, accepted
+  local invited, called, accepted -- popups shown (target names); C_GuildInfo.Invite calls; AcceptGuild calls
 
   local function install(opts)
     opts = opts or {}
@@ -23,8 +25,8 @@ describe("GuildInvites (CF-84)", function()
     else
       state.clubs = {}
     end
-    invited, accepted = {}, 0
-    _G.C_GuildInfo = { Invite = function(name) invited[#invited + 1] = name end }
+    invited, called, accepted = {}, {}, 0
+    _G.C_GuildInfo = { Invite = function(name) called[#called + 1] = name end }
     _G.AcceptGuild = function() accepted = accepted + 1 end
     _G.StaticPopup_Hide = function() end
     _G.ERR_GUILD_INVITE_S = "You have invited %s to join your guild."
@@ -33,6 +35,11 @@ describe("GuildInvites (CF-84)", function()
     if opts.members then state.clubMembers[GUILD_CLUB] = opts.members end
     if opts.vault ~= false then _G.CommunitiesForeverVaultDB = opts.vault or {} end
     ns = helpers.loadAddon()
+    local show = ns.GuildInvitePopup.show
+    ns.GuildInvitePopup.show = function(target, ...)
+      invited[#invited + 1] = target
+      return show(target, ...)
+    end
     addon = state.addon
     addon:OnInitialize()
     local s = addon.db.global.settings
@@ -43,6 +50,9 @@ describe("GuildInvites (CF-84)", function()
   end
 
   after_each(function()
+    -- CF-87: never, in any test.
+    assert.are.same({}, called)
+    assert.are.equal(0, accepted)
     _G.C_GuildInfo, _G.AcceptGuild, _G.StaticPopup_Hide, _G.ERR_GUILD_INVITE_S = nil, nil, nil, nil
     _G.ERR_GUILD_PERMISSIONS, _G.ERR_GUILD_NOT_ALLIED = nil, nil
     wowapi.uninstall()
@@ -240,7 +250,9 @@ describe("GuildInvites (CF-84)", function()
       wowapi.runTimers(state)
     end
 
-    it("acknowledges a valid request, claims it in the guild and invites the character that asked", function()
+    local function popup() return ns.GuildInvitePopup.frame() end
+
+    it("acknowledges a valid request, claims it in the guild and shows the copy popup", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
       local ack = sentOfType("GINVACK")
@@ -252,35 +264,80 @@ describe("GuildInvites (CF-84)", function()
       assert.are.same({ "GUILD", "1a2b3c4d", "Bram Lovewell" },
         { claim[1].channel, claim[1].message.id, claim[1].message.n })
       assert.are.same({ "Bram Lovewell-ClassicBetaPvP" }, invited)
+      assert.is_true(popup():IsShown())
+      assert.are.equal("Invite Bram Lovewell (Ada's alt)?", popup().line:GetText())
+    end)
+
+    -- CF-87: addons can't invite in any way on Forever (V126, V134, V135): the member copies /ginvite into chat.
+    it("shows /ginvite with the name selected in its own box, ready for Ctrl+C", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local box = popup().box
+      assert.are.equal("/ginvite Bram Lovewell-ClassicBetaPvP", box:GetText())
+      assert.is_true(box:HasFocus())
+      assert.is_true(box.highlighted)
+      assert.are.equal(ns.GuildInvitePopup.HINT, popup().hint:GetText())
+    end)
+
+    it("keeps the command: typing restores and selects it again, a click selects it all", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local box = popup().box
+      box:SetText("/ginvite Somebody Else")
+      box.highlighted = false
+      box:RunScript("OnTextChanged", true)
+      assert.are.equal("/ginvite Bram Lovewell-ClassicBetaPvP", box:GetText())
+      assert.is_true(box.highlighted)
+      box.highlighted = false
+      box:RunScript("OnEditFocusGained")
+      assert.is_true(box.highlighted)
+      box.highlighted = false
+      box:RunScript("OnMouseUp")
+      assert.is_true(box.highlighted)
+    end)
+
+    it("never opens or fills the chat input", function()
+      member()
+      local touched = {}
+      local had = _G.ChatFrameUtil
+      _G.ChatFrameUtil = setmetatable({}, { __index = function(_, key)
+        return function() touched[#touched + 1] = key end
+      end })
+      _G.ChatFrame_OpenChat = function() touched[#touched + 1] = "ChatFrame_OpenChat" end
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      popup().box:RunScript("OnEnterPressed")
+      _G.ChatFrameUtil, _G.ChatFrame_OpenChat = had, nil
+      assert.are.same({}, touched)
+    end)
+
+    it("closes on Enter or Esc, and confirms the member's own invite in chat", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      popup().box:RunScript("OnEnterPressed")
+      assert.is_false(popup():IsShown())
+      assert.is_false(popup().box:HasFocus())
       wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "You have invited Bram Lovewell to join your guild.")
       assert.is_true(printed("Invited Bram Lovewell (Ada's alt) into the guild."))
-      wowapi.runTimers(state)
-      assert.is_nil(ns.GuildInvitePopup.frame()) -- confirmed: no popup
-    end)
-
-    it("shows the one-button popup when nothing came of the invite, and the click invites", function()
-      member()
-      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
-      wowapi.runTimers(state)
-      local popup = ns.GuildInvitePopup.frame()
-      assert.is_true(popup:IsShown())
-      assert.are.equal("Invite Bram Lovewell (Ada's alt)?", popup.line:GetText())
-      popup.button:RunScript("OnClick")
-      assert.are.same({ "Bram Lovewell-ClassicBetaPvP", "Bram Lovewell-ClassicBetaPvP" }, invited)
-      assert.is_false(popup:IsShown())
-    end)
-
-    it("shows the popup at once when the game blocks the invite, and for later requests too", function()
-      member()
-      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
-      wowapi.fireEvent(state, "ADDON_ACTION_BLOCKED", "CommunitiesForever", "C_GuildInfo.Invite()")
-      assert.is_true(ns.GuildInvitePopup.frame():IsShown())
-      ns.GuildInvitePopup.frame():Hide()
       local at = state.serverTime
       receive(request({ id = "99999999", at = at, guid = false, p = ns.GuildInvite.proof("Open Sesame", "My Guild",
         "Dina Lovewell", at) }), "WHISPER", "Dina Lovewell-ClassicBetaPvP")
-      assert.are.equal(1, #invited) -- no second try without a click
-      assert.are.equal("Invite Dina Lovewell?", ns.GuildInvitePopup.frame().line:GetText())
+      assert.is_true(popup():IsShown())
+      popup().box:RunScript("OnEscapePressed")
+      assert.is_false(popup():IsShown())
+    end)
+
+    it("shows a newer request in the same popup", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local at = state.serverTime
+      receive(request({ id = "99999999", at = at, guid = false, p = ns.GuildInvite.proof("Open Sesame", "My Guild",
+        "Dina Lovewell", at) }), "WHISPER", "Dina Lovewell-ClassicBetaPvP")
+      assert.are.equal("Invite Dina Lovewell?", popup().line:GetText())
+      assert.are.equal("/ginvite Dina Lovewell-ClassicBetaPvP", popup().box:GetText())
+    end)
+
+    it("shows nothing for a name that can't make a one-line command", function()
+      assert.is_false(ns and ns.GuildInvitePopup.show("Bram\nLovewell") or false)
     end)
 
     it("ignores a wrong code, a guild member, a request someone claimed and a second one within a minute", function()
@@ -300,17 +357,27 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal(1, #invited)
     end)
 
-    -- Edge case 4: the game refuses the invite (no rights): the alt hears it at once, no popup.
-    it("tells the alt when the game refuses the invite", function()
+    -- Edge case 4: the game refuses the invite (no rights): the alt hears it at once. CF-87: the member pastes the
+    -- command by hand, so a refusal counts as ours for REFUSAL_WINDOW seconds after the popup showed or closed.
+    it("tells the alt when the game refuses the pasted invite, but not long after the popup", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      state.time = state.time + ns.GuildInvite.REFUSAL_WINDOW - 5
+      popup().box:RunScript("OnEnterPressed") -- closed: the paste comes now
+      state.time = state.time + ns.GuildInvite.REFUSAL_WINDOW - 5
       wowapi.fireEvent(state, "UI_ERROR_MESSAGE", 1, "You don't have permission to do that.")
       local fail = sentOfType("GINVFAIL")
       assert.are.equal(1, #fail)
       assert.are.same({ "Bram Lovewell-ClassicBetaPvP", "1a2b3c4d", "rights" },
         { fail[1].target, fail[1].message.id, fail[1].message.r })
-      wowapi.runTimers(state)
-      assert.is_nil(ns.GuildInvitePopup.frame())
+    end)
+
+    it("ignores a refusal text long after the popup", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      state.time = state.time + ns.GuildInvite.REFUSAL_WINDOW + 1
+      wowapi.fireEvent(state, "UI_ERROR_MESSAGE", 1, "You don't have permission to do that.")
+      assert.are.same({}, sentOfType("GINVFAIL"))
     end)
 
     -- Edge case 6: a character removed from the guild is never invited by itself again; a manual invite lifts it.
@@ -450,7 +517,7 @@ describe("GuildInvites (CF-84)", function()
       receive({ t = "GINVACK", id = r[2].message.id }, "WHISPER", "Ada Lovewell-ClassicBetaPvP")
       assert.is_true(printed("Asked Ada Lovewell for an invite into My Guild."))
       wowapi.fireEvent(state, "GUILD_INVITE_REQUEST", "Ada Lovewell", "My Guild")
-      assert.are.equal(1, accepted)
+      assert.is_true(printed("Click Accept to join My Guild."))
       for _ = 1, 5 do wowapi.runTimers(state) end
       assert.are.equal(2, #requests())
     end)
@@ -520,14 +587,14 @@ describe("GuildInvites (CF-84)", function()
       assert.is_false(printed("No member of My Guild answered"))
     end)
 
-    it("accepts the invite into the remembered guild by itself, not another guild's", function()
+    -- CF-87: AcceptGuild is never called (after_each); Blizzard's popup has the Accept button.
+    it("says to click Accept for the remembered guild's invite, not another guild's", function()
       install({ inGuild = false, vault = VAULT })
       wowapi.runTimers(state)
       wowapi.fireEvent(state, "GUILD_INVITE_REQUEST", "Pip Stranger", "Other Guild")
-      assert.are.equal(0, accepted)
+      assert.is_false(printed("Click Accept"))
       wowapi.fireEvent(state, "GUILD_INVITE_REQUEST", "Cora Lovewell", "My Guild")
-      assert.are.equal(1, accepted)
-      assert.is_true(printed("Joining My Guild: accepting the invite from Cora Lovewell."))
+      assert.is_true(printed("Click Accept to join My Guild."))
     end)
 
     it("does not accept an invite it never asked for", function()
@@ -536,7 +603,7 @@ describe("GuildInvites (CF-84)", function()
       wowapi.runTimers(state)
       assert.are.same({}, requests()) -- no code: the feature is off
       wowapi.fireEvent(state, "GUILD_INVITE_REQUEST", "Cora Lovewell", "My Guild")
-      assert.are.equal(0, accepted)
+      assert.is_false(printed("Click Accept"))
     end)
 
     it("tries again later and gives up after three attempts with one line", function()

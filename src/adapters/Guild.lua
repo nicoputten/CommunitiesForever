@@ -1,8 +1,11 @@
 -- Guild: the WoW calls behind automatic guild invites (CF-84). Thin, guarded wrappers; the rules are in
--- core/GuildInvite.lua and services/GuildInvites.lua. Unverified on Forever (VERIFY.md V126 to V129):
--- `C_GuildInfo.Invite` / `GuildInvite` without a click, `AcceptGuild` from an addon, `GUILD_INVITE_REQUEST` and its
--- arguments, addon messages on "GUILD", `ADDON_ACTION_BLOCKED` / `ADDON_ACTION_FORBIDDEN`, `ERR_GUILD_INVITE_S`,
--- `StaticPopup_Hide`; the name forms (V131) and the refusal texts (V132).
+-- core/GuildInvite.lua and services/GuildInvites.lua. Unverified on Forever (VERIFY.md V127 to V132):
+-- `GUILD_INVITE_REQUEST` and its arguments, addon messages on "GUILD", `ERR_GUILD_INVITE_S`; the name forms (V131)
+-- and the refusal texts (V132).
+-- CF-87: no guild invite or accept from addon code, in any form: the invite functions (V126), a secure /ginvite
+-- macro button (V134) and /ginvite in a chat input the addon filled (V135) are all refused on Forever
+-- (API-FINDINGS.md "Guild invites"). The member copies /ginvite from ui/GuildInvitePopup.lua into chat by hand; the
+-- alt clicks Blizzard's Accept. Nothing here opens or fills the chat input.
 local ADDON_NAME, ns = ...
 
 local Guild = {}
@@ -51,36 +54,10 @@ function Guild.send(prefix, text)
   return ok and (result or 0) or nil
 end
 
--- Invites a character into your guild (V126). Returns the name of the call that ran, or nil when none exists or
--- it raised an error. A call the game blocks (it needs a click) shows as Guild.BLOCKED, or as no INVITE_SENT.
-function Guild.invite(name)
-  if type(name) ~= "string" or name == "" then return nil end
-  if C_GuildInfo and C_GuildInfo.Invite and pcall(C_GuildInfo.Invite, name) then return "C_GuildInfo.Invite" end
-  if GuildInvite and pcall(GuildInvite, name) then return "GuildInvite" end
-  return nil
-end
-
--- True when the game's "You have invited %s to join your guild." text (ERR_GUILD_INVITE_S) is known, so a sent
--- invite can be confirmed (Guild.INVITE_SENT).
-function Guild.canConfirm()
-  return type(ERR_GUILD_INVITE_S) == "string"
-end
-
--- Accepts the pending guild invite (V127). Returns true when the call exists and ran.
-function Guild.accept()
-  if not AcceptGuild then return false end
-  return pcall(AcceptGuild) == true
-end
-
 -- This character's faction and realm, from the same verified calls the snapshot uses (UnitFactionGroup, GetRealmName):
 -- members store the guild's, an alt compares with its own (core/GuildInvite.placeMismatch).
 function Guild.place()
   return { faction = UnitFactionGroup and (UnitFactionGroup("player")) or nil, realm = GetRealmName and GetRealmName() }
-end
-
--- Hides Blizzard's guild invite popup, once the invite was accepted (V127). Guarded.
-function Guild.hideInvitePopup()
-  if StaticPopup_Hide then pcall(StaticPopup_Hide, "GUILD_INVITE") end
 end
 
 function Guild.watch(addon, prefix)
@@ -98,7 +75,8 @@ function Guild.watch(addon, prefix)
   ns.Events.register(events, "GUILD_INVITE_REQUEST", function(_, inviter, guildName)
     addon:SendMessage(Guild.INVITED, inviter, guildName)
   end)
-  -- A protected call from our code without a click: ADDON_ACTION_BLOCKED / _FORBIDDEN(addonName, function).
+  -- A protected call from our code: ADDON_ACTION_BLOCKED / _FORBIDDEN(addonName, function). Logged in /cf sync
+  -- debug only; nothing of ours should cause it (CF-87).
   for _, event in ipairs({ "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }) do
     ns.Events.register(events, event, function(_, addonName, functionName)
       if addonName == ADDON_NAME then addon:SendMessage(Guild.BLOCKED, functionName) end
