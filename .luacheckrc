@@ -24,7 +24,7 @@ stds.wow = {
     -- chat windows (CF-25)
     "Chat_GetCommunitiesChannelName", "GetChannelName", "ChangeChatColor", "NUM_CHAT_WINDOWS", "GetChatWindowInfo",
     "GetChatWindowChannels", "SELECTED_CHAT_FRAME", "FCF_StartAlertFlash", "FCF_OpenNewWindow",
-    "ChatFrame_RemoveAllMessageGroups", "PlaySound", "SOUNDKIT",
+    "ChatFrame_RemoveAllMessageGroups", "ChatFrame_AddMessageGroup", "PlaySound", "SOUNDKIT",
     -- libraries
     "LibStub",
     -- C_ namespaces

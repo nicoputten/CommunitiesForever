@@ -7,6 +7,33 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-86 A chat tab for the guild
+Bug from Nico's in-game test of build 8 (develop 4d648b0): with the guild picked, the setup's chat step asks for the
+community chat tab, but none is made. Cause: CF-83 made `CommunityChat.createTab` stop for a guild ("Your community is
+a guild: guild chat already has its place in your chat windows."); the channel lookup is never reached (it would be
+nil anyway: guild chat is the `GUILD` message group, not a `Community:<clubId>:<streamId>` channel). Builds on CF-83.
+Touches: `src/adapters/ChatFrames.lua`, `src/services/CommunityChat.lua`, `src/ui/Setup.lua`, `src/ui/Settings.lua`,
+`src/ui/SettingsWindow.lua`, `tests/mocks/wowapi.lua`, `tests/spec/Guild_spec.lua`, `.luacheckrc`, VERIFY.md,
+ARCHITECTURE.md, CHANGELOG.md.
+- With the guild picked, the setup's "Create chat tab", `/cf settings` "Create a community chat tab" and the
+  once-per-character prompt make a chat tab named after the guild: `FCF_OpenNewWindow(name)`,
+  `ChatFrame_RemoveAllMessageGroups(frame)`, then the `GUILD` message group (`ChatFrame_AddMessageGroup`, or
+  `frame:AddMessageGroup`; unverified, V133). Without either no tab is opened ("Could not create the chat tab.")
+  (tests).
+- "Already has a tab" works for the guild tab (found by name, as for a community): the setup's chat step then says
+  "This character has a <guild> chat tab." and offers no Create button; a second Create says it is there (tests).
+- A character not in the selected guild gets "Select a community first ..." and no tab (tests).
+- Guild chat only: no officer chat or guild achievements. No color, flash or sound for guild chat, and General keeps
+  guild chat: with the guild picked, the chat color, Reset, flash, sound and "Keep community messages in General too"
+  options are hidden (`/cf settings`, the Options panel, the setup's chat step) (tests).
+- Other characters in the guild get the "Create a Community tab on this character too?" prompt once, with the line
+  "A tab with only your guild chat." (CF-83 left it out) (tests).
+- Communities work as before (the existing CF-25/CF-26 tests).
+- Compatibility (rule 8): nothing stored or sent changes; `chatTab[guid]` is set as for a community.
+- Manual (VERIFY.md CF-86, V133).
+- Decided by Nico (2026-11-05): guild chat only; no color, flash or sound for guild chat (hide those options);
+  "Keep community messages in General too" hidden for a guild; alts in the guild get the tab prompt.
+
 ### CF-85 No community: quiet Doomsday, a clean Dungeons tab
 Two bugs Nico found at launch (v1.2.1) on a character with no community (none could be made, so none was selected).
 Builds on CF-83: a character in a guild only is no longer passive. Touches: `src/services/Celebrate.lua`,

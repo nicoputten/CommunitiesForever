@@ -138,6 +138,14 @@ function STEP_BODIES.name()
 end
 
 function STEP_BODIES.chat()
+  -- CF-86: a guild gets just the tab: guild chat keeps Blizzard's color, flash and its place in General.
+  if ns.CommunitySelection.isGuild() then
+    text("Your community is a guild: give guild chat its own chat tab, so you never miss it.")
+    if ns.CommunityChat.tab() then
+      text("This character has a " .. ns.CommunityChat.tabName() .. " chat tab.", "body", "goldLight")
+    end
+    return
+  end
   local color = ns.Chat.color(settings())
   text("Community chat in its own color and its own chat tab, so you never miss it.")
   text(string.format("%s[%s] Alice Example: anyone up for Deadmines?|r", Theme.rgbCode(color.r, color.g, color.b),
@@ -340,6 +348,7 @@ function Setup.openPrompt()
     help:SetWidth(360)
     help:SetJustifyH("LEFT")
     help:SetText("A tab with only your community's chat.")
+    prompt.help = help
     prompt.create = Kit.button(prompt.content, "Create tab", function()
       ns.CommunityChat.createTab()
       prompt:Hide()
@@ -351,6 +360,9 @@ function Setup.openPrompt()
     prompt.notNow:SetPoint("RIGHT", prompt.create, "LEFT", -8, 0)
     prompt.texts = { question, help }
   end
+  -- CF-86: a guild's tab shows guild chat.
+  prompt.help:SetText(ns.CommunitySelection.isGuild() and "A tab with only your guild chat."
+    or "A tab with only your community's chat.")
   prompt:Show()
 end
 
@@ -367,8 +379,8 @@ function Setup.plan()
   local inCommunity = ns.CommunitySelection.active() and true or false
   return ns.Onboarding.plan(settings(), {
     guid = guid,
-    -- CF-83: a guild needs no Community tab (guild chat is Blizzard's own), so no tab prompt.
-    hasTab = ns.CommunitySelection.isGuild() or (guid and settings().chatTab and settings().chatTab[guid])
+    -- CF-86: a guild gets the tab prompt too (CF-83 left it out).
+    hasTab = (guid and settings().chatTab and settings().chatTab[guid])
       or ns.CommunityChat.tab() ~= nil,
     inCommunity = inCommunity,
     joinable = not inCommunity and ns.CommunitySelection.selected() ~= nil and ns.Invites.current() ~= nil,

@@ -85,6 +85,27 @@ function ChatFrames.createTab(name, channel)
   return f.GetID and f:GetID() or nil
 end
 
+-- CF-86: how to add a message group to a chat frame, or nil. `ChatFrame_AddMessageGroup` (and the
+-- `frame:AddMessageGroup` method as a fallback) are unverified on Forever (VERIFY.md V133).
+local function groupAdder()
+  if ChatFrame_AddMessageGroup then return function(f, group) ChatFrame_AddMessageGroup(f, group) end end
+  local f1 = frame(1)
+  if f1 and f1.AddMessageGroup then return function(f, group) f:AddMessageGroup(group) end end
+  return nil
+end
+
+-- CF-86: opens a new chat tab that shows only a message group (guild chat: "GUILD"). Returns its window index,
+-- or nil (also when no way to add the group exists, so no empty tab is left behind).
+function ChatFrames.createGroupTab(name, group)
+  local add = groupAdder()
+  if not (FCF_OpenNewWindow and group and add) then return nil end
+  local f = FCF_OpenNewWindow(name)
+  if not f then return nil end
+  if ChatFrame_RemoveAllMessageGroups then ChatFrame_RemoveAllMessageGroups(f) end
+  add(f, group)
+  return f.GetID and f:GetID() or nil
+end
+
 function ChatFrames.addChannel(index, channel)
   local f = frame(index)
   if f and f.AddChannel then f:AddChannel(channel) end

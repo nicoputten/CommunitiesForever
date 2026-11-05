@@ -70,10 +70,29 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V129 | Does a `CHAT_MSG_SYSTEM` filter (`ChatFrameUtil.AddMessageEventFilter` or `ChatFrame_AddMessageEventFilter`) hide "No player named '…' is currently playing." after an addon whisper to a name that is offline? (CF-84: the alt whispers members who may be offline; also CF-28's V53) | Alone: `/fp`, Test: guild invites, **Whisper an offline name (V129)**. Expected no "No player named 'Nobody Atall' is currently playing." line in chat, and V129 ticks with "the filter hid 1 line(s)". `info` "the filter saw no … line" means the game printed nothing or another text: say whether a line showed. Send the `V129` lines. | open |
 | V131 | Which name forms do addon whispers and guild invites take on Forever, where names have a space ("First Last")? How does `CHAT_MSG_ADDON` report the sender (with "-Realm"?), how do `C_Club.GetMemberInfo` and `GUILD_INVITE_REQUEST` give names, and does `C_GuildInfo.Invite("First Last-Realm")` work? (CF-84: the alt whispers the name the guild list gives; the member whispers back and invites with the sender's name exactly as reported, never a name built from parts) | `/fp`, Test: guild invites, **Name forms (V131)**: V131 ticks with "whisper to the name arrived true, with -Realm true; sender reported as <exact text>"; the log has `V131 V131:plain sender exactly [<text>]`. Then, with a friend's alt targeted outside the guild, **Invite target as Name-Realm (V131)**: did the invite arrive? Also send the `V124 member` lines (guild names) and the `V126/V127 EVENT GUILD_INVITE_REQUEST` line (inviter's name). | open |
 | V132 | Which texts does the game show when a guild invite is refused, and do they match `ERR_GUILD_PERMISSIONS`, `ERR_GUILD_NOT_ALLIED`, `ERR_ALREADY_IN_GUILD_S`, `ERR_ALREADY_INVITED_TO_GUILD_S`, `ERR_GUILD_PLAYER_NOT_FOUND_S`? Do they come as `CHAT_MSG_SYSTEM` or `UI_ERROR_MESSAGE`? (CF-84: a refused invite tells the alt to ask the next member at once) | `/fp`, Test: guild invites, **Refusal texts (V132)** (logs the six texts). Then **Invite target with this click (V126)** on a character already in a guild, and, on a character without invite rights, on anyone. The log's `V126/V127 EVENT CHAT_MSG_SYSTEM …` or `… UI_ERROR_MESSAGE …` lines should show the same text as one of the `V132 ERR_…` lines. Send them. | open |
+| V133 | Does `ChatFrame_AddMessageGroup(frame, "GUILD")` exist on Forever and add guild chat to a chat window (or, if not, does `frame:AddMessageGroup("GUILD")`)? (CF-86: the guild chat tab) | `/run print(ChatFrame_AddMessageGroup, ChatFrame1.AddMessageGroup)`: which is a function? Then the CF-86 steps: the new tab shows guild chat. | open |
 | V130 | Does `EditBox:SetPassword(true)` show dots instead of the typed letters? (CF-84: the guild code field in `/cf settings`) | `/fp`, Test: guild invites: type in the box at the bottom of the window. Mark Yes when it shows dots (or stars), No when it shows the letters. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-86 A chat tab for the guild
+On a character in the guild, with the guild picked in `/cf settings` and `/console scriptErrors 1`. Answers V133.
+Remove an earlier test tab first (right-click its tab, Close Window) if one named after the guild exists.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/run print(ChatFrame_AddMessageGroup, ChatFrame1.AddMessageGroup)` | At least one prints `function: ...` (V133). | open |
+| `/cf setup`, Next to the "Community chat" step | It says "Your community is a guild: give guild chat its own chat tab, so you never miss it."; no colored sample line, no flash, sound or "Keep community messages in General too" switches; the buttons are "Not now" and "Create chat tab". | open |
+| Click "Create chat tab" | A new chat tab named after the guild; chat says "Created the <guild> chat tab." The setup moves on to Notifications. | open |
+| Let a guild member write in guild chat (or write yourself) | The message shows in the new tab, in Blizzard's guild green, and still in General. No officer chat or achievements in the new tab. The tab does not flash and no sound plays. | open |
+| Right-click the new tab, Settings (or Chat tab settings) | Only "Guild" is ticked under the chat types; no channels. | open |
+| `/cf setup`, Next to the chat step again | "This character has a <guild> chat tab."; the buttons are Next and Skip setup, no "Create chat tab". | open |
+| `/cf settings`, Community chat | Only the "Create a community chat tab" button; no chat color, Reset, flash, sound or General switch. Click the button: chat says "This character already has a <guild> chat tab."; no second tab. | open |
+| `/reload` | The tab is still there and still shows guild chat. | open |
+| Log in on another character of yours in the guild (that never answered the tab prompt) | After ~5 s: "Create a Community tab on this character too?" with "A tab with only your guild chat."; Create tab makes the guild tab there. | open |
+| An alt **not** in the guild: `/cf settings`, Create a community chat tab | Chat says "Select a community first (and log in on a character that is a member)."; no tab. | open |
+| Pick a character community in `/cf settings` | The color, Reset, flash, sound and General switches are back; "Create a community chat tab" makes the community tab as before (purple community chat only). | open |
 
 ### CF-85 No community: quiet Doomsday, a clean Dungeons tab
 On a character in no guild and no character community, with `/console scriptErrors 1`. Clear the account's pick
@@ -125,7 +144,6 @@ On a character in a guild that is also in a character community (or in a guild o
 | Pick the guild, then the community, then the guild again (no `/reload`) | Each time `/cf` shows that club's members at once; friends' characters, levels, professions and Doomsday points stay. | open |
 | With the guild picked: say something in guild chat | The Doomsday goal "Say something in the community chat" ticks (if drawn today); "Chat in the community on 5 days" counts the day. | open |
 | With the guild picked, as guild master: `/cf settings` | No "Community invite link" field. An alt outside the guild sees no "How to join" steps and no "Post invite link in chat". | open |
-| With the guild picked: `/cf settings`, Create a community chat tab | Chat says "Your community is a guild: guild chat already has its place in your chat windows."; no tab is made, guild chat keeps its color. | open |
 | A friend with the guild picked, both online | Their characters sync as before (`/cf sync debug` shows the HELLO on the hidden `cf…` channel). | open |
 
 ### CF-82 The hidden launch probe

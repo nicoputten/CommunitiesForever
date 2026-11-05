@@ -581,7 +581,14 @@ function wowapi.install(opts)
     state.chatWindows[#state.chatWindows + 1] = { name = name, channels = {} }
     return globals["ChatFrame" .. #state.chatWindows]
   end
-  globals.ChatFrame_RemoveAllMessageGroups = function() end
+  -- CF-86: message groups per window in state.chatWindows[i].groups (General starts with GUILD).
+  state.chatWindows[1].groups = { "GUILD" }
+  globals.ChatFrame_RemoveAllMessageGroups = function(frame) state.chatWindows[frame.id].groups = {} end
+  globals.ChatFrame_AddMessageGroup = function(frame, group)
+    local w = state.chatWindows[frame.id]
+    w.groups = w.groups or {}
+    table.insert(w.groups, group)
+  end
   globals.C_Club.GetStreams = function() return { { streamId = 1, name = "General", streamType = 0 } } end
   globals.Enum = globals.Enum or {}
   globals.Enum.ClubStreamType = { General = 0 }
