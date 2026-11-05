@@ -381,7 +381,10 @@ the level-up's handlers run in.
 ## 6. What the receiver checks (accept and merge)
 
 **Sender:**
-- Battle.net: the sender is a friend online in Forever, identified by Battle.net (cannot be faked).
+- Battle.net: the sender is a friend online in Forever, identified by Battle.net (cannot be faked), who belongs
+  (CF-89: has a character in the selected community, ARCHITECTURE "Who belongs"). Messages from other friends are
+  dropped and nothing is sent to them. While that is not known yet (first login before the members load), a HELLO
+  waits and is answered once it is known.
 - Community: the sender is a member of the selected community; its character name maps to a GUID.
 
 **Accept** (`Merge.accept`), for a record about someone:

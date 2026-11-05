@@ -223,7 +223,9 @@ describe("GuildInvites (CF-84)", function()
   end)
 
   describe("a member", function()
-    local PEOPLE = { ["Ada#1001"] = { displayName = "Ada", chars = { [ALT_GUID] = { name = "Bram Lovewell" } } } }
+    -- CF-89: Ada belongs (Ada Lovewell is in the guild), so her record and its alt are kept.
+    local PEOPLE = { ["Ada#1001"] = { displayName = "Ada", chars = {
+      [ALT_GUID] = { name = "Bram Lovewell" }, ["Player-4619-0AAAAAAA"] = { name = "Ada Lovewell" } } } }
 
     local function request(over)
       local at = state.serverTime - 5

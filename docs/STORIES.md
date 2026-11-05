@@ -7,6 +7,33 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-89 Only the group takes part
+Bug from Nico at launch (2026-11-05): `PresenceTracker` / `Friends.recordPresence` wrote `presence` for every
+Battle.net friend seen in Forever, and `Sync` HELLOed every Forever game account of every friend, so records were
+exchanged with friends outside the group and stored in `people`. The upload carried them all, and the site made
+every BattleTag in `people` and `presence` a site member ("has no addon data yet"). The site's side is WEB-85.
+Touches: `src/core/Belongs.lua` (new), `src/core/Friends.lua`, `src/services/MemberTracker.lua`,
+`src/services/PresenceTracker.lua`, `src/services/Messenger.lua`, `src/services/Sync.lua`, specs,
+`tests/fixtures/capture.lua`, ARCHITECTURE.md ("Who belongs"), SYNC.md, VERIFY.md, CHANGELOG.md.
+- A person belongs when at least one of their characters is a member of the selected community or guild, also while
+  they play an alt outside it; their characters come from presence links, the character they are on now and their
+  own record. You always belong. Without a selected community nobody belongs: no sync at all (tests).
+- Over Battle.net nothing is sent to a friend who does not belong (HELLO, REQ, RECORD, relays, RUNS, SCHED, asks,
+  pings) and nothing from them is accepted or stored (tests).
+- `presence` keeps only links of member characters and of people who belong; `people` only people who belong. What
+  earlier versions stored is removed at run time once the members are known (tests).
+- `CommunitiesForeverDB.global.members = { [guid] = { name, seenAt } }`: the selected community's members as last seen
+  by this client, replaced whole on every member update, `{}` without a community (the site's proof of who is in
+  the group); in the golden fixtures from the next release on (tests).
+- Login timing: the roster is only replaced from a member list that lists your own character; until a roster is
+  known (first login with this version, or after choosing another community) nobody is dropped and nothing is
+  sent over Battle.net; a HELLO received meanwhile is answered once it is known, if the friend belongs (tests).
+- Compatibility (rule 8): no message changes; `members` is a new optional key (no migration, no schema bump: the
+  cleanup needs the members, which a migration cannot know).
+- Manual (VERIFY.md CF-89).
+- Decided by Nico (2026-11-05): stop exchanging, not just hide; prune `presence` and `people`; the `members` key as
+  the contract with the site.
+
 ### CF-86 A chat tab for the guild
 Bug from Nico's in-game test of build 8 (develop 4d648b0): with the guild picked, the setup's chat step asks for the
 community chat tab, but none is made. Cause: CF-83 made `CommunityChat.createTab` stop for a guild ("Your community is

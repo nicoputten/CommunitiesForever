@@ -6,6 +6,10 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Only your group syncs:** the addon now syncs only with friends who have a character in the community or guild
+  you picked, also while they play an alt outside it. Other Battle.net friends who run the addon are left alone:
+  nothing is sent to them or stored about them, and what earlier versions stored about them is removed once your
+  community's members have loaded. Without a community picked, nothing syncs.
 - **Your guild can be the community:** `/cf settings` lists your guild next to your character communities. Pick it
   to see your guild's members grouped per friend; switch back to a community at any time, nothing is lost. With the
   guild picked, guild chat counts for the community chat goals, and the invite link options are hidden.

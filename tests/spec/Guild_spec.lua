@@ -44,7 +44,7 @@ describe("the guild as the community (CF-83)", function()
     wowapi.uninstall()
   end)
 
-  it("switches guild, community, guild without a reload and without losing data", function()
+  it("switches guild, community, guild without a reload and without losing own data", function()
     load(GUILD)
     local db = addon.db.global
     db.people["Ada#1001"] = { displayName = "Ada", chars = { [GUILDIE] = { name = "Ada Stormwind", level = 20 } } }
@@ -63,8 +63,10 @@ describe("the guild as the community (CF-83)", function()
     assert.is_true(ns.CommunitySelection.isGuild())
     assert.are.equal(GUILD, ns.CommunitySelection.active())
     assert.are.same({ ME, GUILDIE }, memberGuids())
-    -- Everything carries over: friends, their characters and the own characters stay as they were.
-    assert.are.equal(20, db.people["Ada#1001"].chars[GUILDIE].level)
+    -- The own characters stay as they were. CF-89: Ada, with no character in the community, was dropped while it was
+    -- selected (her record comes back through sync); the roster is the guild's again.
+    assert.is_nil(db.people["Ada#1001"])
+    assert.is_truthy(db.members[GUILDIE])
     assert.are.equal(chars, db.self.chars)
     assert.is_truthy(db.self.chars[ME])
   end)
