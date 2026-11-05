@@ -739,7 +739,7 @@ end
 
 -- Several clients in one spec (tests/net.lua): the globals of the current install and the addon, to put
 -- back later with activate(), so each client runs against its own mock.
-local ADDON_GLOBALS = { "CommunitiesForever", "CommunitiesForeverDB",
+local ADDON_GLOBALS = { "CommunitiesForever", "CommunitiesForeverDB", "CommunitiesForeverVaultDB",
                         "BINDING_HEADER_COMMUNITIESFOREVER", "BINDING_NAME_COMMUNITIESFOREVER_TOGGLE" }
 
 function wowapi.snapshot()
@@ -762,6 +762,7 @@ function wowapi.uninstall()
   installed = {}
   _G.CommunitiesForever = nil
   _G.CommunitiesForeverDB = nil
+  _G.CommunitiesForeverVaultDB = nil
 end
 
 return wowapi

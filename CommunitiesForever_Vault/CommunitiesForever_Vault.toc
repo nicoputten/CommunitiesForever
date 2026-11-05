@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: CommunitiesForever Vault
+## Notes: Keeps the guild code of CommunitiesForever out of the file the uploader sends. Comes with CommunitiesForever.
+## Author: Vestras
+## Version: @project-version@
+## SavedVariables: CommunitiesForeverVaultDB
+
+Vault.lua
