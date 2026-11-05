@@ -34,6 +34,8 @@ GuildInvite specs, `tools/FriendProbe/`, VERIFY.md, CHANGELOG.md.
 - Deviations from the brief: A (no chat input opened: 5 key presses, 4 caps; Nico, 2026-11-05: keep 4 caps), B (the paste hook behind a switch),
   C (no locale table, rule 6), D (no new protocol: the refusal is GINVFAIL), E (unverified APIs guarded, V136),
   G (Esc through the frame's own keyboard handler, not `UISpecialFrames`, which needs a named global, rule 5).
+- Decided (Nico, 2026-11-05): keep 4 caps; the window stays open after the first Enter (players close it with X or
+  Esc); the whisper buttons (Dungeons tab and menus) that open the chat input stay as they are (tested in game).
 - No change to stored data or messages (rule 8).
 - Manual (VERIFY.md CF-88, V136, V137).
 
