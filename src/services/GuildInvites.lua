@@ -4,8 +4,9 @@
 --   Code: a member types it in /cf settings; members' addons spread it over the guild's addon channel (GKEY,
 --     GKEYHI); the newest version wins (GuildInvite.newer). Without a code everything here stays off.
 --   Members: keep the guild member list for alts and the characters removed from the guild (Vault, GKICK), answer a
---     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and show the Invite popup
---     (CF-87: addons may not invite, V126; the popup runs /ginvite); a refused invite is reported back (GINVFAIL).
+--     valid request (GINVREQ) with GINVACK, claim it on the guild channel (GINVCLAIM) and show the popup with
+--     "/ginvite <name>" to copy into chat (CF-87: addons can't invite in any way, V126, V134, V135); a refused
+--     invite is reported back (GINVFAIL).
 --   Alt: a character outside the picked guild whispers a request to the stored members, most recently online
 --     first, one at a time, until one invites; then says "Click Accept" (CF-87: no AcceptGuild from addon code).
 --     Another faction or realm stops it for good, with one chat line.
@@ -40,7 +41,7 @@ local alt    -- the alt's request in progress: { id, guild, code, candidates, in
 local requestedAt   -- server time of our last request or ack ("Click Accept" window)
 local seen, lastHandled = {}, {} -- member side: request ids handled or claimed; requester -> time
 -- member side: [lower-case name] = { name, raw, friend, id, at } popups shown, waiting for "You have invited"
--- (at: the Invite click, for refusal texts)
+-- (at: when the popup showed or closed, for refusal texts)
 local pending = {}
 local answerTimer, lastAnswerAt
 local debugging = false
@@ -391,15 +392,18 @@ local function friendOf(message)
   return name or ns.GuildInvite.cleanDisplayName(message.dn)
 end
 
--- The member's popup: the click runs /ginvite (CF-87). The entry waits in pending for "You have invited" (the
--- confirmation line) or a refusal text right after the click (GINVFAIL to the alt).
+-- The member's popup: /ginvite <name> to copy and paste into chat (CF-87). The entry waits in pending for the
+-- member's own invite: "You have invited" (the confirmation line, matched by name) or a refusal text within
+-- REFUSAL_WINDOW (GINVFAIL to the alt).
 local function invite(entry)
-  pending[entry.name:lower()] = entry
+  entry.at = ns.Transport.now()
   -- The name exactly as the game reported the whisper's sender (V131).
-  ns.GuildInvitePopup.show(entry.raw, entry.friend, entry.name, function(how)
-    entry.at = ns.Transport.now()
-    trace("invite %s: %s", entry.raw, tostring(how))
+  local shown = ns.GuildInvitePopup.show(entry.raw, entry.friend, entry.name, function()
+    entry.at = ns.Transport.now() -- closed after copying: the paste comes now
+    trace("popup for %s closed", entry.raw)
   end)
+  if shown then pending[entry.name:lower()] = entry end
+  trace("popup for %s: %s", entry.raw, tostring(shown))
 end
 
 local function onRequest(message, sender, raw)
@@ -458,8 +462,8 @@ local function onInviteFailed(kind, name)
       if e.at and (not entry or e.at > entry.at) then entry = e end
     end
   end
-  -- Only right after a click on our popup: "no permission" is a generic text the game shows for other things too.
-  if not (entry and entry.at) or ns.Transport.now() - entry.at > ns.GuildInvite.CONFIRM_WAIT * 3 then return end
+  -- Only soon after our popup: "no permission" is a generic text the game shows for other things too.
+  if not (entry and entry.at) or ns.Transport.now() - entry.at > ns.GuildInvite.REFUSAL_WINDOW then return end
   pending[entry.name:lower()] = nil
   trace("invite %s refused: %s", entry.raw, tostring(kind))
   whisper(entry.raw, { t = "GINVFAIL", id = entry.id, r = kind })
@@ -527,8 +531,6 @@ function GuildInvites.start(addon)
   events:RegisterMessage(ns.Guild.GUILD_RECEIVED, function(_, text, sender) onGuildMessage(text, sender) end)
   events:RegisterMessage(ns.Guild.INVITED, function(_, inviter, guildName) onInvited(inviter, guildName) end)
   events:RegisterMessage(ns.Guild.BLOCKED, function(_, fn) onBlocked(fn) end)
-  events:RegisterMessage(ns.Guild.COMBAT_STARTED, function() ns.GuildInvitePopup.combatStarted() end)
-  events:RegisterMessage(ns.Guild.COMBAT_ENDED, function() ns.GuildInvitePopup.combatEnded() end)
   events:RegisterMessage(ns.Guild.INVITE_SENT, function(_, name) onInviteSent(name) end)
   events:RegisterMessage(ns.Guild.INVITE_FAILED, function(_, kind, name) onInviteFailed(kind, name) end)
   events:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name) onWhisperFailed(name) end)

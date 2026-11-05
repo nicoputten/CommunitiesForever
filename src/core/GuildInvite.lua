@@ -19,11 +19,11 @@ GuildInvite.MAX_ATTEMPTS = 3         -- attempts per login
 GuildInvite.LOGIN_DELAY = 15         -- seconds after login before the alt checks (club data needs to load)
 GuildInvite.HANDLE_COOLDOWN = 60     -- a member handles one request per requester this often
 GuildInvite.ACCEPT_WINDOW = 180      -- an invite this long after our last request gets "Click Accept"
-GuildInvite.CONFIRM_WAIT = 3         -- a refusal text counts as ours this long (times 3) after the Invite click
+GuildInvite.REFUSAL_WINDOW = 60      -- a refusal text counts as ours this long after the popup showed or closed
 GuildInvite.KEY_ANSWER_MIN = 1       -- a member answers an older code after a random delay in this range,
 GuildInvite.KEY_ANSWER_MAX = 5       -- unless another member's answer came first
 GuildInvite.KEY_ANSWER_COOLDOWN = 60 -- and at most this often
-GuildInvite.INVITE_WAIT = 60         -- after an ack, the alt waits this long for the invite before asking the next
+GuildInvite.INVITE_WAIT = 120        -- after an ack, the alt waits this long for the invite (pasted by hand)
 GuildInvite.REMOVED_MAX = 200        -- removed characters remembered per guild
 GuildInvite.NO_ANSWER_QUIET = 86400  -- "No member answered" shows once a day per character
 
@@ -295,8 +295,8 @@ function GuildInvite.altLabel(characterName, friendName)
   return characterName
 end
 
--- CF-87: the slash command the member's popup runs (a secure macro button, or put in the chat input): the name
--- exactly as the game reported it (V131), never built from parts. nil for an empty name or one with a control
+-- CF-87: the slash command the member's popup offers to copy into chat: the name exactly as the game reported it
+-- (V131), never built from parts. nil for an empty name or one with a control
 -- character or "|" (a macro line must stay one line, without escapes).
 GuildInvite.INVITE_COMMAND = "/ginvite %s"
 function GuildInvite.inviteCommand(name)

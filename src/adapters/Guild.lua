@@ -1,12 +1,11 @@
 -- Guild: the WoW calls behind automatic guild invites (CF-84). Thin, guarded wrappers; the rules are in
--- core/GuildInvite.lua and services/GuildInvites.lua. Unverified on Forever (VERIFY.md V127 to V135):
--- `GUILD_INVITE_REQUEST` and its arguments, addon messages on "GUILD", `ERR_GUILD_INVITE_S`, `PLAYER_REGEN_DISABLED`;
--- the name forms (V131), the refusal texts (V132), a secure /ginvite button (V134), /ginvite from the chat input
--- (V135).
--- CF-87: `C_GuildInfo.Invite` / `GuildInvite` and `AcceptGuild` are never called from addon code. Invites are
--- forbidden for addons on Forever even inside a click (ADDON_ACTION_FORBIDDEN, V126, API-FINDINGS.md): the member
--- invites through ui/GuildInvitePopup.lua (a secure /ginvite button, or /ginvite in the chat input), the alt clicks
--- Blizzard's Accept.
+-- core/GuildInvite.lua and services/GuildInvites.lua. Unverified on Forever (VERIFY.md V127 to V132):
+-- `GUILD_INVITE_REQUEST` and its arguments, addon messages on "GUILD", `ERR_GUILD_INVITE_S`; the name forms (V131)
+-- and the refusal texts (V132).
+-- CF-87: no guild invite or accept from addon code, in any form: the invite functions (V126), a secure /ginvite
+-- macro button (V134) and /ginvite in a chat input the addon filled (V135) are all refused on Forever
+-- (API-FINDINGS.md "Guild invites"). The member copies /ginvite from ui/GuildInvitePopup.lua into chat by hand; the
+-- alt clicks Blizzard's Accept. Nothing here opens or fills the chat input.
 local ADDON_NAME, ns = ...
 
 local Guild = {}
@@ -18,8 +17,6 @@ Guild.WHISPER_RECEIVED = "CF_GUILD_WHISPER_RECEIVED"
 Guild.GUILD_RECEIVED = "CF_GUILD_CHANNEL_RECEIVED"   -- (text, senderName, rawSender) on the guild channel
 Guild.INVITED = "CF_GUILD_INVITED"                   -- (inviterName, guildName): GUILD_INVITE_REQUEST
 Guild.BLOCKED = "CF_GUILD_BLOCKED"                   -- (functionName): the game blocked one of our calls
-Guild.COMBAT_STARTED = "CF_GUILD_COMBAT_STARTED"     -- PLAYER_REGEN_DISABLED: secure buttons are locked soon
-Guild.COMBAT_ENDED = "CF_GUILD_COMBAT_ENDED"         -- PLAYER_REGEN_ENABLED (V24)
 Guild.INVITE_SENT = "CF_GUILD_INVITE_SENT"           -- (name): "You have invited <name> to join your guild."
 Guild.INVITE_FAILED = "CF_GUILD_INVITE_FAILED"       -- (kind, name or nil): the game refused an invite (V132)
 
@@ -57,19 +54,6 @@ function Guild.send(prefix, text)
   return ok and (result or 0) or nil
 end
 
--- InCombatLockdown is verified (V24); without it, assume no combat.
-function Guild.inCombat()
-  return InCombatLockdown and InCombatLockdown() or false
-end
-
--- Puts text into the chat input without sending it (ChatFrameUtil.OpenChat, verified V72): the player presses Enter
--- (CF-87: "/ginvite <name>", V135). Returns true when the input opened.
-function Guild.putInChat(text)
-  local open = (ChatFrameUtil and ChatFrameUtil.OpenChat) or ChatFrame_OpenChat
-  if not open then return false end
-  return pcall(open, text) == true
-end
-
 -- This character's faction and realm, from the same verified calls the snapshot uses (UnitFactionGroup, GetRealmName):
 -- members store the guild's, an alt compares with its own (core/GuildInvite.placeMismatch).
 function Guild.place()
@@ -91,9 +75,6 @@ function Guild.watch(addon, prefix)
   ns.Events.register(events, "GUILD_INVITE_REQUEST", function(_, inviter, guildName)
     addon:SendMessage(Guild.INVITED, inviter, guildName)
   end)
-  -- Before combat locks secure frames (PLAYER_REGEN_DISABLED, V134), and after (PLAYER_REGEN_ENABLED, V24).
-  ns.Events.register(events, "PLAYER_REGEN_DISABLED", function() addon:SendMessage(Guild.COMBAT_STARTED) end)
-  ns.Events.register(events, "PLAYER_REGEN_ENABLED", function() addon:SendMessage(Guild.COMBAT_ENDED) end)
   -- A protected call from our code: ADDON_ACTION_BLOCKED / _FORBIDDEN(addonName, function). Logged in /cf sync
   -- debug only; nothing of ours should cause it (CF-87).
   for _, event in ipairs({ "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }) do

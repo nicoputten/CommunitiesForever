@@ -61,8 +61,13 @@ FriendProbe on Forever, build 9 of the addon (develop 5598ec0), with a friend's 
   CommunitiesForever, and the popup's plain Invite button sent nothing.
 - Typing `/ginvite <alt name>` in chat by hand works: the invite arrives. The alt's name was "First Last" (with the
   space), on another realm id of the same mega-realm.
-- So the addon never calls these functions. Still open: a secure macro button running `/ginvite` (V134) and
-  `/ginvite` put in the chat input by the addon (V135).
+- **V134 (build 10):** a `SecureActionButtonTemplate` button with `type` = `macro` and `macrotext` =
+  `/ginvite <name>` made by an addon does not run it: the game says "Macro script disabled".
+- **V135 (build 10):** `/ginvite <name>` put in the chat input by the addon (`ChatFrameUtil.OpenChat`) shows in the
+  input, but Enter gives Blizzard's "CommunitiesForever has been blocked from an action only available to the
+  Blizzard UI". The edit box opened and filled by addon code is tainted, so the slash command runs tainted.
+- So an addon cannot send a guild invite on Forever in any way. Only a `/ginvite` the player types or pastes into
+  chat runs. CF-87 shows `/ginvite <name>` in the addon's own edit box to copy.
 
 ## Verified during development
 Recorded by Nico in `VERIFY.md`, 2026-10-17.

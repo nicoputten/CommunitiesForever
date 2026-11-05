@@ -12,13 +12,13 @@ tagging; the release stops if the tag has no section.
 - **A chat tab for your guild:** with the guild picked, the setup's chat step and "Create a community chat tab" in
   `/cf settings` make a chat tab named after your guild that shows only guild chat, and your other characters in the
   guild are offered it once. Guild chat keeps its own color and stays in General too.
-- **Your alts get into the guild with two clicks:** set a guild code in `/cf settings` (shown with your guild
+- **Your alts get into the guild with one copy and paste:** set a guild code in `/cf settings` (shown with your guild
   picked). Members' addons share it in the guild. When you log in on an alt outside the guild, it asks an online
-  member for an invite: the member gets a small window "Invite <alt> (<your name>'s alt)?" and clicks Invite (or Put
-  in chat, then Enter), and you click Accept on the game's invite. The game doesn't let addons invite or accept by
-  themselves. The code is saved in the new `CommunitiesForever_Vault` folder that comes with the addon, never in the file you upload.
-  Someone who left or was kicked from the guild is never invited again by itself; a member can still invite them
-  by hand.
+  member for an invite: the member gets a small window "Invite <alt> (<your name>'s alt)?" with the `/ginvite` line
+  ready to copy into chat, and you click Accept on the game's invite. The game doesn't let addons send or accept
+  guild invites. The code is saved in the new `CommunitiesForever_Vault` folder that comes with the addon, never in
+  the file you upload. Someone who left or was kicked from the guild gets no invite window; a member can still invite
+  them by hand.
 - **Fixed:** without a community, Doomsday keeps counting your goals quietly: no celebration banner or "First to
   finish today!" popup until you pick a community or your guild. Today's progress counts as soon as you do.
 - **Fixed:** the Dungeons tab without a community shows just the explanation, without buttons drawn over it or

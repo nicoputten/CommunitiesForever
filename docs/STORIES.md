@@ -7,31 +7,32 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
-### CF-87 Guild invites that work on Forever
-Bug from Nico's in-game test with a friend, build 9 (develop 5598ec0), 2026-11-05: CF-84's guild invite does not work
-at all. `C_GuildInfo.Invite` / `GuildInvite` are forbidden for addon code even inside a click (V126,
-`docs/API-FINDINGS.md` "Guild invites"): FriendProbe's two invite buttons and CommunitiesForever's automatic invite
-show Blizzard's "has been blocked from an action only available to the Blizzard UI" dialog; the popup's Invite button
-sends nothing. Typing `/ginvite <alt name>` by hand works. Blocks the guild release. Touches:
-`src/adapters/Guild.lua`, `src/core/GuildInvite.lua`, `src/services/GuildInvites.lua`, `src/ui/GuildInvitePopup.lua`,
-`src/ui/kit/Widgets.lua`, `tests/mocks/wowapi.lua`, the GuildInvite specs, `tools/FriendProbe/`, VERIFY.md,
+### CF-87 Guild invites by copy and paste
+Bug from Nico's in-game tests with a friend, 2026-11-05: CF-84's guild invite does not work at all. On Forever an
+addon cannot send a guild invite in any way (`docs/API-FINDINGS.md` "Guild invites"): `C_GuildInfo.Invite` /
+`GuildInvite` are forbidden also inside a click (V126, build 9), a secure macro button with `/ginvite` gives "Macro
+script disabled" (V134, build 10), and `/ginvite` put in the chat input by the addon is forbidden on Enter (V135,
+build 10). Typing `/ginvite <alt name>` by hand works. Copy and paste is the only way (Nico, 2026-11-05). Blocks the
+guild release. Touches: `src/adapters/Guild.lua`, `src/core/GuildInvite.lua`, `src/services/GuildInvites.lua`,
+`src/ui/GuildInvitePopup.lua`, `tests/mocks/wowapi.lua`, the GuildInvite specs, `tools/FriendProbe/`, VERIFY.md,
 API-FINDINGS.md, CHANGELOG.md.
-- Addon code never calls `C_GuildInfo.Invite`, `GuildInvite` or `AcceptGuild`: no automatic attempt, no "needs a
-  click" detection. Every request that passes `checkRequest` shows the member's popup at once.
-- The popup's **Invite** button is a `SecureActionButtonTemplate` macro button with `/ginvite <name exactly as the
-  whisper's sender was reported>` (V134). Its attributes are set out of combat only; before combat
-  (`PLAYER_REGEN_DISABLED`) the button is taken off the popup, so the popup can still show and hide in combat; it
-  comes back after combat. In combat the popup says "You're in combat: the Invite button comes back when combat ends."
-- Plan B in the same popup: **Put in chat** opens the chat input with `/ginvite <name>` (`ChatFrameUtil.OpenChat`,
-  V72); the member presses Enter (V135). `GuildInvitePopup.METHODS` switches either off.
-- The popup names the alt ("Invite Bram Lovewell (Ada's alt)?"); "Invited %s into the guild." still confirms through
-  `ERR_GUILD_INVITE_S`. A refusal text within 9 s of a click on the popup is reported to the alt (GINVFAIL).
+- Addon code never calls `C_GuildInfo.Invite`, `GuildInvite` or `AcceptGuild`, has no secure button, and never opens
+  or fills the chat input in the invite flow (`ChatFrameUtil.OpenChat`, `ChatFrame_OpenChat`, `ChatEdit_*`, or text
+  set on a chat edit box).
+- Every request that passes `checkRequest` shows the member's popup at once: "Invite <alt> (<friend>'s alt)?", an
+  edit box in our own window with `/ginvite <name exactly as the whisper's sender was reported>`, focused and
+  highlighted so Ctrl+C copies it at once, and the line "Ctrl+C, Enter. Then Enter, Ctrl+V, Enter." The explanation
+  is the box's tooltip. Typing restores the text and selects it again; a click selects it all. Enter, Esc or X
+  closes the window.
+- "Invited %s into the guild." confirms the member's own pasted invite through `ERR_GUILD_INVITE_S`, matched by name
+  to the pending request. A refusal text within `REFUSAL_WINDOW` (60 s) of the popup showing or closing is reported
+  to the alt (GINVFAIL). The alt waits `INVITE_WAIT` 120 s (was 60) after an ack before asking the next member.
 - The alt never accepts by itself: after its request, an invite into the remembered guild prints "Click Accept to
   join %s." and the alt clicks Blizzard's Accept.
-- FriendProbe: the two V126 buttons are gone; new "Invite target via a secure /ginvite button (V134)", "Put /ginvite
-  target in the chat input (V135)", and the V131 Name-Realm invite as a secure button.
-- No change to stored data or messages (rule 8): GINVACK, GINVCLAIM and GINVFAIL stay as they are.
-- Manual (VERIFY.md CF-87, V134, V135).
+- Minimal look with the Kit; the designer's board for this window and the alt's side follows as its own change.
+- FriendProbe: the V126 invite buttons are gone (V126, V134, V135 answered).
+- No change to stored data or message fields (rule 8).
+- Manual (VERIFY.md CF-87).
 
 ### CF-86 A chat tab for the guild
 Bug from Nico's in-game test of build 8 (develop 4d648b0): with the guild picked, the setup's chat step asks for the

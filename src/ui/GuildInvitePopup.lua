@@ -1,11 +1,10 @@
 -- GuildInvitePopup: "Invite Bram Lovewell (Ada's alt)?" on a member's client when an alt asks for a guild invite
--- (CF-84, CF-87). Addons may not invite into a guild, not even inside a click (ADDON_ACTION_FORBIDDEN, V126), so the
--- invite runs as the game's own /ginvite command:
---   secure: the Invite button is a SecureActionButtonTemplate macro button with "/ginvite <name>" (V134);
---   chat:   "Put in chat" opens the chat input with "/ginvite <name>", the member presses Enter (V135).
--- GuildInvitePopup.METHODS picks which of the two show. Secure attributes can only be set out of combat: in combat
--- the Invite button is taken off the popup (before the lockdown starts, so the popup stays free to show and hide)
--- and comes back when combat ends. One popup at a time: a newer request replaces the line.
+-- (CF-84, CF-87). On Forever an addon cannot send a guild invite in any way: not the invite functions, not a secure
+-- macro button ("Macro script disabled"), not /ginvite in a chat input the addon opened or filled (tainted, so
+-- forbidden). Only a /ginvite the player types or pastes runs (API-FINDINGS.md "Guild invites"). So the popup is a
+-- copy box: "/ginvite <name>" selected in our own edit box (never a chat frame); the member copies it and pastes it
+-- into chat. Minimal look with the Kit; the designer's board comes later. One popup at a time: a newer request
+-- replaces it.
 local _, ns = ...
 
 local GuildInvitePopup = {}
@@ -13,109 +12,75 @@ local Kit = ns.Kit
 local Theme = ns.Theme
 
 GuildInvitePopup.TITLE = "Guild invite"
-GuildInvitePopup.BUTTON = "Invite"
-GuildInvitePopup.CHAT_BUTTON = "Put in chat"
-GuildInvitePopup.CHAT_TOOLTIP = "Puts /ginvite with the name in the chat input. Press Enter to send the invite."
-GuildInvitePopup.COMBAT = "You're in combat: the Invite button comes back when combat ends."
-
--- CF-87: which ways to invite the popup offers (switch one off here; the other keeps working on its own).
-GuildInvitePopup.METHODS = { secure = true, chat = true }
+GuildInvitePopup.HINT = "Ctrl+C, Enter. Then Enter, Ctrl+V, Enter."
+GuildInvitePopup.TOOLTIP = "Addons can't send guild invites. Copy this line (Ctrl+C), close this window (Enter), "
+  .. "then open chat (Enter), paste (Ctrl+V) and send it (Enter)."
 
 local popup
 
-local function command()
-  return popup and ns.GuildInvite.inviteCommand(popup.target)
+-- The command, selected in the box with the keyboard focus, so Ctrl+C copies it at once.
+local function selectCommand()
+  local box = popup.box
+  box:SetText(popup.command or "")
+  box:SetFocus()
+  box:HighlightText()
 end
 
-local function invited(how)
-  return function()
-    local onInvite = popup.onInvite
-    popup:Hide()
-    if onInvite then onInvite(how) end
-  end
-end
-
--- The secure Invite button off the popup: hidden and parented away, so the popup itself never counts as protected.
--- Only out of combat (no-op in it).
-local function detachSecure()
-  local b = popup and popup.invite
-  if not b or ns.Guild.inCombat() then return end
-  b:Hide()
-  b:ClearAllPoints()
-  b:SetParent(UIParent)
-  b.attached = false
-end
-
--- The secure Invite button on the popup with the current name, out of combat; in combat the line says why it's gone.
-local function attachSecure()
-  popup.note:SetText("")
-  if not GuildInvitePopup.METHODS.secure then return end
-  local text = command()
-  if ns.Guild.inCombat() then
-    popup.note:SetText(GuildInvitePopup.COMBAT)
-    return
-  end
-  if not text then
-    detachSecure()
-    return
-  end
-  local b = popup.invite
-  if not b then
-    b = Kit.button(popup.content, GuildInvitePopup.BUTTON, invited("secure"), "primary", "SecureActionButtonTemplate")
-    -- Down and up: the secure handler acts on the one the ActionButtonUseKeyDown setting names.
-    if b.RegisterForClicks then b:RegisterForClicks("AnyUp", "AnyDown") end
-    popup.invite = b
-  end
-  b:SetParent(popup.content)
-  b:ClearAllPoints()
-  b:SetPoint("BOTTOMRIGHT", -20, 14)
-  b:SetAttribute("type", "macro")
-  b:SetAttribute("macrotext", text)
-  b.attached = true
-  b:Show()
+local function close()
+  popup:Hide()
 end
 
 local function build()
-  popup = Kit.dialog({ title = GuildInvitePopup.TITLE, width = 360, height = 150 })
+  popup = Kit.dialog({ title = GuildInvitePopup.TITLE, width = 360, height = 170, onClose = function()
+    if popup.box then popup.box:ClearFocus() end
+    local onClose = popup.onClose
+    popup.onClose = nil
+    if onClose then onClose() end
+  end })
   popup.line = Theme.text(popup.content, "body", "text")
   popup.line:SetPoint("TOPLEFT", 20, -18)
   popup.line:SetPoint("TOPRIGHT", -20, -18)
   popup.line:SetJustifyH("LEFT")
-  popup.note = Theme.text(popup.content, "small", "textDim")
-  popup.note:SetPoint("TOPLEFT", popup.line, "BOTTOMLEFT", 0, -8)
-  popup.note:SetPoint("TOPRIGHT", popup.line, "BOTTOMRIGHT", 0, -8)
-  popup.note:SetJustifyH("LEFT")
-  local chatClicked = invited("chat")
-  popup.chat = Kit.button(popup.content, GuildInvitePopup.CHAT_BUTTON, function()
-    local text = command()
-    if text then ns.Guild.putInChat(text) end
-    chatClicked()
-  end, "normal")
-  popup.chat.tooltip = GuildInvitePopup.CHAT_TOOLTIP
-  popup.chat:SetPoint("BOTTOMLEFT", 20, 14)
+  -- Read-only in effect: typing restores the command, a click selects it all again.
+  local box = Kit.input(popup.content, {})
+  box:SetPoint("TOPLEFT", popup.line, "BOTTOMLEFT", 0, -10)
+  box:SetPoint("TOPRIGHT", popup.line, "BOTTOMRIGHT", 0, -10)
+  box:SetScript("OnEditFocusLost", nil)
+  box:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+  box:SetScript("OnMouseUp", function(self) self:HighlightText() end)
+  box:SetScript("OnTextChanged", function(self, userInput)
+    if userInput and self:GetText() ~= popup.command then selectCommand() end
+  end)
+  box:SetScript("OnEnterPressed", close)
+  box:SetScript("OnEscapePressed", close)
+  box:SetScript("OnEnter", function(self)
+    if not GameTooltip then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(GuildInvitePopup.TOOLTIP, nil, nil, nil, nil, true)
+    GameTooltip:Show()
+  end)
+  box:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  popup.box = box
+  popup.hint = Theme.text(popup.content, "small", "textDim")
+  popup.hint:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -8)
+  popup.hint:SetPoint("TOPRIGHT", box, "BOTTOMRIGHT", 0, -8)
+  popup.hint:SetJustifyH("LEFT")
+  popup.hint:SetText(GuildInvitePopup.HINT)
 end
 
 -- target: the name to invite exactly as the game reported it (V131); friend: whose alt (or nil); name: how to show
--- it (default target); onInvite(how): after a click on Invite ("secure") or Put in chat ("chat").
-function GuildInvitePopup.show(target, friend, name, onInvite)
+-- it (default target); onClose(): when the window closes (Enter, Esc or X), or a newer request replaces it.
+-- Returns false (nothing shown) for a name that can't make a one-line command.
+function GuildInvitePopup.show(target, friend, name, onClose)
+  local command = ns.GuildInvite.inviteCommand(target)
+  if not command then return false end
   if not popup then build() end
-  popup.target, popup.onInvite = target, onInvite
+  if popup:IsShown() then popup:Hide() end -- the older request's onClose runs
+  popup.command, popup.onClose = command, onClose
   popup.line:SetText(ns.GuildInvite.popupText(name or target, friend))
-  popup.chat:SetShown(GuildInvitePopup.METHODS.chat and command() ~= nil)
   popup:Show()
-  attachSecure()
-end
-
--- PLAYER_REGEN_DISABLED (before the lockdown): take the secure button off while that is still allowed.
-function GuildInvitePopup.combatStarted()
-  if not (popup and popup.invite and popup.invite.attached) then return end
-  detachSecure()
-  if popup:IsShown() and GuildInvitePopup.METHODS.secure then popup.note:SetText(GuildInvitePopup.COMBAT) end
-end
-
--- PLAYER_REGEN_ENABLED: the button comes back on a popup still open.
-function GuildInvitePopup.combatEnded()
-  if popup and popup:IsShown() then attachSecure() end
+  selectCommand()
+  return true
 end
 
 -- For the specs: the popup frame (nil until shown once).

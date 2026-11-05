@@ -53,24 +53,8 @@ local function newRegion(state, kind, parent)
   return r
 end
 
--- CF-87: a secure frame, or a frame with one inside (the game protects its parents too), can't show or hide in
--- combat.
-local function protected(self)
-  if self.secureTemplate then return true end
-  for _, child in ipairs(self.children or {}) do
-    if child.parent == self and protected(child) then return true end
-  end
-  return false
-end
-local function assertFree(self, what)
-  assert(not (self.state and self.state.inCombat and protected(self)), what .. " of a protected frame in combat")
-end
-function regionMethods.Show(self)
-  assertFree(self, "Show")
-  self.shown = true
-end
+function regionMethods.Show(self) self.shown = true end
 function regionMethods.Hide(self)
-  assertFree(self, "Hide")
   local was = self.shown
   self.shown = false
   if was then regionMethods.RunScript(self, "OnHide") end
@@ -107,20 +91,12 @@ function regionMethods.GetHeight(self) return self.height end
 function regionMethods.GetTop(self) return self.top end
 function regionMethods.GetLeft(self) return self.left end
 function regionMethods.GetParent(self) return self.parent end
-function regionMethods.SetParent(self, parent)
-  assert(not (self.secureTemplate and self.state.inCombat), "SetParent on a secure frame in combat")
-  self.parent = parent
-  if not (parent and parent.children) then return end
-  for _, child in ipairs(parent.children) do if child == self then return end end
-  table.insert(parent.children, self)
-end
--- CF-87: attributes of a secure frame (SecureActionButtonTemplate) can only change out of combat.
-function regionMethods.SetAttribute(self, key, value)
-  assert(not (self.secureTemplate and self.state.inCombat), "SetAttribute on a secure frame in combat")
-  self.attributes = self.attributes or {}
-  self.attributes[key] = value
-end
-function regionMethods.GetAttribute(self, key) return self.attributes and self.attributes[key] end
+function regionMethods.SetParent(self, parent) self.parent = parent end
+-- CF-87: edit box focus and selection (no scripts run; specs run OnEditFocusLost etc. themselves).
+function regionMethods.SetFocus(self) self.focused = true end
+function regionMethods.ClearFocus(self) self.focused = false end
+function regionMethods.HasFocus(self) return self.focused == true end
+function regionMethods.HighlightText(self) self.highlighted = true end
 function regionMethods.SetText(self, text) self.text = text end
 function regionMethods.GetText(self) return self.text end
 function regionMethods.GetStringWidth(self) return #(tostring(self.text or "")) * 7 end
@@ -713,12 +689,7 @@ function wowapi.install(opts)
 
   -- CF-39: native frames for the kit (see newRegion).
   globals.UIParent = newRegion(state, "Frame", nil)
-  globals.CreateFrame = function(frameType, _, parent, template)
-    local frame = newRegion(state, frameType, parent)
-    frame.template = template
-    frame.secureTemplate = type(template) == "string" and template:find("Secure", 1, true) ~= nil
-    return frame
-  end
+  globals.CreateFrame = function(frameType, _, parent) return newRegion(state, frameType, parent) end
   globals.CreateColor = function(r, g, b, a) return { r = r, g = g, b = b, a = a } end
   globals.GetLocale = function() return state.locale or "enUS" end
   globals.CLASS_ICON_TCOORDS = { MAGE = { 0.25, 0.49, 0, 0.25 }, ROGUE = { 0.49, 0.74, 0, 0.25 },

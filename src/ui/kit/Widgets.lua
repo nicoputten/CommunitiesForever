@@ -125,10 +125,8 @@ function Kit.roleIcon(parent, size)
 end
 
 -- Button with the gold look. kind: "normal", "primary" or "ghost". onClick(button).
--- template (CF-87): a frame template such as "SecureActionButtonTemplate". Its OnClick is the template's own (the
--- secure action), so onClick then runs as PostClick, after the action.
-function Kit.button(parent, text, onClick, kind, template)
-  local b = CreateFrame("Button", nil, parent, template)
+function Kit.button(parent, text, onClick, kind)
+  local b = CreateFrame("Button", nil, parent)
   b:SetHeight(Theme.SIZES.button)
   b.kind = kind or "normal"
   local bg = b:CreateTexture(nil, "BACKGROUND")
@@ -146,7 +144,7 @@ function Kit.button(parent, text, onClick, kind, template)
   hover:SetColorTexture(Theme.color("white", 0.06))
   b.label = Theme.text(b, "button", b.kind == "primary" and "outline" or "goldPale")
   b.label:SetPoint("CENTER")
-  b:SetScript(template and "PostClick" or "OnClick", function(self) if onClick then onClick(self) end end)
+  b:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
   -- CF-61: b.tooltip (optional) shows on hover (guarded).
   b:SetScript("OnEnter", function(self)
     if not (self.tooltip and GameTooltip) then return end
@@ -160,15 +158,12 @@ function Kit.button(parent, text, onClick, kind, template)
     local width = self.label.GetStringWidth and self.label:GetStringWidth() or 0
     self:SetWidth(math.max(60, width + 24))
   end
-  -- Disabled at 40% (the design's :disabled). Not on a template button: its secure code may call the frame's own
-  -- methods, so they stay Blizzard's.
-  if not template then
-    local setEnabled = b.SetEnabled
-    function b:SetEnabled(on)
-      if setEnabled then setEnabled(self, on) end
-      self.enabled = on and true or false
-      self:SetAlpha(on and 1 or 0.4)
-    end
+  -- Disabled at 40% (the design's :disabled).
+  local setEnabled = b.SetEnabled
+  function b:SetEnabled(on)
+    if setEnabled then setEnabled(self, on) end
+    self.enabled = on and true or false
+    self:SetAlpha(on and 1 or 0.4)
   end
   b.enabled = true
   b:SetLabel(text or "")

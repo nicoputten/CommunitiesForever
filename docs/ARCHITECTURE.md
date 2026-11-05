@@ -93,7 +93,7 @@ CommunitiesForever/
                              whether addon messages may be restricted now (CF-46, guarded)
       Transport.lua          BNSendGameData, prefix, BN_CHAT_MSG_ADDON, combat state (thin)
       Guild.lua              guild invite events: CFGuild prefix, GUILD addon messages, GUILD_INVITE_REQUEST, combat,
-                             "You have invited", chat input (CF-84; never C_GuildInfo.Invite or AcceptGuild, CF-87)
+                             "You have invited" (CF-84; never an invite, accept or chat input, CF-87)
       Vault.lua              CommunitiesForeverVaultDB, the companion folder's SavedVariables (CF-84)
       Classes.lua            class file and name from a class ID (C_CreatureInfo, V21)
       Panels.lua             colour picker and the Options › AddOns page (CF-43, guarded)
@@ -149,7 +149,7 @@ CommunitiesForever/
       StartPanel.lua         the start-time panel: friends' states, Invite, Whisper, Ping; Request invite (CF-48)
       LevelUpToast.lua       the level-up announcement at the top of the screen, one at a time (CF-44)
       Tooltip.lua            unit tooltip line "Name · N characters" (TooltipDataProcessor, cached lines)
-      GuildInvitePopup.lua   "Invite <alt> (<friend>'s alt)?": a secure /ginvite macro button, Put in chat (CF-87)
+      GuildInvitePopup.lua   "Invite <alt> (<friend>'s alt)?" with /ginvite <name> to copy into chat (CF-87)
       Minimap.lua            LibDataBroker launcher + LibDBIcon button
   tests/
     helpers.lua              loads addon files in TOC order with (addonName, ns) varargs
