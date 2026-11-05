@@ -39,6 +39,7 @@ src\core\Snapshot.lua
 src\core\Describe.lua
 src\core\Clubs.lua
 src\core\Members.lua
+src\core\Belongs.lua
 src\core\Invite.lua
 src\core\GuildInvite.lua
 src\core\Talents.lua

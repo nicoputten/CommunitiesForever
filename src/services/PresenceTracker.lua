@@ -50,7 +50,9 @@ local function refresh()
   local previous = snapshot
   snapshot = next
 
-  ns.Friends.recordPresence(addonRef.db.global.presence, next, GetServerTime())
+  -- CF-89: links only for characters on the roster and people who belong (all while the roster is not known).
+  ns.Friends.recordPresence(addonRef.db.global.presence, next, GetServerTime(), ns.MemberTracker.roster(),
+    ns.MemberTracker.belonging())
 
   for _, change in ipairs(ns.Friends.changes(previous, next)) do
     if change.kind == "online" then
@@ -125,6 +127,15 @@ end
 -- Set of current Battle.net friends: { [battleTag] = true }. Do not modify.
 function PresenceTracker.friends()
   return snapshot and snapshot.friends or {}
+end
+
+-- CF-89: every Forever character a friend is on now, hidden friends too: { [guid] = battleTag }.
+function PresenceTracker.characters()
+  local result = {}
+  if not snapshot then return result end
+  for guid, bt in pairs(snapshot.characters) do result[guid] = bt end
+  for guid, bt in pairs(snapshot.hiddenCharacters or {}) do result[guid] = bt end
+  return result
 end
 
 -- Friends online in Forever: { [battleTag] = { guid, name, className, level, gameAccountID } }. Do not modify.

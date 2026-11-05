@@ -113,6 +113,24 @@ before these steps (`/reload` if you did): they fill the chat input from addon c
 | Bo without invite rights: the window comes, Bo pastes and sends within a minute | The game's "no permission" line; with `/cf sync debug` on Bo: `[guild] invite … refused: rights`; the alt asks the next member at once. | open |
 | Bo waits more than 2 minutes before pasting | The alt has already asked the next member (if one is online); Bo's later invite still arrives and still confirms. | open |
 
+### CF-89 Only the group takes part
+Two accounts with the addon on this build, both in the guild picked as the community (A and B), plus a Battle.net
+friend C who runs the addon (any version) and has **no** character in the guild. All three online in Forever, with
+`/console scriptErrors 1`. Before updating A, note what A has stored about C:
+`/run local n=0 for g,p in pairs(CommunitiesForeverDB.global.presence) do if p.battleTag=="<C's BattleTag>" then n=n+1 end end print(n, CommunitiesForeverDB.global.people["<C's BattleTag>"] ~= nil)`.
+
+| Step | Expected | Status |
+|---|---|---|
+| Update A to this build, log in, wait ~10 s, then run the line above again | `0 false`: C's links and record are gone. | open |
+| On A: `/run local n=0 for _ in pairs(CommunitiesForeverDB.global.members) do n=n+1 end print(n)` | The guild's member count (as in `/cf members`). | open |
+| On A: `/cf sync debug`, then `/cf sync` | Lines `to <B's BattleTag>: HELLO ...` for B; for C only `not to <C>: not in the community`, never `to <C>: HELLO`. `/cf sync debug` again to stop. | open |
+| On C: `/reload` (C greets A) | A's chat shows nothing from C; A's window does not list C. | open |
+| On A: `/reload`, then the line from the top again | Still `0 false`. | open |
+| On C (if C runs this build): the same line with A's BattleTag | `0 false`: C stores nothing about A either. | open |
+| B logs in on an alt **outside** the guild | A and B still sync: B's alt shows under B in A's window after B levels or `/cf sync`. | open |
+| On A: `/cf ping` | "Ping sent to N game account(s)" counts only friends in the guild (B), not C. | open |
+| Upload A's SavedVariables to the site | C is not a site member; B is. | open |
+
 ### CF-86 A chat tab for the guild
 On a character in the guild, with the guild picked in `/cf settings` and `/console scriptErrors 1`. Answers V133.
 Remove an earlier test tab first (right-click its tab, Close Window) if one named after the guild exists.

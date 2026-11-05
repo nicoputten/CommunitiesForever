@@ -111,7 +111,15 @@ local function helloFor(community)
            .. tostring(dd and dd.changedAt) .. ";" .. tostring(dd and dd.offsetUntil) .. ";" .. tostring(ds)
 end
 
+-- CF-89: a Battle.net target only when its friend belongs (has a character in the selected community); community
+-- targets are members already. Checked before the dedupe, so a HELLO held back now goes out once it is known.
+local function reachable(target)
+  if isCommunity(target) then return true end
+  return ns.MemberTracker.belongs(ns.PresenceTracker.battleTagFor(target)) == true
+end
+
 local function sendHello(target, force)
+  if not reachable(target) then return end
   local message, signature = helloFor(isCommunity(target))
   if not message then return end
   if not force and recentlySent(lastHello, target, signature) then return end
@@ -167,6 +175,7 @@ end
 
 -- Asks a peer for one record (want = key on its wire; nil = the peer's own record), once per version per 60 s.
 local function request(target, want, version)
+  if not reachable(target) then return end
   local key = tostring(target) .. "|" .. tostring(want)
   if recentlySent(lastReq, key, version) then return end
   remember(lastReq, key, version)
@@ -176,6 +185,7 @@ end
 -- CF-46: our planned runs to a peer, at most once per updatedAt per 60 s. Never during an encounter or a PvP
 -- match (Midnight's addon message restrictions): tried again RUNS_RETRY seconds later.
 local function sendRuns(target)
+  if not reachable(target) then return end
   local runs = ns.Planner.outgoing(isCommunity(target))
   if not runs then return end
   if ns.Instance.messagingRestricted() then
@@ -195,6 +205,7 @@ end
 
 -- CF-68: our mission schedule to a peer that asked, at most once per v per 60 s; held back like RUNS.
 local function sendSchedule(target)
+  if not reachable(target) then return end
   local schedule = ns.DoomsdayTracker.missionSchedule()
   if not schedule then return end
   if ns.Instance.messagingRestricted() then
@@ -423,6 +434,19 @@ local function retryWaiting()
   end
 end
 
+-- CF-89: Battle.net HELLOs that arrived while it was not known yet who belongs (login, before the member list
+-- loaded), by reply target: answered once it is known, and only for friends who belong.
+local heldHellos = {}
+
+local function retryHeldHellos()
+  if ns.MemberTracker.roster() == nil then return end
+  local held = heldHellos
+  heldHellos = {}
+  for target, entry in pairs(held) do
+    if ns.MemberTracker.belongs(entry.sender) == true then handlers.HELLO(entry.message, entry.sender, target) end
+  end
+end
+
 -- CF-28: the account ID that keys you over the community, made once. Not a version bump: friends learn
 -- it with your next record change (levels, quests and gear change often).
 local function ensureAccountId()
@@ -433,6 +457,7 @@ end
 function Sync.start(addon)
   addonRef = addon
   lastHello, lastReq, noticeShown, waitingForMembers, peers, offline = {}, {}, false, {}, {}, {}
+  heldHellos = {}
   lastRuns, runsRetry = {}, {}
   lastSched, schedRetry = {}, {}
   releaseNoticeShown = false
@@ -444,6 +469,7 @@ function Sync.start(addon)
   events:RegisterMessage(ns.SelfTracker.UPDATED, function() helloDebounced() end)
   events:RegisterMessage(ns.MemberTracker.UPDATED, function()
     retryWaiting()
+    retryHeldHellos()
     helloDebounced() -- CF-28: members who came online get a HELLO (the dedupe skips the others)
   end)
   -- A friend who appears offline sent us data: greet back so both sides sync (never a "came online" line).
@@ -456,6 +482,12 @@ function Sync.start(addon)
     end
   end)
   events:RegisterMessage(ns.Messenger.RECEIVED, function(_, message, senderKey, target, guid)
+    -- CF-89: over Battle.net, only friends who belong (Messenger drops the others); a HELLO from before that is
+    -- known waits for the member list.
+    if guid == nil and ns.MemberTracker.belongs(senderKey) == nil then
+      if message.t == "HELLO" then heldHellos[target] = { message = message, sender = senderKey } end
+      return
+    end
     local handler = handlers[message.t]
     if handler then handler(message, senderKey, target, guid) end
   end)

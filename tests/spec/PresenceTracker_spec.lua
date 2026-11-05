@@ -6,14 +6,16 @@ describe("PresenceTracker", function()
 
   local SJAAK = "Sjaakovich#2232"
   local GARRAKA = "Player-4619-01789956"
+  local CLUB = "23125681" -- the mock's community: Ves (you) and Garraka (CF-89: Sjaak belongs)
 
-  local function load(setup)
+  local function load(setup, clubId)
     state = wowapi.install()
     if setup then setup(state) end
     ns = helpers.loadAddon()
     Tracker = ns.PresenceTracker
     addon = state.addon
     addon:OnInitialize()
+    if clubId ~= false then addon.db.global.settings.clubId = clubId or CLUB end
     addon:OnEnable()
   end
 
@@ -52,6 +54,32 @@ describe("PresenceTracker", function()
   it("writes presence links with lastSeen", function()
     load()
     assert.are.same({ [GARRAKA] = { battleTag = SJAAK, lastSeen = 1000 } }, addon.db.global.presence)
+  end)
+
+  describe("CF-89 members only", function()
+    it("writes no presence links without a selected community", function()
+      load(nil, false)
+      assert.are.same({}, addon.db.global.presence)
+      assert.is_not_nil(Tracker.online()[SJAAK]) -- still seen, just not stored
+    end)
+
+    it("does not link a friend with no character in the community", function()
+      load(function(s)
+        s.friends[1].gameAccounts[1].playerGuid = "Player-4619-0000OUT1"
+      end)
+      assert.are.same({}, addon.db.global.presence)
+    end)
+
+    it("links the alt of a friend who belongs through an earlier link", function()
+      load(function(s)
+        s.friends[1].gameAccounts[1].playerGuid = "Player-4619-0000ALT1"
+      end)
+      assert.are.same({}, addon.db.global.presence)
+      addon.db.global.presence[GARRAKA] = { battleTag = SJAAK, lastSeen = 1 }
+      sjaakAccounts()[1].characterLevel = 12
+      bnet("BN_FRIEND_INFO_CHANGED")
+      assert.are.equal(SJAAK, addon.db.global.presence["Player-4619-0000ALT1"].battleTag)
+    end)
   end)
 
   it("does not announce friends already online at login", function()

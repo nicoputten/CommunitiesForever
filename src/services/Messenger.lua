@@ -78,8 +78,15 @@ end
 
 -- Queues a message for one game account (number) or community member (character name). Returns the
 -- number of chunks; nothing is sent while the addon is passive (no community, see Clubs.passive).
+-- CF-89: never to a Battle.net friend who does not belong (no character in the selected community), nor while
+-- that is not known yet.
 function Messenger.send(gameAccountID, message)
   if ns.CommunitySelection.passive() then return 0 end
+  if type(gameAccountID) == "number"
+     and ns.MemberTracker.belongs(ns.PresenceTracker.battleTagFor(gameAccountID)) ~= true then
+    trace("not to %s: not in the community", who(gameAccountID))
+    return 0
+  end
   local msgId = nextMsgId()
   local size = type(gameAccountID) == "string" and ns.Protocol.COMMUNITY_CHUNK or nil
   local chunks = ns.Protocol.chunk(codec:encode(message), msgId, size)
@@ -140,12 +147,12 @@ local function onMiss(senderID, msgId, parts)
   schedulePump()
 end
 
--- Queues a message for every friend game account online in Forever. Returns the number of targets.
+-- Queues a message for every friend game account online in Forever that belongs (CF-89). Returns the number of
+-- targets.
 function Messenger.broadcast(message)
   local count = 0
   for gameAccountID in pairs(ns.PresenceTracker.gameAccounts()) do
-    Messenger.send(gameAccountID, message)
-    count = count + 1
+    if Messenger.send(gameAccountID, message) > 0 then count = count + 1 end
   end
   return count
 end
@@ -187,6 +194,12 @@ local function receiveBattleNet(text, senderID)
   local battleTag = ns.PresenceTracker.battleTagFor(senderID) or ns.PresenceTracker.resolveSender(senderID)
   if not battleTag then
     stats.dropped = stats.dropped + 1 -- not a friend in Forever right now
+    return
+  end
+  -- CF-89: a friend without a character in the selected community is left alone. While that is not known yet
+  -- (login, before the member list loaded) messages pass; Sync keeps their HELLO until it is known.
+  if ns.MemberTracker.belongs(battleTag) == false then
+    stats.dropped = stats.dropped + 1
     return
   end
   receive(text, senderID, battleTag)
