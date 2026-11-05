@@ -66,6 +66,13 @@ FriendProbe on Forever, build 9 of the addon (develop 5598ec0), with a friend's 
 - **V135 (build 10):** `/ginvite <name>` put in the chat input by the addon (`ChatFrameUtil.OpenChat`) shows in the
   input, but Enter gives Blizzard's "CommunitiesForever has been blocked from an action only available to the
   Blizzard UI". The edit box opened and filled by addon code is tainted, so the slash command runs tainted.
+- **V136, V137 (build 12, CF-88):** the member's invite window works in game (Nico, 2026-11-05): the copy box takes
+  the focus with the text highlighted, the key caps light on their events (EditBox `OnKeyDown` with
+  `IsControlKeyDown`, `OnEnterPressed`), and a read-only post-hook on the chat inputs
+  (`ChatFrame<i>EditBox:HookScript("OnTextChanged", …)`, reading `GetText()`) lights the Ctrl+V cap **without
+  blocking the pasted `/ginvite`**. The focus rule's helpers (`GetUnitSpeed`, `ChatEdit_GetActiveWindow` /
+  `ChatFrameUtil.GetActiveWindow`, `GetCurrentKeyBoardFocus`), the sound, the mouse atlas and the check texture were
+  not checked one by one; they stay guarded.
 - So an addon cannot send a guild invite on Forever in any way. Only a `/ginvite` the player types or pastes into
   chat runs. CF-87 shows `/ginvite <name>` in the addon's own edit box to copy.
 
