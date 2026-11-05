@@ -81,8 +81,10 @@ held while you are in combat and sent after it.
 ## 3. Messages
 
 Keys are person keys: a BattleTag (`"Ann#1234"`) over Battle.net, or `"aid:<accountId>"` (a random
-12-character hex ID per account) over the community. **No BattleTag ever travels over the community**;
-people whose account ID is unknown are simply not mentioned there.
+12-character hex ID per account) over the community. Over the community every key is an `aid:` key; people whose
+account ID is unknown are not mentioned there. **CF-90:** the owner's own HELLO and RECORD over the community also
+carry the sender's **own** BattleTag (`btag`), so guild and community members who are not Battle.net friends know
+each other by it. A relayed record never carries one, and no other BattleTag travels over the community.
 
 ### HELLO: "this is my version, and these are the versions I can pass on"
 
@@ -103,6 +105,7 @@ people whose account ID is unknown are simply not mentioned there.
 | `ru` | Optional (CF-46): updatedAt of the sender's planned runs, 0 when it has none. Older clients send none (and get no runs) and ignore it (rule 8) |
 | `ds` | Optional (CF-68): `v` of the site's Doomsday mission schedule the sender uses, 0 when it has none. A receiver with an older one sends `SCHEDREQ`. Older clients send none and ignore it (rule 8) |
 | `av` | Optional (CF-35): the sender's addon version (TOC `Version`, e.g. `v0.3.1`). A newer **release** than yours gives one chat line per session; dev builds are never compared. Older clients send none and ignore it (rule 8) |
+| `btag` | Optional, community only (CF-90): the sender's own BattleTag, when its client knows it. See "BattleTag over the community" below. Older clients send none and ignore it (rule 8) |
 
 The receiver compares: `ver` newer than stored → `REQ` for the sender's own record. A `known` entry newer
 than stored → `REQ` for that record (relay). Over the community, a HELLO from an unknown member is also
@@ -113,6 +116,26 @@ Over the community, a HELLO from a character that belongs to a person you know *
 (`Identity.bindAccountId`): the game names the sending character, and that character is theirs. A known
 account ID is never overwritten, and one that another person already has is never taken. Anything stored
 under that `aid:` key is then merged into the person (`Merge.absorb`), and their newer record is asked for.
+
+**BattleTag over the community (CF-90).** A HELLO, or the owner's own RECORD (section 6, accept rule 2), with a
+`btag` re-keys the sender's person from `aid:<id>` to that BattleTag (`Identity.claimBattleTag`), keeps `aid = <id>`
+on it, and merges anything stored under the `aid:` key into it (`Merge.absorb`). From then on `aid:<id>` on the wire
+maps to the BattleTag (`Identity.fromWire`), and the person goes out over the community as `aid:<id>` as before. The
+`btag` field itself is never stored. A HELLO from someone not known yet re-keys nothing (there is nothing stored);
+their RECORD carries the `btag` too. Refused, so the person stays under `aid:`:
+
+| Guard | Why |
+|---|---|
+| Not a BattleTag: a name without `#`, `:` or spaces, `#`, 3 to 10 digits, at most 40 bytes | Garbage, or an `aid:` / `member:` key |
+| Your own BattleTag, or your own account ID | Nobody can pose as you |
+| A current Battle.net friend's BattleTag | Battle.net presence is the truth for friends; their own record over Battle.net carries `aid` and merges the `aid:` entry (section 6, "Keys") |
+| The sending character has a presence link (stored or live) to another BattleTag | Battle.net linked that character to someone else |
+| The account ID is already known under another BattleTag, or the sending character is in another person's record | One account, one BattleTag; a member can't use someone else's account ID |
+| The `aid:` person's record does not list the sending character | Same rule as accept rule 2: a learned account ID can't be used to pose as someone |
+| A stored person under that BattleTag has another account ID, or none and does not list the sending character | A BattleTag that belongs to another account is never taken over |
+
+The first account to claim a BattleTag keeps it. A guild member could still claim the BattleTag of someone the
+receiver doesn't know at all; the site (WEB-86) decides what that gives them.
 
 ### REQ: "send me this record"
 
@@ -176,6 +199,7 @@ under that `aid:` key is then merged into the person (`Merge.absorb`), and their
 |---|---|
 | `bt` | Whose record (key). Over the community always an `aid:` key |
 | `aid` | The owner's account ID, only in the owner's own record (not in relayed copies); links a BattleTag to its community key for friends |
+| `btag` | CF-90, optional, community only: the owner's own BattleTag, only in the owner's own record (never in relayed copies). Not stored. Older clients ignore it |
 | `displayName` | Name chosen in settings (plain text, max 24 characters) or missing |
 | `version` | Record version (see section 5) |
 | `invite` | Shared community invite link (CF-21), only from owners, leaders and moderators |
@@ -414,7 +438,11 @@ the level-up's handlers run in.
 - All received text is cleaned: color, link and texture codes removed; names, feed sizes and days capped.
 
 **Keys:** a Battle.net record that shows an `aid` merges an earlier `aid:` entry of the same account into
-the BattleTag, so a person never shows twice.
+the BattleTag, so a person never shows twice. CF-90: so does the owner's own `btag` over the community (section 3,
+"BattleTag over the community").
+
+**Older clients (rule 8, CF-90):** a client before CF-90 sends no `btag`; we keep it under `aid:` as before (until
+it updates). It ignores our `btag` and keeps us under `aid:`. Both read the other's messages unchanged.
 
 ## 7. Sizes and limits
 

@@ -74,6 +74,15 @@ describe("sync over the community (CF-28 part 2b)", function()
     return false
   end
 
+  -- CF-90: a message without the sender's own BattleTag (btag), the only one allowed over the community.
+  local function withoutOwnBtag(message)
+    local copy = {}
+    for k, v in pairs(message) do copy[k] = v end
+    assert.is_true(copy.btag == nil or copy.btag == addon.db.global.self.battleTag, "btag is not our own")
+    copy.btag = nil
+    return copy
+  end
+
   local function deeRecord(version, chars, extra)
     local r = { t = "RECORD", bt = DEE_AID, version = version, aid = "dddddddddddd", displayName = "Dee",
                 chars = chars or { [DEE_GUID] = { name = DEE, classFile = "ROGUE", level = 20, updatedAt = 900 } } }
@@ -94,7 +103,9 @@ describe("sync over the community (CF-28 part 2b)", function()
     assert.are.equal("aid:" .. addon.db.global.self.accountId, hellos[1].bt)
     -- The Battle.net friend (also a member) gets nothing over the community.
     assert.are.equal(0, #whisperedTo(state.clubMembers[CLUB][2].name))
-    assert.is_false(hasBattleTag(whisperedTo(DEE)))
+    -- CF-90: our own BattleTag in btag, no other.
+    assert.are.equal(addon.db.global.self.battleTag, hellos[1].btag)
+    for _, m in ipairs(whisperedTo(DEE)) do assert.is_false(hasBattleTag(withoutOwnBtag(m))) end
   end)
 
   it("asks for the record of a member who says HELLO, and marks them online", function()
@@ -125,7 +136,7 @@ describe("sync over the community (CF-28 part 2b)", function()
     assert.are.equal(DEE_GUID, found.chars[1].guid)
   end)
 
-  it("sends your record with the account ID key and no BattleTag", function()
+  it("sends your record with the account ID key and only your own BattleTag (CF-90)", function()
     load()
     flush()
     state.whispers = {}
@@ -134,7 +145,8 @@ describe("sync over the community (CF-28 part 2b)", function()
     local records = ofType(whisperedTo(DEE), "RECORD")
     assert.are.equal(1, #records)
     assert.are.equal("aid:" .. addon.db.global.self.accountId, records[1].bt)
-    assert.is_false(hasBattleTag(records[1]))
+    assert.are.equal(addon.db.global.self.battleTag, records[1].btag)
+    assert.is_false(hasBattleTag(withoutOwnBtag(records[1])))
   end)
 
   it("does not let one member pose as another with a learned account ID", function()
@@ -207,7 +219,7 @@ describe("sync over the community (CF-28 part 2b)", function()
       assert.are.equal("aid:" .. BRAM_AID, records[1].bt)
       assert.are.equal(700, records[1].version)
       assert.is_not_nil(records[1].chars[BRAM_GUID])
-      assert.is_false(hasBattleTag(records[1]))
+      assert.is_false(hasBattleTag(records[1])) -- CF-90: a relay never carries a btag
     end)
 
     it("sends nothing when the person has no account ID (only the BattleTag is known)", function()
@@ -224,7 +236,7 @@ describe("sync over the community (CF-28 part 2b)", function()
       flush()
       local hellos = ofType(whisperedTo(DEE), "HELLO")
       assert.is_true(#hellos >= 1)
-      for _, hello in ipairs(hellos) do assert.is_false(hasBattleTag(hello)) end
+      for _, hello in ipairs(hellos) do assert.is_false(hasBattleTag(withoutOwnBtag(hello))) end
     end)
   end)
 
@@ -267,5 +279,104 @@ describe("sync over the community (CF-28 part 2b)", function()
     assert.is_not_nil(people["Dee#4444"].chars[DEE_GUID])
     assert.is_not_nil(people["Dee#4444"].chars["Player-1-0000DEE2"])
     assert.is_nil(people["Dee#4444"].via)
+  end)
+
+  describe("a member's own BattleTag (CF-90)", function()
+    local DEE_TAG = "Dee#4444"
+
+    it("stores a new member's own record under the BattleTag it carries", function()
+      load()
+      flush()
+      fromDee(deeRecord(950, nil, { btag = DEE_TAG }))
+      local people = addon.db.global.people
+      assert.is_nil(people[DEE_AID])
+      assert.is_not_nil(people[DEE_TAG])
+      assert.are.equal("dddddddddddd", people[DEE_TAG].aid)
+      assert.is_nil(people[DEE_TAG].via)
+      assert.is_nil(people[DEE_TAG].btag) -- the field is not stored
+      local found
+      for _, p in ipairs(ns.ViewModel.build(addon).people) do
+        if p.battleTag == DEE_TAG then found = p end
+      end
+      assert.are.equal("Dee", found.displayName)
+      assert.are.equal(DEE_GUID, found.chars[1].guid)
+    end)
+
+    it("re-keys a member known by account ID on their HELLO, and keeps them online", function()
+      load()
+      flush()
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+      fromDee(deeRecord(950))
+      assert.is_not_nil(addon.db.global.people[DEE_AID])
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {}, btag = DEE_TAG })
+      local people = addon.db.global.people
+      assert.is_nil(people[DEE_AID])
+      assert.are.equal(950, people[DEE_TAG].version)
+      assert.are.equal(DEE_GUID, ns.Sync.online()[DEE_TAG].guid)
+      assert.is_nil(ns.Sync.online()[DEE_AID])
+      -- Later records under the account ID land on the BattleTag.
+      fromDee(deeRecord(960, nil, { displayName = "Deedee" }))
+      assert.is_nil(people[DEE_AID])
+      assert.are.equal("Deedee", people[DEE_TAG].displayName)
+      -- Over the community the person stays an account-ID key (HELLO known list).
+      state.whispers = {}
+      ns.Sync.announce()
+      flush()
+      local hellos = ofType(whisperedTo(DEE), "HELLO")
+      assert.is_true(#hellos >= 1)
+      assert.are.equal(960, hellos[#hellos].known[DEE_AID])
+    end)
+
+    it("merges a stored aid: copy into a BattleTag person that lists the character", function()
+      load(function(global)
+        global.people[DEE_TAG] = { version = 800, via = "Sjaakovich#2232",
+          chars = { [DEE_GUID] = { name = DEE, classFile = "ROGUE", level = 19, updatedAt = 800 } } }
+        global.people[DEE_AID] = { version = 900, aid = "dddddddddddd",
+          chars = { [DEE_GUID] = { name = DEE, classFile = "ROGUE", level = 20, updatedAt = 900 } } }
+      end)
+      flush()
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 900, known = {}, btag = DEE_TAG })
+      local people = addon.db.global.people
+      assert.is_nil(people[DEE_AID])
+      assert.are.equal("dddddddddddd", people[DEE_TAG].aid)
+      assert.are.equal(20, people[DEE_TAG].chars[DEE_GUID].level)
+    end)
+
+    it("never lets a member take a Battle.net friend's BattleTag", function()
+      load()
+      flush()
+      fromDee(deeRecord(950, nil, { btag = "Sjaakovich#2232" }))
+      local people = addon.db.global.people
+      assert.is_not_nil(people[DEE_AID])
+      assert.is_nil(people["Sjaakovich#2232"])
+    end)
+
+    it("never lets a member take a BattleTag another account has", function()
+      load(function(global)
+        global.people["Eve#5555"] = { version = 100, aid = "eeeeeeeeeeee",
+          chars = { ["Player-1-0000EEE1"] = { name = "Eve Example", level = 30, updatedAt = 800 } } }
+      end, { { "Player-1-0000EEE1", "Eve Example" } })
+      flush()
+      fromDee(deeRecord(950, nil, { btag = "Eve#5555" }))
+      local people = addon.db.global.people
+      assert.is_not_nil(people[DEE_AID])
+      assert.are.equal("eeeeeeeeeeee", people["Eve#5555"].aid)
+      assert.is_nil(people["Eve#5555"].chars[DEE_GUID])
+    end)
+
+    it("ignores a btag in a relayed record or from someone posing with a learned account ID", function()
+      load(function(global)
+        global.people["aid:eeeeeeeeeeee"] = { version = 100, aid = "eeeeeeeeeeee", displayName = "Eve",
+          chars = { ["Player-1-0000EEE1"] = { name = "Eve Example", level = 30, updatedAt = 800 } } }
+      end, { { "Player-1-0000EEE1", "Eve Example" } })
+      flush()
+      -- Dee relays (or poses as) Eve with a BattleTag: neither her HELLO nor the record re-keys Eve.
+      fromDee({ t = "HELLO", bt = "aid:eeeeeeeeeeee", ver = 300, known = {}, btag = "Evil#6666" })
+      fromDee(deeRecord(200, { ["Player-1-0000EEE1"] = { name = "Eve Example", level = 31, updatedAt = 900 } },
+        { bt = "aid:eeeeeeeeeeee", aid = "eeeeeeeeeeee", btag = "Evil#6666" }))
+      local people = addon.db.global.people
+      assert.is_nil(people["Evil#6666"])
+      assert.is_not_nil(people["aid:eeeeeeeeeeee"])
+    end)
   end)
 end)
