@@ -21,6 +21,9 @@ other place.
 - Kept: the guild invite lines (CF-87/88), answers to `/cf` commands and to the player's own clicks, errors and
   refusals, `/reload` hints where the player otherwise waits for nothing (an ask posted on Discord, a failed Reload
   now), and debug output (`/cf sync debug`, `/cf activity debug`, `/cf ping`).
+- Decided by Nico (2026-11-05): keep a friend's group ask with [Join] [Later] [No], the answers to your own ask
+  (with [Invite]) and the update notices ("A newer version … is available", "A friend uses a newer … version");
+  dropping "Showing community …" is fine.
 - Switches that only turned a removed line on or off are gone from the settings window, the options and the setup
   (When friends log in, Announce friends' level-ups, Doomsday in chat, the six run chat lines). Their stored values
   stay, unused (rule 8: older versions still read them).
