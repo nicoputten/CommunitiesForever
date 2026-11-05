@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.3.2 (2026-11-05)
 - **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
   The box takes the keyboard also when your chat input stays on screen (IM-style chat), takes it once you stand
   still, and says "Click here, then Ctrl+C" until it has it. A click anywhere on the window selects the command.
