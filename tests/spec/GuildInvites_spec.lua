@@ -36,9 +36,9 @@ describe("GuildInvites (CF-84)", function()
     if opts.vault ~= false then _G.CommunitiesForeverVaultDB = opts.vault or {} end
     ns = helpers.loadAddon()
     local show = ns.GuildInvitePopup.show
-    ns.GuildInvitePopup.show = function(target, ...)
-      invited[#invited + 1] = target
-      return show(target, ...)
+    ns.GuildInvitePopup.show = function(shown, ...)
+      invited[#invited + 1] = shown and shown.target
+      return show(shown, ...)
     end
     addon = state.addon
     addon:OnInitialize()
@@ -235,7 +235,8 @@ describe("GuildInvites (CF-84)", function()
   describe("a member", function()
     -- CF-89: Ada belongs (Ada Lovewell is in the guild), so her record and its alt are kept.
     local PEOPLE = { ["Ada#1001"] = { displayName = "Ada", chars = {
-      [ALT_GUID] = { name = "Bram Lovewell" }, ["Player-4619-0AAAAAAA"] = { name = "Ada Lovewell" } } } }
+      [ALT_GUID] = { name = "Bram Lovewell", classFile = "WARRIOR" },
+      ["Player-4619-0AAAAAAA"] = { name = "Ada Lovewell" } } } }
 
     local function request(over)
       local at = state.serverTime - 5
@@ -252,7 +253,20 @@ describe("GuildInvites (CF-84)", function()
 
     local function popup() return ns.GuildInvitePopup.frame() end
 
-    it("acknowledges a valid request, claims it in the guild and shows the copy popup", function()
+    -- The key caps' looks, left to right: { "done", "next", "upcoming", "upcoming" }.
+    local function caps()
+      local states = {}
+      for i, g in ipairs(popup().steps) do states[i] = g.state end
+      return states
+    end
+
+    local function secondRequest()
+      local at = state.serverTime
+      receive(request({ id = "99999999", at = at, guid = false, p = ns.GuildInvite.proof("Open Sesame", "My Guild",
+        "Dina Lovewell", at) }), "WHISPER", "Dina Lovewell-ClassicBetaPvP")
+    end
+
+    it("acknowledges a valid request, claims it in the guild and shows the window", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
       local ack = sentOfType("GINVACK")
@@ -265,38 +279,106 @@ describe("GuildInvites (CF-84)", function()
         { claim[1].channel, claim[1].message.id, claim[1].message.n })
       assert.are.same({ "Bram Lovewell-ClassicBetaPvP" }, invited)
       assert.is_true(popup():IsShown())
-      assert.are.equal("Invite Bram Lovewell (Ada's alt)?", popup().line:GetText())
+      assert.are.equal("Guild invite", popup().title:GetText())
+      -- The name in its class colour, the owner by display name.
+      local who = popup().who:GetText()
+      assert.are.equal("Invite ", who:sub(1, 7))
+      assert.is_truthy(who:find("|cff%x%x%x%x%x%xBram Lovewell|r %(Ada's alt%)%?$"))
+    end)
+
+    -- CF-88 (GI02Screen): top centre, under the error lines; strata DIALOG; not movable; one sound on arrival.
+    it("opens top centre with one sound, 400 px wide, growing with a long name up to 520", function()
+      member()
+      local before = #state.sounds
+      _G.SOUNDKIT.IG_MAINMENU_OPEN = 850
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      assert.are.same({ "TOP", _G.UIParent, "TOP", 0, -262 }, popup().points[1])
+      assert.are.equal("DIALOG", popup():GetFrameStrata())
+      assert.is_falsy(popup().movable)
+      assert.are.same({ 850 }, { unpack(state.sounds, before + 1) })
+      assert.are.equal(400, popup():GetWidth())
+      assert.are.equal(520, ns.GuildInvite.windowWidth(900))
+      assert.are.equal(470, ns.GuildInvite.windowWidth(428))
+      secondRequest()
+      assert.are.equal(before + 1, #state.sounds) -- replaced in place: no second sound
     end)
 
     -- CF-87: addons can't invite in any way on Forever (V126, V134, V135): the member copies /ginvite into chat.
-    it("shows /ginvite with the name selected in its own box, ready for Ctrl+C", function()
+    it("shows /ginvite with the name selected in its focused box, Ctrl+C next", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
       local box = popup().box
       assert.are.equal("/ginvite Bram Lovewell-ClassicBetaPvP", box:GetText())
       assert.is_true(box:HasFocus())
       assert.is_true(box.highlighted)
-      assert.are.equal(ns.GuildInvitePopup.HINT, popup().hint:GetText())
+      assert.is_false(popup().mouse.frame:IsShown())
+      assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
     end)
 
-    it("keeps the command: typing restores and selects it again, a click selects it all", function()
+    it("arrives unfocused in combat, while moving or with chat open: a click focuses and selects", function()
+      for _, case in ipairs({ "combat", "moving", "chat" }) do
+        member()
+        if case == "combat" then state.inCombat = true end
+        if case == "moving" then _G.GetUnitSpeed = function() return 7 end end
+        if case == "chat" then _G.ChatEdit_GetActiveWindow = function() return {} end end
+        receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+        _G.GetUnitSpeed, _G.ChatEdit_GetActiveWindow, state.inCombat = nil, nil, false
+        local box = popup().box
+        assert.is_false(box:HasFocus(), case)
+        assert.is_falsy(box.highlighted, case)
+        local r, g, b = ns.Theme.color("muted")
+        assert.are.same({ r, g, b }, { box.textColor[1], box.textColor[2], box.textColor[3] })
+        assert.is_true(popup().mouse.frame:IsShown(), case)
+        assert.are.equal("next", popup().mouse.state)
+        assert.are.same({ "upcoming", "upcoming", "upcoming", "upcoming" }, caps())
+        box:RunScript("OnMouseDown")
+        assert.is_true(box:HasFocus())
+        assert.is_true(box.highlighted)
+        assert.are.equal("done", popup().mouse.state)
+        assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
+        wowapi.uninstall()
+      end
+      install({ people = PEOPLE }) -- for after_each
+    end)
+
+    it("lights each key only on its own event", function()
+      member()
+      _G.IsControlKeyDown = function() return true end
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local box = popup().box
+      box:RunScript("OnKeyDown", "LCTRL")
+      assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
+      box:RunScript("OnKeyDown", "C")
+      assert.are.same({ "done", "next", "upcoming", "upcoming" }, caps())
+      box:RunScript("OnEnterPressed")
+      assert.are.same({ "done", "done", "next", "upcoming" }, caps())
+      assert.is_false(box:HasFocus())
+      assert.is_true(popup():IsShown()) -- the window stays: the player's own Enter opens chat
+      -- Ctrl+V: a chat input's text becomes the command (case and spaces don't matter); anything else lights nothing.
+      local chatBox = _G.ChatFrame1EditBox
+      chatBox.text = "/ginvite Somebody"
+      chatBox:RunScript("OnTextChanged", true)
+      assert.are.same({ "done", "done", "next", "upcoming" }, caps())
+      chatBox.text = "  /GINVITE bram lovewell-classicbetapvp "
+      chatBox:RunScript("OnTextChanged", true)
+      assert.are.same({ "done", "done", "done", "next" }, caps())
+      _G.IsControlKeyDown = nil
+    end)
+
+    it("lets any other key release the focus (that key is lost once), and keeps the text", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
       local box = popup().box
+      box:RunScript("OnKeyDown", "W")
+      assert.is_false(box:HasFocus())
       box:SetText("/ginvite Somebody Else")
       box.highlighted = false
       box:RunScript("OnTextChanged", true)
       assert.are.equal("/ginvite Bram Lovewell-ClassicBetaPvP", box:GetText())
       assert.is_true(box.highlighted)
-      box.highlighted = false
-      box:RunScript("OnEditFocusGained")
-      assert.is_true(box.highlighted)
-      box.highlighted = false
-      box:RunScript("OnMouseUp")
-      assert.is_true(box.highlighted)
     end)
 
-    it("never opens or fills the chat input", function()
+    it("never opens or fills the chat input, and only reads it", function()
       member()
       local touched = {}
       local had = _G.ChatFrameUtil
@@ -305,39 +387,65 @@ describe("GuildInvites (CF-84)", function()
       end })
       _G.ChatFrame_OpenChat = function() touched[#touched + 1] = "ChatFrame_OpenChat" end
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      _G.ChatFrame1EditBox.text = "/ginvite Bram Lovewell-ClassicBetaPvP"
+      _G.ChatFrame1EditBox:RunScript("OnTextChanged", true)
       popup().box:RunScript("OnEnterPressed")
+      wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "You have invited Bram Lovewell to join your guild.")
       _G.ChatFrameUtil, _G.ChatFrame_OpenChat = had, nil
-      assert.are.same({}, touched)
+      assert.are.same({ "GetActiveWindow" }, touched) -- the focus check only
+      assert.are.equal("/ginvite Bram Lovewell-ClassicBetaPvP", _G.ChatFrame1EditBox.text)
     end)
 
-    it("closes on Enter or Esc, and confirms the member's own invite in chat", function()
+    it("sent: all keys lit, a check after 150 ms, faded out by 1.2 s, one line in chat", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
-      popup().box:RunScript("OnEnterPressed")
-      assert.is_false(popup():IsShown())
-      assert.is_false(popup().box:HasFocus())
       wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "You have invited Bram Lovewell to join your guild.")
+      assert.are.same({ "done", "done", "done", "done" }, caps())
       assert.is_true(printed("Invited Bram Lovewell (Ada's alt) into the guild."))
-      local at = state.serverTime
-      receive(request({ id = "99999999", at = at, guid = false, p = ns.GuildInvite.proof("Open Sesame", "My Guild",
-        "Dina Lovewell", at) }), "WHISPER", "Dina Lovewell-ClassicBetaPvP")
+      assert.is_false(popup().check:IsShown())
+      wowapi.runTimers(state)
+      assert.is_true(popup().check:IsShown())
+      popup():RunScript("OnUpdate", 1.0)
       assert.is_true(popup():IsShown())
+      assert.is_true(popup().alpha < 1)
+      popup():RunScript("OnUpdate", 0.3)
+      assert.is_false(popup():IsShown())
+    end)
+
+    it("closes on Esc or X with nothing printed or sent; a later pasted invite still confirms", function()
+      member()
+      receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
+      local lines = #state.printed
       popup().box:RunScript("OnEscapePressed")
       assert.is_false(popup():IsShown())
+      secondRequest()
+      popup().closeButton:RunScript("OnClick")
+      assert.is_false(popup():IsShown())
+      assert.are.equal(lines, #state.printed)
+      assert.are.same({}, sentOfType("GINVFAIL"))
+      wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "You have invited Bram Lovewell to join your guild.")
+      assert.is_true(printed("Invited Bram Lovewell (Ada's alt) into the guild."))
     end)
 
-    it("shows a newer request in the same popup", function()
+    it("replaces a request in place: new name and command, keys reset, a gold edge for 400 ms", function()
       member()
+      _G.IsControlKeyDown = function() return true end
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
-      local at = state.serverTime
-      receive(request({ id = "99999999", at = at, guid = false, p = ns.GuildInvite.proof("Open Sesame", "My Guild",
-        "Dina Lovewell", at) }), "WHISPER", "Dina Lovewell-ClassicBetaPvP")
-      assert.are.equal("Invite Dina Lovewell?", popup().line:GetText())
+      popup().box:RunScript("OnKeyDown", "C")
+      _G.IsControlKeyDown = nil
+      secondRequest()
+      assert.is_true(popup():IsShown())
+      assert.is_truthy(popup().who:GetText():find("Dina Lovewell|r?", 1, true))
       assert.are.equal("/ginvite Dina Lovewell-ClassicBetaPvP", popup().box:GetText())
+      assert.are.same({ "next", "upcoming", "upcoming", "upcoming" }, caps())
+      assert.is_true(popup().flash[1]:IsShown())
+      wowapi.runTimers(state)
+      assert.is_false(popup().flash[1]:IsShown())
     end)
 
     it("shows nothing for a name that can't make a one-line command", function()
-      assert.is_false(ns and ns.GuildInvitePopup.show("Bram\nLovewell") or false)
+      member()
+      assert.is_false(ns.GuildInvitePopup.show({ target = "Bram\nLovewell" }))
     end)
 
     it("ignores a wrong code, a guild member, a request someone claimed and a second one within a minute", function()
@@ -357,27 +465,27 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal(1, #invited)
     end)
 
-    -- Edge case 4: the game refuses the invite (no rights): the alt hears it at once. CF-87: the member pastes the
-    -- command by hand, so a refusal counts as ours for REFUSAL_WINDOW seconds after the popup showed or closed.
-    it("tells the alt when the game refuses the pasted invite, but not long after the popup", function()
+    -- Edge case 4: the game refuses the invite (no rights): the alt hears it at once. CF-88: only while the window
+    -- shows that request; it goes at once, with one line.
+    it("tells the alt when the game refuses the pasted invite, and the window goes at once", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
-      state.time = state.time + ns.GuildInvite.REFUSAL_WINDOW - 5
-      popup().box:RunScript("OnEnterPressed") -- closed: the paste comes now
-      state.time = state.time + ns.GuildInvite.REFUSAL_WINDOW - 5
       wowapi.fireEvent(state, "UI_ERROR_MESSAGE", 1, "You don't have permission to do that.")
+      assert.is_false(popup():IsShown())
+      assert.is_true(printed("Bram Lovewell (Ada's alt) will ask someone else."))
       local fail = sentOfType("GINVFAIL")
       assert.are.equal(1, #fail)
       assert.are.same({ "Bram Lovewell-ClassicBetaPvP", "1a2b3c4d", "rights" },
         { fail[1].target, fail[1].message.id, fail[1].message.r })
     end)
 
-    it("ignores a refusal text long after the popup", function()
+    it("ignores a refusal text when no window is open", function()
       member()
       receive(request(), "WHISPER", "Bram Lovewell-ClassicBetaPvP")
-      state.time = state.time + ns.GuildInvite.REFUSAL_WINDOW + 1
+      popup().box:RunScript("OnEscapePressed")
       wowapi.fireEvent(state, "UI_ERROR_MESSAGE", 1, "You don't have permission to do that.")
       assert.are.same({}, sentOfType("GINVFAIL"))
+      assert.is_false(printed("will ask someone else"))
     end)
 
     -- Edge case 6: a character removed from the guild is never invited by itself again; a manual invite lifts it.

@@ -75,6 +75,22 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-88 The guild invite window (designer's flow)
+Two people with this build, as in CF-87: Bo online in the guild with invite rights and the guild code set, Ada's alt
+outside any guild. `/console scriptErrors 1` on both. No addon whisper (menu or Whisper button) before the steps,
+else `/reload`. The main flow (window, the four keys, sent, Accept) passed in Nico's test of build 12 (2026-11-05);
+these are the steps it did not cover.
+
+| Step | Expected | Status |
+|---|---|---|
+| Again with Bo **moving** (or in combat, or with the chat input open) when the window comes | The box is not focused, its text grey and not highlighted, and a mouse cap comes first (outlined). Bo's keys keep working for the game. One click on the box: text highlighted, the mouse cap gold, Ctrl+C outlined. Then the flow as above. | open |
+| Box focused: Bo presses **W** | The box lets go of the focus (the W is lost once, Bo doesn't walk); the text stays. Typing into the box after a click puts the command back. | open |
+| Window open: **Esc** (box focused, then again with it unfocused out of combat), and the **X** | The window closes; nothing in chat, nothing sent; the alt asks the next member after 2 minutes. | open |
+| Bo without invite rights: Ctrl+C, Enter, Enter, Ctrl+V, Enter | The game's red "You don't have permission to do that."; the window closes at once; Bo's chat: "<alt> (Ada's alt) will ask someone else."; the alt at once: "Asked <next member> for an invite into <guild>." | open |
+| Two of Ada's alts ask within seconds (log one in, then another) | One window; the second request replaces the first in place: new name and command, caps reset, a gold edge for a moment. No second window. | open |
+| At 3440×1440 (or the largest resolution you have) | The window sits top centre, larger with the UI, not over the action bars, the red error line or the run reminder banner. | open |
+| A long name (e.g. a "First Last-Realm" sender) | The window grows wider (up to 520 px at UI scale 1); the name line wraps to at most two lines. | open |
+
 ### CF-87 Guild invites by copy and paste
 Two people with this build, as in the CF-84 steps: Bo online in the guild with invite rights and the guild code set,
 Ada's alt outside any guild. `/console scriptErrors 1` on both. Do not use the addon's whisper menu or Whisper buttons
@@ -82,11 +98,7 @@ before these steps (`/reload` if you did): they fill the chat input from addon c
 
 | Step | Expected | Status |
 |---|---|---|
-| Ada logs in the alt | Alt's chat within ~20 s: "Asked Bo <name> for an invite into <guild>." On Bo's side a window **Guild invite**: "Invite <alt> (Ada's alt)?", below it a box with `/ginvite <alt name>` (maybe with `-<realm>`), all of it highlighted, and the line "Ctrl+C, Enter. Then Enter, Ctrl+V, Enter." No "blocked from an action" dialog on either side. | open |
-| Bo: hover the box | Tooltip: "Addons can't send guild invites. Copy this line (Ctrl+C), close this window (Enter), then open chat (Enter), paste (Ctrl+V) and send it (Enter)." | open |
 | Bo types a letter into the box, then clicks in it | The text stays `/ginvite <alt name>` and is highlighted again each time. | open |
-| Bo presses **Ctrl+C**, **Enter** (window closes), **Enter** (chat opens), **Ctrl+V**, **Enter** | The invite is sent: Bo's chat "You have invited <alt> to join your guild." and "Invited <alt> (Ada's alt) into the guild."; the alt gets Blizzard's invite popup and the chat line "Click Accept to join <guild>.". No "blocked" dialog. | open |
-| Alt clicks Blizzard's **Accept** | The alt is in the guild; `/cf` on the alt shows the guild. | open |
 | Kick the alt and invite it again by hand once (`/gremove <alt name>`, `/ginvite <alt name>`, alt declines), log the alt out and in again; Bo presses **Esc** in the window | The window closes; nothing is sent. The X closes it too. | open |
 | Bo without invite rights: the window comes, Bo pastes and sends within a minute | The game's "no permission" line; with `/cf sync debug` on Bo: `[guild] invite … refused: rights`; the alt asks the next member at once. | open |
 | Bo waits more than 2 minutes before pasting | The alt has already asked the next member (if one is online); Bo's later invite still arrives and still confirms. | open |

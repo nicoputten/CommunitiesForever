@@ -1157,6 +1157,11 @@ local function GuildInviteTest()
     local exists = ns1 and (_G[ns1] ~= nil and _G[ns1][fn] ~= nil) or _G[name] ~= nil
     log("exists " .. name, S(exists))
   end
+  -- V136 (CF-88): what the invite window's focus rule and sound need.
+  log("V136 GetUnitSpeed", Vals(GetUnitSpeed, "player"), "ChatEdit_GetActiveWindow", S(ChatEdit_GetActiveWindow ~= nil),
+    "ChatFrameUtil.GetActiveWindow", S(ChatFrameUtil ~= nil and ChatFrameUtil.GetActiveWindow ~= nil),
+    "GetCurrentKeyBoardFocus", S(GetCurrentKeyBoardFocus ~= nil), "IsControlKeyDown", S(IsControlKeyDown ~= nil),
+    "SOUNDKIT.IG_MAINMENU_OPEN", S(SOUNDKIT and SOUNDKIT.IG_MAINMENU_OPEN))
   log("ERR_GUILD_INVITE_S", S(ERR_GUILD_INVITE_S), "CanGuildInvite", Vals(CanGuildInvite), "IsInGuild",
     Vals(IsInGuild), "GetGuildInfo", Vals(GetGuildInfo, "player"))
   WatchGuildInvites()

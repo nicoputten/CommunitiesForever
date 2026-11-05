@@ -24,5 +24,12 @@ function Sounds.celebrate(weight)
   return nil
 end
 
+-- CF-88: plays one SOUNDKIT sound by key (keys not checked one by one: API-FINDINGS.md, V136). True when played.
+function Sounds.play(key)
+  local id = PlaySound and SOUNDKIT and SOUNDKIT[key]
+  if not id then return false end
+  return pcall(PlaySound, id, "SFX") == true
+end
+
 ns.Sounds = Sounds
 return Sounds

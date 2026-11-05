@@ -7,6 +7,38 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-88 The guild invite window (designer's flow)
+Stacked on CF-87 (PR #201). The designer's boards GI01Window (the member's window, all states), GI02Screen (placement
+at 1920×1080 and 3440×1440) and GI03Alt (the alt's chat lines), and the designer's brief, with Nico's deviations
+(2026-11-05). Touches: `src/ui/GuildInvitePopup.lua`, `src/services/GuildInvites.lua`, `src/core/GuildInvite.lua`,
+`src/adapters/Guild.lua`, `src/adapters/Sounds.lua`, `src/ui/kit/Theme.lua`, `.luacheckrc`, the WoW mock, the
+GuildInvite specs, `tools/FriendProbe/`, VERIFY.md, CHANGELOG.md.
+- **Window:** 400 px wide, growing with the command up to 520; title bar 30 px with the shield, "Guild invite" and
+  an X; padding 12, gaps 10. "Invite <Name> (<Owner>'s alt)?" with the name in its class colour (white when
+  unknown) and the owner's display name, never a BattleTag; at most two lines. A 32 px copy box with exactly
+  `/ginvite <name as reported>`, read-only in effect. Key caps [Ctrl]+[C] › [Enter] › [Ctrl]+[V] › [Enter] (22 px,
+  1 px edges, 3 px bottom edge; done gold fill, next gold outline, upcoming grey); tooltip "Copy · open chat · paste
+  · send". `TOP` of UIParent, 0, −262; strata DIALOG; not movable; `SOUNDKIT.IG_MAINMENU_OPEN` once on arrival.
+- **Focus:** the box takes the focus only out of combat, standing still, with no chat input open and no other box
+  focused; else it arrives unfocused (grey text, a mouse cap first) and one click focuses and selects. While
+  focused, Ctrl, C, Enter and Esc work; any other key releases the focus.
+- **Keys light only on events:** Ctrl+C on the box's OnKeyDown; Enter on its OnEnterPressed (it releases the focus,
+  the window stays, nothing opens the chat: deviation A); Ctrl+V when a chat input's text becomes the command
+  (post-hook, `PASTE_HOOK`, V137: deviation B); Enter on "You have invited <name>".
+- **States:** sent (all lit, a check at 150 ms, faded out by 1.2 s; chat "Invited <Name> (<Owner>'s alt) into the
+  guild."); refused while the window shows the request (closes at once, chat "<Name> (<Owner>'s alt) will ask
+  someone else.", GINVFAIL to the alt; no line for another faction); closed with X or Esc (nothing printed or sent);
+  a new request replaces the shown one in place (keys reset, a gold edge for 400 ms; no queue).
+- **Alt:** chat lines only, with the shield and in gold: "Asked …", "Click Accept to join …", "No member of …
+  answered …". No waiting window (GI03 option B).
+- Deviations from the brief: A (no chat input opened: 5 key presses, 4 caps; Nico, 2026-11-05: keep 4 caps), B (the paste hook behind a switch),
+  C (no locale table, rule 6), D (no new protocol: the refusal is GINVFAIL), E (unverified APIs guarded, V136),
+  G (Esc through the frame's own keyboard handler, not `UISpecialFrames`, which needs a named global, rule 5).
+- Decided (Nico, 2026-11-05): keep 4 caps; the window stays open after the first Enter (players close it with X or
+  Esc); the whisper buttons (Dungeons tab and menus) that open the chat input stay as they are (tested in game).
+- No change to stored data or messages (rule 8).
+- Manual (VERIFY.md CF-88, V136, V137).
+
 ### CF-87 Guild invites by copy and paste
 Bug from Nico's in-game tests with a friend, 2026-11-05: CF-84's guild invite does not work at all. On Forever an
 addon cannot send a guild invite in any way (`docs/API-FINDINGS.md` "Guild invites"): `C_GuildInfo.Invite` /

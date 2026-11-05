@@ -19,7 +19,6 @@ GuildInvite.MAX_ATTEMPTS = 3         -- attempts per login
 GuildInvite.LOGIN_DELAY = 15         -- seconds after login before the alt checks (club data needs to load)
 GuildInvite.HANDLE_COOLDOWN = 60     -- a member handles one request per requester this often
 GuildInvite.ACCEPT_WINDOW = 180      -- an invite this long after our last request gets "Click Accept"
-GuildInvite.REFUSAL_WINDOW = 60      -- a refusal text counts as ours this long after the popup showed or closed
 GuildInvite.KEY_ANSWER_MIN = 1       -- a member answers an older code after a random delay in this range,
 GuildInvite.KEY_ANSWER_MAX = 5       -- unless another member's answer came first
 GuildInvite.KEY_ANSWER_COOLDOWN = 60 -- and at most this often
@@ -304,7 +303,52 @@ function GuildInvite.inviteCommand(name)
   return string.format(GuildInvite.INVITE_COMMAND, name)
 end
 
--- The member's popup line: "Invite Bram Lovewell (Ada's alt)?".
+-- CF-88: the member window's four key steps (GI01Window): Ctrl+C in the copy box, Enter in it, the command pasted
+-- into a chat input, the invite sent. progress = how many are done (0-4); a step lights only on its own event, and a
+-- later event lights the earlier steps too (right-click copy, or a click elsewhere, skips them).
+GuildInvite.STEPS = 4
+GuildInvite.STEP_COPY, GuildInvite.STEP_CLOSE, GuildInvite.STEP_PASTE, GuildInvite.STEP_SEND = 1, 2, 3, 4
+
+-- The progress after a step's event: never back.
+function GuildInvite.advance(progress, step)
+  progress = type(progress) == "number" and progress or 0
+  if type(step) ~= "number" then return progress end
+  return math.max(progress, math.min(step, GuildInvite.STEPS))
+end
+
+-- Each step's look for a progress: "done" (gold fill), "next" (gold outline) or "upcoming" (grey).
+function GuildInvite.capStates(progress)
+  progress = type(progress) == "number" and progress or 0
+  local states = {}
+  for i = 1, GuildInvite.STEPS do
+    states[i] = (i <= progress and "done") or (i == progress + 1 and "next") or "upcoming"
+  end
+  return states
+end
+
+-- True when a chat input's text is the command: trimmed, case-insensitive (the Ctrl+V step).
+function GuildInvite.isPasted(text, command)
+  if type(text) ~= "string" or type(command) ~= "string" or command == "" then return false end
+  local trimmed = text:gsub("^%s+", ""):gsub("%s+$", "")
+  return trimmed:lower() == command:lower()
+end
+
+-- May the copy box take the keyboard focus? Only out of combat, standing still, with no chat input open and no
+-- other edit box focused, so it never eats a keypress. ctx = { combat, speed, chatOpen, otherFocus }.
+function GuildInvite.canFocus(ctx)
+  ctx = ctx or {}
+  if ctx.combat or ctx.chatOpen or ctx.otherFocus then return false end
+  return not (type(ctx.speed) == "number" and ctx.speed > 0)
+end
+
+-- The window's width for the copy text's width: 400 px, growing with the text up to 520.
+GuildInvite.WINDOW_MIN, GuildInvite.WINDOW_MAX, GuildInvite.WINDOW_PADDING = 400, 520, 42
+function GuildInvite.windowWidth(textWidth)
+  local want = (type(textWidth) == "number" and textWidth or 0) + GuildInvite.WINDOW_PADDING
+  return math.max(GuildInvite.WINDOW_MIN, math.min(GuildInvite.WINDOW_MAX, math.ceil(want)))
+end
+
+-- The member's popup line: "Invite Bram Lovewell (Ada's alt)?". characterName may carry a colour escape.
 function GuildInvite.popupText(characterName, friendName)
   return string.format(GuildInvite.POPUP, GuildInvite.altLabel(characterName, friendName))
 end

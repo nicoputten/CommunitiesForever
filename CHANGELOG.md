@@ -19,7 +19,8 @@ tagging; the release stops if the tag has no section.
 - **Your alts get into the guild with one copy and paste:** set a guild code in `/cf settings` (shown with your guild
   picked). Members' addons share it in the guild. When you log in on an alt outside the guild, it asks an online
   member for an invite: the member gets a small window "Invite <alt> (<your name>'s alt)?" with the `/ginvite` line
-  ready to copy into chat, and you click Accept on the game's invite. The game doesn't let addons send or accept
+  ready to copy into chat and keys that light up as they go (Ctrl+C, Enter, Ctrl+V, Enter), and you click Accept
+  on the game's invite. The game doesn't let addons send or accept
   guild invites. The code is saved in the new `CommunitiesForever_Vault` folder that comes with the addon, never in
   the file you upload. Someone who left or was kicked from the guild gets no invite window; a member can still invite
   them by hand.
