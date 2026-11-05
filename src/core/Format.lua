@@ -223,8 +223,8 @@ local findPerson = Format.findPerson
 -- active is false on a character that is not a member of the selected community; passive: no community on
 -- the account and none on this character (see Clubs.passive).
 Format.PASSIVE_TEXT = "You're not in a community yet.\n\n"
-  .. "CommunitiesForever is for friends who play together without a guild: it works with an in-game "
-  .. "community you share. Once this character is in one, the addon sets itself up and shows your friends, "
+  .. "CommunitiesForever is for friends who play together: it works with an in-game community you share, "
+  .. "or your guild. Once this character is in one, the addon sets itself up and shows your friends, "
   .. "their characters, their activity and the dungeons you can run together.\n\n"
   .. "Got an invite link from a friend? Click it in chat and choose Join. Got an invite code? Open Blizzard's "
   .. "Communities window and join with the code. No community yet? Create one there and invite your friends."

@@ -14,8 +14,10 @@ local function settings() return addonRef.db.global.settings end
 
 local function say(text) addonRef:Print(text) end
 
--- Channel of the selected community, or nil (no selection, or not visible on this character).
+-- Channel of the selected community, or nil (no selection, or not visible on this character). nil for a guild
+-- (CF-83): guild chat is Blizzard's own (color, tabs), so the community chat features leave it alone.
 function CommunityChat.channel()
+  if ns.CommunitySelection.isGuild() then return nil end
   return ns.ChatFrames.channel(ns.CommunitySelection.active())
 end
 
@@ -87,6 +89,10 @@ end
 -- Creates the Community tab on this character (chat windows are saved per character).
 function CommunityChat.createTab()
   local channel = CommunityChat.channel()
+  if ns.CommunitySelection.isGuild() then
+    say("Your community is a guild: guild chat already has its place in your chat windows.")
+    return false
+  end
   if not channel then
     say("Select a community first (and log in on a character that is a member).")
     return false

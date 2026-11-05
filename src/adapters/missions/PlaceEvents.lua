@@ -2,7 +2,8 @@
 -- internal message DoomsdayTracker.MISSION_EVENT (kind, obs) for the kinds of src/core/missions/Places.lua.
 -- Zones entered (Instance events: ZONE_CHANGED_NEW_AREA, the login), friends in game and in the same zone
 -- (MemberTracker), a lower friend in the group (GROUP_ROSTER_UPDATE, levels) and own community chat messages
--- (ChatFrames.MESSAGE). Zone level ranges from Group Finder's zone activities (C_LFGList, V46).
+-- (ChatFrames.MESSAGE; guild chat when the community is a guild, CF-83). Zone level ranges from Group Finder's
+-- zone activities (C_LFGList, V46).
 -- Local stored data: self.doomsday.zonesSeen (see Places).
 local _, ns = ...
 
@@ -114,8 +115,16 @@ local function ownGuids()
   return guids
 end
 
+-- The chat channel of the selected community: guild chat for a guild (CF-83), else the community's stream.
+local function selectedChannel()
+  local clubId = ns.CommunitySelection.active()
+  if not clubId then return nil end
+  if ns.CommunitySelection.isGuild() then return ns.ChatFrames.GUILD end
+  return ns.ChatFrames.channel(clubId)
+end
+
 local function onChat(_, channel, senderGuid)
-  local selected = ns.ChatFrames.channel(ns.CommunitySelection.active())
+  local selected = selectedChannel()
   if ns.Missions.Places.ownMessage(channel, selected, senderGuid, ownGuids()) then
     send("placeChat", { day = ns.DoomsdayTracker.today() })
   end

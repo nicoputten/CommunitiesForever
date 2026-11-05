@@ -178,6 +178,25 @@ local function build()
   controls.inviteLink = link
   window.invite = invite
 
+  -- CF-84: the guild code, masked (EditBox:SetPassword, V130) and emptied after each commit: it is never shown.
+  local guild = CreateFrame("Frame", nil, body)
+  guild:SetSize(WIDTH - 2 * PAD, 74)
+  label(guild, 0, 0, "GUILD CODE")
+  local function commitCode(text)
+    if text ~= "" then option("guildCode").set({}, text) end
+    guild.field:SetValue("")
+    guild.status:SetText(option("guildCode").status())
+  end
+  local code = Kit.input(guild, { width = WIDTH - 2 * PAD, maxLetters = ns.GuildInvite.CODE_MAX,
+                                  onCommit = commitCode })
+  code:SetPoint("TOPLEFT", 0, -18)
+  guild.masked = code.SetPassword ~= nil
+  if guild.masked then code:SetPassword(true) else code:Hide() end
+  guild.field = code
+  guild.status = label(guild, 0, 52, "", "tiny", "faint")
+  controls.guildCode = code
+  window.guild = guild
+
   -- CF-18: the role of each of your characters (Auto from talents, or set).
   window.rolesTop = y
   window.rolesTitle = label(body, left, y, "Roles of your characters", "section", "goldLight")
@@ -196,7 +215,8 @@ local function build()
   Kit.release(rolePool)
 end
 
--- The invite field shows only where it can be set; the roles follow your characters.
+-- The invite field shows only where it can be set, the guild code only with the guild picked (CF-84); the roles
+-- follow your characters.
 local function layoutLower()
   local body = scroll.child
   local y = window.rolesTop
@@ -208,6 +228,17 @@ local function layoutLower()
     y = y + 84
   else
     window.invite:Hide()
+  end
+  if not option("guildCode").hidden() then
+    window.guild:Show()
+    window.guild:ClearAllPoints()
+    window.guild:SetPoint("TOPLEFT", PAD, -y)
+    window.guild.field:SetValue("")
+    window.guild.status:SetText(window.guild.masked and option("guildCode").status()
+      or ns.Settings.GUILD_CODE_NO_MASK)
+    y = y + 84
+  else
+    window.guild:Hide()
   end
   window.rolesTitle:ClearAllPoints()
   window.rolesTitle:SetPoint("TOPLEFT", PAD, -y)

@@ -105,7 +105,7 @@ function STEP_BODIES.community()
     text("To join one, ask a friend in it for the invite link (Communities window, Invite, link). "
       .. "Friends who run CommunitiesForever can share it: on a character that is not a member, the "
       .. "window then shows the link to click.")
-    text("Guilds and Battle.net communities are not supported. You can pick the community later in "
+    text("A guild works too. Battle.net communities are not supported. You can pick the community later in "
       .. "/cf settings.", "small", "faint")
     return
   end
@@ -367,7 +367,9 @@ function Setup.plan()
   local inCommunity = ns.CommunitySelection.active() and true or false
   return ns.Onboarding.plan(settings(), {
     guid = guid,
-    hasTab = (guid and settings().chatTab and settings().chatTab[guid]) or ns.CommunityChat.tab() ~= nil,
+    -- CF-83: a guild needs no Community tab (guild chat is Blizzard's own), so no tab prompt.
+    hasTab = ns.CommunitySelection.isGuild() or (guid and settings().chatTab and settings().chatTab[guid])
+      or ns.CommunityChat.tab() ~= nil,
     inCommunity = inCommunity,
     joinable = not inCommunity and ns.CommunitySelection.selected() ~= nil and ns.Invites.current() ~= nil,
   })

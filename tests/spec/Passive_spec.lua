@@ -33,8 +33,15 @@ describe("passive without a community", function()
     assert.are.same({}, state.bnSent)
   end)
 
-  it("stays passive in a guild only", function()
+  -- CF-83: a guild counts as a community; a Battle.net community does not.
+  it("turns active in a guild only, with the guild picked", function()
     load({ { clubId = "999", name = "Some Guild", clubType = 2 } })
+    assert.is_false(ns.CommunitySelection.passive())
+    assert.are.equal("999", ns.CommunitySelection.selected())
+  end)
+
+  it("stays passive in a Battle.net community only", function()
+    load({ { clubId = "4", name = "Some Friends", clubType = 0 } })
     assert.is_true(ns.CommunitySelection.passive())
     assert.is_false(ns.Setup.isShown())
   end)

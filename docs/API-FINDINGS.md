@@ -40,6 +40,17 @@ Cooking appeared in slot 5 (`2/75`, skillLine 185). First Aid: unknown (no chara
   **No BattleTag, no bnetAccountId.**
 - Membership is **per character**: alts of a member are NOT members unless invited themselves.
 - Data loads async: fire `FocusMembers`, then re-read after `CLUB_MEMBERS_UPDATED`.
+- `C_Club.GetSubscribedClubs()` returns an empty table on a character in no community and no guild (Forever,
+  2026-11-05).
+
+### Creating a community (Forever, 2026-11-05)
+No community can be created on Forever at launch (CF-83 picks the guild instead):
+- `C_Club.ValidateText` returns `3` (TooShort) for every name and short name, for both the Character and the
+  BattleNet club type; the Create button in Blizzard's dialog stays grey.
+- `C_Club.CreateClub(...)` is protected: `/run C_Club.CreateClub(...)` gives "blocked from an action only available
+  to the Blizzard UI".
+- `CommunitiesCreateDialog` is a forbidden frame: touching it from `/run` gives "Attempt to access forbidden object
+  from code tainted by an AddOn".
 
 ## Verified during development
 Recorded by Nico in `VERIFY.md`, 2026-10-17.
