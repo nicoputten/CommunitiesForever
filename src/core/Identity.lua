@@ -88,11 +88,13 @@ end
 BattleTag is btag. Re-keys that person from "aid:<id>" to the BattleTag (keeping aid = id), in place, and returns
 true when people changed (the caller then runs Merge.absorb(people, btag, now), which merges a stored "aid:" copy
 into an existing BattleTag person). Returns false when there is nothing to change or the claim is refused.
-ctx = { ownBattleTag, ownAccountId, friends = { [bt] = true }, presence = { [guid] = { battleTag } },
+ctx = { ownBattleTag, ownAccountId, friends = { [bt] = true }, online = { [bt] = char } (friends Battle.net shows
+        in Forever now; nil = not known, then every friend counts as visible), presence = { [guid] = { battleTag } },
         characters = { [guid] = bt } (live Battle.net presence) }.
-Refused (spoofing guards): not a valid BattleTag; your own BattleTag or account ID; a current Battle.net friend
-(Battle.net links them: their own record over Battle.net carries the account ID); the sending character linked by
-Battle.net presence to another BattleTag; the account ID already known under another BattleTag; the sending character
+Refused (spoofing guards): not a valid BattleTag; your own BattleTag or account ID; a current Battle.net friend whom
+Battle.net shows in Forever now (Battle.net links them: their own record over Battle.net carries the account ID;
+CF-97: Battle.net can't name a friend who appears offline, V87, so their claim counts); the sending character linked
+by Battle.net presence to another BattleTag; the account ID already known under another BattleTag; the sending character
 in another person's record; an "aid:" person whose record does not list the sending character; a stored person with
 that BattleTag who has another account ID, or none and does not list the sending character. The first owner of a
 BattleTag keeps it. ]]
@@ -102,7 +104,8 @@ function Identity.claimBattleTag(people, wireKey, btag, guid, ctx)
   if not id or type(people) ~= "table" or type(guid) ~= "string" or not Identity.isBattleTag(btag) then
     return false
   end
-  if btag == ctx.ownBattleTag or id == ctx.ownAccountId or (ctx.friends and ctx.friends[btag]) then return false end
+  if btag == ctx.ownBattleTag or id == ctx.ownAccountId then return false end
+  if ctx.friends and ctx.friends[btag] and (ctx.online == nil or ctx.online[btag]) then return false end
   local link = ctx.presence and ctx.presence[guid]
   link = (type(link) == "table" and link.battleTag) or (ctx.characters and ctx.characters[guid])
   if link ~= nil and link ~= btag then return false end

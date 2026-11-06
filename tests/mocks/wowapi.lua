@@ -100,6 +100,8 @@ function regionMethods.HighlightText(self) self.highlighted = true end
 function regionMethods.SetText(self, text) self.text = text end
 function regionMethods.GetText(self) return self.text end
 function regionMethods.GetStringWidth(self) return #(tostring(self.text or "")) * 7 end
+-- CF-95: one line ("...") or wrapped; the game wraps by default.
+function regionMethods.SetWordWrap(self, on) self.wordWrap = on end
 function regionMethods.SetFont(self, path, size) self.font = { path, size }; return not self.state.fontsFail end
 function regionMethods.SetFrameStrata(self, strata) self.strata = strata end
 function regionMethods.GetFrameStrata(self) return self.strata or "MEDIUM" end

@@ -37,14 +37,17 @@ describe("FriendProbe launch checklist (CF-60)", function()
     assert.is_true(next(open) ~= nil)
   end)
 
-  it("ticks what Nico checked on Retail 12.1.5 and leaves the rest open (CF-61)", function()
+  -- Retail 12.1.5 (CF-61) and the Forever launch probe (CF-96) answered these.
+  it("ticks what was answered and leaves the rest open", function()
     local done = {}
     for _, item in ipairs(checklist().items) do
       if item.done then done[#done + 1] = item.id end
     end
     table.sort(done)
-    assert.are.same({ "V47", "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68", "V71", "V72",
-                      "V77", "V78", "V80", "V81", "V82", "V83", "V86" }, done)
+    assert.are.same({ "V102", "V103", "V104", "V105", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116",
+                      "V117", "V47", "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68", "V71",
+                      "V72", "V77", "V78", "V80", "V81", "V83", "V84", "V86", "V87", "V90", "V93", "V94", "V95",
+                      "V98" }, done)
   end)
 
   it("lists in the TOC only files that exist", function()

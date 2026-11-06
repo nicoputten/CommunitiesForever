@@ -157,7 +157,8 @@ the community), `canBuff` (a character of a class with a buff it can cast on oth
 ### Probe checks
 In `VERIFY.md` (V90 to V119; V91, V92 and V97 were dropped with their missions) and in the FriendProbe launch checklist, which ticks
 most of them by itself while playing. "Retail" means a Retail 12.1.5 dry run can answer it (Nico's rule: checked on Retail counts as done),
-"Forever" that only Forever can.
+"Forever" that only Forever can. The launch results (build 70790) are in `docs/API-FINDINGS.md` "Forever launch probe"
+(CF-96); `VERIFY.md` keeps the checks still open.
 
 | Check | Question | Where |
 |---|---|---|

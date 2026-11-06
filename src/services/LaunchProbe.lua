@@ -2,13 +2,16 @@
 installing FriendProbe. Results go to CommunitiesForeverDB.global.probe (core/Probe.lua), which the uploader sends to
 the site. Until Probe.STOP_AT (2026-11-18).
 - Invisible: nothing in chat, no frame, sound or popup; only post-hooks (hooksecurefunc). Left out: what can show
-  something or act (the combat log V75, whispers, invites, links, reloads, the jump hook V118).
+  something or act (the combat log V75, whispers, invites, sending links, reloads, the jump hook V118). A clicked
+  link is only watched (a SetItemRef post-hook, V60b).
 - Safe: every handler and hook runs in pcall (an error is noted under "error"); every API is guarded; a secret value
   is recorded as "secret", a missing API as "missing".
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
 - Private: no raw chat text, no event log; player names only for the Hunt's victim and the killer (V120).
-This file: the plumbing and the login, PvP, death, loot and trade checks. services/LaunchProbeMissions.lua: the
-mission catalogue's checks (V90 to V117) and the PvP catalogue's (V120 to V123). ]]
+This file: the plumbing and the login and PvP checks. services/LaunchProbeMissions.lua: the mission catalogue's
+checks and the PvP catalogue's (V120 to V123). services/LaunchProbeRecipes.lua: the recipe checks (V60, V60b).
+CF-96: the checks answered by the launch results (build 70790, docs/API-FINDINGS.md "Forever launch probe") are gone;
+their stored results stay in the saved data as they are. ]]
 local _, ns = ...
 
 local Probe = ns.Probe
@@ -140,31 +143,11 @@ end
 LaunchProbe.util = { S = S, Val = Val, Vals = Vals, readable = readable, str = str, get = get, matches = matches,
                      result = result, note = note, info = info, passed = passed, after = after, now = now }
 
--- ===== Login: values to read once (V55, V63, V71, V77, V78, V79, V82) =====
+-- ===== Login: values to read once (V82) =====
 
 local RIDING_LINES = { 148, 149, 150, 152, 533, 553, 554, 713, 762 }
 
 LaunchProbe.atLogin(function()
-  local clock = date and date("%H:%M")
-  result("V63", type(clock) == "string" and clock:match("^%d%d:%d%d$") and "pass" or "fail", "date: " .. Val(clock))
-  local t = time and time({ year = 2026, month = 11, day = 6, hour = 20, min = 30 })
-  result("V71", type(t) == "number" and math.abs(t - now()) < 400 * 86400 and "pass" or "fail", "time() " .. Val(t))
-  local double = GameTooltip and GameTooltip.AddDoubleLine ~= nil
-  result("V55", double and "pass" or "fail", "GameTooltip.AddDoubleLine " .. (double and "exists" or "missing"))
-
-  local region = get(GetCurrentRegion)
-  result("V77", type(region) == "number" and "pass" or "fail", "region " .. Val(region))
-  local hour, minute
-  if GetGameTime then
-    local ok, h, m = pcall(GetGameTime)
-    if ok and readable(h) and readable(m) then hour, minute = h, m end
-  end
-  result("V78", Probe.realmClock(hour, minute, now()))
-
-  local lifetime = get(GetPVPLifetimeStats)
-  result("V79", type(lifetime) == "number" and "pass" or "fail", "lifetime " .. Vals(GetPVPLifetimeStats)
-    .. ", rank " .. Vals(UnitPVPRank, "player") .. ", deaths " .. Vals(GetStatistic, 60))
-
   local riding = {}
   local byLine = C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID
   for _, line in ipairs(RIDING_LINES) do
@@ -202,7 +185,8 @@ LaunchProbe.on("ENCOUNTER_START", function()
   end
 end)
 
--- ===== V74, V73, V76, the Hunt: enemy players and honorable kills =====
+-- ===== V73, V76, the Hunt: enemy players and honorable kills =====
+-- Enemy players are still looked at for the Hunt (their race and class before a kill); V74 itself is answered.
 
 local unitSeen = {} -- guid -> server time of the last look (Probe.THROTTLE)
 local seenByName = {} -- the Hunt: name -> { race, class, source, at }
@@ -213,18 +197,8 @@ local function Enemy(unit, source)
   local guid = UnitGUID and UnitGUID(unit)
   local key = readable(guid) and guid or (unit .. source)
   if Probe.throttled(unitSeen, key, now()) then return end
-  local level = UnitLevel and UnitLevel(unit)
   local class = UnitClass and select(2, UnitClass(unit))
   local race = UnitRace and select(2, UnitRace(unit))
-  local bad = {}
-  if not readable(class) then bad[#bad + 1] = "class " .. Val(class) end
-  if not readable(level) then bad[#bad + 1] = "level " .. Val(level) end
-  if not readable(race) then bad[#bad + 1] = "race " .. Val(race) end
-  if #bad == 0 then
-    result("V74", "pass", "level, class and race readable via " .. source)
-  else
-    result("V74", "fail", table.concat(bad, ", ") .. " via " .. source)
-  end
   Probe.remember(seenByName, { get(GetUnitName, unit, true), get(UnitName, unit) },
     { race = str(race) and race or nil, class = str(class) and class or nil, source = source }, now())
 end
@@ -259,102 +233,26 @@ LaunchProbe.on("CHAT_MSG_COMBAT_HONOR_GAIN", function(text)
   else
     result("V76", "fail", "IsInGroup " .. Val(grouped) .. ", instance " .. Val(instanceType))
   end
-  note("V79", "at a kill: lifetime " .. Vals(GetPVPLifetimeStats) .. ", week " .. Vals(GetPVPThisWeekStats))
+  note("V73", "at a kill: lifetime " .. Vals(GetPVPLifetimeStats) .. ", week " .. Vals(GetPVPThisWeekStats))
 end)
 
--- ===== V80, V86: system messages =====
+-- V79's open part: does PLAYER_PVP_KILLS_CHANGED fire on Forever (noted with the kill it belongs to)?
+LaunchProbe.on("PLAYER_PVP_KILLS_CHANGED", function()
+  note("V73", "PLAYER_PVP_KILLS_CHANGED, week " .. Vals(GetPVPThisWeekStats))
+end)
 
-local function Discovered(text)
-  local key = matches(text, "ERR_ZONE_EXPLORED", "ERR_ZONE_EXPLORED_XP")
-  if key then result("V86", "pass", key .. " matched") end
-end
+-- ===== V80: duel lines =====
 
 LaunchProbe.on("CHAT_MSG_SYSTEM", function(text)
-  if not str(text) then return end
-  if not passed("V80") then
-    local me = get(GetUnitName, "player", true)
-    local short = get(UnitName, "player")
-    for _, key in ipairs({ "DUEL_WINNER_KNOCKOUT", "DUEL_WINNER_RETREAT" }) do
-      local args = ns.GameText.parse(text, _G[key])
-      if args and (args[1] == me or args[2] == me or args[1] == short or args[2] == short) then
-        result("V80", "pass", key .. " parsed with your name")
-      end
+  if not str(text) or passed("V80") then return end
+  local me = get(GetUnitName, "player", true)
+  local short = get(UnitName, "player")
+  for _, key in ipairs({ "DUEL_WINNER_KNOCKOUT", "DUEL_WINNER_RETREAT" }) do
+    local args = ns.GameText.parse(text, _G[key])
+    if args and (args[1] == me or args[2] == me or args[1] == short or args[2] == short) then
+      result("V80", "pass", key .. " parsed with your name")
     end
   end
-  if not passed("V86") then Discovered(text) end
-end)
-
--- ===== V81: where a death's cause comes from =====
-
-local mirrorSeen = false
-LaunchProbe.on("MIRROR_TIMER_START", function() mirrorSeen = true end)
-
-LaunchProbe.on("PLAYER_DEAD", function()
-  local sources = {}
-  local recap = C_DeathRecap and C_DeathRecap.GetRecapEvents
-  if recap then
-    sources[#sources + 1] = "death recap"
-    local ok, events = pcall(recap)
-    note("V81", "GetRecapEvents: " .. (ok and type(events) == "table" and (#events .. " events") or Val(events)))
-  end
-  if mirrorSeen then sources[#sources + 1] = "mirror timers" end
-  result("V81", #sources > 0 and "pass" or "fail", #sources > 0 and table.concat(sources, ", ") or "no cause source")
-  note("V79", "at a death: GetStatistic(60) " .. Vals(GetStatistic, 60))
-end)
-
--- ===== V83, V84, V85: loot, fishing, trades =====
-
-LaunchProbe.on("CHAT_MSG_LOOT", function(text)
-  if passed("V83") then return end
-  local key = matches(text, "LOOT_ITEM_SELF", "LOOT_ITEM_PUSHED_SELF", "LOOT_ITEM_CREATED_SELF")
-  if key then result("V83", "pass", key .. " matched, item " .. Val(ns.GameText.item(text))) end
-end)
-
-LaunchProbe.on("LOOT_OPENED", function()
-  if passed("V84") then return end
-  if get(IsFishingLoot) == true then
-    result("V84", "pass", "IsFishingLoot true, " .. Vals(GetNumLootItems) .. " items")
-  end
-end)
-
-local tradePartner
-LaunchProbe.on("TRADE_SHOW", function() tradePartner = get(UnitGUID, "NPC") or false end)
-LaunchProbe.on("UI_INFO_MESSAGE", function(_, text)
-  if not str(text) then return end
-  if ERR_TRADE_COMPLETE and text == ERR_TRADE_COMPLETE and tradePartner ~= nil then
-    result("V85", tradePartner and "pass" or "fail", "trade complete, partner GUID "
-      .. (tradePartner and "readable" or "missing"))
-    tradePartner = nil
-  elseif not passed("V86") then
-    Discovered(text)
-  end
-end)
-
--- ===== V87: data from a friend who appears offline =====
-
--- True when a Battle.net friend's WoW game account with this ID is visible (online in this game).
-local function visible(gameAccountID)
-  if not (BNGetNumFriends and C_BattleNet and C_BattleNet.GetFriendNumGameAccounts) then return false end
-  for i = 1, get(BNGetNumFriends) or 0 do
-    for j = 1, get(C_BattleNet.GetFriendNumGameAccounts, i) or 0 do
-      local ga = get(C_BattleNet.GetFriendGameAccountInfo, i, j)
-      if type(ga) == "table" and ga.gameAccountID == gameAccountID then return true end
-    end
-  end
-  return false
-end
-
-local senders = {}
-LaunchProbe.on("BN_CHAT_MSG_ADDON", function(_, _, _, senderID)
-  if passed("V87") or type(senderID) ~= "number" or secret(senderID) then return end
-  if Probe.throttled(senders, senderID, now()) or visible(senderID) then return end
-  local game = get(C_BattleNet and C_BattleNet.GetGameAccountInfoByID, senderID)
-  local guid = type(game) == "table" and str(game.playerGuid) and game.playerGuid or nil
-  local account = guid and get(C_BattleNet.GetAccountInfoByGUID, guid)
-  local tag = type(account) == "table" and str(account.battleTag)
-  result("V87", guid and tag and "pass" or "fail", string.format("from a hidden game account: "
-    .. "GetGameAccountInfoByID %s, playerGuid %s, battleTag %s", type(game) == "table" and "ok" or "nil",
-    guid and "yes" or "no", tag and "yes" or "no"))
 end)
 
 -- ===== Start =====

@@ -4,8 +4,135 @@ Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order:
-1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
+1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, which the
+   launch probe runs since CF-98).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
+
+### CF-99 Pool version 3
+After the launch probe (CF-96) and the three tracker lanes (CF-74 #222, CF-75 #224 #225, CF-76 #221). Follows CF-77.
+Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`, `src/adapters/missions/BattleEvents.lua`,
+`tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`, `docs/DOOMSDAY.md`, VERIFY.md,
+CHANGELOG.md. The site ships its copy in the same release (WEB story in CommunitiesForever-Web).
+- `Doomsday.POOL_VERSION = 3`; `since = 3` on the 82 missions of CF-74 to CF-76 whose checks passed, each with a
+  registered progress (tests); not `d.reward`, `d.fishFriend`, `d.feedFriend` (they wait for an in-game check).
+- `p.homeGuard` (CF-81): a counted kill in a zone whose PvP type read "friendly" (V123), `since = 3`; progress cases
+  in `tests/fixtures/missions/battle.json`.
+- The honor rank goals `p.ranked`, `p.rankUp`, `b.ranked5`, `b.rankUp` get `retired = 3` (Nico, 2026-11-06:
+  `UnitPVPRank` is missing on Forever); pool 1 and 2 draws are unchanged. `docs/DOOMSDAY.md` says the rank titles,
+  rank 0's included, don't show on Forever.
+- `docs/DOOMSDAY.md`: `d.bank`, `d.repair`, `d.trainer` are CF-76's in the Data column.
+- Golden `draws` cases for days and weeks of pool version 3 from its first day (`pool: 3`) and two pool-3 swaps;
+  pool-1 and pool-2 cases unchanged; `Compat_spec` passes.
+- Compatibility (rule 8): no switch date, as CF-77: each day records the pool version it was drawn with. An addon on
+  pool version 2 keeps drawing version 2 and scores a friend's version-3 day by its `pool` (every id is already in
+  its catalogue). Stored data: only new local day facts (`battle.zones`), optional. No new message fields.
+- Manual (VERIFY.md CF-99).
+
+### CF-97 A friend who appears offline is known by their BattleTag over the guild
+From the launch probe (V87 failed on build 70790, CF-96): from a Battle.net friend who appears offline,
+`C_BattleNet.GetGameAccountInfoByID` gives no `playerGuid` and no BattleTag, so their Battle.net messages are dropped.
+In the selected guild or community they still sync, as `aid:<id>`, but CF-90 refused their `btag` because the tag is a
+current Battle.net friend's ("Battle.net decides for them"). Battle.net can't decide here. Touches:
+`src/core/Identity.lua`, `src/services/Sync.lua`, specs, SYNC.md, VERIFY.md, CHANGELOG.md.
+- `Identity.claimBattleTag` takes a current Battle.net friend's BattleTag when Battle.net does not show that friend in
+  Forever now (no entry in `PresenceTracker.online()`), with every other CF-90 guard (tests). Without an online list
+  (`ctx.online == nil`) every friend counts as shown, and the claim is refused as before (tests).
+- Still refused while Battle.net shows the friend in Forever, from any character (tests).
+- Before the Battle.net friends are read the claim is taken like any BattleTag (as in CF-90); once Battle.net shows
+  the friend, their own record carries the same BattleTag and account ID: nothing changes (tests).
+- A friend who is really offline can't send over the guild. Someone else claiming their BattleTag is refused when we
+  ever synced them (the first owner keeps it: their record holds another account ID, or lists other characters);
+  one we never synced can be claimed, the same risk as CF-90 for non-friends (tests).
+- Online: a friend known this way stays offline in the window, as Battle.net shows them (privacy, CF-15): `Sync.online`
+  lists no community peer whose key is a current Battle.net friend (tests).
+- The inert hidden-friend path (`Friends.resolveHidden`, `addHidden`, `PresenceTracker.isHidden`) stays: Blizzard may
+  fix the API.
+- Compatibility (rule 8): nothing sent and no stored shape changes. Older clients send `btag` the same way (v1.3.1 on)
+  or none; an older receiver keeps refusing a friend's claim and keeps the friend under `aid:`. No migration.
+- Decided by Nico (2026-11-06): accept the guild BattleTag claim of a friend Battle.net doesn't show in Forever.
+- Manual (VERIFY.md CF-97).
+
+### CF-98 Launch probe: the recipes check (V60)
+CF-38 (recipes) was prepared before launch with a FriendProbe-only check `/fp recipes` (PR #63, never merged), so the
+launch probe never looked at recipes. Now the addon's own probe does, so friends' normal play answers it. Touches:
+`src/services/LaunchProbeRecipes.lua` (new), `src/core/Probe.lua` (`Probe.IDS`), `CommunitiesForever.toc`, a comment
+in `src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua`, `tests/spec/LaunchProbe_spec.lua`, VERIFY.md.
+- V60, passive: on `TRADE_SKILL_SHOW`, `TRADE_SKILL_LIST_UPDATE` and `TRADE_SKILL_DATA_SOURCE_CHANGED` for the own
+  window (not a linked one), at most every 10 s and until it passed: which `C_TradeSkillUI` functions are missing
+  (a log line), the base and child profession IDs, the number of recipes and of learned ones, from which call the
+  item a recipe makes comes (`GetRecipeOutputItemData`, `GetRecipeItemLink`, `GetRecipeSchematic`), and whether
+  `GetTradeSkillListLink` gives a `trade:` link. Two learned recipes are noted with their item IDs. Pass: learned
+  recipes with an item from at least one call; fail: no `C_TradeSkillUI` or `GetAllRecipeIDs`, or learned recipes
+  without any item; info while the list is still empty (tests).
+- V60b, needs a click: a post-hook on `SetItemRef` notes a clicked `trade:` link (never acts on it); a
+  `TRADE_SKILL_SHOW` or `TRADE_SKILL_DATA_SOURCE_CHANGED` with `IsTradeSkillLinked` true within 5 s answers it. Whose
+  link is kept as one word: "yours", "a friend online" (Battle.net presence or a sync peer), "a friend offline" (a
+  character of someone in `global.people`) or "someone else". Pass: a friend's link opened while they are offline;
+  info: it opened otherwise; fail: a friend's link opened no linked window within 5 s; open until someone clicks one
+  (tests).
+- Privacy: counts and IDs only (recipe, item, profession); no recipe, item or player names, no GUIDs (tests). Same
+  size cap as the other checks (`Probe.trim`). Every API guarded (rule 3; VERIFY.md V60).
+- FriendProbe: `/fp recipes` from #63 is not ported (friends run the addon, not FriendProbe, and the addon's probe
+  answers the same); its checklist gets a V60 item pointing at `/cf fp`.
+- Compatibility (rule 8): two new keys under `global.probe.results.<client>` (`V60`, `V60b`); no migration, nothing
+  sent changes. Older versions keep and upload results they have and never write these. The site's reader
+  (CommunitiesForever-Web `src/core/probe.ts`) passes the section through without reading item keys.
+- Not user-facing (the probe is invisible), so no CHANGELOG line.
+- Manual: VERIFY.md V60 and CF-98.
+
+### CF-96 Launch probe results: answered items closed, the probe trimmed
+Nico exported the launch probe's results from the site on 2026-11-06: 6 testers on Forever live, build 70790. Touches:
+`VERIFY.md`, `docs/API-FINDINGS.md`, `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeMissions.lua`, `tools/FriendProbe/Checklist.lua`, comments in the adapters that named the
+answered items, their specs.
+- `docs/API-FINDINGS.md` "Forever launch probe": what was seen per item, as "N of 6" (no names, BattleTags or
+  character details). Answered: V55, V63, V71, V77, V78, V81, V83, V84, V86, V90, V93, V94, V95, V98, V102 to V105,
+  V107, V109 to V113, V115 to V117. Failed: V87 (a friend who appears offline sends, but
+  `GetGameAccountInfoByID` gives no `playerGuid`, so no BattleTag). `UnitPVPRank` is missing on Forever (V79).
+- `VERIFY.md` holds only what is still open, with narrower steps: V74 (a skull), V79 (`GetPVPRankInfo`,
+  `GetPVPThisWeekStats`, `PLAYER_PVP_KILLS_CHANGED`), V82 (riding, reopened: no tester had it), V85 (what was given),
+  V99 (sale, item link, repair cost), V100 (the inbox), V106 (slot links, fishing source), V108 (the emote), V120
+  (a player killer), V123 (hostile, contested, starting zones). V87 is closed as failed.
+- The probe (`Probe.IDS`) runs only the open checks: V82, V35b, V70, V73, V76, the Hunt, V80, V96, V101, V108,
+  V114, V120 to V123 (tests). Enemy players are still looked at for the Hunt. V108 passes on an emote at an
+  enemy-faction player alone; V123 keeps looking after "friendly" and notes each new type; `PLAYER_PVP_KILLS_CHANGED`
+  is noted under V73 (tests). `Probe.realmClock` (V78) is gone.
+- FriendProbe's checklist marks the answered items `done = "forever 70790"`; V82 is open again (spec).
+- Compatibility (rule 8): results stored for the removed checks stay in `global.probe` as they are, are uploaded
+  as before and only leave the `/cf fp` report; no migration, no schema change (tests). The site's reader
+  (CommunitiesForever-Web `src/core/probe.ts`) passes the section through without reading item keys, so files with
+  and without the removed keys both work. Nothing sent changes.
+- Not user-facing (the probe is invisible), so no CHANGELOG line.
+- Manual (VERIFY.md CF-96).
+
+### CF-95 Run view fits the window's smallest width
+Open bug (noted in CF-94): at the window's 700 px minimum the detail shows about 408 px, but a run (and a dungeon, and
+the empty states) was laid out at least 520 px wide, so the right side was cut off: the group rows' status, "Ask now
+for this run", the answer buttons. Touches: `src/ui/DungeonsTab.lua`, `src/ui/RunAnswer.lua`,
+`tests/spec/DungeonsTab_spec.lua`, `tests/mocks/wowapi.lua`, VERIFY.md, CHANGELOG.md.
+- Everything in the detail follows the width that shows (at least 300 px), like CF-94's "Online now, fits".
+- Texts are one line, cut with "..." where they don't fit (the empty state's explainer still wraps). Buttons stay
+  whole: what doesn't fit beside something goes below it ("Ask now for this run" under the Group header, "Whisper
+  <friend>" under Invite all, the planned-run button under a dungeon's title, the answer block's dropdown and roles on
+  the next line, the empty states' buttons below each other).
+- Every state: your run and a friend's, Invite open, an ask, a dungeon with quests, the empty and no-fit states.
+- No change to stored data or messages (rule 8). No new strings.
+- Specs: each part at the 700 px minimum (text + gap + buttons within the row width).
+- Manual: VERIFY.md CF-95.
+
+### CF-94 Run detail: Online now, fits at full width, Edit or cancel below
+Live feedback (Nico, v1.3.1, 2026-11-05, screenshot): in a planned run's detail, "Online now, fits" had only the left
+column beside "Edit or cancel", and the Whisper buttons covered the "level · friend" text. Touches:
+`src/ui/DungeonsTab.lua`, `tests/spec/DungeonsTab_spec.lua`, VERIFY.md, CHANGELOG.md.
+- "Online now, fits" takes the full width; "Edit or cancel" (organiser) or "On the website" (others), with its ⓘ and
+  the link box, goes below it, also at the full width. Strings unchanged.
+- Each online row: name and "level · friend" end 8 px before Whisper (and Invite once inviting opens); the info stays
+  whole where it can, the name gets the rest; what doesn't fit is cut with "..." on one line.
+- Near the window's 700 px minimum the detail shows less than the 520 px the run view is laid out at: these two parts
+  follow the width that shows (at least 300 px), so Whisper stays in view.
+- Same in every state: organiser and member, nobody online, many online (the detail scrolls).
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-94.
 
 ### CF-93 Ctrl+C in the guild invite window copies the command
 Live feedback (v1.3.1, a guild member, 2026-11-05): "I couldn't CTRL-C the guild invite string that popped up. I had
@@ -348,6 +475,38 @@ Touches: `src/core/Probe.lua`, `src/services/LaunchProbe.lua`, `src/services/Lau
   The section stays far below the site's upload limit (25 MiB).
 - Manual (VERIFY.md): `/cf fp` after a play session on Forever shows ticks; the saved file has `probe`; nothing shows
   in chat or on screen while playing.
+
+## E12 Crafting
+
+### CF-38 Recipes: what everyone can craft
+Waits for V60 (the launch probe checks it since CF-98). Story from PR #63.
+- Goal: see exactly what a person can craft, and find who can make something ("who can make Bolt of Silk Cloth?"),
+  also while they are offline.
+- **B, our own recipe list (the story):**
+  - Reading: when you open a profession window, the addon reads that profession's learned recipes
+    (`C_TradeSkillUI.GetAllRecipeIDs` + `GetRecipeInfo(id).learned`, V60) and stores them on the character:
+    `char.recipes = { [skillLineID] = { [recipeID] = itemID or 0 } }` (0: no item, e.g. an enchant), with when it was
+    read. Only your own characters; a profession's recipes are known once its owner opened its window once, and
+    updated on every open and on `NEW_RECIPE_LEARNED` (verified, API-FINDINGS V104).
+  - Sharing: part of the character in the record, like professions (rule 8: a new optional character field; older
+    clients ignore it, code handles characters without it). Not shared when the character has none.
+  - Showing: on a character's card, each profession gets "Recipes (N)"; clicking it lists the recipes by name, each
+    as the real item link (hover: tooltip, shift-click: into chat), "Read <time> ago". Names come from the item (the
+    client's item cache, loaded on demand) or the recipe name for recipes without an item. Without data: "Recipes not
+    read yet: <name> has to open <profession> once."
+  - Finding: the smart filter (CF-36) also matches recipe and item names: `bolt of silk` shows the characters that
+    can make it, the card opens on that recipe.
+- **A, Blizzard's own view (extra, only if V60b says it works):** if `C_TradeSkillUI.GetTradeSkillListLink()` gives a
+  link while the window is open and clicking that link opens Blizzard's profession window for someone else, also
+  when they are offline: store the link with the recipes and show a button "Open in Blizzard's window" on the card.
+- Decided after V60: which calls give recipe IDs, learned state and the item (`GetRecipeItemLink` /
+  `GetRecipeOutputItemData` / `GetRecipeSchematic`), how big a full profession is on the wire (compressed), and
+  whether A works.
+- Unit tests (pure core): reading a recipe list into the stored shape; merge (a newer character copy brings its
+  recipes; an older one never removes them); filter matches recipe names; sizes stay below a limit per profession.
+- Manual (2 clients): open Tailoring on one; on the other, the card shows "Recipes (N)" with item links and tooltips;
+  `bolt` in the search finds the crafter; after learning a recipe it shows up; with A: "Open in Blizzard's window"
+  opens their recipes, also when they are offline.
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).

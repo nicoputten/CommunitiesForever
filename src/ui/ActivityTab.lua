@@ -29,7 +29,7 @@ local function charText(char)
   return Theme.rgbCode(Kit.classColor(char and char.classFile)) .. tostring(char and char.name or "?") .. "|r"
 end
 
--- "20:40": the local time of the entry's last change. `date` is the game's (unverified, V63).
+-- "20:40": the local time of the entry's last change. `date` is the game's (verified on Forever, V63).
 local function clock(at)
   if not at or at <= 0 or not date then return "" end
   return date("%H:%M", at)

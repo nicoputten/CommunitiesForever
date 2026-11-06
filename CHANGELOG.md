@@ -5,6 +5,27 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.4.0 (2026-11-06)
+- **Doomsday:** 83 new missions join the draw (pool version 3): cooking, First Aid, crafting and gathering, fishing,
+  kills, elites and rares, flights and travel, the bank, trainer and merchants, loot, sessions and playing without
+  dying, and "Defend home" (a kill in your own faction's land) as a Skirmish. **Please update:** friends on the
+  previous version see different missions until they do.
+- **Doomsday:** the honor rank missions are gone for good: Forever doesn't show a PvP rank to addons. They were never
+  drawn, so nothing you've done changes.
+- **Fixed:** a Battle.net friend who appears offline and is in your guild or community now shows under their
+  Battle.net name instead of as a separate unknown player. They still show as offline in the window.
+- **Doomsday:** the addon now keeps track of cooking, First Aid, crafting, gathering, recipes, coins, new gear,
+  potions, scrolls, Well Fed, buffing friends and tidy bags, for the new missions.
+- **Doomsday:** the addon now tracks 25 more missions: kills, elites and rares, flights, swimming and riding, the
+  hearthstone, places within zones, the bank, trainer and merchant, weapon skills, and whispers, mail and group
+  screenshots with friends, for the new missions.
+- **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
+  "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
+  names are cut with "..." before the buttons, also in a narrow window.
+- **Fixed:** at the addon window's smallest width the rest of a run's detail no longer runs off the right edge:
+  the group's status column, "Ask now for this run" and your answer buttons stay in view. Long texts are cut with
+  "...", and buttons that don't fit beside something move below it. Also for a dungeon's detail and the empty states.
+
 ## v1.3.2 (2026-11-05)
 - **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
   The box takes the keyboard also when your chat input stays on screen (IM-style chat), takes it once you stand

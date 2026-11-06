@@ -66,8 +66,9 @@ stds.wow = {
     "GetCurrentRegion", "UnitOnTaxi", "COMBATLOG_XPGAIN_FIRSTPERSON", "UnitClassification", "C_PvP", "GetZonePVPInfo",
     "GetBattlefieldScore", "GetBattlefieldStatInfo", "GetNumBattlefieldStats", "GetNumBattlefieldScores", "UnitIsPVP",
     "GetSubZoneText", "C_SummonInfo", "GetInventoryItemID", "GetLootSourceInfo", "GetSpellInfo", "C_Spell",
-    "GetBindLocation", "ERR_NEWTAXIPATH", "IsSwimming", "IsMounted", "C_UnitAuras", "C_Container",
+    "GetBindLocation", "ERR_NEWTAXIPATH", "SKILL_RANK_UP", "IsSwimming", "IsMounted", "C_UnitAuras", "C_Container",
     "issecretvalue",
+    "YOU_LOOT_MONEY", "LOOT_MONEY_SPLIT", -- CF-75 (V109)
     -- CF-87: C_GuildInfo, GuildInvite, AcceptGuild and the chat input calls are left out on purpose: addon code must
     -- never call them (V126, V134, V135), so luacheck flags any use.
     "ERR_GUILD_INVITE_S", -- CF-84

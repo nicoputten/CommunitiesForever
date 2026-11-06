@@ -162,4 +162,80 @@ describe("Identity (CF-28)", function()
       assert.is_false(Identity.claimBattleTag(people, AID, "Ben#1002", "G9", CTX)) -- stored Ben does not list G9
     end)
   end)
+
+  describe("claimBattleTag for a friend who appears offline (CF-97, V87)", function()
+    local AID, BID = "aid:bbbbbbbbbbbb", "bbbbbbbbbbbb"
+    local BEN = "Ben#1002"
+
+    local function stored()
+      return { [AID] = { version = 5, aid = BID, displayName = "Ben", chars = { G1 = { name = "Ben Example" } } } }
+    end
+
+    -- Ben is a Battle.net friend; online = who Battle.net shows in Forever now.
+    local function ctx(online, extra)
+      local c = { ownBattleTag = "Me#1001", ownAccountId = "aaaaaaaaaaaa", friends = { [BEN] = true }, online = online }
+      for k, v in pairs(extra or {}) do c[k] = v end
+      return c
+    end
+
+    it("takes a friend's BattleTag when Battle.net does not show them in Forever", function()
+      local people = stored()
+      assert.is_true(Identity.claimBattleTag(people, AID, BEN, "G1", ctx({})))
+      assert.is_nil(people[AID])
+      assert.are.equal(BID, people[BEN].aid)
+      assert.are.equal(BEN, (Identity.fromWire(people, OWN, AID)))
+    end)
+
+    it("refuses while Battle.net shows the friend in Forever, from any character", function()
+      local online = { [BEN] = { guid = "G1" } }
+      local people = stored()
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx(online))) -- their own: Battle.net links
+      online = { [BEN] = { guid = "G5" } }
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx(online))) -- another character
+      assert.is_not_nil(people[AID])
+      assert.is_nil(people[BEN])
+    end)
+
+    it("refuses when it is not known who Battle.net shows (no online list)", function()
+      local people = stored()
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx(nil)))
+      assert.is_not_nil(people[AID])
+    end)
+
+    it("takes it before the Battle.net friends are read, like any BattleTag", function()
+      local people = stored()
+      assert.is_true(Identity.claimBattleTag(people, AID, BEN, "G1", { friends = {}, online = {} }))
+      assert.are.equal(BID, people[BEN].aid)
+    end)
+
+    it("changes nothing once the friend shows online later: Battle.net agrees", function()
+      local people = stored()
+      assert.is_true(Identity.claimBattleTag(people, AID, BEN, "G1", ctx({})))
+      local online = { [BEN] = { guid = "G1" } }
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx(online, { characters = { G1 = BEN } })))
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx({}))) -- already known by it
+      assert.are.equal(BID, people[BEN].aid)
+      assert.are.equal(BEN, (Identity.fromWire(people, OWN, AID)))
+    end)
+
+    it("keeps the guards: a friend synced before keeps their BattleTag, links and records decide", function()
+      -- Ben synced over Battle.net before (his record carries his account ID): really offline now.
+      local people = stored()
+      people[BEN] = { version = 9, aid = "cccccccccccc", chars = { G2 = {} } }
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx({})))
+      assert.are.equal("cccccccccccc", people[BEN].aid)
+      -- Synced through a relay (no account ID): only a character in Ben's record may claim it.
+      people[BEN] = { version = 9, chars = { G2 = {} } }
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx({})))
+      -- The sending character is linked to another BattleTag (stored or live presence).
+      people = stored()
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1",
+        ctx({}, { presence = { G1 = { battleTag = "Fay#1006" } } })))
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G1", ctx({}, { characters = { G1 = "Fay#1006" } })))
+      -- Someone else's character, or one the aid: person's record does not list.
+      people["Cat#3003"] = { chars = { G9 = {} } }
+      assert.is_false(Identity.claimBattleTag(people, AID, BEN, "G9", ctx({})))
+      assert.is_not_nil(people[AID])
+    end)
+  end)
 end)

@@ -1,5 +1,6 @@
 -- GoalEvents: fishing loot, trades and discoveries for Doomsday goals that wait for data (CF-56). Thin
--- wrapper: raw values only. All unverified on Forever (VERIFY.md V84 to V86): every call guarded.
+-- wrapper: raw values only. Verified on Forever (V84 to V86, API-FINDINGS "Forever launch probe"); every call
+-- stays guarded.
 local _, ns = ...
 
 local GoalEvents = {}
