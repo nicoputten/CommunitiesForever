@@ -1,4 +1,201 @@
 {
- "about": "Progress cases of the extended missions (CF-74), addon only: the site never computes progress. Never edit a case to make code pass.",
- "cases": []
+ "about": "Progress cases of the extended missions (CF-74), addon only: the site never computes progress. Never edit a case to make code pass. Each case adds its observations (Goals.observe) to new facts and expects [value, target, done] per goal id.",
+ "cases": [
+  {
+   "name": "fish over two zones, one at night and one with a friend",
+   "observations": [
+    { "kind": "fish", "count": 30 },
+    { "kind": "extFish", "zone": "Elwynn Forest", "friend": false, "hour": 20 },
+    { "kind": "fish", "count": 25 },
+    { "kind": "extFish", "zone": "Westfall", "friend": true, "hour": 21 },
+    { "kind": "extFish", "zone": "Westfall", "friend": false, "hour": 4 }
+   ],
+   "progress": { "d.fish20": [55, 20, true], "d.fish50": [55, 50, true], "w.fish100": [55, 100, false],
+                 "d.fishZones": [2, 2, true], "w.fishZones4": [2, 4, false], "d.fishFriend": [1, 1, true],
+                 "d.fishNight": [2, 1, true] }
+  },
+  {
+   "name": "fishing in the evening and the morning is not the night, a zone without a name counts nothing",
+   "observations": [
+    { "kind": "extFish", "zone": "Durotar", "hour": 20 },
+    { "kind": "extFish", "zone": "", "hour": 5 },
+    { "kind": "extFish", "hour": 12 }
+   ],
+   "progress": { "d.fishZones": [1, 2, false], "d.fishNight": [0, 1, false], "d.fishFriend": [0, 1, false] }
+  },
+  {
+   "name": "online at 23:00 is a night owl, 03:00 is not",
+   "observations": [
+    { "kind": "extClock", "hour": 3 },
+    { "kind": "extClock", "hour": 22 }
+   ],
+   "progress": { "d.nightOwl": [0, 1, false] }
+  },
+  {
+   "name": "the night and the early bird in one week",
+   "observations": [
+    { "kind": "earlyBird" },
+    { "kind": "extClock", "hour": 23 }
+   ],
+   "progress": { "d.nightOwl": [1, 1, true], "d.earlyBird": [1, 1, true], "w.dayAndNight": [2, 2, true] }
+  },
+  {
+   "name": "after midnight still counts as night, alone it is half of day and night",
+   "observations": [
+    { "kind": "extClock", "hour": 2 }
+   ],
+   "progress": { "d.nightOwl": [1, 1, true], "w.dayAndNight": [1, 2, false] }
+  },
+  {
+   "name": "an hour of session with a death after 20 minutes",
+   "observations": [
+    { "kind": "extAlive", "from": 1000, "now": 2200 },
+    { "kind": "extAlive", "from": 1000, "now": 4600, "death": 2200 }
+   ],
+   "progress": { "d.session1h": [3600, 3600, true], "d.deathless": [2400, 3600, false] }
+  },
+  {
+   "name": "an hour alive: a death before the session doesn't count",
+   "observations": [
+    { "kind": "extAlive", "from": 10000, "now": 13600, "death": 9000 }
+   ],
+   "progress": { "d.deathless": [3600, 3600, true], "w.deathless3h": [3600, 10800, false] }
+  },
+  {
+   "name": "the session from the play tracker counts too",
+   "observations": [
+    { "kind": "session", "seconds": 3700 },
+    { "kind": "extAlive", "from": 1000, "now": 1600 }
+   ],
+   "progress": { "d.session1h": [3700, 3600, true], "w.session2h": [3700, 7200, false] }
+  },
+  {
+   "name": "a session without a start or before it counts nothing",
+   "observations": [
+    { "kind": "extAlive", "now": 5000 },
+    { "kind": "extAlive", "from": 5000, "now": 4000 }
+   ],
+   "progress": { "d.session1h": [0, 3600, false], "d.deathless": [0, 3600, false] }
+  },
+  {
+   "name": "a clean run counts once however many bosses, a run with a death doesn't",
+   "observations": [
+    { "kind": "extBoss", "guid": "Player-1-A", "name": "Dungeon A", "startedAt": 1000 },
+    { "kind": "extBoss", "guid": "Player-1-A", "name": "Dungeon A", "startedAt": 1000, "death": 900 },
+    { "kind": "extBoss", "guid": "Player-1-A", "name": "Dungeon B", "startedAt": 5000, "death": 5200 }
+   ],
+   "progress": { "d.cleanRun": [1, 1, true], "w.cleanRuns2": [1, 2, false] }
+  },
+  {
+   "name": "two clean runs, one of them the same dungeon again",
+   "observations": [
+    { "kind": "extBoss", "guid": "Player-1-A", "name": "Dungeon A", "startedAt": 1000 },
+    { "kind": "extBoss", "guid": "Player-1-A", "name": "Dungeon A", "startedAt": 9000, "death": 8000 }
+   ],
+   "progress": { "w.cleanRuns2": [2, 2, true] }
+  },
+  {
+   "name": "a boss without its run's start counts nothing",
+   "observations": [
+    { "kind": "extBoss", "guid": "Player-1-A", "name": "Dungeon A" },
+    { "kind": "extBoss", "name": "Dungeon A", "startedAt": 1000 }
+   ],
+   "progress": { "d.cleanRun": [0, 1, false] }
+  },
+  {
+   "name": "money below and then above the session's start",
+   "observations": [
+    { "kind": "extMoney", "start": 5000, "now": 4000 },
+    { "kind": "extMoney", "start": 5000, "now": 5000 }
+   ],
+   "progress": { "d.profit": [0, 1, false] }
+  },
+  {
+   "name": "a copper more than at the start is a profit",
+   "observations": [
+    { "kind": "extMoney", "start": 5000, "now": 4000 },
+    { "kind": "extMoney", "start": 5000, "now": 5001 }
+   ],
+   "progress": { "d.profit": [1, 1, true] }
+  },
+  {
+   "name": "greens looted and received count, grey, white and created ones don't",
+   "observations": [
+    { "kind": "extLoot", "source": "looted", "quality": 2, "count": 1 },
+    { "kind": "extLoot", "source": "looted", "quality": 3, "count": 1 },
+    { "kind": "extLoot", "source": "pushed", "quality": 2, "count": 2 },
+    { "kind": "extLoot", "source": "looted", "quality": 1, "count": 5 },
+    { "kind": "extLoot", "source": "looted", "quality": 0, "count": 1 },
+    { "kind": "extLoot", "source": "looted", "count": 1 },
+    { "kind": "extLoot", "source": "created", "quality": 2, "count": 1 }
+   ],
+   "progress": { "d.green5": [4, 5, false], "d.craft5": [1, 5, false] }
+  },
+  {
+   "name": "five crafted with a stack of four",
+   "observations": [
+    { "kind": "extLoot", "source": "created", "quality": 1, "count": 4 },
+    { "kind": "extLoot", "source": "created", "quality": 1 }
+   ],
+   "progress": { "d.craft5": [5, 5, true], "d.green5": [0, 5, false] }
+  },
+  {
+   "name": "an uncommon quest reward, a white one doesn't count",
+   "observations": [
+    { "kind": "extReward", "quality": 1 },
+    { "kind": "extReward" },
+    { "kind": "extReward", "quality": 2 }
+   ],
+   "progress": { "d.reward": [1, 1, true] }
+  },
+  {
+   "name": "trades with three friends, one of them twice, and one with a stranger",
+   "observations": [
+    { "kind": "extTrade", "friend": "Ada#1001", "fed": false },
+    { "kind": "extTrade", "friend": "Bob#1002", "fed": false },
+    { "kind": "extTrade", "friend": "Ada#1001", "fed": true },
+    { "kind": "extTrade", "fed": true },
+    { "kind": "extTrade", "friend": "Cy#1003" }
+   ],
+   "progress": { "w.trades3": [3, 3, true], "d.feedFriend": [1, 1, true] }
+  },
+  {
+   "name": "a dish given to a stranger doesn't feed a friend",
+   "observations": [
+    { "kind": "extTrade", "fed": true }
+   ],
+   "progress": { "d.feedFriend": [0, 1, false], "w.trades3": [0, 3, false] }
+  },
+  {
+   "name": "grouped with friends on three days",
+   "observations": [
+    { "kind": "extGroup", "day": 100 },
+    { "kind": "extGroup", "day": 100 },
+    { "kind": "extGroup", "day": 102 },
+    { "kind": "extGroup" },
+    { "kind": "extGroup", "day": 104 }
+   ],
+   "progress": { "w.friendDays3": [3, 3, true] }
+  },
+  {
+   "name": "discoveries",
+   "observations": [
+    { "kind": "discovery" },
+    { "kind": "discovery" }
+   ],
+   "progress": { "d.discover1": [2, 1, true], "d.discover3": [2, 3, false], "w.discover5": [2, 5, false] }
+  },
+  {
+   "name": "the ready missions of the existing trackers",
+   "observations": [
+    { "kind": "trade", "friend": "Ada#1001" },
+    { "kind": "rare", "count": 1 },
+    { "kind": "level", "guid": "Player-1-A", "count": 1, "clean": true },
+    { "kind": "group", "friend": "Ada#1001" },
+    { "kind": "group", "friend": "Bob#1002" }
+   ],
+   "progress": { "d.trade": [1, 1, true], "d.rare": [1, 1, true], "w.rare5": [1, 5, false],
+                 "d.cleanLevel": [1, 1, true], "d.groupFriend": [2, 1, true], "w.friends3": [2, 3, false] }
+  }
+ ]
 }

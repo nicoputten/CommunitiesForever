@@ -290,6 +290,26 @@ The release day's draw with this build: `/run local D,s=CommunitiesForever.Dooms
 | On this build, a day that was already drawn before the update (log in on v1.1.0, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `pool` nil (read as version 1: its goals score 5 each); the next day's entry prints `2`. | open |
 | Finish a new daily (e.g. Say something in the community chat, if drawn) | Its banner and the week's total show its size (+1, +3 or +5), not +5 for every goal. | open |
 
+### CF-74 Existing trackers, extended (tracking only, not in the draw yet)
+The missions aren't in the draw yet (a later pool version): check the facts with this command (call it "the extended
+line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local x=d.extended; if x then local z,r,t=0,0,0; for _ in pairs(x.fishZones) do z=z+1 end; for _ in pairs(x.cleanRuns) do r=r+1 end; for _ in pairs(x.tradeFriends) do t=t+1 end; print(n,'fishZones',z,'fishFriend',x.fishFriend,'fishNight',x.fishNight,'night',x.night,'session',x.sessionMax,'alive',x.aliveMax,'clean',r,'profit',x.profit,'green',x.green,'reward',x.reward,'crafted',x.crafted,'fed',x.fed,'trades',t) end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, wait a minute; the extended line | `session` counts up each minute (seconds since the session began; a `/reload` continues it). | open |
+| Fish once in two zones; the extended line | `fishZones 2`. Fishing between 21:00 and 05:00 realm time (`/run print(GetGameTime())`) counts in `fishNight`; earlier it doesn't. | open |
+| Fish while grouped with a friend's community character in the same zone (needs CF-73's "Club member zone text" step) | `fishFriend` 1 or more; with the friend in another zone it stays. | open |
+| Play at or after 23:00 on your PC's clock (before 03:00) | `night` true; before 23:00 `false`. | open |
+| Die once, then play on | `alive` restarts from the death: it stays below `session` and grows again each minute. | open |
+| Kill a dungeon boss without dying in that run | `clean` 1. In another run die first, then kill a boss: `clean` stays. | open |
+| Note your gold, sell an item to a merchant | `profit` true once your gold is above what you had at login; `/reload` keeps the login's amount (`/run print(CommunitiesForeverDB.global.self.doomsday.sessionMoney.money)` unchanged). | open |
+| Loot an uncommon (green) item; create a stack (e.g. 3 bandages at once) | `green` up by 1 (a white or grey item doesn't count), `crafted` up by the stack's count. | open |
+| Hand in a quest and pick an uncommon reward (unverified: the reward's "You receive item" line within 5 s of `QUEST_TURNED_IN`) | `reward` 1. A green bought from a merchant later doesn't count as a reward (it counts in `green`). | open |
+| Trade with a friend's community character | `trades` 1 or more; a stranger doesn't count. | open |
+| Cook a dish, then trade it to a friend (needs V85: what you gave) | `/run print(next(CommunitiesForeverDB.global.self.doomsday.cooked))` shows the dish's item ID; after the trade `fed` 1. | open |
+| Group with a friend's community character, then `/run for w,f in pairs(CommunitiesForeverDB.global.self.doomsday.weeks) do local n=0; for _ in pairs(f.extended and f.extended.groupDays or {}) do n=n+1 end; print(w,n) end` | This week shows 1 (a day with a friend in the group); on two more days it reaches 3. | open |
+| A friend on v1.3.2 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
+
 ### CF-73 Friends and places for Doomsday missions
 The missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the places line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local p=d.places; if p then local z,nz=0,0; for _ in pairs(p.zones) do z=z+1 end; for _ in pairs(p.newZones) do nz=nz+1 end; print(n,'zones',z,'new',nz,'sea',p.crossSea,'nost',p.nostalgia,'dare',p.daredevil,'same',p.sameZone,'online',p.onlineMax,'carry',p.carry,'chat',p.chat) end end`
 
