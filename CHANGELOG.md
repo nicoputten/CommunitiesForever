@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.5.1 (2026-11-07)
 - **Fixed:** opening a second profession window no longer forgets the recipes of the first one.
 
 ## v1.5.0 (2026-11-06)
