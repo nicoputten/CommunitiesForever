@@ -304,7 +304,8 @@ local function fitGroupRow(g, width)
   local room = width - 66 - 10 - statusW - 12 - (onlineW > 0 and (onlineW + 8) or 0)
   local infoW = natural(g.info)
   local nameW = math.min(natural(g.name), math.max(80, room - math.min(infoW, 120) - 8))
-  g.name:SetWidth(math.max(1, nameW))
+  nameW = math.max(1, math.min(nameW, room - 9)) -- CF-95: the info's gap and 1 px stay in the row when narrow
+  g.name:SetWidth(nameW)
   g.info:SetWidth(math.max(1, math.min(infoW, room - nameW - 8)))
 end
 
@@ -344,7 +345,7 @@ local function fitOnlineRow(o, width, inviteShown)
   local room = width - 26 - buttons - 8
   local infoW = natural(o.info)
   local nameW = math.min(natural(o.name), math.max(60, room - math.min(infoW, 120) - 8))
-  nameW = math.max(1, math.min(nameW, room))
+  nameW = math.max(1, math.min(nameW, room - 9)) -- CF-95: the info's gap and 1 px stay in the row
   o.name:SetWidth(nameW)
   o.info:SetWidth(math.max(1, math.min(infoW, room - nameW - 8)))
 end
@@ -383,6 +384,10 @@ local function questRow(parent)
   q.name:SetJustifyH("LEFT")
   q.who = Theme.text(q, "tiny", "muted")
   q.who:SetPoint("RIGHT")
+  q.who:SetJustifyH("RIGHT")
+  for _, fs in ipairs({ q.name, q.who }) do
+    if fs.SetWordWrap then fs:SetWordWrap(false) end -- CF-95: cut with "...", never a second line
+  end
   local sep = q:CreateTexture(nil, "BORDER")
   sep:SetPoint("BOTTOMLEFT")
   sep:SetPoint("BOTTOMRIGHT")
@@ -396,10 +401,38 @@ local function primary(parent) return Kit.button(parent, "", nil, "primary") end
 
 -- ===== Drawing =====
 
-local placeText = Kit.placeText
+-- A text that wraps (pooled texts are reused, so each placement says how it breaks).
+local function placeText(pool, parent, x, y, width, text, color, justify)
+  local holder = Kit.placeText(pool, parent, x, y, width, text, color, justify)
+  if holder.text.SetWordWrap then holder.text:SetWordWrap(true) end
+  return holder
+end
 
+-- CF-95: one line, cut with "..." where it doesn't fit (the same rule as fitGroupRow and fitOnlineRow).
+local function line(pool, parent, x, y, width, text, color, justify)
+  local holder = Kit.placeText(pool, parent, x, y, math.max(1, width), text, color, justify)
+  if holder.text.SetWordWrap then holder.text:SetWordWrap(false) end
+  return holder
+end
+
+-- A section title and a note after it, both on one line within width (Kit.section in single lines, CF-95).
 local function section(parent, x, y, width, text, note, noteColor)
-  return Kit.section(pools.section, pools.small, parent, x, y, width, text, note, noteColor)
+  local h = line(pools.section, parent, x, y, width, text, "goldLight")
+  if note then
+    local w = math.min(width, h.text.GetStringWidth and h.text:GetStringWidth() or 100)
+    line(pools.small, parent, x + w + 10, y + 3, width - w - 10, note, noteColor or "muted")
+  end
+  return y + Kit.SECTION_HEIGHT
+end
+
+-- CF-95: the width a run or a dungeon is laid out at: what the detail shows (near the window's 700 px minimum
+-- about 408 px), never below 300; 520 until the detail has a size. It was at least 520, so at the minimum the
+-- right side (the status column, Ask now for this run, the answer buttons) was cut off.
+local MIN_WIDTH = 300
+local function detailWidth()
+  local shown = detail and detail:GetWidth()
+  if shown and shown > 0 then return math.max(MIN_WIDTH, shown - 6 - 2 * PAD) end
+  return 560 - 2 * PAD
 end
 
 -- CF-63c: the In range dropdown: your characters "Name (level)"; picking one makes the list follow it.
@@ -596,7 +629,7 @@ local function askStatus(parent, y, width)
   if #s.later > 0 then parts[#parts + 1] = "later: " .. table.concat(s.later, ", ") end
   if #s.no > 0 then parts[#parts + 1] = colored("not now: " .. table.concat(s.no, ", "), "muted") end
   if #s.waiting > 0 then parts[#parts + 1] = colored("waiting: " .. table.concat(s.waiting, ", "), "muted") end
-  placeText(pools.small, parent, PAD, y + 4, width, "Asked who's up for it" .. (#parts > 0 and (DOT ..
+  line(pools.small, parent, PAD, y + 4, width, "Asked who's up for it" .. (#parts > 0 and (DOT ..
     table.concat(parts, DOT)) or ""), "text")
   return y + 26
 end
@@ -683,14 +716,14 @@ end
 -- CF-63: fills "Online now, fits" at x, y (width): its heading with an ⓘ, then a row per member, Whisper, and
 -- Invite from 15 minutes before the start (open). Returns the new y.
 local function onlineList(parent, x, y, width, fits, dungeon, open)
-  local heading = placeText(pools.section, parent, x, y, width, "Online now, fits", "goldLight")
+  local heading = line(pools.section, parent, x, y, width, "Online now, fits", "goldLight")
   local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 120
   local info = Kit.take(pools.infos, parent)
   info:SetPoint("TOPLEFT", x + hw + 6, -(y + 3))
   info.tip = dungeon and string.format(ROSTER_TIP, range(dungeon)) or nil
   y = y + 26
   if #fits == 0 then
-    placeText(pools.small, parent, x, y + 4, width, "Nobody else online fits", "muted")
+    line(pools.small, parent, x, y + 4, width, "Nobody else online fits", "muted")
     return y + 26
   end
   local combat = InCombatLockdown and InCombatLockdown()
@@ -796,17 +829,17 @@ end
 -- On the website (CF-94).
 local function renderRun(run, me, candidates)
   local parent = detail.child
-  local width = math.max(560, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local width = detailWidth() -- CF-95
   local y = PAD - 6
   local dungeon = dungeonOf(run)
   local open = ns.PlannedRuns.inviteOpen(run, now())
   -- Header: the full name; "level 26–36 · <zone>"; the countdown line.
-  placeText(pools.name, parent, PAD, y, width, dungeonName(run), "heading")
+  line(pools.name, parent, PAD, y, width, dungeonName(run), "heading")
   y = y + 34
   if dungeon then
     local sub = "level " .. range(dungeon)
     if ns.Dungeons.ZONES[dungeon.id] then sub = sub .. DOT .. ns.Dungeons.ZONES[dungeon.id] end
-    placeText(pools.small, parent, PAD, y, width, sub, "muted")
+    line(pools.small, parent, PAD, y, width, sub, "muted")
     y = y + 18
   end
   local sub = {}
@@ -820,7 +853,7 @@ local function renderRun(run, me, candidates)
   if SOURCE_WORDS[run.source] then sub[#sub + 1] = SOURCE_WORDS[run.source] end
   if run.state == "full" then sub[#sub + 1] = "full" end
   if run.note then sub[#sub + 1] = "note: \226\128\156" .. run.note .. "\226\128\157" end
-  local leadText = placeText(pools.small, parent, PAD, y, width - 24,
+  local leadText = line(pools.small, parent, PAD, y, width - 24,
     lead .. (#sub > 0 and (DOT .. table.concat(sub, DOT)) or ""), "textDim")
   local mineNow = ns.PlannedRuns.yourAnswer(run, me)
   if run.pending or (mineNow and mineNow.pending) then
@@ -846,17 +879,31 @@ local function renderRun(run, me, candidates)
   local yes, maybe = ns.PlannedRuns.counts(run)
   local counts = yes .. " in" .. (maybe > 0 and (DOT .. maybe .. " maybe") or "") ..
     (openCount > 0 and (DOT .. openCount .. " open") or "")
-  local groupTop = y
-  y = section(parent, PAD, y, width, "Group", counts)
-  -- CF-64: one "Ask now for this run" for the run (was on every open slot), at the right of the header.
+  -- CF-64: one "Ask now for this run" for the run (was on every open slot), at the right of the header. CF-95:
+  -- below the header when "Group" and the counts don't fit beside it.
   local needed = ns.PlannedRuns.neededRole(run, candidates, dungeon)
+  local ask
   if needed and dungeon then
-    local ask = Kit.take(pools.buttons, parent)
+    ask = Kit.take(pools.buttons, parent)
     ask:SetLabel("Ask now for this run")
     ask:SetEnabled(true)
     ask:SetHeight(24)
     ask:SetScript("OnClick", function() askForRun(run, needed) end)
+    ask:ClearAllPoints()
+  end
+  local askW = ask and ((ask:GetWidth() or 140) + 8) or 0
+  local groupTop = y
+  local title = line(pools.section, parent, PAD, y, width, "Group", "goldLight")
+  local tw = math.min(width, title.text.GetStringWidth and title.text:GetStringWidth() or 50)
+  local note = line(pools.small, parent, PAD + tw + 10, y + 3, width - tw - 10, counts, "muted")
+  local beside = ask and tw + 10 + natural(note.text) <= width - askW
+  if beside then note.text:SetWidth(math.max(1, width - tw - 10 - askW)) end
+  y = y + Kit.SECTION_HEIGHT
+  if beside then
     ask:SetPoint("TOPRIGHT", parent, "TOPLEFT", PAD + width, -(groupTop - 2))
+  elseif ask then
+    ask:SetPoint("TOPLEFT", PAD, -y)
+    y = y + 30
   end
   local organiser = run.organiser
   local ctx = open and ns.RunAlerts.context() or nil
@@ -950,7 +997,7 @@ local function renderRun(run, me, candidates)
     reserves[#reserves + 1] = who .. (#parts > 0 and (" (" .. table.concat(parts, ", ") .. ")") or "")
   end
   if #reserves > 0 then
-    placeText(pools.small, parent, PAD, y + 2, width, "Reserve: " .. table.concat(reserves, ", "), "muted")
+    line(pools.small, parent, PAD, y + 2, width, "Reserve: " .. table.concat(reserves, ", "), "muted")
     y = y + 22
   end
 
@@ -979,14 +1026,19 @@ local function renderRun(run, me, candidates)
           w:SetLabel("Whisper " .. tostring(personName(st.answer, candidates, me)))
           w:SetEnabled(true)
           w:SetScript("OnClick", function() ns.RunAlerts.whisperSwitch(run, st) end)
-          w:SetPoint("TOPLEFT", bx, -(y + 3))
+          if bx + (w:GetWidth() or 120) > PAD + width then -- CF-95: below Invite all when it doesn't fit beside
+            w:SetPoint("TOPLEFT", PAD, -(y + 40))
+            y = y + 34
+          else
+            w:SetPoint("TOPLEFT", bx, -(y + 3))
+          end
           break
         end
       end
     end
     y = y + 40
     if not open and data and data.reminderMinutes and date then
-      placeText(pools.small, parent, PAD, y, width,
+      line(pools.small, parent, PAD, y, width,
         "Reminder at " .. clock(run.startsAt - data.reminderMinutes * 60), "textDim")
       y = y + 20
     elseif open and ctx then
@@ -996,7 +1048,7 @@ local function renderRun(run, me, candidates)
         offline[#offline + 1] = who .. (st.answer.answer == "maybe" and " (maybe)" or "")
       end
       if #offline > 0 then
-        placeText(pools.small, parent, PAD, y, width, table.concat(offline, ", ") ..
+        line(pools.small, parent, PAD, y, width, table.concat(offline, ", ") ..
           (#offline == 1 and " is offline." or " are offline."), "textDim")
         y = y + 20
       end
@@ -1009,13 +1061,9 @@ local function renderRun(run, me, candidates)
 
   -- CF-94: Online now, fits at full width, then Edit or cancel or On the website below it, also at full width
   -- (beside each other the rows had too little room and Whisper covered their text).
-  -- The run view is laid out at least 520 px wide; in a window near its 700 px minimum the detail shows less, so
-  -- these two follow the width that shows (never below 300 px), keeping Whisper in view.
-  local shown = detail:GetWidth()
-  local full = (shown and shown > 0) and math.min(width, math.max(300, shown - 6 - 2 * PAD)) or width
   y = divider(parent, y + 6, width) + 12
-  y = onlineList(parent, PAD, y, full, fits, dungeon, open) + 8
-  local heading = placeText(pools.section, parent, PAD, y, full,
+  y = onlineList(parent, PAD, y, width, fits, dungeon, open) + 8
+  local heading = line(pools.section, parent, PAD, y, width,
     isOrganiser and "Edit or cancel" or "On the website", "goldLight")
   local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 120
   local info = Kit.take(pools.infos, parent)
@@ -1026,7 +1074,7 @@ local function renderRun(run, me, candidates)
     linkBox:ClearAllPoints()
     linkBox:SetParent(parent)
     linkBox:SetPoint("TOPLEFT", PAD, -y)
-    linkBox:SetWidth(full)
+    linkBox:SetWidth(width)
     linkBox:SetText(run.url)
     linkBox:Show()
     linkPlaced = true
@@ -1052,9 +1100,9 @@ end
 -- and the runs need one).
 local function renderEmpty(messageText)
   local parent = detail.child
-  local width = math.max(420, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local width = detailWidth() -- CF-95
   local y = PAD + 60
-  placeText(pools.name, parent, PAD, y, width, "Nothing planned yet", "heading", "CENTER")
+  line(pools.name, parent, PAD, y, width, "Nothing planned yet", "heading", "CENTER")
   y = y + 40
   local body = messageText or "Plan a run on the website and it shows up here after your next upload, or use Ask "
     .. "now to see who is up for a dungeon right now."
@@ -1066,6 +1114,7 @@ local function renderEmpty(messageText)
     return
   end
   local site = ns.RunsFile.site()
+  local linkY = y + 44 -- the link box, below the buttons
   local ask = Kit.take(pools.primary, parent)
   ask:SetLabel("Ask now\226\128\166")
   ask:SetEnabled(true)
@@ -1078,8 +1127,8 @@ local function renderEmpty(messageText)
     copy:SetScript("OnClick", function()
       linkBox:ClearAllPoints()
       linkBox:SetParent(parent)
-      linkBox:SetPoint("TOP", parent, "TOPLEFT", PAD + width / 2, -(y + 44))
-      linkBox:SetWidth(260)
+      linkBox:SetPoint("TOP", parent, "TOPLEFT", PAD + width / 2, -linkY)
+      linkBox:SetWidth(math.min(260, width))
       linkBox:SetText(site)
       linkBox:Show()
       linkPlaced = true
@@ -1088,9 +1137,15 @@ local function renderEmpty(messageText)
     end)
   end
   local total = (ask:GetWidth() or 100) + (copy and ((copy:GetWidth() or 140) + 10) or 0)
-  ask:SetPoint("TOPLEFT", PAD + math.floor((width - total) / 2), -y)
-  if copy then copy:SetPoint("LEFT", ask, "RIGHT", 10, 0) end
-  parent:SetHeight(y + 120)
+  if total <= width then
+    ask:SetPoint("TOPLEFT", PAD + math.floor((width - total) / 2), -y)
+    if copy then copy:SetPoint("LEFT", ask, "RIGHT", 10, 0) end
+  else -- CF-95: below each other when they don't fit side by side
+    ask:SetPoint("TOPLEFT", PAD + math.floor((width - (ask:GetWidth() or 100)) / 2), -y)
+    copy:SetPoint("TOP", ask, "BOTTOM", 0, -8)
+    linkY = y + 82
+  end
+  parent:SetHeight(linkY + 76)
   detail:Update()
 end
 
@@ -1098,13 +1153,13 @@ end
 -- or Pick another character.
 local function renderNoFit()
   local parent = detail.child
-  local width = math.max(420, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local width = detailWidth() -- CF-95
   local y = PAD + 80
-  placeText(pools.name, parent, PAD, y, width, "No dungeon fits yet", "heading", "CENTER")
+  line(pools.name, parent, PAD, y, width, "No dungeon fits yet", "heading", "CENTER")
   y = y + 36
   local first = ns.Dungeons.first()
   if first then
-    placeText(pools.small, parent, PAD, y, width, string.format("First one: %s at level %d", first.name, first.min),
+    line(pools.small, parent, PAD, y, width, string.format("First one: %s at level %d", first.name, first.min),
       "textDim", "CENTER")
   end
   y = y + 30
@@ -1120,8 +1175,14 @@ local function renderNoFit()
   other:SetEnabled(#rangeOptions > 1)
   other:SetScript("OnClick", rangeMenu)
   local total = (all:GetWidth() or 140) + 10 + (other:GetWidth() or 160)
-  all:SetPoint("TOPLEFT", PAD + math.floor((width - total) / 2), -y)
-  other:SetPoint("LEFT", all, "RIGHT", 10, 0)
+  if total <= width then
+    all:SetPoint("TOPLEFT", PAD + math.floor((width - total) / 2), -y)
+    other:SetPoint("LEFT", all, "RIGHT", 10, 0)
+  else -- CF-95: below each other when they don't fit side by side
+    all:SetPoint("TOPLEFT", PAD + math.floor((width - (all:GetWidth() or 140)) / 2), -y)
+    other:SetPoint("TOP", all, "BOTTOM", 0, -8)
+    y = y + 38
+  end
   parent:SetHeight(y + 80)
   detail:Update()
 end
@@ -1131,10 +1192,10 @@ end
 local function renderDetail(entry, messageText, runs, candidates, rangeChar)
   if not entry then return renderEmpty(messageText) end
   local parent = detail.child
-  local width = math.max(560, (detail:GetWidth() or 0) - 6) - 2 * PAD
+  local width = detailWidth() -- CF-95
   local y = PAD - 6
   local dungeon = entry.dungeon
-  placeText(pools.name, parent, PAD, y, width - 200, dungeon.name, "heading")
+  local title = line(pools.name, parent, PAD, y, width, dungeon.name, "heading")
   -- A planned run for this dungeon: "1 run planned · Fri 20:00 ›" selects it.
   local planned = {}
   for _, run in ipairs(runs) do
@@ -1146,12 +1207,20 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
       now(), date) or "") .. " \226\128\186")
     b:SetEnabled(true)
     b:SetScript("OnClick", function() DungeonsTab.select("run:" .. planned[1].id) end)
-    b:SetPoint("TOPRIGHT", parent, "TOPLEFT", PAD + width, -y)
+    -- CF-95: beside the title when both fit, else below it.
+    local bw = (b:GetWidth() or 160) + 8
+    if natural(title.text) <= width - bw then
+      title.text:SetWidth(width - bw)
+      b:SetPoint("TOPRIGHT", parent, "TOPLEFT", PAD + width, -y)
+    else
+      b:SetPoint("TOPLEFT", PAD, -(y + 34))
+      y = y + 32
+    end
   end
   y = y + 34
   local sub = "level " .. range(dungeon)
   if ns.Dungeons.ZONES[dungeon.id] then sub = sub .. DOT .. ns.Dungeons.ZONES[dungeon.id] end
-  placeText(pools.small, parent, PAD, y, width, sub, "muted")
+  line(pools.small, parent, PAD, y, width, sub, "muted")
   y = y + 18
   local options = ns.PlannedRuns.charChoices(candidates, dungeon, rangeChar.guid)
   if not entry.fits then
@@ -1164,13 +1233,13 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
       parts[2] = string.format("%s %s: %s", tostring(alt.char.name), tostring(alt.char.level),
         colored("fits", "online"))
     end
-    placeText(pools.small, parent, PAD, y + 4, width, table.concat(parts, DOT), "muted")
+    line(pools.small, parent, PAD, y + 4, width, table.concat(parts, DOT), "muted")
     y = y + 24
   end
   y = y + 10
 
   -- Suggested group: the same rows as a run's group, full width.
-  local heading = placeText(pools.section, parent, PAD, y, width, "Suggested group", "goldLight")
+  local heading = line(pools.section, parent, PAD, y, width, "Suggested group", "goldLight")
   local hw = heading.text.GetStringWidth and heading.text:GetStringWidth() or 120
   local gi = Kit.take(pools.infos, parent)
   gi:SetPoint("TOPLEFT", PAD + hw + 6, -(y + 3))
@@ -1234,7 +1303,6 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
       local r = Kit.take(pools.quests, parent)
       r:SetPoint("TOPLEFT", PAD, -y)
       r:SetWidth(width)
-      r.name:SetWidth(width - 22 - 180)
       local name = tostring(q.name or ("Quest " .. q.id))
       if q.state == "have" then
         r.check:Show()
@@ -1261,6 +1329,12 @@ local function renderDetail(entry, messageText, runs, candidates, rangeChar)
         who = "level " .. q.level
       end
       r.who:SetText(who or "")
+      -- CF-95: who has it ends the row, the name gets the rest; both cut with "..." on one line.
+      r.who:SetWidth(0)
+      r.name:SetWidth(0)
+      local whoW = math.min(natural(r.who), math.floor(width * 0.45))
+      r.who:SetWidth(math.max(1, whoW))
+      r.name:SetWidth(math.max(1, width - 22 - (whoW > 0 and (whoW + 8) or 0)))
       y = y + 24
     end
   end
@@ -1485,6 +1559,18 @@ end
 -- For the specs: the list rows, the card's texts (in pool order), its buttons by label, the link box.
 function DungeonsTab.rows() return rows end
 function DungeonsTab.linkBox() return linkBox end
+
+-- For the specs (CF-95): the detail's scroll area, and the pooled texts drawn in it (holders, with .text).
+function DungeonsTab.detailArea() return detail end
+
+function DungeonsTab.detailTexts()
+  local out = {}
+  for _, name in ipairs({ "name", "section", "small", "tiny" }) do
+    local p = pools and pools[name]
+    for i = 1, p and p.used or 0 do out[#out + 1] = p.items[i] end
+  end
+  return out
+end
 
 function DungeonsTab.texts()
   local out = {}

@@ -9,6 +9,9 @@ tagging; the release stops if the tag has no section.
 - **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
   "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
   names are cut with "..." before the buttons, also in a narrow window.
+- **Fixed:** at the addon window's smallest width the rest of a run's detail no longer runs off the right edge:
+  the group's status column, "Ask now for this run" and your answer buttons stay in view. Long texts are cut with
+  "...", and buttons that don't fit beside something move below it. Also for a dungeon's detail and the empty states.
 
 ## v1.3.2 (2026-11-05)
 - **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
