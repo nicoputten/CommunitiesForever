@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday:** the addon now keeps track of cooking, First Aid, crafting, gathering, recipes, coins, new gear,
+  potions, scrolls, Well Fed, buffing friends and tidy bags, for missions that join the draw in a later pool.
 - **Doomsday:** the addon now tracks 25 more missions: kills, elites and rares, flights, swimming and riding, the
   hearthstone, places within zones, the bank, trainer and merchant, weapon skills, and whispers, mail and group
   screenshots with friends. They join the draw in a later version.
