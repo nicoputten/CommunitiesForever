@@ -28,6 +28,8 @@ local sent = {}              -- castGUID -> target name (UNIT_SPELLCAST_SENT)
 local sentCount = 0
 local lootSources, lootUntil -- the open loot's source kinds; how long they still count after it closed
 local lastRecipe             -- { subclass, at } of the last recipe item used
+local lastCast               -- { spell, at } of the player's last finished cast
+local CAST_WAIT = 3          -- seconds a created item still belongs to the last cast
 local lastJunk, wasFed, buffDay
 local auraAt = {}
 
@@ -166,6 +168,7 @@ end
 local function onSucceeded(_, unit, castGUID, spellID)
   if unit ~= "player" then return end
   spellID = readable(spellID)
+  if type(spellID) == "number" then lastCast = { spell = spellID, at = now() } end
   local candidates = type(spellID) == "number" and spellItems[spellID]
   if not candidates then return end
   local target = readable(castGUID) and sent[castGUID] or nil
@@ -193,14 +196,30 @@ local function onLootClosed()
   lootUntil = now() + LOOT_GRACE
 end
 
+-- The profession (skill line and its parent) of a recipe or crafting spell: C_TradeSkillUI, unverified on Forever
+-- (VERIFY.md CF-75). On Retail a recipe's ID is its crafting spell's ID.
+local function skillLineOf(spellID)
+  local ui = C_TradeSkillUI
+  if not (ui and ui.GetTradeSkillLineForRecipe and spellID ~= nil) then return nil, nil end
+  local line, _, parent = call(ui.GetTradeSkillLineForRecipe, spellID)
+  return line, parent
+end
+
 local function onLoot(text)
   local item = ns.Loot.parse(text, ns.LootInfo.formats())
   local guid = item and ns.SelfInfo.guid()
   if not guid then return end
   local entry = info(item.id)
   if item.source == "created" then
+    -- Conjured food (a mage's): a mage's food counts only when its cast was a Cooking recipe (Items.conjured).
+    local classFile = UnitClassBase and readable(UnitClassBase("player"))
+    local line, parent
+    if classFile == ns.Missions.Items.CONJURER and lastCast and now() - lastCast.at <= CAST_WAIT then
+      line, parent = skillLineOf(lastCast.spell)
+    end
     send("itemCreated", { guid = guid, id = item.id, count = item.count, class = entry.class,
-                          subclass = entry.subclass, quality = quality(item.id) })
+                          subclass = entry.subclass, quality = quality(item.id), classFile = classFile,
+                          castSkillLine = line, castParentSkillLine = parent })
     return
   end
   local sources = (lootSources and (lootUntil == nil or now() <= lootUntil)) and lootSources or {}
@@ -223,10 +242,7 @@ local function onRecipe(recipeID)
   if not guid or recipeID == nil then return end
   local obs = { guid = guid, id = recipeID }
   local ui = C_TradeSkillUI
-  if ui and ui.GetTradeSkillLineForRecipe then
-    local line, _, parent = call(ui.GetTradeSkillLineForRecipe, recipeID)
-    obs.skillLine, obs.parentSkillLine = line, parent
-  end
+  obs.skillLine, obs.parentSkillLine = skillLineOf(recipeID)
   if ui and ui.GetRecipeSchematic then
     local schematic = call(ui.GetRecipeSchematic, recipeID, false)
     local output = type(schematic) == "table" and readable(schematic.outputItemID)

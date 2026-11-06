@@ -194,6 +194,23 @@ describe("Missions: items (CF-75)", function()
     end)
   end)
 
+  it("tells conjured food from cooked: a mage's food needs a Cooking cast", function()
+    local food = { class = 0, subclass = 5 }
+    local function with(fields)
+      local o = { class = food.class, subclass = food.subclass }
+      for k, v in pairs(fields) do o[k] = v end
+      return o
+    end
+    assert.is_true(Items.conjured(with({ classFile = "MAGE" })))
+    assert.is_true(Items.conjured(with({ classFile = "MAGE", castSkillLine = 8 })))
+    assert.is_false(Items.conjured(with({ classFile = "MAGE", castSkillLine = 185 })))
+    assert.is_false(Items.conjured(with({ classFile = "MAGE", castParentSkillLine = 185 })))
+    assert.is_false(Items.conjured(with({ classFile = "PRIEST" })))
+    assert.is_false(Items.conjured(with({})))
+    assert.is_false(Items.conjured({ class = 0, subclass = 7, classFile = "MAGE" })) -- a bandage
+    assert.is_false(Items.conjured(nil))
+  end)
+
   it("tells Well Fed by its name", function()
     assert.is_true(Items.isWellFed("Well Fed"))
     assert.is_false(Items.isWellFed("Food"))
@@ -214,7 +231,7 @@ describe("ItemEvents (CF-75)", function()
   local wowapi = require("mocks.wowapi")
   local state, ns, addon
   local bags, classes, spells
-  local STUBS = { "C_Container", "YOU_LOOT_MONEY", "LOOT_MONEY_SPLIT" }
+  local STUBS = { "C_Container", "YOU_LOOT_MONEY", "LOOT_MONEY_SPLIT", "C_TradeSkillUI" }
 
   before_each(function()
     bags = { { itemID = 1000101, stackCount = 2, quality = 1 }, { itemID = 1005001, stackCount = 1, quality = 0 } }
@@ -263,6 +280,20 @@ describe("ItemEvents (CF-75)", function()
     wowapi.fireEvent(state, "CHAT_MSG_MONEY", "You loot 12 Copper")
     wowapi.fireEvent(state, "CHAT_MSG_MONEY", "Your share of the loot is 3 Copper.")
     assert.are.equal(2, today().coins)
+  end)
+
+  it("never counts a mage's conjured food as cooked, but a mage's Cooking recipe", function()
+    _G.UnitClassBase = function() return "MAGE" end
+    _G.C_TradeSkillUI = { GetTradeSkillLineForRecipe = function(spell)
+      if spell == 1102001 then return 185, "Cooking", nil end
+    end }
+    wowapi.fireEvent(state, "UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-4", 1101001) -- Conjure Food
+    wowapi.fireEvent(state, "CHAT_MSG_LOOT", "You create: |cffffffff|Hitem:1000101::::|h[Bread]|hx20|r.")
+    assert.are.equal(0, today().cooked)
+    wowapi.fireEvent(state, "UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-5", 1102001) -- a Cooking recipe
+    wowapi.fireEvent(state, "CHAT_MSG_LOOT", "You create: |cffffffff|Hitem:1000101::::|h[Roast]|h|r.")
+    assert.are.equal(1, today().cooked)
+    _G.C_TradeSkillUI = nil
   end)
 
   it("ignores casts that use no bag item and other units' casts", function()
