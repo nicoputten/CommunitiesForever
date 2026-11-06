@@ -128,7 +128,7 @@ their RECORD carries the `btag` too. Refused, so the person stays under `aid:`:
 |---|---|
 | Not a BattleTag: a name without `#`, `:` or spaces, `#`, 3 to 10 digits, at most 40 bytes | Garbage, or an `aid:` / `member:` key |
 | Your own BattleTag, or your own account ID | Nobody can pose as you |
-| A current Battle.net friend's BattleTag | Battle.net presence is the truth for friends; their own record over Battle.net carries `aid` and merges the `aid:` entry (section 6, "Keys") |
+| A current Battle.net friend's BattleTag while Battle.net shows that friend in Forever (CF-97: a friend Battle.net doesn't show there, e.g. one who appears offline, may claim it; the other guards still apply) | Battle.net presence is the truth for friends; their own record over Battle.net carries `aid` and merges the `aid:` entry (section 6, "Keys"). A friend who appears offline can't be named over Battle.net (V87), so only the guild can tell |
 | The sending character has a presence link (stored or live) to another BattleTag | Battle.net linked that character to someone else |
 | The account ID is already known under another BattleTag, or the sending character is in another person's record | One account, one BattleTag; a member can't use someone else's account ID |
 | The `aid:` person's record does not list the sending character | Same rule as accept rule 2: a learned account ID can't be used to pose as someone |
