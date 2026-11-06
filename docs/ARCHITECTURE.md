@@ -40,6 +40,7 @@ CommunitiesForever/
       Protocol.lua           encode/decode (LibSerialize + LibDeflate injected), chunk/reassemble
       Outbox.lua             outgoing chunk queue with send-rate limit
       Snapshot.lua           build and compare character snapshots
+      Recipes.lua            profession scan -> stored recipes and profession links, scan throttle, link cells (CF-38)
       Describe.lua           stable text output for debug commands (/cf self)
       Format.lua             view model -> tree nodes, last seen, footers, empty states, menus, tooltips
       Card.lua               the Friends tab's card models: person, character (tiles, professions, talents, shared
@@ -86,6 +87,7 @@ CommunitiesForever/
       ChatFrames.lua         chat windows: community channel, color, flash, sound, new tab, add/remove channel (CF-25)
       Presence.lua           C_BattleNet friend accounts, BN events
       ChatLinks.lua          clickable addon chat links (|Haddon:CommunitiesForever:...|h), click dispatch (CF-27)
+      TradeSkill.lua         C_TradeSkillUI reads of the own profession window, open/insert a profession link (CF-38)
       Party.lua              invite request / invite by name / via Battle.net from a click (CF-27, guarded)
       GroupFinder.lua        the Group Finder's dungeon activities with level ranges (C_LFGList, CF-24)
       QuestieData.lua        dungeon quests from the optional QuestieDB addon, completed quests (CF-24, guarded)
@@ -119,6 +121,7 @@ CommunitiesForever/
       DoomsdayBoard.lua      the Board, Ladder and Feats data; the own feats' first-seen times (CF-57b, CF-59)
       ActivityTracker.lua    run in progress (db.global.runs), finished runs into the feed, /cf activity debug (CF-23)
       SelfTracker.lua        keeps own snapshot current (events, ilvl debounce)
+      RecipeTracker.lua      scans the own profession window into the character, 1 s throttle (CF-38)
       CommunitySelection.lua owns settings.clubId (account-wide); active() only if this character is a member
       CommunityChat.lua      community chat color (always), tab flash and sound, Community chat tab (CF-25)
       MemberTracker.lua      members of the selected community (FocusMembers, 1 s debounce)
@@ -313,7 +316,11 @@ Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
 Char = {
   guid, name, classFile, raceID, level, faction, realm,
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
-  professions = { [skillLineID] = { name, rank, max } },
+  professions = { [skillLineID] = { name, rank, max,
+                  link, linkType, spec, scannedAt } }, -- CF-38: from the own window's scan, crafting ones only
+  recipes = { [recipeID] = itemID },                 -- CF-38: learned recipes of ALL professions, 0 = no item;
+  recipesAt,                                         -- not in the RECORD (Recipes.IN_RECORD); time of the last scan
+  recipeLines = { [recipeID] = skillLineID },        -- CF-38: only where GetTradeSkillLineForRecipe answers
   talents = { { name, points } x3 }, mainTree,       -- CF-18: points per Vanilla tree, tree with most points
   autoRole, roleOverride, role,                      -- CF-18: guessed, player override, effective (tank/heal/dps)
   quests = { [questID] = { title, area, dungeon } },  -- CF-19: quest log, names only, no progress; area = log header

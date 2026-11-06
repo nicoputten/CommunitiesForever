@@ -17,6 +17,11 @@ function Timer.debounce(seconds, fn)
   end
 end
 
+-- Runs fn once after `seconds` (CF-38).
+function Timer.after(seconds, fn)
+  C_Timer.NewTimer(seconds, fn)
+end
+
 -- Runs fn every `seconds` (CF-53). C_Timer.NewTicker works on Forever (it ran the launch probe's V98 poll); still
 -- guarded: without it nothing repeats. Returns true when it runs.
 function Timer.every(seconds, fn)

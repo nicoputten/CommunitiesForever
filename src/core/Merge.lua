@@ -1,5 +1,5 @@
 -- Merge: record accept rules and version rules. Pure Lua, no WoW globals.
--- Requires ns.Feed and ns.Pvp (load core/Feed.lua and core/Pvp.lua first).
+-- Requires ns.Feed, ns.Pvp and ns.Recipes (load core/Feed.lua, core/Pvp.lua and core/Recipes.lua first).
 local _, ns = ...
 
 local Merge = {}
@@ -36,11 +36,13 @@ local function stripEscapes(value, depth)
   return copy
 end
 
--- Received characters: escape sequences removed, and `pvp` (CF-52) only with its expected fields.
+-- Received characters: escape sequences removed, `pvp` (CF-52) only with its expected fields, and the recipe
+-- fields (CF-38) only valid links and numeric recipe maps.
 local function cleanChars(chars)
   local result = stripEscapes(chars, 0)
   for _, char in pairs(result or {}) do
     if type(char) == "table" and char.pvp ~= nil then char.pvp = ns.Pvp.clean(char.pvp) end
+    if type(char) == "table" then ns.Recipes.clean(char) end
   end
   return result
 end
@@ -62,7 +64,7 @@ function Merge.outgoingRecord(selfRecord, goals)
   local feed = selfRecord.feed
   local chars = {}
   for guid, char in pairs(selfRecord.chars or {}) do
-    chars[guid] = char
+    chars[guid] = ns.Recipes.outgoing(char) -- CF-38: the recipe set only when Recipes.IN_RECORD
   end
   return {
     t = "RECORD",

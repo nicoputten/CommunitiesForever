@@ -34,6 +34,7 @@ src\core\Runs.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
 src\core\RunStart.lua
+src\core\Recipes.lua
 src\core\Merge.lua
 src\core\Snapshot.lua
 src\core\Describe.lua
@@ -77,6 +78,7 @@ src\adapters\Instance.lua
 src\adapters\QuestieData.lua
 src\adapters\GroupFinder.lua
 src\adapters\ChatLinks.lua
+src\adapters\TradeSkill.lua
 src\adapters\Party.lua
 src\adapters\RunsFile.lua
 src\adapters\ContextMenu.lua
@@ -108,6 +110,7 @@ src\services\PlayTracker.lua
 src\services\DoomsdayTracker.lua
 src\services\DoomsdayBoard.lua
 src\services\SelfTracker.lua
+src\services\RecipeTracker.lua
 src\services\CommunitySelection.lua
 src\services\CommunityChat.lua
 src\services\SyncChannel.lua

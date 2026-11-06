@@ -9,6 +9,7 @@ describe("Feed: kills, deaths and duels (CF-52)", function()
     local ns = helpers.coreNs()
     Feed = helpers.loadAddonFile("src/core/Feed.lua", ns)
     helpers.loadAddonFile("src/core/Pvp.lua", ns)
+    helpers.loadAddonFile("src/core/Recipes.lua", ns)
     Merge = helpers.loadAddonFile("src/core/Merge.lua", ns)
   end)
 

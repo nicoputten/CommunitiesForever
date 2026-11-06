@@ -296,7 +296,7 @@ describe("the hidden launch probe", function()
       local timers = #state.timers
       wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- the list loaded, but throttled; nothing fires after it
       wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- one later scan only
-      assert.are.equal(timers + 1, #state.timers)
+      assert.are.equal(timers + 2, #state.timers) -- the probe's, and CF-38's RecipeTracker's (1 s throttle)
       assert.are.equal("info", results().V60.status)
       state.serverTime = state.serverTime + 10
       wowapi.runTimers(state)

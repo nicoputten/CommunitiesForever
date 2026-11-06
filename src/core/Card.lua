@@ -1,6 +1,7 @@
 -- Card: the Friends tab's card models (CF-40; split from Format.lua in CF-59): a person's card, a character's card
 -- (tiles, professions, talents, shared quests, the PvP line) and the Unlinked list. Pure Lua, no WoW globals.
--- Requires ns.Format (paths, seen texts, profession lists) and, for the PvP line, ns.Doomsday and ns.DoomsdayView.
+-- Requires ns.Format (paths, seen texts, profession lists), ns.Recipes (CF-38: profession links) and, for the PvP
+-- line, ns.Doomsday and ns.DoomsdayView.
 local _, ns = ...
 
 local Card = {}
@@ -156,6 +157,18 @@ local function weekKillPoints(feed, guid, dd, now)
   return points
 end
 
+-- CF-38: professions grouped (Format.professionGroups), each crafting one with its link cell (Recipes.cell, RC07):
+-- "[Tailoring]" or "not scanned"; whose: the owner's name for the tooltips.
+local function professionGroups(professions, whose)
+  local groups = Format.professionGroups(professions)
+  for _, group in ipairs(groups) do
+    for _, p in ipairs(group.list) do
+      p.cell = ns.Recipes.cell(p.skillLine, professions[p.skillLine], whose)
+    end
+  end
+  return groups
+end
+
 local function characterDetail(row, owner, now, own, sharedWith, showAllQuests, person, dd)
   local talents = Card.talentSummary(row)
   return {
@@ -166,7 +179,7 @@ local function characterDetail(row, owner, now, own, sharedWith, showAllQuests, 
     classID = row.classID,
     outside = row.outside or false,
     online = row.online,
-    professions = Format.professionGroups(row.professions),
+    professions = professionGroups(row.professions, owner or row.name),
     talents = talents,
     subtitle = characterSubtitle(row, owner, own, now), -- CF-40
     tiles = characterTiles(row, talents),
@@ -188,7 +201,7 @@ end
     sharedQuests }                     -- CF-19: see personSharedQuests; nil on your own card
   { kind = "unlinked", characters = ... }                        -- same character entries
   { kind = "character", guid, name, classFile, classID, outside, online,
-    professions = { { title, list } },   -- see professionGroups
+    professions = { { title, list } },   -- see professionGroups; CF-38: each entry's `cell` (Recipes.cell)
     talents,                             -- talentSummary
     subtitle, tiles, talentBars,         -- CF-40: the line under the name, Level/Item level/Role, tree bars
     sharedQuests }                       -- CF-19: only on a friend's character
