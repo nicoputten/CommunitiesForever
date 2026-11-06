@@ -71,6 +71,7 @@ local function charSelect(parent)
   d.portrait:SetPoint("LEFT", 8, 0)
   d.text = Theme.text(d, "body", "text")
   d.text:SetPoint("LEFT", 32, 0)
+  if d.text.SetWordWrap then d.text:SetWordWrap(false) end -- CF-95: cut with "...", never a second line
   d.arrow = d:CreateTexture(nil, "ARTWORK")
   d.arrow:SetSize(10, 10)
   d.arrow:SetPoint("RIGHT", -10, 0)
@@ -98,6 +99,7 @@ function RunAnswer.create(parent)
   b.heading:SetText("Your answer")
   b.status = Theme.text(b, "small", "textDim")
   b.status:SetPoint("LEFT", b.heading, "RIGHT", 10, 0)
+  if b.status.SetWordWrap then b.status:SetWordWrap(false) end -- CF-95
   b.clock = Kit.clock(b)
   b.clock:SetPoint("LEFT", b.status, "RIGHT", 6, 0)
   b.clock.tip = PENDING_TIP
@@ -177,12 +179,26 @@ function RunAnswer.render(parent, run, me, candidates, x, y, width, onSaved)
     if onSaved then onSaved() end
   end
 
-  -- Line 1: "Your answer", what it is, the clock while it waits for the upload.
+  -- Line 1: "Your answer", what it is, the clock while it waits for the upload. CF-95: the status ends before the
+  -- clock within the width.
+  b.status:SetWidth(0)
   b.status:SetText(ns.PlannedRuns.ANSWER_STATES[ns.PlannedRuns.answerState(mine, roleFull)])
   b.clock:SetShown(mine ~= nil and mine.pending == true)
+  local hw = b.heading.GetStringWidth and b.heading:GetStringWidth() or 90
+  local sw = math.ceil(b.status.GetStringWidth and b.status:GetStringWidth() or 0) + 1
+  b.status:SetWidth(math.max(1, math.min(sw, width - hw - 10 - (b.clock:IsShown() and 22 or 0))))
 
-  -- Line 2: the answer, then (unless Can't) the character and the roles.
-  local lx = 0
+  -- Line 2: the answer, then (unless Can't) the character and the roles. CF-95: what doesn't fit the width
+  -- goes on the next line (the three answers stay together).
+  local lineY, lx = 28, 0
+  local function place(frame, w, gap)
+    if lx > 0 and lx + w > width then
+      lineY, lx = lineY + 34, 0
+    end
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", lx, -lineY)
+    lx = lx + w + gap
+  end
   for _, def in ipairs(ANSWERS) do
     local pair = b.answers[def[1]]
     local on = current == def[1]
@@ -209,9 +225,11 @@ function RunAnswer.render(parent, run, me, candidates, x, y, width, onSaved)
   end
   b.select.text:SetText(charText(option))
   b.select.portrait:SetClass(c.classFile)
-  b.select:SetWidth(32 + math.ceil(b.select.text:GetStringWidth() or 160) + 30)
-  b.select:ClearAllPoints()
-  b.select:SetPoint("TOPLEFT", lx, -28)
+  b.select.text:SetWidth(0)
+  local selectW = math.min(width, 32 + math.ceil(b.select.text:GetStringWidth() or 160) + 30)
+  b.select:SetWidth(selectW)
+  b.select.text:SetWidth(math.max(1, selectW - 32 - 30)) -- CF-95: a long name is cut before the arrow
+  place(b.select, selectW, 12)
   b.select:SetScript("OnClick", function(owner)
     local items = {}
     for i, o in ipairs(options) do items[i] = { label = charText(o), enabled = true, option = o } end
@@ -227,13 +245,11 @@ function RunAnswer.render(parent, run, me, candidates, x, y, width, onSaved)
       end
     end)
   end)
-  lx = lx + b.select:GetWidth() + 12
   for i, rc in ipairs(roleChoices) do
     local t = b.roles[i]
     t:Show()
     t:SetChoice(rc, rc.role == role)
-    t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", lx, -28)
+    place(t, t:GetWidth(), 6)
     t:SetScript("OnClick", function()
       if rc.role == role then return end
       if current then
@@ -243,12 +259,11 @@ function RunAnswer.render(parent, run, me, candidates, x, y, width, onSaved)
         if onSaved then onSaved() end
       end
     end)
-    lx = lx + t:GetWidth() + 6
   end
 
   -- Line 3: the note, saved on Enter or when the box loses focus.
   b.note:ClearAllPoints()
-  b.note:SetPoint("TOPLEFT", 0, -66)
+  b.note:SetPoint("TOPLEFT", 0, -(lineY + 38))
   b.note:SetWidth(width - 48)
   b.count:ClearAllPoints()
   b.count:SetPoint("LEFT", b.note, "RIGHT", 8, 0)
@@ -263,8 +278,8 @@ function RunAnswer.render(parent, run, me, candidates, x, y, width, onSaved)
       pick.note = clean
     end
   end
-  b:SetHeight(100)
-  return 100
+  b:SetHeight(lineY + 72)
+  return lineY + 72
 end
 
 function RunAnswer.hide() if block then block:Hide() end end

@@ -7,6 +7,21 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-95 Run view fits the window's smallest width
+Open bug (noted in CF-94): at the window's 700 px minimum the detail shows about 408 px, but a run (and a dungeon, and
+the empty states) was laid out at least 520 px wide, so the right side was cut off: the group rows' status, "Ask now
+for this run", the answer buttons. Touches: `src/ui/DungeonsTab.lua`, `src/ui/RunAnswer.lua`,
+`tests/spec/DungeonsTab_spec.lua`, `tests/mocks/wowapi.lua`, VERIFY.md, CHANGELOG.md.
+- Everything in the detail follows the width that shows (at least 300 px), like CF-94's "Online now, fits".
+- Texts are one line, cut with "..." where they don't fit (the empty state's explainer still wraps). Buttons stay
+  whole: what doesn't fit beside something goes below it ("Ask now for this run" under the Group header, "Whisper
+  <friend>" under Invite all, the planned-run button under a dungeon's title, the answer block's dropdown and roles on
+  the next line, the empty states' buttons below each other).
+- Every state: your run and a friend's, Invite open, an ask, a dungeon with quests, the empty and no-fit states.
+- No change to stored data or messages (rule 8). No new strings.
+- Specs: each part at the 700 px minimum (text + gap + buttons within the row width).
+- Manual: VERIFY.md CF-95.
+
 ### CF-94 Run detail: Online now, fits at full width, Edit or cancel below
 Live feedback (Nico, v1.3.1, 2026-11-05, screenshot): in a planned run's detail, "Online now, fits" had only the left
 column beside "Edit or cancel", and the Whisper buttons covered the "level · friend" text. Touches:

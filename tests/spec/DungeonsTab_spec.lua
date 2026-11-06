@@ -573,6 +573,272 @@ describe("Dungeons tab (CF-24)", function()
     end)
   end)
 
+  -- CF-95: at the window's 700 px minimum the detail shows 408 px; everything in it follows that width (362 px
+  -- between the 20 px pads): texts end within it on one line (cut with "..."), buttons stay whole, and what
+  -- doesn't fit beside something goes below it.
+  describe("at the window's 700 px minimum (CF-95)", function()
+    local W -- the width of the layout: 362 at the minimum (set by narrow)
+    local LONG = "Bartholomew Thunderbrewington Featherstonehaugh of the Western Reach"
+
+    -- A region's left edge below the parent's left, from its first anchor.
+    local function leftOf(r)
+      local p = r.points[1]
+      if p[1] == "TOPLEFT" and type(p[2]) == "number" then return p[2] end
+      if p[1] == "TOPRIGHT" then return p[4] - r.width end
+      if p[1] == "LEFT" then return leftOf(p[2]) + p[2].width + p[4] end
+      if p[1] == "TOP" then return leftOf(p[2]) + (p[2].width - r.width) / 2 end
+      error("anchor " .. tostring(p[1]))
+    end
+    local function topOf(r) return -r.points[1][#r.points[1]] end
+
+    local function narrow(width)
+      width = width or (700 - 290 - 2) -- the window's minimum less the list
+      W = math.max(300, width - 6 - 40)
+      ns.DungeonsTab.detailArea():SetWidth(width)
+      ns.MainFrame.render()
+    end
+
+    -- Every text in the detail ends within the width, on one line (the empty state's explainer wraps).
+    local function textsFit(wraps)
+      for _, h in ipairs(ns.DungeonsTab.detailTexts()) do
+        local t = h.text:GetText() or ""
+        if t ~= "" then
+          local x = h.points[1][2]
+          assert.is_true(x >= 20 and x + (h.text.width or 0) <= 20 + W, t .. " at " .. x .. " + " .. h.text.width)
+          if t ~= wraps then assert.is_false(h.text.wordWrap, t) end
+        end
+      end
+    end
+
+    -- Every button of the detail is whole within the width (the answer block's are placed in it, at x 20).
+    local function buttonsFit()
+      local block = ns.RunAnswer.block()
+      local seen = 0
+      for label, b in pairs(ns.DungeonsTab.buttons()) do
+        if b.shown and b.points and b.points[1] and type(label) == "string" and not label:find("^select:")
+            and not label:find("^chip:") and not label:find("^Whisper:") and b.parent ~= nil then
+          local x
+          if block and b.parent == block then
+            x = 20 + leftOf(b)
+          elseif b.parent == ns.DungeonsTab.detailArea().child then
+            x = leftOf(b)
+          end
+          if x then
+            seen = seen + 1
+            assert.is_true(x >= 20 and x + b.width <= 20 + W, label .. " at " .. x .. " + " .. b.width)
+          end
+        end
+      end
+      return seen
+    end
+
+    local function groupRowsFit()
+      for _, g in ipairs(ns.DungeonsTab.groupRows()) do
+        assert.are.equal(W, g.width)
+        local onlineW = (g.online:GetText() or "") ~= "" and (g.online:GetStringWidth() + 8) or 0
+        local used = 66 + g.name.width + 8 + g.info.width + onlineW + 12 + g.status.width + 10
+        assert.is_true(used <= g.width, tostring(g.name:GetText()))
+      end
+    end
+
+    local function onlineRowsFit()
+      for _, o in ipairs(ns.DungeonsTab.onlineRows()) do
+        assert.are.equal(W, o.width)
+        local buttons = o.button.width + (o.invite.shown and (o.invite.width + 6) or 0)
+        assert.is_true(26 + o.name.width + 8 + o.info.width + 8 + buttons <= o.width, tostring(o.name:GetText()))
+      end
+    end
+
+    local function loadNarrow(level, runs, online)
+      load(level or 20, runs)
+      for i = 1, online or 0 do
+        state.clubMembers[CLUB][#state.clubMembers[CLUB] + 1] = { memberId = 100 + i,
+          guid = "Player-1-ON" .. i, name = (i == 1 and LONG or ("Online Example" .. i)), classID = 1,
+          level = level or 20, presence = 1, clubType = 1 }
+      end
+      if online then wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB) end
+      open()
+      narrow()
+    end
+
+    -- A run with long names, a long note and a reserve, so every line has more than fits.
+    local function longRuns()
+      local runs = sampleRuns()
+      local r1 = runs.runs[1]
+      r1.note = "Bring water, food, a repair bill and patience; we clear the whole place including the ship"
+      r1.answers[3].name = LONG
+      r1.answers[#r1.answers + 1] = { battleTag = "Cy#3003", name = "Cyrilla Longername-Featherstonehaugh",
+        answer = "in", role = "dps", source = "discord" }
+      r1.answers[#r1.answers + 1] = { battleTag = "Di#4004", name = "Dimitri Reservington", answer = "in",
+        role = "heal", source = "discord", reserve = true }
+      r1.answers[#r1.answers + 1] = { battleTag = "Ed#5005", name = "Edwina Reservington", answer = "in",
+        role = "heal", source = "discord", reserve = true }
+      return runs
+    end
+
+    it("lays your run out at the width that shows: header, group, start, online now, the link", function()
+      loadNarrow(20, longRuns(), 3)
+      select("run:r1")
+      local all = text()
+      assert.is_truthy(all:find("\nEdit or cancel\n", 1, true))
+      assert.is_truthy(all:find("\nReserve: ", 1, true))
+      textsFit()
+      assert.is_true(buttonsFit() >= 2) -- Invite all, Ask now for this run
+      groupRowsFit()
+      onlineRowsFit()
+      assert.are.equal(W, ns.DungeonsTab.linkBox().width)
+      -- Ask now for this run: beside "Group" and the counts when they fit, else below them.
+      local ask = ns.DungeonsTab.buttons()["Ask now for this run"]
+      local counts
+      for _, h in ipairs(ns.DungeonsTab.detailTexts()) do
+        if (h.text:GetText() or ""):find(" in \194\183 ", 1, true) then counts = h end
+      end
+      if ask.points[1][1] == "TOPRIGHT" then
+        assert.is_true(counts.points[1][2] + counts.text.width <= leftOf(ask) - 8)
+      else
+        assert.is_true(topOf(ask) >= topOf(counts) + 16)
+        assert.is_true(topOf(ns.DungeonsTab.groupRows()[1]) >= topOf(ask) + 24) -- the rows below it
+      end
+    end)
+
+    it("puts Ask now for this run beside the counts when they fit", function()
+      loadNarrow(20, sampleRuns())
+      narrow(560 + 300) -- a wide window
+      local ask = ns.DungeonsTab.buttons()["Ask now for this run"]
+      assert.are.equal("TOPRIGHT", ask.points[1][1])
+      buttonsFit()
+    end)
+
+    it("lays someone else's run out with your answer wrapping to the width", function()
+      loadNarrow(20, sampleRuns(), 2)
+      select("run:r2")
+      assert.is_truthy(text():find("\nOn the website\n", 1, true))
+      textsFit()
+      local answers = ns.RunAnswer.buttons()
+      assert.is_truthy(answers["I\226\128\153m in"] and answers.character)
+      assert.is_true(buttonsFit() >= 4) -- the three answers and the character at least
+      groupRowsFit()
+      onlineRowsFit()
+      -- The answer texts end within the width; the note line below the last row of buttons.
+      local block = ns.RunAnswer.block()
+      assert.are.equal(W, block.width)
+      local lowest = 0
+      for _, b in pairs(answers) do lowest = math.max(lowest, topOf(b) + 28) end
+      assert.is_true(topOf(block.note) >= lowest, topOf(block.note) .. " vs " .. lowest)
+      assert.is_true(block.select.text.width <= block.select.width - 62)
+      assert.is_false(block.select.text.wordWrap)
+      local hw = block.heading:GetStringWidth()
+      assert.is_true(hw + 10 + block.status.width <= W)
+    end)
+
+    it("keeps Invite all, Whisper and the Invite buttons whole once inviting opens", function()
+      local runs = longRuns()
+      load(20, runs)
+      state.serverTime = NOW + 9600 - 600 -- 10 minutes before The Deadmines
+      -- Someone in on another character: Whisper <friend> beside Invite all, or below it when it doesn't fit.
+      ns.RunAlerts.context = function() return {} end
+      ns.RunStart.states = function(run)
+        return { { answer = run.answers[2], state = "other" }, { answer = run.answers[3], state = "offline" } }
+      end
+      for i = 1, 2 do
+        state.clubMembers[CLUB][#state.clubMembers[CLUB] + 1] = { memberId = 100 + i, guid = "Player-1-ON" .. i,
+          name = LONG, classID = 1, level = 20, presence = 1, clubType = 1 }
+      end
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+      open()
+      for _, width in ipairs({ 408, 346 }) do -- the minimum, and the 300 px floor of the layout
+        narrow(width)
+        local all = text()
+        assert.is_truthy(all:find("\nStart\n", 1, true))
+        assert.is_truthy(all:find(" is offline.\n", 1, true))
+        local whisper
+        for label, b in pairs(ns.DungeonsTab.buttons()) do
+          if type(label) == "string" and label:find("^Whisper ") then whisper = b end
+        end
+        assert.is_table(whisper)
+        assert.are.equal(width == 408 and 362 or 300, W)
+        textsFit()
+        buttonsFit()
+        groupRowsFit()
+        onlineRowsFit()
+        assert.is_true(ns.DungeonsTab.onlineRows()[1].invite.shown)
+      end
+      -- At the floor Whisper goes below Invite all.
+      local whisper
+      for label, b in pairs(ns.DungeonsTab.buttons()) do
+        if type(label) == "string" and label:find("^Whisper ") then whisper = b end
+      end
+      assert.are.equal(20, whisper.points[1][2])
+    end)
+
+    it("lays a dungeon out at the width: the planned run, the group, an ask, the quests", function()
+      _G.LibQuestieDB = {
+        RequireContract = function() return true end,
+        Enum = { factionRaceMasks = { Horde = 690, Alliance = 77 } },
+      }
+      _G.QuestDB = {
+        GetAllIds = function() return { 201 } end,
+        Get = function(_, key)
+          return ({ name = "The Exceedingly Long Quest Name That Never Ends In The Deadmines", zoneOrSort = 1581,
+                    questLevel = 17, requiredLevel = 14, requiredRaces = 0, requiredClasses = 0 })[key]
+        end,
+      }
+      local recipients = {}
+      for i = 1, 6 do recipients[i] = { battleTag = "P" .. i .. "#100" .. i, displayName = "Friend Number " .. i } end
+      loadNarrow(20, sampleRuns(), 2)
+      ns.GroupAsks.current = function() return { dungeon = { id = "dm" }, recipients = recipients, answers = {} } end
+      select("dm")
+      local all = text()
+      assert.is_truthy(all:find("\nAsked who's up for it", 1, true))
+      assert.is_truthy(all:find("Exceedingly Long Quest", 1, true))
+      textsFit()
+      assert.is_true(buttonsFit() >= 2) -- 1 run planned …, Ask now
+      groupRowsFit()
+      onlineRowsFit()
+      for _, q in ipairs(ns.DungeonsTab.questRows()) do
+        assert.are.equal(W, q.width)
+        assert.is_true(22 + q.name.width + 8 + q.who.width <= W)
+        assert.is_false(q.name.wordWrap)
+      end
+      _G.LibQuestieDB, _G.QuestDB = nil, nil
+    end)
+
+    it("keeps the empty state's buttons within the width, below each other when they don't fit", function()
+      local runs = sampleRuns()
+      runs.runs, runs.site = {}, "https://wow.example.org"
+      loadNarrow(11, runs)
+      local buttons = ns.DungeonsTab.buttons()
+      assert.is_table(buttons["Ask now\226\128\166"])
+      assert.is_table(buttons["Copy website link"])
+      local body
+      for _, h in ipairs(ns.DungeonsTab.detailTexts()) do
+        if h.text.wordWrap ~= false and (h.text:GetText() or "") ~= "" then body = h.text:GetText() end
+      end
+      textsFit(body)
+      buttonsFit()
+      buttons["Copy website link"]:RunScript("OnClick")
+      assert.is_true(ns.DungeonsTab.linkBox().width <= W)
+      narrow(346) -- the 300 px floor: these two still fit side by side
+      buttons = ns.DungeonsTab.buttons()
+      assert.are.equal(buttons["Ask now\226\128\166"], buttons["Copy website link"].points[1][2])
+      buttonsFit()
+    end)
+
+    it("keeps No dungeon fits yet within the width", function()
+      local runs = sampleRuns()
+      runs.runs = { runs.runs[2] }
+      loadNarrow(8, runs)
+      assert.is_truthy(text():find("\nNo dungeon fits yet\n", 1, true))
+      textsFit()
+      buttonsFit()
+      narrow(346)
+      local buttons = ns.DungeonsTab.buttons()
+      assert.are.same({ "TOP", buttons["Show all dungeons"], "BOTTOM", 0, -8 },
+        buttons["Pick another character"].points[1])
+      buttonsFit()
+    end)
+  end)
+
   describe("quests (QuestieDB)", function()
     local QUESTS = {
       [201] = { name = "Red Silk Bandanas", zoneOrSort = 1581, questLevel = 17, requiredLevel = 14, requiredRaces = 0,

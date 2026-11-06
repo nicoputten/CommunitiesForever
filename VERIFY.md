@@ -97,6 +97,21 @@ Two accounts with this build, A and B, in the community (or guild) picked on bot
 6. Still in chat: `/cf ask Deadmines` with nobody in range ("Nobody with CommunitiesForever is online ..."), the
    guild invite lines (CF-87 steps), `/cf version`, and `/cf sync debug` lines.
 
+### CF-95 Run view at the smallest window
+This build, `/console scriptErrors 1`. Plan two runs on the website for a dungeon in your range, one you organise and
+one a friend organises, with an open slot (so "Ask now for this run" shows) and a long note; have a few guild members
+in range online (one with a long name). Upload, then `/reload`. `/cf`, Dungeons tab. Drag the window's corner to its
+smallest width (it stops at 700 px) for every step, then make it wide again.
+
+| Step | Expected | Status |
+|---|---|---|
+| Your run, smallest width | Nothing is cut off at the right edge: the title, the "level · zone" and the time/note line end within the detail (a long note ends in "..."; the clock icon, if shown, right after it). Each group row's status ("organiser", "maybe", "Discord") is in view, a long name cut with "..." before it. "Ask now for this run" is whole: at the right of "Group" and the counts, or on its own line below them when they don't fit beside it. "Invite all · opens 20:15", the reminder line, "Online now, fits" and the link box all within the detail. | open |
+| A friend's run, smallest width | "Your answer" and its status on one line. I'm in / Maybe / Can't whole; the character dropdown and the role buttons go to the next line when they don't fit (a long character name cut with "..." before the arrow); the note box below the last line of buttons. Every click still saves. | open |
+| Your run from 15 minutes before the start, someone in on another character | "Invite all · N online" whole; "Whisper <friend>" beside it, or below it when it doesn't fit. Invite and Whisper in each "Online now" row whole. "... is offline." on one line. | open |
+| A dungeon in the list (not a run), smallest width, after Ask now… for it | "1 run planned · <time> ›" beside the title, or below it when the title doesn't fit; the suggested group rows like the run's; "Asked who's up for it · ..." on one line ending in "..."; each quest row: name cut before "who has it" (Questie installed). Ask now whole. | open |
+| Empty state (a character below every range, e.g. a level 8 alt with no runs) | "Nothing planned yet", the text, "Ask now…" and "Copy website link" centred within the detail; the link box no wider than the detail. "No dungeon fits yet": "Show all dungeons" and "Pick another character" whole, side by side or below each other. | open |
+| Make the window wide again | The layout is as before this build: texts whole, Ask now for this run at the right of the Group header. | open |
+
 ### CF-94 Run detail layout
 This build, `/console scriptErrors 1`. Plan a run on the website for a dungeon whose range fits a few guild members who
 are online now (the more the better; at least one with a long name), as organiser. Upload, then `/reload` so
