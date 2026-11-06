@@ -318,7 +318,7 @@ Char = {
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max,
                   link, linkType, spec, scannedAt } }, -- CF-38: from the own window's scan, crafting ones only
-  recipes = { [recipeID] = itemID },                 -- CF-38: learned recipes of ALL professions, 0 = no item
+  recipes = { [recipeID] = itemID },                 -- CF-38: learned recipes, 0 = no item; scans add (CF-102)
   recipesAt,                                         -- CF-38: the owner's last recipe scan
   recipeOrder = { recipeID, ... }, recipesBase,      -- CF-38: append-only learn order and its start: sent as tails
   recipeLines = { [recipeID] = skillLineID },        -- CF-38: own only, where GetTradeSkillLineForRecipe answers

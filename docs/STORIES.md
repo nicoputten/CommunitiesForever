@@ -93,6 +93,19 @@ loads just after that event, and the `TRADE_SKILL_LIST_UPDATE` that follows with
 - Manual (VERIFY.md CF-100).
 - Not user-facing (the probe is invisible), so no CHANGELOG line.
 
+### CF-102 Recipes: a scan adds, never replaces
+WEB-90 found that the probe's 471 recipe IDs equal Forever's Tailoring recipes in the client data, so
+`GetAllRecipeIDs` likely gives only the open (or last loaded) profession's list, not every profession. CF-38 replaced
+the stored set on each scan, so opening Cooking after Tailoring dropped the Tailoring recipes and restarted the list
+(a full resend to every friend; on the site, recipes vanishing and coming back as "new"). Touches
+`src/core/Recipes.lua`, `tests/spec/Recipes_spec.lua`, ARCHITECTURE.md, SYNC.md.
+- `Recipes.apply` adds the scan's learned recipes (and `recipeLines`) to the stored ones; a recipe a scan doesn't
+  list stays. Recipes are never unlearned here (Nico: the unlearn case doesn't matter); a new order and base start
+  only when a recipe's item changes.
+- Compatibility (rule 8): no shape change. A v1.5.0 client may have replaced its set once; the next scans fill it
+  again, and friends get the list via the existing base logic.
+- Manual: VERIFY.md CF-38 (open Tailoring, then Cooking: `/run` count of `recipes` keeps growing).
+
 ### CF-101 Honor message variants; the probe checks a recipe's profession (V60c)
 The export of 2026-11-06 21:33: the first honorable kill's message did not match `COMBATLOG_HONORGAIN` (V73 fail), so
 kills on Forever had no victim (the Hunt, `p.punchUp5`, `p.punchDown5` can't count); and `GetAllRecipeIDs` gives every

@@ -225,7 +225,7 @@ in full. Older clients send none and ignore it (rule 8).
 | `chars.*.recipesFrom` | CF-38, optional: the learned recipes are sent as the tail of an append-only list (the owner's `recipeOrder`: the order they were learned in, the first scan's in ID order). `recipesFrom` = how many the asker already holds (from its REQ `rc`, when the base matches and the count is not above the owner's), 0 = the full list. Present only for a character with recipes |
 | `chars.*.recipeIds`, `recipeItems` | CF-38: the recipes after `recipesFrom`, in order, and the item each makes (`0` = none), two lists of the same length |
 | `chars.*.recipeCount` | CF-38: how many recipes the character has in all (`recipesFrom` + the tail) |
-| `chars.*.recipesBase` | CF-38: when the owner started this list. A new base (a recipe unlearned, e.g. a dropped profession) means "start over": the next answer to anyone holding the old base is the full list |
+| `chars.*.recipesBase` | CF-38: when the owner started this list. A new base (a recipe's item changed; since CF-102 scans only add, so an unlearned recipe stays) means "start over": the next answer to anyone holding the old base is the full list |
 | `chars.*.recipesAt` | CF-38: when the owner last scanned the recipes |
 | `removed` | Only in relayed copies: characters the owner dropped, with the time |
 | `feed` | Activity of the last 7 realm days by day number and character; always sent (CF-58). Missing = unknown (relayed). `false` comes only from released clients that had "Share my activity" off: it means nothing was sent, and the stored feed stays |
