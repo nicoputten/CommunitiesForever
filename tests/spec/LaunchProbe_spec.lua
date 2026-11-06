@@ -253,6 +253,23 @@ describe("the hidden launch probe", function()
       assert.are.equal("pass", results().V60.status)
     end)
 
+    it("scans again after a throttled event, as no event may follow it (V60)", function()
+      tailoring()
+      recipeIDs = {}
+      load()
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      assert.are.equal("info", results().V60.status)
+      recipeIDs = { 3839 }
+      local timers = #state.timers
+      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- the list loaded, but throttled; nothing fires after it
+      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- one later scan only
+      assert.are.equal(timers + 1, #state.timers)
+      assert.are.equal("info", results().V60.status)
+      state.serverTime = state.serverTime + 10
+      wowapi.runTimers(state)
+      assert.are.equal("pass", results().V60.status)
+    end)
+
     it("fails without C_TradeSkillUI, and names missing functions (V60)", function()
       load()
       wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
