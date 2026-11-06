@@ -311,7 +311,8 @@ V116, V117. The missions join the draw in the pool-3 story, so check the facts. 
 | First login with this build, wait 10 s; `/dump CommunitiesForeverDB.global.self.doomsday.worn` | The item IDs your character wears now, under its GUID. No Lua error. | open |
 | Cook 2 different dishes (one of them twice); today's items | `cooked 3`, `cookKinds 2`. | open |
 | Make a bandage (first bandage on Forever: class `0/7` expected, never seen yet): `/run print(select(6, C_Item.GetItemInfoInstant(<bandage item ID>)))`; today's items | Prints `0 7`. `bandages` and `bandageKinds` went up. If the class differs, say which: the bandage missions match `0/7`. | open |
-| A mage conjures food or water; today's items | Say whether `cooked` went up (conjured food is "created" too, catalogue note 9). If it did, d.cook5 and friends count conjured food; Nico decides whether to exclude it. | open |
+| A mage conjures food and water; today's items | `cooked` and `cookKinds` don't change (conjured food never counts, Nico 2026-11-06). | open |
+| A mage with Cooking cooks a dish (unverified `C_TradeSkillUI.GetTradeSkillLineForRecipe` with the crafting spell's ID): `/run print(C_TradeSkillUI.GetTradeSkillLineForRecipe(<spell ID>))` (the spell ID: `/etrace`, event `UNIT_SPELLCAST_SUCCEEDED`); today's items | Prints 185 (or a Cooking line, with 185 third); `cooked` went up. If it prints nothing, a mage's cooking doesn't count (other classes' does): say so. | open |
 | Craft an uncommon (green) item; today's items | `fine 1`. | open |
 | Eat a dish one of your characters cooked today; today's items | `eatOwn true`. Then eat bought bread: nothing more changes. | open |
 | Learn a recipe at a trainer, then read a recipe item from your bags; today's items | `recipes` went up by 2. | open |
