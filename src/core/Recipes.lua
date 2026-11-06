@@ -1,8 +1,8 @@
 --[[ Recipes (CF-38): the own profession scan, profession links, the recipe tails on the wire and the scan throttle.
 Pure Lua, no WoW globals.
 Stored per character (docs/ARCHITECTURE.md "Data model"), own characters and friends' alike:
-  recipes     = { [recipeID] = itemID }  learned recipes of ALL professions (GetAllRecipeIDs gives every profession
-                                         at once on Forever, V60); itemID 0 = no item. What the site reads.
+  recipes     = { [recipeID] = itemID }  learned recipes of all the character's professions; itemID 0 = no item.
+                                         What the site reads.
   recipesAt   = server time of the owner's last complete scan
   recipeOrder = { recipeID, ... }        the same recipes in the order the owner learned them (the first scan's in
                                          ID order): append-only, so a friend only needs the new tail
@@ -12,8 +12,10 @@ Stored per character (docs/ARCHITECTURE.md "Data model"), own characters and fri
                         .linkType  "short" (4 colon-separated fields: read live) or "long"
                         .spec      the specialisation's English name, when known
                         .scannedAt server time of the last scan of that profession
-A scan replaces the recipe set (it is complete), never on an empty or failed read, and only touches the open
-profession's fields.
+A scan ADDS its learned recipes to the stored set (CF-102): GetAllRecipeIDs may give only the open profession's list
+(its 471 IDs match Forever's Tailoring recipes), so a recipe a scan doesn't list is kept. Recipes are never unlearned
+here (Nico: the unlearn edge case doesn't matter); a new order and base start only when a recipe's item changes.
+Never on an empty or failed read; only the open profession's fields change.
 On the wire (SYNC.md): a REQ says per character how many recipes the asker holds and of which base (Recipes.have);
 the RECORD then carries only the recipes after that count (Recipes.outgoing), and the receiver appends them when its
 count and base still match (Recipes.receive). ]]
@@ -129,6 +131,15 @@ function Recipes.apply(char, scan, now)
   local synced, stored = false, false
   local set, lines = Recipes.fromScan(scan.entries)
   if set then
+    -- CF-102: keep what earlier scans (of other professions) found.
+    for id, item in pairs(type(char.recipes) == "table" and char.recipes or {}) do
+      if set[id] == nil and isId(id) and isItem(item) then set[id] = item end
+    end
+    if lines and type(char.recipeLines) == "table" then
+      for id, line in pairs(char.recipeLines) do
+        if lines[id] == nil and set[id] ~= nil and isId(line) then lines[id] = line end
+      end
+    end
     local order, base, changed = nextOrder(char, set, now)
     if changed then synced = true end
     char.recipes, char.recipeOrder, char.recipesBase, char.recipesAt = set, order, base, now
