@@ -63,7 +63,7 @@ describe("Doomsday (CF-55)", function()
       end
       assert.are.equal(118, dailies)
       assert.are.equal(15, n)
-      for _, id in ipairs({ "d.cook5", "d.scrolls10", "d.fish20", "d.groupFriend", "p.flex", "p.punchDown5" }) do
+      for _, id in ipairs({ "d.reward", "d.fishFriend", "d.feedFriend", "d.treasure", "p.flex", "p.punchDown5" }) do
         assert.is_nil(Doomsday.goal(id).since, id)
       end
     end)
@@ -88,7 +88,7 @@ describe("Doomsday (CF-55)", function()
         end
       end
       assert.are.same({ 50, 14 }, { weeklies, n })
-      assert.are.same({ 2, nil }, { Doomsday.goal("w.ilvl3").retired, Doomsday.goal("w.blueGear").since })
+      assert.are.same({ 2, 3 }, { Doomsday.goal("w.ilvl3").retired, Doomsday.goal("w.blueGear").since })
       local function has(list, id)
         for _, x in ipairs(list) do if x == id then return true end end
         return false
@@ -110,6 +110,52 @@ describe("Doomsday (CF-55)", function()
       end
       assert.are.same({ skirmish = 57, bounty = 43 }, count)
       assert.are.same({ "taunts", "emote" }, { Doomsday.goal("p.flex").category, Doomsday.goal("p.flex").needs })
+    end)
+
+    -- CF-99: pool version 3 adds the lanes' missions (CF-74 to CF-76) and p.homeGuard, and retires the rank goals.
+    it("grows the pools in version 3 and leaves versions 1 and 2 as they were", function()
+      local sizes = {}
+      for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
+        sizes[slot] = { #Doomsday.pool(slot, 1), #Doomsday.pool(slot, 2), #Doomsday.pool(slot, 3) }
+      end
+      assert.are.same({ daily = { 14, 43, 103 }, weekly = { 15, 27, 49 }, skirmish = { 3, 3, 4 },
+                        bounty = { 5, 5, 5 } }, sizes)
+      local categories = {}
+      for _, id in ipairs(Doomsday.pool("daily", 3)) do categories[Doomsday.goal(id).category] = true end
+      local n = 0
+      for _ in pairs(categories) do n = n + 1 end
+      assert.are.equal(15, n)
+    end)
+
+    it("retires the honor rank goals from pool version 3; they were never drawn", function()
+      for _, id in ipairs({ "p.ranked", "p.rankUp", "b.ranked5", "b.rankUp" }) do
+        local g = Doomsday.goal(id)
+        assert.are.same({ 3, nil }, { g.retired, g.since }, id)
+        for version = 1, 3 do
+          for _, pooled in ipairs(Doomsday.pool(g.slot, version)) do assert.are_not.equal(id, pooled) end
+        end
+      end
+    end)
+
+    it("gives every goal of pool version 3 a registered progress", function()
+      local all = helpers.coreNs()
+      for _, file in ipairs({ "Doomsday", "Goals", "GameText" }) do
+        helpers.loadAddonFile("src/core/" .. file .. ".lua", all)
+      end
+      for _, name in ipairs({ "Quests", "Records", "Places", "Extended", "Items", "World", "Fights", "Battle" }) do
+        helpers.loadAddonFile("src/core/missions/" .. name .. ".lua", all)
+      end
+      local joined = 0
+      for _, g in ipairs(all.Doomsday.GOALS) do
+        if g.since == 3 then joined = joined + 1 end
+      end
+      assert.are.equal(83, joined) -- 82 of the lanes CF-74 to CF-76, and p.homeGuard
+      local facts = all.Goals.progressFacts(all.Goals.newFacts())
+      for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
+        for _, id in ipairs(all.Doomsday.pool(slot, 3)) do
+          assert.is_number((all.Doomsday.progress(id, facts)), id)
+        end
+      end
     end)
 
     it("checks b.zone25's level only from pool version 2 (pool version 1 is unchanged)", function()

@@ -51,14 +51,16 @@ describe("Missions: extended (CF-74)", function()
     end
   end)
 
-  it("leaves the goals that still wait for a check and the pool alone", function()
+  it("leaves the goals that still wait for a check out of the pool", function()
     for _, id in ipairs({ "w.craftTrade", "p.punchUp5", "p.punchDown5" }) do
       local found = false
       for _, own in ipairs(Extended.IDS) do found = found or own == id end
       assert.is_false(found, id)
     end
+    -- CF-99: the rest joined pool version 3; these three wait for their in-game check (VERIFY.md CF-74).
+    local waiting = { ["d.reward"] = true, ["d.fishFriend"] = true, ["d.feedFriend"] = true }
     for _, id in ipairs(Extended.IDS) do
-      assert.is_nil(ns.Doomsday.goal(id).since, id)
+      assert.are.equal(not waiting[id] and 3 or nil, ns.Doomsday.goal(id).since, id)
     end
   end)
 

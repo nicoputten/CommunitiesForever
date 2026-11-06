@@ -1,4 +1,51 @@
 {
- "about": "Progress cases of the battle missions (CF-81), addon only: the site never computes progress. Never edit a case to make code pass.",
- "cases": []
+ "about": "Progress cases of the battle missions (CF-81), addon only: the site never computes progress. Never edit a case to make code pass. Each case adds its observations (Goals.observe) to new facts and expects [value, target, done] per goal id.",
+ "cases": [
+  {
+   "name": "a kill in a zone seen as friendly defends home",
+   "observations": [
+    { "kind": "battleZone", "zone": "Orgrimmar", "pvpType": "friendly" },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1000, "zone": "Orgrimmar", "name": "Ada Brightwood", "lvl": 30, "myLvl": 30 } }
+   ],
+   "progress": { "p.homeGuard": [1, 1, true] }
+  },
+  {
+   "name": "kills in hostile, contested and unknown zones don't count",
+   "observations": [
+    { "kind": "battleZone", "zone": "Stormwind City", "pvpType": "hostile" },
+    { "kind": "battleZone", "zone": "Stranglethorn Vale", "pvpType": "contested" },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1000, "zone": "Stormwind City", "name": "Ada Brightwood" } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1001, "zone": "Stranglethorn Vale", "name": "Bo Ironfoot" } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1002, "zone": "Durotar", "name": "Cy Dawnstep" } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1003, "name": "Di Marshwalker" } }
+   ],
+   "progress": { "p.homeGuard": [0, 1, false] }
+  },
+  {
+   "name": "a zone without a PvP type (a starting zone) is not kept",
+   "observations": [
+    { "kind": "battleZone", "zone": "Durotar" },
+    { "kind": "battleZone", "zone": "Durotar", "pvpType": "" },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1000, "zone": "Durotar", "name": "Ada Brightwood" } }
+   ],
+   "progress": { "p.homeGuard": [0, 1, false] }
+  },
+  {
+   "name": "a battleground kill and a repeat victim don't count",
+   "observations": [
+    { "kind": "battleZone", "zone": "The Barrens", "pvpType": "friendly" },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1000, "zone": "The Barrens", "name": "Ada Brightwood", "bg": true } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1001, "zone": "The Barrens", "name": "Bo Ironfoot" } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1002, "zone": "The Barrens", "name": "Bo Ironfoot" } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1003, "zone": "The Barrens", "name": "Bo Ironfoot" } },
+    { "kind": "kill", "char": "Player-1-A", "kill": { "t": 1004, "zone": "The Barrens", "name": "Bo Ironfoot" } }
+   ],
+   "progress": { "p.homeGuard": [3, 1, true] }
+  },
+  {
+   "name": "no observations",
+   "observations": [],
+   "progress": { "p.homeGuard": [0, 1, false] }
+  }
+ ]
 }

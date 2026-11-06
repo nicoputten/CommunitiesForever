@@ -8,6 +8,26 @@ Build order:
    launch probe runs since CF-98).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-99 Pool version 3
+After the launch probe (CF-96) and the three tracker lanes (CF-74 #222, CF-75 #224 #225, CF-76 #221). Follows CF-77.
+Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`, `src/adapters/missions/BattleEvents.lua`,
+`tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`, `docs/DOOMSDAY.md`, VERIFY.md,
+CHANGELOG.md. The site ships its copy in the same release (WEB story in CommunitiesForever-Web).
+- `Doomsday.POOL_VERSION = 3`; `since = 3` on the 82 missions of CF-74 to CF-76 whose checks passed, each with a
+  registered progress (tests); not `d.reward`, `d.fishFriend`, `d.feedFriend` (they wait for an in-game check).
+- `p.homeGuard` (CF-81): a counted kill in a zone whose PvP type read "friendly" (V123), `since = 3`; progress cases
+  in `tests/fixtures/missions/battle.json`.
+- The honor rank goals `p.ranked`, `p.rankUp`, `b.ranked5`, `b.rankUp` get `retired = 3` (Nico, 2026-11-06:
+  `UnitPVPRank` is missing on Forever); pool 1 and 2 draws are unchanged. `docs/DOOMSDAY.md` says the rank titles,
+  rank 0's included, don't show on Forever.
+- `docs/DOOMSDAY.md`: `d.bank`, `d.repair`, `d.trainer` are CF-76's in the Data column.
+- Golden `draws` cases for days and weeks of pool version 3 from its first day (`pool: 3`) and two pool-3 swaps;
+  pool-1 and pool-2 cases unchanged; `Compat_spec` passes.
+- Compatibility (rule 8): no switch date, as CF-77: each day records the pool version it was drawn with. An addon on
+  pool version 2 keeps drawing version 2 and scores a friend's version-3 day by its `pool` (every id is already in
+  its catalogue). Stored data: only new local day facts (`battle.zones`), optional. No new message fields.
+- Manual (VERIFY.md CF-99).
+
 ### CF-97 A friend who appears offline is known by their BattleTag over the guild
 From the launch probe (V87 failed on build 70790, CF-96): from a Battle.net friend who appears offline,
 `C_BattleNet.GetGameAccountInfoByID` gives no `playerGuid` and no BattleTag, so their Battle.net messages are dropped.

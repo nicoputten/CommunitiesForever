@@ -1,7 +1,7 @@
 {
  "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
  "version": 1,
- "poolVersion": 2,
+ "poolVersion": 3,
  "epoch": 20761,
  "defaultReset": 68400,
  "salts": {
@@ -36,6 +36,7 @@
    "d.level",
    "d.altLevel",
    "d.ilvl",
+   "d.cleanLevel",
    "d.levels2",
    "d.dingDungeon",
    "d.dingFriend",
@@ -44,28 +45,87 @@
    "d.dungeonFriend",
    "d.bosses3",
    "d.dungeonQuest",
+   "d.cleanRun",
    "d.speedRun",
    "d.newDungeon",
    "d.dungeons2",
    "d.skill5",
    "d.secondary",
+   "d.craft5",
+   "d.gather10",
+   "d.newRecipe",
+   "d.craftGreen",
+   "d.cook5",
+   "d.cook15",
    "d.cookSkill5",
+   "d.cookKinds3",
+   "d.eatOwn",
+   "d.cookRecipe",
+   "d.fish20",
+   "d.fishZones",
+   "d.fish50",
    "d.fishSkill5",
+   "d.fishNight",
+   "d.bandage3",
+   "d.bandageUp",
+   "d.bandage10",
+   "d.bandageUse3",
+   "d.bandageFriend",
    "d.aidSkill5",
+   "d.bandageKinds2",
    "d.chars2",
    "d.chars3",
    "d.switchUp",
    "d.dustOff",
+   "d.earlyBird",
+   "d.nightOwl",
+   "d.session1h",
+   "d.deathless",
+   "d.groupFriend",
+   "d.trade",
    "d.questTogether",
    "d.chatHello",
    "d.sameZone",
    "d.online3",
    "d.carry",
+   "d.whisper",
+   "d.groupPic",
+   "d.discover1",
+   "d.discover3",
    "d.roam4",
    "d.newZone",
+   "d.places10",
+   "d.swim",
    "d.nostalgia",
    "d.daredevil",
-   "d.crossSea"
+   "d.flight",
+   "d.newFlight",
+   "d.hearth",
+   "d.ride",
+   "d.crossSea",
+   "d.kills30",
+   "d.elite",
+   "d.rareMob",
+   "d.bigFoe",
+   "d.streak20",
+   "d.weaponSkill",
+   "d.duoHunt",
+   "d.rare",
+   "d.green5",
+   "d.coins10",
+   "d.equipNew",
+   "d.vendorSale",
+   "d.vendorBuy",
+   "d.mailFriend",
+   "d.profit",
+   "d.repair",
+   "d.trainer",
+   "d.wellFed",
+   "d.buffFriend",
+   "d.bank",
+   "d.tidyBags",
+   "d.potion",
+   "d.scrolls10"
   ],
   "weekly": [
    "w.days3",
@@ -82,24 +142,47 @@
    "w.skill25",
    "w.cap",
    "w.newProf",
+   "w.friends3",
+   "w.rare5",
+   "w.session2h",
+   "w.discover5",
    "w.groupQuests3",
    "w.questUp5",
    "w.duoQuests5",
+   "w.blueGear",
    "w.levels5",
    "w.levelDays3",
    "w.dungeons5",
    "w.bosses15",
    "w.newDungeons2",
+   "w.cleanRuns2",
+   "w.gather50",
+   "w.recipes3",
+   "w.cook30",
+   "w.cookKinds5",
+   "w.fish100",
+   "w.fishZones4",
+   "w.bandages20",
    "w.days7",
+   "w.dayAndNight",
+   "w.deathless3h",
+   "w.friendDays3",
+   "w.trades3",
    "w.chatDays5",
    "w.mentor3",
    "w.newZones3",
-   "w.roam10"
+   "w.roam10",
+   "w.flightPaths3",
+   "w.kills200",
+   "w.elites10",
+   "w.weapon25",
+   "w.potions5"
   ],
   "skirmish": [
    "p.frontLine",
    "p.loneWolf",
-   "p.untouchable"
+   "p.untouchable",
+   "p.homeGuard"
   ],
   "bounty": [
    "b.zone25",
@@ -251,6 +334,7 @@
     "id": "d.cleanLevel",
     "slot": "daily",
     "category": "levels",
+    "since": 3,
     "points": 3,
     "text": "Gain a level without dying",
     "short": "Clean lvl",
@@ -367,6 +451,7 @@
     "id": "d.cleanRun",
     "slot": "daily",
     "category": "dungeons",
+    "since": 3,
     "points": 5,
     "text": "Run a dungeon without dying",
     "short": "Clean run",
@@ -440,6 +525,7 @@
     "id": "d.craft5",
     "slot": "daily",
     "category": "crafts",
+    "since": 3,
     "points": 3,
     "text": "Craft 5 items",
     "short": "Craft 5",
@@ -452,6 +538,7 @@
     "id": "d.gather10",
     "slot": "daily",
     "category": "crafts",
+    "since": 3,
     "points": 3,
     "text": "Gather 10 herbs, ore or leather",
     "short": "Gather 10",
@@ -464,6 +551,7 @@
     "id": "d.newRecipe",
     "slot": "daily",
     "category": "crafts",
+    "since": 3,
     "points": 3,
     "text": "Learn a new recipe",
     "short": "Recipe",
@@ -476,6 +564,7 @@
     "id": "d.craftGreen",
     "slot": "daily",
     "category": "crafts",
+    "since": 3,
     "points": 3,
     "text": "Craft something uncommon or better",
     "short": "Fine craft",
@@ -488,6 +577,7 @@
     "id": "d.cook5",
     "slot": "daily",
     "category": "cooking",
+    "since": 3,
     "points": 3,
     "text": "Cook 5 meals",
     "short": "Cook 5",
@@ -500,6 +590,7 @@
     "id": "d.cook15",
     "slot": "daily",
     "category": "cooking",
+    "since": 3,
     "points": 5,
     "text": "Cook 15 dishes",
     "short": "Cook 15",
@@ -525,6 +616,7 @@
     "id": "d.cookKinds3",
     "slot": "daily",
     "category": "cooking",
+    "since": 3,
     "points": 3,
     "text": "Cook 3 different dishes",
     "short": "3 dishes",
@@ -557,6 +649,7 @@
     "id": "d.eatOwn",
     "slot": "daily",
     "category": "cooking",
+    "since": 3,
     "points": 3,
     "text": "Eat a dish cooked that day",
     "short": "Home meal",
@@ -569,6 +662,7 @@
     "id": "d.cookRecipe",
     "slot": "daily",
     "category": "cooking",
+    "since": 3,
     "points": 3,
     "text": "Learn a cooking recipe",
     "short": "New dish",
@@ -593,6 +687,7 @@
     "id": "d.fish20",
     "slot": "daily",
     "category": "fishing",
+    "since": 3,
     "points": 3,
     "text": "Catch 20 fish",
     "short": "20 fish",
@@ -605,6 +700,7 @@
     "id": "d.fishZones",
     "slot": "daily",
     "category": "fishing",
+    "since": 3,
     "points": 3,
     "text": "Fish in 2 zones",
     "short": "Fish spots",
@@ -617,6 +713,7 @@
     "id": "d.fish50",
     "slot": "daily",
     "category": "fishing",
+    "since": 3,
     "points": 5,
     "text": "Catch 50 fish",
     "short": "50 fish",
@@ -666,6 +763,7 @@
     "id": "d.fishNight",
     "slot": "daily",
     "category": "fishing",
+    "since": 3,
     "points": 3,
     "text": "Fish at night",
     "short": "Night fish",
@@ -678,6 +776,7 @@
     "id": "d.bandage3",
     "slot": "daily",
     "category": "firstaid",
+    "since": 3,
     "points": 3,
     "text": "Make 3 bandages",
     "short": "Bandages",
@@ -690,6 +789,7 @@
     "id": "d.bandageUp",
     "slot": "daily",
     "category": "firstaid",
+    "since": 3,
     "points": 3,
     "text": "Use a bandage",
     "short": "Bandage up",
@@ -702,6 +802,7 @@
     "id": "d.bandage10",
     "slot": "daily",
     "category": "firstaid",
+    "since": 3,
     "points": 3,
     "text": "Make 10 bandages",
     "short": "10 bandage",
@@ -714,6 +815,7 @@
     "id": "d.bandageUse3",
     "slot": "daily",
     "category": "firstaid",
+    "since": 3,
     "points": 3,
     "text": "Use 3 bandages",
     "short": "Bandage x3",
@@ -726,6 +828,7 @@
     "id": "d.bandageFriend",
     "slot": "daily",
     "category": "firstaid",
+    "since": 3,
     "points": 3,
     "text": "Bandage a friend",
     "short": "Medic",
@@ -751,6 +854,7 @@
     "id": "d.bandageKinds2",
     "slot": "daily",
     "category": "firstaid",
+    "since": 3,
     "points": 3,
     "text": "Make 2 kinds of bandages",
     "short": "2 bandages",
@@ -815,6 +919,7 @@
     "id": "d.earlyBird",
     "slot": "daily",
     "category": "play",
+    "since": 3,
     "points": 3,
     "text": "Early bird: play before 09:00",
     "short": "Early bird"
@@ -823,6 +928,7 @@
     "id": "d.nightOwl",
     "slot": "daily",
     "category": "play",
+    "since": 3,
     "points": 3,
     "text": "Night owl: play after 23:00",
     "short": "Night owl"
@@ -831,6 +937,7 @@
     "id": "d.session1h",
     "slot": "daily",
     "category": "play",
+    "since": 3,
     "points": 5,
     "text": "Play a 1-hour session",
     "short": "1h session"
@@ -839,6 +946,7 @@
     "id": "d.deathless",
     "slot": "daily",
     "category": "play",
+    "since": 3,
     "points": 5,
     "text": "Play an hour without dying",
     "short": "No deaths"
@@ -855,6 +963,7 @@
     "id": "d.groupFriend",
     "slot": "daily",
     "category": "social",
+    "since": 3,
     "points": 3,
     "text": "Group up with a friend",
     "short": "Group up"
@@ -863,6 +972,7 @@
     "id": "d.trade",
     "slot": "daily",
     "category": "social",
+    "since": 3,
     "points": 3,
     "text": "Trade with a friend",
     "short": "Trade"
@@ -924,6 +1034,7 @@
     "id": "d.whisper",
     "slot": "daily",
     "category": "social",
+    "since": 3,
     "points": 1,
     "text": "Whisper a friend",
     "short": "Whisper"
@@ -940,6 +1051,7 @@
     "id": "d.groupPic",
     "slot": "daily",
     "category": "social",
+    "since": 3,
     "points": 1,
     "text": "Take a screenshot in a group with a friend",
     "short": "Group pic"
@@ -948,6 +1060,7 @@
     "id": "d.discover1",
     "slot": "daily",
     "category": "exploration",
+    "since": 3,
     "points": 3,
     "text": "Discover a new place",
     "short": "Discover"
@@ -956,6 +1069,7 @@
     "id": "d.discover3",
     "slot": "daily",
     "category": "exploration",
+    "since": 3,
     "points": 3,
     "text": "Discover 3 new places",
     "short": "Discover 3"
@@ -982,6 +1096,7 @@
     "id": "d.places10",
     "slot": "daily",
     "category": "exploration",
+    "since": 3,
     "points": 3,
     "text": "Visit 10 places within zones",
     "short": "10 places"
@@ -990,6 +1105,7 @@
     "id": "d.swim",
     "slot": "daily",
     "category": "exploration",
+    "since": 3,
     "points": 3,
     "text": "Swim for 2 minutes",
     "short": "Swim"
@@ -1024,6 +1140,7 @@
     "id": "d.flight",
     "slot": "daily",
     "category": "travel",
+    "since": 3,
     "points": 1,
     "text": "Take a flight",
     "short": "Fly"
@@ -1032,6 +1149,7 @@
     "id": "d.newFlight",
     "slot": "daily",
     "category": "travel",
+    "since": 3,
     "points": 3,
     "text": "Learn a new flight path",
     "short": "New flight"
@@ -1040,6 +1158,7 @@
     "id": "d.hearth",
     "slot": "daily",
     "category": "travel",
+    "since": 3,
     "points": 1,
     "text": "Use the hearthstone",
     "short": "Hearth"
@@ -1056,6 +1175,7 @@
     "id": "d.ride",
     "slot": "daily",
     "category": "travel",
+    "since": 3,
     "points": 3,
     "text": "Ride a mount for 15 minutes",
     "short": "Ride",
@@ -1085,6 +1205,7 @@
     "id": "d.kills30",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 3,
     "text": "Defeat 30 enemies",
     "short": "30 foes",
@@ -1097,6 +1218,7 @@
     "id": "d.elite",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 3,
     "text": "Defeat an elite",
     "short": "Elite",
@@ -1109,6 +1231,7 @@
     "id": "d.rareMob",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 5,
     "text": "Defeat a rare enemy",
     "short": "Rare hunt",
@@ -1121,6 +1244,7 @@
     "id": "d.bigFoe",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 3,
     "text": "Defeat an enemy 3+ levels higher",
     "short": "Big foe",
@@ -1133,6 +1257,7 @@
     "id": "d.streak20",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 5,
     "text": "Defeat 20 enemies without dying",
     "short": "Streak 20",
@@ -1145,6 +1270,7 @@
     "id": "d.weaponSkill",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 3,
     "text": "Raise a weapon skill 5 times",
     "short": "Weapon +5"
@@ -1153,6 +1279,7 @@
     "id": "d.duoHunt",
     "slot": "daily",
     "category": "combat",
+    "since": 3,
     "points": 3,
     "text": "Defeat 15 enemies in a group with a friend",
     "short": "Duo hunt",
@@ -1165,6 +1292,7 @@
     "id": "d.rare",
     "slot": "daily",
     "category": "loot",
+    "since": 3,
     "points": 3,
     "text": "Loot a rare item",
     "short": "Rare loot"
@@ -1173,6 +1301,7 @@
     "id": "d.green5",
     "slot": "daily",
     "category": "loot",
+    "since": 3,
     "points": 3,
     "text": "Loot 5 uncommon items",
     "short": "5 greens"
@@ -1189,6 +1318,7 @@
     "id": "d.coins10",
     "slot": "daily",
     "category": "loot",
+    "since": 3,
     "points": 3,
     "text": "Loot coins from 10 enemies",
     "short": "10 purses"
@@ -1197,6 +1327,7 @@
     "id": "d.equipNew",
     "slot": "daily",
     "category": "loot",
+    "since": 3,
     "points": 3,
     "text": "Wear a new find",
     "short": "New gear"
@@ -1213,6 +1344,7 @@
     "id": "d.vendorSale",
     "slot": "daily",
     "category": "economy",
+    "since": 3,
     "points": 1,
     "text": "Sell to a merchant",
     "short": "Sell"
@@ -1221,6 +1353,7 @@
     "id": "d.vendorBuy",
     "slot": "daily",
     "category": "economy",
+    "since": 3,
     "points": 1,
     "text": "Buy from a merchant",
     "short": "Shopping"
@@ -1245,6 +1378,7 @@
     "id": "d.mailFriend",
     "slot": "daily",
     "category": "economy",
+    "since": 3,
     "points": 1,
     "text": "Send mail to a friend",
     "short": "Mail pal"
@@ -1261,6 +1395,7 @@
     "id": "d.profit",
     "slot": "daily",
     "category": "economy",
+    "since": 3,
     "points": 3,
     "text": "End a session in profit",
     "short": "In profit"
@@ -1269,6 +1404,7 @@
     "id": "d.repair",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 1,
     "text": "Repair gear",
     "short": "Repair"
@@ -1277,6 +1413,7 @@
     "id": "d.trainer",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 3,
     "text": "Learn a spell at a trainer",
     "short": "Train",
@@ -1289,6 +1426,7 @@
     "id": "d.wellFed",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 1,
     "text": "Get Well Fed",
     "short": "Well fed"
@@ -1297,6 +1435,7 @@
     "id": "d.buffFriend",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 3,
     "text": "Buff a friend",
     "short": "Buff pal",
@@ -1317,6 +1456,7 @@
     "id": "d.bank",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 1,
     "text": "Visit the bank",
     "short": "Bank"
@@ -1325,6 +1465,7 @@
     "id": "d.tidyBags",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 1,
     "text": "Clear the junk from the bags",
     "short": "Tidy bags"
@@ -1333,6 +1474,7 @@
     "id": "d.potion",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 1,
     "text": "Drink a potion",
     "short": "Potion"
@@ -1341,6 +1483,7 @@
     "id": "d.scrolls10",
     "slot": "daily",
     "category": "care",
+    "since": 3,
     "points": 3,
     "text": "Read 10 scrolls on the own character",
     "short": "10 scrolls"
@@ -1525,6 +1668,7 @@
     "id": "w.friends3",
     "slot": "weekly",
     "category": "social",
+    "since": 3,
     "points": 10,
     "text": "Group with 3 different friends",
     "short": "3 friends"
@@ -1533,6 +1677,7 @@
     "id": "w.rare5",
     "slot": "weekly",
     "category": "loot",
+    "since": 3,
     "points": 10,
     "text": "Loot 5 rare items",
     "short": "5 rares"
@@ -1541,6 +1686,7 @@
     "id": "w.session2h",
     "slot": "weekly",
     "category": "play",
+    "since": 3,
     "points": 5,
     "text": "Play a 2-hour session",
     "short": "2h session"
@@ -1549,6 +1695,7 @@
     "id": "w.discover5",
     "slot": "weekly",
     "category": "exploration",
+    "since": 3,
     "points": 5,
     "text": "Discover 5 new places",
     "short": "Discover 5"
@@ -1600,6 +1747,7 @@
     "id": "w.blueGear",
     "slot": "weekly",
     "category": "levels",
+    "since": 3,
     "points": 10,
     "text": "Put on a blue item new to the character",
     "short": "Blue gear",
@@ -1677,6 +1825,7 @@
     "id": "w.cleanRuns2",
     "slot": "weekly",
     "category": "dungeons",
+    "since": 3,
     "points": 10,
     "text": "Run 2 dungeons without dying",
     "short": "2 clean",
@@ -1689,6 +1838,7 @@
     "id": "w.gather50",
     "slot": "weekly",
     "category": "crafts",
+    "since": 3,
     "points": 10,
     "text": "Gather 50 herbs, ore or leather",
     "short": "Gather 50",
@@ -1701,6 +1851,7 @@
     "id": "w.recipes3",
     "slot": "weekly",
     "category": "crafts",
+    "since": 3,
     "points": 10,
     "text": "Learn 3 new recipes",
     "short": "3 recipes",
@@ -1713,6 +1864,7 @@
     "id": "w.cook30",
     "slot": "weekly",
     "category": "cooking",
+    "since": 3,
     "points": 10,
     "text": "Cook 30 dishes",
     "short": "Cook 30",
@@ -1725,6 +1877,7 @@
     "id": "w.cookKinds5",
     "slot": "weekly",
     "category": "cooking",
+    "since": 3,
     "points": 10,
     "text": "Cook 5 different dishes",
     "short": "5 dishes",
@@ -1737,6 +1890,7 @@
     "id": "w.fish100",
     "slot": "weekly",
     "category": "fishing",
+    "since": 3,
     "points": 15,
     "text": "Catch 100 fish",
     "short": "100 fish",
@@ -1749,6 +1903,7 @@
     "id": "w.fishZones4",
     "slot": "weekly",
     "category": "fishing",
+    "since": 3,
     "points": 10,
     "text": "Fish in 4 zones",
     "short": "Fish 4 zns",
@@ -1761,6 +1916,7 @@
     "id": "w.bandages20",
     "slot": "weekly",
     "category": "firstaid",
+    "since": 3,
     "points": 10,
     "text": "Make 20 bandages",
     "short": "20 bandage",
@@ -1782,6 +1938,7 @@
     "id": "w.dayAndNight",
     "slot": "weekly",
     "category": "play",
+    "since": 3,
     "points": 10,
     "text": "Play before 09:00 and after 23:00",
     "short": "Day+night"
@@ -1790,6 +1947,7 @@
     "id": "w.deathless3h",
     "slot": "weekly",
     "category": "play",
+    "since": 3,
     "points": 15,
     "text": "Play 3 hours without dying",
     "short": "Iron 3h"
@@ -1798,6 +1956,7 @@
     "id": "w.friendDays3",
     "slot": "weekly",
     "category": "social",
+    "since": 3,
     "points": 10,
     "text": "Group with a friend on 3 days",
     "short": "Duo days"
@@ -1806,6 +1965,7 @@
     "id": "w.trades3",
     "slot": "weekly",
     "category": "social",
+    "since": 3,
     "points": 10,
     "text": "Trade with 3 different friends",
     "short": "3 trades",
@@ -1854,6 +2014,7 @@
     "id": "w.flightPaths3",
     "slot": "weekly",
     "category": "travel",
+    "since": 3,
     "points": 10,
     "text": "Learn 3 flight paths",
     "short": "3 paths"
@@ -1862,6 +2023,7 @@
     "id": "w.kills200",
     "slot": "weekly",
     "category": "combat",
+    "since": 3,
     "points": 15,
     "text": "Defeat 200 enemies",
     "short": "200 foes",
@@ -1874,6 +2036,7 @@
     "id": "w.elites10",
     "slot": "weekly",
     "category": "combat",
+    "since": 3,
     "points": 10,
     "text": "Defeat 10 elites",
     "short": "10 elites",
@@ -1886,6 +2049,7 @@
     "id": "w.weapon25",
     "slot": "weekly",
     "category": "combat",
+    "since": 3,
     "points": 10,
     "text": "Raise weapon skills 25 times",
     "short": "Weapon +25"
@@ -1894,6 +2058,7 @@
     "id": "w.potions5",
     "slot": "weekly",
     "category": "care",
+    "since": 3,
     "points": 5,
     "text": "Drink 5 potions",
     "short": "5 potions"
@@ -1957,7 +2122,8 @@
     "needs": "kill",
     "points": 5,
     "text": "Ranked bounty: kill a ranked player",
-    "short": "Ranked"
+    "short": "Ranked",
+    "retired": 3
    },
    {
     "id": "p.flex",
@@ -2091,6 +2257,7 @@
     "slot": "skirmish",
     "category": "worldKills",
     "needs": "kill",
+    "since": 3,
     "points": 3,
     "text": "Defend home: a kill in friendly territory",
     "short": "Home guard",
@@ -2191,7 +2358,8 @@
     "needs": "kill",
     "points": 5,
     "text": "Kill a player of higher rank",
-    "short": "Outrank"
+    "short": "Outrank",
+    "retired": 3
    },
    {
     "id": "p.huntPair",
@@ -2546,7 +2714,8 @@
     "needs": "kill",
     "points": 15,
     "text": "5 kills on ranked players",
-    "short": "5 ranked"
+    "short": "5 ranked",
+    "retired": 3
    },
    {
     "id": "b.kills50",
@@ -2955,7 +3124,8 @@
     "needs": "kill",
     "points": 15,
     "text": "Rise a PvP rank",
-    "short": "Rank up"
+    "short": "Rank up",
+    "retired": 3
    },
    {
     "id": "b.skirmish5",
@@ -3703,6 +3873,414 @@
      ],
      "skirmish": "p.frontLine"
     }
+   },
+   {
+    "pool": 3,
+    "day": 20761,
+    "expect": {
+     "dailies": [
+      "d.vendorBuy",
+      "d.level",
+      "d.duoHunt"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20762,
+    "expect": {
+     "dailies": [
+      "d.dungeon",
+      "d.wellFed",
+      "d.eatOwn"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20763,
+    "expect": {
+     "dailies": [
+      "d.streak20",
+      "d.bandageUse3",
+      "d.discover1"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20764,
+    "expect": {
+     "dailies": [
+      "d.bandage3",
+      "d.online3",
+      "d.fish50"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20765,
+    "expect": {
+     "dailies": [
+      "d.questBurst",
+      "d.chars3",
+      "d.hearth"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20766,
+    "expect": {
+     "dailies": [
+      "d.flight",
+      "d.bandage3",
+      "d.fish50"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20767,
+    "expect": {
+     "dailies": [
+      "d.cookSkill5",
+      "d.discover1",
+      "d.crossSea"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20768,
+    "expect": {
+     "dailies": [
+      "d.scrolls10",
+      "d.ilvl",
+      "d.chars2"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20769,
+    "expect": {
+     "dailies": [
+      "d.sameZone",
+      "d.earlyBird",
+      "d.dungeonFriend"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20770,
+    "expect": {
+     "dailies": [
+      "d.skill5",
+      "d.places10",
+      "d.groupPic"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20771,
+    "expect": {
+     "dailies": [
+      "d.mailFriend",
+      "d.scrolls10",
+      "d.cook15"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20772,
+    "expect": {
+     "dailies": [
+      "d.switchUp",
+      "d.cook5",
+      "d.tidyBags"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20773,
+    "expect": {
+     "dailies": [
+      "d.dingFriend",
+      "d.rare",
+      "d.cookKinds3"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20774,
+    "expect": {
+     "dailies": [
+      "d.bigFoe",
+      "d.craft5",
+      "d.fishZones"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20775,
+    "expect": {
+     "dailies": [
+      "d.bandageUp",
+      "d.gather10",
+      "d.bosses3"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20776,
+    "expect": {
+     "dailies": [
+      "d.classQuest",
+      "d.potion",
+      "d.altLevel"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20777,
+    "expect": {
+     "dailies": [
+      "d.newZone",
+      "d.questUp",
+      "d.earlyBird"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20778,
+    "expect": {
+     "dailies": [
+      "d.cookSkill5",
+      "d.mailFriend",
+      "d.switchUp"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20779,
+    "expect": {
+     "dailies": [
+      "d.potion",
+      "d.zones3",
+      "d.groupFriend"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20780,
+    "expect": {
+     "dailies": [
+      "d.chatHello",
+      "d.newZone",
+      "d.vendorSale"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20781,
+    "expect": {
+     "dailies": [
+      "d.newDungeon",
+      "d.cleanLevel",
+      "d.online3"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20782,
+    "expect": {
+     "dailies": [
+      "d.green5",
+      "d.questTogether",
+      "d.bosses3"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20783,
+    "expect": {
+     "dailies": [
+      "d.chars3",
+      "d.newDungeon",
+      "d.carry"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20784,
+    "expect": {
+     "dailies": [
+      "d.dingDungeon",
+      "d.crossSea",
+      "d.scrolls10"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20785,
+    "expect": {
+     "dailies": [
+      "d.hearth",
+      "d.bigFoe",
+      "d.dingFriend"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20786,
+    "expect": {
+     "dailies": [
+      "d.fishNight",
+      "d.online3",
+      "d.bandageFriend"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20787,
+    "expect": {
+     "dailies": [
+      "d.groupQuest",
+      "d.trade",
+      "d.fish20"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20788,
+    "expect": {
+     "dailies": [
+      "d.newZone",
+      "d.bank",
+      "d.fishZones"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20789,
+    "expect": {
+     "dailies": [
+      "d.cook5",
+      "d.dingDungeon",
+      "d.chars3"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20790,
+    "expect": {
+     "dailies": [
+      "d.trainer",
+      "d.groupQuest",
+      "d.rareMob"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20800,
+    "expect": {
+     "dailies": [
+      "d.craftGreen",
+      "d.bandageUse3",
+      "d.altLevel"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20821,
+    "expect": {
+     "dailies": [
+      "d.whisper",
+      "d.nightOwl",
+      "d.cookKinds3"
+     ],
+     "skirmish": "p.homeGuard"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 20900,
+    "expect": {
+     "dailies": [
+      "d.hearth",
+      "d.lowbie",
+      "d.wellFed"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 3,
+    "day": 21000,
+    "expect": {
+     "dailies": [
+      "d.newDungeon",
+      "d.gather10",
+      "d.fishNight"
+     ],
+     "skirmish": "p.homeGuard"
+    }
    }
   ],
   "weeks": [
@@ -3932,6 +4510,162 @@
       "w.chatDays5",
       "w.fullClear",
       "w.roam10"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2966,
+    "expect": {
+     "weeklies": [
+      "w.recipes3",
+      "w.levelDays3",
+      "w.dungeons5"
+     ],
+     "bounty": "b.kills50"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2967,
+    "expect": {
+     "weeklies": [
+      "w.trades3",
+      "w.flightPaths3",
+      "w.bosses15"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2968,
+    "expect": {
+     "weeklies": [
+      "w.dayAndNight",
+      "w.cook30",
+      "w.zones5"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2969,
+    "expect": {
+     "weeklies": [
+      "w.days3",
+      "w.skill25",
+      "w.newZones3"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2970,
+    "expect": {
+     "weeklies": [
+      "w.potions5",
+      "w.questUp5",
+      "w.chatDays5"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2971,
+    "expect": {
+     "weeklies": [
+      "w.elites10",
+      "w.dungeonsDiff3",
+      "w.fish100"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2972,
+    "expect": {
+     "weeklies": [
+      "w.fullClear",
+      "w.zones5",
+      "w.levels3"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2973,
+    "expect": {
+     "weeklies": [
+      "w.skill25",
+      "w.altLevels2",
+      "w.mentor3"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2974,
+    "expect": {
+     "weeklies": [
+      "w.dungeonsDiff3",
+      "w.weapon25",
+      "w.rare5"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2975,
+    "expect": {
+     "weeklies": [
+      "w.duoQuests5",
+      "w.bosses15",
+      "w.altLevels2"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 2980,
+    "expect": {
+     "weeklies": [
+      "w.trades3",
+      "w.kills200",
+      "w.questUp5"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 3000,
+    "expect": {
+     "weeklies": [
+      "w.skill25",
+      "w.roam10",
+      "w.cook30"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 3,
+    "week": 3020,
+    "expect": {
+     "weeklies": [
+      "w.mentor3",
+      "w.fish100",
+      "w.weapon25"
      ],
      "bounty": "b.days5"
     }
@@ -4357,6 +5091,58 @@
      "w.skill25": "w.dungeonFriends2"
     },
     "zone": "Silithus"
+   }
+  },
+  {
+   "note": "pool version 3 day: p.homeGuard (level 20) swaps to its fallback p.loneWolf for a friend below 20",
+   "pool": 3,
+   "day": 20761,
+   "situation": {
+    "chars": 1,
+    "below60": 1,
+    "altBelow60": 0,
+    "highest": 15,
+    "friends": 0
+   },
+   "expect": {
+    "set": [
+     "d.vendorBuy",
+     "d.level",
+     "d.duoHunt",
+     "p.loneWolf"
+    ],
+    "swapped": {
+     "p.loneWolf": "p.homeGuard"
+    }
+   }
+  },
+  {
+   "note": "pool version 3 week: w.recipes3 without any profession and w.dungeons5 without a dungeon in range swap to their fallbacks",
+   "pool": 3,
+   "week": 2966,
+   "situation": {
+    "chars": 1,
+    "below60": 1,
+    "altBelow60": 0,
+    "highest": 12,
+    "hasProfession": false,
+    "hasCooking": false,
+    "hasFirstAid": false,
+    "hasFishing": false,
+    "dungeonInRange": false,
+    "friends": 0
+   },
+   "expect": {
+    "set": [
+     "w.newProf",
+     "w.levelDays3",
+     "w.quests50",
+     "b.kills50"
+    ],
+    "swapped": {
+     "w.newProf": "w.recipes3",
+     "w.quests50": "w.dungeons5"
+    }
    }
   }
  ],

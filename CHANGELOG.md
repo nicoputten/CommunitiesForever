@@ -6,13 +6,19 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday:** 83 new missions join the draw (pool version 3): cooking, First Aid, crafting and gathering, fishing,
+  kills, elites and rares, flights and travel, the bank, trainer and merchants, loot, sessions and playing without
+  dying, and "Defend home" (a kill in your own faction's land) as a Skirmish. **Please update:** friends on the
+  previous version see different missions until they do.
+- **Doomsday:** the honor rank missions are gone for good: Forever doesn't show a PvP rank to addons. They were never
+  drawn, so nothing you've done changes.
 - **Fixed:** a Battle.net friend who appears offline and is in your guild or community now shows under their
   Battle.net name instead of as a separate unknown player. They still show as offline in the window.
 - **Doomsday:** the addon now keeps track of cooking, First Aid, crafting, gathering, recipes, coins, new gear,
-  potions, scrolls, Well Fed, buffing friends and tidy bags, for missions that join the draw in a later pool.
+  potions, scrolls, Well Fed, buffing friends and tidy bags, for the new missions.
 - **Doomsday:** the addon now tracks 25 more missions: kills, elites and rares, flights, swimming and riding, the
   hearthstone, places within zones, the bank, trainer and merchant, weapon skills, and whispers, mail and group
-  screenshots with friends. They join the draw in a later version.
+  screenshots with friends, for the new missions.
 - **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
   "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
   names are cut with "..." before the buttons, also in a narrow window.
