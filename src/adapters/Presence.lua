@@ -40,15 +40,16 @@ function Presence.friendAccounts()
   return accounts
 end
 
--- A game account by its ID (C_BattleNet.GetGameAccountInfoByID, unverified on Forever: VERIFY.md V87), or nil.
+-- A game account by its ID (C_BattleNet.GetGameAccountInfoByID), or nil. On Forever (V87, API-FINDINGS "Forever
+-- launch probe") it answers for a friend who appears offline, but without playerGuid: such a sender stays unknown.
 function Presence.gameAccountInfo(gameAccountID)
   if not (C_BattleNet and C_BattleNet.GetGameAccountInfoByID) then return nil end
   local ok, info = pcall(C_BattleNet.GetGameAccountInfoByID, gameAccountID)
   return ok and type(info) == "table" and info or nil
 end
 
--- The BattleTag of the Battle.net account a character belongs to (C_BattleNet.GetAccountInfoByGUID, unverified:
--- V87), or nil.
+-- The BattleTag of the Battle.net account a character belongs to (C_BattleNet.GetAccountInfoByGUID; V87 had no GUID
+-- to ask it with), or nil.
 function Presence.battleTagForGuid(guid)
   if not (guid and C_BattleNet and C_BattleNet.GetAccountInfoByGUID) then return nil end
   local ok, info = pcall(C_BattleNet.GetAccountInfoByGUID, guid)

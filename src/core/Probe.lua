@@ -14,13 +14,11 @@ Probe.THROTTLE = 60       -- seconds between two looks at the same unit
 Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list starts over
 
 -- The checks the probe runs, in report order (FriendProbe's `auto` items without those that show something or
--- act: V47, V48, V50b, V51, V67, V68, V75, V118).
+-- act: V47, V48, V50b, V51, V67, V68, V75, V118). CF-96: the checks the launch results (build 70790) answered are
+-- gone (docs/API-FINDINGS.md "Forever launch probe"); results stored for them stay in the saved data, uploaded as they
+-- are, and only leave the /cf fp report.
 Probe.IDS = {
-  "V55", "V63", "V71", "V77", "V78", "V79", "V82",
-  "V35b", "V70", "V73", "V74", "V76", "Hunt", "V80", "V81", "V83", "V84", "V85", "V86", "V87",
-  "V90", "V93", "V94", "V95", "V96", "V98", "V99", "V100", "V101", "V102", "V103", "V104", "V105", "V106", "V107",
-  "V108", "V109", "V110", "V111", "V112", "V113", "V114", "V115", "V116", "V117",
-  "V120", "V121", "V122", "V123",
+  "V82", "V35b", "V70", "V73", "V76", "Hunt", "V80", "V96", "V101", "V108", "V114", "V120", "V121", "V122", "V123",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.
@@ -138,21 +136,6 @@ function Probe.hunt(seen, victim, now)
       tostring(entry.source), math.floor((now or 0) - (entry.at or 0) + 0.5))
   end
   return "info", "victim " .. victim .. " named, but not seen with race and class before the kill"
-end
-
--- ===== V78: the realm clock =====
-
--- The realm clock's offset from UTC, rounded to 15 minutes, from GetGameTime's hour and minute and the server time
--- (UTC seconds). Returns status ("pass" when the offset is a sane time zone) and the detail.
-function Probe.realmClock(hour, minute, serverTime)
-  if type(hour) ~= "number" or type(minute) ~= "number" or type(serverTime) ~= "number" then
-    return "fail", "GetGameTime " .. tostring(hour) .. ":" .. tostring(minute)
-  end
-  local diff = (hour * 60 + minute) - math.floor(serverTime / 60) % 1440
-  if diff > 720 then diff = diff - 1440 elseif diff <= -720 then diff = diff + 1440 end
-  local offset = math.floor(diff / 15 + 0.5) * 15
-  local sane = math.abs(offset) <= 14 * 60 and math.abs(diff - offset) <= 5
-  return sane and "pass" or "fail", string.format("realm %02d:%02d, offset %+d min", hour, minute, offset)
 end
 
 -- ===== The size cap =====

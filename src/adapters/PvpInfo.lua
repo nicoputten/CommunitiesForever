@@ -1,6 +1,7 @@
 -- PvpInfo: PvP counters, duels and deaths of the logged-in character (CF-52). Thin wrapper: raw values
--- only, the rules are in core/Pvp.lua. None of these APIs are verified on Forever (VERIFY.md V79 to V81):
--- each is guarded, and a missing or secret value is nil.
+-- only, the rules are in core/Pvp.lua. On Forever (V79, V81, API-FINDINGS "Forever launch probe") lifetime
+-- kills, deaths and the death recap work and UnitPVPRank is missing; the rest is open (VERIFY.md V79). Each is
+-- guarded, and a missing or secret value is nil.
 local _, ns = ...
 
 local PvpInfo = {}
@@ -47,7 +48,7 @@ function PvpInfo.formats()
 end
 
 -- The last damage of the latest death recap: subevent, environmentalType, sourceGUID; or nil.
--- C_DeathRecap.GetRecapEvents() without an id is assumed to give the latest death (VERIFY.md V81).
+-- C_DeathRecap.GetRecapEvents() without an id gives the latest death (V81, verified on Forever).
 function PvpInfo.recapDamage()
   if not (C_DeathRecap and C_DeathRecap.GetRecapEvents) then return nil end
   local events = call(C_DeathRecap.GetRecapEvents)
@@ -62,7 +63,8 @@ function PvpInfo.recapDamage()
 end
 
 -- CF-55b: an enemy player at a unit token: full name, { lvl (-1 skull), class, race (tokens), rank }, or nil.
--- Unverified (VERIFY.md V74): every value guarded, a secret one is nil.
+-- Level, class and race verified on Forever (V74); the skull is open (VERIFY.md V74), the rank missing (V79). Every
+-- value guarded, a secret one is nil.
 function PvpInfo.enemy(unit)
   if not (UnitExists and UnitIsPlayer and GetUnitName) then return nil end
   if not (call(UnitExists, unit) and call(UnitIsPlayer, unit)) then return nil end

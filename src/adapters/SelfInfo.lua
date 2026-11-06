@@ -179,7 +179,7 @@ end
 function SelfInfo.guid() return UnitGUID("player") end
 SelfInfo.fullName = fullName
 
--- CF-56: the realm clock (GetGameTime, unverified: VERIFY.md V78): hour, minute, or nil.
+-- CF-56: the realm clock (GetGameTime, verified on Forever: V78): hour, minute, or nil.
 function SelfInfo.gameTime()
   local hour, minute = ns.Safe.call(GetGameTime)
   if type(hour) ~= "number" or type(minute) ~= "number" then return nil end

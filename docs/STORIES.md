@@ -7,6 +7,31 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-96 Launch probe results: answered items closed, the probe trimmed
+Nico exported the launch probe's results from the site on 2026-11-06: 6 testers on Forever live, build 70790. Touches:
+`VERIFY.md`, `docs/API-FINDINGS.md`, `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeMissions.lua`, `tools/FriendProbe/Checklist.lua`, comments in the adapters that named the
+answered items, their specs.
+- `docs/API-FINDINGS.md` "Forever launch probe": what was seen per item, as "N of 6" (no names, BattleTags or
+  character details). Answered: V55, V63, V71, V77, V78, V81, V83, V84, V86, V90, V93, V94, V95, V98, V102 to V105,
+  V107, V109 to V113, V115 to V117. Failed: V87 (a friend who appears offline sends, but
+  `GetGameAccountInfoByID` gives no `playerGuid`, so no BattleTag). `UnitPVPRank` is missing on Forever (V79).
+- `VERIFY.md` holds only what is still open, with narrower steps: V74 (a skull), V79 (`GetPVPRankInfo`,
+  `GetPVPThisWeekStats`, `PLAYER_PVP_KILLS_CHANGED`), V82 (riding, reopened: no tester had it), V85 (what was given),
+  V99 (sale, item link, repair cost), V100 (the inbox), V106 (slot links, fishing source), V108 (the emote), V120
+  (a player killer), V123 (hostile, contested, starting zones). V87 is closed as failed.
+- The probe (`Probe.IDS`) runs only the open checks: V82, V35b, V70, V73, V76, the Hunt, V80, V96, V101, V108,
+  V114, V120 to V123 (tests). Enemy players are still looked at for the Hunt. V108 passes on an emote at an
+  enemy-faction player alone; V123 keeps looking after "friendly" and notes each new type; `PLAYER_PVP_KILLS_CHANGED`
+  is noted under V73 (tests). `Probe.realmClock` (V78) is gone.
+- FriendProbe's checklist marks the answered items `done = "forever 70790"`; V82 is open again (spec).
+- Compatibility (rule 8): results stored for the removed checks stay in `global.probe` as they are, are uploaded
+  as before and only leave the `/cf fp` report; no migration, no schema change (tests). The site's reader
+  (CommunitiesForever-Web `src/core/probe.ts`) passes the section through without reading item keys, so files with
+  and without the removed keys both work. Nothing sent changes.
+- Not user-facing (the probe is invisible), so no CHANGELOG line.
+- Manual (VERIFY.md CF-96).
+
 ### CF-95 Run view fits the window's smallest width
 Open bug (noted in CF-94): at the window's 700 px minimum the detail shows about 408 px, but a run (and a dungeon, and
 the empty states) was laid out at least 520 px wide, so the right side was cut off: the group rows' status, "Ask now

@@ -101,10 +101,19 @@ describe("Probe", function()
   end)
 
   describe("the size cap", function()
+    -- Saved files keep the results of the checks answered at launch (CF-96) next to the running ones.
+    local ids = {}
+    for _, id in ipairs(Probe.IDS) do ids[#ids + 1] = id end
+    for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86", "V87",
+                          "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105", "V106",
+                          "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117" }) do
+      ids[#ids + 1] = id
+    end
+
     local function full()
       local section = { results = { forever = {}, retail = {} } }
       for _, client in ipairs({ "forever", "retail" }) do
-        for _, id in ipairs(Probe.IDS) do
+        for _, id in ipairs(ids) do
           Probe.record(section.results[client], id, "fail", string.rep("d", 200), 1794000000, "65000")
           Probe.record(section.results[client], id, "info", string.rep("l", 200), 1794000000, "65000")
           for i = 1, 3 do Probe.note(section.results[client], id, i .. string.rep("n", 200)) end
@@ -190,26 +199,13 @@ describe("Probe", function()
     end)
   end)
 
-  describe("the realm clock (V78)", function()
-    it("finds the offset from UTC in 15 minute steps", function()
-      local noonUtc = 1794000000 - 1794000000 % 86400 + 12 * 3600
-      assert.are.same({ "pass", "realm 13:00, offset +60 min" }, { Probe.realmClock(13, 0, noonUtc) })
-      assert.are.same({ "pass", "realm 04:00, offset -480 min" }, { Probe.realmClock(4, 0, noonUtc) })
-      assert.are.same({ "pass", "realm 23:30, offset +690 min" }, { Probe.realmClock(23, 30, noonUtc) })
-    end)
-
-    it("fails without a clock", function()
-      assert.are.equal("fail", (Probe.realmClock(nil, nil, 1)))
-    end)
-  end)
-
   describe("the report", function()
     it("summarises and lists every check, open ones too", function()
       local results = {}
       Probe.record(results, "V73", "pass", "victim and rank", 100, "65000")
-      Probe.record(results, "V74", "fail", "race secret", 100, "65000")
-      Probe.record(results, "V74", "info", "later one", 100, "65000")
-      Probe.note(results, "V74", "a line")
+      Probe.record(results, "V76", "fail", "IsInGroup secret", 100, "65000")
+      Probe.record(results, "V76", "info", "later one", 100, "65000")
+      Probe.note(results, "V76", "a line")
       Probe.note(results, "error", "PLAYER_DEAD: boom")
       local c = Probe.summary(results)
       assert.are.same({ pass = 1, fail = 1, info = 0, open = #Probe.IDS - 2 }, c)
@@ -218,11 +214,28 @@ describe("Probe", function()
         #Probe.IDS - 2), lines[1])
       local text = table.concat(lines, "\n")
       assert.truthy(text:find("V73 pass: victim and rank [T100, build 65000]", 1, true))
-      assert.truthy(text:find("V74 fail: race secret (later: later one) [T100, build 65000]\n  a line", 1, true))
+      assert.truthy(text:find("V76 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
       assert.truthy(text:find("V120 open", 1, true))
+      assert.is_nil(text:find("V63", 1, true)) -- answered at launch (CF-96): no longer in the report
       assert.truthy(text:find("error: PLAYER_DEAD: boom", 1, true))
       assert.are.equal("Probe (retail): 1 pass, 1 fail, 0 info, " .. (#Probe.IDS - 2) .. " open; stopped.",
         Probe.summaryLine(results, "retail", false))
+    end)
+
+    it("keeps stored results of checks answered at launch, and leaves them out of the report (CF-96)", function()
+      local results = {}
+      Probe.record(results, "V63", "pass", "date: 14:48", 100, "70790")
+      Probe.record(results, "V87", "fail", "playerGuid no, battleTag no", 100, "70790")
+      local c = Probe.summary(results)
+      assert.are.same({ pass = 0, fail = 0, info = 0, open = #Probe.IDS }, c)
+      local text = table.concat(Probe.report(results, "forever", true), "\n")
+      assert.is_nil(text:find("V87", 1, true))
+      assert.are.equal("pass", results.V63.status) -- untouched: the upload still carries it
+      for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86",
+                            "V87", "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105",
+                            "V106", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117" }) do
+        for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
+      end
     end)
   end)
 end)

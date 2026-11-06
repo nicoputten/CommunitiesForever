@@ -1,5 +1,6 @@
 -- LootInfo: own loot messages, item quality and slot, and money (CF-53). Thin wrapper: raw values only,
--- the rules are in core/Loot.lua. Unverified on Forever (VERIFY.md V82, V83): guarded, missing values are nil.
+-- the rules are in core/Loot.lua. Loot strings verified on Forever (V83); riding still open (VERIFY.md V82): guarded,
+-- missing values are nil.
 local _, ns = ...
 
 local LootInfo = {}
