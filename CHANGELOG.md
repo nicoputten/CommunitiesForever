@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Doomsday:** the addon now tracks 25 more missions: kills, elites and rares, flights, swimming and riding, the
+  hearthstone, places within zones, the bank, trainer and merchant, weapon skills, and whispers, mail and group
+  screenshots with friends. They join the draw in a later version.
 - **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
   "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
   names are cut with "..." before the buttons, also in a narrow window.
