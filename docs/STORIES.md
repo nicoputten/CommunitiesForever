@@ -80,6 +80,19 @@ in `src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua`, `tests/spe
 - Not user-facing (the probe is invisible), so no CHANGELOG line.
 - Manual: VERIFY.md V60 and CF-98.
 
+### CF-100 Launch probe: scan the recipes again once the list has loaded
+The export of 2026-11-06 (evening) has V60 `info` with `0 recipes, 0 learned` on `TRADE_SKILL_SHOW`: the recipe list
+loads just after that event, and the `TRADE_SKILL_LIST_UPDATE` that follows within seconds fell in the 10 s throttle
+(`Recipes.EVERY`). No event came after it, so V60 never saw the loaded list. Touches
+`src/services/LaunchProbeRecipes.lua`, `tests/spec/LaunchProbe_spec.lua`, VERIFY.md, API-FINDINGS.md.
+- A throttled scan schedules one later scan when the throttle runs out (`C_Timer.NewTimer`, verified), at most one at a
+  time; it stops as before once V60 passed or while a linked view is open.
+- API-FINDINGS gets the partial V60 answer (the functions exist, profession ID, list link, own link opens Blizzard's
+  view with 471 recipe IDs); VERIFY.md V60 keeps what is left.
+- Compatibility (rule 8): nothing stored or sent changes; an older client keeps its `info` result until it updates.
+- Manual (VERIFY.md CF-100).
+- Not user-facing (the probe is invisible), so no CHANGELOG line.
+
 ### CF-96 Launch probe results: answered items closed, the probe trimmed
 Nico exported the launch probe's results from the site on 2026-11-06: 6 testers on Forever live, build 70790. Touches:
 `VERIFY.md`, `docs/API-FINDINGS.md`, `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
