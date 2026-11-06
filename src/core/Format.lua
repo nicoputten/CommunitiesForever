@@ -38,7 +38,7 @@ end
 -- Secondary professions by skillLine (verified): First Aid 129, Cooking 185, Fishing 356.
 local SECONDARY_SKILL_LINES = { [129] = true, [185] = true, [356] = true }
 
--- Professions sorted by name: { { name, rank, max, fraction } }, fraction in 0..1.
+-- Professions sorted by name: { { name, rank, max, fraction, skillLine } }, fraction in 0..1.
 -- filter(skillLine) limits the list when given.
 function Format.professionList(professions, filter)
   local list = {}
@@ -46,7 +46,7 @@ function Format.professionList(professions, filter)
     if not filter or filter(skillLine) then
       local fraction = 0
       if (p.max or 0) > 0 then fraction = math.min(1, math.max(0, (p.rank or 0) / p.max)) end
-      list[#list + 1] = { name = p.name, rank = p.rank, max = p.max, fraction = fraction }
+      list[#list + 1] = { name = p.name, rank = p.rank, max = p.max, fraction = fraction, skillLine = skillLine }
     end
   end
   table.sort(list, function(a, b) return (a.name or "") < (b.name or "") end)

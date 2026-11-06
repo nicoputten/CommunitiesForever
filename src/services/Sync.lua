@@ -177,12 +177,15 @@ local function broadcastHello(force)
 end
 
 -- Asks a peer for one record (want = key on its wire; nil = the peer's own record), once per version per 60 s.
-local function request(target, want, version)
+-- person: our key of that record; CF-38: `rc` says how many recipes we hold per character, so only the new ones come.
+local function request(target, want, version, person)
   if not reachable(target) then return end
   local key = tostring(target) .. "|" .. tostring(want)
   if recentlySent(lastReq, key, version) then return end
   remember(lastReq, key, version)
-  ns.Messenger.send(target, { t = "REQ", bt = ownWireKey(target), want = want })
+  local stored = person and global().people[person]
+  ns.Messenger.send(target, { t = "REQ", bt = ownWireKey(target), want = want,
+                              rc = stored and ns.Recipes.have(stored.chars) or nil })
 end
 
 -- CF-46: our planned runs to a peer, at most once per updatedAt per 60 s. Never during an encounter or a PvP
@@ -339,14 +342,14 @@ function handlers.HELLO(message, senderKey, target, guid)
   local person = global().people[key]
   -- The owner's record also replaces a relayed copy with a higher version.
   if message.ver > storedVersion(key) or (person and person.via) then
-    request(target, nil, message.ver)
+    request(target, nil, message.ver, key)
   end
   if type(message.known) ~= "table" then return end
   for wire, version in pairs(message.known) do
     if type(wire) == "string" and type(version) == "number" and wire ~= message.bt then
       local local_, ownKnown = fromWire(wire)
       if not ownKnown and version > storedVersion(local_) then
-        request(target, wire, version)
+        request(target, wire, version, local_)
       end
     end
   end
@@ -355,9 +358,10 @@ end
 function handlers.REQ(message, _, target)
   local wireOwn = ownWireKey(target)
   if not wireOwn then return end
+  local have = ns.Recipes.cleanHave(message.rc) -- CF-38
   if message.want == nil or message.want == wireOwn then
     -- All own characters are always shared (CF-17), so this works on any character.
-    local record = ns.Merge.outgoingRecord(own(), ns.DoomsdayTracker.outgoing())
+    local record = ns.Merge.outgoingRecord(own(), ns.DoomsdayTracker.outgoing(), have)
     ns.FeedTracker.published(record.version)
     record.bt = wireOwn
     -- CF-90: over the community our own record also says our BattleTag (over Battle.net it is bt already).
@@ -365,7 +369,7 @@ function handlers.REQ(message, _, target)
     ns.Messenger.send(target, record)
   elseif type(message.want) == "string" then
     local key = fromWire(message.want)
-    local record = ns.Merge.relayRecord(global().people, key)
+    local record = ns.Merge.relayRecord(global().people, key, have)
     if not record then return end
     if isCommunity(target) then
       record.bt = ns.Identity.toCommunity(global().people, own(), key)
