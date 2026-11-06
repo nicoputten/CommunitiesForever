@@ -57,6 +57,19 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-97 A friend who appears offline, known over the guild
+Two accounts with this build, A and B: Battle.net friends, both in the guild picked as the community. Both online in
+Forever, with `/console scriptErrors 1`. Replace `<B's BattleTag>` with B's real one (B: `/run print(CommunitiesForeverDB.global.self.battleTag)`).
+
+| Step | Expected | Status |
+|---|---|---|
+| B: set Battle.net to **Appear Offline** (Battle.net status menu). On A: `/reload`, wait ~15 s (or `/cf sync` on both) | Nothing in chat. | open |
+| On A: `/run local p=CommunitiesForeverDB.global.people["<B's BattleTag>"] print(p ~= nil, p and p.aid)` | `true` and B's 12-hex account ID. | open |
+| On A: `/run local n=0 for k in pairs(CommunitiesForeverDB.global.people) do if k:sub(1,4)=="aid:" then n=n+1 end end print(n)` | `0` (or only members on an older version); no `aid:` entry for B. | open |
+| On A: `/cf` | B shows once, under B's display name, with B's characters **offline** (B appears offline). | open |
+| B levels up or changes gear; on A after ~15 s: `/run print(CommunitiesForeverDB.global.people["<B's BattleTag>"].version)` | A newer version. | open |
+| B: set Battle.net back to **Online**; on A after ~15 s: `/cf` and the `aid:` count line again | B still shows once, now with B's character online; still `0` `aid:` entries. | open |
+
 ### CF-98 The launch probe checks recipes (V60)
 This build on Forever (before 2026-11-18), `/console scriptErrors 1`.
 

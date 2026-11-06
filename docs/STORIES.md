@@ -8,6 +8,30 @@ Build order:
    launch probe runs since CF-98).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-97 A friend who appears offline is known by their BattleTag over the guild
+From the launch probe (V87 failed on build 70790, CF-96): from a Battle.net friend who appears offline,
+`C_BattleNet.GetGameAccountInfoByID` gives no `playerGuid` and no BattleTag, so their Battle.net messages are dropped.
+In the selected guild or community they still sync, as `aid:<id>`, but CF-90 refused their `btag` because the tag is a
+current Battle.net friend's ("Battle.net decides for them"). Battle.net can't decide here. Touches:
+`src/core/Identity.lua`, `src/services/Sync.lua`, specs, SYNC.md, VERIFY.md, CHANGELOG.md.
+- `Identity.claimBattleTag` takes a current Battle.net friend's BattleTag when Battle.net does not show that friend in
+  Forever now (no entry in `PresenceTracker.online()`), with every other CF-90 guard (tests). Without an online list
+  (`ctx.online == nil`) every friend counts as shown, and the claim is refused as before (tests).
+- Still refused while Battle.net shows the friend in Forever, from any character (tests).
+- Before the Battle.net friends are read the claim is taken like any BattleTag (as in CF-90); once Battle.net shows
+  the friend, their own record carries the same BattleTag and account ID: nothing changes (tests).
+- A friend who is really offline can't send over the guild. Someone else claiming their BattleTag is refused when we
+  ever synced them (the first owner keeps it: their record holds another account ID, or lists other characters);
+  one we never synced can be claimed, the same risk as CF-90 for non-friends (tests).
+- Online: a friend known this way stays offline in the window, as Battle.net shows them (privacy, CF-15): `Sync.online`
+  lists no community peer whose key is a current Battle.net friend (tests).
+- The inert hidden-friend path (`Friends.resolveHidden`, `addHidden`, `PresenceTracker.isHidden`) stays: Blizzard may
+  fix the API.
+- Compatibility (rule 8): nothing sent and no stored shape changes. Older clients send `btag` the same way (v1.3.1 on)
+  or none; an older receiver keeps refusing a friend's claim and keeps the friend under `aid:`. No migration.
+- Decided by Nico (2026-11-06): accept the guild BattleTag claim of a friend Battle.net doesn't show in Forever.
+- Manual (VERIFY.md CF-97).
+
 ### CF-98 Launch probe: the recipes check (V60)
 CF-38 (recipes) was prepared before launch with a FriendProbe-only check `/fp recipes` (PR #63, never merged), so the
 launch probe never looked at recipes. Now the addon's own probe does, so friends' normal play answers it. Touches:

@@ -268,7 +268,8 @@ local function learnBattleTag(wireKey, btag, guid, senderKey)
   if btag == nil or not guid then return senderKey end
   local people = global().people
   local ctx = { ownBattleTag = own().battleTag, ownAccountId = own().accountId, friends = ns.PresenceTracker.friends(),
-                presence = global().presence, characters = ns.PresenceTracker.characters() }
+                online = ns.PresenceTracker.online(), presence = global().presence,
+                characters = ns.PresenceTracker.characters() }
   if not ns.Identity.claimBattleTag(people, wireKey, btag, guid, ctx) then return senderKey end
   ns.Merge.absorb(people, btag, now())
   for _, peer in pairs(peers) do
@@ -580,10 +581,13 @@ function Sync.online()
   local result = {}
   for bt, presence in pairs(ns.PresenceTracker.online()) do result[bt] = presence end
   local members = ns.MemberTracker.members()
+  local friends = ns.PresenceTracker.friends()
   for name, peer in pairs(peers) do
     -- A friend who appears offline on Battle.net stays offline here too (privacy), even when they greet us over
-    -- the community: sync and linking only.
-    if not result[peer.key] and not offline[peer.guid] and not ns.PresenceTracker.isHidden(peer.key) then
+    -- the community: sync and linking only. CF-97: also one known by the BattleTag they claimed over the
+    -- community (a Battle.net friend whom Battle.net doesn't show in Forever; V87: the game can't name them).
+    if not result[peer.key] and not offline[peer.guid] and not friends[peer.key]
+        and not ns.PresenceTracker.isHidden(peer.key) then
       local member = members[peer.guid] or {}
       result[peer.key] = { guid = peer.guid, name = name, level = member.level, classID = member.classID,
                            target = name }

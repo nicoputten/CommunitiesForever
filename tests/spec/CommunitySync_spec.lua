@@ -351,6 +351,30 @@ describe("sync over the community (CF-28 part 2b)", function()
       assert.is_nil(people["Solvar#2032"])
     end)
 
+    it("takes a Battle.net friend's BattleTag when Battle.net does not show them in Forever (CF-97)", function()
+      load()
+      flush()
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+      fromDee(deeRecord(950))
+      -- Offline#3333 is a Battle.net friend Battle.net shows offline (appears offline, V87); Retailer#1111 is on
+      -- another game: neither is in Forever on Battle.net, so Battle.net can't decide.
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {}, btag = "Offline#3333" })
+      local people = addon.db.global.people
+      assert.is_nil(people[DEE_AID])
+      assert.are.equal("dddddddddddd", people["Offline#3333"].aid)
+      -- Later records under the account ID land on the BattleTag.
+      fromDee(deeRecord(960, nil, { displayName = "Deedee", btag = "Offline#3333" }))
+      assert.is_nil(people[DEE_AID])
+      assert.are.equal("Deedee", people["Offline#3333"].displayName)
+      -- Battle.net decides a friend's online state: the window does not tell that they are on.
+      local found
+      for _, p in ipairs(ns.ViewModel.build(addon).people) do
+        if p.battleTag == "Offline#3333" then found = p end
+      end
+      assert.are.equal(DEE_GUID, found.chars[1].guid)
+      assert.is_false(found.chars[1].online == true)
+    end)
+
     it("never lets a member take a BattleTag another account has", function()
       load(function(global)
         global.people["Eve#5555"] = { version = 100, aid = "eeeeeeeeeeee",
