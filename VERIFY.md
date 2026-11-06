@@ -15,6 +15,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V52 | How stale does community presence get after a logout? (CF-28: online status for non-friends; CF-15 bug) | A few minutes after a member logged out, the FriendProbe run (at login): under V52 COMMUNITY PRESENCE, does that member still show `Online`? | open |
 | V53 | Is the "No player named X is currently playing" line hidden after an addon whisper to someone who just went offline? (CF-28) | With a community member running this build: let them log out, then (within a minute, before the community list updates) `/cf sync`. Expected no "No player named ..." line in chat (`ChatFrameUtil.AddMessageEventFilter` / `ChatFrame_AddMessageEventFilter` and `ERR_CHAT_PLAYER_NOT_FOUND_S` are unverified). If the line shows, send it. | open |
 | V59 | Does a friend **receive** the hidden sync channel's HELLO, and which `CHAT_MSG_ADDON` arguments name the channel? (CF-31; sending works on Retail 12.1.5: API-FINDINGS) | Two players in the community who are **not** Battle.net friends, both with CommunitiesForever. Log in A and B, then `/cf sync debug` on both (it lasts until the next /reload or login, CF-64). On A `/cf sync`: `[sync] to the community channel: HELLO …`. On B: a `[sync]` line receiving that HELLO from A, and within seconds A's characters show with their data in `/cf` (not only the community's class and level). Then `/cf sync debug` again on both to stop the lines. If B shows nothing: B's `/dump GetChannelList()` (is a `cf…` channel in it?). | open |
+| V60 | What does the profession API give on Forever (CF-38)? Recipe IDs, learned state and the item a recipe makes (`C_TradeSkillUI.GetAllRecipeIDs`, `GetRecipeInfo(id).learned`, `GetRecipeOutputItemData` / `GetRecipeItemLink` / `GetRecipeSchematic`), the profession (`GetBaseProfessionInfo`, `GetChildProfessionInfo`) and `GetTradeSkillListLink`. V60b: does a clicked profession link open Blizzard's view of someone else's recipes (`TRADE_SKILL_SHOW` with `IsTradeSkillLinked` true), also while they are offline? (The launch probe checks both, CF-98.) | V60: open one of your professions (e.g. Tailoring) and scroll a bit. `/cf fp`: `V60 pass: base <id>, child <id>; <n> recipes, <n> learned; item from output/link/schematic; list link yes`, with two `recipe <id>: …` lines under it; a `missing: …` line names functions Forever lacks. Or by hand with the window open: `/run local T=C_TradeSkillUI; local ids=T.GetAllRecipeIDs(); print(#ids, T.GetRecipeInfo(ids[1]).learned, T.GetRecipeOutputItemData(ids[1]).itemID, T.GetTradeSkillListLink())`. V60b (two friends with this build, both in the addon's list): A opens a profession and links it in a whisper or community chat (the link button next to the profession name, or shift-click it). B clicks the link: does Blizzard's profession window open with A's recipes? A logs out; B clicks the same link again in the chat history. B's `/cf fp`: `V60b pass: link of a friend offline opened Blizzard's view …` answers both (log: `link of a friend online clicked`, `… offline clicked`); `fail: … no linked window within 5 s` means it did not open. | open |
 | V64 | Do the ambient effects work (CF-43)? `texture:CreateAnimationGroup` (on the streak, not the frame: see API-FINDINGS "Retail dry runs") with a `Translation` animation (`SetOffset`, `SetDuration`, `SetStartDelay`, `SetLooping("REPEAT")`), `SetClipsChildren` and `Texture:SetBlendMode("ADD")`. | See the CF-43 steps: a soft light streak slides across the window title every few seconds and across LEVEL UP chips, clipped to them; the title bar and the chips themselves never move and no dark block shows; between passes nothing shows, no white strip behind the title's shield (CF-62: an `Alpha` animation holds it visible only while it moves); off with Ambient effects. If nothing moves, send any Lua error. | open |
 
 | V69 | Can one click invite several friends in a row (`C_PartyInfo.InviteUnit` per name), the first invite making a party? (CF-48: Invite everyone ready) | With at least two friends online in Forever and you not in a group: FriendProbe's Test: invite all, click `Invite all N`. Do all friends get an invite (also the second, while the first hasn't accepted yet)? Let them accept, wait 10 s (`V69 after 10 s: in group N`), `/reload` and send the log (the `V69 C_PartyInfo.InviteUnit` lines and `INVITE EVENT` lines). | open |
@@ -55,6 +56,15 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-98 The launch probe checks recipes (V60)
+This build on Forever (before 2026-11-18), `/console scriptErrors 1`.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf fp` before opening a profession | The summary counts 17 checks; the report ends with `V60 open` and `V60b open`. | open |
+| Open a profession window (e.g. Tailoring), scroll, close it | Nothing in chat, no popup, no Lua error. `/cf fp`: `V60` with the profession IDs, recipe counts and where the item comes from (see V60 above); no recipe or player names in its lines. | open |
+| Click a friend's profession link (online, then after they logged out) | Blizzard's window opens or not, nothing else happens. `/cf fp`: `V60b` says whose link (`a friend online`, `a friend offline`, `yours`, `someone else`) and whether the view opened; no names or GUIDs. | open |
 
 ### CF-96 The launch probe without the answered checks
 This build on Forever (before 2026-11-18), on a character that ran the earlier build, `/console scriptErrors 1`.
@@ -308,6 +318,35 @@ line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.d
 | Trade with a friend's community character | `trades` 1 or more; a stranger doesn't count. | open |
 | Cook a dish, then trade it to a friend (needs V85: what you gave) | `/run print(next(CommunitiesForeverDB.global.self.doomsday.cooked))` shows the dish's item ID; after the trade `fed` 1. | open |
 | Group with a friend's community character, then `/run for w,f in pairs(CommunitiesForeverDB.global.self.doomsday.weeks) do local n=0; for _ in pairs(f.extended and f.extended.groupDays or {}) do n=n+1 end; print(w,n) end` | This week shows 1 (a day with a friend in the group); on two more days it reaches 3. | open |
+| A friend on v1.3.2 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
+
+### CF-75 Items, crafting, cooking, First Aid and care missions (tracking only, not in the draw yet)
+Verified on Forever (API-FINDINGS "Forever launch probe"): V95, V104, V105, V106 (sources), V109, V110, V112, V113,
+V116, V117. The missions join the draw in the pool-3 story, so check the facts. "Today's items" below means:
+`/run local d=CommunitiesForeverDB.global.self.doomsday.days local n=0 for k in pairs(d) do if k>n then n=k end end for k,v in pairs(d[n].items or {}) do local c=0 if type(v)=="table" then for _ in pairs(v) do c=c+1 end end print(k,type(v)=="table" and c or tostring(v)) end`
+(tables print their size). `/console scriptErrors 1` for all steps.
+
+| Step | Expected | Status |
+|---|---|---|
+| First login with this build, wait 10 s; `/dump CommunitiesForeverDB.global.self.doomsday.worn` | The item IDs your character wears now, under its GUID. No Lua error. | open |
+| Cook 2 different dishes (one of them twice); today's items | `cooked 3`, `cookKinds 2`. | open |
+| Make a bandage (first bandage on Forever: class `0/7` expected, never seen yet): `/run print(select(6, C_Item.GetItemInfoInstant(<bandage item ID>)))`; today's items | Prints `0 7`. `bandages` and `bandageKinds` went up. If the class differs, say which: the bandage missions match `0/7`. | open |
+| A mage conjures food or water; today's items | Say whether `cooked` went up (conjured food is "created" too, catalogue note 9). If it did, d.cook5 and friends count conjured food; Nico decides whether to exclude it. | open |
+| Craft an uncommon (green) item; today's items | `fine 1`. | open |
+| Eat a dish one of your characters cooked today; today's items | `eatOwn true`. Then eat bought bread: nothing more changes. | open |
+| Learn a recipe at a trainer, then read a recipe item from your bags; today's items | `recipes` went up by 2. | open |
+| Cooking recipe (unverified `C_TradeSkillUI.GetTradeSkillLineForRecipe` and `GetRecipeSchematic` on Forever): learn a cooking recipe at the cooking trainer, then `/run local l,_,p=C_TradeSkillUI.GetTradeSkillLineForRecipe(<recipe ID>) local s=C_TradeSkillUI.GetRecipeSchematic(<recipe ID>,false) print(l,p,s and s.outputItemID)` (the recipe ID: `/etrace`, event `NEW_RECIPE_LEARNED`); today's items | Prints a skill line (185 or a Cooking line whose parent is 185) and the dish's item ID; `cookRecipe true`. If both are nil, reading a cooking recipe item still counts: try one and check `cookRecipe true`. | open |
+| Recipe items (V116 for recipes): `/run for b=0,4 do for s=1,C_Container.GetContainerNumSlots(b) do local i=C_Container.GetContainerItemID(b,s) if i then local _,sp=C_Item.GetItemSpell(i) local c,sc=select(6,C_Item.GetItemInfoInstant(i)) if c==9 then print(i,sp,c,sc) end end end end` with a recipe in your bags | The recipe shows a spell ID and class `9`, subclass `5` for cooking. A nil spell: reading a recipe item can't tell cooking (the skill line above still can). | open |
+| Gather 3 herbs or ore from a node, skin a body; today's items | `gathered` up by every herb, ore, stone and leather item. Loot cloth from a mob: no change. | open |
+| Loot coins from 3 enemies, alone and in a group; today's items | `coins 3`. | open |
+| Loot a piece of gear and put it on; today's items | `equipNew true`. Put on gear from your bank looted on an earlier day: no change. | open |
+| Put on a blue (rare) item this character never wore; `/dump CommunitiesForeverDB.global.self.doomsday.weeks` (newest week, `items.blueGear`) | `blueGear true`; the item is now in the character's `worn` set. Taking it off and on again doesn't count again. | open |
+| Use a bandage on yourself, then on a friend's community character in your group; today's items | `bandagesUsed 2`, `bandageFriend true`. On a stranger: `bandagesUsed` up, `bandageFriend` unchanged. | open |
+| Drink a potion (first potion on Forever: class `0/1` expected); today's items | `potions 1`. If not: `/run print(select(6, C_Item.GetItemInfoInstant(<potion item ID>)))` and say the class. | open |
+| Read a scroll on yourself, with no target and with yourself targeted (first scroll on Forever: class `0/4` expected); then one on a friend | `scrolls` up by 2; the friend's doesn't count. If not: print its class as for the potion. | open |
+| Eat food until "Well Fed" shows on your buffs; today's items | `wellFed true` (matched by the aura's name "Well Fed": an English client). | open |
+| Buff a friend's community character in your group (out of combat); today's items | `buffFriend true`. A buff on your own alt or a stranger doesn't count. | open |
+| Have grey items in your bags, sell them all; today's items | `tidy true`. A character with no grey items at login has nothing to tidy. | open |
 | A friend on v1.3.2 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
 
 ### CF-76 World missions: combat, travel, economy, social

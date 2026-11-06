@@ -5,7 +5,8 @@ local wowapi = require("mocks.wowapi")
 describe("the hidden launch probe", function()
   local state, ns, addon
   local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "C_DeathRecap", "C_PvP",
-                  "UnitFactionGroup", "IsFishingLoot", "GetPVPThisWeekStats", "DoEmote", "hooksecurefunc" }
+                  "UnitFactionGroup", "IsFishingLoot", "GetPVPThisWeekStats", "DoEmote", "hooksecurefunc",
+                  "C_TradeSkillUI", "SetItemRef" }
 
   local function load(serverTime)
     state, ns, addon = helpers.client({ setup = function(s) s.serverTime = serverTime or 1794000000 end })
@@ -188,5 +189,127 @@ describe("the hidden launch probe", function()
     _G.DoEmote("FLEX", "target")
     assert.are.equal("pass", results().V108.status)
     assert.are.equal("emote FLEX on an enemy-faction player", results().V108.detail)
+  end)
+
+  -- CF-98: the recipe checks V60 and V60b (services/LaunchProbeRecipes.lua).
+  describe("recipes", function()
+    local linked, recipeIDs
+
+    -- Tailoring with three recipes, two learned; Bolt of Silk Cloth (item 4305) from each way.
+    local function tailoring()
+      linked, recipeIDs = false, { 3839, 3840, 3841 }
+      _G.C_TradeSkillUI = {
+        GetAllRecipeIDs = function() return recipeIDs end,
+        GetRecipeInfo = function(id) return { recipeID = id, name = "Bolt of Silk Cloth", learned = id ~= 3841 } end,
+        GetRecipeOutputItemData = function() return { itemID = 4305 } end,
+        GetRecipeItemLink = function() return "|cffffffff|Hitem:4305::::::::60:::::|h[Bolt of Silk Cloth]|h|r" end,
+        GetRecipeSchematic = function() return { outputItemID = 4305, name = "Bolt of Silk Cloth" } end,
+        GetBaseProfessionInfo = function() return { professionID = 197, professionName = "Tailoring" } end,
+        GetChildProfessionInfo = function() return { professionID = 2540 } end,
+        GetTradeSkillListLink = function() return "|cffffd000|Htrade:Player-1-000A:3908:197|h[Tailoring]|h|r" end,
+        IsTradeSkillLinked = function() return linked, linked and "Ada Stormwind" or nil end,
+        OpenTradeSkill = function() end,
+      }
+    end
+
+    local function withLinks()
+      _G.SetItemRef = function() end
+      _G.hooksecurefunc = function(name, fn)
+        local original = _G[name]
+        _G[name] = function(...)
+          original(...)
+          fn(...)
+        end
+      end
+    end
+
+    it("reads the own profession window: counts and IDs only (V60)", function()
+      tailoring()
+      load()
+      local printed = #state.printed
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      local r = results().V60
+      assert.are.equal("pass", r.status)
+      assert.are.equal("base 197, child 2540; 3 recipes, 2 learned; item from output/link/schematic; list link yes",
+        r.detail)
+      assert.are.same({ "recipe 3839: output 4305, link 4305, schematic 4305",
+                        "recipe 3840: output 4305, link 4305, schematic 4305" }, r.log)
+      assert.is_nil(r.detail:find("Bolt", 1, true))
+      assert.is_nil(r.detail:find("Tailoring", 1, true))
+      assert.are.equal(printed, #state.printed) -- silent
+    end)
+
+    it("waits for the list to load, scanning at most every 10 s (V60)", function()
+      tailoring()
+      recipeIDs = {}
+      load()
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      assert.are.equal("info", results().V60.status)
+      recipeIDs = { 3839 }
+      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
+      assert.are.equal("info", results().V60.status) -- throttled
+      state.serverTime = state.serverTime + 10
+      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
+      assert.are.equal("pass", results().V60.status)
+    end)
+
+    it("fails without C_TradeSkillUI, and names missing functions (V60)", function()
+      load()
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      assert.are.same("fail", results().V60.status)
+      assert.are.same("C_TradeSkillUI missing", results().V60.detail)
+      wowapi.uninstall()
+      tailoring()
+      _G.C_TradeSkillUI.GetRecipeSchematic = nil
+      _G.C_TradeSkillUI.GetRecipeItemLink = nil
+      load()
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      assert.are.equal("pass", results().V60.status)
+      assert.truthy(results().V60.detail:find("item from output;", 1, true))
+      assert.are.equal("missing: GetRecipeItemLink, GetRecipeSchematic", results().V60.log[1])
+    end)
+
+    it("passes V60b when a friend's link opens Blizzard's view while they are offline, without their GUID", function()
+      tailoring()
+      withLinks()
+      load()
+      addon.db.global.people["Ada#1001"] = { chars = { ["Player-1-000B"] = { name = "Ada Stormwind" } } }
+      _G.SetItemRef("trade:Player-1-000B:3908:197", "[Tailoring]", "LeftButton")
+      linked = true
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      local r = results().V60b
+      assert.are.equal("pass", r.status)
+      assert.are.equal("link of a friend offline opened Blizzard's view (IsTradeSkillLinked true, 3 recipes)", r.detail)
+      assert.are.same({ "link of a friend offline clicked" }, r.log)
+      assert.is_nil(results().V60) -- someone else's recipes are not V60's
+      wowapi.runTimers(state)
+      assert.are.equal("pass", results().V60b.status)
+    end)
+
+    it("keeps V60b info for the own link, and notes a click that opened nothing", function()
+      tailoring()
+      withLinks()
+      load()
+      _G.SetItemRef("item:4305", "[Bolt of Silk Cloth]", "LeftButton") -- not a profession link
+      assert.is_nil(results().V60b)
+      _G.SetItemRef("trade:" .. state.player.guid .. ":3908:197", "[Tailoring]", "LeftButton")
+      linked = true
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      assert.are.equal("info", results().V60b.status)
+      assert.truthy(results().V60b.detail:find("link of yours opened", 1, true))
+      _G.SetItemRef("trade:Player-1-000C:3908:197", "[Tailoring]", "LeftButton")
+      wowapi.runTimers(state)
+      assert.are.equal("info", results().V60b.status)
+      assert.are.equal("link of someone else clicked, no linked window within 5 s", results().V60b.detail)
+    end)
+
+    it("counts V60 and V60b in /cf fp", function()
+      load()
+      assert.are.equal(17, #ns.Probe.IDS)
+      addon:OnSlashCommand("fp")
+      local text = ns.ProbeReport.text()
+      assert.truthy(text:find("V60 open", 1, true))
+      assert.truthy(text:find("V60b open", 1, true))
+    end)
   end)
 end)
