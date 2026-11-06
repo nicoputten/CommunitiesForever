@@ -290,6 +290,35 @@ The release day's draw with this build: `/run local D,s=CommunitiesForever.Dooms
 | On this build, a day that was already drawn before the update (log in on v1.1.0, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `pool` nil (read as version 1: its goals score 5 each); the next day's entry prints `2`. | open |
 | Finish a new daily (e.g. Say something in the community chat, if drawn) | Its banner and the week's total show its size (+1, +3 or +5), not +5 for every goal. | open |
 
+### CF-75 Items, crafting, cooking, First Aid and care missions (tracking only, not in the draw yet)
+Verified on Forever (API-FINDINGS "Forever launch probe"): V95, V104, V105, V106 (sources), V109, V110, V112, V113,
+V116, V117. The missions join the draw in the pool-3 story, so check the facts. "Today's items" below means:
+`/run local d=CommunitiesForeverDB.global.self.doomsday.days local n=0 for k in pairs(d) do if k>n then n=k end end for k,v in pairs(d[n].items or {}) do local c=0 if type(v)=="table" then for _ in pairs(v) do c=c+1 end end print(k,type(v)=="table" and c or tostring(v)) end`
+(tables print their size). `/console scriptErrors 1` for all steps.
+
+| Step | Expected | Status |
+|---|---|---|
+| First login with this build, wait 10 s; `/dump CommunitiesForeverDB.global.self.doomsday.worn` | The item IDs your character wears now, under its GUID. No Lua error. | open |
+| Cook 2 different dishes (one of them twice); today's items | `cooked 3`, `cookKinds 2`. | open |
+| Make a bandage (first bandage on Forever: class `0/7` expected, never seen yet): `/run print(select(6, C_Item.GetItemInfoInstant(<bandage item ID>)))`; today's items | Prints `0 7`. `bandages` and `bandageKinds` went up. If the class differs, say which: the bandage missions match `0/7`. | open |
+| A mage conjures food or water; today's items | Say whether `cooked` went up (conjured food is "created" too, catalogue note 9). If it did, d.cook5 and friends count conjured food; Nico decides whether to exclude it. | open |
+| Craft an uncommon (green) item; today's items | `fine 1`. | open |
+| Eat a dish one of your characters cooked today; today's items | `eatOwn true`. Then eat bought bread: nothing more changes. | open |
+| Learn a recipe at a trainer, then read a recipe item from your bags; today's items | `recipes` went up by 2. | open |
+| Cooking recipe (unverified `C_TradeSkillUI.GetTradeSkillLineForRecipe` and `GetRecipeSchematic` on Forever): learn a cooking recipe at the cooking trainer, then `/run local l,_,p=C_TradeSkillUI.GetTradeSkillLineForRecipe(<recipe ID>) local s=C_TradeSkillUI.GetRecipeSchematic(<recipe ID>,false) print(l,p,s and s.outputItemID)` (the recipe ID: `/etrace`, event `NEW_RECIPE_LEARNED`); today's items | Prints a skill line (185 or a Cooking line whose parent is 185) and the dish's item ID; `cookRecipe true`. If both are nil, reading a cooking recipe item still counts: try one and check `cookRecipe true`. | open |
+| Recipe items (V116 for recipes): `/run for b=0,4 do for s=1,C_Container.GetContainerNumSlots(b) do local i=C_Container.GetContainerItemID(b,s) if i then local _,sp=C_Item.GetItemSpell(i) local c,sc=select(6,C_Item.GetItemInfoInstant(i)) if c==9 then print(i,sp,c,sc) end end end end` with a recipe in your bags | The recipe shows a spell ID and class `9`, subclass `5` for cooking. A nil spell: reading a recipe item can't tell cooking (the skill line above still can). | open |
+| Gather 3 herbs or ore from a node, skin a body; today's items | `gathered` up by every herb, ore, stone and leather item. Loot cloth from a mob: no change. | open |
+| Loot coins from 3 enemies, alone and in a group; today's items | `coins 3`. | open |
+| Loot a piece of gear and put it on; today's items | `equipNew true`. Put on gear from your bank looted on an earlier day: no change. | open |
+| Put on a blue (rare) item this character never wore; `/dump CommunitiesForeverDB.global.self.doomsday.weeks` (newest week, `items.blueGear`) | `blueGear true`; the item is now in the character's `worn` set. Taking it off and on again doesn't count again. | open |
+| Use a bandage on yourself, then on a friend's community character in your group; today's items | `bandagesUsed 2`, `bandageFriend true`. On a stranger: `bandagesUsed` up, `bandageFriend` unchanged. | open |
+| Drink a potion (first potion on Forever: class `0/1` expected); today's items | `potions 1`. If not: `/run print(select(6, C_Item.GetItemInfoInstant(<potion item ID>)))` and say the class. | open |
+| Read a scroll on yourself, with no target and with yourself targeted (first scroll on Forever: class `0/4` expected); then one on a friend | `scrolls` up by 2; the friend's doesn't count. If not: print its class as for the potion. | open |
+| Eat food until "Well Fed" shows on your buffs; today's items | `wellFed true` (matched by the aura's name "Well Fed": an English client). | open |
+| Buff a friend's community character in your group (out of combat); today's items | `buffFriend true`. A buff on your own alt or a stranger doesn't count. | open |
+| Have grey items in your bags, sell them all; today's items | `tidy true`. A character with no grey items at login has nothing to tidy. | open |
+| A friend on v1.3.2 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
+
 ### CF-73 Friends and places for Doomsday missions
 The missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the places line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local p=d.places; if p then local z,nz=0,0; for _ in pairs(p.zones) do z=z+1 end; for _ in pairs(p.newZones) do nz=nz+1 end; print(n,'zones',z,'new',nz,'sea',p.crossSea,'nost',p.nostalgia,'dare',p.daredevil,'same',p.sameZone,'online',p.onlineMax,'carry',p.carry,'chat',p.chat) end end`
 
