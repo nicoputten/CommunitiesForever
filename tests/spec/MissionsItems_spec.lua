@@ -58,9 +58,9 @@ describe("Missions: items (CF-75)", function()
     end
   end)
 
-  it("puts nothing in the draw (no since: the pool-3 story does that)", function()
+  it("puts all its missions in pool version 3 (CF-99)", function()
     for _, id in ipairs(Items.IDS) do
-      assert.is_nil(ns.Doomsday.goal(id).since, id)
+      assert.are.equal(3, ns.Doomsday.goal(id).since, id)
     end
   end)
 

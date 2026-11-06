@@ -61,9 +61,9 @@ describe("Missions: world (CF-76)", function()
     end
   end)
 
-  it("sets no since on its missions: the pool step does that", function()
+  it("puts all its missions in pool version 3 (CF-99)", function()
     for _, id in ipairs(World.IDS) do
-      assert.is_nil(ns.Doomsday.goal(id).since, id)
+      assert.are.equal(3, ns.Doomsday.goal(id).since, id)
     end
   end)
 
