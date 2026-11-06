@@ -177,6 +177,26 @@ describe("PvP, duels and deaths (CF-52)", function()
       assert.are.same({ Ashenvale = 1 }, entry().kills)
     end)
 
+    it("reads the victim from the honor message variant without a rank (CF-101, Forever)", function()
+      _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
+      _G.COMBATLOG_HONORGAIN_NO_RANK = "%s dies (Honorable Kill). You gain %d Honor."
+      finally(function() _G.COMBATLOG_HONORGAIN_NO_RANK = nil end)
+      load(nil, { hk = 10 })
+      enemyTarget()
+      state.zone = "Ashenvale"
+      state.serverTime = 1500
+      wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+      state.pvp.hk = 11
+      wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies (Honorable Kill). You gain 12 Honor.")
+      wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+      for _ = 1, 5 do
+        state.time = state.time + 5
+        wowapi.runTimers(state)
+      end
+      assert.are.same({ { t = 1500, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
+                          race = "Orc", solo = true } }, entry().pvpKills)
+    end)
+
     it("adds kills the counter shows without an honor message, without a victim", function()
       load(nil, { hk = 10 })
       state.zone = "Ashenvale"

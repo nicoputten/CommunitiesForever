@@ -203,9 +203,9 @@ describe("Probe", function()
     it("summarises and lists every check, open ones too", function()
       local results = {}
       Probe.record(results, "V73", "pass", "victim and rank", 100, "65000")
-      Probe.record(results, "V76", "fail", "IsInGroup secret", 100, "65000")
-      Probe.record(results, "V76", "info", "later one", 100, "65000")
-      Probe.note(results, "V76", "a line")
+      Probe.record(results, "V82", "fail", "IsInGroup secret", 100, "65000")
+      Probe.record(results, "V82", "info", "later one", 100, "65000")
+      Probe.note(results, "V82", "a line")
       Probe.note(results, "error", "PLAYER_DEAD: boom")
       local c = Probe.summary(results)
       assert.are.same({ pass = 1, fail = 1, info = 0, open = #Probe.IDS - 2 }, c)
@@ -214,7 +214,7 @@ describe("Probe", function()
         #Probe.IDS - 2), lines[1])
       local text = table.concat(lines, "\n")
       assert.truthy(text:find("V73 pass: victim and rank [T100, build 65000]", 1, true))
-      assert.truthy(text:find("V76 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
+      assert.truthy(text:find("V82 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
       assert.truthy(text:find("V120 open", 1, true))
       assert.is_nil(text:find("V63", 1, true)) -- answered at launch (CF-96): no longer in the report
       assert.truthy(text:find("error: PLAYER_DEAD: boom", 1, true))
@@ -237,5 +237,15 @@ describe("Probe", function()
         for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
       end
     end)
+  end)
+
+  it("shapes a game message without names (CF-101)", function()
+    local formats = { "%s dies (Honorable Kill: %s). You gain %d Honor.", "%1$s dies" }
+    assert.are.equal("x x dies (Honorable Kill). You gain 12.5 Honor.",
+      Probe.shape("Ann Example dies (Honorable Kill). You gain 12.5 Honor.", formats))
+    assert.are.equal("x dies", Probe.shape("|cff00ff00Grim|r dies", formats))
+    assert.are.equal("!x!x dies", Probe.shape("|Hplayer|h dies", formats))
+    assert.are.equal("x x", Probe.shape("Grim Tusk", nil))
+    assert.is_nil(Probe.shape(nil, formats))
   end)
 end)

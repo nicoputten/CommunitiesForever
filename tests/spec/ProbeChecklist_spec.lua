@@ -45,9 +45,9 @@ describe("FriendProbe launch checklist (CF-60)", function()
     end
     table.sort(done)
     assert.are.same({ "V102", "V103", "V104", "V105", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116",
-                      "V117", "V47", "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68", "V71",
-                      "V72", "V77", "V78", "V80", "V81", "V83", "V84", "V86", "V87", "V90", "V93", "V94", "V95",
-                      "V98" }, done)
+                      "V117", "V121", "V47", "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68",
+                      "V70", "V71", "V72", "V76", "V77", "V78", "V80", "V81", "V83", "V84", "V86", "V87", "V90",
+                      "V93", "V94", "V95", "V98" }, done)
   end)
 
   it("lists in the TOC only files that exist", function()

@@ -190,12 +190,26 @@ function Pvp.recall(cache, name, now)
   return nil
 end
 
+--[[ The arguments of an honor message and the format that matched, or nil. formats: one game format string or a
+list of them (CF-101: COMBATLOG_HONORGAIN and its variants; on Forever the kill message did not match
+COMBATLOG_HONORGAIN, V73), tried in order. ]]
+function Pvp.honorArgs(text, formats)
+  if type(formats) == "string" then formats = { formats } end
+  if type(formats) ~= "table" then return nil end
+  for _, format in ipairs(formats) do
+    local args = ns.GameText.parse(text, format)
+    if args and args[1] then return args, format end
+  end
+  return nil
+end
+
 --[[ The victim of an honor message: full name and rank number, from the game's COMBATLOG_HONORGAIN
-("%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)"). rankNumbers = { [rank name] = number } from
-the game's rank names (both factions); an unknown or empty rank name gives rank nil. nil when it isn't a kill. ]]
-function Pvp.victim(text, format, rankNumbers)
-  local args = ns.GameText.parse(text, format)
-  if not (args and args[1]) then return nil end
+("%s dies, honorable kill Rank: %s (Estimated Honor Points: %d)") or a variant without the rank (formats: see
+Pvp.honorArgs). rankNumbers = { [rank name] = number } from the game's rank names (both factions); an unknown or
+empty rank name, or a variant without one, gives rank nil. nil when it isn't a kill. ]]
+function Pvp.victim(text, formats, rankNumbers)
+  local args = Pvp.honorArgs(text, formats)
+  if not args then return nil end
   local rank = rankNumbers and args[2] and rankNumbers[args[2]]
   return args[1], type(rank) == "number" and rank or nil
 end
