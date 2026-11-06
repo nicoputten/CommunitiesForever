@@ -93,6 +93,27 @@ loads just after that event, and the `TRADE_SKILL_LIST_UPDATE` that follows with
 - Manual (VERIFY.md CF-100).
 - Not user-facing (the probe is invisible), so no CHANGELOG line.
 
+### CF-101 Honor message variants; the probe checks a recipe's profession (V60c)
+The export of 2026-11-06 21:33: the first honorable kill's message did not match `COMBATLOG_HONORGAIN` (V73 fail), so
+kills on Forever had no victim (the Hunt, `p.punchUp5`, `p.punchDown5` can't count); and `GetAllRecipeIDs` gives every
+profession's recipes at once, so CF-38 needs each recipe's profession. Touches `src/core/Pvp.lua`, `src/core/Probe.lua`,
+`src/adapters/PvpInfo.lua`, `src/services/PvpTracker.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeRecipes.lua`, specs, VERIFY.md, API-FINDINGS.md.
+- Honor messages: `PvpInfo.formats().honors` lists the readable `COMBATLOG_HONORGAIN`, `_NO_RANK` and
+  `_EXHAUSTION1` to `4`; `Pvp.honorArgs` / `Pvp.victim` try them in order (a variant without a rank gives rank nil).
+- V73: passes naming the global that matched; a miss keeps the message's shape (`Probe.shape`: words not in the
+  formats become `x`, so no names) and logs the game's `COMBATLOG_HONOR...` globals once.
+- V60c (new): with the own profession window open, `GetTradeSkillLineForRecipe` for each learned recipe (counts per
+  line/parent), and of one learned recipe the skill-up colour, skill-ups, can-make count, category, reagents and
+  cooldown; of one unlearned recipe whether `GetRecipeSourceText` gives text (its length only). The scan goes on
+  after V60 passed until V60c passed.
+- Findings from the export moved to API-FINDINGS (V60, V70, V73, V76, V79, V121, V123). `p.homeGuard` counts only in
+  the capitals (own zones outside them give no PvP type); left as is until Nico decides.
+- Compatibility (rule 8): nothing sent or stored changes shape; a new probe key `V60c` under
+  `global.probe.results.<client>` (free-form, uploaded as is). Kill entries keep their shape; Forever kills now get
+  the victim fields they lacked.
+- Manual (VERIFY.md CF-101). User-facing: Forever kills get their victim (CHANGELOG).
+
 ### CF-96 Launch probe results: answered items closed, the probe trimmed
 Nico exported the launch probe's results from the site on 2026-11-06: 6 testers on Forever live, build 70790. Touches:
 `VERIFY.md`, `docs/API-FINDINGS.md`, `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,

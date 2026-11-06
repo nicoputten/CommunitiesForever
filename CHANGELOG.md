@@ -5,6 +5,10 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Fixed:** honorable kills on Forever should now remember who you killed (level, class and race of a player you saw
+  first), so the Hunt and the kill missions that need the victim can count.
+
 ## v1.4.1 (2026-11-06)
 - **Fixed:** the addon's hidden launch check for professions now waits until the recipe list has loaded, so opening
   a profession window gives us the answer we need for sharing recipes between friends.

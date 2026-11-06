@@ -71,20 +71,6 @@ local function Killer()
 end
 on("PLAYER_DEAD", function() after(1, Killer) end)
 
--- ===== V121: the PvP flag =====
-local flagSeen
-local function Flag()
-  local flagged = UnitIsPVP and UnitIsPVP("player")
-  if not readable(flagged) or flagged == flagSeen then
-    if flagged == nil then result("V121", "fail", "UnitIsPVP missing") end
-    return
-  end
-  flagSeen = flagged
-  if flagged == true then result("V121", "pass", "UnitIsPVP true after a flag change") end
-end
-on("PLAYER_FLAGS_CHANGED", function(unit) if unit == "player" then Flag() end end)
-LaunchProbe.atLogin(Flag)
-
 -- ===== V122: the battleground score (at most once a minute) =====
 local scoreAt
 on("UPDATE_BATTLEFIELD_SCORE", function()
