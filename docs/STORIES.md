@@ -4,8 +4,37 @@ Open stories only, in build order. Done stories move to `docs/STORIES-COMPLETED.
 Each story: criteria are testable. "Manual" items go into VERIFY.md.
 
 Build order:
-1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
+1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, which the
+   launch probe runs since CF-98).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
+
+### CF-98 Launch probe: the recipes check (V60)
+CF-38 (recipes) was prepared before launch with a FriendProbe-only check `/fp recipes` (PR #63, never merged), so the
+launch probe never looked at recipes. Now the addon's own probe does, so friends' normal play answers it. Touches:
+`src/services/LaunchProbeRecipes.lua` (new), `src/core/Probe.lua` (`Probe.IDS`), `CommunitiesForever.toc`, a comment
+in `src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua`, `tests/spec/LaunchProbe_spec.lua`, VERIFY.md.
+- V60, passive: on `TRADE_SKILL_SHOW`, `TRADE_SKILL_LIST_UPDATE` and `TRADE_SKILL_DATA_SOURCE_CHANGED` for the own
+  window (not a linked one), at most every 10 s and until it passed: which `C_TradeSkillUI` functions are missing
+  (a log line), the base and child profession IDs, the number of recipes and of learned ones, from which call the
+  item a recipe makes comes (`GetRecipeOutputItemData`, `GetRecipeItemLink`, `GetRecipeSchematic`), and whether
+  `GetTradeSkillListLink` gives a `trade:` link. Two learned recipes are noted with their item IDs. Pass: learned
+  recipes with an item from at least one call; fail: no `C_TradeSkillUI` or `GetAllRecipeIDs`, or learned recipes
+  without any item; info while the list is still empty (tests).
+- V60b, needs a click: a post-hook on `SetItemRef` notes a clicked `trade:` link (never acts on it); a
+  `TRADE_SKILL_SHOW` or `TRADE_SKILL_DATA_SOURCE_CHANGED` with `IsTradeSkillLinked` true within 5 s answers it. Whose
+  link is kept as one word: "yours", "a friend online" (Battle.net presence or a sync peer), "a friend offline" (a
+  character of someone in `global.people`) or "someone else". Pass: a friend's link opened while they are offline;
+  info: it opened otherwise; fail: a friend's link opened no linked window within 5 s; open until someone clicks one
+  (tests).
+- Privacy: counts and IDs only (recipe, item, profession); no recipe, item or player names, no GUIDs (tests). Same
+  size cap as the other checks (`Probe.trim`). Every API guarded (rule 3; VERIFY.md V60).
+- FriendProbe: `/fp recipes` from #63 is not ported (friends run the addon, not FriendProbe, and the addon's probe
+  answers the same); its checklist gets a V60 item pointing at `/cf fp`.
+- Compatibility (rule 8): two new keys under `global.probe.results.<client>` (`V60`, `V60b`); no migration, nothing
+  sent changes. Older versions keep and upload results they have and never write these. The site's reader
+  (CommunitiesForever-Web `src/core/probe.ts`) passes the section through without reading item keys.
+- Not user-facing (the probe is invisible), so no CHANGELOG line.
+- Manual: VERIFY.md V60 and CF-98.
 
 ### CF-96 Launch probe results: answered items closed, the probe trimmed
 Nico exported the launch probe's results from the site on 2026-11-06: 6 testers on Forever live, build 70790. Touches:
@@ -402,6 +431,38 @@ Touches: `src/core/Probe.lua`, `src/services/LaunchProbe.lua`, `src/services/Lau
   The section stays far below the site's upload limit (25 MiB).
 - Manual (VERIFY.md): `/cf fp` after a play session on Forever shows ticks; the saved file has `probe`; nothing shows
   in chat or on screen while playing.
+
+## E12 Crafting
+
+### CF-38 Recipes: what everyone can craft
+Waits for V60 (the launch probe checks it since CF-98). Story from PR #63.
+- Goal: see exactly what a person can craft, and find who can make something ("who can make Bolt of Silk Cloth?"),
+  also while they are offline.
+- **B, our own recipe list (the story):**
+  - Reading: when you open a profession window, the addon reads that profession's learned recipes
+    (`C_TradeSkillUI.GetAllRecipeIDs` + `GetRecipeInfo(id).learned`, V60) and stores them on the character:
+    `char.recipes = { [skillLineID] = { [recipeID] = itemID or 0 } }` (0: no item, e.g. an enchant), with when it was
+    read. Only your own characters; a profession's recipes are known once its owner opened its window once, and
+    updated on every open and on `NEW_RECIPE_LEARNED` (verified, API-FINDINGS V104).
+  - Sharing: part of the character in the record, like professions (rule 8: a new optional character field; older
+    clients ignore it, code handles characters without it). Not shared when the character has none.
+  - Showing: on a character's card, each profession gets "Recipes (N)"; clicking it lists the recipes by name, each
+    as the real item link (hover: tooltip, shift-click: into chat), "Read <time> ago". Names come from the item (the
+    client's item cache, loaded on demand) or the recipe name for recipes without an item. Without data: "Recipes not
+    read yet: <name> has to open <profession> once."
+  - Finding: the smart filter (CF-36) also matches recipe and item names: `bolt of silk` shows the characters that
+    can make it, the card opens on that recipe.
+- **A, Blizzard's own view (extra, only if V60b says it works):** if `C_TradeSkillUI.GetTradeSkillListLink()` gives a
+  link while the window is open and clicking that link opens Blizzard's profession window for someone else, also
+  when they are offline: store the link with the recipes and show a button "Open in Blizzard's window" on the card.
+- Decided after V60: which calls give recipe IDs, learned state and the item (`GetRecipeItemLink` /
+  `GetRecipeOutputItemData` / `GetRecipeSchematic`), how big a full profession is on the wire (compressed), and
+  whether A works.
+- Unit tests (pure core): reading a recipe list into the stored shape; merge (a newer character copy brings its
+  recipes; an older one never removes them); filter matches recipe names; sizes stay below a limit per profession.
+- Manual (2 clients): open Tailoring on one; on the other, the card shows "Recipes (N)" with item links and tooltips;
+  `bolt` in the search finds the crafter; after learning a recipe it shows up; with A: "Open in Blizzard's window"
+  opens their recipes, also when they are offline.
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).
