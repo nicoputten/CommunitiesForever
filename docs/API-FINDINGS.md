@@ -132,6 +132,52 @@ Recorded by Nico in `VERIFY.md`, 2026-10-17.
 | `AceConfigDialog:AddToBlizOptions` | Shows the options in Esc → Options → AddOns (V16). No longer used: AceConfig was removed after CF-43. |
 | `/dump` (DevTools) | Prints table keys in hash order; order differs after a table is rebuilt. Use `/cf self` to compare the own record. |
 
+## Forever launch probe (build 70790, 2026-11-06, CF-96)
+The hidden launch probe (CF-82) of 6 testers on Forever live, build 70790, uploaded through the site (export of
+2026-11-06). "N of 6" counts the testers whose probe saw it; a check the others didn't record was not met in their
+play, not failed. All answers below are Forever's own, so they close the Retail hints above. The probe no longer runs
+these checks (CF-96).
+| Item | Seen on build 70790 | What it means |
+|---|---|---|
+| V55 `GameTooltip:AddDoubleLine` | exists, 6 of 6 | Confirmed on Forever. |
+| V63 `date("%H:%M")` | the PC's clock time, 6 of 6 | Confirmed. |
+| V71 `time({ year, month, day, hour, min })` | server seconds for the date, 6 of 6 | Confirmed. |
+| V77 `GetCurrentRegion()` | `3` (EU), 6 of 6 | Confirmed. |
+| V78 `GetGameTime()` | the realm clock, offset +60 min from UTC (CET), 6 of 6 | The realm offset from `GetGameTime` and `GetServerTime` works on Forever (CF-55, CF-56). |
+| V79 PvP counters | `GetPVPLifetimeStats()` gives `0, 0` (no kills yet), 6 of 6. `GetStatistic(60)` gives the deaths (`"--"` before the first, then counts up with each death; 5 testers logged it at their deaths). **`UnitPVPRank` is missing on Forever**, 6 of 6. | Lifetime kills and deaths work. The own rank can't be read with `UnitPVPRank` (CF-52's rank stays nil; the rank goals wait). Still open: `GetPVPRankInfo`, `GetPVPThisWeekStats` and `PLAYER_PVP_KILLS_CHANGED` (VERIFY.md V79). |
+| V74 enemy players | level, class and race readable by nameplate (`NAME_PLATE_UNIT_ADDED` fires for enemy players), 1 of 6 | The Hunt's and CF-55b's victim fields are readable. Still open: a skull (`UnitLevel` `-1`). The rank is not readable with `UnitPVPRank` (V79). |
+| V81 death cause | `C_DeathRecap.GetRecapEvents()` gives events at a death (10, the recap's size), 5 of 6; the mirror timers (`MIRROR_TIMER_START`) were seen before a death by 1 | Death causes from the recap work. |
+| V83 loot strings | `LOOT_ITEM_SELF` matched a real loot line with its item ID, 6 of 6 | Loot parsing works on Forever. |
+| V84 fishing | `IsFishingLoot()` true and `GetNumLootItems()` on `LOOT_OPENED` while fishing, 3 of 6 | Fishing loot is told apart (`d.fish20` and the fishing goals). |
+| V85 trades | `TRADE_SHOW` with a readable `UnitGUID("NPC")`, then `ERR_TRADE_COMPLETE` as `UI_INFO_MESSAGE`, 5 of 6 | A completed trade and its partner work (`d.trade`). Still open: what was given (`TRADE_PLAYER_ITEM_CHANGED`, `GetTradePlayerItemLink`) for `w.craftTrade` (VERIFY.md V85). |
+| V86 discoveries | `ERR_ZONE_EXPLORED` matched, 5 of 6; `ERR_ZONE_EXPLORED_XP` 1 of 6 | Discovery parsing works. |
+| V87 "Appear offline" friend | **fails**, 4 of 6: a `BN_CHAT_MSG_ADDON` arrives from a game account the friends list doesn't show; `C_BattleNet.GetGameAccountInfoByID(senderID)` answers with a table, but without `playerGuid`, so `C_BattleNet.GetAccountInfoByGUID` gives no BattleTag | A friend who appears offline on Battle.net can't be identified or linked over Battle.net: their data still arrives, but the addon can't tell whose it is and drops it (`Friends.resolveHidden` gets nothing to work with). Over a guild or community they still sync and link by their character (CF-28, CF-90). |
+| V90 kills from the XP message | `CHAT_MSG_COMBAT_XP_GAIN` matches `COMBATLOG_XPGAIN_FIRSTPERSON` (also with the rested bonus text), alone and in a group (3 of 6 in a group), and names the creature seen just before, 6 of 6 | Kills count from the XP message. |
+| V93 enemy creatures | `UnitName`, `UnitClassification` (`normal`) and `UnitLevel` readable by nameplate and mouseover, 6 of 6 | Creature level and classification work; no elite or rare was seen yet, the value is the game's string. |
+| V94 flights | `UnitOnTaxi("player")` true 3 s after `PLAYER_CONTROL_LOST` on a flight, 1 of 6; a message equal to `ERR_NEWTAXIPATH` (as `UI_INFO_MESSAGE` or `CHAT_MSG_SYSTEM`; the probe listened to both) when a flight path was learned, 1 of 6 | `d.flight` and `d.newFlight` work; listen to both events for the new path. |
+| V95 own casts | `UNIT_SPELLCAST_SUCCEEDED` for `"player"` with a readable spell ID and name, 6 of 6 | Own casts work (`d.hearth`, `d.bandageUp`). Some Forever spells have new, high IDs (above 1,000,000). |
+| V98 movement | `IsMounted()` read true (1 tester) and `IsSwimming()` read true (5 testers), polled every 5 s by `C_Timer.NewTicker` | Both work. `C_Timer.NewTicker` works on Forever too (it ran the poll). Riding skill: see V82, still open. |
+| V99 merchant | `MERCHANT_SHOW` and `MERCHANT_CLOSED` fire, and post-hooks on `BuyMerchantItem` (5 of 6) and `RepairAllItems` (1 of 6) run; `GetMoney` dropped while the window was open | Buys and repairs are seen. Still open: a sale (money up while open), `GetMerchantItemLink`, `CanMerchantRepair`, `GetRepairAllCost` (VERIFY.md V99). |
+| V100 mail sent | a `SendMail` post-hook sees the recipient and `MAIL_SEND_SUCCESS` fires, 2 of 6 | `d.mailFriend` works. Still open: the inbox (VERIFY.md V100). |
+| V102 bank | `BANKFRAME_OPENED` fires, 1 of 6 | `d.bank` works. |
+| V103 trainer | `LEARNED_SPELL_IN_SKILL_LINE` between `TRAINER_SHOW` and `TRAINER_CLOSED`, 6 of 6 | `d.trainer` works with the event. |
+| V104 recipes | `NEW_RECIPE_LEARNED` with a recipe ID, 6 of 6 (some IDs above 1,000,000) | `d.newRecipe`, `d.cookRecipe` work with the event. |
+| V105 created items | `LOOT_ITEM_CREATED_SELF` with the item, `C_Item.GetItemInfoInstant` class and subclass and `C_Item.GetItemQualityByID` readable, 6 of 6: food and drink `0/5`, trade goods `7/5`, `7/6`, `7/7` | Crafting and cooking checks by item class work. A bandage (expected `0/7`) wasn't made yet. |
+| V106 loot source | `GetLootSourceInfo(slot)` gives a readable GUID: `Creature` (5 of 6), `GameObject` (1 of 6) | Loot by source works (`d.gather10`). Still open: item IDs from `GetLootSlotLink` and fishing loot's source (VERIFY.md V106). |
+| V107 weapon skill | `CHAT_MSG_SKILL` matches `SKILL_RANK_UP`, 6 of 6 | `d.weaponSkill` works. |
+| V108 whisper target | `CHAT_MSG_WHISPER_INFORM` names the target, 4 of 6 | `d.whisper` works. Still open: the emote part (VERIFY.md V108). |
+| V109 coins | `CHAT_MSG_MONEY` matches `YOU_LOOT_MONEY` (alone, 3 of 6) and `LOOT_MONEY_SPLIT` (in a group, 3 of 6) | `d.coins10` works. |
+| V110 auras | `C_UnitAuras.GetAuraDataByIndex` `spellId` and `sourceUnit` readable out of combat: an own buff on a party member, 3 of 6; the player's own auras, the other 3 | `d.buffFriend` and `d.wellFed` work. |
+| V111 screenshot | `SCREENSHOT_SUCCEEDED` fires, 1 of 6 | `d.groupPic` works. |
+| V112 bag quality | `C_Container.GetContainerItemInfo` gives `quality`, 6 of 6 | `d.tidyBags` works. |
+| V113 gear | `PLAYER_EQUIPMENT_CHANGED` slot and `GetInventoryItemID` give the item put on, 6 of 6 | `d.equipNew` (and `w.blueGear` with the quality) works. |
+| V115 places | `ZONE_CHANGED` / `ZONE_CHANGED_INDOORS` with `GetSubZoneText()`, 6 of 6 | `d.places10` works. |
+| V116 items used | a used bag item casts the spell `C_Item.GetItemSpell` gives for it (`UNIT_SPELLCAST_SUCCEEDED`), 6 of 6: food and drink `0/5`, consumables `0/8`, a quest item `12/0` | Item use works (`d.eatOwn` and the care goals). Potions (`0/1`) and scrolls (`0/4`) weren't used yet; the classes are Blizzard's. |
+| V117 cast targets | `UNIT_SPELLCAST_SENT` gives the target's name, 6 of 6 | `d.bandageFriend`, `d.scrolls10` on yourself work. |
+| V120 death recap source | the recap's last event names a `Creature` source with a readable name, 5 of 6 | The recap names the killer for creatures. Still open: a death to a player (VERIFY.md V120). |
+| V123 zone PvP type | `C_PvP.GetZonePVPInfo()` (or `GetZonePVPInfo()`) gives `friendly` in the own faction's capital cities, 5 of 6; nothing (`nil`) in a starting zone, 1 of 6 | Own territory reads. Still open: hostile and contested zones, and whether starting zones give no type at all (VERIFY.md V123). |
+| V82 riding | no riding skill seen (no tester has riding yet); `C_TradeSkillUI.GetProfessionInfoBySkillLineID` exists, 6 of 6 | Still open (VERIFY.md V82). |
+
 ## Retail dry runs (not Forever)
 Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.
 | API | Result |
@@ -139,8 +185,8 @@ Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Ma
 | `frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")` | Blocked for addons (V75 retail: fail). Blizzard shows its popup "... only available to the Blizzard UI. You can disable this addon and reload the UI.", also when the call is inside `pcall`. FriendProbe now only tries it from a button; CommunitiesForever never registers it (CF-61, Nico 2026-10-29: death causes from the death recap and mirror timers). |
 | `frame:CreateAnimationGroup()` with a `Translation` (Ambient effects, V64) | Animates the frame itself: the whole title bar slid across as a dark block every few seconds, the streak's bright edge riding along (CF-43 bug). The shine now creates the group on its streak texture (`texture:CreateAnimationGroup()`), so only the streak moves. The texture (white, alpha in the file) with `SetBlendMode("ADD")` was fine. |
 | V47 a click on an addon chat link (FriendProbe run 2, build 70575, 29 Oct) | pass: "link click reached the addon via SetItemRef hook". Closed (Nico: checked on Retail counts as done). |
-| V74 enemy player fields | Level, class and race are readable by mouseover. Still open for Forever: enemy target and nameplates, `NAME_PLATE_UNIT_ADDED`, the PvP rank. |
-| V79 PvP counters | `GetPVPLifetimeStats()` works (`0, 0` on a character without kills); `GetStatistic(60)` gives total deaths (`31`). The Vanilla rank API (`UnitPVPRank`, `GetPVPRankInfo`, `GetPVPThisWeekStats`) is missing on Retail, as expected: still open for Forever. |
+| V74 enemy player fields | Level, class and race are readable by mouseover. Forever: see "Forever launch probe" (nameplates confirmed; a skull still open). |
+| V79 PvP counters | `GetPVPLifetimeStats()` works (`0, 0` on a character without kills); `GetStatistic(60)` gives total deaths (`31`). The Vanilla rank API (`UnitPVPRank`, `GetPVPRankInfo`, `GetPVPThisWeekStats`) is missing on Retail, as expected. Forever: `UnitPVPRank` is missing there too, see "Forever launch probe". |
 | V72 `ChatFrameUtil.OpenChat("/w <name> <text>")` (Whisper on the start panel) | yes (Nico, by hand): the chat input opens as a whisper with the text filled in, not sent. Closed. |
 | V59 the hidden sync channel, sending | `JoinTemporaryChannel` plus `SendAddonMessage(prefix, text, "CHANNEL", index)` sends: `/cf sync debug` printed "[sync] to the community channel: HELLO …". Receiving on another client is still open (V59). |
 | A file listed in the TOC that doesn't exist | A "Lua Warning" popup at every login (`<addon>.toc:<line> Error loading ...`). Ship only TOC lines whose files exist. |

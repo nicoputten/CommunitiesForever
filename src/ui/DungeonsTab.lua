@@ -65,7 +65,7 @@ local function range(dungeon)
   return string.format("%d%s%d", dungeon.min, Theme.bundledFonts() and "\226\128\147" or "-", dungeon.max)
 end
 
--- Local times need the game's date (V63); without it, nothing is shown rather than a wrong time.
+-- Local times need the game's date (V63, verified on Forever); without it, nothing is shown rather than a wrong time.
 local function when(at)
   if not date then return "" end
   return ns.PlannedRuns.whenText(at, now(), date)
