@@ -1,4 +1,173 @@
 {
- "about": "Progress cases of the world missions (CF-76), addon only: the site never computes progress. Never edit a case to make code pass.",
- "cases": []
+ "about": "Progress cases of the world missions (CF-76), addon only: the site never computes progress. Never edit a case to make code pass. Each case adds its observations (Goals.observe) to new facts and expects [value, target, done] per goal id.",
+ "cases": [
+  {
+   "name": "kills of normal creatures count for the kill goals only",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "level": 12, "charLevel": 12 },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "level": 13, "charLevel": 12 },
+    { "kind": "worldKill", "guid": "Player-1-B", "charLevel": 30 }
+   ],
+   "progress": { "d.kills30": [3, 30, false], "w.kills200": [3, 200, false], "d.elite": [0, 1, false],
+                 "d.rareMob": [0, 1, false], "d.bigFoe": [0, 1, false], "d.duoHunt": [0, 15, false] }
+  },
+  {
+   "name": "an elite, a rare, a rare elite and a world boss",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "elite", "level": 20, "charLevel": 20 },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "rare", "level": 20, "charLevel": 20 },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "rareelite", "level": 20, "charLevel": 20 },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "worldboss", "level": -1, "charLevel": 60 }
+   ],
+   "progress": { "d.elite": [3, 1, true], "w.elites10": [3, 10, false], "d.rareMob": [2, 1, true],
+                 "d.bigFoe": [1, 1, true], "d.kills30": [4, 30, false] }
+  },
+  {
+   "name": "a foe 3 levels higher is big, 2 levels higher is not",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "level": 22, "charLevel": 20 },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "level": 23, "charLevel": 20 }
+   ],
+   "progress": { "d.bigFoe": [1, 1, true] }
+  },
+  {
+   "name": "a creature never seen is a plain kill",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A", "charLevel": 20 }
+   ],
+   "progress": { "d.kills30": [1, 30, false], "d.bigFoe": [0, 1, false], "d.elite": [0, 1, false] }
+  },
+  {
+   "name": "kills with a friend in the group count for the duo hunt",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "friend": true },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "friend": true },
+    { "kind": "worldKill", "guid": "Player-1-A", "classification": "normal", "friend": false }
+   ],
+   "progress": { "d.duoHunt": [2, 15, false], "d.kills30": [3, 30, false] }
+  },
+  {
+   "name": "a death starts the streak over, the best streak stays",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A" },
+    { "kind": "worldKill", "guid": "Player-1-A" },
+    { "kind": "worldKill", "guid": "Player-1-A" },
+    { "kind": "worldDeath", "guid": "Player-1-A" },
+    { "kind": "worldKill", "guid": "Player-1-A" }
+   ],
+   "progress": { "d.streak20": [3, 20, false], "d.kills30": [4, 30, false] }
+  },
+  {
+   "name": "the streak is per character: another character's death doesn't end it",
+   "observations": [
+    { "kind": "worldKill", "guid": "Player-1-A" },
+    { "kind": "worldKill", "guid": "Player-1-B" },
+    { "kind": "worldDeath", "guid": "Player-1-B" },
+    { "kind": "worldKill", "guid": "Player-1-A" }
+   ],
+   "progress": { "d.streak20": [2, 20, false] }
+  },
+  {
+   "name": "swimming adds up per character, in whole minutes",
+   "observations": [
+    { "kind": "worldMove", "guid": "Player-1-A", "swim": 60, "ride": 0 },
+    { "kind": "worldMove", "guid": "Player-1-B", "swim": 60, "ride": 0 },
+    { "kind": "worldMove", "guid": "Player-1-A", "swim": 55, "ride": 0 },
+    { "kind": "worldMove", "guid": "Player-1-A", "swim": 5, "ride": 0 }
+   ],
+   "progress": { "d.swim": [2, 2, true], "d.ride": [0, 15, false] }
+  },
+  {
+   "name": "two characters riding 10 minutes each is not 15 on one",
+   "observations": [
+    { "kind": "worldMove", "guid": "Player-1-A", "swim": 0, "ride": 600 },
+    { "kind": "worldMove", "guid": "Player-1-B", "swim": 0, "ride": 600 }
+   ],
+   "progress": { "d.ride": [10, 15, false] }
+  },
+  {
+   "name": "15 minutes mounted on one character",
+   "observations": [
+    { "kind": "worldMove", "guid": "Player-1-A", "ride": 600 },
+    { "kind": "worldMove", "guid": "Player-1-A", "ride": 300 }
+   ],
+   "progress": { "d.ride": [15, 15, true] }
+  },
+  {
+   "name": "one observation adds at most 10 minutes",
+   "observations": [
+    { "kind": "worldMove", "guid": "Player-1-A", "ride": 5000 }
+   ],
+   "progress": { "d.ride": [10, 15, false] }
+  },
+  {
+   "name": "places: the same subzone twice counts once, a subzone without a name never",
+   "observations": [
+    { "kind": "worldPlace", "zone": "Elwynn Forest", "subzone": "Goldshire" },
+    { "kind": "worldPlace", "zone": "Elwynn Forest", "subzone": "Goldshire" },
+    { "kind": "worldPlace", "zone": "Elwynn Forest", "subzone": "Fargodeep Mine" },
+    { "kind": "worldPlace", "zone": "Westfall", "subzone": "" },
+    { "kind": "worldPlace", "zone": "Westfall" }
+   ],
+   "progress": { "d.places10": [2, 10, false] }
+  },
+  {
+   "name": "flights, flight paths and the hearthstone",
+   "observations": [
+    { "kind": "worldAction", "action": "flight" },
+    { "kind": "worldAction", "action": "newFlight" },
+    { "kind": "worldAction", "action": "newFlight" },
+    { "kind": "worldAction", "action": "hearth" }
+   ],
+   "progress": { "d.flight": [1, 1, true], "d.newFlight": [2, 1, true], "w.flightPaths3": [2, 3, false],
+                 "d.hearth": [1, 1, true] }
+  },
+  {
+   "name": "weapon skill-ups",
+   "observations": [
+    { "kind": "worldAction", "action": "weaponUp" },
+    { "kind": "worldAction", "action": "weaponUp" },
+    { "kind": "worldAction", "action": "weaponUp" },
+    { "kind": "worldAction", "action": "weaponUp" },
+    { "kind": "worldAction", "action": "weaponUp" }
+   ],
+   "progress": { "d.weaponSkill": [5, 5, true], "w.weapon25": [5, 25, false] }
+  },
+  {
+   "name": "town errands: bank, trainer, merchant",
+   "observations": [
+    { "kind": "worldAction", "action": "bank" },
+    { "kind": "worldAction", "action": "trainer" },
+    { "kind": "worldAction", "action": "buy" },
+    { "kind": "worldAction", "action": "repair" },
+    { "kind": "worldAction", "action": "sale" }
+   ],
+   "progress": { "d.bank": [1, 1, true], "d.trainer": [1, 1, true], "d.vendorBuy": [1, 1, true],
+                 "d.repair": [1, 1, true], "d.vendorSale": [1, 1, true] }
+  },
+  {
+   "name": "a buy is no repair and no sale",
+   "observations": [
+    { "kind": "worldAction", "action": "buy" }
+   ],
+   "progress": { "d.vendorBuy": [1, 1, true], "d.repair": [0, 1, false], "d.vendorSale": [0, 1, false] }
+  },
+  {
+   "name": "social: a whisper, a mail and a group picture",
+   "observations": [
+    { "kind": "worldAction", "action": "whisper" },
+    { "kind": "worldAction", "action": "mailFriend" },
+    { "kind": "worldAction", "action": "groupPic" }
+   ],
+   "progress": { "d.whisper": [1, 1, true], "d.mailFriend": [1, 1, true], "d.groupPic": [1, 1, true] }
+  },
+  {
+   "name": "an unknown action counts nothing",
+   "observations": [
+    { "kind": "worldAction", "action": "wave" },
+    { "kind": "worldAction" }
+   ],
+   "progress": { "d.whisper": [0, 1, false], "d.flight": [0, 1, false], "d.bank": [0, 1, false] }
+  }
+ ]
 }

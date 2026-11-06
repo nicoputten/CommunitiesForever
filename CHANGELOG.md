@@ -8,6 +8,9 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **Fixed:** a Battle.net friend who appears offline and is in your guild or community now shows under their
   Battle.net name instead of as a separate unknown player. They still show as offline in the window.
+- **Doomsday:** the addon now tracks 25 more missions: kills, elites and rares, flights, swimming and riding, the
+  hearthstone, places within zones, the bank, trainer and merchant, weapon skills, and whispers, mail and group
+  screenshots with friends. They join the draw in a later version.
 - **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
   "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
   names are cut with "..." before the buttons, also in a narrow window.
