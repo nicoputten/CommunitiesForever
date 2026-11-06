@@ -319,6 +319,30 @@ V116, V117. The missions join the draw in the pool-3 story, so check the facts. 
 | Have grey items in your bags, sell them all; today's items | `tidy true`. A character with no grey items at login has nothing to tidy. | open |
 | A friend on v1.3.2 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
 
+### CF-76 World missions: combat, travel, economy, social
+The missions aren't in the draw yet (a later pool version): check the facts with this command (call it "the world
+line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local w=d.world; if w then local p=0; for _ in pairs(w.places) do p=p+1 end; print(n,'kills',w.kills,'elite',w.elites,'rare',w.rares,'big',w.bigFoes,'duo',w.duo,'streak',w.bestStreak,'fly',w.flights,'new',w.newFlights,'hearth',w.hearth,'bank',w.bank,'train',w.trainer,'weapon',w.weaponUps,'pic',w.groupPic,'whisper',w.whispers,'mail',w.mailFriend,'buy',w.buys,'repair',w.repairs,'sale',w.sales,'places',p) end end`
+and, for swimming and riding (seconds per character): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local w=d.world; if w then for g,s in pairs(w.swim) do print(n,'swim',s) end; for g,s in pairs(w.ride) do print(n,'ride',s) end end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| Kill 3 creatures that give XP, one of them 3+ levels above you; the world line | `kills` 3, `big` 1, `streak` 3. A kill that gives no XP (grey) doesn't count. | open |
+| Target or mouse over an elite (or a rare) before killing it | `elite` (or `rare`) 1. An elite never targeted, moused over or seen by nameplate counts only in `kills`. | open |
+| Die, then kill 2 more | `streak` stays at the best so far; a new streak counts from 0. | open |
+| Kill creatures in a group with a friend's community character (also when the friend lands the kill and you get XP) | `duo` goes up per kill; in a group with only your own alt or a stranger it stays. | open |
+| Take a flight; learn a new flight path at a flight master | `fly` 1 (once per flight); `new` 1 (once, though the message may come as two events). | open |
+| Use the hearthstone (unverified: its spell is 8690 or what `/run print(C_Item.GetItemSpell(6948))` gives) | `hearth` 1. If not: send the `/run` line's output and the spell ID of `/run local f=CreateFrame("Frame") f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED","player") f:SetScript("OnEvent",function(_,_,_,_,id) print(id) end)` when you hearth. | open |
+| Swim for a while (more than a minute), then get out of the water; the second command | A `swim` line with the seconds (in steps of 5). Ride a mount a minute: a `ride` line; a flight doesn't count as riding. | open |
+| Open the bank; learn a spell at your class trainer | `bank` 1; `train` 1 (a spell learned elsewhere, e.g. from a book, doesn't count). | open |
+| Get a weapon or Defense skill-up, then a Cooking or First Aid skill-up | `weapon` 1 for the weapon, not for the profession. | open |
+| Grouped with a friend's community character, take a screenshot (Print Screen) | `pic` 1; alone it stays. | open |
+| Walk through 3 subzones (e.g. Goldshire, the Northshire Valley, Fargodeep Mine) | `places` 3; walking back into one doesn't add. | open |
+| Whisper a friend's community character (`/w First Last`) | `whisper` 1; a whisper to your own alt or a stranger doesn't count. Unverified: the GUID argument (12) of `CHAT_MSG_WHISPER_INFORM`; the name alone also counts. | open |
+| Whisper a friend over Battle.net (unverified: `CHAT_MSG_BN_WHISPER_INFORM` argument 13 and `C_BattleNet.GetAccountInfoByID`) | `whisper` 1 when that friend runs the addon. If not: `/run print(C_BattleNet.GetAccountInfoByID)` should be a function; send it. | open |
+| Send a mail to a friend's community character (the name as you type it, with or without the realm) | `mail` 1; to a stranger it stays. A mail that fails (unknown name; `MAIL_FAILED`, unverified) doesn't count. | open |
+| At a merchant: buy an item, repair, sell an item (unverified: a sale is money up while the merchant is open, V99) | `buy` 1, `repair` 1, `sale` 1. A buyback doesn't count as a sale. | open |
+| A friend on v1.3.2 | No errors on either side; nothing new is sent. | open |
+
 ### CF-73 Friends and places for Doomsday missions
 The missions aren't in the draw yet (pool version 2, CF-77): check the facts with this command (call it "the places line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local p=d.places; if p then local z,nz=0,0; for _ in pairs(p.zones) do z=z+1 end; for _ in pairs(p.newZones) do nz=nz+1 end; print(n,'zones',z,'new',nz,'sea',p.crossSea,'nost',p.nostalgia,'dare',p.daredevil,'same',p.sameZone,'online',p.onlineMax,'carry',p.carry,'chat',p.chat) end end`
 
