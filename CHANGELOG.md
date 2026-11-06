@@ -8,6 +8,8 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **Fixed:** a Battle.net friend who appears offline and is in your guild or community now shows under their
   Battle.net name instead of as a separate unknown player. They still show as offline in the window.
+- **Doomsday:** the addon now keeps track of cooking, First Aid, crafting, gathering, recipes, coins, new gear,
+  potions, scrolls, Well Fed, buffing friends and tidy bags, for missions that join the draw in a later pool.
 - **Doomsday:** the addon now tracks 25 more missions: kills, elites and rares, flights, swimming and riding, the
   hearthstone, places within zones, the bank, trainer and merchant, weapon skills, and whispers, mail and group
   screenshots with friends. They join the draw in a later version.

@@ -16,9 +16,10 @@ Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list sta
 -- The checks the probe runs, in report order (FriendProbe's `auto` items without those that show something or
 -- act: V47, V48, V50b, V51, V67, V68, V75, V118). CF-96: the checks the launch results (build 70790) answered are
 -- gone (docs/API-FINDINGS.md "Forever launch probe"); results stored for them stay in the saved data, uploaded as they
--- are, and only leave the /cf fp report.
+-- are, and only leave the /cf fp report. CF-98: V60 and V60b (recipes, services/LaunchProbeRecipes.lua) added.
 Probe.IDS = {
   "V82", "V35b", "V70", "V73", "V76", "Hunt", "V80", "V96", "V101", "V108", "V114", "V120", "V121", "V122", "V123",
+  "V60", "V60b",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.

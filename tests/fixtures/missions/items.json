@@ -1,4 +1,256 @@
 {
- "about": "Progress cases of the items missions (CF-75), addon only: the site never computes progress. Never edit a case to make code pass.",
- "cases": []
+ "about": "Progress cases of the items missions (CF-75), addon only: the site never computes progress. Never edit a case to make code pass. Each case adds its observations (Goals.observe) to new facts and expects [value, target, done] per goal id. Item classes are Blizzard's: consumable 0 (potion 1, scroll 4, food and drink 5, bandage 7), trade goods 7 (leather 6, metal and stone 7, herb 9), recipe 9 (cooking 5). Item and recipe IDs are made up, some above 1,000,000 as on Forever.",
+ "cases": [
+  {
+   "name": "five dishes cooked, three kinds, one stack of two",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000101, "count": 1, "class": 0, "subclass": 5, "quality": 1 },
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000101, "count": 2, "class": 0, "subclass": 5, "quality": 1 },
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000102, "count": 1, "class": 0, "subclass": 5, "quality": 1 },
+    { "kind": "itemCreated", "guid": "Player-1-B", "id": 1000103, "count": 1, "class": 0, "subclass": 5, "quality": 1 }
+   ],
+   "progress": { "d.cook5": [5, 5, true], "d.cook15": [5, 15, false], "d.cookKinds3": [3, 3, true],
+                 "w.cook30": [5, 30, false], "w.cookKinds5": [3, 5, false], "d.craftGreen": [0, 1, false],
+                 "d.bandage3": [0, 3, false] }
+  },
+  {
+   "name": "a mage's conjured food and water are never cooked, nor a home meal when eaten",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1006001, "count": 20, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE" },
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1006002, "count": 20, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE", "castSkillLine": 8 },
+    { "kind": "itemUsed", "guid": "Player-1-M", "id": 1006001, "class": 0, "subclass": 5, "self": true }
+   ],
+   "progress": { "d.cook5": [0, 5, false], "d.cookKinds3": [0, 3, false], "w.cook30": [0, 30, false],
+                 "w.cookKinds5": [0, 5, false], "d.eatOwn": [0, 1, false] }
+  },
+  {
+   "name": "a mage's food from a Cooking recipe is cooked; another class's food always",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1000101, "count": 1, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE", "castSkillLine": 185 },
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1000102, "count": 1, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE", "castSkillLine": 2549, "castParentSkillLine": 185 },
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000103, "count": 1, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "PALADIN" },
+    { "kind": "itemUsed", "guid": "Player-1-M", "id": 1000101, "class": 0, "subclass": 5, "self": true }
+   ],
+   "progress": { "d.cook5": [3, 5, false], "d.cookKinds3": [3, 3, true], "d.eatOwn": [1, 1, true] }
+  },
+  {
+   "name": "trade goods made are not dishes; a green craft is fine",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 2840, "count": 1, "class": 7, "subclass": 7, "quality": 1 },
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000201, "count": 1, "class": 4, "subclass": 2, "quality": 2 }
+   ],
+   "progress": { "d.cook5": [0, 5, false], "d.craftGreen": [1, 1, true] }
+  },
+  {
+   "name": "bandages made: ten of two kinds",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000301, "count": 6, "class": 0, "subclass": 7, "quality": 1 },
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000302, "count": 4, "class": 0, "subclass": 7, "quality": 1 }
+   ],
+   "progress": { "d.bandage3": [10, 3, true], "d.bandage10": [10, 10, true], "d.bandageKinds2": [2, 2, true],
+                 "w.bandages20": [10, 20, false], "d.cook5": [0, 5, false] }
+  },
+  {
+   "name": "eating a dish an own character cooked that day",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-B", "id": 1000101, "count": 1, "class": 0, "subclass": 5, "quality": 1 },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000101, "class": 0, "subclass": 5, "self": true }
+   ],
+   "progress": { "d.eatOwn": [1, 1, true] }
+  },
+  {
+   "name": "eating bought food, or food not told apart, is not a home meal",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000101, "count": 1, "class": 0, "subclass": 5, "quality": 1 },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 4540, "class": 0, "subclass": 5, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "class": 0, "subclass": 5, "self": true }
+   ],
+   "progress": { "d.eatOwn": [0, 1, false] }
+  },
+  {
+   "name": "bandages used, one on a friend",
+   "observations": [
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000301, "class": 0, "subclass": 7, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000301, "class": 0, "subclass": 7, "self": false, "friend": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000302, "class": 0, "subclass": 7, "self": false, "friend": false }
+   ],
+   "progress": { "d.bandageUp": [3, 1, true], "d.bandageUse3": [3, 3, true], "d.bandageFriend": [1, 1, true] }
+  },
+  {
+   "name": "a bandage on a stranger is used, not a friend's",
+   "observations": [
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000301, "class": 0, "subclass": 7, "self": false, "friend": false }
+   ],
+   "progress": { "d.bandageUp": [1, 1, true], "d.bandageFriend": [0, 1, false] }
+  },
+  {
+   "name": "potions drunk; an elixir is not a potion",
+   "observations": [
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000401, "class": 0, "subclass": 1, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-B", "id": 1000402, "class": 0, "subclass": 1, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000403, "class": 0, "subclass": 2, "self": true }
+   ],
+   "progress": { "d.potion": [2, 1, true], "w.potions5": [2, 5, false] }
+  },
+  {
+   "name": "scrolls count only on the own character",
+   "observations": [
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000502, "class": 0, "subclass": 4, "self": false, "friend": true }
+   ],
+   "progress": { "d.scrolls10": [2, 10, false] }
+  },
+  {
+   "name": "ten scrolls on the own character",
+   "observations": [
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000501, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000502, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000502, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000502, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000502, "class": 0, "subclass": 4, "self": true },
+    { "kind": "itemUsed", "guid": "Player-1-A", "id": 1000502, "class": 0, "subclass": 4, "self": true }
+   ],
+   "progress": { "d.scrolls10": [10, 10, true] }
+  },
+  {
+   "name": "recipes learned: distinct IDs, one of them cooking by its skill line",
+   "observations": [
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001001, "skillLine": 164 },
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001001, "skillLine": 164 },
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001002, "skillLine": 185 }
+   ],
+   "progress": { "d.newRecipe": [2, 1, true], "w.recipes3": [2, 3, false], "d.cookRecipe": [1, 1, true] }
+  },
+  {
+   "name": "a cooking recipe told by the dish it makes, by a parent skill line, or by the recipe item read",
+   "observations": [
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001003, "outputClass": 0, "outputSubclass": 5 }
+   ],
+   "progress": { "d.cookRecipe": [1, 1, true] }
+  },
+  {
+   "name": "a cooking recipe by its parent skill line",
+   "observations": [
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001004, "skillLine": 2549, "parentSkillLine": 185 }
+   ],
+   "progress": { "d.cookRecipe": [1, 1, true] }
+  },
+  {
+   "name": "a cooking recipe by the recipe item read",
+   "observations": [
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001005, "recipeSubclass": 5 }
+   ],
+   "progress": { "d.cookRecipe": [1, 1, true], "d.newRecipe": [1, 1, true] }
+  },
+  {
+   "name": "a recipe of another profession, or one we can't read, is not a cooking recipe",
+   "observations": [
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001006, "skillLine": 171, "outputClass": 0, "outputSubclass": 1,
+      "recipeSubclass": 6 },
+    { "kind": "itemRecipe", "guid": "Player-1-A", "id": 1001007 }
+   ],
+   "progress": { "d.cookRecipe": [0, 1, false], "d.newRecipe": [2, 1, true] }
+  },
+  {
+   "name": "gathering: herbs and ore from a node, leather from a body",
+   "observations": [
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002001, "count": 3, "class": 7, "subclass": 9, "node": true },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002002, "count": 4, "class": 7, "subclass": 7, "node": true },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002003, "count": 2, "class": 7, "subclass": 6, "creature": true },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002004, "class": 7, "subclass": 6, "node": true }
+   ],
+   "progress": { "d.gather10": [10, 10, true], "w.gather50": [10, 50, false] }
+  },
+  {
+   "name": "not gathered: ore from a body, herbs without a source, cloth, fish from a bobber",
+   "observations": [
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002002, "count": 2, "class": 7, "subclass": 7, "creature": true },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002001, "count": 2, "class": 7, "subclass": 9 },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002005, "count": 2, "class": 7, "subclass": 5, "creature": true },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002006, "count": 1, "class": 7, "subclass": 8, "node": true },
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1002007, "count": 1, "class": 0, "subclass": 5, "node": true }
+   ],
+   "progress": { "d.gather10": [0, 10, false] }
+  },
+  {
+   "name": "ten coin loots",
+   "observations": [
+    { "kind": "itemCoins", "guid": "Player-1-A" }, { "kind": "itemCoins", "guid": "Player-1-A" },
+    { "kind": "itemCoins", "guid": "Player-1-A" }, { "kind": "itemCoins", "guid": "Player-1-A" },
+    { "kind": "itemCoins", "guid": "Player-1-A" }, { "kind": "itemCoins", "guid": "Player-1-A" },
+    { "kind": "itemCoins", "guid": "Player-1-A" }, { "kind": "itemCoins", "guid": "Player-1-B" },
+    { "kind": "itemCoins", "guid": "Player-1-B" }, { "kind": "itemCoins", "guid": "Player-1-B" }
+   ],
+   "progress": { "d.coins10": [10, 10, true] }
+  },
+  {
+   "name": "wearing a find of the same character that day",
+   "observations": [
+    { "kind": "itemLooted", "guid": "Player-1-A", "id": 1003001, "count": 1, "class": 4, "subclass": 2, "creature": true },
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003001, "quality": 2, "new": true }
+   ],
+   "progress": { "d.equipNew": [1, 1, true], "w.blueGear": [0, 1, false] }
+  },
+  {
+   "name": "another character's find, or gear not looted that day, is not a new find",
+   "observations": [
+    { "kind": "itemLooted", "guid": "Player-1-B", "id": 1003001, "count": 1, "class": 4, "subclass": 2 },
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003001, "quality": 2, "new": true },
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003002, "quality": 2, "new": false }
+   ],
+   "progress": { "d.equipNew": [0, 1, false] }
+  },
+  {
+   "name": "a blue item new to the character",
+   "observations": [
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003003, "quality": 3, "new": true }
+   ],
+   "progress": { "w.blueGear": [1, 1, true], "d.equipNew": [0, 1, false] }
+  },
+  {
+   "name": "a blue item worn before, or a green one, is not blue gear",
+   "observations": [
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003003, "quality": 3, "new": false },
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003004, "quality": 2, "new": true },
+    { "kind": "itemEquip", "guid": "Player-1-A", "id": 1003005, "new": true }
+   ],
+   "progress": { "w.blueGear": [0, 1, false] }
+  },
+  {
+   "name": "well fed and a friend buffed",
+   "observations": [
+    { "kind": "itemAura", "guid": "Player-1-A", "wellFed": true },
+    { "kind": "itemAura", "guid": "Player-1-A", "friend": true }
+   ],
+   "progress": { "d.wellFed": [1, 1, true], "d.buffFriend": [1, 1, true] }
+  },
+  {
+   "name": "bags tidied: junk seen, then none",
+   "observations": [
+    { "kind": "itemBags", "guid": "Player-1-A", "junk": 4 },
+    { "kind": "itemBags", "guid": "Player-1-A", "junk": 1 },
+    { "kind": "itemBags", "guid": "Player-1-A", "junk": 0 }
+   ],
+   "progress": { "d.tidyBags": [1, 1, true] }
+  },
+  {
+   "name": "clean bags from the start, or another character's junk, are not a tidy-up",
+   "observations": [
+    { "kind": "itemBags", "guid": "Player-1-A", "junk": 0 },
+    { "kind": "itemBags", "guid": "Player-1-B", "junk": 3 },
+    { "kind": "itemBags", "guid": "Player-1-A", "junk": 0 }
+   ],
+   "progress": { "d.tidyBags": [0, 1, false] }
+  }
+ ]
 }
