@@ -72,6 +72,8 @@ same guild), both online.
 | A: learn a recipe with the window **open** | The count goes up without `/reload`. | open |
 | A: click a friend's profession link in chat (Blizzard's view opens), close it, then the count line again | Unchanged: a friend's view is never stored as yours. | open |
 | B (after ~15 s, or `/cf sync`): `/cf`, A's character | Each crafting profession shows `[Tailoring]` (gold) after its skill; one A never opened shows a dim `not scanned`; Mining, Herbalism, Skinning and Fishing show nothing after the skill. | open |
+| B, after A opened a profession (~15 s): `/run for _,p in pairs(CommunitiesForeverDB.global.people) do for g,c in pairs(p.chars or {}) do if c.recipeOrder then print(c.name,#c.recipeOrder,c.recipesBase) end end end` | A's character with the same recipe count as A's own count line. | open |
+| A learns one more recipe; B after ~15 s runs the line above again | One more, same base. (A's sent RECORD carried only the new recipe: `recipesFrom` = the old count.) | open |
 | B: hover A's `[Tailoring]`, then `not scanned` | `<A>’s Tailoring` / `Click: open in game` / `Shift-click: link in chat`; on `not scanned`: `Opens once <A> opens Cooking in game`. | open |
 | B: click `[Tailoring]` while A is online | Blizzard's profession window opens with A's recipes. | open |
 | B: open the chat box, Shift-click `[Tailoring]`; then with the chat box closed, Shift-click again | The link goes into the chat box (V134); sent, it shows `[Tailoring]` in chat and opens A's view when clicked. | open |

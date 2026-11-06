@@ -8,7 +8,7 @@ tagging; the release stops if the tag has no section.
 ## Unreleased
 - **New:** a friend's crafting professions show as a link in the Friends tab, e.g. `[Tailoring]`: click it to see their
   recipes in the game's own profession window, Shift-click to put it in chat. Opening one of your profession windows
-  saves your recipes and that link for the website.
+  saves your recipes and that link and shares them with your friends, so the website knows what everyone can craft.
 - **Fixed:** honorable kills on Forever should now remember who you killed (level, class and race of a player you saw
   first), so the Hunt and the kill missions that need the victim can count.
 

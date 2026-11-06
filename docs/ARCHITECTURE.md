@@ -318,9 +318,10 @@ Char = {
   ilvl,                                              -- equipped avg, floored; nil if API unavailable
   professions = { [skillLineID] = { name, rank, max,
                   link, linkType, spec, scannedAt } }, -- CF-38: from the own window's scan, crafting ones only
-  recipes = { [recipeID] = itemID },                 -- CF-38: learned recipes of ALL professions, 0 = no item;
-  recipesAt,                                         -- not in the RECORD (Recipes.IN_RECORD); time of the last scan
-  recipeLines = { [recipeID] = skillLineID },        -- CF-38: only where GetTradeSkillLineForRecipe answers
+  recipes = { [recipeID] = itemID },                 -- CF-38: learned recipes of ALL professions, 0 = no item
+  recipesAt,                                         -- CF-38: the owner's last recipe scan
+  recipeOrder = { recipeID, ... }, recipesBase,      -- CF-38: append-only learn order and its start: sent as tails
+  recipeLines = { [recipeID] = skillLineID },        -- CF-38: own only, where GetTradeSkillLineForRecipe answers
   talents = { { name, points } x3 }, mainTree,       -- CF-18: points per Vanilla tree, tree with most points
   autoRole, roleOverride, role,                      -- CF-18: guessed, player override, effective (tank/heal/dps)
   quests = { [questID] = { title, area, dungeon } },  -- CF-19: quest log, names only, no progress; area = log header

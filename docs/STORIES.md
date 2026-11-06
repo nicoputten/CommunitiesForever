@@ -530,9 +530,13 @@ probe"); PR #63 (the old recipe-list story) is superseded.
     another profession's fields. Mining, Herbalism, Skinning and Fishing: skill only, no link.
   - A snapshot refresh (`Snapshot.apply`) keeps these fields (`Recipes.carry`).
 - **Sync** (SYNC.md, within `pv` 1): `link`, `linkType`, `scannedAt`, `spec` travel with the character's professions.
-  A new link, link type or spec bumps the version; a new `scannedAt` alone does not. The recipe set does **not**
-  travel (`Recipes.IN_RECORD = false`): the uploader sends it from the SavedVariables. Asked Nico whether it should
-  (measured: about 1.4 KB encoded for 300 recipes). Received fields are cleaned (`Recipes.clean`).
+  The learned recipes travel too (Nico, 2026-11-06), so friends without the uploader still reach the site: an
+  append-only list per character (`recipeOrder`, `recipesBase`); a REQ says how many each character's list the asker
+  holds (`rc`), the RECORD (own or relayed) carries only the tail after it (`recipesFrom`, `recipeIds`,
+  `recipeItems`, `recipeCount`), and the receiver appends it when its count and base match, else keeps what it has.
+  An unlearned recipe starts a new base (the full list again); unlearn and relearn are otherwise not tracked. A new
+  recipe, link, link type or spec bumps the version; a new `scannedAt` alone does not. Received fields are cleaned
+  (`Recipes.clean`).
 - **Friends tab** (RC07): a crafting profession row is name, skill bar, skill, then `[Tailoring]` in Blizzard's link
   colour. Click: `SetItemRef` with the stored link (Blizzard's window with their recipes). Shift-click: the link into
   the chat box (`ChatEdit_InsertLink`, or `ChatFrame_OpenChat` without an open box, V134). Tooltip: "Mira’s
@@ -541,10 +545,13 @@ probe"); PR #63 (the old recipe-list story) is superseded.
 - Not built: the dimmed offline state ("Opens while Mira is online"). Only if the offline test (VERIFY.md CF-38)
   shows a friend's link fails while they are offline.
 - Compatibility (rule 8): only new optional fields, no migration, schema stays 2. An older client stores the new
-  profession fields it receives (strings without `|`) and ignores them; it sends none, so its characters show "not
-  scanned". Stored data of older versions has no link: "not scanned" until the profession is opened once.
+  profession and recipe fields it receives (strings without `|`), ignores them and may relay them as they came; a
+  relayed tail only applies where it fits. It sends no `rc`, so it always gets full lists, and no recipes, so its
+  characters show "not scanned" and a stored list stays. Stored data of older versions has no link and no recipes:
+  "not scanned" until the profession is opened once.
 - Unit tests: scan to stored shape, never wiping other professions, empty read, the throttle, link type, cleaning,
-  the record without the set, the Friends tab cells, click and Shift-click (`Recipes_spec`, `RecipeTracking_spec`).
+  the learn order and tails, the Friends tab cells, click and Shift-click (`Recipes_spec`, `RecipeTracking_spec`), the
+  full list then the tail between friends and through a relay (`RecipeSync_spec`).
 - Manual: VERIFY.md CF-38 (with the offline and the old-link test) and V134 to V137.
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)

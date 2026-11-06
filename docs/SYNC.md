@@ -145,6 +145,15 @@ receiver doesn't know at all; the site (WEB-86) decides what that gives them.
 
 `want` missing (nil) = the receiver's own record. `want` = a key = a record the receiver holds (relay).
 
+`rc` (CF-38, optional): what the asker already holds of that record's learned recipes, per character:
+`{ [guid] = { count, base } }` (count = how many, base = the `recipesBase` they belong to). The answer then
+carries only the recipes after that count (see `chars.*.recipesFrom` under RECORD). Missing = send every list
+in full. Older clients send none and ignore it (rule 8).
+
+```json
+{ "t": "REQ", "pv": 1, "bt": "aid:8d0e44c1a9f2", "rc": { "Player-4619-0A1B2C3D": [ 112, 1793000000 ] } }
+```
+
 ### RECORD: a person's data
 
 ```json
@@ -213,7 +222,11 @@ receiver doesn't know at all; the site (WEB-86) decides what that gives them.
 | `chars.*.professions.*.linkType` | CF-38, optional: `short` (4 colon-separated fields: read live when clicked) or `long` (carries the recipes, goes stale). The receiver recomputes it from `link` |
 | `chars.*.professions.*.scannedAt` | CF-38, optional: server time of the last scan of that profession. A new time alone bumps no version; it travels with the next record |
 | `chars.*.professions.*.spec` | CF-38, optional: the specialisation's English name (`Armorsmith`, `Goblin Engineer`, …), only Blacksmithing, Leatherworking and Engineering (VERIFY.md V136); at most 40 bytes |
-| `chars.*.recipes`, `recipesAt`, `recipeLines` | CF-38: **not sent** for now (`Recipes.IN_RECORD = false`); the learned recipes stay in the SavedVariables for the uploader. A received one is kept when it cleans: numeric `{ [recipeID] = itemID }` (0 = no item) and `{ [recipeID] = skillLineID }`, at most 3000 entries, else dropped |
+| `chars.*.recipesFrom` | CF-38, optional: the learned recipes are sent as the tail of an append-only list (the owner's `recipeOrder`: the order they were learned in, the first scan's in ID order). `recipesFrom` = how many the asker already holds (from its REQ `rc`, when the base matches and the count is not above the owner's), 0 = the full list. Present only for a character with recipes |
+| `chars.*.recipeIds`, `recipeItems` | CF-38: the recipes after `recipesFrom`, in order, and the item each makes (`0` = none), two lists of the same length |
+| `chars.*.recipeCount` | CF-38: how many recipes the character has in all (`recipesFrom` + the tail) |
+| `chars.*.recipesBase` | CF-38: when the owner started this list. A new base (a recipe unlearned, e.g. a dropped profession) means "start over": the next answer to anyone holding the old base is the full list |
+| `chars.*.recipesAt` | CF-38: when the owner last scanned the recipes |
 | `removed` | Only in relayed copies: characters the owner dropped, with the time |
 | `feed` | Activity of the last 7 realm days by day number and character; always sent (CF-58). Missing = unknown (relayed). `false` comes only from released clients that had "Share my activity" off: it means nothing was sent, and the stored feed stays |
 | `feed.*.*.at` | When the entry last changed: the feed merge key |
@@ -228,6 +241,16 @@ receiver doesn't know at all; the site (WEB-86) decides what that gives them.
 | `feed.*.*.pvpKills` | CF-55b: one entry per honorable kill, at most 100 (`kills` keeps counting past it): `t`, `zone`, `name` (the victim's full name from the honor message; missing for a kill only the counter showed), `lvl` (-1 skull), `myLvl`, `class` and `race` tokens, `rank` (number), `solo`, `bg`. Victim fields come from the honor message or from what was seen of that player (target, mouseover, nameplate) in the 10 minutes before; each is missing when unknown. Received: tokens checked (`^%u+$`, `^%a+$`), levels -1 to 100, rank 0 to 14 |
 | `goals` | CF-56, optional: the sender's Doomsday goals. `days` (the last 7 Doomsday days) and `weeks` (this and last week), each `{ set, swapped = { [id] = originalId }, done = { [id] = time }, at, pool }` (`pool`, CF-69, optional: the pool version the set was drawn in, a number ≥ 1; missing = the sender's `pool`, then 1); `streak`, `best`, `pool` (the pool version), `reset` (seconds after realm midnight). Always sent (CF-58); `false` from an older client or a missing field = nothing sent, the stored goals stay |
 | `feed.*.*.duels` | CF-52: `{ t, won, vs }`, at most 50, every duel of that character; `vs` = the opponent's full name as the game gives it (never split) |
+
+**Recipes (CF-38).** The receiver appends a tail only when it holds exactly `recipesFrom` recipes of that
+character with the same `recipesBase`, and the result has `recipeCount` recipes; `recipesFrom` 0 replaces the list.
+Anything else (a tail made for another count, a malformed one, a record without recipes from an older client) keeps
+what is stored: a record never loses recipes, and the next REQ says the real count. A relay answers the same way from
+the copy it holds. Received: ids and item IDs numbers, at most 3000, the lengths and the count consistent, a numeric
+base, else the recipe fields are dropped. Stored as `recipes = { [recipeID] = itemID }` (what the site reads),
+`recipeOrder`, `recipesBase`, `recipesAt`. Unlearning and relearning a recipe under the same base are not tracked
+(Nico, 2026-11-06). Size: about 1.5 KB encoded for a full list of 300, about 60 bytes for one new recipe; `rc` for 5
+characters about 85 bytes.
 
 Not in a record: zone, online status and current level of community characters: those come live from the
 community (`C_Club`) and Battle.net presence.

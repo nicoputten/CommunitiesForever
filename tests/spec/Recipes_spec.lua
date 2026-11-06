@@ -24,7 +24,6 @@ describe("Recipes (CF-38)", function()
   before_each(function()
     ns = helpers.coreNs()
     Recipes = helpers.loadAddonFile("src/core/Recipes.lua", ns)
-    Recipes.IN_RECORD = false
   end)
 
   describe("payload and linkType", function()
@@ -128,7 +127,7 @@ describe("Recipes (CF-38)", function()
     it("updates only the set without an open profession (a recipe learned with the window closed)", function()
       local c = char()
       local synced, stored = Recipes.apply(c, { entries = entries() }, 500)
-      assert.is_false(synced)
+      assert.is_true(synced) -- new recipes travel to friends
       assert.is_true(stored)
       assert.is_nil(c.professions[197].scannedAt)
     end)
@@ -146,14 +145,28 @@ describe("Recipes (CF-38)", function()
       assert.equals("Mooncloth Tailor", c.professions[197].spec)
     end)
 
-    it("calls a changed set synced only when it travels in the record", function()
+    it("keeps the learn order: the first scan in ID order, new recipes appended, same base", function()
       local c = char()
-      assert.is_false((Recipes.apply(c, { entries = entries() }, 500)))
-      Recipes.IN_RECORD = true
+      assert.is_true((Recipes.apply(c, { entries = entries() }, 500)))
+      assert.same({ 2963, 7421, 1229504 }, c.recipeOrder)
+      assert.equals(500, c.recipesBase)
       local list = entries()
       list[4].learned = true
+      list[5] = { id = 100, learned = true, itemID = 5 }
       assert.is_true((Recipes.apply(c, { entries = list }, 600)))
-      assert.is_false((Recipes.apply(c, { entries = list }, 700)))
+      assert.same({ 2963, 7421, 1229504, 100, 3914 }, c.recipeOrder)
+      assert.equals(500, c.recipesBase)
+      assert.is_false((Recipes.apply(c, { entries = list }, 700))) -- nothing new
+    end)
+
+    it("starts a new order and base when a recipe is gone", function()
+      local c = char()
+      Recipes.apply(c, { entries = entries() }, 500)
+      local list = entries()
+      table.remove(list, 1)
+      assert.is_true((Recipes.apply(c, { entries = list }, 600)))
+      assert.same({ 7421, 1229504 }, c.recipeOrder)
+      assert.equals(600, c.recipesBase)
     end)
 
     it("ignores a profession the character does not have", function()
@@ -167,59 +180,173 @@ describe("Recipes (CF-38)", function()
     it("keeps the scan fields over a snapshot rebuild", function()
       local previous = char()
       previous.recipes, previous.recipesAt = { [2963] = 2996 }, 100
+      previous.recipeOrder, previous.recipesBase = { 2963 }, 90
       local fresh = { professions = { [333] = { name = "Enchanting", rank = 290, max = 300 } } }
       Recipes.carry(previous, fresh)
       assert.same({ [2963] = 2996 }, fresh.recipes)
+      assert.same({ 2963 }, fresh.recipeOrder)
+      assert.equals(90, fresh.recipesBase)
       assert.equals(100, fresh.recipesAt)
       assert.same({ name = "Enchanting", rank = 290, max = 300, link = "trade:x:1:333", linkType = "long",
                     scannedAt = 100 }, fresh.professions[333])
     end)
   end)
 
-  describe("outgoing", function()
-    it("leaves the recipe set out of the record unless IN_RECORD", function()
+  describe("recipes on the wire", function()
+    local function scanned()
       local c = char()
-      c.recipes, c.recipesAt, c.recipeLines = { [2963] = 2996 }, 100, { [2963] = 197 }
+      Recipes.apply(c, { entries = entries() }, 500)
+      c.recipeLines = { [2963] = 197 }
+      return c
+    end
+
+    it("sends the full list to someone who holds nothing, without the stored fields", function()
+      local c = scanned()
       local out = Recipes.outgoing(c)
       assert.is_nil(out.recipes)
-      assert.is_nil(out.recipesAt)
+      assert.is_nil(out.recipeOrder)
       assert.is_nil(out.recipeLines)
+      assert.equals(0, out.recipesFrom)
+      assert.same({ 2963, 7421, 1229504 }, out.recipeIds)
+      assert.same({ 2996, 0, 279972 }, out.recipeItems)
+      assert.equals(3, out.recipeCount)
+      assert.equals(500, out.recipesBase)
+      assert.equals(500, out.recipesAt)
       assert.equals(c.professions, out.professions)
-      assert.same({ [2963] = 2996 }, c.recipes) -- the stored character keeps it
-      Recipes.IN_RECORD = true
-      assert.equals(c, Recipes.outgoing(c))
+      assert.is_not_nil(c.recipes) -- the stored character keeps them
+    end)
+
+    it("sends only the tail after the asker's count of the same base", function()
+      local out = Recipes.outgoing(scanned(), { 2, 500 })
+      assert.equals(2, out.recipesFrom)
+      assert.same({ 1229504 }, out.recipeIds)
+      assert.same({ 279972 }, out.recipeItems)
+      assert.equals(0, Recipes.outgoing(scanned(), { 2, 499 }).recipesFrom) -- another base
+      assert.equals(0, Recipes.outgoing(scanned(), { 4, 500 }).recipesFrom) -- more than we have
+      local all = Recipes.outgoing(scanned(), { 3, 500 })
+      assert.equals(3, all.recipesFrom)
+      assert.same({}, all.recipeIds)
+    end)
+
+    it("sends no recipe fields for a character without recipes", function()
+      local out = Recipes.outgoing(char())
+      assert.is_nil(out.recipesFrom)
+      assert.is_nil(out.recipesBase)
+    end)
+
+    it("tells what it holds per character for a REQ", function()
+      assert.same({ G1 = { 3, 500 } }, Recipes.have({ G1 = scanned(), G2 = char() }))
+      assert.is_nil(Recipes.have({ G2 = char() }))
+      assert.same({ G1 = { 3, 500 } }, Recipes.cleanHave({ G1 = { 3, 500 }, G2 = { -1, 5 }, G3 = "x", [4] = { 1, 1 } }))
+      assert.is_nil(Recipes.cleanHave("x"))
+    end)
+
+    -- What a receiver stores from what it held (stored) and a received character.
+    local function receive(stored, sent)
+      Recipes.clean(sent)
+      Recipes.receive(stored, sent)
+      return sent
+    end
+
+    it("stores a full list, then appends a tail that fits", function()
+      local owner = scanned()
+      local got = receive(nil, Recipes.outgoing(owner))
+      assert.same(owner.recipes, got.recipes)
+      assert.same(owner.recipeOrder, got.recipeOrder)
+      assert.equals(500, got.recipesBase)
+      assert.is_nil(got.recipeIds)
+      assert.is_nil(got.recipesFrom)
+      local list = entries()
+      list[4].learned = true
+      Recipes.apply(owner, { entries = list }, 600)
+      local tail = Recipes.outgoing(owner, Recipes.have({ g = got }).g)
+      assert.same({ 3914 }, tail.recipeIds)
+      local next = receive(got, tail)
+      assert.same(owner.recipes, next.recipes)
+      assert.same(owner.recipeOrder, next.recipeOrder)
+      assert.equals(600, next.recipesAt)
+    end)
+
+    it("keeps what it holds when a tail doesn't fit", function()
+      local owner = scanned()
+      local got = receive(nil, Recipes.outgoing(owner))
+      local held = { recipes = { [1] = 0, [2] = 0 }, recipeOrder = { 1, 2 }, recipesBase = 500, recipesAt = 1 }
+      local tail = Recipes.outgoing(owner, { 1, 500 }) -- made for someone else's count
+      local kept = receive(held, tail)
+      assert.same({ [1] = 0, [2] = 0 }, kept.recipes)
+      assert.same({ 1, 2 }, kept.recipeOrder)
+      local other = receive(got, Recipes.outgoing(owner, { 3, 500 }))
+      assert.same(owner.recipes, other.recipes)
+    end)
+
+    it("keeps what it holds when a record has no recipes (an older client)", function()
+      local got = receive(nil, Recipes.outgoing(scanned()))
+      local kept = receive(got, { name = "x" })
+      assert.same(got.recipes, kept.recipes)
+      assert.same(got.recipeOrder, kept.recipeOrder)
+    end)
+
+    it("replaces everything on a new base", function()
+      local owner = scanned()
+      local got = receive(nil, Recipes.outgoing(owner))
+      local list = entries()
+      table.remove(list, 1)
+      Recipes.apply(owner, { entries = list }, 600)
+      local full = Recipes.outgoing(owner, Recipes.have({ g = got }).g)
+      assert.equals(0, full.recipesFrom)
+      local next = receive(got, full)
+      assert.same({ [7421] = 0, [1229504] = 279972 }, next.recipes)
+      assert.equals(600, next.recipesBase)
     end)
   end)
 
   describe("clean", function()
-    it("keeps valid fields and recomputes the link type", function()
+    it("keeps valid fields and recomputes the link type; never keeps recipeLines", function()
       local c = { professions = { [197] = { name = "Tailoring", link = SHORT, linkType = "long", scannedAt = 5,
                                             spec = "Mooncloth Tailor" } },
-                  recipes = { [2963] = 2996, [7421] = 0 }, recipesAt = 5, recipeLines = { [2963] = 197 } }
+                  recipes = { [2963] = 2996, [7421] = 0 }, recipeOrder = { 7421, 2963 }, recipesBase = 4,
+                  recipesAt = 5, recipeLines = { [2963] = 197 } }
       Recipes.clean(c)
       assert.equals("short", c.professions[197].linkType)
       assert.equals(SHORT, c.professions[197].link)
       assert.same({ [2963] = 2996, [7421] = 0 }, c.recipes)
-      assert.same({ [2963] = 197 }, c.recipeLines)
-    end)
-
-    it("drops bad links, times, specs and recipe maps", function()
-      local c = { professions = { [197] = { link = "item:1", linkType = "short", scannedAt = "x",
-                                            spec = string.rep("a", 60) } },
-                  recipes = { [2963] = "bolt" }, recipesAt = "x", recipeLines = { [2963] = 0 } }
-      Recipes.clean(c)
-      assert.same({}, c.professions[197])
-      assert.is_nil(c.recipes)
-      assert.is_nil(c.recipesAt)
+      assert.same({ 7421, 2963 }, c.recipeOrder)
       assert.is_nil(c.recipeLines)
     end)
 
-    it("drops a set that is too big", function()
-      local big = {}
-      for i = 1, Recipes.MAX_RECIPES + 1 do big[i] = 0 end
-      local c = { recipes = big }
+    it("drops bad links, times, specs and recipe fields", function()
+      local c = { professions = { [197] = { link = "item:1", linkType = "short", scannedAt = "x",
+                                            spec = string.rep("a", 60) } },
+                  recipes = { [2963] = "bolt" }, recipeOrder = { 2963 }, recipesBase = 1, recipesAt = "x" }
       Recipes.clean(c)
+      assert.same({}, c.professions[197])
       assert.is_nil(c.recipes)
+      assert.is_nil(c.recipeOrder)
+      assert.is_nil(c.recipesBase)
+      assert.is_nil(c.recipesAt)
+    end)
+
+    it("drops a tail of the wrong shape", function()
+      local bad = {
+        { recipesFrom = 0, recipeIds = { 1, 2 }, recipeItems = { 0 }, recipeCount = 2, recipesBase = 1 },
+        { recipesFrom = 0, recipeIds = { 1 }, recipeItems = { 0 }, recipeCount = 5, recipesBase = 1 },
+        { recipesFrom = -1, recipeIds = { 1 }, recipeItems = { 0 }, recipeCount = 0, recipesBase = 1 },
+        { recipesFrom = 0, recipeIds = { "x" }, recipeItems = { 0 }, recipeCount = 1, recipesBase = 1 },
+        { recipesFrom = 0, recipeIds = { 1 }, recipeItems = { 0 }, recipeCount = 1 },
+      }
+      for _, c in ipairs(bad) do
+        Recipes.clean(c)
+        assert.is_nil(c.recipesFrom)
+        assert.is_nil(c.recipeIds)
+      end
+    end)
+
+    it("drops a list that is too big", function()
+      local ids, items = {}, {}
+      for i = 1, Recipes.MAX_RECIPES + 1 do ids[i], items[i] = i, 0 end
+      local c = { recipesFrom = 0, recipeIds = ids, recipeItems = items, recipeCount = #ids, recipesBase = 1 }
+      Recipes.clean(c)
+      assert.is_nil(c.recipeIds)
     end)
   end)
 

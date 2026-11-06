@@ -122,13 +122,26 @@ describe("RecipeTracker and profession links (CF-38)", function()
     assert.same({ [2538] = 2679, [2963] = 2996 }, char().recipes)
   end)
 
-  it("leaves the recipe set out of the record but sends the link", function()
+  it("sends the recipes as a list and the link in the record", function()
     state.time = 100
     fire("TRADE_SKILL_SHOW")
     local record = ns.Merge.outgoingRecord(addon.db.global.self)
     assert.is_nil(record.chars[VES].recipes)
+    assert.same({ 2538, 2963 }, record.chars[VES].recipeIds)
+    assert.equals(0, record.chars[VES].recipesFrom)
     assert.equals(LINK, record.chars[VES].professions[185].link)
     assert.is_not_nil(char().recipes)
+  end)
+
+  it("bumps the version when a recipe is learned", function()
+    state.time = 100
+    fire("TRADE_SKILL_SHOW")
+    local before = addon.db.global.self.version
+    trade.recipes[3].learned = true
+    state.time = 110
+    state.serverTime = state.serverTime + 60
+    fire("NEW_RECIPE_LEARNED", 3914)
+    assert.is_true(addon.db.global.self.version > before)
   end)
 
   describe("Friends tab (RC07)", function()

@@ -60,11 +60,13 @@ end
 -- the receiver decides what to show, see core rule 1) and the activity feed. CF-58: there is no
 -- sharing setting; a friend who doesn't want to share uninstalls the addon. Never sends `feed = false`.
 -- goals (CF-56): the own Doomsday goals as Goals.outgoing gives them (nil: none yet).
-function Merge.outgoingRecord(selfRecord, goals)
+-- have (CF-38, optional): the asker's REQ `rc` (Recipes.cleanHave): each character's recipes go as the tail after
+-- what the asker holds.
+function Merge.outgoingRecord(selfRecord, goals, have)
   local feed = selfRecord.feed
   local chars = {}
   for guid, char in pairs(selfRecord.chars or {}) do
-    chars[guid] = ns.Recipes.outgoing(char) -- CF-38: the recipe set only when Recipes.IN_RECORD
+    chars[guid] = ns.Recipes.outgoing(char, have and have[guid]) -- CF-38: recipes as a tail
   end
   return {
     t = "RECORD",
@@ -220,8 +222,13 @@ older than what is stored. ]]
 function Merge.store(people, record, now, senderBattleTag)
   local stored = people[record.bt]
   local direct = senderBattleTag == record.bt
+  local incoming = cleanChars(record.chars)
+  -- CF-38: a recipe tail is appended to the stored copy's recipes (or the stored ones kept) before the merge.
+  for guid, char in pairs(incoming or {}) do
+    ns.Recipes.receive(stored and stored.chars and stored.chars[guid], char)
+  end
   local chars, removed = Merge.mergeChars(stored and stored.chars, stored and stored.removed,
-    cleanChars(record.chars), cleanRemoved(record.removed), direct, now)
+    incoming, cleanRemoved(record.removed), direct, now)
   local newer = not stored or (stored.version or 0) <= record.version or direct
   local displayName, invite
   if newer then
@@ -292,12 +299,14 @@ function Merge.levelUps(oldChars, newChars)
   return ups
 end
 
--- A stored record as a RECORD message, to relay it (CF-20).
-function Merge.relayRecord(people, battleTag)
+-- A stored record as a RECORD message, to relay it (CF-20). have (CF-38, optional): as for outgoingRecord.
+function Merge.relayRecord(people, battleTag, have)
   local person = people[battleTag]
   if not person then return nil end
+  local chars = {}
+  for guid, char in pairs(person.chars or {}) do chars[guid] = ns.Recipes.outgoing(char, have and have[guid]) end
   return { t = "RECORD", bt = battleTag, displayName = person.displayName, version = person.version,
-           chars = person.chars, removed = person.removed, invite = cleanInvite(person.invite), feed = person.feed,
+           chars = chars, removed = person.removed, invite = cleanInvite(person.invite), feed = person.feed,
            goals = person.goals }
 end
 
