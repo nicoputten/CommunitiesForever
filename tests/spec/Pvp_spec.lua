@@ -131,6 +131,21 @@ describe("Pvp (CF-52)", function()
       assert.is_nil(Pvp.victim("Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)", nil, ranks))
     end)
 
+    it("tries each honor format in order, the variant without a rank gives no rank (CF-101)", function()
+      local ranks = { Grunt = 2 }
+      local forever = { "%s dies (Honorable Kill: %s). You gain %d Honor.",
+                        "%s dies (Honorable Kill). You gain %d Honor." }
+      assert.are.same({ "Ann Example" },
+        { Pvp.victim("Ann Example dies (Honorable Kill). You gain 12 Honor.", forever, ranks) })
+      assert.are.same({ "Grim Tusk", 2 },
+        { Pvp.victim("Grim Tusk dies (Honorable Kill: Grunt). You gain 12 Honor.", forever, ranks) })
+      local args, format = Pvp.honorArgs("Grim Tusk dies (Honorable Kill). You gain 12 Honor.", forever)
+      assert.are.same({ "Grim Tusk", "12" }, args)
+      assert.are.equal(forever[2], format)
+      assert.is_nil(Pvp.honorArgs("You have been awarded 50 honor points.", forever))
+      assert.is_nil(Pvp.honorArgs("Grim Tusk dies (Honorable Kill). You gain 12 Honor.", {}))
+    end)
+
     it("builds a kill entry from the kill and what was seen of the victim", function()
       assert.are.same({ t = 5, zone = "Ashenvale", name = "Grim Tusk", lvl = -1, myLvl = 30, class = "ROGUE",
                         race = "Troll", rank = 3, solo = true },

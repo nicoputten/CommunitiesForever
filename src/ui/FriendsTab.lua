@@ -211,6 +211,57 @@ local function linkFactory(parent)
   return b
 end
 
+-- CF-38 (RC07): a profession's link cell: "[Tailoring]" in the game's link colour (click: Blizzard's window with
+-- their recipes; shift-click: the link into chat) or a dim "not scanned"; both with the board's tooltip.
+local LINK_W = 92
+local LINK_RGB = { 1, 0.82, 0 }
+
+local function professionLinkFactory(parent)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetHeight(16)
+  b.text = Theme.text(b, "small", "gold")
+  b.text:SetPoint("LEFT")
+  b.text:SetJustifyH("LEFT")
+  b:SetScript("OnClick", function(self)
+    local cell = self.cell
+    if not (cell and cell.state == "link") then return end
+    if IsShiftKeyDown and IsShiftKeyDown() then
+      ns.TradeSkill.insert(cell.chatLink)
+    else
+      ns.TradeSkill.open(cell.link, cell.chatLink)
+    end
+  end)
+  b:SetScript("OnEnter", function(self)
+    local tip = self.cell and self.cell.tip
+    if not (tip and GameTooltip) then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    if tip.title then
+      GameTooltip:SetText(tip.title, 1, 1, 1)
+      for _, line in ipairs(tip.lines) do GameTooltip:AddLine(line, Theme.color("textDim")) end
+    else
+      GameTooltip:SetText(tip.lines[1], Theme.color("textDim"))
+    end
+    GameTooltip:Show()
+  end)
+  b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+  return b
+end
+
+local function placeProfessionLink(parent, x, y, cell)
+  local b = take(cardPools.professionLinks, parent)
+  b:SetPoint("TOPLEFT", x, -y)
+  b:SetWidth(LINK_W)
+  b.cell = cell
+  b.text:SetWidth(LINK_W)
+  b.text:SetText(cell.text)
+  if cell.state == "link" then
+    b.text:SetTextColor(LINK_RGB[1], LINK_RGB[2], LINK_RGB[3], 1)
+  else
+    b.text:SetTextColor(Theme.color("faint"))
+  end
+  return b
+end
+
 local function cardWidth()
   return math.max(300, (detail:GetWidth() or 0) - 2 * PAD - 6)
 end
@@ -229,19 +280,27 @@ local function skillColumns(parent, d, y, width)
     placeText(cardPools.small, parent, PAD, ly, left, "No professions known.", "muted")
     ly = ly + LINE.small
   end
+  -- CF-38: a link column on the right when any profession has a link cell.
+  local linkW = 0
+  for _, group in ipairs(d.professions) do
+    for _, p in ipairs(group.list) do
+      if p.cell then linkW = LINK_W + 8 end
+    end
+  end
   for _, group in ipairs(d.professions) do
     local secondary = group.title == "Secondary"
     for _, p in ipairs(group.list) do
       placeText(cardPools.small, parent, PAD, ly, 104, tostring(p.name), secondary and "textDim" or "text")
       local bar = take(cardPools.bars, parent)
       bar:SetPoint("TOPLEFT", PAD + 112, -(ly + 5))
-      bar:SetWidth(math.max(40, left - 112 - 66))
+      bar:SetWidth(math.max(40, left - 112 - 66 - linkW))
       local spec = ns.Card.skillBar(p, secondary)
       local color = spec.muted and { Theme.color("muted") } or nil
       bar:SetValues(spec.fill * ns.Card.SKILL_SCALE, ns.Card.SKILL_SCALE, spec.cap * ns.Card.SKILL_SCALE,
         spec.ticks, color)
-      placeText(cardPools.small, parent, PAD + left - 58, ly, 58,
+      placeText(cardPools.small, parent, PAD + left - 58 - linkW, ly, 58,
         string.format("%s / %s", tostring(p.rank), tostring(p.max)), "textDim")
+      if p.cell then placeProfessionLink(parent, PAD + left - LINK_W, ly, p.cell) end
       ly = ly + 19
     end
   end
@@ -628,6 +687,7 @@ function FriendsTab.create(parent, h)
     buttons = pool(buttonFactory), bars = pool(barFactory), tiles = pool(tileFactory),
     portraits = pool(portraitFactory), links = pool(linkFactory), charLines = pool(charLineFactory),
     charCards = pool(charCardFactory), -- CF-62
+    professionLinks = pool(professionLinkFactory), -- CF-38
     infos = pool(Kit.info), -- CF-65
     boxes = pool(function(p)
       local f = CreateFrame("Frame", nil, p)
@@ -699,7 +759,7 @@ function FriendsTab.searchBox() return search end
 function FriendsTab.countText() return countText and countText:GetText() or "" end
 
 local TEXT_POOLS = { "name", "body", "small", "section", "group", "tiny", "tiles", "charLines", "charCards", "links",
-                     "buttons" }
+                     "buttons", "professionLinks" }
 
 function FriendsTab.cardTexts()
   local out = {}
@@ -731,6 +791,13 @@ end
 function FriendsTab.cardTips()
   local out = {}
   for i = 1, cardPools and cardPools.infos.used or 0 do out[i] = cardPools.infos.items[i].tip end
+  return out
+end
+
+-- CF-38: the card's profession link cells (buttons with .cell).
+function FriendsTab.professionLinks()
+  local out = {}
+  for i = 1, cardPools and cardPools.professionLinks.used or 0 do out[i] = cardPools.professionLinks.items[i] end
   return out
 end
 

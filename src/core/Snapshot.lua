@@ -1,5 +1,5 @@
 -- Snapshot: build and compare character snapshots. Pure Lua, no WoW globals.
--- Requires ns.Merge (load core/Merge.lua first).
+-- Requires ns.Merge and ns.Recipes (load core/Recipes.lua and core/Merge.lua first).
 local _, ns = ...
 
 local Snapshot = {}
@@ -110,6 +110,7 @@ function Snapshot.apply(record, info, now)
     -- The role override is set by the player in settings, not read from the game.
     char.roleOverride = previous.roleOverride
     char.role = char.roleOverride or char.autoRole
+    ns.Recipes.carry(previous, char) -- CF-38: recipes and profession links come from the profession scan
   end
   if Snapshot.equal(previous, char) then
     return false

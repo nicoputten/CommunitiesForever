@@ -164,7 +164,7 @@ LaunchProbe.atLogin(function()
   end
 end)
 
--- ===== V35b, V70: battlegrounds and boss fights =====
+-- ===== V35b: battlegrounds (V70, boss fights, answered: CF-101) =====
 
 LaunchProbe.on("PVP_MATCH_COMPLETE", function(winner)
   if type(winner) == "number" and readable(winner) then
@@ -175,17 +175,7 @@ LaunchProbe.on("PVP_MATCH_COMPLETE", function(winner)
   end
 end)
 
-LaunchProbe.on("ENCOUNTER_START", function()
-  local locked = get(C_ChatInfo and C_ChatInfo.InChatMessagingLockdown)
-  local busy = get(IsEncounterInProgress)
-  if locked == true or busy == true then
-    result("V70", "pass", "in a boss fight: lockdown " .. Val(locked) .. ", in progress " .. Val(busy))
-  else
-    result("V70", "fail", "in a boss fight: lockdown " .. Val(locked) .. ", in progress " .. Val(busy))
-  end
-end)
-
--- ===== V73, V76, the Hunt: enemy players and honorable kills =====
+-- ===== V73, the Hunt: enemy players and honorable kills (V76, the group at a kill, answered: CF-101) =====
 -- Enemy players are still looked at for the Hunt (their race and class before a kill); V74 itself is answered.
 
 local unitSeen = {} -- guid -> server time of the last look (Probe.THROTTLE)
@@ -207,31 +197,46 @@ LaunchProbe.on("PLAYER_TARGET_CHANGED", function() Enemy("target", "target") end
 LaunchProbe.on("UPDATE_MOUSEOVER_UNIT", function() Enemy("mouseover", "mouseover") end)
 LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Enemy(unit, "nameplate") end end)
 
+-- CF-101: the game's honor message globals ("COMBATLOG_HONOR..."), sorted, as "NAME" or "NAME (matches)": which
+-- variant Forever uses. Looked up once, at the first message no format matched.
+local honorGlobals
+local function HonorGlobals(text)
+  if honorGlobals then return honorGlobals end
+  local names = {}
+  for key, value in pairs(_G) do
+    if type(key) == "string" and key:find("^COMBATLOG_HONOR") and type(value) == "string" then
+      names[#names + 1] = key .. (ns.GameText.parse(text, value) and " (matches)" or "")
+    end
+  end
+  table.sort(names)
+  honorGlobals = #names > 0 and table.concat(names, ", ") or "none"
+  return honorGlobals
+end
+
 LaunchProbe.on("CHAT_MSG_COMBAT_HONOR_GAIN", function(text)
-  local args = str(text) and ns.GameText.parse(text, COMBATLOG_HONORGAIN)
-  local victim, rank = args and args[1], args and args[2]
+  local formats = ns.PvpInfo.formats().honors
+  local args, format = nil, nil
+  if str(text) then args, format = ns.Pvp.honorArgs(text, formats) end
+  local victim = args and args[1]
   if victim then
-    result("V73", "pass", "victim and rank from the honor message (rank " .. Val(rank) .. ")")
-  elseif not COMBATLOG_HONORGAIN then
-    result("V73", "fail", "COMBATLOG_HONORGAIN missing")
+    local name = "?"
+    for _, global in ipairs(ns.PvpInfo.HONOR_FORMATS) do
+      if _G[global] == format then name = global break end
+    end
+    result("V73", "pass", "victim from the honor message via " .. name .. " (second argument " .. Val(args[2]) .. ")")
+  elseif #formats == 0 then
+    result("V73", "fail", "COMBATLOG_HONORGAIN and its variants missing")
   elseif not str(text) then
     result("V73", "fail", "honor message " .. Val(text))
   else
-    result("V73", "fail", "honor message did not match COMBATLOG_HONORGAIN")
-    note("V73", "format: " .. Val(COMBATLOG_HONORGAIN))
+    result("V73", "fail", "no honor format matched: " .. Val(ns.Probe.shape(text, formats)))
+    note("V73", "globals: " .. HonorGlobals(text))
   end
   local status, detail = Probe.hunt(seenByName, victim, now())
   if status == "pass" then
     result("Hunt", status, detail)
   elseif status then
     info("Hunt", detail)
-  end
-  local grouped = get(IsInGroup)
-  local instanceType = GetInstanceInfo and select(2, GetInstanceInfo())
-  if type(grouped) == "boolean" and str(instanceType) then
-    result("V76", "pass", "group " .. S(grouped) .. ", instance " .. instanceType)
-  else
-    result("V76", "fail", "IsInGroup " .. Val(grouped) .. ", instance " .. Val(instanceType))
   end
   note("V73", "at a kill: lifetime " .. Vals(GetPVPLifetimeStats) .. ", week " .. Vals(GetPVPThisWeekStats))
 end)

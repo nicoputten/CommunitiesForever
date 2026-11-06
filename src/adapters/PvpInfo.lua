@@ -41,10 +41,22 @@ function PvpInfo.totalDeaths()
   return tonumber(text)
 end
 
--- The game's format strings for the duel and honor messages (nil when missing).
+-- The game's honor message formats, tried in this order (CF-101: Forever's kill message did not match
+-- COMBATLOG_HONORGAIN, V73; it has no PvP ranks, so it likely uses the variant without one). Missing ones are skipped.
+PvpInfo.HONOR_FORMATS = { "COMBATLOG_HONORGAIN", "COMBATLOG_HONORGAIN_NO_RANK", "COMBATLOG_HONORGAIN_EXHAUSTION1",
+                          "COMBATLOG_HONORGAIN_EXHAUSTION2", "COMBATLOG_HONORGAIN_EXHAUSTION3",
+                          "COMBATLOG_HONORGAIN_EXHAUSTION4" }
+
+-- The game's format strings for the duel and honor messages (nil when missing); honors: the readable
+-- HONOR_FORMATS strings, in order (empty when none is readable).
 function PvpInfo.formats()
+  local honors = {}
+  for _, name in ipairs(PvpInfo.HONOR_FORMATS) do
+    local format = readable(_G[name])
+    if type(format) == "string" then honors[#honors + 1] = format end
+  end
   return { knockout = readable(DUEL_WINNER_KNOCKOUT), retreat = readable(DUEL_WINNER_RETREAT),
-           honor = readable(COMBATLOG_HONORGAIN) }
+           honor = readable(COMBATLOG_HONORGAIN), honors = honors }
 end
 
 -- The last damage of the latest death recap: subevent, environmentalType, sourceGUID; or nil.

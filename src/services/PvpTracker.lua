@@ -77,19 +77,21 @@ local function fallback()
   for _ = 1, math.min(missing, ns.Pvp.MAX_KILLS_PER_CHANGE) do recordKill(char, nil, nil) end
 end
 
--- Without a readable lifetime count, each honor message of a kill (the game's COMBATLOG_HONORGAIN) counts.
+-- Without a readable lifetime count, each honor message of a kill (the game's COMBATLOG_HONORGAIN or a variant,
+-- PvpInfo.HONOR_FORMATS) counts.
 local function honor(text)
   local char = currentChar()
   if not char then return end
   rankNumbers = rankNumbers or ns.PvpInfo.rankNumbers()
-  local victim, rank = ns.Pvp.victim(text, ns.PvpInfo.formats().honor, rankNumbers)
+  local honors = ns.PvpInfo.formats().honors
+  local victim, rank = ns.Pvp.victim(text, honors, rankNumbers)
   local counted = char.pvp and char.pvp.hk ~= nil -- the counter fallback runs only with a readable counter
   if victim then
     if counted then honorKills = honorKills + 1 end
     recordKill(char, victim, rank)
   end
   if counted then return refresh(true) end
-  if ns.GameText.parse(text, ns.PvpInfo.formats().honor) then
+  if ns.Pvp.honorArgs(text, honors) then
     ns.FeedTracker.record(char, { { kind = "kills", zone = ns.SelfInfo.zone(), count = 1 } })
   end
 end

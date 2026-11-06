@@ -34,6 +34,7 @@ describe("Format", function()
   before_each(function()
     local ns = helpers.coreNs()
     helpers.loadAddonFile("src/core/Quests.lua", ns)
+    helpers.loadAddonFile("src/core/Recipes.lua", ns)
     Format = helpers.loadAddonFile("src/core/Format.lua", ns)
     Card = helpers.loadAddonFile("src/core/Card.lua", ns) -- CF-59: the card models moved there
   end)
@@ -60,8 +61,8 @@ describe("Format", function()
   describe("professionList", function()
     it("sorts by name with a progress fraction", function()
       assert.are.same({
-        { name = "Cooking", rank = 75, max = 75, fraction = 1 },
-        { name = "Mining", rank = 60, max = 150, fraction = 0.4 },
+        { name = "Cooking", rank = 75, max = 75, fraction = 1, skillLine = 185 },
+        { name = "Mining", rank = 60, max = 150, fraction = 0.4, skillLine = 186 },
       }, Format.professionList(charRow().professions))
       assert.are.same({}, Format.professionList(nil))
       assert.are.equal(0, Format.professionList({ [1] = { name = "X", rank = 5, max = 0 } })[1].fraction)
@@ -315,10 +316,13 @@ describe("Format", function()
 
     it("describes a character with its subtitle, tiles and professions", function()
       local d = Card.detail(view, Format.path("Solvar#2032", "G1"), NOW)
+      local professions = Format.professionGroups(charRow().professions)
+      professions[2].list[1].cell = { state = "notScanned", text = "not scanned", -- CF-38: Cooking, Mining has none
+                                      tip = { lines = { "Opens once Sjaak opens Cooking in game" } } }
       assert.are.same({
         kind = "character", guid = "G1", name = "Garraka", classFile = "MAGE", classID = 8, online = true,
         outside = false,
-        professions = Format.professionGroups(charRow().professions),
+        professions = professions,
         sharedQuests = { total = 0, more = 0, areas = {}, expandable = false, showAll = false }, -- CF-19
         subtitle = "played by Sjaak \194\183 online in Orgrimmar", -- CF-40
         tiles = { { label = "Level", value = "11", fraction = 11 / 60 }, { label = "Item level", value = "20" },

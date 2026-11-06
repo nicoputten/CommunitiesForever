@@ -109,6 +109,14 @@ ns.items = {
     how = "Test: guild invites, Refusal texts; then invite someone already in a guild. Send the V132 lines." },
   { id = "V133", retail = true, session = 1, title = "A chat tab with only guild chat (ChatFrame_AddMessageGroup)",
     how = "/run print(ChatFrame_AddMessageGroup, ChatFrame1.AddMessageGroup), then VERIFY.md CF-86 in CF." },
+  { id = "V134", session = 2, friend = true, title = "Shift-click a profession link into chat (CF-38)",
+    how = "/cf, a friend's character, Shift-click [Tailoring] with the chat box open and closed: VERIFY.md V134." },
+  { id = "V135", session = 1, title = "TRADE_SKILL_CLOSE fires when a profession window closes",
+    how = "VERIFY.md V135: register it with /run, open and close a profession window." },
+  { id = "V136", session = 1, title = "Specialisation spells (Armorsmith, Goblin Engineer, ...) read as known",
+    how = "A character with a specialisation: the IsSpellKnown line of VERIFY.md V136." },
+  { id = "V137", session = 1, title = "Each learned recipe's profession (GetTradeSkillLineForRecipe)",
+    how = "Open a profession, then the recipeLines line of VERIFY.md V137 (same as V60c)." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 
@@ -123,7 +131,7 @@ ns.items = {
     how = "/cf, Doomsday, Feats: a level-up adds a feat with today's date." },
 
   -- 4. A dungeon
-  { id = "V70", retail = true, session = 4, auto = true, title = "Messaging lockdown during a boss fight" },
+  { id = "V70", done = "forever 70790", retail = true, session = 4, auto = true, title = "Messaging lockdown during a boss fight" },
   { id = "Run log", session = 4, title = "The run shows in Activity",
     how = "Finish a dungeon with a boss: Activity shows 'ran <dungeon>'." },
   { id = "Boss counts", session = 4, title = "Boss counts of the dungeons with wings",
@@ -135,7 +143,7 @@ ns.items = {
   { id = "V75", session = 5, auto = true, title = "The combat log can be registered",
     how = "Press Test the combat log (Blizzard may show a warning: then answer No).",
     note = "Retail 12.1.5: blocked for addons (Blizzard's popup). Forever is still open." },
-  { id = "V76", session = 5, auto = true, title = "Group and instance at a kill" },
+  { id = "V76", done = "forever 70790", session = 5, auto = true, title = "Group and instance at a kill" },
   { id = "Hunt", session = 5, auto = true, title = "The Hunt: a kill's victim race and class",
     how = "Enemy nameplates on. Target or mouse over an enemy player, then get the honorable kill on them.",
     note = "Needs V73 (the victim's name in the honor message) and V74 (race and class readable) together." },
@@ -224,7 +232,7 @@ ns.items = {
   -- The PvP catalogue (docs/DOOMSDAY-PVP-CATALOGUE.md).
   { id = "V120", session = 5, auto = true, title = "Who killed you: the killer's name from the death recap",
     how = "Die to an enemy player (or let a friend on the other faction kill you)." },
-  { id = "V121", retail = true, session = 5, auto = true, title = "The PvP flag (UnitIsPVP)",
+  { id = "V121", done = "forever 70790", retail = true, session = 5, auto = true, title = "The PvP flag (UnitIsPVP)",
     how = "Flag yourself for PvP (/pvp) or enter a contested zone." },
   { id = "V122", session = 5, auto = true, title = "Battleground score: your row and the flag and base stats",
     how = "Play a battleground and open its scoreboard once." },

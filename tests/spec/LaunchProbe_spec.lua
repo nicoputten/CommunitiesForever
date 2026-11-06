@@ -44,7 +44,7 @@ describe("the hidden launch probe", function()
     assert.are.equal(2, addon.db.global.schemaVersion)
   end)
 
-  it("ticks V73, V76 and the Hunt from a target and the honor message, silently", function()
+  it("ticks V73 and the Hunt from a target and the honor message, silently", function()
     load()
     local printed = #state.printed
     enemyTarget("Orc")
@@ -54,7 +54,6 @@ describe("the hidden launch probe", function()
       "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)")
     assert.is_nil(results().V74) -- answered at launch (CF-96); the target still feeds the Hunt
     assert.are.equal("pass", results().V73.status)
-    assert.are.equal("pass", results().V76.status)
     assert.are.same("Grim Tusk: Orc WARRIOR via target, 5 s before the kill", results().Hunt.detail)
     assert.is_nil(results().V73.detail:find("Grim Tusk", 1, true)) -- no names but the Hunt's and the killer's
     for i = printed + 1, #state.printed do -- the addon's own Doomsday kill line may print; the probe never does
@@ -107,10 +106,10 @@ describe("the hidden launch probe", function()
 
   it("notes a handler error instead of showing it", function()
     load()
-    _G.UnitIsPVP = function() error("boom") end
-    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
-    _G.UnitIsPVP = nil
-    assert.truthy(results().error.log[1]:find("PLAYER_FLAGS_CHANGED", 1, true))
+    _G.C_TradeSkillUI = setmetatable({}, { __index = function() error("boom") end })
+    wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+    _G.C_TradeSkillUI = nil
+    assert.truthy(results().error.log[1]:find("TRADE_SKILL_SHOW", 1, true))
   end)
 
   it("registers nothing from 2026-11-18 and keeps the results", function()
@@ -149,6 +148,31 @@ describe("the hidden launch probe", function()
     end
     assert.are.same({ status = "pass", detail = "IsFishingLoot true, 1 items", at = 1, build = "70790" },
       results().V84)
+  end)
+
+  it("passes V73 from the honor message variant without a rank, naming the global (CF-101)", function()
+    load()
+    _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
+    _G.COMBATLOG_HONORGAIN_NO_RANK = "%s dies (Honorable Kill). You gain %d Honor."
+    finally(function() _G.COMBATLOG_HONORGAIN_NO_RANK = nil end)
+    enemyTarget("Orc")
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies (Honorable Kill). You gain 12 Honor.")
+    assert.are.equal("pass", results().V73.status)
+    assert.are.equal("victim from the honor message via COMBATLOG_HONORGAIN_NO_RANK (second argument 12)",
+      results().V73.detail)
+    assert.are.equal("pass", results().Hunt.status)
+  end)
+
+  it("keeps the shape of an honor message no format matched, without the name (CF-101)", function()
+    load()
+    _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
+    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies. You gain 12.5 Honor.")
+    local r = results().V73
+    assert.are.equal("fail", r.status)
+    assert.are.equal("no honor format matched: x x dies. You gain 12.5 Honor.", r.detail)
+    assert.truthy(r.log[#r.log - 1]:find("globals: ", 1, true) or r.log[#r.log]:find("globals: ", 1, true))
+    for _, line in ipairs(r.log) do assert.is_nil(line:find("Grim", 1, true)) end
   end)
 
   it("notes PLAYER_PVP_KILLS_CHANGED under V73 (V79's open part)", function()
@@ -200,15 +224,24 @@ describe("the hidden launch probe", function()
       linked, recipeIDs = false, { 3839, 3840, 3841 }
       _G.C_TradeSkillUI = {
         GetAllRecipeIDs = function() return recipeIDs end,
-        GetRecipeInfo = function(id) return { recipeID = id, name = "Bolt of Silk Cloth", learned = id ~= 3841 } end,
+        GetRecipeInfo = function(id)
+          return { recipeID = id, name = "Bolt of Silk Cloth", learned = id ~= 3841, relativeDifficulty = 1,
+                   numSkillUps = 1, numAvailable = 3, categoryID = 1100 }
+        end,
         GetRecipeOutputItemData = function() return { itemID = 4305 } end,
         GetRecipeItemLink = function() return "|cffffffff|Hitem:4305::::::::60:::::|h[Bolt of Silk Cloth]|h|r" end,
-        GetRecipeSchematic = function() return { outputItemID = 4305, name = "Bolt of Silk Cloth" } end,
+        GetRecipeSchematic = function()
+          return { outputItemID = 4305, name = "Bolt of Silk Cloth",
+                   reagentSlotSchematics = { { quantityRequired = 4, reagents = { { itemID = 4306 } } } } }
+        end,
         GetBaseProfessionInfo = function() return { professionID = 197, professionName = "Tailoring" } end,
         GetChildProfessionInfo = function() return { professionID = 2540 } end,
         GetTradeSkillListLink = function() return "|cffffd000|Htrade:Player-1-000A:3908:197|h[Tailoring]|h|r" end,
         IsTradeSkillLinked = function() return linked, linked and "Ada Stormwind" or nil end,
         OpenTradeSkill = function() end,
+        GetTradeSkillLineForRecipe = function(id) return 2540, "Tailoring", id == 3839 and 197 or 185 end,
+        GetRecipeCooldown = function() return nil end,
+        GetRecipeSourceText = function() return "Trainer: Tailoring" end,
       }
     end
 
@@ -263,10 +296,40 @@ describe("the hidden launch probe", function()
       local timers = #state.timers
       wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- the list loaded, but throttled; nothing fires after it
       wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- one later scan only
-      assert.are.equal(timers + 1, #state.timers)
+      assert.are.equal(timers + 2, #state.timers) -- the probe's, and CF-38's RecipeTracker's (1 s throttle)
       assert.are.equal("info", results().V60.status)
       state.serverTime = state.serverTime + 10
       wowapi.runTimers(state)
+      assert.are.equal("pass", results().V60.status)
+    end)
+
+    it("tells each learned recipe's profession and one recipe's details, no names (V60c, CF-101)", function()
+      tailoring()
+      load()
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      local r = results().V60c
+      assert.are.equal("pass", r.status)
+      assert.are.equal("lines 2540/185:1 2540/197:1; colour yes, skill-ups yes, can make yes; reagents yes; "
+        .. "source yes", r.detail)
+      assert.are.same({ "recipe 3839: difficulty 1, skill-ups 1, can make 3, category 1100",
+                        "recipe 3839: 1 reagent slots, first 4x item 4306; cooldown missing; source text 18 chars",
+                        "list link: 4 fields, 28 chars" }, r.log)
+      for _, line in ipairs(r.log) do assert.is_nil(line:find("Player-", 1, true)) end
+      for _, line in ipairs(r.log) do assert.is_nil(line:find("Trainer", 1, true)) end
+    end)
+
+    it("fails V60c without the recipe's profession, and keeps scanning for it after V60 passed", function()
+      tailoring()
+      _G.C_TradeSkillUI.GetTradeSkillLineForRecipe = nil
+      load()
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
+      assert.are.equal("pass", results().V60.status)
+      assert.are.equal("fail", results().V60c.status)
+      assert.truthy(results().V60c.detail:find("^lines none;"))
+      _G.C_TradeSkillUI.GetTradeSkillLineForRecipe = function() return 2540, "Tailoring", 197 end
+      state.serverTime = state.serverTime + 10
+      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
+      assert.are.equal("pass", results().V60c.status)
       assert.are.equal("pass", results().V60.status)
     end)
 
@@ -322,7 +385,7 @@ describe("the hidden launch probe", function()
 
     it("counts V60 and V60b in /cf fp", function()
       load()
-      assert.are.equal(17, #ns.Probe.IDS)
+      assert.are.equal(15, #ns.Probe.IDS)
       addon:OnSlashCommand("fp")
       local text = ns.ProbeReport.text()
       assert.truthy(text:find("V60 open", 1, true))
