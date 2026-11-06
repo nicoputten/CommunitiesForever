@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.5.0 (2026-11-06)
 - **New:** a friend's crafting professions show as a link in the Friends tab, e.g. `[Tailoring]`: click it to see their
   recipes in the game's own profession window, Shift-click to put it in chat. Opening one of your profession windows
   saves your recipes and that link and shares them with your friends, so the website knows what everyone can craft.
