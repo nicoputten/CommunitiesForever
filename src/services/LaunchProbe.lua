@@ -2,13 +2,14 @@
 installing FriendProbe. Results go to CommunitiesForeverDB.global.probe (core/Probe.lua), which the uploader sends to
 the site. Until Probe.STOP_AT (2026-11-18).
 - Invisible: nothing in chat, no frame, sound or popup; only post-hooks (hooksecurefunc). Left out: what can show
-  something or act (the combat log V75, whispers, invites, links, reloads, the jump hook V118).
+  something or act (the combat log V75, whispers, invites, sending links, reloads, the jump hook V118). A clicked
+  link is only watched (a SetItemRef post-hook, V60b).
 - Safe: every handler and hook runs in pcall (an error is noted under "error"); every API is guarded; a secret value
   is recorded as "secret", a missing API as "missing".
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
 - Private: no raw chat text, no event log; player names only for the Hunt's victim and the killer (V120).
 This file: the plumbing and the login and PvP checks. services/LaunchProbeMissions.lua: the mission catalogue's
-checks and the PvP catalogue's (V120 to V123).
+checks and the PvP catalogue's (V120 to V123). services/LaunchProbeRecipes.lua: the recipe checks (V60, V60b).
 CF-96: the checks answered by the launch results (build 70790, docs/API-FINDINGS.md "Forever launch probe") are gone;
 their stored results stay in the saved data as they are. ]]
 local _, ns = ...
