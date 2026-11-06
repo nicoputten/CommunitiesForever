@@ -62,10 +62,20 @@ end
 
 -- ===== V60: reading the own profession window =====
 
-local scannedAt
+local scannedAt, rescanning
 function Recipes.scan(event)
   if passed("V60") or linked() then return end -- someone else's recipes are V60b's
-  if scannedAt and now() - scannedAt < Recipes.EVERY then return end
+  if scannedAt and now() - scannedAt < Recipes.EVERY then
+    -- A throttled event (the list loading right after TRADE_SKILL_SHOW) gets one later scan: no event may follow it.
+    if not rescanning then
+      rescanning = true
+      after(Recipes.EVERY - (now() - scannedAt), function()
+        rescanning = false
+        Recipes.scan(event)
+      end)
+    end
+    return
+  end
   scannedAt = now()
   local api = T()
   if type(api) ~= "table" then
