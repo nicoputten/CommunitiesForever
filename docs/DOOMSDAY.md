@@ -363,7 +363,7 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 **Pool version 1** (`Doomsday.POOL_VERSION = 1`):
 - PvE dailies and weeklies: the goals with Data **now**.
 - Skirmish: `p.frontLine`, `p.loneWolf`, `p.untouchable`. Bounty: `b.zone25`, `b.kills50`, `b.spree10`, `b.duels3`, `b.days5`. These need only the kill's time, zone and `solo`, and deaths.
-- **No Hunt** yet: the slot is empty until the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `p.ranked`, `b.allClasses`, `b.allRaces`, `b.ranked5`, `b.hunt3` where their fields are readable, and the goals marked 52, 53, 56 whose APIs are verified.
+- **No Hunt** yet: the slot is empty until the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `b.allClasses`, `b.allRaces`, `b.hunt3` where their fields are readable (`p.ranked` and `b.ranked5` are retired from pool version 3, CF-99), and the goals marked 52, 53, 56 whose APIs are verified.
 - Pool order is the order of the tables in this file. The weeklies, Skirmish and Bounty goals of pool version 1 keep their place; the catalogues' other goals follow them, in catalogue order (CF-79).
 
 **Pool version 2** (`Doomsday.POOL_VERSION = 2`, CF-77, the release after v1.1.0):
@@ -377,7 +377,17 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - The weeklies are drawn in different categories (below).
 - Missions waiting for launch checks (CF-74 to CF-76, CF-80, CF-81) join in later versions, one bump per release, with golden cases each.
 
-**Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use version 2. A friend on an older addon keeps drawing version 1, so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so version 1's draws stay as they were.
+**Pool version 3** (`Doomsday.POOL_VERSION = 3`, CF-99, after the launch probe of 2026-11-06):
+- Joins (`since = 3`): the missions of CF-74 to CF-76 whose checks passed, each with its registered progress, and `p.homeGuard` (CF-81):
+  - CF-74 (existing trackers, extended): `d.trade`, `d.fish20`, `d.rare`, `d.cleanLevel`, `d.groupFriend`, `d.earlyBird`, `d.fish50`, `d.fishZones`, `d.fishNight`, `d.discover1`, `d.discover3`, `d.nightOwl`, `d.session1h`, `d.deathless`, `d.cleanRun`, `d.profit`, `d.green5`, `d.craft5`; weeklies `w.rare5`, `w.friends3`, `w.session2h`, `w.discover5`, `w.fish100`, `w.fishZones4`, `w.dayAndNight`, `w.deathless3h`, `w.cleanRuns2`, `w.friendDays3`, `w.trades3`. Not yet: `d.reward`, `d.fishFriend`, `d.feedFriend` (they wait for an in-game check, VERIFY.md CF-74).
+  - CF-75 (items): `d.gather10`, `d.newRecipe`, `d.craftGreen`, `d.cook5`, `d.cook15`, `d.cookKinds3`, `d.eatOwn`, `d.cookRecipe`, `d.bandage3`, `d.bandage10`, `d.bandageKinds2`, `d.bandageUp`, `d.bandageUse3`, `d.bandageFriend`, `d.coins10`, `d.equipNew`, `d.wellFed`, `d.buffFriend`, `d.tidyBags`, `d.potion`, `d.scrolls10`; weeklies `w.blueGear`, `w.gather50`, `w.recipes3`, `w.cook30`, `w.cookKinds5`, `w.bandages20`, `w.potions5`.
+  - CF-76 (world): `d.kills30`, `d.elite`, `d.rareMob`, `d.bigFoe`, `d.streak20`, `d.duoHunt`, `d.weaponSkill`, `d.flight`, `d.newFlight`, `d.hearth`, `d.ride`, `d.swim`, `d.places10`, `d.whisper`, `d.groupPic`, `d.mailFriend`, `d.vendorBuy`, `d.vendorSale`, `d.repair`, `d.trainer`, `d.bank`; weeklies `w.kills200`, `w.elites10`, `w.weapon25`, `w.flightPaths3`.
+  - Skirmish: `p.homeGuard`.
+- Leaves: `p.ranked`, `p.rankUp`, `b.ranked5`, `b.rankUp` (`retired = 3`): Forever has no readable PvP rank (`UnitPVPRank` missing, V79). They never had a `since`, so the draws of pool versions 1 and 2 are unchanged.
+- The pools: 103 dailies in all 15 categories, 49 weeklies in 14 categories, 4 Skirmish goals, Bounty as before (5).
+- Draw, swaps and points: as pool version 2.
+
+**Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use the new version. A friend on an older addon keeps drawing its own version (1 or 2), so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so the older versions' draws stay as they were. Points follow the entry's `pool`, and every id of a newer pool is already in the older addon's catalogue (CF-70, CF-79), so an addon on version 2 scores a friend's version-3 day the same way.
 
 **Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
 
@@ -569,12 +579,12 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `d.mailFriend` | economy | Send mail to a friend | 1 | mail sent to a friend's community character | CF-76, V100 | |
 | `d.mailbox` | economy | Empty the mailbox | 1 | an item or money taken from the mailbox | CF-76, V100 | |
 | `d.profit` | economy | End a session in profit | 3 | a session that ends with more money than it started with | CF-74 | |
-| `d.repair` | care | Repair gear | 1 | a repair paid at a merchant | CF-75, V99 | |
-| `d.trainer` | care | Learn a spell at a trainer | 3 | a spell or rank learned from a class trainer | CF-75, V103 | all characters at 60 → `d.repair` |
+| `d.repair` | care | Repair gear | 1 | a repair paid at a merchant | CF-76, V99 | |
+| `d.trainer` | care | Learn a spell at a trainer | 3 | a spell or rank learned from a class trainer | CF-76, V103 | all characters at 60 → `d.repair` |
 | `d.wellFed` | care | Get Well Fed | 1 | the "Well Fed" aura on a character | CF-75, V110 | |
 | `d.buffFriend` | care | Buff a friend | 3 | an aura cast by the own character on a friend's community character | CF-75, V110 | no character that can buff others → `d.groupFriend` |
 | `d.restock` | care | Restock food or drink | 1 | food or drink bought from a merchant | CF-75, V99, V105 | |
-| `d.bank` | care | Visit the bank | 1 | the bank window opened | CF-75, V102 | |
+| `d.bank` | care | Visit the bank | 1 | the bank window opened | CF-76, V102 | |
 | `d.tidyBags` | care | Clear the junk from the bags | 1 | a character that had poor (grey) items in its bags has none left | CF-75, V112 | |
 | `d.potion` | care | Drink a potion | 1 | a potion used (item class consumable, potion) | CF-75, V116 | |
 | `d.scrolls10` | care | Read 10 scrolls on the own character | 3 | 10 scrolls used (item class consumable, scroll) with the own character as the target | CF-75, V116, V117 | |
@@ -656,7 +666,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.loneWolf` | worldKills | kill | Lone wolf: 3 solo kills | 3 | 3 counted kills with `solo` | now |  |
 | `p.untouchable` | streaks | kill | Untouchable: 5 kills without dying | 5 | 5 counted kills on one character with no death in between | now |  |
 | `p.variety` | targets | kill | Variety: kills of 3 different classes | 3 | 3 different victim classes | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
-| `p.ranked` | targets | kill | Ranked bounty: kill a ranked player | 5 | 1 counted kill of a victim with PvP rank 1 or higher | existing tracker, waits for its launch check: V73, V74, V79 (victim and own rank) |  |
+| `p.ranked` | targets | kill | Ranked bounty: kill a ranked player | 5 | 1 counted kill of a victim with PvP rank 1 or higher | retired from pool version 3: no rank reads on Forever (`UnitPVPRank` missing, V79; Nico, 2026-11-06) |  |
 | `p.flex` | taunts | emote | Flex at a player of the other faction | 1 | the `/flex` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
 | `p.boo` | taunts | emote | Boo a player of the other faction | 1 | the `/boo` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
 | `p.punchUp5` | targets | kill | Kill an enemy player 5+ levels higher | 5 | a counted kill with `diff >= 5` (a skull counts) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
@@ -668,7 +678,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.firstBlood` | worldKills | kill | First blood: the first kill among friends | 5 | the day's first counted world kill of all friends (by the kill's time in the synced records) | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
 | `p.nightRaid` | worldKills | kill | Night raid: a kill after 23:00 realm time | 3 | a counted kill between 23:00 and 05:00 realm time (`GetGameTime`) | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
 | `p.enemyLand` | worldKills | kill | Kill in the enemy's territory | 3 | a counted kill in a zone of the enemy faction (`C_PvP.GetZonePVPInfo` "hostile") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
-| `p.homeGuard` | worldKills | kill | Defend home: a kill in friendly territory | 3 | a counted kill in a zone of the own faction ("friendly") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
+| `p.homeGuard` | worldKills | kill | Defend home: a kill in friendly territory | 3 | a counted kill in a zone of the own faction: its PvP type (`C_PvP.GetZonePVPInfo`) read "friendly" while the own character was there that day (on entering it or at a kill); a zone without a type (one starting zone, V123) doesn't count | CF-81 (CF-99), V123 "friendly" verified | no character of level 20 or more → `p.loneWolf` |
 | `p.contested` | worldKills | kill | Kills in contested land | 3 | 3 counted kills in contested zones ("contested") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
 | `p.skull` | targets | kill | Slay a skull | 5 | a counted kill of a victim shown as a skull (`lvl = -1`) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.fairFight` | targets | kill | Fair fight: a kill at the same level | 3 | a counted kill with `diff = 0` | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
@@ -678,7 +688,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.casters3` | targets | kill | Kill 3 casters | 3 | 3 counted kills of mages, warlocks or priests | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.melee3` | targets | kill | Kill 3 fighters | 3 | 3 counted kills of warriors, rogues or paladins | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.nemesis` | targets | kill | Nemesis: kill the same player twice | 3 | 2 counted kills of the same victim name | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
-| `p.rankUp` | targets | kill | Kill a player of higher rank | 5 | a counted kill of a victim whose PvP rank is above the killer's | existing tracker, waits for its launch check: V73, V74, V79 (victim and own rank) |  |
+| `p.rankUp` | targets | kill | Kill a player of higher rank | 5 | a counted kill of a victim whose PvP rank is above the killer's | retired from pool version 3: no rank reads on Forever (`UnitPVPRank` missing, V79; Nico, 2026-11-06) |  |
 | `p.huntPair` | targets | kill | Kills of 2 Hunt combinations | 3 | counted kills of 2 different race and class combinations of the enemy list (not only today's Hunt) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.streak3` | streaks | kill | Three in a row without dying | 3 | 3 counted kills on one character with no death in between | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
 | `p.revenge` | streaks | kill | Revenge: kill the player who killed you | 5 | a counted kill of the player who killed that character, within 30 minutes of the death | needs probe V120 (new) |  |
@@ -724,7 +734,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `b.zone25` | worldKills | kill | 25 kills in the zone of the week | 10 | `pick(week, 5, #band)` from the band of the friend's highest character | now | no character of level 20 or more → `b.kills50` (from pool version 2) |
 | `b.allClasses` | targets | kill | A kill of every enemy class | 15 | each class of the enemy list at least once | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `b.allRaces` | targets | kill | A kill of every enemy race | 10 | each race at least once | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
-| `b.ranked5` | targets | kill | 5 kills on ranked players | 15 | victims with PvP rank 1 or higher | existing tracker, waits for its launch check: V73, V74, V79 (victim and own rank) |  |
+| `b.ranked5` | targets | kill | 5 kills on ranked players | 15 | victims with PvP rank 1 or higher | retired from pool version 3: no rank reads on Forever (`UnitPVPRank` missing, V79; Nico, 2026-11-06) |  |
 | `b.kills50` | worldKills | kill | 50 counted kills | 10 | 50 counted world kills | now |  |
 | `b.spree10` | streaks | kill | A spree of 10 | 15 | 10 kills on one character without dying | now |  |
 | `b.hunt3` | targets | kill | The Hunt done on 3 days | 10 | the Hunt done on 3 days | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
@@ -761,7 +771,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `b.bgFlags3` | battlegrounds | bg | Capture 3 flags | 15 | 3 flag captures | needs probe V122 (new) | no character of level 10 or more → `b.kills50` |
 | `b.bgBases5` | battlegrounds | bg | Take or hold 5 bases | 10 | 5 bases or towers assaulted or defended | needs probe V122 (new) | no character of level 10 or more → `b.kills50` |
 | `b.bgFriends` | battlegrounds | bg | Win a battleground with 2 friends | 15 | a battleground run won with community characters of 2 other friends in it | existing tracker, waits for its launch check: V35b (CF-23 battleground runs) | no character of level 10 or more → `b.kills50` |
-| `b.rankUp` | honor | kill | Rise a PvP rank | 15 | a character's PvP rank higher than at the start of the week | existing tracker, waits for its launch check: V79 (own rank) |  |
+| `b.rankUp` | honor | kill | Rise a PvP rank | 15 | a character's PvP rank higher than at the start of the week | retired from pool version 3: no rank reads on Forever (`UnitPVPRank` missing, V79; Nico, 2026-11-06) |  |
 | `b.skirmish5` | honor | kill | The Skirmish done on 5 days | 10 | the day's Skirmish done on 5 days of the week | works now: the Skirmish `done` per day |  |
 | `b.taunts5` | taunts | emote | Taunt 5 enemies | 5 | `/flex`, `/boo`, `/chicken` or `/rude` at 5 different enemy-faction players | needs probe V108, V74 |  |
 
@@ -802,7 +812,7 @@ The site decides feats; the addon shows the feats it can derive from records it 
 
 | Rank | Horde / Alliance | Our title |
 |---|---|---|
-| 0 | none | Conscientious Objector while a PvP Virgin (shown, never posted); otherwise "No rank yet · N kills" |
+| 0 | none | Conscientious Objector while a PvP Virgin (shown, never posted); otherwise "No rank yet · N kills" (never shown on Forever, see below) |
 | 1 | Scout / Private | Fresh Meat |
 | 2 | Grunt / Corporal | Accidental Flagger |
 | 3 | Sergeant / Sergeant | Lowbie Botherer |
@@ -817,6 +827,8 @@ The site decides feats; the addon shows the feats it can derive from records it 
 | 12 | General / Marshal | Last Seen Questing at Launch |
 | 13 | Warlord / Field Marshal | Sleep Is for the Dishonorable |
 | 14 | High Warlord / Grand Marshal | Grass: Untouched |
+
+On Forever the own PvP rank isn't readable (`UnitPVPRank` missing, V79; Nico, 2026-11-06): `pvp.rank` stays empty, so no rank title shows, rank 0's rule included, and the rank goals are retired from pool version 3 (CF-99). The titles stay for when a rank reads.
 
 ## Lists
 Enemy combinations (race token as `UnitRace` gives it, class token):

@@ -313,6 +313,19 @@ The release day's draw with this build: `/run local D,s=CommunitiesForever.Dooms
 | On this build, a day that was already drawn before the update (log in on v1.1.0, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `pool` nil (read as version 1: its goals score 5 each); the next day's entry prints `2`. | open |
 | Finish a new daily (e.g. Say something in the community chat, if drawn) | Its banner and the week's total show its size (+1, +3 or +5), not +5 for every goal. | open |
 
+### CF-99 Pool version 3
+"The draw line" as in CF-77; it now prints `3` first.
+
+| Step | Expected | Status |
+|---|---|---|
+| Two friends on this build, on the release day: the draw line on both, and compare the Doomsday tab | Both print `3` and the same 3 dailies and 3 weeklies; the tabs show the same goals (or their swaps). | open |
+| A friend still on the previous release (pool version 2), same day: their Doomsday tab | They see pool version 2's goals (the ones the site shows for version 2). No errors on either side; on the site both friends' points count. | open |
+| A day drawn before the update (log in on the previous release, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `2`; the next day's entry prints `3`. | open |
+| Finish one of the new dailies when drawn (e.g. Visit the bank, Cook 5 meals, Defeat 30 enemies) | It crosses out with its banner and its size (+1, +3 or +5). | open |
+| p.homeGuard: in your own capital (or another zone of your faction), `/run print(GetRealZoneText(), (C_PvP and C_PvP.GetZonePVPInfo or GetZonePVPInfo)())` | Prints the zone and `friendly`. | open |
+| p.homeGuard (when it is the Skirmish, level 20 or more): kill an enemy player in a zone of your faction, then `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do if d.battle then for z,t in pairs(d.battle.zones) do print(n,z,t) end end end` | That zone prints `friendly`; the Skirmish "Defend home" is done. A kill in a contested or enemy zone doesn't do it. | open |
+| Below level 20 on every character, a day whose Skirmish is "Defend home" | The Skirmish shows "Lone wolf" instead, with the swap mark. | open |
+
 ### CF-74 Existing trackers, extended (tracking only, not in the draw yet)
 The missions aren't in the draw yet (a later pool version): check the facts with this command (call it "the extended
 line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do local x=d.extended; if x then local z,r,t=0,0,0; for _ in pairs(x.fishZones) do z=z+1 end; for _ in pairs(x.cleanRuns) do r=r+1 end; for _ in pairs(x.tradeFriends) do t=t+1 end; print(n,'fishZones',z,'fishFriend',x.fishFriend,'fishNight',x.fishNight,'night',x.night,'session',x.sessionMax,'alive',x.aliveMax,'clean',r,'profit',x.profit,'green',x.green,'reward',x.reward,'crafted',x.crafted,'fed',x.fed,'trades',t) end end`
