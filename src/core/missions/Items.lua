@@ -135,6 +135,17 @@ function Items.markWorn(worn, guid, id, equipped)
   return true
 end
 
+--[[ Whether created food is conjured, not cooked (Nico, 2026-11-06: conjured food never counts as cooked). In
+Vanilla only mages conjure food and water, and the item looks like cooked food (consumable, food and drink), so
+food a mage creates counts only when the cast that made it is a Cooking recipe (its skill line or parent is
+Cooking, C_TradeSkillUI, unverified on Forever: unreadable means conjured). Other classes' food is cooked. ]]
+Items.CONJURER = "MAGE"
+function Items.conjured(obs)
+  if type(obs) ~= "table" or obs.class ~= Items.CONSUMABLE or obs.subclass ~= Items.FOOD then return false end
+  if obs.classFile ~= Items.CONJURER then return false end
+  return obs.castSkillLine ~= Items.COOKING and obs.castParentSkillLine ~= Items.COOKING
+end
+
 -- Whether an aura is Well Fed, by its name: Forever's food buffs have new spell IDs (English client, rule 6).
 Items.WELL_FED = "Well Fed"
 function Items.isWellFed(auraName)
@@ -154,11 +165,14 @@ end
 -- ===== Observations =====
 
 --[[ itemCreated: an item the current character created (LOOT_ITEM_CREATED_SELF, V105).
-  { guid, id, count, class, subclass, quality } ]]
+  { guid, id, count, class, subclass, quality, classFile (UnitClassBase), castSkillLine, castParentSkillLine (the
+  profession of the cast that made it, read for a mage only) }. Conjured food is never cooked (Items.conjured). ]]
 ns.Goals.registerKind("itemCreated", function(f, obs)
   local r = factsOf(f)
   local n = amount(obs)
-  if is(obs, Items.CONSUMABLE, Items.FOOD) then
+  if Items.conjured(obs) then
+    return
+  elseif is(obs, Items.CONSUMABLE, Items.FOOD) then
     r.cooked = r.cooked + n
     add(r.cookKinds, obs.id, Items.MAX_SET)
   elseif is(obs, Items.CONSUMABLE, Items.BANDAGE) then

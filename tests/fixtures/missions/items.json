@@ -14,6 +14,31 @@
                  "d.bandage3": [0, 3, false] }
   },
   {
+   "name": "a mage's conjured food and water are never cooked, nor a home meal when eaten",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1006001, "count": 20, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE" },
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1006002, "count": 20, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE", "castSkillLine": 8 },
+    { "kind": "itemUsed", "guid": "Player-1-M", "id": 1006001, "class": 0, "subclass": 5, "self": true }
+   ],
+   "progress": { "d.cook5": [0, 5, false], "d.cookKinds3": [0, 3, false], "w.cook30": [0, 30, false],
+                 "w.cookKinds5": [0, 5, false], "d.eatOwn": [0, 1, false] }
+  },
+  {
+   "name": "a mage's food from a Cooking recipe is cooked; another class's food always",
+   "observations": [
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1000101, "count": 1, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE", "castSkillLine": 185 },
+    { "kind": "itemCreated", "guid": "Player-1-M", "id": 1000102, "count": 1, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "MAGE", "castSkillLine": 2549, "castParentSkillLine": 185 },
+    { "kind": "itemCreated", "guid": "Player-1-A", "id": 1000103, "count": 1, "class": 0, "subclass": 5, "quality": 1,
+      "classFile": "PALADIN" },
+    { "kind": "itemUsed", "guid": "Player-1-M", "id": 1000101, "class": 0, "subclass": 5, "self": true }
+   ],
+   "progress": { "d.cook5": [3, 5, false], "d.cookKinds3": [3, 3, true], "d.eatOwn": [1, 1, true] }
+  },
+  {
    "name": "trade goods made are not dishes; a green craft is fine",
    "observations": [
     { "kind": "itemCreated", "guid": "Player-1-A", "id": 2840, "count": 1, "class": 7, "subclass": 7, "quality": 1 },
