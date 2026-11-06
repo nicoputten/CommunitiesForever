@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.4.0 (2026-11-06)
 - **Doomsday:** 83 new missions join the draw (pool version 3): cooking, First Aid, crafting and gathering, fishing,
   kills, elites and rares, flights and travel, the bank, trainer and merchants, loot, sessions and playing without
   dying, and "Defend home" (a kill in your own faction's land) as a Skirmish. **Please update:** friends on the
