@@ -95,11 +95,14 @@ describe("Recipes (CF-38)", function()
       assert.is_nil(c.professions[185].scannedAt)
     end)
 
-    it("replaces the set on a complete scan", function()
+    it("adds a scan to the stored set: a list may be one profession's (CF-102)", function()
       local c = char()
       c.recipes = { [1] = 0, [2963] = 2996 }
-      Recipes.apply(c, { entries = entries(), profession = 197, link = FULL }, 500)
-      assert.is_nil(c.recipes[1])
+      c.recipeLines = { [1] = 185 }
+      Recipes.apply(c, { entries = { { id = 3914, learned = true, itemID = 4307, line = 197 } }, profession = 197,
+                         link = FULL }, 500)
+      assert.same({ [1] = 0, [2963] = 2996, [3914] = 4307 }, c.recipes)
+      assert.same({ [1] = 185, [3914] = 197 }, c.recipeLines)
     end)
 
     it("keeps the set and the link on an empty read", function()
@@ -159,14 +162,26 @@ describe("Recipes (CF-38)", function()
       assert.is_false((Recipes.apply(c, { entries = list }, 700))) -- nothing new
     end)
 
-    it("starts a new order and base when a recipe is gone", function()
+    it("keeps a recipe another profession's scan doesn't list, same order and base (CF-102)", function()
+      local c = char()
+      Recipes.apply(c, { entries = entries() }, 500)
+      local cooking = { { id = 2539, learned = true, itemID = 2680 } }
+      assert.is_true((Recipes.apply(c, { entries = cooking, profession = 185 }, 600)))
+      assert.same({ 2963, 7421, 1229504, 2539 }, c.recipeOrder)
+      assert.equals(500, c.recipesBase)
+      -- back to Tailoring: nothing new
+      assert.is_false((Recipes.apply(c, { entries = entries(), profession = 197 }, 700)))
+      assert.same({ 2963, 7421, 1229504, 2539 }, c.recipeOrder)
+    end)
+
+    it("starts a new order and base when a recipe's item changes", function()
       local c = char()
       Recipes.apply(c, { entries = entries() }, 500)
       local list = entries()
-      table.remove(list, 1)
+      list[1].itemID = 2997
       assert.is_true((Recipes.apply(c, { entries = list }, 600)))
-      assert.same({ 7421, 1229504 }, c.recipeOrder)
       assert.equals(600, c.recipesBase)
+      assert.equals(2997, c.recipes[2963])
     end)
 
     it("ignores a profession the character does not have", function()
@@ -290,12 +305,12 @@ describe("Recipes (CF-38)", function()
       local owner = scanned()
       local got = receive(nil, Recipes.outgoing(owner))
       local list = entries()
-      table.remove(list, 1)
+      list[1].itemID = 2997 -- a recipe that makes another item now: a new base
       Recipes.apply(owner, { entries = list }, 600)
       local full = Recipes.outgoing(owner, Recipes.have({ g = got }).g)
       assert.equals(0, full.recipesFrom)
       local next = receive(got, full)
-      assert.same({ [7421] = 0, [1229504] = 279972 }, next.recipes)
+      assert.same({ [2963] = 2997, [7421] = 0, [1229504] = 279972 }, next.recipes)
       assert.equals(600, next.recipesBase)
     end)
   end)
