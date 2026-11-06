@@ -5,6 +5,11 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Fixed:** in a planned run's detail (Dungeons tab), the Whisper buttons no longer cover the level and owner in
+  "Online now, fits". The list now uses the full width, with "Edit or cancel" (or "On the website") below it; long
+  names are cut with "..." before the buttons, also in a narrow window.
+
 ## v1.3.2 (2026-11-05)
 - **Fixed:** Ctrl+C in the guild invite window now copies the command instead of opening your character window.
   The box takes the keyboard also when your chat input stays on screen (IM-style chat), takes it once you stand

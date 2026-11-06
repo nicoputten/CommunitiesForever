@@ -103,7 +103,7 @@ describe("Dungeons tab (CF-24)", function()
     open()
     assert.are.same({ "dm", "wc" }, values()) -- both 2 people; then by level, then name
     local all = text()
-    -- CF-62 (board AG05): "Dungeons" with Ask now…, the empty run list, "In range for …" with its ⓘ.
+    -- CF-62 (board AG05): "Dungeons" with Ask nowâ€¦, the empty run list, "In range for â€¦" with its â“˜.
     assert.is_truthy(all:find("\nDungeons\n", 1, true))
     assert.is_truthy(all:find("\nNo runs planned\nPlan one on the website, or ask who is up for something right "
       .. "now.\n", 1, true))
@@ -124,11 +124,11 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_truthy(all:find("\nOnline now, fits\n", 1, true))
     assert.is_truthy(all:find("\nQuests\n", 1, true))
     assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Friends\226\128\153 and your characters whose "
-      .. "level fits, online or not.", 1, true)) -- CF-63c: the ⓘ on Suggested group
+      .. "level fits, online or not.", 1, true)) -- CF-63c: the â“˜ on Suggested group
     local askFor = ns.DungeonsTab.buttons()["Ask now"] -- CF-63c board CF63List
     assert.is_truthy(askFor.tooltip:find("Whispers online friends who fit", 1, true)) -- CF-61: its tooltip
     assert.is_nil(ns.DungeonsTab.buttons()["Plan a run\226\128\166"]) -- CF-64: no planning in the game
-    assert.is_nil(ns.DungeonsTab.buttons()["Ask now\226\128\166"]) -- CF-65: no Ask now… on the list
+    assert.is_nil(ns.DungeonsTab.buttons()["Ask now\226\128\166"]) -- CF-65: no Ask nowâ€¦ on the list
     assert.is_falsy(all:find("Whispers online friends", 1, true))
     assert.is_falsy(all:find("reaches the website and Discord", 1, true)) -- in the tooltip only
     assert.are.equal("", ns.MainFrame.window().footerRightText.text)
@@ -164,7 +164,7 @@ describe("Dungeons tab (CF-24)", function()
     assert.are.equal(5, #r1.pips)
     local all = text()
     assert.is_truthy(all:find("\nTonight\n", 1, true) or all:find("\nToday\n", 1, true))
-    assert.is_truthy(all:find("\nRuns from ", 1, true)) -- CF-63: "Runs from Wed 22:30" with an ⓘ
+    assert.is_truthy(all:find("\nRuns from ", 1, true)) -- CF-63: "Runs from Wed 22:30" with an â“˜
     assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Runs from the website. Type /reload after an "
       .. "upload for newer.", 1, true))
   end)
@@ -206,14 +206,14 @@ describe("Dungeons tab (CF-24)", function()
     assert.is_false(invite.enabled)
     assert.are.equal("Invite all invites everyone who is in and online.", invite.tooltip)
     assert.is_truthy(all:find("\nReminder at " .. os.date("%H:%M", NOW + 9600 - 1800) .. "\n", 1, true))
-    -- Online now, fits: nobody else online in range here; its explanation in the ⓘ.
+    -- Online now, fits: nobody else online in range here; its explanation in the â“˜.
     assert.is_truthy(all:find("\nNobody else online fits\n", 1, true))
     assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Online members whose current character fits 17"
       .. DASH .. "26.", 1, true))
     assert.is_truthy(all:find("\nEdit or cancel\n", 1, true))
     assert.are.equal("https://example.com/runs/r1", ns.DungeonsTab.linkBox():GetText())
     assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Copy with Ctrl+C. Edit or cancel happens on the "
-      .. "website.", 1, true)) -- CF-63: in the ⓘ, not a line
+      .. "website.", 1, true)) -- CF-63: in the â“˜, not a line
     -- Someone else's run: your answer, Online now with Whisper, "On the website".
     select("run:r2")
     all = text()
@@ -474,12 +474,104 @@ describe("Dungeons tab (CF-24)", function()
         end
         lastY = math.max(lastY, -g.points[1][3])
       end
-      -- CF-63 board: Edit or cancel / On the website below the group and your answer, in a 236 px column on the right.
+      -- CF-94: Edit or cancel / On the website below the group and your answer, at the full width.
       local box = ns.DungeonsTab.linkBox()
       assert.is_true(box.shown)
-      assert.are.equal(20 + 520 - 236, box.points[1][2]) -- the 520 px detail of the specs
+      assert.are.equal(20, box.points[1][2])
+      assert.are.equal(520, box.width) -- the 520 px detail of the specs
       assert.is_true(-box.points[1][3] > lastY)
     end)
+
+  -- CF-94: Online now, fits takes the full width with Edit or cancel below it; Whisper (and Invite) at the right
+  -- never cover the name and "level Â· friend", which are cut before them at the window's narrowest.
+  describe("online now, fits (CF-94)", function()
+    local LONG = "Bartholomew Thunderbrewington Featherstonehaugh of the Western Reach"
+
+    local function loadWithOnline(count)
+      load(20, sampleRuns())
+      for i = 1, count do
+        state.clubMembers[CLUB][#state.clubMembers[CLUB] + 1] = { memberId = 100 + i,
+          guid = "Player-1-ON" .. i, name = (i == 1 and LONG or ("Online Example" .. i)), classID = 1,
+          level = 20, presence = 1, clubType = 1 }
+      end
+      wowapi.fireEvent(state, "CLUB_MEMBERS_UPDATED", CLUB)
+    end
+
+    local function assertRows(expected, inviteShown, width)
+      local rows = ns.DungeonsTab.onlineRows()
+      assert.are.equal(expected, #rows)
+      local lastY = 0
+      for _, o in ipairs(rows) do
+        assert.are.equal(20, o.points[1][2]) -- at the left edge of the detail
+        assert.are.equal(width or 520, o.width) -- the full width
+        assert.are.equal(inviteShown, o.invite.shown)
+        local buttons = o.button.width + (inviteShown and (o.invite.width + 6) or 0)
+        local used = 26 + o.name.width + 8 + o.info.width + 8 + buttons
+        assert.is_true(used <= o.width, tostring(o.name:GetText()))
+        assert.is_true(o.info.width >= o.info:GetStringWidth() - 1) -- "20 Â· community" whole
+        if inviteShown then
+          assert.are.same({ "RIGHT", o.invite, "LEFT", -6, 0 }, o.button.points[1])
+        else
+          assert.are.same({ "RIGHT", 0, 0 }, o.button.points[1])
+        end
+        lastY = math.max(lastY, -o.points[1][3])
+      end
+      return lastY
+    end
+
+    it("lays the rows out at the full width, Edit or cancel below them", function()
+      loadWithOnline(6)
+      open()
+      local all = text()
+      assert.is_truthy(all:find("\nOnline now, fits\n", 1, true))
+      assert.is_truthy(all:find("\n20 \194\183 community\n", 1, true))
+      local lastY = assertRows(6, false)
+      local long = ns.DungeonsTab.onlineRows()[1]
+      assert.is_true(long.name:GetText():find("Bartholomew", 1, true) ~= nil)
+      assert.is_true(long.name.width < long.name:GetStringWidth()) -- cut, not over Whisper
+      -- Edit or cancel below the last row, at the left edge and the full width.
+      local box = ns.DungeonsTab.linkBox()
+      assert.are.equal(20, box.points[1][2])
+      assert.are.equal(520, box.width)
+      assert.is_true(-box.points[1][3] > lastY + 30)
+      assert.is_truthy(all:find("\nEdit or cancel\n", 1, true))
+      -- Someone else's run: the same, with On the website.
+      select("run:r2")
+      assertRows(7, false) -- Garraka too: not in this group
+      assert.is_truthy(text():find("\nOn the website\n", 1, true))
+      assert.are.equal(20, ns.DungeonsTab.linkBox().points[1][2])
+    end)
+
+    it("keeps the text clear of Invite and Whisper once inviting opens", function()
+      loadWithOnline(2)
+      state.serverTime = NOW + 9600 - 600 -- 10 minutes before The Deadmines
+      open()
+      assertRows(2, true)
+    end)
+
+    it("fits the rows and the link to the detail that shows at the window's 700 px minimum", function()
+      loadWithOnline(3)
+      open()
+      local area = ns.DungeonsTab.onlineRows()[1].parent.parent -- the detail's scroll area
+      area:SetWidth(700 - 290 - 2) -- the window's minimum less the list
+      select("run:r1")
+      assertRows(3, false, 408 - 6 - 40)
+      assert.is_true(ns.DungeonsTab.onlineRows()[1].name.width < ns.DungeonsTab.onlineRows()[1].name:GetStringWidth())
+      assert.are.equal(362, ns.DungeonsTab.linkBox().width)
+      state.serverTime = NOW + 9600 - 600 -- Invite beside Whisper: still clear
+      select("run:r1")
+      assertRows(3, true, 362)
+    end)
+
+    it("puts Edit or cancel below the line when nobody else online fits", function()
+      load(20, sampleRuns())
+      open()
+      assert.are.equal(0, #ns.DungeonsTab.onlineRows())
+      assert.is_truthy(text():find("\nNobody else online fits\n", 1, true))
+      assert.are.equal(20, ns.DungeonsTab.linkBox().points[1][2])
+      assert.are.equal(520, ns.DungeonsTab.linkBox().width)
+    end)
+  end)
 
   describe("quests (QuestieDB)", function()
     local QUESTS = {

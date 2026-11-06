@@ -7,6 +7,20 @@ Build order:
 1. At launch (from 2026-11-05): CF-54 (the FriendProbe run), then CF-38 (recipes; waits for the V60 check, its story is in PR #63).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-94 Run detail: Online now, fits at full width, Edit or cancel below
+Live feedback (Nico, v1.3.1, 2026-11-05, screenshot): in a planned run's detail, "Online now, fits" had only the left
+column beside "Edit or cancel", and the Whisper buttons covered the "level · friend" text. Touches:
+`src/ui/DungeonsTab.lua`, `tests/spec/DungeonsTab_spec.lua`, VERIFY.md, CHANGELOG.md.
+- "Online now, fits" takes the full width; "Edit or cancel" (organiser) or "On the website" (others), with its ⓘ and
+  the link box, goes below it, also at the full width. Strings unchanged.
+- Each online row: name and "level · friend" end 8 px before Whisper (and Invite once inviting opens); the info stays
+  whole where it can, the name gets the rest; what doesn't fit is cut with "..." on one line.
+- Near the window's 700 px minimum the detail shows less than the 520 px the run view is laid out at: these two parts
+  follow the width that shows (at least 300 px), so Whisper stays in view.
+- Same in every state: organiser and member, nobody online, many online (the detail scrolls).
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-94.
+
 ### CF-93 Ctrl+C in the guild invite window copies the command
 Live feedback (v1.3.1, a guild member, 2026-11-05): "I couldn't CTRL-C the guild invite string that popped up. I had
 to manually type it in… Ctrl-C just pops open my character page." The copy box (CF-88) had no keyboard focus, so C
