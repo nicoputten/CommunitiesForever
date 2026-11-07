@@ -62,10 +62,8 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 
 ### CF-106 Runs tab and Dungeons tab (boards docs/design/dungeons-2026-11/ DL01 to DL03)
 This build on Forever, `/console scriptErrors 1`, a character in the community, `/reload` after the uploader
-fetched runs. Screenshots of each step marked 📷 for Nico's design check. **The loot file is still the placeholder**
-(The Deadmines and Scarlet Monastery: Graveyard only, made-up boss IDs): the boss checks of a run and "Last cleared"
-need real DungeonEncounter IDs: they can only be tested once the generated `Data\Loot.lua` (WEB-96) replaced it
-(CF-103 is in).
+fetched runs. Screenshots of each step marked 📷 for Nico's design check. The loot file is the generated one
+(build 70862, every dungeon with real DungeonEncounter IDs), so the boss checks and "Last cleared" can be tested too.
 
 | Step | Expected | Status |
 |---|---|---|
