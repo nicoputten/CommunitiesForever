@@ -33,9 +33,14 @@ end
 
 -- Loads every addon file in TOC order into a fresh private table and returns it.
 -- Install the WoW mock first (tests/mocks/wowapi.lua).
+-- The UI specs run on a small invented loot file (tests/fixtures/loot-sample.lua), not the generated Data\Loot.lua,
+-- so a new generation never changes them (DungeonLoot_spec checks the shipped file's shape).
+helpers.LOOT_SAMPLE = "tests/fixtures/loot-sample.lua"
+
 function helpers.loadAddon()
   local ns = {}
   for _, path in ipairs(helpers.tocFiles()) do
+    if path == "Data/Loot.lua" then path = helpers.LOOT_SAMPLE end
     helpers.loadAddonFile(path, ns)
   end
   return ns
