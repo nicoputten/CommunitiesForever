@@ -88,7 +88,7 @@ describe("Run alerts (CF-48)", function()
     local shown = ns.RunBanner.shown()
     assert.are.same({ "invites", true }, { shown[#shown].kind, shown[#shown].invite })
     banner:RunScript("OnClick")
-    assert.are.equal("run:r1", addon.db.global.settings.dungeonTree.selected)
+    assert.are.equal("run:r1", addon.db.global.settings.runsTab.selected) -- CF-106: the Runs tab
     assert.are.same({}, state.printed)
   end)
 

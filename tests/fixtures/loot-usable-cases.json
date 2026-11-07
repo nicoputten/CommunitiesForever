@@ -1,0 +1,2133 @@
+{
+ "about": "Golden cases for 'Usable by' (CF-106, Nico 2026-11-07): the class can EVER use the item: class-only items by AllowableClass (bit classID-1; -1, 0 or missing = every class), the armor types the class reaches by level 60 (mail for hunters and shamans and plate for warriors and paladins come at 40, but count), shields, relics, and the weapon types the class can learn in Classic. No level, no trained skills. Quest drops and anything that is not armor (4) or a weapon (2) are usable. Owner: the addon (tests/spec/DungeonLoot_spec.lua); the site copies this file byte for byte.",
+ "sources": [
+  "https://warcraft.wiki.gg/wiki/Class_proficiencies",
+  "https://warcraft.wiki.gg/wiki/Weapon_skill",
+  "https://warcraft.wiki.gg/wiki/Warrior",
+  "https://warcraft.wiki.gg/wiki/Paladin",
+  "https://warcraft.wiki.gg/wiki/Hunter",
+  "https://warcraft.wiki.gg/wiki/Rogue",
+  "https://warcraft.wiki.gg/wiki/Priest",
+  "https://warcraft.wiki.gg/wiki/Shaman",
+  "https://warcraft.wiki.gg/wiki/Mage",
+  "https://warcraft.wiki.gg/wiki/Warlock",
+  "https://warcraft.wiki.gg/wiki/Druid"
+ ],
+ "sourceNote": "Checked 2026-11-07. The wiki's proficiency grids show today's game; the Classic (1.x) weapon lists here differ (no druid polearms before 3.0, no rogue axes, no paladin ranged weapons or staves, no hunter maces) and were set by hand from the Classic skill trainers: to be confirmed by Nico before the release.",
+ "classIds": {
+  "WARRIOR": 1,
+  "PALADIN": 2,
+  "HUNTER": 3,
+  "ROGUE": 4,
+  "PRIEST": 5,
+  "SHAMAN": 7,
+  "MAGE": 8,
+  "WARLOCK": 9,
+  "DRUID": 11
+ },
+ "armorByClass": {
+  "WARRIOR": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   6
+  ],
+  "PALADIN": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   6,
+   7
+  ],
+  "HUNTER": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "ROGUE": [
+   0,
+   1,
+   2
+  ],
+  "PRIEST": [
+   0,
+   1
+  ],
+  "SHAMAN": [
+   0,
+   1,
+   2,
+   3,
+   6,
+   9
+  ],
+  "MAGE": [
+   0,
+   1
+  ],
+  "WARLOCK": [
+   0,
+   1
+  ],
+  "DRUID": [
+   0,
+   1,
+   2,
+   8
+  ]
+ },
+ "weaponsByClass": {
+  "WARRIOR": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   10,
+   13,
+   14,
+   15,
+   16,
+   18,
+   20
+  ],
+  "PALADIN": [
+   0,
+   1,
+   4,
+   5,
+   6,
+   7,
+   8,
+   14,
+   20
+  ],
+  "HUNTER": [
+   0,
+   1,
+   2,
+   3,
+   6,
+   7,
+   8,
+   10,
+   13,
+   14,
+   15,
+   16,
+   18,
+   20
+  ],
+  "ROGUE": [
+   2,
+   3,
+   4,
+   7,
+   13,
+   14,
+   15,
+   16,
+   18,
+   20
+  ],
+  "PRIEST": [
+   4,
+   10,
+   14,
+   15,
+   19,
+   20
+  ],
+  "SHAMAN": [
+   0,
+   1,
+   4,
+   5,
+   10,
+   13,
+   14,
+   15,
+   20
+  ],
+  "MAGE": [
+   7,
+   10,
+   14,
+   15,
+   19,
+   20
+  ],
+  "WARLOCK": [
+   7,
+   10,
+   14,
+   15,
+   19,
+   20
+  ],
+  "DRUID": [
+   4,
+   5,
+   10,
+   13,
+   14,
+   15,
+   20
+  ]
+ },
+ "cases": [
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 6,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 6,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 8,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 13,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 16,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 18,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 19,
+   "usable": false
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": false
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": true
+  },
+  {
+   "class": "WARRIOR",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 6,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 6,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 8,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 10,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 13,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 15,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 16,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 18,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 19,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "PALADIN",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 5,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 6,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 8,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 13,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 16,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 18,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 19,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "HUNTER",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 0,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 1,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 5,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 10,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 13,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 16,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 18,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 19,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "ROGUE",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 0,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 1,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 5,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 13,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 16,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 18,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 19,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "PRIEST",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 3,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 6,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 9,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 13,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 16,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 18,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 19,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "SHAMAN",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 0,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 1,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 5,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 13,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 16,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 18,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 19,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "MAGE",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 0,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 1,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 5,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 7,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 13,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 16,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 18,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 19,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "WARLOCK",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 1,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 2,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 4,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 8,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 9,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 0,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 1,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 2,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 3,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 4,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 6,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 7,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 8,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 10,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 13,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 14,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 15,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 16,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 18,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 19,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 2,
+   "sub": 20,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 12,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 9,
+   "sub": 5,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 0,
+   "sub": 0,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 1,
+   "classes": 8,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 1,
+   "classes": 400,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 1,
+   "classes": -1,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 1,
+   "classes": 0,
+   "usable": true
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 4,
+   "classes": 1,
+   "usable": false
+  },
+  {
+   "class": "DRUID",
+   "cls": 4,
+   "sub": 4,
+   "quest": 2040,
+   "usable": true
+  }
+ ]
+}

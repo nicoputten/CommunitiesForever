@@ -45,7 +45,8 @@ describe("dungeon, raid and battleground runs (CF-23)", function()
     state.serverTime = 10700
     wowapi.fireEvent(state, "PLAYER_LEAVING_WORLD")
     enter(OUTSIDE)
-    assert.are.same({ { name = "Deadmines", kind = "party", bosses = 1, with = { friendGuid } } }, runs())
+    assert.are.same({ { name = "Deadmines", kind = "party", bosses = 1, bossKills = { [1001] = 10300 },
+                         with = { friendGuid } } }, runs())
     assert.is_nil(addon.db.global.runs[myGuid])
   end)
 

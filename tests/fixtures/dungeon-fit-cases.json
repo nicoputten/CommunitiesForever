@@ -1,0 +1,446 @@
+{
+ "about": "Golden cases for the one fit rule (CF-106, Nico 2026-11-07): a dungeon fits a character when level >= min - 2 and level <= max; below that it is higher, above max lower. Owner: the addon (tests/spec/DungeonFit_spec.lua); the site copies this file byte for byte. Never edit a case to make code pass.",
+ "version": 1,
+ "fitBelow": 2,
+ "wingRanges": "The client's GroupFinderActivity table, build 70862: 813 Dire Maul (East) 54-60, 814 Dire Maul (West) 56-60, 815 Dire Maul (North) 56-60, 816 Stratholme (Main Gate) 58-60 = stratlive, 1603 Stratholme (Service Gate) 58-60 = stratud. A case with `dungeon` is that dungeon id's range.",
+ "cases": [
+  {
+   "level": 1,
+   "min": 17,
+   "max": 26,
+   "fit": "higher"
+  },
+  {
+   "level": 13,
+   "min": 17,
+   "max": 26,
+   "fit": "higher"
+  },
+  {
+   "level": 14,
+   "min": 17,
+   "max": 26,
+   "fit": "higher"
+  },
+  {
+   "level": 15,
+   "min": 17,
+   "max": 26,
+   "fit": "fits"
+  },
+  {
+   "level": 16,
+   "min": 17,
+   "max": 26,
+   "fit": "fits"
+  },
+  {
+   "level": 17,
+   "min": 17,
+   "max": 26,
+   "fit": "fits"
+  },
+  {
+   "level": 21,
+   "min": 17,
+   "max": 26,
+   "fit": "fits"
+  },
+  {
+   "level": 26,
+   "min": 17,
+   "max": 26,
+   "fit": "fits"
+  },
+  {
+   "level": 27,
+   "min": 17,
+   "max": 26,
+   "fit": "lower"
+  },
+  {
+   "level": 31,
+   "min": 17,
+   "max": 26,
+   "fit": "lower"
+  },
+  {
+   "level": 60,
+   "min": 17,
+   "max": 26,
+   "fit": "lower"
+  },
+  {
+   "level": 1,
+   "min": 13,
+   "max": 18,
+   "fit": "higher"
+  },
+  {
+   "level": 9,
+   "min": 13,
+   "max": 18,
+   "fit": "higher"
+  },
+  {
+   "level": 10,
+   "min": 13,
+   "max": 18,
+   "fit": "higher"
+  },
+  {
+   "level": 11,
+   "min": 13,
+   "max": 18,
+   "fit": "fits"
+  },
+  {
+   "level": 12,
+   "min": 13,
+   "max": 18,
+   "fit": "fits"
+  },
+  {
+   "level": 13,
+   "min": 13,
+   "max": 18,
+   "fit": "fits"
+  },
+  {
+   "level": 15,
+   "min": 13,
+   "max": 18,
+   "fit": "fits"
+  },
+  {
+   "level": 18,
+   "min": 13,
+   "max": 18,
+   "fit": "fits"
+  },
+  {
+   "level": 19,
+   "min": 13,
+   "max": 18,
+   "fit": "lower"
+  },
+  {
+   "level": 23,
+   "min": 13,
+   "max": 18,
+   "fit": "lower"
+  },
+  {
+   "level": 60,
+   "min": 13,
+   "max": 18,
+   "fit": "lower"
+  },
+  {
+   "level": 1,
+   "min": 55,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "level": 51,
+   "min": 55,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "level": 52,
+   "min": 55,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "level": 53,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 54,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 55,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 57,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 60,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 1,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "level": 54,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "level": 55,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "level": 56,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 57,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 58,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 59,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "level": 60,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 52,
+   "min": 54,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 53,
+   "min": 54,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 54,
+   "min": 54,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 55,
+   "min": 54,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 58,
+   "min": 54,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 60,
+   "min": 54,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 52,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 53,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 54,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 55,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 58,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 60,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 52,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 53,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 54,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 55,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 58,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 60,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 52,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 53,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 54,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 55,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 58,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 60,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 52,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 53,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 54,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 55,
+   "min": 58,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 58,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 60,
+   "min": 58,
+   "max": 60,
+   "fit": "fits"
+  }
+ ]
+}

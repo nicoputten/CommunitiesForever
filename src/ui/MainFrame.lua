@@ -11,7 +11,7 @@ local REFRESH_DEBOUNCE = 0.2
 
 local addonRef, events, frame, refreshDebounced
 local tabs -- CF-39: the kit's tab row
-local activeTab = "friends" -- CF-22: "friends", "activity" or "dungeons" (CF-24)
+local activeTab = "friends" -- CF-22: "friends", "activity", "runs" (CF-106), "dungeons" (CF-24) or "doomsday"
 local view -- last view model, used by the selection callback
 local showAllQuests = {} -- CF-19: tree path -> true when "Show all" is on (until /reload)
 local updateFooter -- CF-41, defined below
@@ -158,9 +158,15 @@ local TABS = {
   { value = "activity", text = "Activity", module = function() return ns.ActivityTab end, -- CF-22, CF-41
     helpers = function() return { settings = settings, render = MainFrame.render } end,
     footer = function() return "", string.format("Keeps %d days", ns.Feed.KEEP_DAYS) end },
-  { value = "dungeons", text = "Dungeons", module = function() return ns.DungeonsTab end, -- CF-24, CF-42: a badge
+  { value = "runs", text = "Runs", module = function() return ns.RunsTab end, -- CF-106: a badge
     helpers = function()
       return { settings = settings, render = MainFrame.render, print = function(text) addonRef:Print(text) end }
+    end,
+    footer = function(empty) return synced(empty), "" end },
+  { value = "dungeons", text = "Dungeons", module = function() return ns.DungeonsTab end, -- CF-24, CF-42
+    helpers = function()
+      return { settings = settings, render = MainFrame.render, print = function(text) addonRef:Print(text) end,
+               global = function() return addonRef.db.global end } -- CF-106: recipes for "Nobody knows it"
     end,
     footer = function(empty) return synced(empty), "" end },
   { value = "doomsday", text = "Doomsday", module = function() return ns.DoomsdayTab end, -- CF-57
@@ -192,7 +198,8 @@ local function create()
       MainFrame.setFilter("")
       ns.ActivityTab.reset()
       ns.DoomsdayTab.reset() -- CF-57: Today again next time
-      ns.DungeonsTab.closed() -- CF-63c: the chips at All, no plan box open
+      ns.DungeonsTab.closed()
+      ns.RunsTab.closed()
     end,
     onSettings = function() ns.Settings.open() end,
     onResize = function()
@@ -205,11 +212,12 @@ local function create()
   MainFrame.selectTab(activeTab)
 end
 
--- The active tab in pale gold with an underline. CF-46: the Dungeons badge counts the planned runs.
+-- The active tab in pale gold with an underline. CF-106: the Runs badge counts the runs waiting for your answer that
+-- one of your characters fits (RunProgress.badge).
 function MainFrame.updateTabs()
   if not frame then return end
   tabs.select(activeTab)
-  tabs.setBadge("dungeons", #ns.Planner.upcoming())
+  tabs.setBadge("runs", view and ns.RunsTab.badge(view) or 0)
   updateTitle()
 end
 
@@ -224,10 +232,18 @@ function MainFrame.selectTab(value)
   if view then MainFrame.render() end
 end
 
--- CF-48: opens the window on a planned run in the Dungeons tab (the reminder's Open).
+-- CF-48: opens the window on a planned run, in the Runs tab since CF-106 (the reminder's Open, a run tag).
 function MainFrame.showRun(runId)
   if not MainFrame.isShown() then MainFrame.toggle() end
-  ns.DungeonsTab.selectQuietly("run:" .. tostring(runId))
+  ns.RunsTab.selectQuietly("run:" .. tostring(runId))
+  MainFrame.selectTab("runs")
+end
+
+-- CF-106: opens the Dungeons tab on a dungeon (Dungeon › of a run), or on the first that fits you (nil: Find a
+-- dungeon ›).
+function MainFrame.showDungeon(dungeonId)
+  if not MainFrame.isShown() then MainFrame.toggle() end
+  ns.DungeonsTab.selectQuietly(dungeonId or false)
   MainFrame.selectTab("dungeons")
 end
 
@@ -274,6 +290,7 @@ local function refreshMessages()
     ns.GroupAsks.CHANGED, -- CF-27: your ask and its answers
     ns.Sync.PEERS_CHANGED, -- CF-28: community members coming online or leaving
     ns.DoomsdayTracker.CHANGED, -- CF-57: a Doomsday goal done
+    ns.ActivityTracker.KILLS_CHANGED, -- CF-103/CF-106: a live boss kill (Runs: the checks; Dungeons: Last cleared)
   }
 end
 
@@ -286,6 +303,7 @@ function MainFrame.start(addon)
   tabs = nil
   activeTab = "friends"
   ns.DungeonsTab.reset()
+  ns.RunsTab.reset()
   ns.Kit.ambient = function() return settings().ambientEffects ~= false end -- CF-43
   refreshDebounced = ns.Timer.debounce(REFRESH_DEBOUNCE, function()
     if MainFrame.isShown() then MainFrame.render() end

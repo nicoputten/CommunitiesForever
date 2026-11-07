@@ -13,6 +13,8 @@
 --   SCHEDREQ {}             (CF-68) asks a peer whose HELLO showed a newer ds (schedule v) for its schedule.
 --   RUNANSWER {run, answer, guid, name, role, note}  (CF-47; note CF-63, optional) your answer to a run, to its
 --     organiser when online.
+--   KILL {guid, instance, name, encounter, at}  (CF-103) an own boss kill, to everyone online at once; held back
+--     like RUNS while messaging is restricted.
 -- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua). CF-90: the owner's own
 -- HELLO and RECORD there also carry its own BattleTag (btag); relayed records never carry one.
 local _, ns = ...
@@ -45,6 +47,8 @@ local addonRef, helloDebounced
 local lastHello, lastReq, lastRuns, noticeShown
 local runsRetry = {} -- CF-46: target -> true while a retry timer is waiting
 local lastSched, schedRetry = {}, {} -- CF-68: as lastRuns and runsRetry, for SCHED
+local killsWaiting, killsRetry = {}, false -- CF-103: own kills held back while messaging is restricted
+local MAX_KILLS_WAITING = 20
 local releaseNoticeShown -- CF-35: once per session
 local peers = {}   -- CF-28: community peers met by HELLO: name -> { guid, key, at }
 local offline = {} -- CF-28: guid -> true after a BYE or a failed whisper (until the next HELLO)
@@ -459,6 +463,20 @@ function handlers.SCHEDREQ(_, _, target)
   sendSchedule(target)
 end
 
+-- CF-103: a friend's boss kill, live. Only a kill of the sender's own character counts: over the community the
+-- sending character, over Battle.net a character of the sender's record.
+function handlers.KILL(message, senderKey, _, guid)
+  local kill = ns.BossKills.cleanLive(message, now(), ns.Merge.MAX_FUTURE_SECONDS)
+  if not kill then return end
+  if guid then
+    if kill.guid ~= guid then return end
+  else
+    local person = global().people[senderKey]
+    if not (person and type(person.chars) == "table" and person.chars[kill.guid]) then return end
+  end
+  ns.ActivityTracker.liveKill(kill)
+end
+
 -- CF-47: a friend answered a run you organise, in game.
 function handlers.RUNANSWER(message, senderKey)
   ns.Planner.answerReceived(message, senderKey)
@@ -499,6 +517,7 @@ function Sync.start(addon)
   heldHellos = {}
   lastRuns, runsRetry = {}, {}
   lastSched, schedRetry = {}, {}
+  killsWaiting, killsRetry = {}, false
   releaseNoticeShown = false
   helloDebounced = ns.Timer.debounce(HELLO_DEBOUNCE, function() broadcastHello(false) end)
   ensureAccountId()
@@ -567,6 +586,42 @@ function Sync.sendRunAnswer(run, item)
     end
   end
   return false
+end
+
+-- CF-103: the kills waiting go to everyone online now (Battle.net friends who belong, community peers), one KILL
+-- each. While messaging is restricted (an encounter, a PvP match) they wait and are tried again RUNS_RETRY later.
+local function flushKills()
+  if #killsWaiting == 0 then return end
+  if ns.Instance.messagingRestricted() then
+    if not killsRetry then
+      killsRetry = true
+      C_Timer.NewTimer(RUNS_RETRY, function()
+        killsRetry = false
+        flushKills()
+      end)
+    end
+    return
+  end
+  local kills = killsWaiting
+  killsWaiting = {}
+  for _, presence in pairs(Sync.online()) do
+    local target = presence.gameAccountID or presence.target
+    if target and reachable(target) then
+      for _, kill in ipairs(kills) do
+        ns.Messenger.send(target, { t = "KILL", guid = kill.guid, instance = kill.instance, name = kill.name,
+                                    encounter = kill.encounter, at = kill.at })
+      end
+    end
+  end
+end
+
+-- CF-103: an own boss kill { guid, instance, name, encounter, at } for online friends, now or once messaging is
+-- allowed again.
+function Sync.sendKill(kill)
+  if not addonRef or type(kill) ~= "table" then return end
+  if #killsWaiting >= MAX_KILLS_WAITING then table.remove(killsWaiting, 1) end
+  killsWaiting[#killsWaiting + 1] = kill
+  flushKills()
 end
 
 -- The own record changed outside SelfTracker (e.g. invite link, CF-21): HELLO after the debounce.
