@@ -120,12 +120,12 @@ function ChatFrames.watch(addon)
   ns.Events.register(addon, "CHAT_MSG_COMMUNITIES_CHANNEL", function(_, ...)
     -- arg 9: channel name, arg 12: sender GUID (V38)
     local channel, guid = select(9, ...), select(12, ...)
-    addon:SendMessage(ChatFrames.MESSAGE, channel, guid)
+    addon:SendMessage(ChatFrames.MESSAGE, ns.Safe.value(channel), ns.Safe.value(guid)) -- CF-108: secret as nil
   end)
   -- CF-83: guild chat, for a guild picked as the community. Arg 12 as the sender GUID is unverified on Forever
   -- (VERIFY.md V125); a missing GUID counts as nobody's.
   ns.Events.register(addon, "CHAT_MSG_GUILD", function(_, ...)
-    addon:SendMessage(ChatFrames.MESSAGE, ChatFrames.GUILD, (select(12, ...)))
+    addon:SendMessage(ChatFrames.MESSAGE, ChatFrames.GUILD, ns.Safe.value((select(12, ...))))
   end)
 end
 

@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** no more "attempt to compare ... a secret string value" Lua error during boss fights. In combat the game
+  hides some event details from addons; the addon now skips those instead of erroring.
 - **Fixed:** a profession link of a character on another server than yours (the game opens those only for players
   on the same server) now shows grey, and its tooltip says "Opens only for players on your server". Click and
   Shift-click work as before.

@@ -56,7 +56,8 @@ end
 
 function Transport.watch(addon, prefix)
   -- BN_CHAT_MSG_ADDON(prefix, text, channel, senderGameAccountID) is verified (API-FINDINGS.md).
-  ns.Events.register(addon, "BN_CHAT_MSG_ADDON", function(_, messagePrefix, text, _, senderID)
+  ns.Events.register(addon, "BN_CHAT_MSG_ADDON", function(_, ...)
+    local messagePrefix, text, _, senderID = ns.Safe.values(...) -- CF-108: secret as nil
     if messagePrefix == prefix then
       addon:SendMessage(Transport.RECEIVED, text, senderID)
     end
@@ -66,8 +67,8 @@ function Transport.watch(addon, prefix)
   end)
   -- CF-28: community whispers. CHAT_MSG_ADDON(prefix, text, channel, sender) is verified (V50).
   local events = LibStub("AceEvent-3.0"):Embed({})
-  ns.Events.register(events, "CHAT_MSG_ADDON", function(_, messagePrefix, text, channel, sender, target, _,
-                                                       localID, channelName)
+  ns.Events.register(events, "CHAT_MSG_ADDON", function(_, ...)
+    local messagePrefix, text, channel, sender, target, _, localID, channelName = ns.Safe.values(...) -- CF-108
     if messagePrefix ~= prefix then return end
     if channel == "WHISPER" then
       addon:SendMessage(Transport.WHISPER_RECEIVED, text, Transport.shortName(sender))
@@ -81,7 +82,7 @@ function Transport.watch(addon, prefix)
   local pattern = ERR_CHAT_PLAYER_NOT_FOUND_S
   if addFilter and type(pattern) == "string" then
     addFilter("CHAT_MSG_SYSTEM", function(_, _, message)
-      if type(message) ~= "string" then return false end
+      if not ns.Safe.text(message) then return false end
       for name, at in pairs(whispered) do
         if Transport.now() - at < FAILED_WINDOW and message == pattern:format(name) then
           addon:SendMessage(Transport.WHISPER_FAILED, name)

@@ -60,6 +60,15 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-108 No Lua error from secret event arguments
+This build, `/console scriptErrors 1`, a character with a weapon skill below its maximum, in a group in a dungeon.
+
+| Step | Expected | Status |
+|---|---|---|
+| Fight a boss to the end, swinging the weapon (so "Your <weapon> skill has increased" can show mid-fight), loot it | No Lua error during or after the fight. | open |
+| After the fight: `/cf`, Doomsday tab | The boss kill and the loot still count as before (missions that track them update). | open |
+| Outside combat, raise a weapon skill on a mob | The skill-up still counts for the weapon skill mission. | open |
+
 ### CF-107 Profession links on another server
 This build on two accounts, `/console scriptErrors 1`: Ada on internal server A, Bo on another internal server of
 the same mega-realm (check with `/run print(UnitGUID("player"))`: the number after `Player-` differs), plus Cy on

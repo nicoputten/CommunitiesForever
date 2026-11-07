@@ -113,7 +113,7 @@ function Guild.watchChatInput(fn)
     local box = _G["ChatFrame" .. i .. "EditBox"]
     if box and box.HookScript and box.GetText then
       box:HookScript("OnTextChanged", function(self)
-        local text = self:GetText()
+        local text = ns.Safe.value(self:GetText()) -- CF-108: secret as nil
         for _, watcher in ipairs(textWatchers) do watcher(text) end
       end)
       count = count + 1
@@ -125,7 +125,8 @@ end
 function Guild.watch(addon, prefix)
   local events = LibStub("AceEvent-3.0"):Embed({})
   -- CHAT_MSG_ADDON(prefix, text, channel, sender) is verified (V50); the "GUILD" channel is V128.
-  ns.Events.register(events, "CHAT_MSG_ADDON", function(_, messagePrefix, text, channel, sender)
+  ns.Events.register(events, "CHAT_MSG_ADDON", function(_, ...)
+    local messagePrefix, text, channel, sender = ns.Safe.values(...) -- CF-108: secret as nil
     if messagePrefix ~= prefix then return end
     if channel == "WHISPER" then
       addon:SendMessage(Guild.WHISPER_RECEIVED, text, ns.Transport.shortName(sender), sender)
@@ -135,19 +136,19 @@ function Guild.watch(addon, prefix)
   end)
   -- GUILD_INVITE_REQUEST(inviter, guildName, ...) as on Retail (V127).
   ns.Events.register(events, "GUILD_INVITE_REQUEST", function(_, inviter, guildName)
-    addon:SendMessage(Guild.INVITED, inviter, guildName)
+    addon:SendMessage(Guild.INVITED, ns.Safe.value(inviter), ns.Safe.value(guildName))
   end)
   -- A protected call from our code: ADDON_ACTION_BLOCKED / _FORBIDDEN(addonName, function). Logged in /cf sync
   -- debug only; nothing of ours should cause it (CF-87).
   for _, event in ipairs({ "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }) do
     ns.Events.register(events, event, function(_, addonName, functionName)
-      if addonName == ADDON_NAME then addon:SendMessage(Guild.BLOCKED, functionName) end
+      if ns.Safe.value(addonName) == ADDON_NAME then addon:SendMessage(Guild.BLOCKED, ns.Safe.value(functionName)) end
     end)
   end
   -- "You have invited <name> to join your guild." (ERR_GUILD_INVITE_S): the invite went out. Or one of the game's
   -- refusals (no rights, other faction, already in a guild, ...), as a system line or a UI error (V132).
   local function onText(message)
-    if type(message) ~= "string" then return end
+    if not ns.Safe.text(message) then return end
     local args = type(ERR_GUILD_INVITE_S) == "string" and ns.GameText.parse(message, ERR_GUILD_INVITE_S)
     if args and args[1] then
       addon:SendMessage(Guild.INVITE_SENT, args[1])

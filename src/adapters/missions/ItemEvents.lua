@@ -159,14 +159,14 @@ local function guidOfName(name)
 end
 
 local function onSent(_, unit, target, castGUID)
-  if unit ~= "player" or readable(castGUID) == nil then return end
+  if readable(unit) ~= "player" or readable(castGUID) == nil then return end
   if sentCount > 20 then sent, sentCount = {}, 0 end
   sent[castGUID] = readable(target) or ""
   sentCount = sentCount + 1
 end
 
 local function onSucceeded(_, unit, castGUID, spellID)
-  if unit ~= "player" then return end
+  if readable(unit) ~= "player" then return end
   spellID = readable(spellID)
   if type(spellID) == "number" then lastCast = { spell = spellID, at = now() } end
   local candidates = type(spellID) == "number" and spellItems[spellID]
@@ -309,6 +309,7 @@ local function scanAuras(unit)
 end
 
 local function onAura(_, unit)
+  unit = readable(unit) -- CF-108: secret as nil
   if unit == "player" or (type(unit) == "string" and (unit:match("^party%d$") or unit:match("^raid%d+$"))) then
     scanAuras(unit)
   end
