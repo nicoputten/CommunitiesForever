@@ -3,7 +3,8 @@
 except the killer's (V120). Left out: the jump hook (V118, a "blocked" popup is a possible answer) and the campfire
 (V119, judged by eye).
 CF-96: only the checks the launch results (build 70790) left open run: V96, V101, V108 (the emote part), V114 and
-V120 to V123. The answered ones are in docs/API-FINDINGS.md "Forever launch probe". ]]
+V120 to V123. The answered ones are in docs/API-FINDINGS.md "Forever launch probe". CF-109: V114 answered (build
+70862), its check is gone. ]]
 local _, ns = ...
 
 local LaunchProbe = ns.LaunchProbe
@@ -25,7 +26,7 @@ LaunchProbe.hook("DoEmote", function(token)
   end
 end)
 
--- ===== V96, V101, V114: home inn, auctions, summons =====
+-- ===== V96, V101: home inn, auctions (V114, summons, answered: CF-109) =====
 local function Message(text)
   if str(text) and matches(text, "ERR_AUCTION_STARTED") then result("V101", "pass", "posted: ERR_AUCTION_STARTED") end
 end
@@ -36,11 +37,6 @@ on("AUCTION_HOUSE_AUCTION_CREATED", function() result("V101", "pass", "posted: A
 on("PLAYER_BINDING_CHANGED", function()
   local place = get(GetBindLocation)
   result("V96", str(place) and "pass" or "fail", "GetBindLocation " .. Val(place))
-end)
-
-on("CONFIRM_SUMMON", function()
-  local summoner = get(C_SummonInfo and C_SummonInfo.GetSummonConfirmSummoner)
-  result("V114", str(summoner) and "pass" or "fail", "summoner " .. (str(summoner) and "readable" or Val(summoner)))
 end)
 
 -- ===== V120: who killed you, from the death recap (1 s after the death) =====

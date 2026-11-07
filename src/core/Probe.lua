@@ -21,7 +21,7 @@ Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list sta
 -- 2026-11-06 21:33) and gone. CF-105: V60 and V60c answered (export of 2026-11-07, builds 70790 and 70840) and gone;
 -- V60b (a friend's link while they are offline) stays.
 Probe.IDS = {
-  "V82", "V35b", "V73", "Hunt", "V80", "V96", "V101", "V108", "V114", "V120", "V122", "V123",
+  "V82", "V35b", "V73", "Hunt", "V80", "V96", "V101", "V108", "V120", "V122", "V123",
   "V60b",
 }
 

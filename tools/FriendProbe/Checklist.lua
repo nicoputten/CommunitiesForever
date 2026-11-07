@@ -144,7 +144,7 @@ ns.items = {
     how = "/cf activity in a full run: note the bosses for SM, BRS, DM, Strat, Scholo, BFD, ST." },
 
   -- 5. World PvP
-  { id = "V73", session = 5, auto = true, title = "Honor message: victim and rank" },
+  { id = "V73", done = "forever 70862", session = 5, auto = true, title = "Honor message: victim and rank" },
   { id = "V74", session = 5, auto = true, title = "Enemy players: level, class, race readable" },
   { id = "V75", session = 5, auto = true, title = "The combat log can be registered",
     how = "Press Test the combat log (Blizzard may show a warning: then answer No).",
@@ -196,7 +196,7 @@ ns.items = {
   { id = "V110", done = "forever 70790", retail = true, session = 2, auto = true,
     title = "Buffs: spell and caster readable on party members",
     how = "In a group out of combat: cast a buff on a party member (or let one buff you)." },
-  { id = "V114", session = 2, auto = true, friend = true, title = "A summon names the summoner",
+  { id = "V114", done = "forever 70862", session = 2, auto = true, friend = true, title = "A summon names the summoner",
     how = "A warlock friend summons you (or a meeting stone)." },
   { id = "V90", done = "forever 70790", retail = true, session = 3, auto = true, title = "Kills from the XP message",
     how = "Kill an enemy that gives XP, alone and in a group." },
