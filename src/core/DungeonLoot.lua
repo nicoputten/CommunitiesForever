@@ -185,8 +185,8 @@ DungeonLoot.RECIPE_LINES = { [1] = 165, [2] = 197, [3] = 202, [4] = 164, [5] = 1
                              [9] = 356 }
 
 -- Profession names by skill line, for "Requires Cooking (75)".
-DungeonLoot.LINE_NAMES = { [165] = "Leatherworking", [197] = "Tailoring", [202] = "Engineering",
-                           [164] = "Blacksmithing", [185] = "Cooking", [171] = "Alchemy", [129] = "First Aid", [333] = "Enchanting",
+                           [164] = "Blacksmithing", [185] = "Cooking", [171] = "Alchemy", [129] = "First Aid",
+                           [333] = "Enchanting", [356] = "Fishing" }
                            [356] = "Fishing" }
 
 --[[ A recipe drop among the group's characters (board DL03 C): chars = { { name, recipes = { [recipeID] = itemID },

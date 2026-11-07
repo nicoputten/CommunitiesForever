@@ -246,7 +246,10 @@ describe("Dungeons tab (CF-24; CF-106 boards DL02, DL03)", function()
     assert.are.equal("Nobody knows it", recipe.tag.text:GetText())
     assert.are.equal("Recipe \194\183 Cooking", recipe.type:GetText())
     local tip = table.concat(recipe.tag.tipLines, "\n")
-    assert.is_truthy(tip:find("Requires Cooking (75)\nNobody knows it\nCan learn: Ves Doombringer (Cooking 75)", 1, true))
+    assert.is_truthy(tip:find("Requires Cooking (75)
+Nobody knows it
+Can learn: Ves Doombringer (Cooking 75)", 1,
+      true))
     addon.db.global.self.chars[VES].professions[185].rank = 74 -- below the required skill
     ns.MainFrame.render()
     assert.is_falsy(table.concat(lootRow("Item 728").tag.tipLines, "\n"):find("Can learn", 1, true))
