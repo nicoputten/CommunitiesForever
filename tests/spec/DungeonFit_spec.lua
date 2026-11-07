@@ -88,18 +88,20 @@ describe("Dungeon fit (CF-106)", function()
     assert.are.equal("Dire Maul: East", Dungeons.runName({ dungeon = "dmeast" }))
   end)
 
-  it("links the Group Finder's wing activities by their names (V46)", function()
+  it("links each wing to its Group Finder activity (client GroupFinderActivity, build 70862)", function()
     Dungeons.applyGroupFinder({
-      { activityID = 813, name = "Dire Maul - East", min = 54, max = 60 },
-      { activityID = 814, name = "Dire Maul - North", min = 56, max = 60 },
-      { activityID = 815, name = "Dire Maul - West", min = 57, max = 60 },
-      { activityID = 816, name = "Stratholme", min = 58, max = 60 }, -- no wing named: both
+      { activityID = 813, name = "Dire Maul (East)", min = 53, max = 60 },
+      { activityID = 814, name = "Dire Maul (West)", min = 57, max = 60 },
+      { activityID = 815, name = "Dire Maul (North)", min = 55, max = 60 },
+      { activityID = 816, name = "Stratholme (Main Gate)", min = 58, max = 60 },
     })
-    assert.are.same({ 54, 60 }, { Dungeons.get("dmeast").min, Dungeons.get("dmeast").max })
-    assert.are.same({ 56, 60 }, { Dungeons.get("dmnorth").min, Dungeons.get("dmnorth").max })
+    assert.are.same({ 53, 60 }, { Dungeons.get("dmeast").min, Dungeons.get("dmeast").max })
     assert.are.same({ 57, 60 }, { Dungeons.get("dmwest").min, Dungeons.get("dmwest").max })
-    assert.are.equal(58, Dungeons.get("stratlive").min)
-    assert.are.equal(58, Dungeons.get("stratud").min)
+    assert.are.same({ 55, 60 }, { Dungeons.get("dmnorth").min, Dungeons.get("dmnorth").max })
+    local listed = {}
+    for _, d in ipairs(Dungeons.LIST) do listed[d.id] = true end
+    assert.is_true(listed.stratlive)
+    assert.is_nil(listed.stratud) -- 1603 not offered here
     for _, d in ipairs(Dungeons.LIST) do assert.is_falsy(d.id:find("^lfg81")) end -- none left over as unknown
     Dungeons.LIST = Dungeons.STATIC
   end)
