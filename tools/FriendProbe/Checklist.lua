@@ -117,6 +117,12 @@ ns.items = {
     how = "A character with a specialisation: the IsSpellKnown line of VERIFY.md V136." },
   { id = "V137", done = "forever 70840", session = 1, auto = true,
     title = "Each learned recipe's profession (GetTradeSkillLineForRecipe)" },
+  { id = "V138", session = 1, title = "Loot items load: names, icons and qualities (C_Item.GetItemInfo, CF-106)",
+    how = "/cf, Dungeons, The Deadmines: the loot rows get their names; the print lines of VERIFY.md V138." },
+  { id = "V139", session = 1, title = "The game's item tooltip on a loot row (GameTooltip:SetItemByID, CF-106)",
+    how = "/cf, Dungeons, The Deadmines: hover a loot row (VERIFY.md V139)." },
+  { id = "V140", session = 1, title = "A quest's name by its ID (C_QuestLog.GetTitleForQuestID, CF-106)",
+    how = "The print line of VERIFY.md V140." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 

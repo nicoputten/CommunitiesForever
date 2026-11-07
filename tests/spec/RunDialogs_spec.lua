@@ -50,8 +50,11 @@ describe("Run dialogs (CF-47)", function()
     return "\n" .. table.concat(list, "\n") .. "\n"
   end
 
+  -- CF-106: runs ("run:<id>") are in the Runs tab, dungeons in the Dungeons tab.
+  local function tab(value) return value and value:find("^run:") and ns.RunsTab or ns.DungeonsTab end
+
   local function row(value)
-    for _, r in ipairs(ns.DungeonsTab.rows()) do
+    for _, r in ipairs(tab(value).rows()) do
       if r.value == value then return r.frame end
     end
   end
@@ -59,7 +62,7 @@ describe("Run dialogs (CF-47)", function()
   local function open(value)
     settle()
     ns.MainFrame.toggle()
-    ns.MainFrame.selectTab("dungeons")
+    ns.MainFrame.selectTab(value and value:find("^run:") and "runs" or "dungeons")
     if value then row(value):RunScript("OnClick") end
   end
 
@@ -93,10 +96,11 @@ describe("Run dialogs (CF-47)", function()
   end)
 
   -- CF-64 (Nico): no planning in the game; the reload prompt is short, its detail in an ⓘ, and sits on the window.
-  it("has no Plan a run; the reload prompt is short and reloads", function()
+  -- CF-106: the dungeon's Plan a run… gives the website's link; the game still has no planning dialog.
+  it("has no planning dialog; the reload prompt is short and reloads", function()
     load(nil)
     open("dm")
-    assert.is_nil(ns.DungeonsTab.buttons()["Plan a run\226\128\166"])
+    assert.is_truthy(ns.DungeonsTab.buttons()["Plan a run\226\128\166"])
     assert.is_nil(ns.RunDialogs.plan)
     ns.RunDialogs.reloadPrompt()
     local all = dialogText()
@@ -180,8 +184,8 @@ describe("Run dialogs (CF-47)", function()
 
   -- CF-63b (board CF63Answer): answering is inline under the group; every click saves at once.
   local IN, CANT = "I\226\128\153m in", "Can\226\128\153t"
-  local function tap(label) ns.DungeonsTab.buttons()[label]:RunScript("OnClick") end
-  local function detailText() return plain(table.concat(ns.DungeonsTab.texts(), "\n")) end
+  local function tap(label) ns.RunsTab.buttons()[label]:RunScript("OnClick") end
+  local function detailText() return plain(table.concat(ns.RunsTab.texts(), "\n")) end
 
   it("answers a run inline: pending, shown in the row, sent to the organiser, cleared when the site has it", function()
     load(runs())
@@ -198,9 +202,9 @@ describe("Run dialogs (CF-47)", function()
                                               answers[1].message.guid })
     settle()
     -- The run's detail shows your answer highlighted and a clock until the next upload.
-    assert.are.equal("primary", ns.DungeonsTab.buttons()["Maybe"].kind)
+    assert.are.equal("primary", ns.RunsTab.buttons()["Maybe"].kind)
     assert.is_truthy(detailText():find("\nYour answer\nYou said maybe\n", 1, true))
-    assert.is_truthy(table.concat(ns.DungeonsTab.tips(), "\n"):find("Saved. Reaches the website with your next upload.",
+    assert.is_truthy(table.concat(ns.RunsTab.tips(), "\n"):find("Saved. Reaches the website with your next upload.",
       1, true))
     -- Can't hides the character, the roles and the note.
     tap(CANT) -- replaces the pending answer (one per run)
@@ -208,7 +212,7 @@ describe("Run dialogs (CF-47)", function()
     assert.are.equal("cant", pending()[1].answer)
     assert.is_nil(pending()[1].guid)
     assert.is_truthy(detailText():find("\nYou can\226\128\153t make it", 1, true))
-    assert.is_nil(ns.DungeonsTab.buttons().character)
+    assert.is_nil(ns.RunsTab.buttons().character)
     -- The site has it: a newer runs list confirms the id.
     local newer = runs()
     newer.updatedAt, newer.received = NOW, { pending()[1].id }
@@ -221,7 +225,7 @@ describe("Run dialogs (CF-47)", function()
   it("answers with a role the class can play, with its slot, and a note", function()
     load(runs())
     open("run:r2")
-    local buttons = ns.DungeonsTab.buttons()
+    local buttons = ns.RunsTab.buttons()
     assert.is_truthy(buttons["Tank"] and buttons["Healer"] and buttons["Damage"]) -- a paladin plays all three
     local all = detailText()
     assert.is_truthy(all:find("\nHealer \194\183 full\n", 1, true)) -- Garraka heals

@@ -27,6 +27,7 @@ function helpers.coreNs()
   local ns = {}
   helpers.loadAddonFile("src/core/Calendar.lua", ns)
   helpers.loadAddonFile("src/core/Text.lua", ns)
+  helpers.loadAddonFile("src/core/Dungeons.lua", ns) -- CF-106: the fit rule PlannedRuns uses
   return ns
 end
 

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Addon · Dungeons tab</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus+SC&amp;family=Marcellus&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;background:#0A140C}
+.game{position:relative;background:radial-gradient(900px 500px at 20% 10%,#2D4A26,#13230F 60%,#0A140C);padding:30px}
+.wf{position:relative;width:1080px;height:720px;box-sizing:border-box;background:rgba(9,15,26,.96);border:1px solid #7C6838;font-family:Inter,sans-serif;color:#DADFE6;display:flex;flex-direction:column}
+.dia{position:absolute;width:10px;height:10px;background:#D4AF6A;transform:rotate(45deg);border:1px solid #3A2E14}
+.tb{height:52px;display:flex;align-items:center;gap:10px;padding:0 12px 0 16px;border-bottom:1px solid #2A3348;background:linear-gradient(180deg,#121B2B,#0B1220)}
+.tb .t{font:21px 'Marcellus SC',serif;color:#F0D08E}
+.tb .s{font-size:12px;color:#8E98A8;margin-top:3px}
+.sq{width:30px;height:30px;border:1px solid #4A5468;background:#141C2A;display:flex;align-items:center;justify-content:center;color:#E6E1D6;font-size:13px}
+.tabs{height:42px;display:flex;border-bottom:1px solid #2A3348}
+.tab{display:flex;align-items:center;gap:7px;padding:0 18px;font:16px 'Marcellus SC',serif;color:#AEB6C3}
+.tab.on{color:#F0D08E;background:rgba(212,175,106,.08);box-shadow:inset 0 -2px 0 #D4AF6A}
+.bdg{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#D4AF6A;color:#0B0F14;font:700 11px/17px Inter,sans-serif;justify-content:center}
+.body{flex:1;display:flex;min-height:0}
+.ft{height:30px;display:flex;align-items:center;gap:8px;padding:0 16px;border-top:1px solid #2A3348;font-size:12px;color:#8E98A8}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 12px;border:1px solid #4A5468;background:#141C2A;color:#E6E1D6;font:13px Inter,sans-serif;white-space:nowrap}
+.btn.gold{border-color:#B8975A;background:#3A2F18;color:#F3DFAE}
+.btn.go{border-color:#D4AF6A;background:#D4AF6A;color:#0B0F14;font-weight:600}
+.btn.off{border-color:#3A3A30;background:#2A2618;color:#7A6E50}
+.btn.on{border-color:#D4AF6A;background:rgba(212,175,106,.14);color:#F3EBDA}
+.h2{font:19px 'Marcellus SC',serif;color:#F0D08E}
+.mut{color:#8E98A8}.dim{color:#6E7888}.ok{color:#7FD99A}.blu{color:#9DB4FF}.warn{color:#F0A774}
+.row{display:flex;align-items:center;gap:10px}
+.edit{height:30px;border:1px solid #4A5468;background:#0B111C;display:flex;align-items:center;padding:0 10px;font-size:13px;color:#E6E1D6}
+.ico{width:20px;height:20px;flex:none;display:inline-flex}
+.bar{height:6px;background:#1B2232;border:1px solid #2A3348;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:#D4AF6A}
+.lab{font:12px Inter,sans-serif;color:#8E98A8}
+.pin{position:absolute;width:26px;height:26px;border-radius:50%;background:#E0625A;color:#fff;font:700 13px/26px Inter,sans-serif;text-align:center;box-shadow:0 0 0 3px rgba(0,0,0,.5)}
+.note{padding:16px 18px;border:1px solid rgba(212,175,106,.3);background:rgba(12,18,30,.9);color:#C9CFD9;font:13.5px/1.55 Inter,sans-serif}
+.note h3{margin:0 0 8px;font:17px 'Marcellus SC',serif;color:#F3DFAE}
+.note b{color:#F3EBDA}
+.note code{font:12px ui-monospace,Menlo,monospace;color:#F3DFAE}
+.li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.li:last-child{border-bottom:0}
+.n{width:22px;height:22px;border-radius:50%;background:#E0625A;color:#fff;font:700 12px/22px Inter,sans-serif;text-align:center}
+.cap{font:12px Inter,sans-serif;color:#D4AF6A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.H1{margin:0;font:38px 'Marcellus SC',serif;letter-spacing:.05em;color:#F3DFAE}
+.SUB{margin:6px 0 0;font-size:15px;color:#8E98A8;line-height:1.5;max-width:1200px}
+
+.chip2{display:inline-flex;align-items:center;height:24px;padding:0 9px;border:1px solid #4A5468;background:#141C2A;color:#C9CFD9;font:12px Inter,sans-serif;white-space:nowrap}
+.chip2.on{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.dd{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border:1px solid #4A5468;background:#0B111C;color:#E6E1D6;font:13px Inter,sans-serif;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid #4A5468}
+.seg span{display:inline-flex;align-items:center;height:28px;padding:0 12px;font:13px Inter,sans-serif;color:#C9CFD9;background:#141C2A;border-right:1px solid #4A5468;white-space:nowrap}
+.seg span:last-child{border-right:0}
+.seg span.on{background:#D4AF6A;color:#0B0F14;font-weight:600}
+.seg span.onm{background:#5A4622;color:#F6C29C;font-weight:600}
+.seg span.onc{background:#3A2026;color:#F59A9C;font-weight:600}
+.tg{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #4A5468;background:#141C2A;font:13px Inter,sans-serif;color:#C9CFD9;white-space:nowrap}
+.tg.on{border-color:#D4AF6A;background:rgba(212,175,106,.16);color:#F3EBDA}
+.tg i{font-style:normal;color:#8E98A8;font-size:12px}
+.ttp{position:absolute;z-index:5;background:rgba(6,10,18,.97);border:1px solid #5C6A85;padding:8px 10px;font:12.5px/1.45 Inter,sans-serif;color:#C9CFD9;box-shadow:0 6px 18px rgba(0,0,0,.6);white-space:nowrap}
+.ttp b{display:block;font-size:13.5px;color:#FFFFFF;font-weight:600}
+.menu{position:absolute;z-index:6;background:#0B0F14;border:1px solid #5C6A85;padding:4px 0;min-width:170px;font:13px Inter,sans-serif;color:#E6E1D6;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+.menu div{height:24px;display:flex;align-items:center;gap:8px;padding:0 12px;white-space:nowrap}
+.menu div.hd{color:#D4AF6A;font-size:12px}
+.menu div.off{color:#5E6878}
+.menu div.hl{background:rgba(212,175,106,.18)}
+.strings{font:12.5px/1.5 Inter,sans-serif;color:#C9CFD9;padding:16px 18px;border:1px solid rgba(212,175,106,.3);background:rgba(12,18,30,.9);align-self:start}
+.strings h3{margin:0 0 8px;font:16px 'Marcellus SC',serif;color:#F3DFAE}
+.strings ol{margin:0;padding-left:22px;columns:2;column-gap:26px}
+.strings li{padding:1px 0}
+.strings .tl{margin-top:10px;color:#D4AF6A;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+
+.wf2{position:relative;width:1080px;height:720px;box-sizing:border-box;background:rgba(9,15,26,.96);border:1px solid #7C6838;font-family:Inter,sans-serif;color:#DADFE6;display:flex;flex-direction:column}
+.grp{padding:12px 14px 4px;font:12px Inter,sans-serif;color:#8E98A8;display:flex;justify-content:space-between}
+.grp b{font-weight:600;color:#D4AF6A}
+.li2{padding:6px 14px 7px 12px;border-left:3px solid transparent;display:flex;flex-direction:column;gap:4px}
+.li2.on{border-left-color:#D4AF6A;background:rgba(212,175,106,.10)}
+.li2 .nm{font-size:14px;color:#E6E1D6;font-weight:600}
+.li2.on .nm{color:#F0D08E}
+.li2 .sb{font-size:12px;color:#8E98A8}
+.ans{white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font-size:12px}
+.adot{width:7px;height:7px;background:#D4AF6A;display:inline-block}
+.lr{display:grid;grid-template-columns:22px minmax(0,1fr) 40px;gap:8px;align-items:center;height:26px;font:13px Inter,sans-serif}
+.lr .t{font-size:11px;color:#8E98A8;margin-left:6px}
+.lr .p{text-align:right;color:#C9CFD9;font-variant-numeric:tabular-nums;font-size:12px}
+.lr.dim{opacity:.45}
+.ii{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;border:1px solid;background:linear-gradient(145deg,#3A3226,#121212)}
+.bh{display:flex;align-items:center;gap:8px;height:26px;margin-top:6px;border-bottom:1px solid #2A3348;font:15px 'Marcellus SC',serif;color:#F0D08E}
+.bh .o{font:600 11px Inter,sans-serif;color:#6E7888;width:14px}
+.qtag{font:600 10px Inter,sans-serif;padding:1px 5px;border:1px solid #6B5A2E;color:#F0D08E;margin-left:6px}
+.ntag{font:600 10px Inter,sans-serif;padding:1px 5px;border:1px solid #2E6B48;color:#7FD99A;margin-left:6px}
+.chk{width:14px;height:14px;border:1px solid #6B5A2E;background:#0B111C;display:inline-flex;align-items:center;justify-content:center}
+.gtt{position:absolute;z-index:8;width:270px;box-sizing:border-box;padding:8px 10px;border:1px solid #5E6A80;background:rgba(6,9,20,.97);font:13px/1.42 Inter,sans-serif;color:#FFFFFF;box-shadow:0 8px 20px rgba(0,0,0,.6)}
+.gtt .r{display:flex;justify-content:space-between}
+.gtt .g{color:#1EFF00}.gtt .yl{color:#FFD100}.gtt .rd{color:#FF2020}.gtt .mu{color:#B8B8B8}
+.bk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 18px}
+.bk span{display:flex;align-items:center;gap:6px;height:24px;font-size:13px;color:#8E98A8}
+.bk span.k{color:#E6E1D6}
+.ck{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;background:#3BA55D}
+.ck0{width:14px;height:14px;display:inline-block;border:1px solid #3A4456}
+
+</style>
+</helmet>
+<div style="width: 2240px; box-sizing: border-box; padding: 48px 56px 64px; background: radial-gradient(1200px 500px at 30% -10%, #12233A, rgba(7,12,21,0) 70%), #070C15; font-family: Inter, sans-serif; color: #E6E1D6; display: flex; flex-direction: column; gap: 26px">
+  <div><h1 class="H1">Addon · Dungeons tab</h1><p class="SUB">Browse every dungeon: who it fits, bosses with their loot, quests, and Plan a run or Ask now from here.</p></div><div style="display: grid; grid-template-columns: 1140px 440px 520px; gap: 28px; align-items: start"><div><div style="display: flex; flex-direction: column; gap: 10px"><div class="cap">The Deadmines · hovering Cruel Barb</div><div class="game" style="width: 1140px; box-sizing: border-box"><div class="wf2">
+      <div class="tb"><svg width="22" height="22" viewBox="0 0 26 26" fill="#121B2A" stroke="#E6E1D6" stroke-width="1.6"><path d="M13 2l9 4v7c0 6-4 9-9 11C8 22 4 19 4 13V6z"></path><path d="M13 7v12M8 12h10"></path></svg><span class="t">Doombringers of Arcadia</span><span class="s">CommunitiesForever</span><span style="flex: 1"></span><span class="sq">⚙</span><span class="sq">✕</span></div>
+      <div class="tabs"><span class="tab">Friends</span><span class="tab">Activity</span><span class="tab">Runs <span class="bdg">1</span></span><span class="tab on">Dungeons</span><span class="tab">Doomsday</span></div><div class="body"><div style="width: 290px; border-right: 1px solid #2A3348; display: flex; flex-direction: column; overflow: hidden"><div class="row" style="padding: 12px 14px 4px; justify-content: space-between"><span class="h2" style="font-size: 17px">Dungeons</span></div><div class="grp"><b>Fits you</b><span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="14" height="14" style="flex: none; vertical-align: -4px" role="img" aria-label="Warlock"><defs><radialGradient id="hz10-warlock" cx="35%" cy="28%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".38"></stop><stop offset=".55" stop-color="#fff" stop-opacity="0"></stop></radialGradient></defs><circle cx="64" cy="64" r="60" fill="#8788EE"></circle><circle cx="64" cy="64" r="60" fill="url(#hz10-warlock)"></circle><circle cx="64" cy="54" r="30" fill="#0B1322"></circle><rect x="46" y="66" width="36" height="28" rx="7" fill="#0B1322"></rect><circle cx="52" cy="56" r="8" fill="#8788EE"></circle><circle cx="76" cy="56" r="8" fill="#8788EE"></circle><path d="M64 66 L59 75 H69 Z" fill="#8788EE"></path><path d="M56 84 V94 M64 84 V94 M72 84 V94" stroke="#8788EE" stroke-width="3.5"></path><circle cx="64" cy="64" r="60.5" fill="none" stroke="#0B0F14" stroke-width="4"></circle></svg> Hex 16</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Ragefire Chasm</span><span class="sb">13–18</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Ruins of Lordaeron</span><span style="font-size: 11px; color: #0B0F14; background: #D4AF6A; padding: 1px 5px">Tomorrow</span><span class="sb">15–22</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Wailing Caverns</span><span style="font-size: 11px; color: #0B0F14; background: #D4AF6A; padding: 1px 5px">Sun</span><span class="sb">17–24</span></div><div class="li2 on" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">The Deadmines</span><span style="font-size: 11px; color: #0B0F14; background: #D4AF6A; padding: 1px 5px">Today</span><span class="sb">17–26</span></div><div class="grp"><b>Higher</b><span></span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Shadowfang Keep</span><span style="font-size: 11px; color: #0B0F14; background: #D4AF6A; padding: 1px 5px">Sat</span><span class="sb">22–30</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Blackfathom Deeps</span><span class="sb">24–32</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">The Stockade</span><span class="sb">24–32</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; "><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Gnomeregan</span><span class="sb">29–38</span></div><div style="padding: 8px 14px 2px 15px; font-size: 12px; color: #AEB6C3">Scarlet Monastery</div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; padding-left: 26px;"><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Graveyard</span><span class="sb">26–36</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; padding-left: 26px;"><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Library</span><span class="sb">29–39</span></div><div class="li2" style="flex-direction: row; align-items: center; gap: 8px; padding-left: 26px;"><span class="nm" style="font-weight: 500; font-size: 14px; flex: 1">Armory</span><span class="sb">32–42</span></div></div><div style="position: relative; flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: hidden"><div class="row" style="align-items: baseline; gap: 12px"><span style="font: 26px Marcellus, serif; color: #F3EBDA">The Deadmines</span><span style="font-size: 13px; color: #8E98A8">level 17–26 · Westfall</span><span class="ok" style="font-size: 13px">fits</span></div>
+      <div class="row" style="gap: 10px; font-size: 13px; color: #AEB6C3"><span>Last cleared by <span style="color: #C69B6D">Grom</span>, <span style="color: #3FC7EB">Mira</span> · Tue</span><span style="flex: 1"></span>
+      <span class="btn" style="height: 26px">Today 20:00 · 5 in ›</span><span class="btn gold" style="height: 26px">Ask now</span><span class="btn go" style="height: 26px">Plan a run…</span></div>
+      <div style="height: 1px; background: #1E2738"></div><div style="display: flex; flex-direction: column; gap: 2px"><div class="row" style="justify-content: space-between"><span class="h2">Bosses &amp; loot</span>
+      <span class="row" style="gap: 14px"><span class="row" style="gap: 6px; font-size: 12px; color: #8E98A8">Classic data <span style="display: inline-flex; width: 15px; height: 15px; border: 1px solid #7C6838; border-radius: 50%; color: #D4AF6A; font: 600 10px/14px Inter, sans-serif; justify-content: center">i</span></span>
+      <span class="row" style="gap: 6px; font-size: 13px; color: #E6E1D6"><span class="chk"></span>Usable by Hex</span></span></div><div class="bh"><span class="o">1</span>Rhahk’Zor</div><div class="lr dim"><span class="ii" style="width: 22px; height: 22px; border-color: #1EFF00"><svg width="20" height="20" viewBox="0 0 32 32"><path d="M8 6h12v7H8z" fill="#9AA3B0" stroke="#3A4250"></path><path d="M13 13h3v14h-3z" fill="#8A6A3A"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #1EFF00">Rhahk’Zor’s Hammer</span><span class="t">Two-Hand · Mace</span></span><span class="p">77%</span></div><div class="bh"><span class="o">2</span>Sneed</div><div class="lr"><span class="ii" style="width: 22px; height: 22px; border-color: #0070DD"><svg width="20" height="20" viewBox="0 0 32 32"><path d="M20 5l3 3-9 9-3-3z" fill="#D8DEE8" stroke="#4A5260"></path><path d="M10 18l4 4M11 22l-4 4" stroke="#8A6A3A" stroke-width="2.4"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #4DA3FF">Buzzer Blade</span><span class="t">Dagger</span></span><span class="p">30%</span></div><div class="lr"><span class="ii" style="width: 22px; height: 22px; border-color: #0070DD"><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="18" r="7" fill="none" stroke="#E8C66A" stroke-width="3"></circle><circle cx="16" cy="10" r="3.5" fill="#6AB0F0"></circle></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #4DA3FF">Lavishly Jeweled Ring</span><span class="t">Finger</span></span><span class="p">31%</span></div><div class="bh"><span class="o">3</span>Gilnid</div><div class="lr dim"><span class="ii" style="width: 22px; height: 22px; border-color: #0070DD"><svg width="20" height="20" viewBox="0 0 32 32"><path d="M10 6h12l1 20h-5l-2-12-2 12H9z" fill="#7A5A3A" stroke="#2A1A0A"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #4DA3FF">Smelting Pants</span><span class="t">Leather · Legs</span></span><span class="p">40%</span></div><div class="lr"><span class="ii" style="width: 22px; height: 22px; border-color: #FFFFFF"><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="16" r="9" fill="#B8975A" stroke="#4A3A1A"></circle><path d="M16 10l2 4 4 .5-3 3 .8 4-3.8-2-3.8 2 .8-4-3-3 4-.5z" fill="#F3DFAE"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #FFFFFF">Thistlenettle’s Badge</span><span class="qtag">Quest</span><span class="t">Quest item</span></span><span class="p">100%</span></div><div class="bh"><span class="o">4</span>Mr. Smite</div><div class="lr dim"><span class="ii" style="width: 22px; height: 22px; border-color: #0070DD"><svg width="20" height="20" viewBox="0 0 32 32"><path d="M8 6h12v7H8z" fill="#9AA3B0" stroke="#3A4250"></path><path d="M13 13h3v14h-3z" fill="#8A6A3A"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #4DA3FF">Smite’s Mighty Hammer</span><span class="t">Two-Hand · Mace</span></span><span class="p">31%</span></div><div class="lr"><span class="ii" style="width: 22px; height: 22px; border-color: #0070DD"><svg width="20" height="20" viewBox="0 0 32 32"><path d="M22 4l2 2-12 12-2-2z" fill="#C9D2DE" stroke="#4A5260"></path><path d="M8 18l6 6M10 23l-4 4" stroke="#B8975A" stroke-width="2.4"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #4DA3FF">Thief’s Blade</span><span class="t">One-Hand · Sword</span></span><span class="p">33%</span></div><div class="lr dim"><span class="ii" style="width: 22px; height: 22px; border-color: #0070DD"><svg width="20" height="20" viewBox="0 0 32 32"><path d="M14 6c6 0 10 4 10 9-4-1-7-1-10 1z" fill="#AEB6C3" stroke="#3A4250"></path><path d="M13 6h3v22h-3z" fill="#8A6A3A"></path></svg></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="color: #4DA3FF">Smite’s Reaver</span><span class="t">One-Hand · Axe</span></span><span class="p">29%</span></div></div><div class="gtt" style="left: 330px; top: 300px"><div style="color: #4DA3FF; font-weight: 600">Cruel Barb</div><div>Binds when equipped</div><div class="r"><span>One-Hand</span><span>Sword</span></div>
+          <div class="r"><span>30 - 57 Damage</span><span>Speed 2.80</span></div><div>(15.5 damage per second)</div><div>+12 Strength</div><div>Durability 75 / 75</div><div>Requires Level 19</div></div>
+      <div style="position: absolute; right: 6px; top: 120px; width: 4px; height: 160px; background: #7C6838"></div></div></div><div class="ft">Synced with 4 friends</div></div></div></div></div><div style="margin-top: 26px"><div class="strings"><h3>Visible strings · 85</h3><ol><li>Doombringers of Arcadia</li><li>Runs</li><li>Fits you</li><li>Hex 16</li><li>Ragefire Chasm</li><li>13–18</li><li>Ruins of Lordaeron</li><li>Tomorrow</li><li>15–22</li><li>Wailing Caverns</li><li>Sun</li><li>17–24</li><li>The Deadmines</li><li>Today</li><li>17–26</li><li>Higher</li><li>Shadowfang Keep</li><li>Sat</li><li>22–30</li><li>Blackfathom Deeps</li><li>24–32</li><li>The Stockade</li><li>Gnomeregan</li><li>29–38</li><li>Scarlet Monastery</li><li>Graveyard</li><li>26–36</li><li>Library</li><li>29–39</li><li>Armory</li><li>32–42</li><li>level 17–26 · Westfall</li><li>fits</li><li>Last cleared by</li><li>Grom</li><li>Mira</li><li>· Tue</li><li>Today 20:00 · 5 in ›</li><li>Ask now</li><li>Plan a run…</li><li>Bosses &amp; loot</li><li>Classic data</li><li>i</li><li>Usable by Hex</li><li>Rhahk’Zor</li><li>Rhahk’Zor’s Hammer</li><li>Two-Hand · Mace</li><li>77%</li><li>2</li><li>Sneed</li><li>Buzzer Blade</li><li>Dagger</li><li>30%</li><li>Lavishly Jeweled Ring</li><li>Finger</li><li>31%</li><li>3</li><li>Gilnid</li><li>Smelting Pants</li><li>Leather · Legs</li><li>40%</li><li>Thistlenettle’s Badge</li><li>Quest</li><li>Quest item</li><li>100%</li><li>4</li><li>Mr. Smite</li><li>Smite’s Mighty Hammer</li><li>Thief’s Blade</li><li>One-Hand · Sword</li><li>33%</li><li>Smite’s Reaver</li><li>One-Hand · Axe</li><li>29%</li><li>Cruel Barb</li><li>Binds when equipped</li><li>One-Hand</li><li>Sword</li><li>30 - 57 Damage</li><li>Speed 2.80</li><li>(15.5 damage per second)</li><li>+12 Strength</li><li>Durability 75 / 75</li><li>Requires Level 19</li><li>Synced with 4 friends</li></ol><div class="tl">Tooltips &amp; menus</div><ol><li>ⓘ next to Classic data: Drops and chances from Classic 1.12; Forever may differ.</li><li>Hover on an item: the game’s own item tooltip</li><li>Run tag (Tonight, Sat…): a run is planned here; click opens it in the Runs tab</li></ol><div style="margin-top: 10px; font-size: 11px; color: #6E7888">Window chrome not listed. New tabs: Runs · Dungeons.</div></div></div><div style="margin-top: 26px"><div class="note"><h3>Dungeons tab</h3>
+      <div class="li"><span class="n">1</span><span><b>Always every dungeon</b>, grouped <b>Fits you · Higher · Lower</b> for the character you’re logged in on (Hex 16). No picker, no checkbox. Fits = your level is at most 2 below the minimum and not above the maximum. Lower only appears when it has dungeons.</span></div>
+      <div class="li"><span class="n">2</span><span><b>Wings</b> are their own entries, indented under the dungeon name (Scarlet Monastery: Graveyard, Library…), like runs already name them.</span></div>
+      <div class="li"><span class="n">3</span><span><b>Detail top to bottom:</b> name, level, zone, fits · Last cleared by … · a planned run (opens it in Runs) · <b>Ask now</b> · <b>Plan a run…</b> → Bosses &amp; loot → Quests (the AG05 list).</span></div>
+      <div class="li"><span class="n">4</span><span><b>Loot rows:</b> icon with quality border, name in quality colour, type in grey, drop % right-aligned, highest first per boss. Hover = the game’s own <code>GameTooltip:SetItemByID</code>. Shift-click links it in chat.</span></div>
+      <div class="li"><span class="n">5</span><span><b>Not usable</b> by your class (armor type, weapon skill, class-only) is dimmed to 45 %. <b>Usable by Hex</b> hides them; remembered per character.</span></div>
+      <div class="li"><span class="n">6</span><span><b>Data:</b> boss order from the client’s DungeonEncounter table, loot from cmangos, shipped in the addon as a data file per release.</span></div>
+      <div class="li"><span class="n">7</span><span><b>Cleared</b> = the dungeon’s <b>final boss</b> died (The Deadmines: Edwin VanCleef). Each dungeon has one final boss and may have optional bosses (Cookie), kept in a small hand-made list in the import. “Last cleared by” names the friends in that group.</span></div><div class="li"><span class="n">8</span><span><b>Which loot:</b> only the boss’s own drops at 1 % or more, highest first; shared world-drop tables are left out. Quest items and recipe drops from the boss’s own table always show, even under 1 %. Max <b>6</b> per boss, then a “<b>2 more ▾</b>” row that expands in place (counted after the Usable switch).</span></div><div class="li"><span class="n">9</span><span><b>Raids</b> are not in this version: dungeons only.</span></div></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2240,"height":1325}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

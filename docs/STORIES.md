@@ -8,6 +8,54 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-106 Runs tab and Dungeons tab with bosses and loot (boards DL01 to DL03; pairs with WEB-96, WEB-97)
+Boards in `docs/design/dungeons-2026-11/` (DL01 Runs tab, DL02 Dungeons tab, DL03 states A to F) and the shared
+contract (Nico and the designer, 2026-11-07). Ships in one release with the site; not before Nico's go.
+- **Runs tab** (its own tab between Activity and Dungeons): runs grouped Today / Tomorrow / Later (headers only with
+  runs; a 14:00 run today is Today); each row name, time, role pips, "3 in · 2 open" (once started "5 in · 3/6
+  bosses") and your status: you're in, maybe, can't, gold "answer", grey "no fit" (none of your characters fits; you
+  can still answer), grey "no boss yet". Ask now… on the list; "Runs from 09:51 ⓘ"; without runs "No runs planned"
+  and "Find a dungeon ›". The detail: name, range, **Dungeon ›** (opens it in the Dungeons tab), the time line
+  ("started 20:04" once a boss died), the group rows and Your answer as CF-63 built them, and **Bosses** once the run
+  has started: a check per boss killed by the run's group, "3 of 6" (optional bosses don't count), "optional", and
+  "– skipped" on a cleared run; hover: "Killed 20:31 (from Grom's log)".
+- **Badge** on Runs: runs that haven't started, you haven't answered (nor organise), and one of your characters fits.
+- **Progress rule** (`RunProgress.progress`, golden `tests/fixtures/run-progress-cases.json`): kills of the dungeon's
+  bosses by characters that answered I'm in or Maybe (or organise), from 1 h before the start until the first daily
+  reset after it (the Doomsday day boundary); cleared = the final boss died; a run without a kill leaves the list 3 h
+  after its start, a run with kills at the reset.
+- **Dungeons tab**: every dungeon grouped Fits you / Higher / Lower (Lower only with dungeons) for the character you
+  are on; wings indented; a run tag (Today, Tomorrow, a weekday) that opens the run in Runs. No picker, no Show all.
+  Nothing fits: "Nothing fits yet · first at 13". The detail: name, "level · zone · fits", "Last cleared by … · Tue"
+  (the final boss's last death in a kill log), the next run's button, Ask now, Plan a run… (the website's link: no
+  planning in the game, CF-64), **Bosses & loot** (up to 6 drops per boss, "N more" opens the rest until /reload,
+  "Classic data ⓘ", the "Usable by <character>" switch remembered per character, the game's tooltip on hover, Shift-
+  click links the item, Quest and "Nobody knows it" tags with their tooltips), then **Quests** (AG05).
+- **Fit rule** (one rule with the site): fits when `level >= min - 2 and level <= max` (`Dungeons.fits`), everywhere:
+  the tab, the suggestions (`Dungeons.overview`), `PlannedRuns.levelFit` ("fits" from 2 below), open slots, Ask
+  now's default dungeon. Golden `tests/fixtures/dungeon-fit-cases.json`.
+- **Usable by** (golden `tests/fixtures/loot-usable-cases.json`, cited): the class can ever use it: AllowableClass,
+  the armor types reached by 60, shields and relics, weapon types it can learn in Classic. No level, no skills.
+- **Data**: `Data\Loot.lua` (`ns.LootData`, contract 2) loads before the UI; a hand-written placeholder until WEB-96
+  generates it (GPL-3.0 data, ARCHITECTURE "Loot data file"). Kills from `KillLog` over CF-103's data
+  (contract 1: `bossKills` of feed runs, `liveKills` from the KILL message, runs in progress).
+- Compatibility (rule 8): nothing sent changes. Stored: two new optional settings (`runsTab.selected`,
+  `usableOnly = { [guid] = true }`), nil in older data, so no migration; `dungeonTree.selected` keeps its meaning (a
+  stored "run:<id>" no longer matches a dungeon and falls back to the first that fits). Older clients ignore them.
+- **Wings** (Nico, 2026-11-07): Dire Maul and Stratholme are split like Scarlet Monastery: `dmeast`, `dmwest`,
+  `dmnorth` and `stratlive`, `stratud`, titles "Dire Maul: East" etc. Activities and ranges from the client's
+  GroupFinderActivity table (build 70862): 813 East 54–60, 814 West 56–60, 815 North 56–60, 816 Main Gate (Live)
+  58–60, 1603 Service Gate (Undead) 58–60; the same numbers as the site. The old ids
+  `strat` and `dme` stay readable (rule 8, `Dungeons.LEGACY`): `Dungeons.get` finds them, no list shows them, and a
+  run for one lists every wing's bosses under the wing's name and is cleared when any wing's final boss dies
+  (`DungeonLoot.bossesFor`; golden cases in both fixtures). New plans use the wing ids.
+- **Recipe skill** (Nico, 2026-11-07): recipe drops may carry `skill` and `line`; "Can learn" lists only characters
+  with that profession at that rank, the tooltip says "Requires Cooking (75)"; without `skill` the profession is
+  enough.
+- Not in it: raids.
+- Done when: specs for the core rules on the golden files, the tabs (RunsTab_spec, DungeonsTab_spec); busted and
+  luacheck pass. Manual: VERIFY.md CF-106, V138 to V140.
+
 ### CF-105 Launch probe: the export of 2026-11-07
 The export of 2026-11-07 (6 testers; builds 70790, 70840 from 01:39 UTC and 70862 from 09:24 UTC) answers the recipe
 details. Nico's rule: a check that failed in every export with the same reason is a finding ("fails on Forever"):

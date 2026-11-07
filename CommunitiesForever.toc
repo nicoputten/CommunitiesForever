@@ -12,6 +12,7 @@
 embeds.xml
 
 Data\Runs.lua
+Data\Loot.lua
 
 src\core\Calendar.lua
 src\core\Text.lua
@@ -48,6 +49,8 @@ src\core\Talents.lua
 src\core\Onboarding.lua
 src\core\Quests.lua
 src\core\Dungeons.lua
+src\core\DungeonLoot.lua
+src\core\RunProgress.lua
 src\core\GroupAsk.lua
 src\core\Chat.lua
 src\core\Friends.lua
@@ -91,6 +94,7 @@ src\adapters\Panels.lua
 src\adapters\Classes.lua
 src\adapters\PvpInfo.lua
 src\adapters\LootInfo.lua
+src\adapters\ItemInfo.lua
 src\adapters\GoalEvents.lua
 src\adapters\Sounds.lua
 src\adapters\Screen.lua
@@ -126,6 +130,7 @@ src\services\Invites.lua
 src\services\GuildInvites.lua
 src\services\Notify.lua
 src\services\Planner.lua
+src\services\KillLog.lua
 src\services\GroupAsks.lua
 src\services\RunAlerts.lua
 src\services\DoomsdayAlerts.lua
@@ -140,6 +145,7 @@ src\ui\kit\Window.lua
 src\ui\Settings.lua
 src\ui\SettingsWindow.lua
 src\ui\RunAnswer.lua
+src\ui\RunsTab.lua
 src\ui\DungeonsTab.lua
 src\ui\DoomsdayTab.lua
 src\ui\RunDialogs.lua

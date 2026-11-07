@@ -63,6 +63,7 @@ stds.wow = {
     "MinimapCluster", "ChatFrame_OpenChat", -- CF-48 (V72)
     "GetPhysicalScreenSize", "ChatFrame1", -- CF-67 (V89)
     "ChatEdit_InsertLink", "IsShiftKeyDown", -- CF-38 (VERIFY.md CF-38)
+    "GetItemInfo", -- CF-106 (VERIFY.md CF-106, guarded)
     -- CF-82: the hidden launch probe (each guarded; the checks answer whether they work on Forever)
     "GetCurrentRegion", "UnitOnTaxi", "COMBATLOG_XPGAIN_FIRSTPERSON", "UnitClassification", "C_PvP", "GetZonePVPInfo",
     "GetBattlefieldScore", "GetBattlefieldStatInfo", "GetNumBattlefieldStats", "GetNumBattlefieldScores", "UnitIsPVP",

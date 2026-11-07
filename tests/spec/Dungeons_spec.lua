@@ -47,8 +47,8 @@ describe("Dungeons (CF-24)", function()
 
   describe("overview", function()
     it("lists a planned dungeon that fits none of your characters when asked to", function()
-      local overview = Dungeons.overview(Dungeons.candidates(view()), "G-ME", { strat = true })
-      local strat = entryFor(overview, "strat")
+      local overview = Dungeons.overview(Dungeons.candidates(view()), "G-ME", { stratud = true }) -- CF-106: a wing
+      local strat = entryFor(overview, "stratud")
       assert.is_false(strat.fits)
       assert.are.equal(1, strat.people) -- the unlinked level 60
       assert.is_true(entryFor(overview, "dm").fits)
@@ -60,12 +60,12 @@ describe("Dungeons (CF-24)", function()
         local fits = false
         for _, c in ipairs(e.candidates) do
           if c.own then fits = true end
-          assert.is_true(c.level >= e.dungeon.min and c.level <= e.dungeon.max, e.dungeon.name)
+          assert.is_true(c.level >= e.dungeon.min - 2 and c.level <= e.dungeon.max, e.dungeon.name) -- CF-106
         end
         assert.is_true(fits, e.dungeon.name)
       end
       assert.is_nil(entryFor(overview, "rfc")) -- 13 to 18: none of your characters
-      assert.is_nil(entryFor(overview, "strat")) -- only an unlinked 60
+      assert.is_nil(entryFor(overview, "stratud")) -- only an unlinked 60
       -- Deadmines (17-26): you, Ben (two characters, one person), Cid, Dee: 4 people.
       local dm = entryFor(overview, "dm")
       assert.are.equal(4, dm.people)
@@ -179,7 +179,8 @@ describe("Dungeons (CF-24)", function()
     it("takes the game's level ranges and adds dungeons the static table does not know", function()
       Dungeons.applyGroupFinder(ACTIVITIES)
       assert.are.same({ 20, 30 }, { Dungeons.get("sfk").min, Dungeons.get("sfk").max })
-      assert.are.same({ 54, 60 }, { Dungeons.get("dme").min, Dungeons.get("dme").max }) -- wings: lowest min
+      assert.are.same({ 54, 60 }, { Dungeons.get("dmeast").min, Dungeons.get("dmeast").max }) -- CF-106: its wing
+      assert.are.same({ 56, 60 }, { Dungeons.get("dmnorth").min, Dungeons.get("dmnorth").max })
       local listed = {}
       for _, d in ipairs(Dungeons.LIST) do listed[d.id] = true end
       assert.is_nil(listed.dm) -- not offered by the Group Finder: not listed (feedback)
