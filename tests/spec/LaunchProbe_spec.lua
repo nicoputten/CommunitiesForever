@@ -106,6 +106,7 @@ describe("the hidden launch probe", function()
 
   it("notes a handler error instead of showing it", function()
     load()
+    ns.LaunchProbe.recipes.clicked("trade:Player-1-000C:3908:197") -- V60b waits for the window (CF-105)
     _G.C_TradeSkillUI = setmetatable({}, { __index = function() error("boom") end })
     wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
     _G.C_TradeSkillUI = nil
@@ -215,7 +216,7 @@ describe("the hidden launch probe", function()
     assert.are.equal("emote FLEX on an enemy-faction player", results().V108.detail)
   end)
 
-  -- CF-98: the recipe checks V60 and V60b (services/LaunchProbeRecipes.lua).
+  -- CF-98: the recipe checks (services/LaunchProbeRecipes.lua); since CF-105 only V60b.
   describe("recipes", function()
     local linked, recipeIDs
 
@@ -256,97 +257,13 @@ describe("the hidden launch probe", function()
       end
     end
 
-    it("reads the own profession window: counts and IDs only (V60)", function()
+    it("no longer reads the own profession window (V60 and V60c answered, CF-105)", function()
       tailoring()
       load()
-      local printed = #state.printed
       wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      local r = results().V60
-      assert.are.equal("pass", r.status)
-      assert.are.equal("base 197, child 2540; 3 recipes, 2 learned; item from output/link/schematic; list link yes",
-        r.detail)
-      assert.are.same({ "recipe 3839: output 4305, link 4305, schematic 4305",
-                        "recipe 3840: output 4305, link 4305, schematic 4305" }, r.log)
-      assert.is_nil(r.detail:find("Bolt", 1, true))
-      assert.is_nil(r.detail:find("Tailoring", 1, true))
-      assert.are.equal(printed, #state.printed) -- silent
-    end)
-
-    it("waits for the list to load, scanning at most every 10 s (V60)", function()
-      tailoring()
-      recipeIDs = {}
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      assert.are.equal("info", results().V60.status)
-      recipeIDs = { 3839 }
       wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
-      assert.are.equal("info", results().V60.status) -- throttled
-      state.serverTime = state.serverTime + 10
-      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
-      assert.are.equal("pass", results().V60.status)
-    end)
-
-    it("scans again after a throttled event, as no event may follow it (V60)", function()
-      tailoring()
-      recipeIDs = {}
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      assert.are.equal("info", results().V60.status)
-      recipeIDs = { 3839 }
-      local timers = #state.timers
-      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- the list loaded, but throttled; nothing fires after it
-      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE") -- one later scan only
-      assert.are.equal(timers + 2, #state.timers) -- the probe's, and CF-38's RecipeTracker's (1 s throttle)
-      assert.are.equal("info", results().V60.status)
-      state.serverTime = state.serverTime + 10
-      wowapi.runTimers(state)
-      assert.are.equal("pass", results().V60.status)
-    end)
-
-    it("tells each learned recipe's profession and one recipe's details, no names (V60c, CF-101)", function()
-      tailoring()
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      local r = results().V60c
-      assert.are.equal("pass", r.status)
-      assert.are.equal("lines 2540/185:1 2540/197:1; colour yes, skill-ups yes, can make yes; reagents yes; "
-        .. "source yes", r.detail)
-      assert.are.same({ "recipe 3839: difficulty 1, skill-ups 1, can make 3, category 1100",
-                        "recipe 3839: 1 reagent slots, first 4x item 4306; cooldown missing; source text 18 chars",
-                        "list link: 4 fields, 28 chars" }, r.log)
-      for _, line in ipairs(r.log) do assert.is_nil(line:find("Player-", 1, true)) end
-      for _, line in ipairs(r.log) do assert.is_nil(line:find("Trainer", 1, true)) end
-    end)
-
-    it("fails V60c without the recipe's profession, and keeps scanning for it after V60 passed", function()
-      tailoring()
-      _G.C_TradeSkillUI.GetTradeSkillLineForRecipe = nil
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      assert.are.equal("pass", results().V60.status)
-      assert.are.equal("fail", results().V60c.status)
-      assert.truthy(results().V60c.detail:find("^lines none;"))
-      _G.C_TradeSkillUI.GetTradeSkillLineForRecipe = function() return 2540, "Tailoring", 197 end
-      state.serverTime = state.serverTime + 10
-      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
-      assert.are.equal("pass", results().V60c.status)
-      assert.are.equal("pass", results().V60.status)
-    end)
-
-    it("fails without C_TradeSkillUI, and names missing functions (V60)", function()
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      assert.are.same("fail", results().V60.status)
-      assert.are.same("C_TradeSkillUI missing", results().V60.detail)
-      wowapi.uninstall()
-      tailoring()
-      _G.C_TradeSkillUI.GetRecipeSchematic = nil
-      _G.C_TradeSkillUI.GetRecipeItemLink = nil
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      assert.are.equal("pass", results().V60.status)
-      assert.truthy(results().V60.detail:find("item from output;", 1, true))
-      assert.are.equal("missing: GetRecipeItemLink, GetRecipeSchematic", results().V60.log[1])
+      assert.is_nil(results().V60)
+      assert.is_nil(results().V60c)
     end)
 
     it("passes V60b when a friend's link opens Blizzard's view while they are offline, without their GUID", function()
@@ -361,7 +278,6 @@ describe("the hidden launch probe", function()
       assert.are.equal("pass", r.status)
       assert.are.equal("link of a friend offline opened Blizzard's view (IsTradeSkillLinked true, 3 recipes)", r.detail)
       assert.are.same({ "link of a friend offline clicked" }, r.log)
-      assert.is_nil(results().V60) -- someone else's recipes are not V60's
       wowapi.runTimers(state)
       assert.are.equal("pass", results().V60b.status)
     end)
@@ -383,12 +299,13 @@ describe("the hidden launch probe", function()
       assert.are.equal("link of someone else clicked, no linked window within 5 s", results().V60b.detail)
     end)
 
-    it("counts V60 and V60b in /cf fp", function()
+    it("counts only V60b of the recipe checks in /cf fp (CF-105)", function()
       load()
-      assert.are.equal(15, #ns.Probe.IDS)
+      assert.are.equal(13, #ns.Probe.IDS)
       addon:OnSlashCommand("fp")
       local text = ns.ProbeReport.text()
-      assert.truthy(text:find("V60 open", 1, true))
+      assert.is_nil(text:find("V60 ", 1, true))
+      assert.is_nil(text:find("V60c", 1, true))
       assert.truthy(text:find("V60b open", 1, true))
     end)
   end)

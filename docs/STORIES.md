@@ -8,6 +8,30 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-105 Launch probe: the export of 2026-11-07
+The export of 2026-11-07 (6 testers; builds 70790, 70840 from 01:39 UTC and 70862 from 09:24 UTC) answers the recipe
+details. Nico's rule: a check that failed in every export with the same reason is a finding ("fails on Forever"):
+it leaves the probe, FriendProbe's checklist gets a `done` marker, and the goals that waited on it are retired or
+re-planned. Info results that are still to see (V82, V108, V120, V123) are not failures. Touches `src/core/Probe.lua`,
+`src/services/LaunchProbeRecipes.lua`, `src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua`, the probe
+specs, `docs/API-FINDINGS.md`, VERIFY.md.
+- V60c passed (build 70840): `GetTradeSkillLineForRecipe` answers per learned recipe (Cooking: line 2939, parent 185);
+  skill-up colour, skill-ups and reagents readable; `numAvailable`, `GetRecipeCooldown` and `GetRecipeSourceText`
+  missing; the list link is the short form (4 fields). To API-FINDINGS; VERIFY.md V137 closed (CF-38's `recipeLines`
+  works); out of `Probe.IDS` and its code removed.
+- V60 answered: with Cooking open `GetAllRecipeIDs` gave 132 IDs (Tailoring 471): the list is the open profession's,
+  as CF-102 assumes. Out of `Probe.IDS`; only V60b (a friend's link while they are offline) stays. VERIFY.md V60 keeps
+  only V60b and the old-link question; the answered CF-98, CF-100 and CF-101 steps go.
+- V98 passes for 2 testers (both reads on one client): noted in API-FINDINGS.
+- Failed in every export: V87 (closed as failed in CF-96, CF-97 built the guild route) and V70 (its `fail` means "no
+  lockdown during a boss fight", the answer recorded in CF-101) are not in the probe any more. V73 fails only from
+  clients before CF-101 (old wording, no shape logged), so it stays open and in the probe. No goal waits on a check
+  that always failed, so CF-104 (pool 4) is unchanged.
+- `Probe.IDS`: 13 checks (V82, V35b, V73, Hunt, V80, V96, V101, V108, V114, V120, V122, V123, V60b). Stored results of
+  removed checks stay in the saved data and the upload, as in CF-96.
+- Compatibility (rule 8): nothing stored or sent changes shape; the probe only stops writing two keys.
+- Manual (VERIFY.md CF-105): `/cf fp` counts 13.
+
 ### CF-103 Send which bosses a run killed (pairs with the site's WEB-97; needs a design on the site)
 The addon already keeps a run's bosses as `{ [encounterID] = true }` (CF-23, `ENCOUNTER_END`, verified) but sends only
 the count `bosses`. The site (WEB-96, WEB-97) names the bosses and links their loot.
@@ -568,7 +592,10 @@ probe"); PR #63 (the old recipe-list story) is superseded.
   - Per character: `recipes = { [recipeID] = itemID }`, the learned recipes of **all** professions
     (`GetAllRecipeIDs` gives every profession at once), itemID from `GetRecipeOutputItemData(id).itemID`, 0 for none;
     `recipesAt` the time of the scan. A scan replaces the set (it is complete), never on an empty or failed read
-    (CF-100). `recipeLines = { [recipeID] = skillLineID }` only where `GetTradeSkillLineForRecipe` answers (V137).
+    (CF-100). `recipeLines = { [recipeID] = skillLineID }` only where `GetTradeSkillLineForRecipe` answers (V137;
+    CF-105: it answers on Forever, the parent line, e.g. 185 for Cooking). Not readable on Forever (V60c): how many a
+    character can make now (`numAvailable`), a recipe's cooldown (`GetRecipeCooldown`) and where an unlearned recipe
+    is learned (`GetRecipeSourceText`); the addon stores none of them.
   - Per profession (only the open one; window open = `TRADE_SKILL_SHOW` until `TRADE_SKILL_CLOSE`): `link` (the
     `trade:` part of `GetTradeSkillListLink()`), `linkType` (`short` for 4 colon-separated fields, else `long`),
     `spec` (the specialisation's name, `IsSpellKnown` on the Vanilla specialisation spells, V136), `scannedAt`. Never
@@ -597,7 +624,7 @@ probe"); PR #63 (the old recipe-list story) is superseded.
 - Unit tests: scan to stored shape, never wiping other professions, empty read, the throttle, link type, cleaning,
   the learn order and tails, the Friends tab cells, click and Shift-click (`Recipes_spec`, `RecipeTracking_spec`), the
   full list then the tail between friends and through a relay (`RecipeSync_spec`).
-- Manual: VERIFY.md CF-38 (with the offline and the old-link test) and V134 to V137.
+- Manual: VERIFY.md CF-38 (with the offline and the old-link test) and V134 to V136 (V137 answered, CF-105).
 
 ## E15 Doomsday (decided with Nico, 2026-10-28)
 Daily and weekly goals, points per track, a streak and a crown, feats and a ladder, in the game, on the site (web E8) and in Discord (bot "Doomsday"). **`docs/DOOMSDAY.md` is the one description of the rules**; read it first. It replaces the three workshop designs (milestones, PvP ladder, dailies and weeklies; their PRs were closed unmerged).
