@@ -71,6 +71,10 @@ Theme.COLORS = {
   capDoneFill = hex("3A2F18"),
   keySep = hex("6E7888"),           -- "›" and an upcoming "+"
   giVeil = hex("090F1A", 0.82),     -- over the body behind the "sent" check
+  -- CF-106: the Runs and Dungeons tabs (boards DL01 to DL03)
+  killed = hex("3BA55D"),           -- a killed boss's check box
+  questTag = hex("6B5A2E"),         -- the edge of a loot row's "Quest" tag
+  learnTag = hex("2E6B48"),         -- the edge of "Nobody knows it"
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).

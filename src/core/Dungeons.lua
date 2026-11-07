@@ -243,7 +243,8 @@ function Dungeons.grouped(level)
           placed[parent] = true
           items[#items + 1] = { parent = parent }
           for _, w in ipairs(list) do
-            if Dungeons.wing(w) == parent then items[#items + 1] = { dungeon = w, wing = select(2, Dungeons.wing(w)) } end
+            local p, wing = Dungeons.wing(w)
+            if p == parent then items[#items + 1] = { dungeon = w, wing = wing } end
           end
         end
       else

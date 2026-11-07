@@ -125,10 +125,11 @@ local function withAnswer(run, a, me)
 end
 
 -- Runs to show now, soonest first: the runs data with your pending plans and answers, and (as organiser)
--- answers friends sent you. pending = true on what has not reached the site yet.
-function Planner.upcoming()
+-- answers friends sent you. pending = true on what has not reached the site yet. keep (CF-106): how long after their
+-- start runs stay (default PlannedRuns.KEEP_STARTED).
+function Planner.upcoming(keep)
   local me = Planner.me()
-  local list = ns.PlannedRuns.upcoming(current, now())
+  local list = ns.PlannedRuns.upcoming(current, now(), keep)
   for i, run in ipairs(list) do
     for _, a in ipairs(heard[run.id] or {}) do run = withAnswer(run, a, nil) end
     local mine = ns.Pending.answerFor(pending(), run.id)
@@ -139,7 +140,7 @@ function Planner.upcoming()
     list[i] = run
   end
   for _, plan in ipairs(ns.Pending.ofKind(pending(), "plan")) do
-    if plan.startsAt >= now() - ns.PlannedRuns.KEEP_STARTED then
+    if plan.startsAt >= now() - (keep or ns.PlannedRuns.KEEP_STARTED) then
       local lead = { guid = plan.guid, name = plan.name, battleTag = me.battleTag }
       list[#list + 1] = { id = plan.id, dungeon = plan.dungeon, startsAt = plan.startsAt, note = plan.note,
         source = "game", state = "open", pending = true, organiser = lead,

@@ -212,12 +212,14 @@ end
 -- ===== The Dungeons tab (CF-46) =====
 
 PlannedRuns.KEEP_STARTED = 2 * 3600 -- a started run stays listed this long after its start
+PlannedRuns.KEEP_PROGRESS = 30 * 3600 -- CF-106: how far back the Runs tab looks (a run with kills stays until the
+                                      -- daily reset; RunProgress decides)
 
--- Runs to show, soonest first: not cancelled, not started more than KEEP_STARTED ago.
-function PlannedRuns.upcoming(data, now)
+-- Runs to show, soonest first: not cancelled, not started more than KEEP_STARTED (or keep, CF-106) ago.
+function PlannedRuns.upcoming(data, now, keep)
   local list = {}
   for _, r in ipairs(data and data.runs or {}) do
-    if r.state ~= "cancelled" and r.startsAt >= now - PlannedRuns.KEEP_STARTED then list[#list + 1] = r end
+    if r.state ~= "cancelled" and r.startsAt >= now - (keep or PlannedRuns.KEEP_STARTED) then list[#list + 1] = r end
   end
   return list
 end
