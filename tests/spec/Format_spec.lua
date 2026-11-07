@@ -330,6 +330,23 @@ describe("Format", function()
       }, d)
     end)
 
+    it("mutes the profession links of a character on another server than yours (CF-107)", function()
+      local link = "trade:Player-6940-0A1B2C3D:3908:185"
+      local function cookingCell(selfGuid, guid)
+        local p = person({ chars = { charRow({ guid = guid,
+          professions = { [185] = { name = "Cooking", rank = 75, max = 75, link = link } } }) } })
+        local v = { people = { p, me() }, unlinked = unlinked, selfGuid = selfGuid }
+        return Card.detail(v, Format.path("Solvar#2032", guid), NOW).professions[1].list[1].cell
+      end
+      local other = cookingCell("Player-6856-00000001", "Player-6940-0A1B2C3D")
+      assert.equals("link", other.state)
+      assert.is_true(other.otherServer)
+      assert.equals("Opens only for players on your server", other.tip.lines[1])
+      assert.is_nil(cookingCell("Player-6940-00000001", "Player-6940-0A1B2C3D").otherServer)
+      assert.is_nil(cookingCell(nil, "Player-6940-0A1B2C3D").otherServer) -- unknown: as before
+      assert.is_nil(cookingCell("Player-6856-00000001", "G1").otherServer)
+    end)
+
     it("shows missing item level and offline characters", function()
       local d = Card.detail(view, Format.path("Solvar#2032", "G2"), NOW)
       assert.are.equal("played by Sjaak \194\183 offline, last seen 2 h ago", d.subtitle)

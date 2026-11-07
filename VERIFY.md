@@ -60,6 +60,18 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-107 Profession links on another server
+This build on two accounts, `/console scriptErrors 1`: Ada on internal server A, Bo on another internal server of
+the same mega-realm (check with `/run print(UnitGUID("player"))`: the number after `Player-` differs), plus Cy on
+Ada's server (same number), all with a crafting profession opened once so it is scanned. All synced (`/cf sync`).
+
+| Step | Expected | Status |
+|---|---|---|
+| Ada: `/cf`, Friends tab, Bo's character | Bo's profession link (e.g. "[Blacksmithing]") is grey, not gold. Hover: title "<Bo>'s Blacksmithing", then "Opens only for players on your server", "Click: open in game", "Shift-click: link in chat". | open |
+| Ada clicks it, then Shift-clicks it | The click does what the game does (no window opens; no Lua error). Shift-click puts the link into chat as before. | open |
+| Ada: Cy's character | Cy's link in gold, tooltip without the "Opens only..." line; a click opens Blizzard's window with Cy's recipes. | open |
+| Ada: her own characters, and one of Bo's from Bo's side | Ada's own links gold (same server); on Bo's client Bo's own links gold and Ada's grey. | open |
+
 ### CF-106 Runs tab and Dungeons tab (boards docs/design/dungeons-2026-11/ DL01 to DL03)
 This build on Forever, `/console scriptErrors 1`, a character in the community, `/reload` after the uploader
 fetched runs. Screenshots of each step marked 📷 for Nico's design check. The loot file is the generated one

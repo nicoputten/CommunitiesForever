@@ -378,6 +378,30 @@ describe("Recipes (CF-38)", function()
     end)
   end)
 
+  describe("server of a GUID (CF-107)", function()
+    it("reads the server id of a player GUID", function()
+      assert.equals("6940", Recipes.serverId("Player-6940-0A1B2C3D"))
+      assert.equals("6856", Recipes.serverId("Player-6856-00000001"))
+    end)
+
+    it("is nil for anything else", function()
+      local odd = { "G1", "Player-", "Player-6940", "Player-x-0A1B", "Creature-0-1-2-3-4-5", "", 6940, false }
+      for _, v in ipairs(odd) do
+        assert.is_nil(Recipes.serverId(v))
+      end
+      assert.is_nil(Recipes.serverId(nil))
+    end)
+
+    it("is another server only when both ids are known and differ", function()
+      assert.is_true(Recipes.otherServer("Player-6856-00000001", "Player-6940-0A1B2C3D"))
+      assert.is_false(Recipes.otherServer("Player-6940-00000001", "Player-6940-0A1B2C3D"))
+      assert.is_false(Recipes.otherServer(nil, "Player-6940-0A1B2C3D"))
+      assert.is_false(Recipes.otherServer("Player-6856-00000001", nil))
+      assert.is_false(Recipes.otherServer("G-ME", "Player-6940-0A1B2C3D"))
+      assert.is_false(Recipes.otherServer(nil, nil))
+    end)
+  end)
+
   describe("cell (RC07)", function()
     it("is a link in the game's colour with the board's tooltip", function()
       local cell = Recipes.cell(197, { name = "Tailoring", link = SHORT }, "Mira")
@@ -394,6 +418,18 @@ describe("Recipes (CF-38)", function()
       assert.equals("notScanned", cell.state)
       assert.equals("not scanned", cell.text)
       assert.same({ "Opens once Mira opens Cooking in game" }, cell.tip.lines)
+    end)
+
+    it("says on another server that the game opens it only on yours, still a link (CF-107)", function()
+      local cell = Recipes.cell(197, { name = "Tailoring", link = SHORT }, "Mira", true)
+      assert.equals("link", cell.state)
+      assert.is_true(cell.otherServer)
+      assert.equals(SHORT, cell.link)
+      assert.equals(FULL, cell.chatLink)
+      assert.same({ "Opens only for players on your server", "Click: open in game", "Shift-click: link in chat" },
+        cell.tip.lines)
+      assert.is_nil(Recipes.cell(197, { name = "Tailoring", link = SHORT }, "Mira", false).otherServer)
+      assert.is_nil(Recipes.cell(185, { name = "Cooking" }, "Mira", true).otherServer) -- not scanned: unchanged
     end)
 
     it("has nothing for gathering professions and Fishing", function()
