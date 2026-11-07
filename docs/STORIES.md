@@ -49,7 +49,10 @@ contract (Nico and the designer, 2026-11-07). Ships in one release with the site
   `strat` and `dme` stay readable (rule 8, `Dungeons.LEGACY`): `Dungeons.get` finds them, no list shows them, and a
   run for one lists every wing's bosses under the wing's name and is cleared when any wing's final boss dies
   (`DungeonLoot.bossesFor`; golden cases in both fixtures). New plans use the wing ids.
-- Not in it: raids; the "Can learn" skill check (the loot file has no required skill).
+- **Recipe skill** (Nico, 2026-11-07): recipe drops may carry `skill` and `line`; "Can learn" lists only characters
+  with that profession at that rank, the tooltip says "Requires Cooking (75)"; without `skill` the profession is
+  enough.
+- Not in it: raids.
 - Done when: specs for the core rules on the golden files, the tabs (RunsTab_spec, DungeonsTab_spec); busted and
   luacheck pass. Manual: VERIFY.md CF-106, V138 to V140.
 

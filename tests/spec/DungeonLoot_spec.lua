@@ -98,8 +98,26 @@ describe("Dungeon loot (CF-106)", function()
     local s = DungeonLoot.recipeState(drop, chars)
     assert.is_false(s.known)
     assert.are.same({ "Lia (Cooking 150)", "Ves (Cooking 75)" }, s.canLearn)
+    assert.is_nil(s.requires) -- no skill in the file: the profession is enough
     chars[3].recipes = { [2795] = 0 }
     assert.is_true(DungeonLoot.recipeState(drop, chars).known)
+  end)
+
+  it("lists only who has the recipe's profession at its required skill (Nico, 2026-11-07)", function()
+    local drop = { item = 728, cls = 9, sub = 5, recipe = 2795, skill = 75, line = 185 }
+    local chars = {
+      { name = "Lia", professions = { [185] = { name = "Cooking", rank = 150 } } },
+      { name = "Ves", professions = { [185] = { name = "Cooking", rank = 75 } } },
+      { name = "Bo", professions = { [185] = { name = "Cooking", rank = 74 } } },
+      { name = "Cy", professions = { [197] = { name = "Tailoring", rank = 300 } } },
+    }
+    local s = DungeonLoot.recipeState(drop, chars)
+    assert.are.same({ "Lia (Cooking 150)", "Ves (Cooking 75)" }, s.canLearn)
+    assert.are.equal("Requires Cooking (75)", s.requires)
+    -- The file's line wins over the recipe subclass.
+    s = DungeonLoot.recipeState({ cls = 9, sub = 0, recipe = 1, skill = 200, line = 197 }, chars)
+    assert.are.same({ "Cy (Tailoring 300)" }, s.canLearn)
+    assert.are.equal("Requires Tailoring (200)", s.requires)
   end)
 
   it("gives an older whole-instance id every wing's bosses, each wing's final boss final (CF-106)", function()

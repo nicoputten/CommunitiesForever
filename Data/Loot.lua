@@ -42,7 +42,7 @@ ns.LootData = {
       } },
       { id = 90007, name = "Cookie", optional = true, drops = {
         { item = 5197, chance = 41, cls = 2, sub = 4 },
-        { item = 728, chance = 12, cls = 9, sub = 5, recipe = 2795 },
+        { item = 728, chance = 12, cls = 9, sub = 5, recipe = 2795, skill = 75, line = 185 },
       } },
     },
     stratud = {

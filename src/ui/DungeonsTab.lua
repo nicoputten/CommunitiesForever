@@ -571,7 +571,9 @@ local function drawLoot(parent, y, width, row, candidates, chars)
     local st = ns.DungeonLoot.recipeState(d, chars)
     if not st.known then
       tagText = "Nobody knows it"
-      tipLines = { tostring(info.name or "Recipe"), "Nobody knows it" }
+      tipLines = { tostring(info.name or "Recipe") }
+      if st.requires then tipLines[#tipLines + 1] = st.requires end
+      tipLines[#tipLines + 1] = "Nobody knows it"
       if #st.canLearn > 0 then tipLines[#tipLines + 1] = "Can learn: " .. table.concat(st.canLearn, ", ") end
     end
   end

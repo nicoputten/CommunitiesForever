@@ -375,7 +375,7 @@ ns.LootData = {
   dungeons = {
     [dungeon id of core/Dungeons.lua] = {               -- SM wings smgy, smlib, smarm, smcath; Forever's "lfg" .. activity
       { id = encounterID, name, final = true|nil, optional = true|nil,   -- in DungeonEncounter order
-        drops = { { item, chance, cls, sub, classes, quest, recipe } } },  -- item class/subclass; classes:
+        drops = { { item, chance, cls, sub, classes, quest, recipe, skill, line } } }, -- item class/subclass; classes:
     },                                                  -- AllowableClass mask (nil = all); quest: quest-only;
   },                                                    -- recipe: the spell it teaches
 }
@@ -385,7 +385,9 @@ Bosses are keyed by the wing ids (Scarlet Monastery, Dire Maul `dmeast`/`dmwest`
 bosses (`DungeonLoot.bossesFor`). Each dungeon has one final boss ("cleared" = it died); optional bosses don't count in
 "3 of 6". Drops are the boss's own
 at 1 % or more, plus its quest items and recipes. `DungeonLoot.bosses` skips broken entries. Bosses without a cmangos
-match (Forever's own dungeons) have `drops = {}`.
+match (Forever's own dungeons) have `drops = {}`. A recipe drop may carry `skill` (the rank it needs) and `line` (its
+profession's skill line, e.g. 185): "Can learn" then lists only who has that profession at that rank (Nico,
+2026-11-07); without `skill`, anyone with the profession.
 
 Kills (data contract 1, CF-103): each run in a feed may carry `bossKills = { [encounterID] = at }`; `KillLog.all()`
 lists them from your feed and friends' records with the run's group (`with`), plus friends' live kills

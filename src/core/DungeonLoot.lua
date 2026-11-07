@@ -184,23 +184,33 @@ end
 DungeonLoot.RECIPE_LINES = { [1] = 165, [2] = 197, [3] = 202, [4] = 164, [5] = 185, [6] = 171, [7] = 129, [8] = 333,
                              [9] = 356 }
 
+-- Profession names by skill line, for "Requires Cooking (75)".
+DungeonLoot.LINE_NAMES = { [165] = "Leatherworking", [197] = "Tailoring", [202] = "Engineering",
+                           [164] = "Blacksmithing", [185] = "Cooking", [171] = "Alchemy", [129] = "First Aid", [333] = "Enchanting",
+                           [356] = "Fishing" }
+
 --[[ A recipe drop among the group's characters (board DL03 C): chars = { { name, recipes = { [recipeID] = itemID },
-professions = { [skillLineID] = { name, rank } } } }. Returns { known = true } when someone learned it, else
-{ known = false, canLearn = { "Lia (Cooking 150)", ... } }: who has the profession (the needed skill is not in the
-loot file). ]]
+professions = { [skillLineID] = { name, rank } } } }. The drop's profession is its `line` (the loot file, Nico
+2026-11-07), else the one of its recipe subclass; `skill` is the rank it needs. Returns { known = true } when someone
+learned it, else { known = false, canLearn = { "Lia (Cooking 150)", ... }, requires = "Requires Cooking (75)" or nil }:
+who has the profession at that rank or more (any rank without `skill`). ]]
 function DungeonLoot.recipeState(drop, chars)
-  local line = DungeonLoot.RECIPE_LINES[drop and drop.sub]
+  local line = (drop and type(drop.line) == "number" and drop.line) or DungeonLoot.RECIPE_LINES[drop and drop.sub]
+  local skill = drop and type(drop.skill) == "number" and drop.skill or nil
   local canLearn = {}
   for _, c in ipairs(chars or {}) do
     if drop.recipe and type(c.recipes) == "table" and c.recipes[drop.recipe] ~= nil then return { known = true } end
     local p = line and type(c.professions) == "table" and c.professions[line]
-    if type(p) == "table" then
-      canLearn[#canLearn + 1] = string.format("%s (%s %s)", tostring(c.name), tostring(p.name or RECIPES[drop.sub]),
-        tostring(p.rank or "?"))
+    if type(p) == "table" and (not skill or (type(p.rank) == "number" and p.rank >= skill)) then
+      canLearn[#canLearn + 1] = string.format("%s (%s %s)", tostring(c.name),
+        tostring(p.name or DungeonLoot.LINE_NAMES[line] or RECIPES[drop.sub]), tostring(p.rank or "?"))
     end
   end
   table.sort(canLearn)
-  return { known = false, canLearn = canLearn }
+  local requires
+  local profession = DungeonLoot.LINE_NAMES[line] or RECIPES[drop.sub]
+  if skill and profession then requires = string.format("Requires %s (%d)", profession, skill) end
+  return { known = false, canLearn = canLearn, requires = requires }
 end
 
 --[[ When a dungeon was last cleared (its final boss died) in the kill log: kills = { { guid, encounterID, at,
