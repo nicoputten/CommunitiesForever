@@ -60,7 +60,7 @@ describe("Dungeons (CF-24)", function()
         local fits = false
         for _, c in ipairs(e.candidates) do
           if c.own then fits = true end
-          assert.is_true(c.level >= e.dungeon.min and c.level <= e.dungeon.max, e.dungeon.name)
+          assert.is_true(c.level >= e.dungeon.min - 2 and c.level <= e.dungeon.max, e.dungeon.name) -- CF-106
         end
         assert.is_true(fits, e.dungeon.name)
       end

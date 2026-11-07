@@ -254,8 +254,9 @@ local function samePerson(a, b)
   return a.battleTag ~= nil and a.battleTag == b.battleTag
 end
 
+-- CF-106: the one fit rule (Dungeons.fits: from 2 below the minimum to the maximum).
 local function inRange(dungeon, level)
-  return dungeon ~= nil and type(level) == "number" and level >= dungeon.min and level <= dungeon.max
+  return dungeon ~= nil and ns.Dungeons.fits(dungeon, level)
 end
 
 --[[ The five slots of a run: tank, healer, three damage.
@@ -361,7 +362,7 @@ end
 PlannedRuns.CARRY_FROM = 10 -- levels above the range from which a character carries the group
 PlannedRuns.LOW_UNTIL = 5   -- levels below the range that are "low"; more is "tooLow" (never suggested)
 
---[[ How a level fits min-max, one rule with the site and Discord:
+--[[ How a level fits min-max, one rule with the site and Discord (CF-106: "fits" from 2 below min, Dungeons.fits):
   { kind = "fits"|"over"|"carry"|"low"|"tooLow", label, canPick, suggested, note }
 canPick: may answer I'm in with it: always since CF-50 (the web's WEB-52, Nico's "recommend, never restrict"),
 6+ below too with "This will be tough."; suggested: offered as "could fill". An unknown level counts as too low. ]]
@@ -377,7 +378,7 @@ function PlannedRuns.levelFit(level, min, max)
     end
     return { kind = "over", label = "+" .. over .. " over", canPick = true, suggested = true }
   end
-  if level < min then
+  if level < min - ns.Dungeons.FIT_BELOW then -- CF-106: up to 2 below the minimum fits
     local below = min - level
     if below <= PlannedRuns.LOW_UNTIL then
       return { kind = "low", label = below .. " below", canPick = true, suggested = false,

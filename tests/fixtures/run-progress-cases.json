@@ -1,0 +1,689 @@
+{
+ "about": "Golden cases for a planned run's boss progress (CF-106, designer's rules 2026-11-07). Kills count when their character answered I'm in or Maybe (or organises), the encounter is one of the dungeon's bosses, and they are from 1 h before the start until the first daily reset after the start (resetAt). Optional bosses don't count; cleared = the final boss died; on a cleared run an optional boss not killed is skipped. visible = in the addon's list: before the start; 3 h after it without a kill; until resetAt with kills (the site keeps every run in its history). Owner: the addon (tests/spec/RunProgress_spec.lua); the site copies this file byte for byte.",
+ "version": 1,
+ "beforeStart": 3600,
+ "noBossFor": 10800,
+ "bosses": [
+  {
+   "id": 1,
+   "name": "Rhahk'Zor"
+  },
+  {
+   "id": 2,
+   "name": "Sneed"
+  },
+  {
+   "id": 3,
+   "name": "Gilnid"
+  },
+  {
+   "id": 4,
+   "name": "Mr. Smite"
+  },
+  {
+   "id": 5,
+   "name": "Captain Greenskin"
+  },
+  {
+   "id": 6,
+   "name": "Edwin VanCleef",
+   "final": true
+  },
+  {
+   "id": 7,
+   "name": "Cookie",
+   "optional": true
+  }
+ ],
+ "cases": [
+  {
+   "name": "before the start: upcoming, listed",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793116400,
+   "resetAt": 1793138000,
+   "kills": [],
+   "expect": {
+    "state": "upcoming",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true
+   }
+  },
+  {
+   "name": "start passed, no kill: no boss yet",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793120600,
+   "resetAt": 1793138000,
+   "kills": [],
+   "expect": {
+    "state": "noBoss",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "no boss yet"
+   }
+  },
+  {
+   "name": "no kill 3 h after the start: leaves the list",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793130800,
+   "resetAt": 1793138000,
+   "kills": [],
+   "expect": {
+    "state": "noBoss",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": false,
+    "label": "no boss yet"
+   }
+  },
+  {
+   "name": "three bosses by the group: 3 of 6, Cookie optional",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793123600,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793120300
+    },
+    {
+     "guid": "Player-1-B",
+     "encounterID": 2,
+     "at": 1793120900
+    },
+    {
+     "guid": "Player-1-C",
+     "encounterID": 3,
+     "at": 1793121500
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 3,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "3/6 bosses",
+    "firstKill": 1793120300
+   }
+  },
+  {
+   "name": "a kill by someone outside the group or who said can't doesn't count",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793123600,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-X",
+     "encounterID": 1,
+     "at": 1793120300
+    },
+    {
+     "guid": "Player-1-D",
+     "encounterID": 2,
+     "at": 1793120400
+    }
+   ],
+   "expect": {
+    "state": "noBoss",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "no boss yet"
+   }
+  },
+  {
+   "name": "a kill from 1 h before the start counts, an earlier one doesn't",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793120600,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793116400
+    },
+    {
+     "guid": "Player-1-A",
+     "encounterID": 2,
+     "at": 1793116399
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 1,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "1/6 bosses",
+    "firstKill": 1793116400
+   }
+  },
+  {
+   "name": "a kill at or after the reset doesn't count",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793138060,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793138000
+    }
+   ],
+   "expect": {
+    "state": "noBoss",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": false,
+    "label": "no boss yet"
+   }
+  },
+  {
+   "name": "the final boss dead: cleared, Cookie skipped",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793127200,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793120300
+    },
+    {
+     "guid": "Player-1-A",
+     "encounterID": 6,
+     "at": 1793125000
+    }
+   ],
+   "expect": {
+    "state": "cleared",
+    "done": 2,
+    "total": 6,
+    "cleared": true,
+    "skipped": [
+     7
+    ],
+    "visible": true,
+    "label": "2/6 bosses",
+    "firstKill": 1793120300
+   }
+  },
+  {
+   "name": "Cookie killed: not counted and not skipped",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793127200,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-B",
+     "encounterID": 7,
+     "at": 1793124000
+    },
+    {
+     "guid": "Player-1-B",
+     "encounterID": 6,
+     "at": 1793125000
+    }
+   ],
+   "expect": {
+    "state": "cleared",
+    "done": 1,
+    "total": 6,
+    "cleared": true,
+    "skipped": [],
+    "visible": true,
+    "label": "1/6 bosses",
+    "firstKill": 1793124000
+   }
+  },
+  {
+   "name": "a run with kills stays until the daily reset",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793137999,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793120300
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 1,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "1/6 bosses",
+    "firstKill": 1793120300
+   }
+  },
+  {
+   "name": "a run with kills leaves at the reset",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793138000,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793120300
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 1,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": false,
+    "label": "1/6 bosses",
+    "firstKill": 1793120300
+   }
+  },
+  {
+   "name": "the same boss twice counts once",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793123600,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 1,
+     "at": 1793120300
+    },
+    {
+     "guid": "Player-1-B",
+     "encounterID": 1,
+     "at": 1793120310
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 1,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "1/6 bosses",
+    "firstKill": 1793120300
+   }
+  },
+  {
+   "name": "a cancelled run is never listed",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ],
+    "state": "cancelled"
+   },
+   "now": 1793116400,
+   "resetAt": 1793138000,
+   "kills": [],
+   "expect": {
+    "state": "upcoming",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": false
+   }
+  },
+  {
+   "name": "another dungeon's boss doesn't count",
+   "run": {
+    "startsAt": 1793120000,
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-B",
+      "answer": "in"
+     },
+     {
+      "guid": "Player-1-C",
+      "answer": "maybe"
+     },
+     {
+      "guid": "Player-1-D",
+      "answer": "cant"
+     }
+    ]
+   },
+   "now": 1793120600,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 99,
+     "at": 1793120300
+    }
+   ],
+   "expect": {
+    "state": "noBoss",
+    "done": 0,
+    "total": 6,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "no boss yet"
+   }
+  }
+ ]
+}
