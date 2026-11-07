@@ -41,7 +41,7 @@ describe("the hidden launch probe", function()
     assert.are.equal("table", type(results()))
     assert.are.equal("info", results().V82.status) -- no riding skill in the mock
     assert.are.equal(1794000000, results().V82.at)
-    assert.are.equal(2, addon.db.global.schemaVersion)
+    assert.are.equal(ns.Store.SCHEMA_VERSION, addon.db.global.schemaVersion)
   end)
 
   it("ticks V73 and the Hunt from a target and the honor message, silently", function()

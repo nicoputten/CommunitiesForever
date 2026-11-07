@@ -57,6 +57,8 @@ CommunitiesForever/
       Dungeons.lua           dungeon planner: level ranges, candidates, group suggestion (CF-24)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
+      BossKills.lua          boss kills with their times from records, live kills and own runs; collect for a
+                             dungeon's encounters, characters and a time window (CF-103)
       Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
                              progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
       Pvp.lua                PvP counters, death cause, duel result from the game's format strings, rank titles,
@@ -223,7 +225,7 @@ UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), d
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
-  schemaVersion = 2,                                 -- 2: CF-47 pending
+  schemaVersion = 3,                                 -- 2: CF-47 pending; 3: CF-103 kill times, liveKills
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 clubType = nil,                      -- CF-83: its club type, remembered like the name (2: guild)
                 notifications = true,                -- CF-15 (and levelUps, CF-16): chat lines; unused since CF-91
@@ -270,6 +272,8 @@ global = {
                                                      -- as proof of who is in the group. See "Who belongs".
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
+  liveKills = { [guid] = { [encounterID] = at } },   -- CF-103: friends' boss kills shared live (KILL), the earliest
+                                                     -- time per character and boss; kept 2 days, never sent
   plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
                                                      -- "Planned runs file"; checked again when loaded
   doomsdaySchedule = { v, days, weeks },             -- CF-68: the site's Doomsday mission schedule (file or a
@@ -298,13 +302,16 @@ CommunitiesForeverVaultDB = {
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
 Run = { name, kind = "party"|"raid"|"pvp", instanceID, day, startedAt, lastAt,
-        bosses = { [encounterID] = true }, bossCount, with = { [guid] = true }, ended, won }
+        bosses = { [encounterID] = at }, bossCount, with = { [guid] = true }, ended, won }
+                                                     -- CF-103: at = the kill's server time (schema 2 had `true`;
+                                                     -- the migration gives those the run's lastAt)
 
 -- CF-22: [day] = realm day number (days since 1970-01-01), aggregated per character.
 Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                               quests = { [zone] = count }, ranks = { [profession] = rank },
                               learned = { [profession] = true },
-                              runs = { { name, kind, bosses, won, with = { guid, ... } } },     -- CF-23
+                              runs = { { name, kind, bosses, won, with = { guid, ... },          -- CF-23
+                                         bossKills = { [encounterID] = at } } },               -- CF-103
                               kills = { [zone] = count },                                       -- CF-52
                               deaths = { { t, zone, cause } }, duels = { { t, won, vs } },       -- CF-52
                               loot = { rare, epic = { { id, name, slot, level } } },             -- CF-53

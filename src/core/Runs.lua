@@ -21,8 +21,10 @@ end
 
 --[[ New run for an instance, or nil when the instance type does not make one:
   instance = { name, type, instanceID } (GetInstanceInfo). day: realm day number (the feed day).
-run = { name, kind, instanceID, day, startedAt, lastAt, bosses = { [encounterID] = true }, bossCount,
-        with = { [guid] = true }, ended, won } ]]
+run = { name, kind, instanceID, day, startedAt, lastAt, bosses = { [encounterID] = at }, bossCount,
+        with = { [guid] = true }, ended, won }
+CF-103: bosses keeps each kill's server time (at, unix seconds); saved runs from before (schema 2) had `true`,
+Store.MIGRATIONS[2] turns those into the run's lastAt. ]]
 function Runs.start(instance, now, day)
   if type(instance) ~= "table" or not Runs.KINDS[instance.type] or type(instance.name) ~= "string" then
     return nil
@@ -43,12 +45,13 @@ function Runs.touch(run, now)
   if run and type(now) == "number" and now > (run.lastAt or 0) then run.lastAt = now end
 end
 
--- A boss died. Returns true when it is a new one (ENCOUNTER_END and BOSS_KILL can both report it).
+-- A boss died. Returns true when it is a new one (ENCOUNTER_END and BOSS_KILL can both report it); the first
+-- report's time stays (CF-103).
 function Runs.boss(run, encounterID, now)
   if not run or encounterID == nil then return false end
   Runs.touch(run, now)
   if run.bosses[encounterID] then return false end
-  run.bosses[encounterID] = true
+  run.bosses[encounterID] = type(now) == "number" and now or true
   run.bossCount = run.bossCount + 1
   return true
 end
@@ -86,8 +89,22 @@ local function sortedKeys(map)
   return keys
 end
 
+-- CF-103: the run's kills with a known time, { [encounterID] = at }, or nil when there is none.
+function Runs.kills(run)
+  if type(run) ~= "table" or type(run.bosses) ~= "table" then return nil end
+  local kills
+  for encounterID, at in pairs(run.bosses) do
+    if type(encounterID) == "number" and type(at) == "number" then
+      kills = kills or {}
+      kills[encounterID] = at
+    end
+  end
+  return kills
+end
+
 --[[ Feed event for a finished run, or nil plus the reason it does not count:
-  { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with = { guid, ... } }
+  { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, bossKills, won, with = { guid, ... } }
+bossKills (CF-103): { [encounterID] = at } of the kills with a known time, nil when there is none.
 Dungeons and raids: at least MIN_SECONDS inside (until lastAt) and MIN_BOSSES bosses. Battlegrounds:
 the match ended while the character was inside. ]]
 function Runs.finish(run)
@@ -104,6 +121,7 @@ function Runs.finish(run)
   end
   if run.bossCount < Runs.MIN_BOSSES then return nil, "no boss killed" end
   event.bosses = run.bossCount
+  event.bossKills = Runs.kills(run)
   return event
 end
 

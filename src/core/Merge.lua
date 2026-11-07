@@ -203,9 +203,11 @@ the stored one. CF-58: `false` (released clients with "Share my activity" off) m
 stored feed stays, from the owner too. ]]
 local function mergedFeed(stored, record, direct, now)
   if record.feed == false then return stored and stored.feed end
-  if direct then return ns.Feed.clean(record.feed) end
+  -- CF-103: boss kill times more than MAX_FUTURE_SECONDS ahead are dropped.
+  if direct then return ns.Feed.clean(record.feed, now + Merge.MAX_FUTURE_SECONDS) end
   -- Relayed activity entries more than MAX_FUTURE_SECONDS ahead are ignored (as for characters).
-  return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed), now + Merge.MAX_FUTURE_SECONDS)
+  return ns.Feed.merge(stored and stored.feed, ns.Feed.clean(record.feed, now + Merge.MAX_FUTURE_SECONDS),
+    now + Merge.MAX_FUTURE_SECONDS)
 end
 
 -- CF-56: Doomsday goals to store. Missing or `false` (CF-58) = nothing sent: the stored goals stay; otherwise
