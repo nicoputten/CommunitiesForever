@@ -8,6 +8,17 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-103 Send which bosses a run killed (pairs with the site's WEB-97; needs a design on the site)
+The addon already keeps a run's bosses as `{ [encounterID] = true }` (CF-23, `ENCOUNTER_END`, verified) but sends only
+the count `bosses`. The site (WEB-96, WEB-97) names the bosses and links their loot.
+- RECORD: each run in `runs` gets the optional `bossIds = { encounterID, ... }` next to `bosses`; nothing else changes.
+- Compatibility (rule 8): an older client ignores the new field and keeps the count; a record without it (older
+  sender) stays as now. Stored friends' records gain the same optional field (nil in old data), so no migration;
+  Compat_spec unchanged.
+- The addon's own UI doesn't change; the design is on the site (WEB-97).
+- Done when: specs for a run with and without IDs, through `Protocol` and `Merge`; SYNC.md and ARCHITECTURE.md;
+  busted and luacheck pass. Manual (VERIFY.md): after a dungeon run, the upload's run shows `bossIds`.
+
 ### CF-99 Pool version 3
 After the launch probe (CF-96) and the three tracker lanes (CF-74 #222, CF-75 #224 #225, CF-76 #221). Follows CF-77.
 Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`, `src/adapters/missions/BattleEvents.lua`,
