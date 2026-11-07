@@ -135,12 +135,12 @@ local UNIT_EVENTS = { PLAYER_TARGET_CHANGED = "target", UPDATE_MOUSEOVER_UNIT = 
 function PvpInfo.watch(addon)
   for event, reason in pairs(EVENTS) do
     ns.Events.register(addon, event, function(_, ...)
-      addon:SendMessage(PvpInfo.CHANGED, reason, ...)
+      addon:SendMessage(PvpInfo.CHANGED, reason, ns.Safe.values(...)) -- CF-108: secret as nil
     end)
   end
   for event, unit in pairs(UNIT_EVENTS) do
     ns.Events.register(addon, event, function(_, token)
-      addon:SendMessage(PvpInfo.CHANGED, "unit", unit or token)
+      addon:SendMessage(PvpInfo.CHANGED, "unit", unit or ns.Safe.value(token))
     end)
   end
   return false

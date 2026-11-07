@@ -15,6 +15,21 @@ function Safe.value(value)
   return value
 end
 
+-- CF-108: the values with secret ones as nil, for forwarding raw event arguments (no comparison runs on a secret).
+function Safe.values(...)
+  local n = select("#", ...)
+  if n == 0 then return end
+  local out = { ... }
+  for i = 1, n do out[i] = Safe.value(out[i]) end
+  return unpack(out, 1, n)
+end
+
+-- CF-108: true for a readable, non-empty string. The secret check comes first: comparing a secret throws.
+function Safe.text(value)
+  if Safe.secret(value) then return false end
+  return type(value) == "string" and value ~= ""
+end
+
 -- Calls fn(...) guarded: its results with secret ones as nil; nothing when fn is missing or errors.
 function Safe.call(fn, ...)
   if type(fn) ~= "function" then return nil end

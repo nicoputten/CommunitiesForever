@@ -15,6 +15,7 @@ function QuestEvents.watch(addon)
   end
   -- Before SelfTracker's debounced refresh: the stored log still has the quest.
   ns.Events.register(events, "QUEST_TURNED_IN", function(_, questID)
+    questID = ns.Safe.value(questID) -- CF-108: secret as nil
     local global = addon.db.global
     local guid = call(UnitGUID, "player")
     local char = guid and global.self.chars and global.self.chars[guid]
@@ -25,6 +26,7 @@ function QuestEvents.watch(addon)
   end)
   -- Mainline passes questID; Classic passed (questLogIndex, questID): the last number is the quest ID.
   ns.Events.register(events, "QUEST_ACCEPTED", function(_, a, b)
+    a, b = ns.Safe.value(a), ns.Safe.value(b) -- CF-108: secret as nil
     local questID = type(b) == "number" and b or a
     if type(questID) == "number" then send({ kind = "questAccepted", questID = questID }) end
   end)

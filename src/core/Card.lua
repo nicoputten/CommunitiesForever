@@ -158,18 +158,20 @@ local function weekKillPoints(feed, guid, dd, now)
 end
 
 -- CF-38: professions grouped (Format.professionGroups), each crafting one with its link cell (Recipes.cell, RC07):
--- "[Tailoring]" or "not scanned"; whose: the owner's name for the tooltips.
-local function professionGroups(professions, whose)
+-- "[Tailoring]" or "not scanned"; whose: the owner's name for the tooltips. CF-107: guid (the character) and
+-- viewerGuid (the character you are on) mark a link the game won't open for you (another internal server).
+local function professionGroups(professions, whose, guid, viewerGuid)
   local groups = Format.professionGroups(professions)
+  local otherServer = ns.Recipes.otherServer(viewerGuid, guid)
   for _, group in ipairs(groups) do
     for _, p in ipairs(group.list) do
-      p.cell = ns.Recipes.cell(p.skillLine, professions[p.skillLine], whose)
+      p.cell = ns.Recipes.cell(p.skillLine, professions[p.skillLine], whose, otherServer)
     end
   end
   return groups
 end
 
-local function characterDetail(row, owner, now, own, sharedWith, showAllQuests, person, dd)
+local function characterDetail(row, owner, now, own, sharedWith, showAllQuests, person, dd, viewerGuid)
   local talents = Card.talentSummary(row)
   return {
     kind = "character",
@@ -179,7 +181,7 @@ local function characterDetail(row, owner, now, own, sharedWith, showAllQuests, 
     classID = row.classID,
     outside = row.outside or false,
     online = row.online,
-    professions = professionGroups(row.professions, owner or row.name),
+    professions = professionGroups(row.professions, owner or row.name, row.guid, viewerGuid),
     talents = talents,
     subtitle = characterSubtitle(row, owner, own, now), -- CF-40
     tiles = characterTiles(row, talents),
@@ -260,7 +262,8 @@ function Card.detail(view, path, now, showAllQuests, siteFriends)
       if row.guid == guid then
         local friend = person and not person.isSelf
         return characterDetail(row, person and person.displayName, now, person and person.isSelf,
-                               friend and ownRows(view) or nil, showAllQuests, person, view.doomsday)
+                               friend and ownRows(view) or nil, showAllQuests, person, view.doomsday,
+                               view.selfGuid)
       end
     end
     return Card.detail(view, nil, now)

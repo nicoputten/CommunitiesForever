@@ -79,7 +79,7 @@ function Instance.watch(addon)
   local events = LibStub("AceEvent-3.0"):Embed({})
   for _, event in ipairs(Instance.EVENTS) do
     ns.Events.register(events, event, function(_, ...)
-      addon:SendMessage(Instance.EVENT, event, ...)
+      addon:SendMessage(Instance.EVENT, event, ns.Safe.values(...)) -- CF-108: secret as nil
     end)
   end
 end

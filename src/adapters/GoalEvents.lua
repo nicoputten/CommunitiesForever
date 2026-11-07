@@ -41,7 +41,7 @@ function GoalEvents.watch(addon)
   end)
   ns.Events.register(events, "TRADE_PLAYER_ITEM_CHANGED", readGiven)
   ns.Events.register(events, "UI_INFO_MESSAGE", function(_, _, text)
-    if type(text) ~= "string" or ns.Safe.secret(text) then return end
+    if not ns.Safe.text(text) then return end
     if ERR_TRADE_COMPLETE and text == ERR_TRADE_COMPLETE then
       if partner then addon:SendMessage(GoalEvents.CHANGED, "trade", partner, given) end
       partner, given = nil, {}
@@ -50,7 +50,7 @@ function GoalEvents.watch(addon)
     end
   end)
   ns.Events.register(events, "CHAT_MSG_SYSTEM", function(_, text)
-    if type(text) == "string" then addon:SendMessage(GoalEvents.CHANGED, "discovered", text) end
+    if ns.Safe.text(text) then addon:SendMessage(GoalEvents.CHANGED, "discovered", text) end
   end)
 end
 

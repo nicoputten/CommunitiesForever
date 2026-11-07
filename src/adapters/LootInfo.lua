@@ -37,7 +37,7 @@ end
 
 function LootInfo.watch(addon)
   ns.Events.register(addon, "CHAT_MSG_LOOT", function(_, text)
-    addon:SendMessage(LootInfo.CHANGED, "loot", text)
+    addon:SendMessage(LootInfo.CHANGED, "loot", ns.Safe.value(text)) -- CF-108: secret as nil
   end)
   ns.Events.register(addon, "PLAYER_MONEY", function()
     addon:SendMessage(LootInfo.CHANGED, "money")

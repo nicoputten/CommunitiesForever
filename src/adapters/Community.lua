@@ -96,7 +96,7 @@ function Community.watch(addon)
   for event, messages in pairs(messagesByEvent) do
     ns.Events.register(addon, event, function(_, clubId)
       for _, message in ipairs(messages) do
-        addon:SendMessage(message, event, clubId)
+        addon:SendMessage(message, event, ns.Safe.value(clubId)) -- CF-108: secret as nil
       end
     end)
   end
