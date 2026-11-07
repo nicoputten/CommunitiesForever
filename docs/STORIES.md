@@ -42,6 +42,13 @@ contract (Nico and the designer, 2026-11-07). Ships in one release with the site
 - Compatibility (rule 8): nothing sent changes. Stored: two new optional settings (`runsTab.selected`,
   `usableOnly = { [guid] = true }`), nil in older data, so no migration; `dungeonTree.selected` keeps its meaning (a
   stored "run:<id>" no longer matches a dungeon and falls back to the first that fits). Older clients ignore them.
+- **Wings** (Nico, 2026-11-07): Dire Maul and Stratholme are split like Scarlet Monastery: `dmeast`, `dmwest`,
+  `dmnorth` (55–60, warcraft.wiki.gg "Classic lvl") and `stratlive`, `stratud` (56–60; the wiki gives 56–61), titles
+  "Dire Maul: East" etc. Their Group Finder activities (813–816, 1603) are linked to a wing by the activity's name;
+  one that names no wing counts for every wing of its instance (which ID is which is VERIFY.md CF-106). The old ids
+  `strat` and `dme` stay readable (rule 8, `Dungeons.LEGACY`): `Dungeons.get` finds them, no list shows them, and a
+  run for one lists every wing's bosses under the wing's name and is cleared when any wing's final boss dies
+  (`DungeonLoot.bossesFor`; golden cases in both fixtures). New plans use the wing ids.
 - Not in it: raids; the "Can learn" skill check (the loot file has no required skill).
 - Done when: specs for the core rules on the golden files, the tabs (RunsTab_spec, DungeonsTab_spec); busted and
   luacheck pass. Manual: VERIFY.md CF-106, V138 to V140.

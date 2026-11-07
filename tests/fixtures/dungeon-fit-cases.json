@@ -2,6 +2,7 @@
  "about": "Golden cases for the one fit rule (CF-106, Nico 2026-11-07): a dungeon fits a character when level >= min - 2 and level <= max; below that it is higher, above max lower. Owner: the addon (tests/spec/DungeonFit_spec.lua); the site copies this file byte for byte. Never edit a case to make code pass.",
  "version": 1,
  "fitBelow": 2,
+ "wingRanges": "warcraft.wiki.gg: Dire Maul East, West and North (Classic lvl 55-60), Stratholme (level 56-61, capped at 60). A case with `dungeon` is that dungeon id's range.",
  "cases": [
   {
    "level": 1,
@@ -228,6 +229,216 @@
   {
    "level": 60,
    "min": 58,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 52,
+   "min": 55,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 53,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 54,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 55,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 58,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmeast",
+   "level": 60,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 52,
+   "min": 55,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 53,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 54,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 55,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 58,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmwest",
+   "level": 60,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 52,
+   "min": 55,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 53,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 54,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 55,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 58,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "dmnorth",
+   "level": 60,
+   "min": 55,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 52,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 53,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 54,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 55,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 58,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratlive",
+   "level": 60,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 52,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 53,
+   "min": 56,
+   "max": 60,
+   "fit": "higher"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 54,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 55,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 58,
+   "min": 56,
+   "max": 60,
+   "fit": "fits"
+  },
+  {
+   "dungeon": "stratud",
+   "level": 60,
+   "min": 56,
    "max": 60,
    "fit": "fits"
   }

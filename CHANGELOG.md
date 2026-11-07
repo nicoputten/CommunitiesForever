@@ -14,6 +14,8 @@ tagging; the release stops if the tag has no section.
   item. "Usable by" hides what your class can't use. Also shows when the dungeon was last cleared, its planned run,
   Ask now and its quests.
 - **Changed:** a dungeon now fits from 2 levels below its minimum, the same rule as the website.
+- **Changed:** Dire Maul and Stratholme are listed per wing (East, West, North; Live, Undead), like Scarlet
+  Monastery. Runs planned for the whole instance before still show, with every wing's bosses.
 
 ## v1.5.1 (2026-11-07)
 - **Fixed:** opening a second profession window no longer forgets the recipes of the first one.

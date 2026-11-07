@@ -136,6 +136,22 @@ function DungeonLoot.bosses(data, dungeonId)
   return out
 end
 
+--[[ CF-106: the bosses of a dungeon (a Dungeons entry): its own, or for an id older versions planned (Dungeons.LEGACY:
+"strat", "dme") every wing's in wing order, each boss with `wing` = the wing's id, each wing's final boss final (so the
+run counts as cleared when any wing's final boss dies). ]]
+function DungeonLoot.bossesFor(data, dungeon)
+  if type(dungeon) ~= "table" then return {} end
+  if type(dungeon.wings) ~= "table" then return DungeonLoot.bosses(data, dungeon.id) end
+  local out = {}
+  for _, wing in ipairs(dungeon.wings) do
+    for _, b in ipairs(DungeonLoot.bosses(data, wing)) do
+      b.wing = wing
+      out[#out + 1] = b
+    end
+  end
+  return out
+end
+
 --[[ A boss's loot rows: highest chance first (then item ID), each { drop, usable }; usableOnly hides what the class
 can't use (quest drops always stay). At most SHOWN unless open; more = how many are left out (after the switch).
 Returns rows, more. ]]

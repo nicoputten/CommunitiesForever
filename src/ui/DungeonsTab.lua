@@ -877,8 +877,11 @@ local function draw(view, messageText)
   -- The next run of each dungeon (its tag and button); runs the Runs tab lists.
   local nextRun = {}
   for _, item in ipairs(ns.RunsTab.runs(kills)) do
-    local id = item.run.dungeon
-    if not nextRun[id] then nextRun[id] = item.run end
+    local d = ns.Dungeons.get(item.run.dungeon)
+    -- CF-106: an older run for a whole instance ("strat", "dme") tags each of its wings.
+    for _, id in ipairs(d and d.wings or { item.run.dungeon }) do
+      if not nextRun[id] then nextRun[id] = item.run end
+    end
   end
   local st = status()
   if not (st.selected and entries[st.selected]) then

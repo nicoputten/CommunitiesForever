@@ -380,7 +380,10 @@ ns.LootData = {
   },                                                    -- recipe: the spell it teaches
 }
 ```
-Each dungeon has one final boss ("cleared" = it died); optional bosses don't count in "3 of 6". Drops are the boss's own
+Bosses are keyed by the wing ids (Scarlet Monastery, Dire Maul `dmeast`/`dmwest`/`dmnorth`, Stratholme
+`stratlive`/`stratud`). An older run for a whole instance (`strat`, `dme`: `Dungeons.LEGACY`) takes every wing's
+bosses (`DungeonLoot.bossesFor`). Each dungeon has one final boss ("cleared" = it died); optional bosses don't count in
+"3 of 6". Drops are the boss's own
 at 1 % or more, plus its quest items and recipes. `DungeonLoot.bosses` skips broken entries. Bosses without a cmangos
 match (Forever's own dungeons) have `drops = {}`.
 
@@ -406,7 +409,8 @@ CF_RUNS = {
   runs = {                        -- upcoming runs, at most 50
     {
       id = "r-102",               -- the site's run id (letters, digits, _ - : .)
-      dungeon = "smlib",          -- dungeon id of core/Dungeons.lua (rfc, wc, dm, ..., smlib, smarm, ...)
+      dungeon = "smlib",          -- dungeon id of core/Dungeons.lua (rfc, wc, dm, ..., smlib, smarm, ...; CF-106:
+                                  -- Dire Maul and Stratholme by wing, the older "dme" and "strat" still read)
       startsAt = 1793210400,
       state = "open",             -- open | full | started | cancelled
       source = "site",            -- where it was planned: site | discord | game (CF-46)

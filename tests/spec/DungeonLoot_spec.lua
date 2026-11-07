@@ -102,6 +102,17 @@ describe("Dungeon loot (CF-106)", function()
     assert.is_true(DungeonLoot.recipeState(drop, chars).known)
   end)
 
+  it("gives an older whole-instance id every wing's bosses, each wing's final boss final (CF-106)", function()
+    local data = { dungeons = {
+      stratlive = { { id = 1, name = "Timmy" }, { id = 2, name = "Balnazzar", final = true } },
+      stratud = { { id = 3, name = "Baron Rivendare", final = true } },
+    } }
+    local bosses = DungeonLoot.bossesFor(data, { id = "strat", wings = { "stratlive", "stratud" } })
+    assert.are.same({ "stratlive", "stratlive", "stratud" }, { bosses[1].wing, bosses[2].wing, bosses[3].wing })
+    assert.is_true(bosses[2].final and bosses[3].final)
+    assert.are.equal(1, #DungeonLoot.bossesFor(data, { id = "stratud" }))
+  end)
+
   it("finds when the final boss last died", function()
     local bosses = { { id = 1 }, { id = 6, final = true } }
     local kills = { { guid = "a", encounterID = 6, at = 100 }, { guid = "b", encounterID = 6, at = 300 },

@@ -59,12 +59,34 @@ Dungeons.STATIC = {
     areas = { "Lower Blackrock Spire", "Blackrock Spire" } },
   { id = "ubrs", activities = { 837 }, name = "Upper Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
     areas = { "Upper Blackrock Spire", "Blackrock Spire" } },
-  { id = "dme", activities = { 813, 814, 815 }, name = "Dire Maul", min = 55, max = 60, areaIds = { 2557 },
-    areas = { "Dire Maul" } },
+  -- CF-106 (Nico, 2026-11-07): Dire Maul and Stratholme are wings like Scarlet Monastery. Ranges from warcraft.wiki.gg
+  -- (Dire Maul East, West and North: "Classic lvl 55-60"; Stratholme: level 56-61, at most 60 here). Which Group
+  -- Finder activity is which wing is not verified (VERIFY.md CF-106): `wingOf` links an activity of the family by its
+  -- name; one that names no wing counts for every wing of it.
+  { id = "dmeast", activities = { 813, 814, 815 }, wingOf = { "east", "warpwood" }, name = "Dire Maul East",
+    title = "Dire Maul: East", min = 55, max = 60, areaIds = { 2557 }, areas = { "Dire Maul" } },
+  { id = "dmwest", activities = { 813, 814, 815 }, wingOf = { "west", "capital" }, name = "Dire Maul West",
+    title = "Dire Maul: West", min = 55, max = 60, areaIds = { 2557 }, areas = { "Dire Maul" } },
+  { id = "dmnorth", activities = { 813, 814, 815 }, wingOf = { "north", "gordok" }, name = "Dire Maul North",
+    title = "Dire Maul: North", min = 55, max = 60, areaIds = { 2557 }, areas = { "Dire Maul" } },
   { id = "scholo", activities = { 797 }, name = "Scholomance", min = 58, max = 60, areaIds = { 2057 },
     areas = { "Scholomance" } },
-  { id = "strat", activities = { 816, 1603 }, name = "Stratholme", min = 58, max = 60, areaIds = { 2017 },
+  { id = "stratlive", activities = { 816, 1603 }, wingOf = { "live", "main gate", "scarlet" },
+    name = "Stratholme Live", title = "Stratholme: Live", min = 56, max = 60, areaIds = { 2017 },
     areas = { "Stratholme" } },
+  { id = "stratud", activities = { 816, 1603 }, wingOf = { "undead", "service", "scourge" },
+    name = "Stratholme Undead", title = "Stratholme: Undead", min = 56, max = 60, areaIds = { 2017 },
+    areas = { "Stratholme" } },
+}
+
+--[[ CF-106 (rule 8): the ids older versions planned runs and asks for, before the wings. They mean the whole instance:
+Dungeons.get still finds them (name, range), the lists never show them, and their bosses are every wing's
+(DungeonLoot.bossesFor). New plans use the wing ids. ]]
+Dungeons.LEGACY = {
+  dme = { id = "dme", activities = { 813, 814, 815 }, name = "Dire Maul", min = 55, max = 60, areaIds = { 2557 },
+          areas = { "Dire Maul" }, wings = { "dmeast", "dmwest", "dmnorth" } },
+  strat = { id = "strat", activities = { 816, 1603 }, name = "Stratholme", min = 56, max = 60, areaIds = { 2017 },
+            areas = { "Stratholme" }, wings = { "stratlive", "stratud" } },
 }
 
 -- CF-42: where each dungeon's entrance is, for the card's header (English, rule 6). Dungeons only the Group
@@ -75,7 +97,8 @@ Dungeons.ZONES = {
   smlib = "Tirisfal Glades", smarm = "Tirisfal Glades", smcath = "Tirisfal Glades", rfd = "The Barrens",
   ulda = "Badlands", zf = "Tanaris", mara = "Desolace", st = "Swamp of Sorrows", brd = "Blackrock Mountain",
   lbrs = "Blackrock Mountain", ubrs = "Blackrock Mountain", dme = "Feralas", scholo = "Western Plaguelands",
-  strat = "Eastern Plaguelands",
+  strat = "Eastern Plaguelands", dmeast = "Feralas", dmwest = "Feralas", dmnorth = "Feralas",
+  stratlive = "Eastern Plaguelands", stratud = "Eastern Plaguelands",
 }
 
 -- The dungeons in use: STATIC, updated from the Group Finder when it is available (applyGroupFinder).
@@ -97,6 +120,25 @@ function Dungeons.applyGroupFinder(activities)
   for _, a in ipairs(activities) do
     if type(a.activityID) == "number" then byActivity[a.activityID] = a end
   end
+  -- CF-106: an activity of a wing family (Dire Maul, Stratholme) belongs to the wings its name names, or to every wing
+  -- of the family when it names none.
+  local function names(a, words)
+    local n = type(a.name) == "string" and a.name:lower() or ""
+    for _, w in ipairs(words) do
+      if n:find(w, 1, true) then return true end
+    end
+    return false
+  end
+  local function namesAnyWing(a)
+    for _, d in ipairs(Dungeons.STATIC) do
+      if d.wingOf and names(a, d.wingOf) then
+        for _, id in ipairs(d.activities) do
+          if id == a.activityID then return true end
+        end
+      end
+    end
+    return false
+  end
   local list, linked = {}, {}
   for _, d in ipairs(Dungeons.STATIC) do
     local copy = {}
@@ -104,6 +146,10 @@ function Dungeons.applyGroupFinder(activities)
     local min, max, offered
     for _, activityID in ipairs(d.activities or {}) do
       local a = byActivity[activityID]
+      if a and d.wingOf and not names(a, d.wingOf) and namesAnyWing(a) then
+        linked[activityID] = true -- another wing's
+        a = nil
+      end
       if a then
         linked[activityID], offered = true, true
         if type(a.min) == "number" and a.min > 0 then min = math.min(min or a.min, a.min) end
@@ -135,6 +181,7 @@ end
 
 local function byId()
   local map = {}
+  for id, d in pairs(Dungeons.LEGACY) do map[id] = d end -- CF-106: older runs' ids
   for _, d in ipairs(Dungeons.STATIC) do map[d.id] = d end
   for _, d in ipairs(Dungeons.LIST) do map[d.id] = d end
   return map

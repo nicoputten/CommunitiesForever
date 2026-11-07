@@ -333,6 +333,21 @@ describe("Runs tab (CF-106; runs since CF-46)", function()
     assert.are.equal("dm", addon.db.global.settings.dungeonTree.selected)
   end)
 
+  -- CF-106 (rule 8): a run planned for the whole of Stratholme with an older version lists the wings' bosses.
+  it("shows an older whole-instance run's bosses under each wing, cleared by a wing's final boss", function()
+    local runs = sampleRuns()
+    runs.runs[1].dungeon, runs.runs[1].startsAt = "strat", NOW - 1800
+    load(58, runs)
+    open()
+    assert.are.equal("Stratholme", row("run:r1").name:GetText())
+    addon.db.global.liveKills = { [GARRAKA] = { [90022] = NOW - 600 } } -- Baron Rivendare
+    ns.MainFrame.render()
+    local all = text()
+    assert.is_truthy(all:find("\nStratholme: Undead\n", 1, true))
+    assert.is_truthy(all:find("\nBaron Rivendare\n", 1, true))
+    assert.are.equal("2 in \194\183 1/2 bosses", row("run:r1").meta:GetText())
+  end)
+
   -- CF-106 (board DL03 E): a started run without a kill, and a run none of your characters fits.
   it("marks a run without a boss yet and a run that fits none of your characters", function()
     local runs = sampleRuns()

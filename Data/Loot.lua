@@ -2,8 +2,8 @@
 this file. The generated file replaces it before the release; it then carries the GPL-3.0 notice and the cmangos
 classic-db attribution, as docs/ARCHITECTURE.md "Loot data file" says.
 
-This placeholder has The Deadmines and Scarlet Monastery: Graveyard in the contract's shape, for building and testing
-the Dungeons tab only. Boss IDs are made up (90001...: no real DungeonEncounter ID), so no in-game kill matches them;
+This placeholder has The Deadmines, Scarlet Monastery: Graveyard and Stratholme: Undead in the contract's shape, for
+building and testing the Dungeons tab only. Boss IDs are made up (90001...: no real DungeonEncounter ID), so no in-game kill matches them;
 item IDs and chances are typed from the design board and memory, not checked. Do not ship it. ]]
 local _, ns = ...
 ns.LootData = {
@@ -43,6 +43,15 @@ ns.LootData = {
       { id = 90007, name = "Cookie", optional = true, drops = {
         { item = 5197, chance = 41, cls = 2, sub = 4 },
         { item = 728, chance = 12, cls = 9, sub = 5, recipe = 2795 },
+      } },
+    },
+    stratud = {
+      { id = 90021, name = "Nerub'enkan", drops = {
+        { item = 18740, chance = 15, cls = 4, sub = 3 },
+      } },
+      { id = 90022, name = "Baron Rivendare", final = true, drops = {
+        { item = 13505, chance = 1, cls = 2, sub = 8 },
+        { item = 13335, chance = 1, cls = 15, sub = 5 },
       } },
     },
     smgy = {

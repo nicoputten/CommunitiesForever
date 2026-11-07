@@ -1,5 +1,5 @@
 {
- "about": "Golden cases for a planned run's boss progress (CF-106, designer's rules 2026-11-07). Kills count when their character answered I'm in or Maybe (or organises), the encounter is one of the dungeon's bosses, and they are from 1 h before the start until the first daily reset after the start (resetAt). Optional bosses don't count; cleared = the final boss died; on a cleared run an optional boss not killed is skipped. visible = in the addon's list: before the start; 3 h after it without a kill; until resetAt with kills (the site keeps every run in its history). Owner: the addon (tests/spec/RunProgress_spec.lua); the site copies this file byte for byte.",
+ "about": "Golden cases for a planned run's boss progress (CF-106, designer's rules 2026-11-07). Kills count when their character answered I'm in or Maybe (or organises), the encounter is one of the dungeon's bosses, and they are from 1 h before the start until the first daily reset after the start (resetAt). Optional bosses don't count; cleared = the final boss died; on a cleared run an optional boss not killed is skipped. visible = in the addon's list: before the start; 3 h after it without a kill; until resetAt with kills (the site keeps every run in its history). A case's `bosses` (when present) replaces the file's: older runs for a whole instance ('strat', 'dme') list every wing's bosses (each with its `wing`) and count as cleared when any wing's final boss dies; a wing's run has only its own. Owner: the addon (tests/spec/RunProgress_spec.lua); the site copies this file byte for byte.",
  "version": 1,
  "beforeStart": 3600,
  "noBossFor": 10800,
@@ -683,6 +683,182 @@
     "skipped": [],
     "visible": true,
     "label": "no boss yet"
+   }
+  },
+  {
+   "name": "strat (whole instance): a kill in each wing counts",
+   "run": {
+    "startsAt": 1793120000,
+    "dungeon": "strat",
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     }
+    ]
+   },
+   "bosses": [
+    {
+     "id": 201,
+     "name": "Timmy the Cruel",
+     "wing": "stratlive"
+    },
+    {
+     "id": 202,
+     "name": "Balnazzar",
+     "final": true,
+     "wing": "stratlive"
+    },
+    {
+     "id": 211,
+     "name": "Baroness Anastari",
+     "wing": "stratud"
+    },
+    {
+     "id": 212,
+     "name": "Baron Rivendare",
+     "final": true,
+     "wing": "stratud"
+    }
+   ],
+   "now": 1793123600,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 201,
+     "at": 1793120300
+    },
+    {
+     "guid": "Player-1-A",
+     "encounterID": 211,
+     "at": 1793120900
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 2,
+    "total": 4,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "2/4 bosses",
+    "firstKill": 1793120300
+   }
+  },
+  {
+   "name": "strat (whole instance): cleared when the Undead wing's final boss dies",
+   "run": {
+    "startsAt": 1793120000,
+    "dungeon": "strat",
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     }
+    ]
+   },
+   "bosses": [
+    {
+     "id": 201,
+     "name": "Timmy the Cruel",
+     "wing": "stratlive"
+    },
+    {
+     "id": 202,
+     "name": "Balnazzar",
+     "final": true,
+     "wing": "stratlive"
+    },
+    {
+     "id": 211,
+     "name": "Baroness Anastari",
+     "wing": "stratud"
+    },
+    {
+     "id": 212,
+     "name": "Baron Rivendare",
+     "final": true,
+     "wing": "stratud"
+    }
+   ],
+   "now": 1793127200,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 212,
+     "at": 1793125000
+    }
+   ],
+   "expect": {
+    "state": "cleared",
+    "done": 1,
+    "total": 4,
+    "cleared": true,
+    "skipped": [],
+    "visible": true,
+    "label": "1/4 bosses",
+    "firstKill": 1793125000
+   }
+  },
+  {
+   "name": "stratud (a wing): the other wing's final boss doesn't count",
+   "run": {
+    "startsAt": 1793120000,
+    "dungeon": "stratud",
+    "organiser": {
+     "guid": "Player-1-A"
+    },
+    "answers": [
+     {
+      "guid": "Player-1-A",
+      "answer": "in"
+     }
+    ]
+   },
+   "bosses": [
+    {
+     "id": 211,
+     "name": "Baroness Anastari",
+     "wing": "stratud"
+    },
+    {
+     "id": 212,
+     "name": "Baron Rivendare",
+     "final": true,
+     "wing": "stratud"
+    }
+   ],
+   "now": 1793127200,
+   "resetAt": 1793138000,
+   "kills": [
+    {
+     "guid": "Player-1-A",
+     "encounterID": 202,
+     "at": 1793125000
+    },
+    {
+     "guid": "Player-1-A",
+     "encounterID": 211,
+     "at": 1793120900
+    }
+   ],
+   "expect": {
+    "state": "going",
+    "done": 1,
+    "total": 2,
+    "cleared": false,
+    "skipped": [],
+    "visible": true,
+    "label": "1/2 bosses",
+    "firstKill": 1793120900
    }
   }
  ]

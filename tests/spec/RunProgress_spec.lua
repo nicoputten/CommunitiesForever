@@ -18,7 +18,7 @@ describe("Run progress (CF-106)", function()
     end)
     for _, c in ipairs(data.cases) do
       it(c.name, function()
-        local p = RunProgress.progress(c.run, data.bosses, c.kills, c.now, c.resetAt)
+        local p = RunProgress.progress(c.run, c.bosses or data.bosses, c.kills, c.now, c.resetAt)
         local e = c.expect
         assert.are.equal(e.state, p.state)
         assert.are.equal(e.done, p.done)

@@ -517,7 +517,7 @@ end
 -- A run's progress and its dungeon's bosses (DungeonLoot from the loot file; {} for a dungeon it doesn't have).
 local function progressOf(run, kills)
   local d = dungeonOf(run)
-  local bosses = d and ns.DungeonLoot.bosses(ns.LootData, d.id) or {}
+  local bosses = d and ns.DungeonLoot.bossesFor(ns.LootData, d) or {} -- CF-106: an older "strat" has every wing's
   return ns.RunProgress.progress(run, bosses, kills, now(), resetAfter(run.startsAt)), bosses
 end
 
@@ -543,7 +543,19 @@ end
 local function bossSection(parent, y, width, progress, bosses, kills, candidates)
   y = section(parent, PAD, y, width, "Bosses", string.format("%d of %d", progress.done, progress.total))
   local colW = math.floor((width - 18) / 2)
-  for i, b in ipairs(bosses) do
+  -- CF-106: an older run for a whole instance ("strat", "dme") lists each wing's bosses under the wing's name.
+  local wing, i = nil, 0
+  for _, b in ipairs(bosses) do
+    if b.wing ~= wing then
+      if i > 0 then y = y + math.ceil(i / 2) * BOSS_ROW end
+      wing, i = b.wing, 0
+      local d = wing and ns.Dungeons.get(wing)
+      if d then
+        line(pools.small, parent, PAD, y + 4, width, d.title or d.name, "textDim")
+        y = y + 22
+      end
+    end
+    i = i + 1
     local col, rowIndex = (i - 1) % 2, math.floor((i - 1) / 2)
     local r = Kit.take(pools.bosses, parent)
     r:SetPoint("TOPLEFT", PAD + col * (colW + 18), -(y + rowIndex * BOSS_ROW))
@@ -569,7 +581,7 @@ local function bossSection(parent, y, width, progress, bosses, kills, candidates
       r.tip = "Killed " .. clock(at) .. (who and (" (from " .. who .. " log)") or "")
     end
   end
-  return y + math.ceil(#bosses / 2) * BOSS_ROW + 6
+  return y + math.ceil(i / 2) * BOSS_ROW + 6
 end
 
 
