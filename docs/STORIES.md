@@ -8,6 +8,24 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-107 Bug batch: profession links on another server
+Bug 7 (Nico, v1.6.0, in game): a friend's profession link doesn't open. The stored link is byte for byte the game's
+own; the game opens a `trade:` link only when the character's GUID server id (the number after `Player-`) is the
+viewer's (6940 vs 6856, one mega-realm). Touches: `src/core/Recipes.lua`, `src/core/Card.lua`,
+`src/services/ViewModel.lua`, `src/ui/FriendsTab.lua`, `tests/spec/Recipes_spec.lua`, `tests/spec/Format_spec.lua`,
+`docs/API-FINDINGS.md`, VERIFY.md, CHANGELOG.md.
+- `Recipes.serverId(guid)` reads the server id of a `Player-<id>-<hex>` GUID, nil for anything else;
+  `Recipes.otherServer(viewerGuid, guid)` is true only when both are known and differ (unit tested, nil-safe: an
+  unknown or odd GUID behaves as today).
+- The Friends tab's profession link cell (the only place profession links show) of a character on another server
+  than the one you are on: grey instead of the link colour, first tooltip line "Opens only for players on your
+  server". Click and Shift-click to chat unchanged (recommend, not restrict).
+- No website link in the tooltip: the addon has no helper for a character's page on the site, so it is left out.
+- The second item handed in with this batch (the run view clipped at the 700 px minimum, noted in CF-94) was
+  already fixed by CF-95 (released in v1.6.0; manual steps VERIFY.md CF-95), so nothing changes for it here.
+- No change to stored data or messages (rule 8): the view gets the current character's GUID, nothing is saved.
+- Manual: VERIFY.md CF-107.
+
 ### CF-106 Runs tab and Dungeons tab with bosses and loot (boards DL01 to DL03; pairs with WEB-96, WEB-97)
 Boards in `docs/design/dungeons-2026-11/` (DL01 Runs tab, DL02 Dungeons tab, DL03 states A to F) and the shared
 contract (Nico and the designer, 2026-11-07). Ships in one release with the site; not before Nico's go.

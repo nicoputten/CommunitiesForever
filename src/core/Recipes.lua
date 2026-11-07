@@ -58,6 +58,20 @@ function Recipes.chatLink(link, name)
   return string.format("|c%s|H%s|h[%s]|h|r", Recipes.LINK_COLOR, trade, tostring(name or "Profession"))
 end
 
+--[[ CF-107: the server id in a player GUID, "Player-<serverId>-<hex>" ("6940"), or nil for anything else. The game
+opens a profession link only for a character whose server id is the viewer's (verified on Forever, bug 7: two
+internal servers of one mega-realm, 6940 and 6856, the link byte for byte the game's own). Never splits names. ]]
+function Recipes.serverId(guid)
+  if type(guid) ~= "string" then return nil end
+  return guid:match("^Player%-(%d+)%-%x+$")
+end
+
+-- CF-107: true only when both GUIDs have a server id and they differ; nil-safe (unknown = same server, as before).
+function Recipes.otherServer(viewerGuid, guid)
+  local a, b = Recipes.serverId(viewerGuid), Recipes.serverId(guid)
+  return a ~= nil and b ~= nil and a ~= b
+end
+
 local function isId(v)
   return type(v) == "number" and v > 0 and v == math.floor(v) and v < 2 ^ 31
 end
@@ -395,10 +409,14 @@ function Recipes.ran(state, now)
 end
 
 -- The Friends tab's link cell of a profession (RC07), or nil (gathering, Fishing, no skill line).
--- owner: whose character ("Mira"), name: the profession's name.
--- { state = "link", text = "[Tailoring]", link, chatLink, tip = { title, lines } }
+-- owner: whose character ("Mira"), name: the profession's name. otherServer (CF-107): the character is on another
+-- internal server than yours (Recipes.otherServer), so the game won't open the link: the cell says so (muted), and
+-- click and Shift-click still work.
+-- { state = "link", text = "[Tailoring]", link, chatLink, otherServer, tip = { title, lines } }
 -- { state = "notScanned", text = "not scanned", tip = { title, lines } }
-function Recipes.cell(skillLine, p, owner)
+Recipes.OTHER_SERVER = "Opens only for players on your server"
+
+function Recipes.cell(skillLine, p, owner, otherServer)
   if not isId(skillLine) or Recipes.NO_LINK[skillLine] or type(p) ~= "table" then return nil end
   local name = tostring(p.name or "Profession")
   owner = tostring(owner or "They")
@@ -407,9 +425,11 @@ function Recipes.cell(skillLine, p, owner)
     return { state = "notScanned", text = "not scanned",
              tip = { lines = { string.format("Opens once %s opens %s in game", owner, name) } } }
   end
+  local lines = { "Click: open in game", "Shift-click: link in chat" }
+  if otherServer then table.insert(lines, 1, Recipes.OTHER_SERVER) end
   return { state = "link", text = "[" .. name .. "]", link = trade, chatLink = Recipes.chatLink(trade, name),
-           tip = { title = string.format("%s\226\128\153s %s", owner, name),
-                   lines = { "Click: open in game", "Shift-click: link in chat" } } }
+           otherServer = otherServer and true or nil,
+           tip = { title = string.format("%s\226\128\153s %s", owner, name), lines = lines } }
 end
 
 ns.Recipes = Recipes

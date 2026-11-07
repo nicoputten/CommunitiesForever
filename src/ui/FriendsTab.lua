@@ -254,8 +254,10 @@ local function placeProfessionLink(parent, x, y, cell)
   b.cell = cell
   b.text:SetWidth(LINK_W)
   b.text:SetText(cell.text)
-  if cell.state == "link" then
+  if cell.state == "link" and not cell.otherServer then
     b.text:SetTextColor(LINK_RGB[1], LINK_RGB[2], LINK_RGB[3], 1)
+  elseif cell.state == "link" then
+    b.text:SetTextColor(Theme.color("muted")) -- CF-107: another server, the game won't open it
   else
     b.text:SetTextColor(Theme.color("faint"))
   end

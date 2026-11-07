@@ -5,6 +5,11 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Fixed:** a profession link of a character on another server than yours (the game opens those only for players
+  on the same server) now shows grey, and its tooltip says "Opens only for players on your server". Click and
+  Shift-click work as before.
+
 ## v1.6.0 (2026-11-07)
 - **New:** a **Runs** tab of its own. Planned runs are grouped Today, Tomorrow and Later, each with your answer on
   the right ("answer" when you haven't, "no fit" when none of your characters fits). The tab's badge counts the runs
