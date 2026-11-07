@@ -31,6 +31,7 @@ src\core\Goals.lua
 src\core\DoomsdayView.lua
 src\core\Celebrations.lua
 src\core\Runs.lua
+src\core\BossKills.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
 src\core\RunStart.lua

@@ -2,9 +2,14 @@
 -- (CF-23). The run in progress lives in db.global.runs[guid] (not synced), so a /reload or a
 -- disconnect inside keeps it; a finished run that counts goes into the feed (FeedTracker).
 -- /cf activity debug prints every instance event and what the tracker concluded (V35).
+-- CF-103: each boss kill keeps its server time, goes to online friends at once (Sync.sendKill) and into the
+-- finished run's bossKills; friends' live kills are kept in db.global.liveKills (Sync's KILL handler).
 local _, ns = ...
 
 local ActivityTracker = {}
+
+-- Internal message (CF-103): boss kills changed (an own kill, or one a friend shared live). The Runs tab refreshes.
+ActivityTracker.KILLS_CHANGED = "CF_BOSS_KILLS_CHANGED"
 
 local addonRef
 local debugging = false -- /cf activity debug, for this session only (as /cf sync debug, CF-64)
@@ -39,6 +44,15 @@ local function selfGuid() return ns.SelfInfo.read().guid end
 local function members()
   local ok, list = pcall(ns.MemberTracker.members)
   return ok and list or {}
+end
+
+-- CF-103: a new boss kill of an own run: friends hear of it now, the Runs tab refreshes.
+local function killed(run, guid, encounterID, now)
+  if run.kind ~= "party" and run.kind ~= "raid" then return end
+  if ns.Sync and ns.Sync.sendKill then
+    ns.Sync.sendKill({ guid = guid, instance = run.instanceID, name = run.name, encounter = encounterID, at = now })
+  end
+  addonRef:SendMessage(ActivityTracker.KILLS_CHANGED)
 end
 
 local function addCompanions(run, guid)
@@ -102,6 +116,7 @@ local function onEvent(event, ...)
     local encounterID, _, _, _, success = ...
     if success == 1 and ns.Runs.boss(run, encounterID, now) then
       trace("boss killed (encounter %s): %d bosses", tostring(encounterID), run.bossCount)
+      killed(run, guid, encounterID, now)
     end
     addCompanions(run, guid)
   elseif event == "BOSS_KILL" then
@@ -109,6 +124,7 @@ local function onEvent(event, ...)
     local encounterID = ...
     if ns.Runs.boss(run, encounterID, now) then
       trace("boss killed (BOSS_KILL %s): %d bosses", tostring(encounterID), run.bossCount)
+      killed(run, guid, encounterID, now)
     end
   elseif event == "GROUP_ROSTER_UPDATE" then
     ns.Runs.touch(run, now)
@@ -133,6 +149,8 @@ function ActivityTracker.start(addon)
   debugging = false
   db().settings.activityDebug = nil
   db().runs = db().runs or {}
+  db().liveKills = db().liveKills or {}
+  ns.BossKills.trimLive(db().liveKills, GetServerTime())
   addon:RegisterMessage(ns.Instance.EVENT, function(_, event, ...) onEvent(event, ...) end)
   ns.Instance.watch(addon)
   check(GetServerTime(), false)
@@ -142,6 +160,29 @@ end
 function ActivityTracker.current()
   local guid = selfGuid()
   return guid and db().runs[guid] or nil
+end
+
+-- CF-103: a kill a friend shared live (BossKills.cleanLive), kept as if it came in their record. Returns true when
+-- it is new (or earlier than the one kept).
+function ActivityTracker.liveKill(kill)
+  if not addonRef then return false end
+  db().liveKills = db().liveKills or {}
+  ns.BossKills.trimLive(db().liveKills, GetServerTime())
+  if not ns.BossKills.addLive(db().liveKills, kill) then return false end
+  trace("%s killed encounter %s at %s (live)", tostring(kill.guid), tostring(kill.encounter), tostring(kill.at))
+  addonRef:SendMessage(ActivityTracker.KILLS_CHANGED)
+  return true
+end
+
+--[[ CF-103, for the Runs tab (CF-106): kills of the given encounters by the given characters from `from` until `to`
+(server time, inclusive), from every record we hold (friends' and our own), friends' live kills and our runs in
+progress. See BossKills.collect: { [encounterID] = { at, by = { [guid] = at } } }. ]]
+function ActivityTracker.kills(guids, encounterIDs, from, to)
+  local g = db()
+  local records = { g.self }
+  for _, person in pairs(g.people or {}) do records[#records + 1] = person end
+  return ns.BossKills.collect(records, { g.liveKills or {}, ns.BossKills.fromRuns(g.runs) }, guids, encounterIDs,
+    from, to)
 end
 
 ns.ActivityTracker = ActivityTracker

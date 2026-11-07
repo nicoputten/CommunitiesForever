@@ -32,16 +32,29 @@ specs, `docs/API-FINDINGS.md`, VERIFY.md.
 - Compatibility (rule 8): nothing stored or sent changes shape; the probe only stops writing two keys.
 - Manual (VERIFY.md CF-105): `/cf fp` counts 13.
 
-### CF-103 Send which bosses a run killed (pairs with the site's WEB-97; needs a design on the site)
-The addon already keeps a run's bosses as `{ [encounterID] = true }` (CF-23, `ENCOUNTER_END`, verified) but sends only
-the count `bosses`. The site (WEB-96, WEB-97) names the bosses and links their loot.
-- RECORD: each run in `runs` gets the optional `bossIds = { encounterID, ... }` next to `bosses`; nothing else changes.
-- Compatibility (rule 8): an older client ignores the new field and keeps the count; a record without it (older
-  sender) stays as now. Stored friends' records gain the same optional field (nil in old data), so no migration;
-  Compat_spec unchanged.
-- The addon's own UI doesn't change; the design is on the site (WEB-97).
-- Done when: specs for a run with and without IDs, through `Protocol` and `Merge`; SYNC.md and ARCHITECTURE.md;
-  busted and luacheck pass. Manual (VERIFY.md): after a dungeon run, the upload's run shows `bossIds`.
+### CF-103 Send which bosses a run killed and when, and share kills live (pairs with the site's WEB-97)
+Dungeon feature (boards DL01–DL05, shared "Data contract 1: kills"): kill times are the base for all boss progress
+(addon Runs tab CF-106, site run and dungeon pages WEB-97). Built 2026-11-07.
+- Runs: the run in progress keeps each kill's server time, `bosses = { [encounterID] = at }` (was `true`, from
+  `ENCOUNTER_END` success 1, V35). Store schema 3: the migration gives old `true` kills the run's `lastAt`.
+- RECORD: each run in `feed.*.*.runs` gets the optional `bossKills = { [encounterID] = at }` next to the unchanged
+  `bosses` count (contract; replaces the earlier `bossIds` idea). Cleaned on receipt (whole IDs, at most 40, times more
+  than 5 minutes ahead dropped, also from the owner). Feed merge: the kills of both copies of an entry are joined, the
+  union with the earliest time per boss, so a copy relayed by an older client (which drops the field) loses nothing.
+- Live: a new message type `KILL { guid, instance, name, encounter, at }` (pv 1) to everyone online right after a
+  kill; held while `Instance.messagingRestricted()` and tried again 30 s later, like RUNS. The receiver keeps it in
+  `global.liveKills[guid][encounterID] = at` (earliest wins, 2 days, only the sender's own characters) and fires
+  `ActivityTracker.KILLS_CHANGED`. Live kills are kept apart from the records because a run reaches the record only
+  once it is over (CF-23), and an accepted owner record replaces the feed whole.
+- API for CF-106 (pure core): `BossKills.collect(records, live, guids, encounterIDs, from, to)` returns
+  `{ [encounterID] = { at = earliest, by = { [guid] = at } } }`; the service `ActivityTracker.kills(guids,
+  encounterIDs, from, to)` calls it with every stored record (own and friends'), `global.liveKills` and the own runs
+  in progress.
+- Compatibility (rule 8): an older client sends runs without `bossKills` (count only) and ignores ours: its clean
+  drops the field, and its relayed copies come without it (our merge keeps the times we hold). It ignores `KILL`.
+  An older version opening schema-3 data (downgrade) leaves it alone and reads `bosses[id]` (a time) as true.
+  Golden fixtures unchanged.
+- Manual (VERIFY.md "CF-103").
 
 ### CF-104 Pool version 4 (built now, released only on Nico's go)
 Nico (2026-11-07): retire "Defend home" and add what is ready, but hold the release. Pairs with the site's WEB-101,
