@@ -18,10 +18,11 @@ Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list sta
 -- gone (docs/API-FINDINGS.md "Forever launch probe"); results stored for them stay in the saved data, uploaded as they
 -- are, and only leave the /cf fp report. CF-98: V60 and V60b (recipes, services/LaunchProbeRecipes.lua) added.
 -- CF-101: V60c (a recipe's profession and details for CF-38) added; V70, V76 and V121 answered (export of
--- 2026-11-06 21:33) and gone.
+-- 2026-11-06 21:33) and gone. CF-105: V60 and V60c answered (export of 2026-11-07, builds 70790 and 70840) and gone;
+-- V60b (a friend's link while they are offline) stays.
 Probe.IDS = {
   "V82", "V35b", "V73", "Hunt", "V80", "V96", "V101", "V108", "V114", "V120", "V122", "V123",
-  "V60", "V60b", "V60c",
+  "V60b",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.
