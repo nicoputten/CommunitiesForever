@@ -210,7 +210,7 @@ end
 function SelfInfo.watch(addon)
   for event, reason in pairs(EVENT_REASONS) do
     ns.Events.register(addon, event, function(_, ...)
-      addon:SendMessage(SelfInfo.CHANGED, reason, ...)
+      addon:SendMessage(SelfInfo.CHANGED, reason, ns.Safe.values(...)) -- CF-108: secret as nil
     end)
   end
 end

@@ -8,6 +8,23 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-108 No Lua error from secret event arguments in combat
+Bug (Nico, v1.6.0, boss fight): "attempt to compare ... (a secret string value, while execution tainted by
+'CommunitiesForever')" via `WorldEvents.lua` onSkill (CHAT_MSG_SKILL). Midnight hands some event arguments to
+addons as secret values in combat; `str(v)` in `src/adapters/missions/WorldEvents.lua` compared `v ~= ""` before
+its `Safe.secret` check. Touches: `src/adapters/Safe.lua`, the event handlers in `src/adapters`,
+`tests/spec/SecretValues_spec.lua`, VERIFY.md, CHANGELOG.md.
+- `Safe.text(v)`: true for a readable, non-empty string, the secret check first; `Safe.values(...)`: the arguments
+  with secret ones as nil. WorldEvents' `str` is `Safe.text`.
+- Audit: every adapter that forwards raw event arguments as an internal message (Instance, SelfInfo, PvpInfo,
+  ChatFrames, Community, LootInfo, Guild, GoalEvents) passes secret ones as nil; every handler that compares a
+  raw argument (unit tokens of UNIT_SPELLCAST_*, UNIT_AURA; addon message prefixes; system lines; quest IDs) reads
+  it through `Safe.value`/`Safe.text` first. Consumers already handle nil arguments. Pure core files unchanged.
+- A spec fires every registered event with secret string and secret number stand-ins (throwing on compare,
+  concatenation, indexing, arithmetic) and asserts no handler throws and no internal message carries a secret.
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-108.
+
 ### CF-107 Bug batch: profession links on another server
 Bug 7 (Nico, v1.6.0, in game): a friend's profession link doesn't open. The stored link is byte for byte the game's
 own; the game opens a `trade:` link only when the character's GUID server id (the number after `Player-`) is the

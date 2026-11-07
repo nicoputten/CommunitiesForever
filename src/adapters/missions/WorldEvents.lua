@@ -37,7 +37,7 @@ end
 
 local function action(name) send("worldAction", { action = name }) end
 
-local function str(v) return type(v) == "string" and v ~= "" and not ns.Safe.secret(v) end
+local str = ns.Safe.text -- CF-108: the secret check before any comparison
 
 local function level()
   local guid = ns.SelfInfo.guid()
@@ -136,7 +136,9 @@ end
 -- ===== Casts, skills, places (V95, V107, V115) =====
 
 local function onCast(_, unit, _, spellID)
-  if unit ~= "player" or type(spellID) ~= "number" or ns.Safe.secret(spellID) then return end
+  if readable(unit) ~= "player" then return end
+  spellID = readable(spellID)
+  if type(spellID) ~= "number" then return end
   local spells = WorldEvents.HEARTH_SPELLS
   -- Forever has new spell IDs (V95): the hearthstone item's own spell counts too (C_Item.GetItemSpell, V116).
   local _, itemSpell = call(C_Item and C_Item.GetItemSpell, WorldEvents.HEARTHSTONE_ITEM)
