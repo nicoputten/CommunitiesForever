@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.6.1 (2026-11-07)
 - **Fixed:** no more "attempt to compare ... a secret string value" Lua error during boss fights. In combat the game
   hides some event details from addons; the addon now skips those instead of erroring.
 - **Fixed:** a profession link of a character on another server than yours (the game opens those only for players
