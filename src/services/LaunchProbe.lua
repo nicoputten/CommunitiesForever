@@ -9,7 +9,8 @@ the site. Until Probe.STOP_AT (2026-11-18).
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
 - Private: no raw chat text, no event log; player names only for the Hunt's victim and the killer (V120).
 This file: the plumbing and the login and PvP checks. services/LaunchProbeMissions.lua: the mission catalogue's
-checks and the PvP catalogue's (V120 to V123). services/LaunchProbeRecipes.lua: the recipe checks (V60, V60b).
+checks and the PvP catalogue's (V120 to V123). services/LaunchProbeRecipes.lua: the recipe check (V60b; V60 and
+V60c answered, CF-105).
 CF-96: the checks answered by the launch results (build 70790, docs/API-FINDINGS.md "Forever launch probe") are gone;
 their stored results stay in the saved data as they are. ]]
 local _, ns = ...

@@ -59,12 +59,31 @@ Dungeons.STATIC = {
     areas = { "Lower Blackrock Spire", "Blackrock Spire" } },
   { id = "ubrs", activities = { 837 }, name = "Upper Blackrock Spire", min = 55, max = 60, areaIds = { 1583 },
     areas = { "Upper Blackrock Spire", "Blackrock Spire" } },
-  { id = "dme", activities = { 813, 814, 815 }, name = "Dire Maul", min = 55, max = 60, areaIds = { 2557 },
-    areas = { "Dire Maul" } },
+  -- CF-106 (Nico, 2026-11-07): Dire Maul and Stratholme are wings like Scarlet Monastery. Activities and ranges from
+  -- the client's GroupFinderActivity table, build 70862: 813 "Dire Maul (East)" 54-60, 814 "Dire Maul (West)" 56-60,
+  -- 815 "Dire Maul (North)" 56-60, 816 "Stratholme (Main Gate)" 58-60, 1603 "Stratholme (Service Gate)" 58-60.
+  { id = "dmeast", activities = { 813 }, name = "Dire Maul East", title = "Dire Maul: East", min = 54, max = 60,
+    areaIds = { 2557 }, areas = { "Dire Maul" } },
+  { id = "dmwest", activities = { 814 }, name = "Dire Maul West", title = "Dire Maul: West", min = 56, max = 60,
+    areaIds = { 2557 }, areas = { "Dire Maul" } },
+  { id = "dmnorth", activities = { 815 }, name = "Dire Maul North", title = "Dire Maul: North", min = 56, max = 60,
+    areaIds = { 2557 }, areas = { "Dire Maul" } },
   { id = "scholo", activities = { 797 }, name = "Scholomance", min = 58, max = 60, areaIds = { 2057 },
     areas = { "Scholomance" } },
-  { id = "strat", activities = { 816, 1603 }, name = "Stratholme", min = 58, max = 60, areaIds = { 2017 },
-    areas = { "Stratholme" } },
+  { id = "stratlive", activities = { 816 }, name = "Stratholme Live", title = "Stratholme: Live", min = 58, max = 60,
+    areaIds = { 2017 }, areas = { "Stratholme" } }, -- the Main Gate
+  { id = "stratud", activities = { 1603 }, name = "Stratholme Undead", title = "Stratholme: Undead", min = 58,
+    max = 60, areaIds = { 2017 }, areas = { "Stratholme" } }, -- the Service Gate
+}
+
+--[[ CF-106 (rule 8): the ids older versions planned runs and asks for, before the wings. They mean the whole instance:
+Dungeons.get still finds them (name, range), the lists never show them, and their bosses are every wing's
+(DungeonLoot.bossesFor). New plans use the wing ids. ]]
+Dungeons.LEGACY = {
+  dme = { id = "dme", activities = { 813, 814, 815 }, name = "Dire Maul", min = 54, max = 60, areaIds = { 2557 },
+          areas = { "Dire Maul" }, wings = { "dmeast", "dmwest", "dmnorth" } },
+  strat = { id = "strat", activities = { 816, 1603 }, name = "Stratholme", min = 58, max = 60, areaIds = { 2017 },
+            areas = { "Stratholme" }, wings = { "stratlive", "stratud" } },
 }
 
 -- CF-42: where each dungeon's entrance is, for the card's header (English, rule 6). Dungeons only the Group
@@ -75,7 +94,8 @@ Dungeons.ZONES = {
   smlib = "Tirisfal Glades", smarm = "Tirisfal Glades", smcath = "Tirisfal Glades", rfd = "The Barrens",
   ulda = "Badlands", zf = "Tanaris", mara = "Desolace", st = "Swamp of Sorrows", brd = "Blackrock Mountain",
   lbrs = "Blackrock Mountain", ubrs = "Blackrock Mountain", dme = "Feralas", scholo = "Western Plaguelands",
-  strat = "Eastern Plaguelands",
+  strat = "Eastern Plaguelands", dmeast = "Feralas", dmwest = "Feralas", dmnorth = "Feralas",
+  stratlive = "Eastern Plaguelands", stratud = "Eastern Plaguelands",
 }
 
 -- The dungeons in use: STATIC, updated from the Group Finder when it is available (applyGroupFinder).
@@ -135,6 +155,7 @@ end
 
 local function byId()
   local map = {}
+  for id, d in pairs(Dungeons.LEGACY) do map[id] = d end -- CF-106: older runs' ids
   for _, d in ipairs(Dungeons.STATIC) do map[d.id] = d end
   for _, d in ipairs(Dungeons.LIST) do map[d.id] = d end
   return map
@@ -180,8 +201,80 @@ function Dungeons.emptyText(name, level, inCommunity)
   return string.format("No dungeon fits level %s.", tostring(level))
 end
 
-local function inRange(dungeon, level)
-  return type(level) == "number" and level >= dungeon.min and level <= dungeon.max
+-- ===== CF-106: the fit rule (one rule with the site: addon Dungeons tab and suggestions, site Who fits and
+-- suggestions; tests/fixtures/dungeon-fit-cases.json) =====
+
+Dungeons.FIT_BELOW = 2 -- a dungeon fits from this many levels below its minimum
+
+-- "fits" (level >= min - 2 and level <= max), "higher" (the dungeon is above the level) or "lower" (below it); nil
+-- without a level or a range.
+function Dungeons.fitKind(level, dungeon)
+  if type(level) ~= "number" or type(dungeon) ~= "table" or type(dungeon.min) ~= "number"
+     or type(dungeon.max) ~= "number" then
+    return nil
+  end
+  if level < dungeon.min - Dungeons.FIT_BELOW then return "higher" end
+  if level > dungeon.max then return "lower" end
+  return "fits"
+end
+
+-- True when the dungeon fits the level (fitKind "fits").
+function Dungeons.fits(dungeon, level)
+  return Dungeons.fitKind(level, dungeon) == "fits"
+end
+
+local inRange = Dungeons.fits
+
+-- CF-106: a dungeon's wing: "Scarlet Monastery: Graveyard" gives "Scarlet Monastery", "Graveyard"; nil otherwise.
+function Dungeons.wing(dungeon)
+  local title = type(dungeon) == "table" and dungeon.title
+  if type(title) ~= "string" then return nil end
+  local parent, wing = title:match("^(.-): (.+)$")
+  return parent, wing
+end
+
+Dungeons.GROUPS = { { key = "fits", text = "Fits you" }, { key = "higher", text = "Higher" },
+                    { key = "lower", text = "Lower" } }
+
+--[[ CF-106 (board DL02): every dungeon of LIST grouped for a level, the Dungeons tab's list:
+  { { key = "fits"|"higher"|"lower", text, items = { { dungeon } | { parent = "Scarlet Monastery" } } } }
+Each group by minimum level, then maximum, then name; a dungeon's wings follow each other under a parent item (the
+dungeon's name) at the place of the first wing. Fits you is always there (empty when nothing fits); Higher and Lower
+only with dungeons. ]]
+function Dungeons.grouped(level)
+  local buckets = { fits = {}, higher = {}, lower = {} }
+  for _, d in ipairs(Dungeons.LIST) do
+    local kind = Dungeons.fitKind(level, d) or "higher"
+    local b = buckets[kind]
+    b[#b + 1] = d
+  end
+  local out = {}
+  for _, g in ipairs(Dungeons.GROUPS) do
+    local list = buckets[g.key]
+    table.sort(list, function(a, b)
+      if a.min ~= b.min then return a.min < b.min end
+      if a.max ~= b.max then return a.max < b.max end
+      return (a.title or a.name) < (b.title or b.name)
+    end)
+    local items, placed = {}, {}
+    for _, d in ipairs(list) do
+      local parent = Dungeons.wing(d)
+      if parent then
+        if not placed[parent] then
+          placed[parent] = true
+          items[#items + 1] = { parent = parent }
+          for _, w in ipairs(list) do
+            local p, wing = Dungeons.wing(w)
+            if p == parent then items[#items + 1] = { dungeon = w, wing = wing } end
+          end
+        end
+      else
+        items[#items + 1] = { dungeon = d }
+      end
+    end
+    if g.key == "fits" or #items > 0 then out[#out + 1] = { key = g.key, text = g.text, items = items } end
+  end
+  return out
 end
 
 -- Quest IDs of a character's quests for a dungeon (by quest log area).

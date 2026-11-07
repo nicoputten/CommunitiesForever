@@ -33,7 +33,8 @@ describe("Runs (CF-23)", function()
       assert.is_true(Runs.boss(run, 1001, 1200))
       Runs.touch(run, 1600)
       local event = Runs.finish(run)
-      assert.are.same({ kind = "run", instance = "party", name = "Deadmines", bosses = 1, with = {} }, event)
+      assert.are.same({ kind = "run", instance = "party", name = "Deadmines", bosses = 1, bossKills = { [1001] = 1200 },
+                        with = {} }, event)
     end)
 
     it("do not count under 10 minutes", function()

@@ -18,7 +18,10 @@ describe("Runs v2 (CF-49)", function()
       { 49, "over", "+9 over", true, true },
       { 50, "carry", "carry \194\183 +10", true, false },
       { 60, "carry", "carry \194\183 +20", true, false },
-      { 29, "low", "1 below", true, false },
+      -- CF-106: the one fit rule: up to 2 below the minimum fits.
+      { 29, "fits", "fits", true, true },
+      { 28, "fits", "fits", true, true },
+      { 27, "low", "3 below", true, false },
       { 25, "low", "5 below", true, false },
       -- CF-50: every level may say I'm in; 6+ below is never suggested.
       { 24, "tooLow", "6 below", true, false },

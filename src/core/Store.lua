@@ -3,7 +3,7 @@ local _, ns = ...
 
 local Store = {}
 
-Store.SCHEMA_VERSION = 2
+Store.SCHEMA_VERSION = 3
 
 -- AceDB defaults table. schemaVersion is deliberately not a default: AceDB
 -- strips values equal to their default on logout, so a defaulted version
@@ -21,6 +21,7 @@ function Store.defaults()
       locations = {},
       runs = {},          -- CF-23: run in progress per own character (not synced)
       pending = {},       -- CF-47: plans, answers, asks and pings waiting to reach the website
+      liveKills = {},     -- CF-103: boss kills friends shared live, { [guid] = { [encounterID] = at } }
     },
   }
 end
@@ -34,6 +35,24 @@ Store.MIGRATIONS = {}
 -- 1 -> 2 (CF-47): the pending list for the website. Nothing to derive: earlier versions had no such items.
 Store.MIGRATIONS[1] = function(global)
   if type(global.pending) ~= "table" then global.pending = {} end
+end
+
+-- 2 -> 3 (CF-103): a run in progress keeps each boss kill's time, bosses = { [encounterID] = at } instead of
+-- `true`. The time of an old kill is unknown; the run's last event (lastAt, else startedAt) is the closest we
+-- have: the kill was before it. A run without either keeps `true` (counted, no time). liveKills starts empty.
+Store.MIGRATIONS[2] = function(global)
+  if type(global.runs) == "table" then
+    for _, run in pairs(global.runs) do
+      if type(run) == "table" and type(run.bosses) == "table" then
+        local at = type(run.lastAt) == "number" and run.lastAt
+          or type(run.startedAt) == "number" and run.startedAt or nil
+        for id, value in pairs(run.bosses) do
+          if value == true and at then run.bosses[id] = at end
+        end
+      end
+    end
+  end
+  if type(global.liveKills) ~= "table" then global.liveKills = {} end
 end
 
 -- Stamps the schema version on a fresh database and runs the migrations for older data. Data from a newer

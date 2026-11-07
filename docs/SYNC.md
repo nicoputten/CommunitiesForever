@@ -187,6 +187,7 @@ in full. Older clients send none and ignore it (rule 8).
         "quests": { "Silverpine Forest": 6 },
         "ranks": { "Mining": "Journeyman" }, "learned": { "Cooking": true },
         "runs": [ { "name": "Shadowfang Keep", "kind": "party", "bosses": 3, "won": null,
+                    "bossKills": { "1069": 1729999100, "1070": 1729999600, "1071": 1730000100 },
                     "with": [ "Player-4619-0B0B0B0B" ] } ],
         "kills": { "Hillsbrad Foothills": 3 },
         "deaths": [ { "t": 1730000300, "zone": "Hillsbrad Foothills", "cause": "player" } ],
@@ -231,6 +232,7 @@ in full. Older clients send none and ignore it (rule 8).
 | `feed` | Activity of the last 7 realm days by day number and character; always sent (CF-58). Missing = unknown (relayed). `false` comes only from released clients that had "Share my activity" off: it means nothing was sent, and the stored feed stays |
 | `feed.*.*.at` | When the entry last changed: the feed merge key |
 | `feed.*.*.runs` | Dungeons, raids, battlegrounds (CF-23); `with` = companions' GUIDs (community members only) |
+| `feed.*.*.runs.*.bossKills` | CF-103, optional: `{ [encounterID] = at }`, the bosses the run killed (encounterID as `ENCOUNTER_END` gives it, the client's DungeonEncounter.ID) and when (server time, unix seconds), next to the unchanged `bosses` count. Kills of an older save without a time are left out, so it can hold fewer than `bosses`. Missing (older clients) = a count only. Received: whole encounter IDs, times more than 5 minutes ahead dropped, at most 40 |
 | `feed.*.*.kills` | CF-52: honorable kills by the zone where the kill counter rose (battlegrounds by their name) |
 | `feed.*.*.deaths` | CF-52: `{ t, zone, cause }`, at most 50; `cause` one of `fall`, `fire`, `lava`, `drown`, `fatigue`, `player`, `creature`, `other` (unknown received causes become `other`) |
 | `feed.*.*.loot` | CF-53: `rare` = blue items looted or received as quest rewards; `epic` = purple (or better) ones, at most 20, `{ id, name, slot, level }` with the `INVTYPE_*` slot (missing for items you can't equip) and the character's level then |
@@ -315,6 +317,27 @@ Sent once, right after you answer a run in game, to the run's organiser when the
 friend by BattleTag, or a community peer on the organiser's character). The organiser keeps it in memory and
 shows it until the site's runs have it. Cleaned like the runs file; ignored unless the receiver organises the
 run. The answer also waits in `global.pending` and reaches the site after `/reload`.
+
+### KILL (CF-103, a boss kill, live)
+
+```json
+{ "t": "KILL", "pv": 1, "guid": "Player-1-0000AAAA", "instance": 36, "name": "The Deadmines", "encounter": 1069,
+  "at": 1730000100 }
+```
+
+Sent right after a boss of your dungeon or raid run dies (`ENCOUNTER_END` with success 1), one per kill, to
+everyone online who gets our HELLO (Battle.net friends who belong, community peers). `guid` = your character,
+`instance` = the instanceID (`GetInstanceInfo`) and `name` the instance's name (both optional, for reading),
+`encounter` = the encounterID, `at` = the kill's server time. Not sent during an encounter, a keystone or a PvP
+match (`Instance.messagingRestricted`): held (at most 20) and tried again 30 s later, so a kill right before the
+next pull still goes out.
+
+The receiver keeps it in `global.liveKills` (ARCHITECTURE "Data model") as if it came in that friend's record: the
+earliest time per character and boss stays. Accepted only for the sender's own character (over the community the
+sending character, over Battle.net a character of the sender's stored record), with a whole `encounter` and an
+`at` at most 5 minutes ahead and at most 2 days old. Kept 2 days. The friend's record brings the same kills in
+`runs.*.bossKills` once the run is over; both count, the earliest time wins (`BossKills.collect`). Not relayed.
+Older clients ignore the unknown type (rule 8).
 
 ### ASK and ANSWER (CF-27, "Who's up for it?")
 
@@ -401,6 +424,7 @@ channel. Only while the community picked is a guild (CF-83).
 | A HELLO shows a newer mission schedule (`ds`, CF-68) | SCHEDREQ | That peer only |
 | A SCHEDREQ arrives | SCHED | That peer only |
 | A newer mission schedule was accepted | HELLO, 5 s debounced | Everyone |
+| A boss of your run dies (CF-103) | KILL (held while messaging is restricted, tried again 30 s later) | Everyone online |
 | A message stays incomplete for 3 s | MISS | Its sender only |
 | Logout | BYE | Community peers |
 | `/cf sync` | HELLO (forced) | Everyone online |
@@ -459,7 +483,10 @@ the level-up's handlers run in.
   `updatedAt`, removal times and feed `at` more than 5 minutes in the future are ignored; a removal only
   takes away copies not newer than it.
 - Activity feed: per day and character, the entry with the newer `at` stays; on an equal `at` the stored one
-  (CF-52: a copy relayed by an older client lacks the newer fields).
+  (CF-52: a copy relayed by an older client lacks the newer fields). CF-103: the runs' `bossKills` of both copies
+  are joined (runs at the same position with the same name and kind): the union, the earliest time per boss, so a
+  copy relayed by an older client (which drops `bossKills`) never loses kill times. Kill times more than 5 minutes
+  ahead are dropped, also from the owner.
 - `chars.*.pvp` (CF-52): only the expected fields, whole numbers ≥ 0, rank at most 14.
 - `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 5 per day and 4 per week, 7 days and 2 weeks, numbers ≥ 0, an entry's `pool` ≥ 1 (else dropped). Ids of a newer pool are kept.
 - `SCHED` (CF-68): as the runs file's schedule (`Goals.cleanMissionSchedule`); a newer `v`, at most 5 minutes ahead, replaces ours whole. Days and weeks already recorded in `goals` keep their set.

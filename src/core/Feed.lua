@@ -95,7 +95,7 @@ end
   feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                                 quests = { [zone] = count }, ranks = { [profession] = rank },
                                 learned = { [profession] = true },
-                                runs = { { name, kind, bosses, won, with = { guid, ... } } },
+                                runs = { { name, kind, bosses, bossKills, won, with = { guid, ... } } },
                                 kills = { [zone] = count }, deaths = { { t, zone, cause } },
                                 duels = { { t, won, vs } },
                                 loot = { rare = n, epic = { { id, name, slot, level } } },
@@ -103,7 +103,8 @@ end
                                 sessions = { { from, to } }, groups = { [guid] = true },
                                 pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } } } } }
 char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, a finished run
-(CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, won, with }, or
+(CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, bossKills, won, with }
+(bossKills, CF-103: { [encounterID] = at }, optional), or
 (CF-52) honorable kills { kind = "kills", zone, count }, a death { kind = "death", t, zone, cause } or a
 finished duel { kind = "duel", t, won, vs } (vs: the opponent's full name as the game gives it), or (CF-53)
 { kind = "rare", count } | { kind = "epic", id, name, slot, level } | { kind = "notable", id, count } |
@@ -129,7 +130,7 @@ function Feed.add(feed, day, char, event, now)
     entry.runs = entry.runs or {}
     if #entry.runs < MAX_RUNS then
       entry.runs[#entry.runs + 1] = { name = event.name, kind = event.instance, bosses = event.bosses,
-                                      won = event.won, with = event.with }
+                                      bossKills = event.bossKills, won = event.won, with = event.with }
     end
   elseif event.kind == "kills" then
     entry.kills = entry.kills or {}
@@ -219,8 +220,24 @@ end
 
 local function isTrue(v) return v == true or nil end
 
+-- CF-103: received kill times of a run, { [encounterID] = at }: encounter IDs are whole numbers, times whole
+-- seconds; a time later than maxAt (when given) is in the future and dropped. nil when none is left.
+local function cleanBossKills(kills, maxAt)
+  if type(kills) ~= "table" then return nil end
+  local result, count = {}, 0
+  for id, at in pairs(kills) do
+    if count >= MAX_BOSSES then break end
+    if type(id) == "number" and id > 0 and id <= 1e7 and id == math.floor(id) and type(at) == "number"
+       and at == at and at > 0 and at < math.huge and (not maxAt or at <= maxAt) then
+      result[id] = math.floor(at)
+      count = count + 1
+    end
+  end
+  return count > 0 and result or nil
+end
+
 -- CF-23: received runs, only the expected fields.
-local function cleanRuns(runs)
+local function cleanRuns(runs, maxAt)
   if type(runs) ~= "table" then return nil end
   local result = {}
   for _, run in ipairs(runs) do
@@ -236,6 +253,7 @@ local function cleanRuns(runs)
         end
       end
       result[#result + 1] = { name = name, kind = run.kind, bosses = cleanNumber(run.bosses, MAX_BOSSES),
+                              bossKills = cleanBossKills(run.bossKills, maxAt),
                               won = type(run.won) == "boolean" and run.won or nil, with = with }
     end
   end
@@ -342,7 +360,8 @@ local function cleanKills(kills)
 end
 
 -- Copy of a received feed with only the expected fields, cleaned and limited, or nil.
-function Feed.clean(feed)
+-- maxAt (optional, CF-103): boss kill times after it are in the future and dropped.
+function Feed.clean(feed, maxAt)
   if type(feed) ~= "table" then return nil end
   local result, days = {}, 0
   for day, chars in pairs(feed) do
@@ -359,7 +378,7 @@ function Feed.clean(feed)
             quests = cleanMap(e.quests, MAX_ZONES, function(v) return cleanNumber(v, MAX_COUNT) end),
             ranks = cleanMap(e.ranks, MAX_PROFESSIONS, cleanText),
             learned = cleanMap(e.learned, MAX_PROFESSIONS, isTrue),
-            runs = cleanRuns(e.runs),
+            runs = cleanRuns(e.runs, maxAt),
             kills = cleanMap(e.kills, MAX_ZONES, function(v) return cleanNumber(v, MAX_COUNT) end),
             deaths = cleanDeaths(e.deaths),
             duels = cleanDuels(e.duels),
@@ -382,9 +401,53 @@ function Feed.clean(feed)
   return next(result) and result or nil
 end
 
+local function copy(t)
+  local result = {}
+  for k, v in pairs(t) do result[k] = v end
+  return result
+end
+
+-- CF-103: two copies of the kills of one run: the union, the earliest time per boss.
+local function unionKills(a, b)
+  if type(a) ~= "table" then return b end
+  if type(b) ~= "table" then return a end
+  local result, changed = copy(a), false
+  for id, at in pairs(b) do
+    if not result[id] or at < result[id] then
+      result[id] = at
+      changed = true
+    end
+  end
+  return changed and result or a
+end
+
+-- CF-103: the entry that stays, with the kill times of the other copy joined into its runs (same position, name
+-- and kind). An older client relays runs without bossKills and with the same `at`: the times are not lost then.
+local function joinRunKills(keep, other)
+  if type(keep.runs) ~= "table" or type(other) ~= "table" or type(other.runs) ~= "table" then return keep end
+  local runs, changed = {}, false
+  for i, run in ipairs(keep.runs) do
+    local o = other.runs[i]
+    if type(o) == "table" and o.name == run.name and o.kind == run.kind then
+      local kills = unionKills(run.bossKills, o.bossKills)
+      if kills ~= run.bossKills then
+        run = copy(run)
+        run.bossKills = kills
+        changed = true
+      end
+    end
+    runs[i] = run
+  end
+  if not changed then return keep end
+  local result = copy(keep)
+  result.runs = runs
+  return result
+end
+
 --[[ Merges two cleaned feeds of one person (CF-28, also for relay): per day and character the entry with
 the newer `at` stays, so an older relayed copy never replaces newer activity. Days older than KEEP_DAYS
-before the newest day are dropped. Returns a new table, or nil when both are empty. ]]
+before the newest day are dropped. Returns a new table, or nil when both are empty.
+CF-103: the boss kill times of both copies are joined (joinRunKills). ]]
 -- maxAt (optional): incoming entries with a later `at` are ignored (a timestamp in the future, CF-28).
 function Feed.merge(stored, incoming, maxAt)
   local result, newest = {}, nil
@@ -395,7 +458,15 @@ function Feed.merge(stored, incoming, maxAt)
         local have = result[day][guid]
         local future = n == 2 and maxAt and (entry.at or 0) > maxAt
         -- On equal `at` the stored entry stays: a copy relayed by an older client may lack newer fields (CF-52).
-        if not future and (not have or (entry.at or 0) > (have.at or 0)) then result[day][guid] = entry end
+        if not future then
+          if not have then
+            result[day][guid] = entry
+          elseif (entry.at or 0) > (have.at or 0) then
+            result[day][guid] = joinRunKills(entry, have)
+          else
+            result[day][guid] = joinRunKills(have, entry)
+          end
+        end
       end
       if not newest or day > newest then newest = day end
     end
