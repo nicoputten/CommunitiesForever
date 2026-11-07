@@ -19,6 +19,27 @@ the count `bosses`. The site (WEB-96, WEB-97) names the bosses and links their l
 - Done when: specs for a run with and without IDs, through `Protocol` and `Merge`; SYNC.md and ARCHITECTURE.md;
   busted and luacheck pass. Manual (VERIFY.md): after a dungeon run, the upload's run shows `bossIds`.
 
+### CF-104 Pool version 4 (built now, released only on Nico's go)
+Nico (2026-11-07): retire "Defend home" and add what is ready, but hold the release. Pairs with the site's WEB-101,
+same release. **Not on develop until Nico says release:** the branch stays open (a PR in draft), so an addon or site
+release in between keeps pool 3. Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`,
+`src/adapters/missions/BattleEvents.lua`, `tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`,
+`docs/DOOMSDAY.md`, VERIFY.md, CHANGELOG.md.
+- `Doomsday.POOL_VERSION = 4`.
+- **Retired:** `p.homeGuard` gets `retired = 4` (V123: own zones outside the capitals have no PvP type, so it only
+  counts inside a capital). Pool 1 to 3 draws are unchanged.
+- **Joins (`since = 4`):** the flag missions from V121 (`UnitIsPVP("player")` reads after `PLAYER_FLAGS_CHANGED`):
+  `p.flagUp` (flag up), `p.flagHour` (an hour flagged), `b.flagged3h` (3 hours flagged in a week), each with a
+  registered progress and cases in `tests/fixtures/missions/battle.json`. The flagged time is a local fact of the
+  day or week (no new stored or sent shape).
+- **Joins only if their in-game check passed before the release:** `d.reward`, `d.fishFriend`, `d.feedFriend`
+  (VERIFY.md "CF-75"). Otherwise they wait for pool 5.
+- Golden `draws` cases for pool 4's days and weeks from its first day; the cases of pools 1 to 3 unchanged.
+- Compatibility (rule 8): an addon on pool 3 keeps drawing and recording pool 3 (`pool = 3` on its days); the release
+  notes ask friends to update.
+- Manual (VERIFY.md): flag up, stay flagged an hour; on the release day two friends on the new version see the same
+  Skirmish; Defend home never drawn.
+
 ### CF-99 Pool version 3
 After the launch probe (CF-96) and the three tracker lanes (CF-74 #222, CF-75 #224 #225, CF-76 #221). Follows CF-77.
 Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`, `src/adapters/missions/BattleEvents.lua`,
