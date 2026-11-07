@@ -301,12 +301,11 @@ describe("Runs tab (CF-106; runs since CF-46)", function()
     runs.runs[1].startsAt = NOW - 1800
     load(20, runs)
     open()
-    -- Your own feed has a kill (contract 1: bossKills), a friend's kills come live (CF-103 calls BossKills.add).
+    -- Your own feed has a kill (contract 1: bossKills), a friend's kills came live (CF-103's KILL: liveKills).
     addon.db.global.self.feed = { [20760] = { [VES] = { runs = { { name = "The Deadmines", kind = "party",
       bosses = 1, bossKills = { [90003] = NOW - 600 } } } } } }
-    ns.BossKills.add(GARRAKA, 90001, NOW - 1500)
-    ns.BossKills.add(GARRAKA, 90002, NOW - 900)
-    ns.BossKills.add("Player-1-STRANGER", 90004, NOW - 300) -- not in the group: doesn't count
+    addon.db.global.liveKills = { [GARRAKA] = { [90001] = NOW - 1500, [90002] = NOW - 900 },
+                                  ["Player-1-STRANGER"] = { [90004] = NOW - 300 } } -- not in the group: doesn't count
     ns.MainFrame.render()
     assert.are.equal("2 in \194\183 3/6 bosses", row("run:r1").meta:GetText())
     local all = text()
@@ -325,7 +324,7 @@ describe("Runs tab (CF-106; runs since CF-46)", function()
     assert.is_truthy(tips:find("Killed " .. os.date("%H:%M", NOW - 1500) .. " (from Solvar\226\128\153s log)", 1, true))
     assert.is_truthy(tips:find("Killed " .. os.date("%H:%M", NOW - 600) .. " (from your log)", 1, true))
     -- The final boss: cleared, Cookie skipped.
-    ns.BossKills.add(GARRAKA, 90006, NOW - 60)
+    addon.db.global.liveKills[GARRAKA][90006] = NOW - 60
     ns.MainFrame.render()
     assert.is_truthy(text():find("\nCookie \226\128\147 skipped\n", 1, true))
     -- Dungeon › opens it in the Dungeons tab.

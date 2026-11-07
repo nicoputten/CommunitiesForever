@@ -63,6 +63,8 @@ CommunitiesForever/
       RunProgress.lua        a planned run's boss progress, its row status, the Runs badge, day groups (CF-106)
       Feed.lua               activity feed: events from snapshot changes, per-day aggregation, clean, lines (CF-22),
                              runs and shared lines for runs done together (CF-23)
+      BossKills.lua          boss kills with their times from records, live kills and own runs; collect for a
+                             dungeon's encounters, characters and a time window (CF-103)
       Doomsday.lua           the rules of docs/DOOMSDAY.md: schedule, draw, swaps, kill points, Duel slot, goal
                              progress, points, crown, streak, ladder; checked against the golden cases (CF-55)
       Pvp.lua                PvP counters, death cause, duel result from the game's format strings, rank titles,
@@ -122,7 +124,8 @@ CommunitiesForever/
                              CF-63d; no chat lines since CF-91)
       GroupAsks.lua          send asks, chat line + sound + [Join] [Later] [No], answers, invite links (CF-27)
       Planner.lua            planned runs: Data\Runs.lua, global.plannedRuns and RUNS from friends, newer wins (CF-46)
-      BossKills.lua          the kill log: bossKills of feed runs (data contract 1, CF-103) and live kills (CF-106)
+      KillLog.lua            every kill as a list with its group, for the Runs and Dungeons tabs (CF-106; CF-103's
+                             bossKills, liveKills and runs in progress)
       PvpTracker.lua         chars[guid].pvp, kills by zone, deaths with their cause, duels into the feed (CF-52)
       PlayTracker.lua        loot, notable items, gold, sessions and groups into the feed (CF-53)
       DoomsdayTracker.lua    facts from feed events and snapshots, goals done, reset setting (file, HELLO), the
@@ -231,13 +234,13 @@ Data, not code (CF-106): `Data\Loot.lua` holds dungeon bosses and their loot fro
 
 Optional, not embedded (CF-24): the **QuestieDB** addon (comes with Questie; `## OptionalDeps: QuestieDB`). When it is installed with contract 3 or later, the Dungeons tab reads every dungeon's quests from its public API (`LibQuestieDB`, `QuestDB`) at runtime; nothing of its data ships with this addon (it has no license). Without it, dungeon quests come from the community's quest logs.
 
-UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), drawn from `Settings.options()`, whose get/set functions are the one place a setting is read and written (the setup uses them too); Options › AddOns has a page with a button that opens it (`Settings.RegisterCanvasLayoutCategory`, unverified). The setup wizard and the Community tab prompt are kit dialogs too (`Kit.dialog`). AceGUI and AceConfig were removed after the revamp (the UI is the kit on native frames). Ambient effects (`Kit.shine`: the title shimmer and the LEVEL UP shine) follow `settings.ambientEffects` through `Kit.ambient`. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). The Friends tab (CF-40, `src/ui/FriendsTab.lua`) is native too: a list of people with their characters on the left (folding per person), the card of the selected person or character on the right, both scrolled by `Kit.scrollArea` (plain ScrollFrame, our own thin thumb; no ScrollBox); frames come from pools and are reused on each render. The Activity tab (CF-41, `src/ui/ActivityTab.lua`) draws `Feed.days` filtered by `Feed.filter` (chips All, Level-ups, Dungeons, Together; whole entries) from `Feed.pieces` (a level change as the LEVEL UP chip, questing as zone pills). Pools (`Kit.pool`, `Kit.take`, `Kit.release`, `Kit.textHolder`) are shared by the tabs. CF-106 split runs and dungeons into two tabs (boards in `docs/design/dungeons-2026-11/`). The Runs tab (`src/ui/RunsTab.lua`) lists planned runs (CF-46: from `Planner`, with a run's five slots filled from its answers by `PlannedRuns.slots`, and its website link to copy) grouped Today / Tomorrow / Later (`RunProgress.dayGroup`), each row with your status (`RunProgress.rowStatus`); a run that started shows its bosses with a check per kill (`RunProgress.progress` over `BossKills.all()`); the tab's badge is `RunProgress.badge` (not started, not answered, one of your characters fits). The Dungeons tab (`src/ui/DungeonsTab.lua`) lists every dungeon grouped for the character you are on (`Dungeons.grouped`), and shows a dungeon's last clear, its next run, Ask now, Plan a run… (the website's link), its bosses and loot (`DungeonLoot` over `ns.LootData`; the game's tooltip on hover, Shift-click links, "Usable by" per character in `settings.usableOnly`) and its quests. CF-46 removed the calendar parts (event matching, sign-up reading, the event title and Open calendar). The window has no AceGUI any more. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
+UI choice: settings (CF-43) are the addon's own kit dialog (`SettingsWindow`), drawn from `Settings.options()`, whose get/set functions are the one place a setting is read and written (the setup uses them too); Options › AddOns has a page with a button that opens it (`Settings.RegisterCanvasLayoutCategory`, unverified). The setup wizard and the Community tab prompt are kit dialogs too (`Kit.dialog`). AceGUI and AceConfig were removed after the revamp (the UI is the kit on native frames). Ambient effects (`Kit.shine`: the title shimmer and the LEVEL UP shine) follow `settings.ambientEffects` through `Kit.ambient`. Main window (CF-39): the revamp's own kit on native frames (`src/ui/kit/`: Theme, Widgets, Window; design in `docs/design/revamp-2026-10/`): window shell with title bar, tabs and footer, strata `DIALOG`, size and position saved in `settings.window` (the keys AceGUI used; reset once to 880 × 600 via `layout = 2`). The Friends tab (CF-40, `src/ui/FriendsTab.lua`) is native too: a list of people with their characters on the left (folding per person), the card of the selected person or character on the right, both scrolled by `Kit.scrollArea` (plain ScrollFrame, our own thin thumb; no ScrollBox); frames come from pools and are reused on each render. The Activity tab (CF-41, `src/ui/ActivityTab.lua`) draws `Feed.days` filtered by `Feed.filter` (chips All, Level-ups, Dungeons, Together; whole entries) from `Feed.pieces` (a level change as the LEVEL UP chip, questing as zone pills). Pools (`Kit.pool`, `Kit.take`, `Kit.release`, `Kit.textHolder`) are shared by the tabs. CF-106 split runs and dungeons into two tabs (boards in `docs/design/dungeons-2026-11/`). The Runs tab (`src/ui/RunsTab.lua`) lists planned runs (CF-46: from `Planner`, with a run's five slots filled from its answers by `PlannedRuns.slots`, and its website link to copy) grouped Today / Tomorrow / Later (`RunProgress.dayGroup`), each row with your status (`RunProgress.rowStatus`); a run that started shows its bosses with a check per kill (`RunProgress.progress` over `KillLog.all()`); the tab's badge is `RunProgress.badge` (not started, not answered, one of your characters fits). The Dungeons tab (`src/ui/DungeonsTab.lua`) lists every dungeon grouped for the character you are on (`Dungeons.grouped`), and shows a dungeon's last clear, its next run, Ask now, Plan a run… (the website's link), its bosses and loot (`DungeonLoot` over `ns.LootData`; the game's tooltip on hover, Shift-click links, "Usable by" per character in `settings.usableOnly`) and its quests. CF-46 removed the calendar parts (event matching, sign-up reading, the event title and Open calendar). The window has no AceGUI any more. Textures are drawn by `tools/make-textures.py`. Each UI module that listens to internal messages uses its own AceEvent-embedded object, because AceEvent keeps one handler per object and message.
 
 ## Data model
 SavedVariables `CommunitiesForeverDB`, AceDB `global` scope (account-wide).
 ```lua
 global = {
-  schemaVersion = 2,                                 -- 2: CF-47 pending
+  schemaVersion = 3,                                 -- 2: CF-47 pending; 3: CF-103 kill times, liveKills
   settings  = { clubId = nil, clubName = nil,        -- account-wide selection; name remembered for non-members
                 clubType = nil,                      -- CF-83: its club type, remembered like the name (2: guild)
                 notifications = true,                -- CF-15 (and levelUps, CF-16): chat lines; unused since CF-91
@@ -286,6 +289,8 @@ global = {
                                                      -- as proof of who is in the group. See "Who belongs".
   locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
+  liveKills = { [guid] = { [encounterID] = at } },   -- CF-103: friends' boss kills shared live (KILL), the earliest
+                                                     -- time per character and boss; kept 2 days, never sent
   plannedRuns = { v, updatedAt, reminderMinutes, runs }, -- CF-46: the newest planned runs (file or a friend), as in
                                                      -- "Planned runs file"; checked again when loaded
   doomsdaySchedule = { v, days, weeks },             -- CF-68: the site's Doomsday mission schedule (file or a
@@ -314,13 +319,16 @@ CommunitiesForeverVaultDB = {
 
 -- CF-23: kind = GetInstanceInfo type; with = community members in the group (GUIDs); won: battleground.
 Run = { name, kind = "party"|"raid"|"pvp", instanceID, day, startedAt, lastAt,
-        bosses = { [encounterID] = true }, bossCount, with = { [guid] = true }, ended, won }
+        bosses = { [encounterID] = at }, bossCount, with = { [guid] = true }, ended, won }
+                                                     -- CF-103: at = the kill's server time (schema 2 had `true`;
+                                                     -- the migration gives those the run's lastAt)
 
 -- CF-22: [day] = realm day number (days since 1970-01-01), aggregated per character.
 Feed = { [day] = { [guid] = { name, classFile, at, levelFrom, levelTo,
                               quests = { [zone] = count }, ranks = { [profession] = rank },
                               learned = { [profession] = true },
-                              runs = { { name, kind, bosses, won, with = { guid, ... } } },     -- CF-23
+                              runs = { { name, kind, bosses, won, with = { guid, ... },          -- CF-23
+                                         bossKills = { [encounterID] = at } } },               -- CF-103
                               kills = { [zone] = count },                                       -- CF-52
                               deaths = { { t, zone, cause } }, duels = { { t, won, vs } },       -- CF-52
                               loot = { rare, epic = { { id, name, slot, level } } },             -- CF-53
@@ -376,9 +384,9 @@ Each dungeon has one final boss ("cleared" = it died); optional bosses don't cou
 at 1 % or more, plus its quest items and recipes. `DungeonLoot.bosses` skips broken entries. Bosses without a cmangos
 match (Forever's own dungeons) have `drops = {}`.
 
-Kills (data contract 1, CF-103): each run in a feed may carry `bossKills = { [encounterID] = at }`; `BossKills.all()`
-reads them from your feed and friends' records (and the run in progress), plus live kills CF-103 passes to
-`BossKills.add`. A run's progress (`RunProgress.progress`, golden cases `tests/fixtures/run-progress-cases.json`)
+Kills (data contract 1, CF-103): each run in a feed may carry `bossKills = { [encounterID] = at }`; `KillLog.all()`
+lists them from your feed and friends' records with the run's group (`with`), plus friends' live kills
+(`global.liveKills`, CF-103's KILL) and your runs in progress (`BossKills.fromRuns`). A run's progress (`RunProgress.progress`, golden cases `tests/fixtures/run-progress-cases.json`)
 counts kills by characters who answered I'm in or Maybe (or organise) from 1 h before the start until the first daily
 reset after it (the Doomsday day boundary). Older data has no `bossKills`: such runs count only, as before.
 

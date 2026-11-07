@@ -32,6 +32,7 @@ src\core\Goals.lua
 src\core\DoomsdayView.lua
 src\core\Celebrations.lua
 src\core\Runs.lua
+src\core\BossKills.lua
 src\core\PlannedRuns.lua
 src\core\Pending.lua
 src\core\RunStart.lua
@@ -129,7 +130,7 @@ src\services\Invites.lua
 src\services\GuildInvites.lua
 src\services\Notify.lua
 src\services\Planner.lua
-src\services\BossKills.lua
+src\services\KillLog.lua
 src\services\GroupAsks.lua
 src\services\RunAlerts.lua
 src\services\DoomsdayAlerts.lua

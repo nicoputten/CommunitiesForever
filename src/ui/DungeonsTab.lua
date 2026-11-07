@@ -873,7 +873,7 @@ local function draw(view, messageText)
   local entries = {}
   for _, e in ipairs(ns.Dungeons.overview(candidates, me.guid, include)) do entries[e.dungeon.id] = e end
   local groups = ns.Dungeons.grouped(me.level)
-  local kills = ns.BossKills.all()
+  local kills = ns.KillLog.all()
   -- The next run of each dungeon (its tag and button); runs the Runs tab lists.
   local nextRun = {}
   for _, item in ipairs(ns.RunsTab.runs(kills)) do

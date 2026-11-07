@@ -1,7 +1,7 @@
 -- RunsTab: the Runs tab (CF-106, board DL01 and DL03 D/E; design docs/design/dungeons-2026-11/). Runs moved here
 -- from the Dungeons tab: the planned runs (from the website through the uploader, or a friend's addon) grouped
 -- Today, Tomorrow and Later with your status on each row; a run's detail with its group, its bosses once it has
--- started (the kill log, BossKills), your answer (CF-63) or the organiser's start, Online now, fits and the link to
+-- started (the kill log, KillLog), your answer (CF-63) or the organiser's start, Online now, fits and the link to
 -- the website. Native frames from the kit, drawn from pools.
 local _, ns = ...
 
@@ -1067,7 +1067,7 @@ end
 it without a kill, until the daily reset with kills (RunProgress). ]]
 function RunsTab.runs(kills)
   local out = {}
-  kills = kills or ns.BossKills.all()
+  kills = kills or ns.KillLog.all()
   for _, run in ipairs(ns.Planner.upcoming(ns.PlannedRuns.KEEP_PROGRESS)) do
     local progress, bosses = progressOf(run, kills)
     if progress.visible then out[#out + 1] = { run = run, progress = progress, bosses = bosses } end
@@ -1093,7 +1093,7 @@ local function draw(view, messageText)
   end
   local who = ns.Planner.me()
   me.guids, me.battleTag = who.guids, who.battleTag
-  local kills = ns.BossKills.all()
+  local kills = ns.KillLog.all()
   local runs = RunsTab.runs(kills)
   local candidates = ns.Dungeons.candidates(view)
   for _, item in ipairs(runs) do entries["run:" .. item.run.id] = item end

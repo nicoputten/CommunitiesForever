@@ -47,7 +47,7 @@ function addon:OnEnable()
   ns.MainFrame.start(self)
   ns.Minimap.start(self)
   ns.Planner.start(self) -- CF-46: planned runs (Data\Runs.lua, stored, sync); before Sync's first HELLO
-  ns.BossKills.start(self) -- CF-106: the kill log of the Runs and Dungeons tabs
+  ns.KillLog.start(self) -- CF-106: the kill log of the Runs and Dungeons tabs
   ns.Messenger.start(self)
   ns.Ping.start(self)
   ns.Sync.start(self)

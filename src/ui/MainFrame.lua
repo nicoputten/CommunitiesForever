@@ -290,7 +290,7 @@ local function refreshMessages()
     ns.GroupAsks.CHANGED, -- CF-27: your ask and its answers
     ns.Sync.PEERS_CHANGED, -- CF-28: community members coming online or leaving
     ns.DoomsdayTracker.CHANGED, -- CF-57: a Doomsday goal done
-    ns.BossKills.CHANGED, -- CF-106: a live boss kill (Runs: the checks; Dungeons: Last cleared)
+    ns.ActivityTracker.KILLS_CHANGED, -- CF-103/CF-106: a live boss kill (Runs: the checks; Dungeons: Last cleared)
   }
 end
 

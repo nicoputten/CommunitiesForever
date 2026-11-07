@@ -766,4 +766,68 @@ describe("Sync", function()
     wowapi.fireEvent(state, "BN_CHAT_MSG_ADDON", "CommForever", "f2:1:1:" .. future, "WHISPER", SJAAK_GA)
     assert.are.same({ ns.Sync.NEWER_VERSION_NOTICE }, state.printed)
   end)
+  -- CF-103: boss kills go to online friends at once; theirs are kept as if they came in their record.
+  describe("boss kills live (CF-103)", function()
+    local NOW = 1794500000
+    local DEADMINES = { name = "Deadmines", type = "party", instanceID = 36 }
+
+    local function loadAt()
+      load(function(s) s.serverTime = NOW end)
+    end
+
+    local function kill(encounterID)
+      state.instance = DEADMINES
+      wowapi.fireEvent(state, "PLAYER_ENTERING_WORLD", false, false)
+      wowapi.fireEvent(state, "ENCOUNTER_END", encounterID, "Boss", 1, 5, 1)
+    end
+
+    after_each(function()
+      _G.IsEncounterInProgress = nil
+    end)
+
+    it("sends an own kill to online friends", function()
+      loadAt()
+      outgoing()
+      kill(1001)
+      local kills = ofType(outgoing(), "KILL")
+      assert.are.equal(1, #kills)
+      assert.are.equal(SJAAK_GA, kills[1].to)
+      assert.are.same({ VES, 36, "Deadmines", 1001, NOW },
+        { kills[1].guid, kills[1].instance, kills[1].name, kills[1].encounter, kills[1].at })
+      assert.are.same({ [1001] = NOW }, addon.db.global.runs[VES].bosses)
+    end)
+
+    it("holds a kill back while messaging is restricted and sends it after", function()
+      loadAt()
+      outgoing()
+      _G.IsEncounterInProgress = function() return true end
+      kill(1001)
+      assert.are.equal(0, #ofType(outgoing(), "KILL"))
+      _G.IsEncounterInProgress = function() return false end
+      state.time = state.time + 30
+      wowapi.runTimers(state)
+      assert.are.equal(1, #ofType(outgoing(), "KILL"))
+    end)
+
+    it("keeps a friend's kill, the earliest time per boss, and tells the window", function()
+      loadAt()
+      fromSjaak(sjaakRecord(2000))
+      fromSjaak({ t = "KILL", guid = SJAAK_ALT, instance = 36, name = "Deadmines", encounter = 1001, at = NOW - 60 })
+      fromSjaak({ t = "KILL", guid = SJAAK_ALT, instance = 36, name = "Deadmines", encounter = 1001, at = NOW - 30 })
+      assert.are.same({ [SJAAK_ALT] = { [1001] = NOW - 60 } }, addon.db.global.liveKills)
+      assert.are.equal(1, #wowapi.sentMessages(state, ns.ActivityTracker.KILLS_CHANGED))
+      local kills = ns.ActivityTracker.kills({ SJAAK_ALT }, { 1001, 1002 }, NOW - 3600, NOW)
+      assert.are.same({ [1001] = { at = NOW - 60, by = { [SJAAK_ALT] = NOW - 60 } } }, kills)
+    end)
+
+    it("ignores kills of other characters, from the future or without an encounter", function()
+      loadAt()
+      fromSjaak(sjaakRecord(2000))
+      fromSjaak({ t = "KILL", guid = "Player-4619-SOMEONE", encounter = 1001, at = NOW })
+      fromSjaak({ t = "KILL", guid = SJAAK_ALT, encounter = 1001, at = NOW + 600 })
+      fromSjaak({ t = "KILL", guid = SJAAK_ALT, encounter = "x", at = NOW })
+      fromSjaak({ t = "KILL", guid = SJAAK_ALT, encounter = 1001 })
+      assert.are.same({}, addon.db.global.liveKills)
+    end)
+  end)
 end)

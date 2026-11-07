@@ -64,7 +64,8 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 This build on Forever, `/console scriptErrors 1`, a character in the community, `/reload` after the uploader
 fetched runs. Screenshots of each step marked 📷 for Nico's design check. **The loot file is still the placeholder**
 (The Deadmines and Scarlet Monastery: Graveyard only, made-up boss IDs): the boss checks of a run and "Last cleared"
-can only be tested once CF-103 is in and the generated `Data\Loot.lua` (WEB-96) replaced it.
+need real DungeonEncounter IDs: they can only be tested once the generated `Data\Loot.lua` (WEB-96) replaced it
+(CF-103 is in).
 
 | Step | Expected | Status |
 |---|---|---|
@@ -88,9 +89,23 @@ can only be tested once CF-103 is in and the generated `Data\Loot.lua` (WEB-96) 
 | Dungeons: **Plan a run…** | A box with the website's link to copy (Ctrl+C); without a website in the runs file a chat line says to plan on the website or with the bot's /plan. | open |
 | Dungeons: **Ask now** | The Ask dialog for that dungeon, as before (CF-65). | open |
 | 📷 Dungeons: Ruins of Lordaeron (a Forever dungeon) | "level 15–22 · fits"; "No boss data for this dungeon yet." (until the generated loot file). | open |
-| After CF-103 and the generated loot file: a run in progress (DL01 A) | In its detail "started 20:04" in green, **Bosses** "3 of 6" with a green check per boss killed by anyone in the group (also live from online friends); Cookie "optional" and not counted; the row "5 in · 3/6 bosses". Hover a checked boss: "Killed 20:31 (from <friend>’s log)". After the final boss: Cookie "– skipped" if not killed. The run stays until the daily reset. | open |
-| After CF-103 and the generated loot file: Dungeons, a cleared dungeon | "Last cleared by <friends> · <day>" under the header. | open |
+| After the generated loot file: a run in progress (DL01 A) | In its detail "started 20:04" in green, **Bosses** "3 of 6" with a green check per boss killed by anyone in the group (also live from online friends); Cookie "optional" and not counted; the row "5 in · 3/6 bosses". Hover a checked boss: "Killed 20:31 (from <friend>’s log)". After the final boss: Cookie "– skipped" if not killed. The run stays until the daily reset. | open |
+| After the generated loot file: Dungeons, a cleared dungeon | "Last cleared by <friends> · <day>" under the header. | open |
 | A friend on an older version | Their Runs and Dungeons parts are as before; nothing breaks on either side (no message or stored shape changed). | open |
+
+### CF-103 Boss kills with their times, shared live
+This build on Forever, `/console scriptErrors 1`. Two accounts A and B with this build, Battle.net friends (or in the
+same guild), both online; A in a dungeon group (B may be elsewhere). On B: `/cf activity debug` (prints the live kills).
+
+| Step | Expected | Status |
+|---|---|---|
+| A: kill the dungeon's first boss. A: `/run local r=CommunitiesForeverDB.global.runs[UnitGUID("player")] for id,at in pairs(r.bosses) do print(id,at,date("%H:%M:%S",at)) end` | The boss's encounterID and the time of the kill (your clock). | open |
+| B, within a few seconds of the kill | Chat (debug): `[activity] <A's GUID> killed encounter <id> at <time> (live)`. No Lua error. | open |
+| B: `/run for g,k in pairs(CommunitiesForeverDB.global.liveKills) do for id,at in pairs(k) do print(g,id,date("%H:%M:%S",at)) end end` | A's character GUID, the same encounterID and time as A's line. | open |
+| A: kill the next boss right before pulling the one after (or in a raid, while another encounter runs) | B still gets it, at the latest about 30 s after the encounter ended. | open |
+| A: finish the dungeon (10+ minutes, leave). B after ~15 s (or `/cf sync`): `/run for _,p in pairs(CommunitiesForeverDB.global.people) do for d,c in pairs(p.feed or {}) do for g,e in pairs(c) do for _,r in ipairs(e.runs or {}) do for id,at in pairs(r.bossKills or {}) do print(r.name,r.bosses,id,date("%H:%M:%S",at)) end end end end end end` | The run with its `bosses` count and one line per boss killed, with the same times as the live kills. | open |
+| A with a run started on the previous build (bosses killed, then update and `/reload` inside): the first step's line | The old kills show the run's last time instead of `true` (migration); new kills their own time. | open |
+| A on an older version, B on this build (and the other way round) | Nothing breaks: no live kill line; the older client shows the run with its boss count as before. | open |
 
 ### CF-38 Recipes: profession scan and profession links (board docs/design/recipes-2026-11/RC07Addon.dc.html)
 This build on Forever, `/console scriptErrors 1`. Two accounts A and B with this build, Battle.net friends (or in the
