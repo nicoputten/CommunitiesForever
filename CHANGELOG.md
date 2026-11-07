@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.6.0 (2026-11-07)
 - **New:** a **Runs** tab of its own. Planned runs are grouped Today, Tomorrow and Later, each with your answer on
   the right ("answer" when you haven't, "no fit" when none of your characters fits). The tab's badge counts the runs
   waiting for your answer. Once a run starts it shows its bosses with a check as each one dies, "3 of 6".
@@ -13,7 +13,7 @@ tagging; the release stops if the tag has no section.
   Pick one to see its bosses and their loot with drop chances, the game's tooltip on hover and Shift-click to link an
   item. "Usable by" hides what your class can't use. Also shows when the dungeon was last cleared, its planned run,
   Ask now and its quests.
-- **Changed:** a dungeon now fits from 2 levels below its minimum, the same rule as the website.
+- **Changed:** a dungeon now fits from 2 levels below its minimum.
 - **Changed:** Dire Maul and Stratholme are listed per wing (East, West, North; Live, Undead), like Scarlet
   Monastery. Runs planned for the whole instance before still show, with every wing's bosses.
 
