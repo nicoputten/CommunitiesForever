@@ -191,6 +191,15 @@ describe("Probe", function()
       assert.is_nil(Probe.hunt(seen, "", 2))
     end)
 
+    it("reports the victim picked at a counted kill (CF-110)", function()
+      assert.are.same({ "pass", "Grim Tusk: Orc WARRIOR via target at the kill" },
+        { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target" }) })
+      assert.are.same({ "info", "victim Grim Tusk via mouseover at the kill, without race and class" },
+        { Probe.huntPick({ name = "Grim Tusk", class = "WARRIOR", source = "mouseover" }) })
+      assert.are.equal("info", (Probe.huntPick(nil)))
+      assert.are.equal("pass", (Probe.huntPick({ race = "Orc", class = "MAGE", source = "nameplate" })))
+    end)
+
     it("starts the list over after 200 players", function()
       local seen = {}
       for i = 1, Probe.SEEN_MAX do Probe.remember(seen, { "P" .. i }, { race = "Orc", class = "ROGUE" }, i) end

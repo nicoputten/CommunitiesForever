@@ -159,6 +159,21 @@ function Probe.hunt(seen, victim, now)
   return "info", "victim " .. victim .. " named, but not seen with race and class before the kill"
 end
 
+-- CF-110: the Hunt's result for a kill counted by the lifetime counter, its victim picked from the enemy players at
+-- the kill (core Pvp.pickVictims' entry, or nil): "pass" with race and class, "info" when the victim lacks one or
+-- none fit.
+function Probe.huntPick(pick)
+  if type(pick) ~= "table" then
+    return "info", "kill counted, no enemy player as target, mouseover or nameplate dead and seen alive just before"
+  end
+  if type(pick.race) == "string" and type(pick.class) == "string" then
+    return "pass", string.format("%s: %s %s via %s at the kill", tostring(pick.name or "?"), pick.race, pick.class,
+      tostring(pick.source))
+  end
+  return "info", "victim " .. tostring(pick.name or "?") .. " via " .. tostring(pick.source)
+    .. " at the kill, without race and class"
+end
+
 -- ===== The size cap =====
 
 -- Estimated size of a value as the saved file writes it (`["key"] = value,` per line, tab indented).

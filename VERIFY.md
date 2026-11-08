@@ -53,6 +53,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V138 | CF-106: do `C_Item.GetItemInfo` (or `GetItemInfo`) give name, link, quality, equip slot and icon for a loot item, does `C_Item.RequestLoadItemDataByID` load one that isn't cached, and does `GET_ITEM_INFO_RECEIVED` fire then? Is `C_Item.GetItemIconByID` there? | `/run print(C_Item.GetItemInfo, GetItemInfo, C_Item.RequestLoadItemDataByID, C_Item.GetItemIconByID)` (which are functions?), then `/run print(C_Item.GetItemInfo(5191))` (Cruel Barb). Right after a fresh login: `/cf`, Dungeons, The Deadmines: the loot rows may show "Item 5191" for a moment, then the names and icons. | open |
 | V139 | CF-106: does `GameTooltip:SetItemByID(id)` exist and show the game's own item tooltip? (Else the tab falls back to `SetHyperlink("item:<id>")`.) | `/run print(GameTooltip.SetItemByID)`, then hover a loot row in the Dungeons tab: the game's item tooltip (name, binds, damage, Requires Level). | open |
 | V140 | CF-106: does `C_QuestLog.GetTitleForQuestID(id)` give a quest's name for a quest not in your log? (The "Quest" tag's tooltip names the quest a drop needs.) | `/run print(C_QuestLog.GetTitleForQuestID(167))`: a quest name, or nil. | open |
+| V141 | CF-110: does `UnitIsDead(unit)` exist on Forever and give `true` for an enemy player who just died (target, mouseover, nameplate), `false` while alive? And does a dead enemy player keep a nameplate (`nameplateN`) for a moment? (Without `UnitIsDead` no victim is picked at a kill.) | Target a living enemy player: `/run print(UnitIsDead, UnitIsDead("target"))` prints a function and `false`. Kill them, keep the target: the same line prints `true`. With enemy nameplates on, right after a kill on a player you did not target: `/run for i=1,40 do local u="nameplate"..i if UnitExists(u) and UnitIsPlayer(u) then print(u, UnitName(u), UnitIsDead(u)) end end`: a line with `true` answers the nameplate part (none: dead players lose their nameplate). `/cf fp` after a kill also notes "UnitIsDead exists, target dead true" under the Hunt. | open |
 | V130 | Does `EditBox:SetPassword(true)` show dots instead of the typed letters? (CF-84: the guild code field in `/cf settings`) | `/fp`, Test: guild invites: type in the box at the bottom of the window. Mark Yes when it shows dots (or stars), No when it shows the letters. | open |
 
 ## Manual test steps per story
@@ -859,6 +860,19 @@ Compare with `docs/design/doomsday-2026-10/DD07AddonToday.dc.html`.
 | Two accounts: A finishes a goal | Within about a minute B's saved file has `people[<A's BattleTag>].goals.days[<day>].done`. | open |
 | A full run of The Deadmines (all 7 bosses) in a week with "Clear every boss of a dungeon" | The weekly is done. Note the boss count `/cf activity` shows for Scarlet Monastery wings, Blackrock Spire, Dire Maul, Stratholme, Scholomance, Blackfathom Deeps and Sunken Temple, for their counts. | open |
 | A friend in Thailand (or a PC clock set to another zone) | The same day and goals as everyone; clock times in their own time. | open |
+
+### CF-110 The kill's victim from your target
+One PvP-flagged character with this build; enemy nameplates on; world PvP, solo. The saved data line:
+`/run for d,c in pairs(CommunitiesForeverDB.global.self.feed) do local e=c[UnitGUID("player")] for _,k in ipairs(e and e.pvpKills or {}) do print(d,k.name,k.lvl,k.class,k.race,k.myLvl,date("%H:%M:%S",k.t)) end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| Target an enemy player and keep them targeted until you get the honorable kill. Wait 5 s, then the saved data line | The last line has the victim's name, level (`-1` for a skull), class and race (tokens like `WARRIOR`, `Orc`), your level and the kill's time. | open |
+| `/cf fp` | The Hunt line: `pass` with "<name>: <race> <class> via target at the kill"; its notes say "UnitIsDead exists, target dead true" (V141). | open |
+| `/cf`, Doomsday: hover the Today box | The kill summary counts the kill by level ("1 kill: 1 near level", "1 above" or "1 below"); a Doomsday goal about the victim (Punch up, Punch down, Skull, the Hunt) that fits the kill is done. | open |
+| Kill an enemy player while only hovering them with the mouse (no target) | The saved data line shows the victim as above. | open |
+| Kill an enemy player you never targeted or hovered (nameplates on) | An entry with the victim when their nameplate stays after death (V141), else without name, level, class and race. No Lua error. | open |
+| Target an enemy player, look away for more than 5 s with another target, then kill the first one with a damage-over-time | The kill has no victim (the picked target must be dead and was seen alive within 5 s). | open |
 
 ### CF-55b Raw kills in the record
 After CF-54's run (V73, V74, V76). One PvP-flagged character with this build; enemy nameplates on. After the steps `/reload` and look at `self.feed[<today>][<guid>].pvpKills`.

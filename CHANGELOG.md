@@ -6,6 +6,10 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** PvP kills get their victim again: the enemy player you had targeted (or under the mouse) when they died.
+  The game's kill message doesn't name them, so the Hunt, Punch up, Punch down, Skull and the other goals about
+  the victim's level, class or race could not complete. Kills on a player you never looked at still count, without
+  a victim.
 - **Fixed:** your own character's location ("last seen in ...", on the Friends tab and the website) is now saved
   when you change zone and when you log out, so it no longer shows an older zone you left long ago.
 

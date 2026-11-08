@@ -95,6 +95,37 @@ function PvpInfo.enemy(unit)
   return name, fields
 end
 
+-- CF-110: an enemy player at a unit token for the victim at a kill (core Pvp.seeAlive, Pvp.pickVictims):
+-- { guid, name, enemy = true, dead, lvl, class, race, rank, source }, or nil when no enemy player is there.
+-- UnitIsDead is unverified on Forever (VERIFY.md V141): missing, it gives dead nil and no victim is picked. Every
+-- value through Safe.call, so a secret one is nil before anything compares it.
+function PvpInfo.look(unit, source)
+  local name, fields = PvpInfo.enemy(unit)
+  if not name then return nil end
+  local guid = call(UnitGUID, unit)
+  if type(guid) ~= "string" or guid == "" then return nil end
+  local dead = call(UnitIsDead, unit)
+  if dead ~= nil then dead = dead == true end
+  return { guid = guid, name = name, enemy = true, dead = dead, lvl = fields.lvl, class = fields.class,
+           race = fields.race, rank = fields.rank, source = source }
+end
+
+PvpInfo.NAMEPLATES = 40
+
+-- CF-110: the enemy players at your target, mouseover and the nameplate tokens nameplate1 to nameplate40, in that
+-- order (PvpInfo.look of each).
+function PvpInfo.looks()
+  local list = {}
+  local function add(unit, source)
+    local look = PvpInfo.look(unit, source)
+    if look then list[#list + 1] = look end
+  end
+  add("target", "target")
+  add("mouseover", "mouseover")
+  for i = 1, PvpInfo.NAMEPLATES do add("nameplate" .. i, "nameplate") end
+  return list
+end
+
 -- The game's PvP rank names of both factions: { [name] = rank number }, for the honor message's rank.
 -- GetPVPRankInfo(rankID, faction) with the Classic rank ids (rank 1 is id 5).
 function PvpInfo.rankNumbers()

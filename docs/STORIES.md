@@ -8,6 +8,35 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-110 The PvP kill's victim from your target at the kill
+On Forever the kill's honor message is the plain award (`COMBATLOG_HONORAWARD`, V73) and never names the victim, so
+the Hunt, `p.punchUp5` / `p.punchDown5`, `p.skull`, `b.skulls3` and the other victim goals (CF-54, CF-55, CF-101)
+can't complete. Nico decided (2026-11-08): take the victim from the target or mouseover at the moment of the kill.
+Touches `src/core/Pvp.lua`, `src/adapters/PvpInfo.lua`, `src/services/PvpTracker.lua`, `src/core/Probe.lua`,
+`src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua` (V141), their specs, VERIFY.md, `docs/API-FINDINGS.md`, `docs/DOOMSDAY-PVP-CATALOGUE.md`.
+- When the lifetime counter rises (`PLAYER_PVP_KILLS_CHANGED`, or an honor message, then `GetPVPLifetimeStats`), the
+  victim is picked from the enemy players at that moment: your target first, then your mouseover, then an enemy
+  nameplate (`nameplate1` to `nameplate40`). It must be an enemy player, dead now (`UnitIsDead`, unverified: V141)
+  and seen alive at most `Pvp.KILL_WINDOW` (5 s) before. The order within a source: the one seen alive last. Players
+  are keyed by GUID; the name is stored as the game gives it, never parsed.
+- "Seen alive" comes from the target, mouseover and nameplate events and a look once a second
+  (`C_Timer.NewTicker`), so a long fight still has a fresh sighting.
+- Level, class, race and rank come from the unit at the kill, else from when it was seen alive; a missing one stays
+  nil. Several kills in one counter rise take distinct players, best first; no fitting player: the kill counts
+  without a victim, as before (no guessing).
+- An honor message that names the victim (`COMBATLOG_HONORGAIN` and variants, CF-101) still wins: its kill gets the
+  name and the rank from the message, and a picked victim of the same name is not added again.
+- Pure rule in core (`Pvp.seeAlive`, `Pvp.pickVictims`) with busted tests: several candidates, none, stale, a
+  friendly player, unknown death, a secret value (nil from the adapter) ignored. The adapter (`PvpInfo.look`,
+  `PvpInfo.looks`) reads every value through `ns.Safe.call`, so a secret is nil before any comparison (CF-108).
+- The launch probe's Hunt also ticks from the victim picked at a counted kill ("Grim Tusk: Orc WARRIOR via target at
+  the kill"), with a note whether `UnitIsDead` exists; V73 keeps logging the message's shape.
+- Compatibility (rule 8): the `pvpKills` entry keeps its shape (`t, zone, name, lvl, myLvl, class, race, rank, solo,
+  bg`); only more entries carry victim fields. An older version sends entries without them for these kills and
+  reads ours as before; the site and bot read the same fields. Nothing stored or sent changes, no migration.
+- Manual (VERIFY.md CF-110, V141): target an enemy player, kill them; the kill has the victim in the saved data,
+  `/cf fp` shows the Hunt and the Doomsday tab's Today box counts the kill by level.
+
 ### CF-111 The own character's last location at a zone change and at logout
 Bug: logged off in Hillsbrad Foothills, the site still showed an older Westfall. `db.global.locations` was only
 written from the community member list (`MemberTracker.refresh`), which runs on member events only; the own zone

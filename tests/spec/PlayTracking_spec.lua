@@ -62,9 +62,10 @@ describe("loot, gold, sessions and groups (CF-53)", function()
   it("moves the session's end with a heartbeat when C_Timer.NewTicker exists", function()
     local ticks = {}
     load(function() _G.C_Timer.NewTicker = function(seconds, fn) ticks[#ticks + 1] = { seconds, fn } end end)
-    assert.are.equal(300, ticks[1][1])
+    local beat
+    for _, tick in ipairs(ticks) do if tick[1] == 300 then beat = tick end end -- CF-110: PvP looks tick too
     state.serverTime = 1300
-    ticks[1][2]()
+    beat[2]()
     assert.are.equal(1300, entry().sessions[1].to)
   end)
 
