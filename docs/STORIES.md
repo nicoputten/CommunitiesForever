@@ -36,6 +36,7 @@ Touches `src/core/Pvp.lua`, `src/adapters/PvpInfo.lua`, `src/services/PvpTracker
   reads ours as before; the site and bot read the same fields. Nothing stored or sent changes, no migration.
 - Manual (VERIFY.md CF-110, V141): target an enemy player, kill them; the kill has the victim in the saved data,
   `/cf fp` shows the Hunt and the Doomsday tab's Today box counts the kill by level.
+
 ### CF-111 The own character's last location at a zone change and at logout
 Bug: logged off in Hillsbrad Foothills, the site still showed an older Westfall. `db.global.locations` was only
 written from the community member list (`MemberTracker.refresh`), which runs on member events only; the own zone
