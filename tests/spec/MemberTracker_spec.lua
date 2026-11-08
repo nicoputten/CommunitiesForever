@@ -102,6 +102,67 @@ describe("MemberTracker", function()
     assert.are.same({ zone = "Orgrimmar", seenAt = 1000 }, addon.db.global.locations[GARRAKA])
   end)
 
+  describe("own location (CF-111)", function()
+    local function own() return addon.db.global.locations[VES] end
+
+    it("records the own zone a moment after login and after a zone change", function()
+      load(CLUB)
+      state.zone = "Westfall"
+      wowapi.fireEvent(state, "PLAYER_ENTERING_WORLD", true, false)
+      wowapi.runTimers(state)
+      assert.are.same({ zone = "Westfall", seenAt = 1000 }, own())
+      state.serverTime = 1200
+      state.zone = "Hillsbrad Foothills"
+      wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+      wowapi.runTimers(state)
+      assert.are.same({ zone = "Hillsbrad Foothills", seenAt = 1200 }, own())
+    end)
+
+    for _, event in ipairs({ "PLAYER_LOGOUT", "PLAYER_LEAVING_WORLD" }) do
+      it("records the own zone right away at " .. event .. ", after the member list's", function()
+        load(CLUB)
+        state.serverTime = 1300
+        state.zone = "Hillsbrad Foothills" -- the member list still says Durotar for the own character
+        members(CLUB)[2].zone = "Ashenvale"
+        wowapi.fireEvent(state, event)
+        assert.are.same({ zone = "Hillsbrad Foothills", seenAt = 1300 }, own())
+        assert.are.same({ zone = "Ashenvale", seenAt = 1300 }, addon.db.global.locations[GARRAKA])
+      end)
+    end
+
+    it("keeps the old location while the zone is unknown, empty or secret", function()
+      load(nil) -- no member list: with one, its zone for the own character is the best known then
+      state.zone = "Westfall"
+      wowapi.fireEvent(state, "PLAYER_LOGOUT")
+      state.serverTime = 1400
+      -- A secret: type() says "string" (as on Midnight), comparing it throws.
+      local secret = setmetatable({}, { __eq = function() error("compared a secret") end,
+                                        __len = function() error("length of a secret") end })
+      local realType = type
+      _G.issecretvalue = function(v) return rawequal(v, secret) end
+      _G.type = function(v) if rawequal(v, secret) then return "string" end return realType(v) end
+      local ok, err = pcall(function()
+        for _, zone in ipairs({ false, "", secret }) do
+          state.zone = zone or nil
+          wowapi.fireEvent(state, "PLAYER_LOGOUT")
+          wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+          wowapi.runTimers(state)
+        end
+      end)
+      _G.type = realType
+      _G.issecretvalue = nil
+      assert.is_true(ok, err)
+      assert.are.same({ zone = "Westfall", seenAt = 1000 }, own())
+    end)
+
+    it("records the own zone without a selected community", function()
+      load(nil)
+      state.zone = "Westfall"
+      wowapi.fireEvent(state, "PLAYER_LOGOUT")
+      assert.are.same({ zone = "Westfall", seenAt = 1000 }, own())
+    end)
+  end)
+
   it("records when the member map last changed", function()
     load(CLUB)
     assert.are.equal(1000, Tracker.changedAt())

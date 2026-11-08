@@ -5,6 +5,10 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Fixed:** your own character's location ("last seen in ...", on the Friends tab and the website) is now saved
+  when you change zone and when you log out, so it no longer shows an older zone you left long ago.
+
 ## v1.6.1 (2026-11-07)
 - **Fixed:** no more "attempt to compare ... a secret string value" Lua error during boss fights. In combat the game
   hides some event details from addons; the addon now skips those instead of erroring.

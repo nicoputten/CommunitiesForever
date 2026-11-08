@@ -55,5 +55,18 @@ function Members.recordLocations(locations, members, now)
   end
 end
 
+--[[ CF-111: records the own character's zone, read with the own API at login, at a zone change and at logout (the
+member list sends no event for those). Same shape as recordLocations: locations[guid] = { zone, seenAt }. Keeps the
+old entry when the GUID or the zone is not a non-empty string (the adapter passes nil for a secret or not yet loaded
+zone) and never moves seenAt back. Returns true when it wrote. ]]
+function Members.recordOwn(locations, guid, zone, now)
+  if type(locations) ~= "table" or type(now) ~= "number" then return false end
+  if type(guid) ~= "string" or guid == "" or type(zone) ~= "string" or zone == "" then return false end
+  local old = locations[guid]
+  if type(old) == "table" and type(old.seenAt) == "number" and old.seenAt > now then return false end
+  locations[guid] = { zone = zone, seenAt = now }
+  return true
+end
+
 ns.Members = Members
 return Members
