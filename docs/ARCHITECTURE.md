@@ -287,7 +287,7 @@ global = {
                                                      -- seen here; replaced whole on every member update; {} without
                                                      -- a selected community; nil until first known. Read by the site
                                                      -- as proof of who is in the group. See "Who belongs".
-  locations = { [guid] = { zone, seenAt } },         -- last zone seen in the community, local only
+  locations = { [guid] = { zone, seenAt } },         -- last zone seen (member list; own: zone change, logout; CF-111)
   runs      = { [guid] = Run },                      -- CF-23: run in progress per own character, local only
   liveKills = { [guid] = { [encounterID] = at } },   -- CF-103: friends' boss kills shared live (KILL), the earliest
                                                      -- time per character and boss; kept 2 days, never sent

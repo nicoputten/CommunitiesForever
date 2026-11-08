@@ -36,6 +36,25 @@ Touches `src/core/Pvp.lua`, `src/adapters/PvpInfo.lua`, `src/services/PvpTracker
   reads ours as before; the site and bot read the same fields. Nothing stored or sent changes, no migration.
 - Manual (VERIFY.md CF-110, V141): target an enemy player, kill them; the kill has the victim in the saved data,
   `/cf fp` shows the Hunt and the Doomsday tab's Today box counts the kill by level.
+### CF-111 The own character's last location at a zone change and at logout
+Bug: logged off in Hillsbrad Foothills, the site still showed an older Westfall. `db.global.locations` was only
+written from the community member list (`MemberTracker.refresh`), which runs on member events only; the own zone
+change and the logout fire none. Touches `src/core/Members.lua`, `src/services/MemberTracker.lua`,
+`tests/spec/Members_spec.lua`, `tests/spec/MemberTracker_spec.lua`, VERIFY.md, CHANGELOG.md.
+- `Members.recordOwn(locations, guid, zone, now)` (pure core) writes `locations[guid] = { zone, seenAt = now }`, the
+  shape `recordLocations` writes. It keeps the old entry when the GUID or the zone is not a non-empty string, and
+  never moves `seenAt` back.
+- The zone is `SelfInfo.zone()` (`GetRealZoneText`, verified V35; nil when secret or empty): the zone name, inside an
+  instance the instance's name ("Ruins of Lordaeron"), as the member list shows it.
+- Recorded 1 s after `PLAYER_ENTERING_WORLD` and `ZONE_CHANGED_NEW_AREA` (the zone text can be nil right after a
+  loading screen), and right away at `PLAYER_LEAVING_WORLD` and `PLAYER_LOGOUT` (handlers run before SavedVariables
+  are written, V22). Works without a selected community.
+- At `PLAYER_LEAVING_WORLD` and `PLAYER_LOGOUT` the member list's zones are recorded first (locations only: no roster
+  update, no message), then the own zone, so the own one wins over a member list that hasn't caught up.
+- Everything guarded (`ns.Safe.call`); secret values are nil before any comparison (CF-108).
+- Same stored shape, no migration (rule 8): older versions keep writing it from the member list; the site merges
+  by the newest `seenAt`.
+- Manual (VERIFY.md): change zone, log out, check `global.locations[<GUID>]` and the site after an upload.
 
 ### CF-109 Launch probe: the export of 2026-11-08, and the V60b window check
 The export of 2026-11-08 (6 testers; builds 70790 and 70862). Same rule as CF-105: an answered check leaves the
