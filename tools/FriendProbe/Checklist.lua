@@ -123,6 +123,8 @@ ns.items = {
     how = "/cf, Dungeons, The Deadmines: hover a loot row (VERIFY.md V139)." },
   { id = "V140", session = 1, title = "A quest's name by its ID (C_QuestLog.GetTitleForQuestID, CF-106)",
     how = "The print line of VERIFY.md V140." },
+  { id = "V141", session = 5, title = "A dead enemy player reads as dead (UnitIsDead, CF-110)",
+    how = "World PvP: the print lines of VERIFY.md V141 before and after a kill." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 
@@ -152,7 +154,8 @@ ns.items = {
   { id = "V76", done = "forever 70790", session = 5, auto = true, title = "Group and instance at a kill" },
   { id = "Hunt", session = 5, auto = true, title = "The Hunt: a kill's victim race and class",
     how = "Enemy nameplates on. Target or mouse over an enemy player, then get the honorable kill on them.",
-    note = "Needs V73 (the victim's name in the honor message) and V74 (race and class readable) together." },
+    note = "Forever's honor message names nobody (V73): since CF-110 the victim is your target (or mouseover)"
+      .. " dead at the kill, and CommunitiesForever's /cf fp ticks the Hunt from it." },
   { id = "V79", session = 5, auto = true, title = "PvP counters, rank and deaths" },
   { id = "V81", done = "retail 12.1.5", retail = true, session = 5, auto = true,
     title = "Where a death's cause comes from" },

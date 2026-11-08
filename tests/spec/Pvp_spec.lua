@@ -156,10 +156,107 @@ describe("Pvp (CF-52)", function()
     end)
   end)
 
+  describe("the victim at the kill (CF-110)", function()
+    local function look(guid, source, dead, extra)
+      local l = { guid = guid, name = "Name " .. guid, enemy = true, dead = dead, lvl = 30, class = "ROGUE",
+                  race = "Troll", source = source }
+      for k, v in pairs(extra or {}) do l[k] = v end
+      return l
+    end
+
+    local function seen(alive, guids, at)
+      for _, guid in ipairs(guids) do Pvp.seeAlive(alive, look(guid, "target", false), at) end
+    end
+
+    it("picks the target that is dead now and was seen alive just before", function()
+      local alive = {}
+      seen(alive, { "Player-1-A" }, 100)
+      assert.are.same({ { name = "Name Player-1-A", lvl = 30, class = "ROGUE", race = "Troll", source = "target" } },
+        Pvp.pickVictims({ look("Player-1-A", "target", true) }, alive, 104, 1))
+    end)
+
+    it("prefers target over mouseover over nameplate, then the one seen alive last", function()
+      local alive = {}
+      seen(alive, { "N1", "N2", "M" }, 100)
+      seen(alive, { "T" }, 99)
+      local looks = { look("N1", "nameplate", true), look("M", "mouseover", true), look("T", "target", true),
+                      look("N2", "nameplate", true) }
+      Pvp.seeAlive(alive, look("N2", "nameplate", false), 101)
+      local picked = Pvp.pickVictims(looks, alive, 103, 4)
+      assert.are.same({ "target", "mouseover", "nameplate", "nameplate" },
+        { picked[1].source, picked[2].source, picked[3].source, picked[4].source })
+      assert.are.same({ "Name T", "Name M", "Name N2", "Name N1" },
+        { picked[1].name, picked[2].name, picked[3].name, picked[4].name })
+      assert.are.equal(1, #Pvp.pickVictims(looks, alive, 103)) -- one kill by default
+      assert.are.equal("Name T", Pvp.pickVictims(looks, alive, 103, 2)[1].name)
+    end)
+
+    it("takes one player once, under their best source", function()
+      local alive = {}
+      seen(alive, { "A" }, 100)
+      local picked = Pvp.pickVictims({ look("A", "nameplate", true), look("A", "target", true) }, alive, 101, 3)
+      assert.are.equal(1, #picked)
+      assert.are.equal("target", picked[1].source)
+    end)
+
+    it("picks nobody without a fitting player: none, alive, stale, never seen alive, unknown death", function()
+      local alive = {}
+      seen(alive, { "A", "B" }, 100)
+      assert.are.same({}, Pvp.pickVictims({}, alive, 101, 1))
+      assert.are.same({}, Pvp.pickVictims({ look("A", "target", false) }, alive, 101, 1))  -- still alive
+      assert.are.same({}, Pvp.pickVictims({ look("A", "target", true) }, alive, 106, 1))   -- stale: 6 s
+      assert.are.equal(1, #Pvp.pickVictims({ look("A", "target", true) }, alive, 105, 1))  -- 5 s still counts
+      assert.are.same({}, Pvp.pickVictims({ look("C", "target", true) }, alive, 101, 1))   -- never seen alive
+      assert.are.same({}, Pvp.pickVictims({ look("A", "target", nil) }, alive, 101, 1))    -- UnitIsDead unknown
+      assert.are.same({}, Pvp.pickVictims({ look("A", "focus", true) }, alive, 101, 1))    -- not a victim source
+      assert.are.same({}, Pvp.pickVictims(nil, alive, 101, 1))
+      assert.are.same({}, Pvp.pickVictims({ look("A", "target", true) }, nil, 101, 1))
+    end)
+
+    it("ignores a friendly player", function()
+      local alive = {}
+      Pvp.seeAlive(alive, look("F", "target", false, { enemy = false }), 100)
+      assert.is_nil(alive.F)
+      seen(alive, { "F" }, 100)
+      assert.are.same({}, Pvp.pickVictims({ look("F", "target", true, { enemy = false }) }, alive, 101, 1))
+      assert.are.same({}, Pvp.pickVictims({ look("F", "target", true, { enemy = 1 }) }, alive, 101, 1))
+    end)
+
+    it("ignores secret values (nil from the adapter): no GUID, no death; a hidden field stays empty", function()
+      local alive = {}
+      Pvp.seeAlive(alive, look("A", "target", false, { guid = false }), 100)
+      Pvp.seeAlive(alive, { name = "No Guid", enemy = true, dead = false }, 100)
+      assert.is_nil(next(alive))
+      seen(alive, { "A" }, 100)
+      assert.are.same({}, Pvp.pickVictims({ { name = "Name A", enemy = true, dead = true, source = "target" } },
+        alive, 101, 1))
+      local picked = Pvp.pickVictims({ look("A", "target", true, { class = false, race = nil, lvl = "30" }) },
+        alive, 101, 1)[1]
+      assert.are.equal("ROGUE", picked.class) -- from when it was seen alive
+      assert.are.equal("Troll", picked.race)
+      assert.are.equal(30, picked.lvl)
+      local bare = {}
+      Pvp.seeAlive(bare, { guid = "B", enemy = true, dead = false }, 100)
+      assert.are.same({ source = "target" }, Pvp.pickVictims({ { guid = "B", enemy = true, dead = true,
+        source = "target", name = "" } }, bare, 101, 1)[1])
+    end)
+
+    it("keeps a skull's level -1 and remembers at most 200 players", function()
+      local alive = {}
+      Pvp.seeAlive(alive, look("S", "target", false, { lvl = -1 }), 100)
+      assert.are.equal(-1, Pvp.pickVictims({ look("S", "target", true, { lvl = -1 }) }, alive, 100, 1)[1].lvl)
+      for i = 1, 205 do Pvp.seeAlive(alive, look("P" .. i, "nameplate", false), 200 + i) end
+      local size = 0
+      for _ in pairs(alive) do size = size + 1 end
+      assert.are.equal(200, size)
+      assert.is_nil(alive.S)
+    end)
+  end)
+
   it("names the rank with our title", function()
     assert.are.equal("Stone Guard, a.k.a. Mailbox Menace", Pvp.rankText({ rank = 6, rankName = "Stone Guard" }))
     assert.are.equal("rank 0, a.k.a. Conscientious Objector", Pvp.rankText({ rank = 0 }))
-    -- CF-61: Conscientious Objector only for a PvP Virgin; else "No rank yet · N kills".
+    -- CF-61: Conscientious Objector only for a PvP Virgin; else "No rank yet Â· N kills".
     assert.are.equal("No rank yet \194\183 1 kill", Pvp.rankText({ rank = 0, hk = 1 }))
     assert.are.equal("No rank yet \194\183 1,234 kills", Pvp.rankText({ rank = 0, hk = 1234 }))
     assert.are.equal("No rank yet \194\183 0 kills", Pvp.rankText({ rank = 0, duelsWon = 1 }))

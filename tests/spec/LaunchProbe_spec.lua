@@ -6,7 +6,7 @@ describe("the hidden launch probe", function()
   local state, ns, addon
   local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "C_DeathRecap", "C_PvP",
                   "UnitFactionGroup", "IsFishingLoot", "GetPVPThisWeekStats", "DoEmote", "hooksecurefunc",
-                  "C_TradeSkillUI", "SetItemRef", "ProfessionsFrame" }
+                  "C_TradeSkillUI", "SetItemRef", "ProfessionsFrame", "UnitIsDead" }
 
   local function load(serverTime)
     state, ns, addon = helpers.client({ setup = function(s) s.serverTime = serverTime or 1794000000 end })
@@ -60,6 +60,26 @@ describe("the hidden launch probe", function()
       assert.is_nil(state.printed[i]:find("V7", 1, true))
       assert.is_nil(state.printed[i]:lower():find("probe", 1, true))
     end
+  end)
+
+  it("ticks the Hunt from the target at a counted kill when the honor message names nobody (CF-110)", function()
+    load()
+    enemyTarget("Orc")
+    local dead = false
+    _G.UnitIsDead = function() return dead end
+    state.unitGuids = { target = "Player-4619-0A1B2C3D" }
+    state.pvp = { hk = 10 }
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    state.serverTime, dead = state.serverTime + 2, true
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    assert.are.equal("pass", results().Hunt.status)
+    assert.are.equal("Grim Tusk: Orc WARRIOR via target at the kill", results().Hunt.detail)
+  end)
+
+  it("gives the Hunt an info line at a counted kill without a fitting victim (CF-110)", function()
+    load()
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    assert.are.equal("info", results().Hunt.status)
   end)
 
   local function honorKill()

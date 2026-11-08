@@ -137,7 +137,7 @@ describe("PvP, duels and deaths (CF-52)", function()
   end)
 
   describe("raw kills (CF-55b)", function()
-    local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup" }
+    local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "UnitIsDead" }
     local HONOR = "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)"
 
     -- An enemy player as the target: Grim Tusk, a level 33 Orc Warrior.
@@ -212,6 +212,85 @@ describe("PvP, duels and deaths (CF-52)", function()
       assert.are.equal("Grim Tusk", entry().pvpKills[1].name)
       assert.is_nil(entry().pvpKills[2].name)
       assert.are.equal(11, entry().pvpKills[2].myLvl)
+    end)
+
+    describe("the victim from the target at the kill (CF-110, Forever: no name in the honor message)", function()
+      local AWARD = "You have been awarded 3 honor points." -- COMBATLOG_HONORAWARD's shape (V73)
+      local dead
+
+      local function forever()
+        enemyTarget()
+        dead = false
+        _G.UnitIsDead = function() return dead end
+        state.unitGuids = { target = "Player-4619-0A1B2C3D" }
+      end
+
+      local function kill(at)
+        state.serverTime = at
+        dead = true
+        state.pvp.hk = state.pvp.hk + 1
+        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+        wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", AWARD)
+        settle()
+      end
+
+      it("records the dead enemy target, seen alive just before, as the victim", function()
+        load(nil, { hk = 10 })
+        forever()
+        state.zone = "Ashenvale"
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        kill(1503)
+        assert.are.same({ { t = 1503, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
+                            race = "Orc", solo = true } }, entry().pvpKills)
+        assert.are.same({ Ashenvale = 1 }, entry().kills)
+        assert.are.equal("Grim Tusk", ns.PvpTracker.victimNow().name) -- the probe's Hunt reads the same pick
+        state.serverTime = 1506
+        assert.is_nil(ns.PvpTracker.victimNow())
+      end)
+
+      it("counts the kill without a victim when the target was seen alive too long ago", function()
+        load(nil, { hk = 10 })
+        forever()
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        kill(1530)
+        assert.are.equal(1, #entry().pvpKills)
+        assert.is_nil(entry().pvpKills[1].name)
+        assert.is_nil(entry().pvpKills[1].class)
+      end)
+
+      it("counts the kill without a victim when UnitIsDead is missing (V141) or the GUID is secret", function()
+        load(nil, { hk = 10 })
+        forever()
+        _G.UnitIsDead = nil
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        kill(1501)
+        assert.is_nil(entry().pvpKills[1].name)
+        forever()
+        _G.issecretvalue = function(v) return v == "Player-4619-0A1B2C3D" end
+        finally(function() _G.issecretvalue = nil end)
+        state.serverTime = 1600
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        kill(1601)
+        assert.are.equal(2, #entry().pvpKills)
+        assert.is_nil(entry().pvpKills[2].name)
+      end)
+
+      it("keeps the name from an honor message that names the victim, without a second entry", function()
+        load(nil, { hk = 10 })
+        forever()
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        state.serverTime, dead = 1502, true
+        state.pvp.hk = 11
+        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+        wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", HONOR)
+        settle()
+        assert.are.equal(1, #entry().pvpKills)
+        assert.are.equal("Grim Tusk", entry().pvpKills[1].name)
+      end)
     end)
 
     it("marks battleground kills", function()

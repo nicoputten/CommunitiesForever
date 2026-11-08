@@ -243,8 +243,14 @@ LaunchProbe.on("CHAT_MSG_COMBAT_HONOR_GAIN", function(text)
 end)
 
 -- V79's open part: does PLAYER_PVP_KILLS_CHANGED fire on Forever (noted with the kill it belongs to)?
+-- CF-110: the Hunt also from the victim picked at the kill (your target, mouseover or a nameplate, dead now).
 LaunchProbe.on("PLAYER_PVP_KILLS_CHANGED", function()
   note("V73", "PLAYER_PVP_KILLS_CHANGED, week " .. Vals(GetPVPThisWeekStats))
+  local pick = ns.PvpTracker and ns.PvpTracker.victimNow and ns.PvpTracker.victimNow()
+  local status, detail = Probe.huntPick(pick)
+  if status == "pass" then result("Hunt", status, detail) else info("Hunt", detail) end
+  note("Hunt", "UnitIsDead " .. (UnitIsDead and "exists" or "missing") .. ", target dead "
+    .. Val(get(UnitIsDead, "target")))
 end)
 
 -- ===== V80: duel lines =====
