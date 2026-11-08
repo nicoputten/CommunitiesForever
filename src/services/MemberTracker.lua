@@ -53,6 +53,28 @@ local function refresh()
   end
 end
 
+-- CF-111: the own character's zone, read with the own API (the member list sends no event at a zone change or at
+-- logout). SelfInfo.zone() is nil for a secret or not yet loaded zone; the GUID goes through Safe.value too.
+local function recordOwn()
+  ns.Members.recordOwn(global().locations, ns.Safe.value(ns.SelfInfo.guid()), ns.SelfInfo.zone(), GetServerTime())
+end
+
+-- CF-111: on the way out (logout, a loading screen): the friends' zones from the member list as it is now, then the
+-- own zone, last, so it wins over a member list that hasn't caught up. Only the locations: no roster update and no
+-- UPDATED message at logout. Guarded: an error here must not stop the logout handlers of other services.
+local function recordOnLeave()
+  ns.Safe.call(function()
+    local clubId = ns.CommunitySelection.active()
+    if clubId then
+      ns.Members.recordLocations(global().locations, ns.Members.build(ns.Community.members(clubId)), GetServerTime())
+    end
+  end)
+  ns.Safe.call(recordOwn)
+end
+
+local LEAVE_EVENTS = { PLAYER_LEAVING_WORLD = true, PLAYER_LOGOUT = true }
+local ENTER_EVENTS = { PLAYER_ENTERING_WORLD = true, ZONE_CHANGED_NEW_AREA = true }
+
 local function select(clubId)
   if clubId then
     ns.Community.focusMembers(clubId)
@@ -75,6 +97,19 @@ function MemberTracker.start(addon)
     -- Events carry the clubId; ignore other clubs. Refresh if the event has none.
     if clubId == nil or clubId == ns.CommunitySelection.active() then
       refreshDebounced()
+    end
+  end)
+
+  -- CF-111: the own location (Instance.EVENT, an own AceEvent object: addon:RegisterMessage would replace other
+  -- handlers). GetRealZoneText can be nil right after a loading screen (V35): read it a moment later, and again at
+  -- every zone change. On the way out right away: no timer runs after logout.
+  local events = LibStub("AceEvent-3.0"):Embed({})
+  local recordOwnLater = ns.Timer.debounce(REFRESH_DEBOUNCE, function() ns.Safe.call(recordOwn) end)
+  events:RegisterMessage(ns.Instance.EVENT, function(_, event)
+    if ENTER_EVENTS[event] then
+      recordOwnLater()
+    elseif LEAVE_EVENTS[event] then
+      recordOnLeave()
     end
   end)
 

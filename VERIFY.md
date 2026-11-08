@@ -58,6 +58,22 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-111 The own character's last location
+This build, `/console scriptErrors 1`, a character in the selected community (guild). The stored entry in game:
+`/run local l=CommunitiesForeverDB.global.locations[UnitGUID("player")] print(l and l.zone, l and l.seenAt, GetServerTime())`
+(below: "the entry"). The member list's zone for yourself:
+`/run for _,c in ipairs(C_Club.GetSubscribedClubs()) do for _,m in ipairs(C_Club.GetClubMembers(c.clubId)) do local i=C_Club.GetMemberInfo(c.clubId,m) if i and i.isSelf then print(c.name, i.zone) end end end`
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, wait 2 s, print the entry and `/run print(GetRealZoneText())` | The entry's zone is the zone you are in (same text as `GetRealZoneText`), its time a few seconds old. | open |
+| Print the member list's zone for yourself | The same text as the entry's zone (if it differs, note both: the site shows the entry's). | open |
+| Ride into the next zone (e.g. Westfall to Duskwood), wait 2 s, print the entry | The new zone, the time of the zone change. | open |
+| Enter a dungeon, wait 2 s, print the entry and the member list's zone for yourself | The entry says the dungeon's name (e.g. "The Deadmines"); note what the member list says. | open |
+| Leave the dungeon, then log out in the open world (not `/reload`). Open `WTF\Account\<account>\SavedVariables\CommunitiesForever.lua`, search for your GUID (`/run print(UnitGUID("player"))` before logging out) under `["locations"]` | `["zone"]` is the zone you logged out in, `["seenAt"]` the logout time (convert with `/run print(date("%H:%M", <seenAt>))` after logging in again). | open |
+| Let the uploader upload, open your character on the site | "Last seen" shows the zone you logged out in, not an older one. | open |
+| A friend on this build logs out while you stay online; you log out a minute later, check your file | Your file has the friend's zone from the member list as it was at your logout (their logout zone if the list caught up). | open |
+
 ### CF-108 No Lua error from secret event arguments
 This build, `/console scriptErrors 1`, a character with a weapon skill below its maximum, in a group in a dungeon.
 
