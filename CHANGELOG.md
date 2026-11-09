@@ -10,6 +10,8 @@ tagging; the release stops if the tag has no section.
   Hunt" in their tooltip, and targeting or hovering them prints "Prey in sight" in chat (once per player every few
   minutes). Keep your prey targeted when they die, so the kill knows who it was. The Hunt's tooltip on the Doomsday
   tab also suggests turning on enemy nameplates.
+
+## v1.6.2 (2026-11-09)
 - **Fixed:** PvP kills get their victim again: the enemy player you had targeted (or under the mouse) when they died.
   The game's kill message doesn't name them, so the Hunt, Punch up, Punch down, Skull and the other goals about
   the victim's level, class or race could not complete. Kills on a player you never looked at still count, without

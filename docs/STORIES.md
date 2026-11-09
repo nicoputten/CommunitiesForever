@@ -34,6 +34,28 @@ the Hunt's text to turn enemy nameplates on. Hints only, nothing is blocked (rec
 - No change to stored data or messages (rule 8).
 - Manual: VERIFY.md CF-114.
 
+### CF-113 Launch probe: the export of 2026-11-09
+The export of 2026-11-09 (build 70862). Same rule as CF-105 and CF-109: an answered check leaves the probe and
+FriendProbe's checklist gets a `done` marker. Touches `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeMissions.lua`, `tools/FriendProbe/Checklist.lua`, `tools/FriendProbe/Missions.lua`, the
+probe specs, `docs/API-FINDINGS.md`, VERIFY.md.
+- V120 passed (2 testers): `C_DeathRecap.GetRecapEvents()` names a player killer (`Player-` GUID, readable name). To
+  API-FINDINGS; out of VERIFY.md and `Probe.IDS`, its code removed; FriendProbe's item `done`. It unblocks the
+  killer goals of CF-81 (`p.revenge`, `b.revenge3`; `p.avenge`, `b.avenge3` also need a friend's killer, which CF-81
+  keeps local): not built here. The addon reads the recap only for a death's cause (`PvpInfo.recapDamage`).
+- V101 half answered (1 tester): posting an auction fires `AUCTION_HOUSE_AUCTION_CREATED` (`d.auctionPost` can be
+  built). V101 stays open for buying: the probe passes on `AUCTION_HOUSE_PURCHASE_COMPLETED` or `ERR_AUCTION_WON_S`
+  (no longer on a post); a pass stored for a post gives way to the first buy's. FriendProbe's item the same.
+- V60b: CF-109's fix works, the own link reads `opened Blizzard's view (IsTradeSkillLinked true, N recipes)` (2
+  testers). A friend's link while they were online still gave no window for 1 tester, likely another internal server
+  (bug 7, CF-107). V60 stays open for an offline friend and a friend on the same server; the answered own-link step
+  of VERIFY.md CF-109 is closed.
+- Re-confirmed, no change: V73 fails (`You x x x 1 Honor.`, the award without the victim), V70, V87. Still open: V74
+  (skull), V100 (inbox take), V108 (emote).
+- `Probe.IDS`: 11 checks (V82, V35b, V73, Hunt, V80, V96, V101, V108, V122, V123, V60b).
+- Compatibility (rule 8): nothing stored or sent changes shape; the probe stops writing V120 (its stored result stays
+  and is uploaded as before) and V101's detail now names a buy.
+
 ### CF-110 The PvP kill's victim from your target at the kill
 On Forever the kill's honor message is the plain award (`COMBATLOG_HONORAWARD`, V73) and never names the victim, so
 the Hunt, `p.punchUp5` / `p.punchDown5`, `p.skull`, `b.skulls3` and the other victim goals (CF-54, CF-55, CF-101)
