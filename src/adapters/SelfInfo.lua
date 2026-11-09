@@ -51,8 +51,8 @@ local function readItemLevel()
   return equipped
 end
 
--- All nodes of the active class talent tree as { posX, ranks } (CF-18, layout in V29).
--- nil when the talent API is missing or not ready yet.
+-- All nodes of the active class talent tree as { id, posX, ranks } (CF-18, layout in V29; CF-115: id is the
+-- TraitNode ID that GetTreeNodes lists). nil when the talent API is missing or not ready yet.
 local function readTalentNodes()
   if not (C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits and C_Traits.GetConfigInfo
       and C_Traits.GetTreeNodes and C_Traits.GetNodeInfo) then
@@ -66,7 +66,7 @@ local function readTalentNodes()
     for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
       local node = C_Traits.GetNodeInfo(configID, nodeID)
       if node and node.posX then
-        nodes[#nodes + 1] = { posX = node.posX, ranks = node.ranksPurchased or 0 }
+        nodes[#nodes + 1] = { id = nodeID, posX = node.posX, ranks = node.ranksPurchased or 0 }
       end
     end
   end

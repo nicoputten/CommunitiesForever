@@ -8,6 +8,75 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-115 Store and sync the talents taken, node by node (pairs with the site's WEB-100)
+CF-18 reads every node of the class tree in game (`{ posX, ranks }`) but keeps only the points per tree, so the site
+can show trees and points but not which talents. The site's WEB-100 (CommunitiesForever-Web#219) shows talent
+tooltips and the tree grid when a character has `talentNodes = { { id = <TraitNode ID>, ranks } }`. Touches
+`src/adapters/SelfInfo.lua`, `src/core/Talents.lua`, `src/core/Snapshot.lua`, `src/core/Merge.lua`, their specs,
+`docs/SYNC.md`, `docs/ARCHITECTURE.md`, VERIFY.md.
+- `SelfInfo` reads each node's id: the node ID `C_Traits.GetTreeNodes` lists (verified V29; no new API).
+- The character record keeps `talentNodes = { { id, ranks }, ... }`: only nodes with ranks 1..5, sorted by id, each
+  id once, at most 64 (`Talents.MAX_NODES`; a level 60 character has 51 points). `{}` when no talent is taken.
+- Updated on the existing talent events (`CHARACTER_POINTS_CHANGED`, `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED`,
+  2 s debounce) and at login. A change bumps the version, also a respec that keeps the points per tree. Not
+  readable for a moment (login): the stored nodes stay, as the tree points do.
+- Sent inside the character in RECORD (Battle.net and community, owner and relay) as an optional field.
+- Received nodes are cleaned by pure core `Talents.cleanNodes` (busted): whole ids 1..99999999, ranks 1..5, each id
+  once, extra fields dropped, sorted, capped; not a list: dropped.
+- Rule 8: an optional new field within `pv` 1. An older client never reads it; it stores and relays the character
+  whole (it copies every field), so the nodes still reach friends over it, and a newer receiver cleans them. Stored records from earlier versions have no `talentNodes`: nil everywhere means "not read yet", and the
+  next talent read fills it. No `Store.MIGRATIONS` step: nothing is renamed or reshaped, and the nodes can't be
+  derived from the stored tree points. `Compat_spec` passes unchanged.
+- Manual: VERIFY.md CF-115.
+
+### CF-114 The Hunt's prey: a hint to keep them targeted
+CF-110 takes the kill's victim from your target, then mouseover, then an enemy nameplate that died within 5 s of being
+seen alive (V73: the honor message doesn't name the victim). A kill on someone you never targeted or hovered counts
+without a victim, so the Hunt can't tick. Nico chose (2026-11-09): a prey hint so players target them, and a tip in
+the Hunt's text to turn enemy nameplates on. Hints only, nothing is blocked (recommend, not restrict). Touches
+`src/core/Doomsday.lua`, `src/core/DoomsdayView.lua`, `src/services/HuntPrey.lua` (new), `src/services/DoomsdayTracker.lua`,
+`src/ui/Tooltip.lua`, `src/ui/DoomsdayTab.lua`, their specs, `docs/DOOMSDAY.md`, VERIFY.md.
+- While the current character's Hunt (its faction's combination today) is not done, targeting or hovering an enemy
+  player of exactly that race and class adds "Your prey: The Hunt" to their unit tooltip, in the PvP track's colour
+  (the existing `TooltipDataProcessor` unit post-call, V6).
+- The same target or mouseover also prints "Prey in sight: <race> <class>. Keep them targeted for the kill." (no
+  names), at most once per player (GUID) per `Doomsday.PREY_CHAT_EVERY` (5 minutes). CF-91 removed chat lines that
+  a banner already shows; this one has no other place when you tab-target, and no setting applies.
+- Nothing for friendly players, other combinations, a done Hunt, a day without a Hunt, in a battleground or arena
+  (kills there score on the bg track, not for the Hunt), or without a community this character is in (Doomsday is
+  quiet then, CF-85).
+- The rule is pure core with busted tests: `Doomsday.isPrey(hunt, done, unit, instanceType)` and
+  `Doomsday.preyChatDue(said, key, now)`. Unit values come from `PvpInfo.enemy` (every value through
+  `ns.Safe.call`, a secret one is nil before any comparison, CF-108); the GUID passes `Safe.text`.
+- The Hunt's goal tooltip on the Doomsday tab (Today row and Board cell) adds "Target your prey, or turn on enemy
+  nameplates, so the kill knows who it was." (`DoomsdayView.HUNT_TIP`), and `docs/DOOMSDAY.md` says it too. The
+  site's and bot's Hunt texts live in the web repo: a follow-up there.
+- The draw had no Hunt then (`Doomsday.HUNT_SINCE` nil); it joins with pool version 4 (CF-104), so the hint shows from there.
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-114.
+
+### CF-113 Launch probe: the export of 2026-11-09
+The export of 2026-11-09 (build 70862). Same rule as CF-105 and CF-109: an answered check leaves the probe and
+FriendProbe's checklist gets a `done` marker. Touches `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeMissions.lua`, `tools/FriendProbe/Checklist.lua`, `tools/FriendProbe/Missions.lua`, the
+probe specs, `docs/API-FINDINGS.md`, VERIFY.md.
+- V120 passed (2 testers): `C_DeathRecap.GetRecapEvents()` names a player killer (`Player-` GUID, readable name). To
+  API-FINDINGS; out of VERIFY.md and `Probe.IDS`, its code removed; FriendProbe's item `done`. It unblocks the
+  killer goals of CF-81 (`p.revenge`, `b.revenge3`; `p.avenge`, `b.avenge3` also need a friend's killer, which CF-81
+  keeps local): not built here. The addon reads the recap only for a death's cause (`PvpInfo.recapDamage`).
+- V101 half answered (1 tester): posting an auction fires `AUCTION_HOUSE_AUCTION_CREATED` (`d.auctionPost` can be
+  built). V101 stays open for buying: the probe passes on `AUCTION_HOUSE_PURCHASE_COMPLETED` or `ERR_AUCTION_WON_S`
+  (no longer on a post); a pass stored for a post gives way to the first buy's. FriendProbe's item the same.
+- V60b: CF-109's fix works, the own link reads `opened Blizzard's view (IsTradeSkillLinked true, N recipes)` (2
+  testers). A friend's link while they were online still gave no window for 1 tester, likely another internal server
+  (bug 7, CF-107). V60 stays open for an offline friend and a friend on the same server; the answered own-link step
+  of VERIFY.md CF-109 is closed.
+- Re-confirmed, no change: V73 fails (`You x x x 1 Honor.`, the award without the victim), V70, V87. Still open: V74
+  (skull), V100 (inbox take), V108 (emote).
+- `Probe.IDS`: 11 checks (V82, V35b, V73, Hunt, V80, V96, V101, V108, V122, V123, V60b).
+- Compatibility (rule 8): nothing stored or sent changes shape; the probe stops writing V120 (its stored result stays
+  and is uploaded as before) and V101's detail now names a buy.
+
 ### CF-110 The PvP kill's victim from your target at the kill
 On Forever the kill's honor message is the plain award (`COMBATLOG_HONORAWARD`, V73) and never names the victim, so
 the Hunt, `p.punchUp5` / `p.punchDown5`, `p.skull`, `b.skulls3` and the other victim goals (CF-54, CF-55, CF-101)
@@ -56,6 +125,42 @@ change and the logout fire none. Touches `src/core/Members.lua`, `src/services/M
 - Same stored shape, no migration (rule 8): older versions keep writing it from the member list; the site merges
   by the newest `seenAt`.
 - Manual (VERIFY.md): change zone, log out, check `global.locations[<GUID>]` and the site after an upload.
+
+### CF-112 No "No player named '...' is currently playing." from our whispers
+Bug (Nico, v1.6.1): the line shows twice in chat. It is the game's answer to an addon whisper to a character that is
+offline. Whispers go out from Sync (HELLO, REQ, RECORD, RUNS, SCHED, RUNANSWER, KILL, BYE and the MISS of reliable
+delivery, all through Messenger) and from CF-84's guild invites (GINVREQ, GINVACK, GINVFAIL). Sync whispered every
+member the community list showed online, and that list lags after a logout (V52); peers who left without a BYE
+stayed online for KILL, RUNANSWER and BYE; the alt whispers stored guild members it can't see. The CHAT_MSG_SYSTEM
+filter meant to hide the line compared it with `ERR_CHAT_PLAYER_NOT_FOUND_S:format(name)` exactly, for 10 s: a
+"-Realm" in the line, another case or other quotes, and it never matched, so nothing was hidden and nothing was
+marked offline. Touches `src/core/Reach.lua` (new), `src/core/Outbox.lua`, `src/services/ReachTracker.lua` (new),
+`src/services/Messenger.lua`, `src/services/Sync.lua`, `src/services/GuildInvites.lua`, `src/adapters/Transport.lua`,
+`src/Core.lua`, their specs, VERIFY.md, CHANGELOG.md.
+- Pure rule in core (`Reach`): a character is online by the freshest source: Battle.net when it knows (the friend
+  is on this character: online; on another character: offline; friends who appear offline count as online), else the
+  later of the community presence and the last message heard from it (heard within `Reach.HEARD_FRESH`, 120 s).
+- A failed whisper blocks the name until it shows online again: something heard from it, or its community presence
+  going offline and then online. A presence that stayed online is what made it fail, so it does not lift the block.
+- Messenger whispers a community member only while it is online by that rule: `send` refuses, and parts already
+  queued are dropped at send time and when a whisper to that name fails (`Outbox:drop`). `/cf ping stats` counts
+  them ("not whispered (offline)").
+- `Sync.online()` leaves out a peer the rule shows offline (left without a BYE), so KILL, RUNANSWER and the logout BYE
+  don't go to them.
+- The guild alt (CF-84) asks members online first, then those no source knows; members known offline (Battle.net,
+  an earlier failure this session) are skipped. The member side's whispers back (GINVACK, GINVFAIL) pass the same
+  check.
+- The filter: the name is read from the line (`Reach.notFoundName`, the game's format string, else the English text
+  with either quote or none) and compared without case and "-Realm" with the names we whispered in the last
+  `Reach.FAILED_WINDOW` (30 s); the line is hidden in every chat window and reported once (WHISPER_FAILED, with the
+  name as we whispered it). A secret line can't be compared: shown, counted. Registered with
+  `ChatFrameUtil.AddMessageEventFilter`, else `ChatFrame_AddMessageEventFilter` (both guarded), again at
+  `PLAYER_ENTERING_WORLD` when neither existed at login. `/cf sync debug` prints which one, the counts, the last
+  name a line had that matched none of ours, and the names blocked.
+- Compatibility (rule 8): nothing stored or sent changes; only fewer whispers go out. Older versions keep whispering
+  as before; ours treats their messages as before.
+- Manual (VERIFY.md CF-112, V53, V129): a member logs out, `/cf sync` within the minute: no line; `/cf sync debug`
+  shows the filter and the block.
 
 ### CF-109 Launch probe: the export of 2026-11-08, and the V60b window check
 The export of 2026-11-08 (6 testers; builds 70790 and 70862). Same rule as CF-105: an answered check leaves the
@@ -216,26 +321,38 @@ Dungeon feature (boards DL01–DL05, shared "Data contract 1: kills"): kill time
   Golden fixtures unchanged.
 - Manual (VERIFY.md "CF-103").
 
-### CF-104 Pool version 4 (built now, released only on Nico's go)
-Nico (2026-11-07): retire "Defend home" and add what is ready, but hold the release. Pairs with the site's WEB-101,
-same release. **Not on develop until Nico says release:** the branch stays open (a PR in draft), so an addon or site
-release in between keeps pool 3. Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`,
-`src/adapters/missions/BattleEvents.lua`, `tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`,
-`docs/DOOMSDAY.md`, VERIFY.md, CHANGELOG.md.
+### CF-104 Pool version 4
+Nico (2026-11-07): retire "Defend home" and add what is ready. Nico (2026-11-09): build and release it now, with the
+joins below. Pairs with the site's WEB-101, same release. Touches: `src/core/Doomsday.lua`,
+`src/core/missions/Battle.lua`, `src/core/missions/World.lua`, `src/adapters/missions/BattleEvents.lua`,
+`src/adapters/missions/WorldEvents.lua`, `src/core/Pvp.lua` and `src/services/PvpTracker.lua` (the victim's GUID),
+`tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`, `tests/fixtures/missions/world.json`,
+`docs/DOOMSDAY.md`, VERIFY.md, CHANGELOG.md. Built 2026-11-09.
 - `Doomsday.POOL_VERSION = 4`.
 - **Retired:** `p.homeGuard` gets `retired = 4` (V123: own zones outside the capitals have no PvP type, so it only
   counts inside a capital). Pool 1 to 3 draws are unchanged.
-- **Joins (`since = 4`):** the flag missions from V121 (`UnitIsPVP("player")` reads after `PLAYER_FLAGS_CHANGED`):
-  `p.flagUp` (flag up), `p.flagHour` (an hour flagged), `b.flagged3h` (3 hours flagged in a week), each with a
-  registered progress and cases in `tests/fixtures/missions/battle.json`. The flagged time is a local fact of the
-  day or week (no new stored or sent shape).
-- **Joins only if their in-game check passed before the release:** `d.reward`, `d.fishFriend`, `d.feedFriend`
-  (VERIFY.md "CF-75"). Otherwise they wait for pool 5.
-- Golden `draws` cases for pool 4's days and weeks from its first day; the cases of pools 1 to 3 unchanged.
-- Compatibility (rule 8): an addon on pool 3 keeps drawing and recording pool 3 (`pool = 3` on its days); the release
-  notes ask friends to update.
-- Manual (VERIFY.md): flag up, stay flagged an hour; on the release day two friends on the new version see the same
-  Skirmish; Defend home never drawn.
+- **Joins (`since = 4`), each with a registered progress and cases:**
+  - The flag missions from V121 (`UnitIsPVP("player")` read on `PLAYER_FLAGS_CHANGED`, at login and each minute):
+    `p.flagUp` (10 minutes flagged on a character), `p.flagHour` (30 minutes flagged in one run, no death or unflag),
+    `b.flagged3h` (3 hours flagged, all characters of the week).
+  - `d.reward`, `d.fishFriend`, `d.feedFriend`: their in-game check passed (Nico, 2026-11-09).
+  - `d.summoned`: a friend's summon (`CONFIRM_SUMMON`, `C_SummonInfo.GetSummonConfirmSummoner()`, V114) accepted (a
+    post-hook on `C_SummonInfo.ConfirmSummon`, unverified).
+  - `d.auctionPost`: an auction posted (`AUCTION_HOUSE_AUCTION_CREATED` or `ERR_AUCTION_STARTED`, V101); buying
+    (`d.auctionBuy`) stays out.
+  - `p.revenge` ("Avenge a death"): a kill, outside a battleground, of the player who last killed that character that
+    day, by GUID: the killer from the death recap's last damage source (V120), the victim from CF-110's pick
+    (`Pvp.pickVictims` now returns the look's `guid`; `Pvp.killEntry` never keeps it).
+  - "Send mail" is `d.mailFriend`, already in pool 3; `d.mailbox` (the inbox) stays out.
+  - **The Hunt** (Nico, 2026-11-09, "add it to the pool"): `Doomsday.HUNT_SINCE = 4`; golden `draws.hunts` cases
+    with `pool: 4` and `huntSince: 4` in the golden file. The victim from CF-110's pick, the prey hint from CF-114.
+- Golden `draws` cases for pool 4's days and weeks from its first day, and three pool-4 swaps; the cases of pools 1
+  to 3 unchanged.
+- Compatibility (rule 8): an addon on pool 3 keeps drawing and recording pool 3 (`pool = 3` on its days); every
+  pool-4 id is already in its catalogue, so it scores a friend's pool-4 day. New local day and week facts only
+  (`battle.flagged`, `flagRun`, `flagBest`, `killers`, `revenge`; `world.summons`, `world.auctions`), read nil-safe;
+  nothing new is sent. The release notes ask friends to update.
+- Manual (VERIFY.md CF-104).
 
 ### CF-99 Pool version 3
 After the launch probe (CF-96) and the three tracker lanes (CF-74 #222, CF-75 #224 #225, CF-76 #221). Follows CF-77.

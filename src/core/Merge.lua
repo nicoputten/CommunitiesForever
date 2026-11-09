@@ -36,13 +36,16 @@ local function stripEscapes(value, depth)
   return copy
 end
 
--- Received characters: escape sequences removed, `pvp` (CF-52) only with its expected fields, and the recipe
--- fields (CF-38) only valid links and numeric recipe maps.
+-- Received characters: escape sequences removed, `pvp` (CF-52) only with its expected fields, the recipe
+-- fields (CF-38) only valid links and numeric recipe maps, and `talentNodes` (CF-115) only valid { id, ranks }.
 local function cleanChars(chars)
   local result = stripEscapes(chars, 0)
   for _, char in pairs(result or {}) do
     if type(char) == "table" and char.pvp ~= nil then char.pvp = ns.Pvp.clean(char.pvp) end
     if type(char) == "table" then ns.Recipes.clean(char) end
+    if type(char) == "table" and char.talentNodes ~= nil then
+      char.talentNodes = ns.Talents.cleanNodes(char.talentNodes)
+    end
   end
   return result
 end

@@ -5,7 +5,7 @@ local _, ns = ... -- requires ns.Calendar (load core/Calendar.lua first)
 
 local Doomsday = {}
 
-Doomsday.POOL_VERSION = 3
+Doomsday.POOL_VERSION = 4
 Doomsday.DEFAULT_RESET = 68400   -- 19:00 realm time, seconds after midnight
 Doomsday.DAY = 86400
 -- The first Doomsday day: the draw runs forward from here, so "never twice in a row" is exact.
@@ -175,7 +175,7 @@ local GOALS = {
     can = "hasCooking", fallback = { "d.secondary" } },
   { id = "d.cookRecipe", slot = "daily", category = "cooking", since = 3, points = 3, text = "Learn a cooking recipe",
     can = "hasCooking", fallback = { "d.secondary" } },
-  { id = "d.feedFriend", slot = "daily", category = "cooking", points = 3,
+  { id = "d.feedFriend", slot = "daily", category = "cooking", since = 4, points = 3,
     text = "Give a friend a dish cooked by an own character", can = "hasCooking", fallback = { "d.trade" } },
 
   -- fishing
@@ -189,7 +189,8 @@ local GOALS = {
     text = "Raise Fishing by 5 points", can = "hasFishing", fallback = { "d.secondary" } },
   { id = "d.fishKinds3", slot = "daily", category = "fishing", points = 3, text = "Catch 3 kinds of fish",
     can = "hasFishing", fallback = { "d.secondary" } },
-  { id = "d.fishFriend", slot = "daily", category = "fishing", points = 3, text = "Fish in a group with a friend",
+  { id = "d.fishFriend", slot = "daily", category = "fishing", since = 4, points = 3,
+    text = "Fish in a group with a friend",
     can = "hasFishing", fallback = { "d.groupFriend" } },
   { id = "d.fishNight", slot = "daily", category = "fishing", since = 3, points = 3, text = "Fish at night",
     can = "hasFishing", fallback = { "d.secondary" } },
@@ -269,7 +270,7 @@ local GOALS = {
   { id = "d.ride", slot = "daily", category = "travel", since = 3, points = 3, text = "Ride a mount for 15 minutes",
     can = "riding", fallback = { "d.roam4" } },
   { id = "d.crossSea", slot = "daily", category = "travel", since = 2, points = 3, text = "Cross the sea" },
-  { id = "d.summoned", slot = "daily", category = "travel", points = 3, text = "Get summoned by a friend" },
+  { id = "d.summoned", slot = "daily", category = "travel", since = 4, points = 3, text = "Get summoned by a friend" },
 
   -- combat
   { id = "d.kills30", slot = "daily", category = "combat", since = 3, points = 3, text = "Defeat 30 enemies",
@@ -292,7 +293,7 @@ local GOALS = {
   -- loot
   { id = "d.rare", slot = "daily", category = "loot", since = 3, points = 3, text = "Loot a rare item" },
   { id = "d.green5", slot = "daily", category = "loot", since = 3, points = 3, text = "Loot 5 uncommon items" },
-  { id = "d.reward", slot = "daily", category = "loot", points = 3, text = "Earn an uncommon quest reward" },
+  { id = "d.reward", slot = "daily", category = "loot", since = 4, points = 3, text = "Earn an uncommon quest reward" },
   { id = "d.coins10", slot = "daily", category = "loot", since = 3, points = 3, text = "Loot coins from 10 enemies" },
   { id = "d.equipNew", slot = "daily", category = "loot", since = 3, points = 3, text = "Wear a new find" },
   { id = "d.treasure", slot = "daily", category = "loot", points = 3, text = "Open a treasure chest" },
@@ -300,7 +301,8 @@ local GOALS = {
   -- economy
   { id = "d.vendorSale", slot = "daily", category = "economy", since = 3, points = 1, text = "Sell to a merchant" },
   { id = "d.vendorBuy", slot = "daily", category = "economy", since = 3, points = 1, text = "Buy from a merchant" },
-  { id = "d.auctionPost", slot = "daily", category = "economy", points = 3, text = "Put an item up for auction" },
+  { id = "d.auctionPost", slot = "daily", category = "economy", since = 4, points = 3,
+    text = "Put an item up for auction" },
   { id = "d.auctionBuy", slot = "daily", category = "economy", points = 3, text = "Buy at the auction house" },
   { id = "d.mailFriend", slot = "daily", category = "economy", since = 3, points = 1, text = "Send mail to a friend" },
   { id = "d.mailbox", slot = "daily", category = "economy", points = 1, text = "Empty the mailbox" },
@@ -458,7 +460,7 @@ local GOALS = {
   { id = "p.enemyLand", slot = "skirmish", category = "worldKills", needs = "kill", points = 3,
     text = "Kill in the enemy's territory", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.homeGuard", slot = "skirmish", category = "worldKills", needs = "kill", since = 3, points = 3,
-    text = "Defend home: a kill in friendly territory", can = "level20", fallback = { "p.loneWolf" } },
+    text = "Defend home: a kill in friendly territory", can = "level20", fallback = { "p.loneWolf" }, retired = 4 },
   { id = "p.contested", slot = "skirmish", category = "worldKills", needs = "kill", points = 3,
     text = "Kills in contested land", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.skull", slot = "skirmish", category = "targets", needs = "kill", points = 5, text = "Slay a skull" },
@@ -480,9 +482,9 @@ local GOALS = {
     text = "Kills of 2 Hunt combinations" },
   { id = "p.streak3", slot = "skirmish", category = "streaks", needs = "kill", points = 3,
     text = "Three in a row without dying" },
-  { id = "p.revenge", slot = "skirmish", category = "streaks", needs = "kill", points = 5,
+  { id = "p.revenge", slot = "skirmish", category = "streaks", needs = "kill", since = 4, points = 5,
     text = "Revenge: kill the player who killed you" },
-  { id = "p.flagHour", slot = "skirmish", category = "streaks", needs = "flag", points = 3,
+  { id = "p.flagHour", slot = "skirmish", category = "streaks", needs = "flag", since = 4, points = 3,
     text = "Stay flagged for 30 minutes without dying" },
   { id = "p.comeback", slot = "skirmish", category = "streaks", needs = "kill", points = 3,
     text = "Comeback: a kill within 5 minutes of a death" },
@@ -529,7 +531,8 @@ local GOALS = {
   { id = "p.chicken", slot = "skirmish", category = "taunts", needs = "emote", points = 1,
     text = "Call an enemy a chicken" },
   { id = "p.bowKill", slot = "skirmish", category = "taunts", needs = "kill", points = 3, text = "Bow, then win" },
-  { id = "p.flagUp", slot = "skirmish", category = "taunts", needs = "flag", points = 1, text = "Flag up for PvP" },
+  { id = "p.flagUp", slot = "skirmish", category = "taunts", needs = "flag", since = 4, points = 1,
+    text = "Flag up for PvP" },
 
   { id = "b.zone25", slot = "bounty", category = "worldKills", needs = "kill", since = 1, points = 10,
     text = "25 kills in the zone of the week", can = "level20", fallback = { "b.kills50" }, canFrom = 2 },
@@ -574,7 +577,7 @@ local GOALS = {
   { id = "b.untouchable3", slot = "bounty", category = "streaks", needs = "kill", points = 10,
     text = "Untouchable on 3 days" },
   { id = "b.revenge3", slot = "bounty", category = "streaks", needs = "kill", points = 10, text = "Revenge 3 times" },
-  { id = "b.flagged3h", slot = "bounty", category = "streaks", needs = "flag", points = 5,
+  { id = "b.flagged3h", slot = "bounty", category = "streaks", needs = "flag", since = 4, points = 5,
     text = "3 hours flagged for PvP" },
   { id = "b.kd", slot = "bounty", category = "streaks", needs = "kill", points = 10, text = "More kills than deaths" },
   { id = "b.duoKills15", slot = "bounty", category = "teamwork", needs = "kill", points = 10,
@@ -700,8 +703,9 @@ for i, g in ipairs(GOALS) do
   BY_ID[g.id] = g
 end
 
--- The Hunt joins with the pool version that verifies victim race and class (CF-54); nil: not yet.
-Doomsday.HUNT_SINCE = nil
+-- The Hunt joins with the pool version that verifies victim race and class (CF-54): pool version 4 (CF-104, Nico
+-- 2026-11-09; the victim comes from CF-110's pick). Pool versions 1 to 3 draw no Hunt.
+Doomsday.HUNT_SINCE = 4
 
 function Doomsday.goal(id) return BY_ID[id] end
 
@@ -922,6 +926,38 @@ end
 function Doomsday.hunt(n, faction, version)
   local draw = Doomsday.draw(n, version)
   return draw.hunt and draw.hunt[faction] or nil
+end
+
+-- ===== Prey (CF-114) =====
+
+-- Seconds before the same enemy player gets the "Prey in sight" chat line again.
+Doomsday.PREY_CHAT_EVERY = 300
+
+-- Instance types where a kill never counts for the Hunt (battleground kills score on the bg track).
+local NO_HUNT_INSTANCE = { pvp = true, arena = true }
+
+--[[ CF-114: true when a unit is the Hunt's prey: the current character's Hunt (hunt = { race, class }, nil when
+there is none today) is not done yet, the unit is an enemy player (unit = { enemy, player, race, class }, as the
+adapter read it, a secret value already nil) of that exact race and class, and the player is not in a battleground or
+arena (instanceType from GetInstanceInfo, nil: unknown, counts as outside). ]]
+function Doomsday.isPrey(hunt, done, unit, instanceType)
+  if type(hunt) ~= "table" or done == true or type(unit) ~= "table" then return false end
+  if unit.enemy ~= true or unit.player ~= true then return false end
+  if instanceType ~= nil and NO_HUNT_INSTANCE[instanceType] then return false end
+  if type(hunt.race) ~= "string" or type(hunt.class) ~= "string" then return false end
+  return unit.race == hunt.race and unit.class == hunt.class
+end
+
+--[[ CF-114: true when the prey chat line for key (the unit's GUID) may show at now, and records it. said = { [key] =
+when it was last said }; entries older than PREY_CHAT_EVERY are dropped. A key that isn't a non-empty string: never. ]]
+function Doomsday.preyChatDue(said, key, now)
+  if type(said) ~= "table" or type(key) ~= "string" or key == "" or type(now) ~= "number" then return false end
+  for k, at in pairs(said) do
+    if now - at >= Doomsday.PREY_CHAT_EVERY then said[k] = nil end
+  end
+  if said[key] then return false end
+  said[key] = now
+  return true
 end
 
 -- ===== The schedule from the site (CF-68) =====

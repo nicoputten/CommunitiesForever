@@ -113,4 +113,13 @@ describe("DoomsdayView (CF-57)", function()
     assert.are.equal("11 h 30 m", V.until_(11 * 3600 + 1800))
     assert.is_function(D.goal)
   end)
+
+  it("gives the Hunt its nameplate tip and the prey texts (CF-114)", function()
+    local rows = V.rows({ set = { "d.quests10", "hunt" }, done = {} }, nil, { { race = "Scourge", class = "MAGE" } })
+    assert.is_nil(rows[1].hint)
+    assert.are.equal("Target your prey, or turn on enemy nameplates, so the kill knows who it was.", rows[2].hint)
+    assert.are.equal("Your prey: The Hunt", V.PREY_LINE)
+    assert.are.equal("Prey in sight: Undead Mage. Keep them targeted for the kill.",
+      V.preyChat({ race = "Scourge", class = "MAGE" }))
+  end)
 end)

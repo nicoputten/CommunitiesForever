@@ -22,6 +22,16 @@ function DoomsdayView.huntText(hunt, single)
   return text .. "s"
 end
 
+-- CF-114: the Hunt's tip (its goal tooltip) and the prey hint's tooltip line and chat line.
+DoomsdayView.HUNT_TIP = "Target your prey, or turn on enemy nameplates, so the kill knows who it was."
+DoomsdayView.PREY_LINE = "Your prey: The Hunt"
+
+-- "Prey in sight: Night Elf Druid. Keep them targeted for the kill."
+function DoomsdayView.preyChat(hunt)
+  local text = hunt and (DoomsdayView.raceName(hunt.race) .. " " .. DoomsdayView.className(hunt.class)) or "the Hunt"
+  return "Prey in sight: " .. text .. ". Keep them targeted for the kill."
+end
+
 -- "3 d 4 h", "11 h 30 m", "12 m".
 function DoomsdayView.until_(seconds)
   local minutes = math.max(0, math.floor(seconds / 60))
@@ -61,6 +71,7 @@ function DoomsdayView.rows(entry, progress, hunts)
       text = DoomsdayView.goalText(id, hunts), value = value, target = target, done = at ~= nil, at = at,
       fraction = at and 1 or (target > 0 and value / target or 0),
       instead = original and DoomsdayView.goalText(original) or nil,
+      hint = id == "hunt" and DoomsdayView.HUNT_TIP or nil, -- CF-114
     }
   end
   return rows

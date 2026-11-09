@@ -18,7 +18,9 @@ Transport.CHANNEL_RECEIVED = "CF_TRANSPORT_CHANNEL_RECEIVED"
 Transport.WHISPER_MAX = 255
 
 local whispered = {} -- name -> time of our last whisper (to recognize "player not found" for it)
-local FAILED_WINDOW = 10
+-- CF-112: how the "No player named" filter is set up and what it saw (/cf sync debug, VERIFY.md V53 and V129).
+local filter = { via = nil, hidden = 0, shown = 0, secret = 0, lastShown = nil }
+local lastLine, lastLineAt -- the line the filter last hid (it runs once per chat window for the same line)
 
 -- C_ChatInfo.RegisterAddonMessagePrefix is verified (API-FINDINGS.md).
 function Transport.registerPrefix(prefix)
@@ -32,7 +34,9 @@ end
 
 -- An addon whisper to a character (verified, V50: arrives at once, also to yourself).
 function Transport.whisper(name, prefix, text)
-  whispered[name] = Transport.now()
+  local now = Transport.now()
+  ns.Reach.prune(whispered, now)
+  whispered[name] = now
   if C_ChatInfo and C_ChatInfo.SendAddonMessage then
     C_ChatInfo.SendAddonMessage(prefix, text, "WHISPER", name)
   end
@@ -52,6 +56,60 @@ end
 -- GetTime (seconds, sub-second precision) for the send rate. Unverified (VERIFY.md V24).
 function Transport.now()
   return GetTime and GetTime() or GetServerTime()
+end
+
+-- CF-112: { via, hidden, shown, secret, lastShown }: the filter function used ("ChatFrameUtil.AddMessageEventFilter",
+-- "ChatFrame_AddMessageEventFilter" or nil when none exists), lines hidden, "No player named" lines not for a whisper
+-- of ours (shown as usual; lastShown the last name in them) and unreadable (secret) system lines seen soon after a
+-- whisper of ours (shown: they can't be compared).
+function Transport.filterInfo()
+  return { via = filter.via, hidden = filter.hidden, shown = filter.shown, secret = filter.secret,
+           lastShown = filter.lastShown }
+end
+
+--[[ Whispering someone offline makes the game print "No player named '...' is currently playing." (CHAT_MSG_SYSTEM,
+ERR_CHAT_PLAYER_NOT_FOUND_S): hide that line when it names a character we whispered in the last Reach.FAILED_WINDOW
+seconds, and report it once as WHISPER_FAILED (with the name as we whispered it). The name in the line is compared
+without case and "-Realm" (core/Reach), so "First Last-Realm" in the line matches our "First Last". A secret line
+can't be read or compared: shown. Unverified on Forever (VERIFY.md V53, V129). ]]
+local function onSystemLine(addon, message)
+  if ns.Safe.secret(message) then
+    if next(whispered) then filter.secret = filter.secret + 1 end
+    return false
+  end
+  if type(message) ~= "string" then return false end
+  local now = Transport.now()
+  if message == lastLine and lastLineAt and now - lastLineAt < 1 then return true end -- the next chat window
+  local format = ns.Safe.value(ERR_CHAT_PLAYER_NOT_FOUND_S)
+  local reported = ns.Reach.notFoundName(type(format) == "string" and format or ns.Reach.NOT_FOUND_TEXT, message)
+  if not reported then return false end
+  local name = ns.Reach.matchFailure(whispered, reported, now)
+  if not name then
+    filter.shown, filter.lastShown = filter.shown + 1, reported
+    return false
+  end
+  filter.hidden = filter.hidden + 1
+  lastLine, lastLineAt = message, now
+  addon:SendMessage(Transport.WHISPER_FAILED, name)
+  return true
+end
+
+-- Registers the CHAT_MSG_SYSTEM filter once, with whichever filter function exists (both guarded, V53).
+local function registerFilter(addon)
+  if filter.via then return end
+  local candidates = {
+    { ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter, "ChatFrameUtil.AddMessageEventFilter" },
+    { ChatFrame_AddMessageEventFilter, "ChatFrame_AddMessageEventFilter" },
+  }
+  for _, candidate in ipairs(candidates) do
+    if type(candidate[1]) == "function" then
+      local ok = pcall(candidate[1], "CHAT_MSG_SYSTEM", function(_, _, message) return onSystemLine(addon, message) end)
+      if ok then
+        filter.via = candidate[2]
+        return
+      end
+    end
+  end
 end
 
 function Transport.watch(addon, prefix)
@@ -76,21 +134,10 @@ function Transport.watch(addon, prefix)
       addon:SendMessage(Transport.CHANNEL_RECEIVED, text, Transport.shortName(sender), target, localID, channelName)
     end
   end)
-  -- Whispering someone who just went offline makes the game print "No player named ... is currently
-  -- playing": hide that line for names we whispered seconds ago, and report it (unverified, VERIFY.md V53).
-  local addFilter = (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter) or ChatFrame_AddMessageEventFilter
-  local pattern = ERR_CHAT_PLAYER_NOT_FOUND_S
-  if addFilter and type(pattern) == "string" then
-    addFilter("CHAT_MSG_SYSTEM", function(_, _, message)
-      if not ns.Safe.text(message) then return false end
-      for name, at in pairs(whispered) do
-        if Transport.now() - at < FAILED_WINDOW and message == pattern:format(name) then
-          addon:SendMessage(Transport.WHISPER_FAILED, name)
-          return true
-        end
-      end
-      return false
-    end)
+  registerFilter(addon)
+  -- CF-112: ChatFrameUtil may not be there yet this early on some clients: try once more after the loading screen.
+  if not filter.via then
+    ns.Events.register(events, "PLAYER_ENTERING_WORLD", function() registerFilter(addon) end)
   end
 end
 

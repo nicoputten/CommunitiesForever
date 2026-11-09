@@ -42,12 +42,14 @@ function addon:OnEnable()
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
   ns.PlayTracker.start(self) -- CF-53: after ActivityTracker (instance events) and MemberTracker (groups)
   ns.DoomsdayTracker.start(self) -- CF-56: after the trackers whose feed events count; before Sync (HELLO dd)
+  ns.HuntPrey.start(self) -- CF-114: the Hunt's prey hint; after PvpTracker (PvpInfo.watch) and DoomsdayTracker
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)
   ns.Minimap.start(self)
   ns.Planner.start(self) -- CF-46: planned runs (Data\Runs.lua, stored, sync); before Sync's first HELLO
   ns.KillLog.start(self) -- CF-106: the kill log of the Runs and Dungeons tabs
+  ns.ReachTracker.start(self) -- CF-112: who may be whispered; before Messenger and GuildInvites, which ask it
   ns.Messenger.start(self)
   ns.Ping.start(self)
   ns.Sync.start(self)
@@ -171,6 +173,7 @@ local COMMANDS = {
         self:Print(ns.Messenger.debugOn() and "Sync debug on until /reload: message parts, missing parts and resends "
           .. "are printed."
           or "Sync debug off.")
+        if ns.Messenger.debugOn() then self:Print("|cffa0a0a0[sync]|r " .. ns.ReachTracker.describe()) end -- CF-112
         return
       end
       ns.Sync.announce()
@@ -183,8 +186,8 @@ local COMMANDS = {
         return
       end
       local s = ns.Messenger.stats()
-      self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed.",
-        s.sent, s.received, s.dropped, s.queued, s.resent, s.missed))
+      self:Print(string.format("Messages: %d chunks sent, %d received, %d dropped, %d queued, %d resent, %d missed, "
+        .. "%d not whispered (offline).", s.sent, s.received, s.dropped, s.queued, s.resent, s.missed, s.offline or 0))
     end },
   { name = "doomsday", help = { "/cf doomsday - today's and this week's Doomsday goals, streak and points" },
     run = function(self)

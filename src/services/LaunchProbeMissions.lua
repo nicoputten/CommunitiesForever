@@ -1,16 +1,16 @@
 --[[ LaunchProbeMissions (CF-82): the hidden probe's checks for the Doomsday mission catalogue and the PvP catalogue
-(V120 to V123). Same rules as services/LaunchProbe.lua: silent, guarded, cheap, no raw chat text and no player names
-except the killer's (V120). Left out: the jump hook (V118, a "blocked" popup is a possible answer) and the campfire
-(V119, judged by eye).
+(V122, V123). Same rules as services/LaunchProbe.lua: silent, guarded, cheap, no raw chat text and no player names.
+Left out: the jump hook (V118, a "blocked" popup is a possible answer) and the campfire (V119, judged by eye).
 CF-96: only the checks the launch results (build 70790) left open run: V96, V101, V108 (the emote part), V114 and
 V120 to V123. The answered ones are in docs/API-FINDINGS.md "Forever launch probe". CF-109: V114 answered (build
-70862), its check is gone. ]]
+70862), its check is gone. CF-113: V120 answered (build 70862: the recap names a player killer), its check is gone;
+posting an auction answered (AUCTION_HOUSE_AUCTION_CREATED), V101 checks only buying. ]]
 local _, ns = ...
 
 local LaunchProbe = ns.LaunchProbe
 local u = LaunchProbe.util
 local Val, Vals, readable, str, get = u.Val, u.Vals, u.readable, u.str, u.get
-local matches, result, note, info, passed, after, now = u.matches, u.result, u.note, u.info, u.passed, u.after, u.now
+local matches, result, note, info, passed, now = u.matches, u.result, u.note, u.info, u.passed, u.now
 local on = LaunchProbe.on
 
 -- ===== V108: an emote on a target (the whisper part is answered) =====
@@ -26,46 +26,21 @@ LaunchProbe.hook("DoEmote", function(token)
   end
 end)
 
--- ===== V96, V101: home inn, auctions (V114, summons, answered: CF-109) =====
+-- ===== V96, V101: home inn, buying at the auction house (posting and V114, summons, answered: CF-113, CF-109) =====
+-- A pass stored for a posted auction (before CF-113) is replaced by the first buy's pass (Probe.record).
 local function Message(text)
-  if str(text) and matches(text, "ERR_AUCTION_STARTED") then result("V101", "pass", "posted: ERR_AUCTION_STARTED") end
+  if str(text) and matches(text, "ERR_AUCTION_WON_S") then result("V101", "pass", "bought: ERR_AUCTION_WON_S") end
 end
 on("UI_INFO_MESSAGE", function(_, text) Message(text) end)
 on("CHAT_MSG_SYSTEM", Message)
 
-on("AUCTION_HOUSE_AUCTION_CREATED", function() result("V101", "pass", "posted: AUCTION_HOUSE_AUCTION_CREATED") end)
+on("AUCTION_HOUSE_PURCHASE_COMPLETED", function()
+  result("V101", "pass", "bought: AUCTION_HOUSE_PURCHASE_COMPLETED")
+end)
 on("PLAYER_BINDING_CHANGED", function()
   local place = get(GetBindLocation)
   result("V96", str(place) and "pass" or "fail", "GetBindLocation " .. Val(place))
 end)
-
--- ===== V120: who killed you, from the death recap (1 s after the death) =====
-local function Killer()
-  local recap = C_DeathRecap and C_DeathRecap.GetRecapEvents
-  if not recap then
-    result("V120", "fail", "C_DeathRecap.GetRecapEvents missing")
-    return
-  end
-  local events = get(recap)
-  if type(events) ~= "table" then
-    info("V120", "no recap events (" .. Val(events) .. ")")
-    return
-  end
-  local last
-  for _, e in ipairs(events) do
-    if type(e) == "table" then last = e end
-  end
-  if not last then return end
-  local guid = last.sourceGUID
-  note("V120", "last recap source: " .. (str(guid) and (guid:match("^(%a+)") or "?") or Val(guid)) .. ", name "
-    .. (str(last.sourceName) and "readable" or Val(last.sourceName)))
-  if str(last.sourceName) and str(guid) and guid:match("^Player%-") then
-    result("V120", "pass", "killed by player " .. last.sourceName)
-  else
-    info("V120", "last recap source not a player with a name; a death to a player still to see")
-  end
-end
-on("PLAYER_DEAD", function() after(1, Killer) end)
 
 -- ===== V122: the battleground score (at most once a minute) =====
 local scoreAt

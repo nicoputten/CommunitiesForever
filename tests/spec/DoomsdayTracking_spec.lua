@@ -136,7 +136,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
       local c = cases[1]
       load(function(s) s.serverTime = D.dayStart(c.day, CET, RESET) + 3600 end, file(c.schedule))
       local day = c.schedule.days[tostring(c.day)]
-      local scheduled = { day.daily[1], day.daily[2], day.daily[3], day.skirmish }
+      local scheduled = { day.daily[1], day.daily[2], day.daily[3], day.skirmish, "hunt" } -- CF-104: the Hunt
       assert.are.same(scheduled, beforeSwaps(goals().days[c.day]))
       assert.are.equal(c.schedule.v, addon.db.global.doomsdaySchedule.v)
       assert.are.equal(c.schedule.v, ns.DoomsdayTracker.missionScheduleVersion())
@@ -144,7 +144,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
       state.serverTime = state.serverTime + 86400
       quest()
       local normal = D.draw(c.day + 1)
-      assert.are.same({ normal.dailies[1], normal.dailies[2], normal.dailies[3], normal.skirmish },
+      assert.are.same({ normal.dailies[1], normal.dailies[2], normal.dailies[3], normal.skirmish, "hunt" },
         beforeSwaps(goals().days[c.day + 1]))
     end)
 
@@ -252,6 +252,38 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     local today = ns.DoomsdayTracker.today()
     local week = addon.db.global.self.doomsday.weeks[ns.Doomsday.week(today)]
     assert.are.same({ 2, 1, 1, 1 }, { week.fish, week.trades, week.craftTrade, week.discoveries })
+    for name in pairs(stubs) do _G[name] = nil end
+  end)
+
+  -- CF-104: the pool-4 trackers' events reach today's facts (flag time, revenge, an auction posted).
+  it("counts the flagged time, a revenge and a posted auction locally", function()
+    local flagged, recap = false, nil
+    local stubs = { UnitIsPVP = function(unit) return unit == "player" and flagged end,
+                    C_DeathRecap = { GetRecapEvents = function() return recap end },
+                    ERR_AUCTION_STARTED = "Auction created." }
+    load(function()
+      for name, value in pairs(stubs) do _G[name] = value end
+    end)
+    local me = _G.UnitGUID("player")
+    flagged = true
+    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
+    state.serverTime = state.serverTime + 300
+    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
+    state.serverTime = state.serverTime + 300
+    flagged = false
+    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
+    recap = { { timestamp = 1, event = "SWING_DAMAGE", sourceGUID = "Player-1-KILLER" } }
+    wowapi.fireEvent(state, "PLAYER_DEAD")
+    wowapi.runTimers(state)
+    addon:SendMessage(ns.PvpTracker.VICTIM, "Player-1-KILLER", false)
+    wowapi.fireEvent(state, "AUCTION_HOUSE_AUCTION_CREATED")
+    wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "Auction created.") -- the same auction: counted once
+    local today = ns.DoomsdayTracker.today()
+    local day = addon.db.global.self.doomsday.days[today]
+    assert.are.same({ 600, 1, 1 }, { day.battle.flagged[me], day.battle.revenge, day.world.auctions })
+    assert.is_nil(day.battle.flagRun[me])
+    local week = addon.db.global.self.doomsday.weeks[ns.Doomsday.week(today)]
+    assert.are.equal(600, week.battle.flagged[me])
     for name in pairs(stubs) do _G[name] = nil end
   end)
 

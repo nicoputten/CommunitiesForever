@@ -112,9 +112,18 @@ local function sendGuild(message)
   trace("to the guild: %s -> %s", message.t, tostring(result))
 end
 
-local function whisper(name, message)
+-- CF-112: never to a character known to be offline (or whose last whisper failed); one no source knows is whispered
+-- (the alt, outside the guild, sees no presence of the members it asks). guid: the character's, when known. Returns
+-- true when sent.
+local function whisper(name, message, guid)
+  local ok, status = ns.ReachTracker.mayWhisper(name, guid, true)
+  if not ok then
+    trace("not to %s: %s (%s)", name, message.t, status)
+    return false
+  end
   ns.Guild.whisper(name, ns.GuildInvite.PREFIX, encode(message))
   trace("to %s: %s", name, message.t)
+  return true
 end
 
 local function randomId()
@@ -280,14 +289,22 @@ local function startAttempt()
     stopForGood(guild, mismatch)
     return
   end
-  local candidates = ns.GuildInvite.candidates(entry.roster, ownGuids())
-  if #candidates == 0 then
+  local stored = ns.GuildInvite.candidates(entry.roster, ownGuids())
+  if #stored == 0 then
     trace("no guild members stored to ask")
     return
   end
+  -- CF-112: the GUID of each stored name, so Battle.net can tell where its owner is; members online first, those
+  -- known offline left out (ReachTracker).
+  local guids = {}
+  for g, member in pairs(entry.roster) do
+    if type(member) == "table" and type(member.name) == "string" then guids[member.name] = g end
+  end
+  local candidates = ns.Reach.order(stored, function(name) return ns.ReachTracker.status(name, guids[name]) end)
   alt = alt or { attempts = 0 }
   alt.attempts = alt.attempts + 1
   alt.guild, alt.code, alt.candidates, alt.index, alt.done = guild, key.code, candidates, 0, false
+  alt.guids = guids
   alt.id = randomId()
   trace("attempt %d: %d members to ask", alt.attempts, #candidates)
   askNext()
@@ -316,19 +333,22 @@ end
 function askNext()
   stopTimer()
   if not alt or alt.done then return end
-  alt.index = alt.index + 1
-  local name = alt.candidates[alt.index]
-  if not name then
-    attemptFailed()
-    return
-  end
   local at = now()
   local selfInfo = ns.SelfInfo.read()
+  -- The next member that may be whispered now (CF-112: one that went offline or failed since the attempt began is
+  -- skipped). The name exactly as the guild's member list gave it (C_Club.GetMemberInfo), never built (V131).
+  repeat
+    alt.index = alt.index + 1
+    local name = alt.candidates[alt.index]
+    if not name then
+      attemptFailed()
+      return
+    end
+  until whisper(name, { t = "GINVREQ", id = alt.id, at = at,
+                        p = ns.GuildInvite.proof(alt.code, alt.guild, selfInfo.name, at), guid = selfInfo.guid,
+                        dn = ns.GuildInvite.cleanDisplayName(addonRef.db.global.self.displayName) },
+                alt.guids and alt.guids[name])
   requestedAt = at
-  -- The name exactly as the guild's member list gave it (C_Club.GetMemberInfo), never built from parts (V131).
-  whisper(name, { t = "GINVREQ", id = alt.id, at = at,
-                  p = ns.GuildInvite.proof(alt.code, alt.guild, selfInfo.name, at), guid = selfInfo.guid,
-                  dn = ns.GuildInvite.cleanDisplayName(addonRef.db.global.self.displayName) })
   alt.timer = C_Timer.NewTimer(ns.GuildInvite.ACK_WAIT, function()
     alt.timer = nil
     askNext()

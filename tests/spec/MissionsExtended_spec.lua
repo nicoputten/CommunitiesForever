@@ -57,10 +57,10 @@ describe("Missions: extended (CF-74)", function()
       for _, own in ipairs(Extended.IDS) do found = found or own == id end
       assert.is_false(found, id)
     end
-    -- CF-99: the rest joined pool version 3; these three wait for their in-game check (VERIFY.md CF-74).
-    local waiting = { ["d.reward"] = true, ["d.fishFriend"] = true, ["d.feedFriend"] = true }
+    -- CF-99: the rest joined pool version 3; these three joined pool version 4 after their in-game check (CF-104).
+    local later = { ["d.reward"] = true, ["d.fishFriend"] = true, ["d.feedFriend"] = true }
     for _, id in ipairs(Extended.IDS) do
-      assert.are.equal(not waiting[id] and 3 or nil, ns.Doomsday.goal(id).since, id)
+      assert.are.equal(later[id] and 4 or 3, ns.Doomsday.goal(id).since, id)
     end
   end)
 
