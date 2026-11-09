@@ -58,6 +58,7 @@ src\core\Identity.lua
 src\core\Linker.lua
 src\core\Protocol.lua
 src\core\Outbox.lua
+src\core\Reach.lua
 src\core\Format.lua
 src\core\Card.lua
 
@@ -122,6 +123,7 @@ src\services\CommunityChat.lua
 src\services\SyncChannel.lua
 src\services\MemberTracker.lua
 src\services\PresenceTracker.lua
+src\services\ReachTracker.lua
 src\services\Debug.lua
 src\services\ViewModel.lua
 src\services\Messenger.lua

@@ -719,6 +719,24 @@ describe("GuildInvites (CF-84)", function()
       assert.are.equal(r[1].message.id, r[2].message.id)
     end)
 
+    it("skips a member whose owner Battle.net shows on another character, and one whose whisper failed (CF-112)",
+      function()
+      -- Cora belongs to a Battle.net friend who is in Forever on another character right now.
+      install({ inGuild = false, vault = VAULT, people = {
+        ["Solvar#2032"] = { chars = { ["Player-4619-0CCCCCCC"] = { name = "Cora Lovewell" } } } } })
+      wowapi.runTimers(state)
+      local r = requests()
+      assert.are.equal(1, #r)
+      assert.are.equal("Ada Lovewell", r[1].target)
+      -- Ada is offline: hidden, and not asked again in the next attempt.
+      local filter = state.chatFilters.CHAT_MSG_SYSTEM[1]
+      assert.is_true(filter(nil, "CHAT_MSG_SYSTEM", "No player named 'Ada Lovewell' is currently playing."))
+      for _ = 1, 5 do wowapi.runTimers(state) end
+      for i = 2, #requests() do
+        assert.are.equal("Dina Lovewell", requests()[i].target)
+      end
+    end)
+
     it("asks the next member when one does not answer, and stops once the acknowledged invite arrives", function()
       install({ inGuild = false, vault = VAULT })
       wowapi.runTimers(state)
