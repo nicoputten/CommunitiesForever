@@ -8,6 +8,27 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-115 Store and sync the talents taken, node by node (pairs with the site's WEB-100)
+CF-18 reads every node of the class tree in game (`{ posX, ranks }`) but keeps only the points per tree, so the site
+can show trees and points but not which talents. The site's WEB-100 (CommunitiesForever-Web#219) shows talent
+tooltips and the tree grid when a character has `talentNodes = { { id = <TraitNode ID>, ranks } }`. Touches
+`src/adapters/SelfInfo.lua`, `src/core/Talents.lua`, `src/core/Snapshot.lua`, `src/core/Merge.lua`, their specs,
+`docs/SYNC.md`, `docs/ARCHITECTURE.md`, VERIFY.md.
+- `SelfInfo` reads each node's id: the node ID `C_Traits.GetTreeNodes` lists (verified V29; no new API).
+- The character record keeps `talentNodes = { { id, ranks }, ... }`: only nodes with ranks 1..5, sorted by id, each
+  id once, at most 64 (`Talents.MAX_NODES`; a level 60 character has 51 points). `{}` when no talent is taken.
+- Updated on the existing talent events (`CHARACTER_POINTS_CHANGED`, `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED`,
+  2 s debounce) and at login. A change bumps the version, also a respec that keeps the points per tree. Not
+  readable for a moment (login): the stored nodes stay, as the tree points do.
+- Sent inside the character in RECORD (Battle.net and community, owner and relay) as an optional field.
+- Received nodes are cleaned by pure core `Talents.cleanNodes` (busted): whole ids 1..99999999, ranks 1..5, each id
+  once, extra fields dropped, sorted, capped; not a list: dropped.
+- Rule 8: an optional new field within `pv` 1. An older client never reads it; it stores and relays the character
+  whole (it copies every field), so the nodes still reach friends over it, and a newer receiver cleans them. Stored records from earlier versions have no `talentNodes`: nil everywhere means "not read yet", and the
+  next talent read fills it. No `Store.MIGRATIONS` step: nothing is renamed or reshaped, and the nodes can't be
+  derived from the stored tree points. `Compat_spec` passes unchanged.
+- Manual: VERIFY.md CF-115.
+
 ### CF-114 The Hunt's prey: a hint to keep them targeted
 CF-110 takes the kill's victim from your target, then mouseover, then an enemy nameplate that died within 5 s of being
 seen alive (V73: the honor message doesn't name the victim). A kill on someone you never targeted or hovered counts

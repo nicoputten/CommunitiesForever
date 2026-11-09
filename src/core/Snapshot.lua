@@ -1,5 +1,5 @@
 -- Snapshot: build and compare character snapshots. Pure Lua, no WoW globals.
--- Requires ns.Merge and ns.Recipes (load core/Recipes.lua and core/Merge.lua first).
+-- Requires ns.Merge, ns.Recipes and ns.Talents (load core/Recipes.lua, core/Merge.lua and core/Talents.lua first).
 local _, ns = ...
 
 local Snapshot = {}
@@ -35,6 +35,8 @@ function Snapshot.build(info)
       char.talents[i] = { name = tree.name, points = tree.points }
     end
   end
+  -- CF-115: the talents taken, node by node ({ { id, ranks } }, sorted by id); nil when not readable.
+  char.talentNodes = ns.Talents.cleanNodes(info.talentNodes)
   char.role = char.roleOverride or char.autoRole
   char.quests = info.quests -- CF-19: { [questID] = { title, area, dungeon } }, already normalized
   return char
@@ -83,6 +85,7 @@ function Snapshot.equal(a, b)
     if a[field] ~= b[field] then return false end
   end
   return professionsEqual(a.professions or {}, b.professions or {}) and talentsEqual(a.talents, b.talents)
+    and ns.Talents.nodesEqual(a.talentNodes, b.talentNodes) -- CF-115: a respec within a tree counts too
     and questsEqual(a.quests, b.quests)
 end
 
@@ -104,6 +107,7 @@ function Snapshot.apply(record, info, now)
     if char.talents == nil then
       char.talents, char.mainTree, char.autoRole = previous.talents, previous.mainTree, previous.autoRole
     end
+    if char.talentNodes == nil then char.talentNodes = previous.talentNodes end -- CF-115: as the talents
     if char.quests == nil then char.quests = previous.quests end
     char.pvp = previous.pvp -- CF-52: kept by PvpTracker, not read with the snapshot
     if char.riding == nil then char.riding = previous.riding end -- CF-53: not readable right now
