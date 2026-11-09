@@ -525,3 +525,7 @@ The numbers in this table are estimates from the field sizes, not measurements.
   still one whisper per peer that asks (a broadcast would not save anything there).
 - **BYE is best effort:** if it does not go out, the community presence (which can lag, V52) decides
   until the next HELLO.
+- **Whispers only to characters online (CF-112):** every community whisper (Messenger, guild invites) first asks
+  `ReachTracker`: Battle.net, the community presence and the last message heard decide (core/Reach.lua), and a name
+  whose whisper failed ("No player named ...") gets nothing until it shows online again. Queued parts for such a name
+  are dropped. Nothing on the wire changes.

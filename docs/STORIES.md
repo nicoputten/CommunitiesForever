@@ -57,6 +57,42 @@ change and the logout fire none. Touches `src/core/Members.lua`, `src/services/M
   by the newest `seenAt`.
 - Manual (VERIFY.md): change zone, log out, check `global.locations[<GUID>]` and the site after an upload.
 
+### CF-112 No "No player named '...' is currently playing." from our whispers
+Bug (Nico, v1.6.1): the line shows twice in chat. It is the game's answer to an addon whisper to a character that is
+offline. Whispers go out from Sync (HELLO, REQ, RECORD, RUNS, SCHED, RUNANSWER, KILL, BYE and the MISS of reliable
+delivery, all through Messenger) and from CF-84's guild invites (GINVREQ, GINVACK, GINVFAIL). Sync whispered every
+member the community list showed online, and that list lags after a logout (V52); peers who left without a BYE
+stayed online for KILL, RUNANSWER and BYE; the alt whispers stored guild members it can't see. The CHAT_MSG_SYSTEM
+filter meant to hide the line compared it with `ERR_CHAT_PLAYER_NOT_FOUND_S:format(name)` exactly, for 10 s: a
+"-Realm" in the line, another case or other quotes, and it never matched, so nothing was hidden and nothing was
+marked offline. Touches `src/core/Reach.lua` (new), `src/core/Outbox.lua`, `src/services/ReachTracker.lua` (new),
+`src/services/Messenger.lua`, `src/services/Sync.lua`, `src/services/GuildInvites.lua`, `src/adapters/Transport.lua`,
+`src/Core.lua`, their specs, VERIFY.md, CHANGELOG.md.
+- Pure rule in core (`Reach`): a character is online by the freshest source: Battle.net when it knows (the friend
+  is on this character: online; on another character: offline; friends who appear offline count as online), else the
+  later of the community presence and the last message heard from it (heard within `Reach.HEARD_FRESH`, 120 s).
+- A failed whisper blocks the name until it shows online again: something heard from it, or its community presence
+  going offline and then online. A presence that stayed online is what made it fail, so it does not lift the block.
+- Messenger whispers a community member only while it is online by that rule: `send` refuses, and parts already
+  queued are dropped at send time and when a whisper to that name fails (`Outbox:drop`). `/cf ping stats` counts
+  them ("not whispered (offline)").
+- `Sync.online()` leaves out a peer the rule shows offline (left without a BYE), so KILL, RUNANSWER and the logout BYE
+  don't go to them.
+- The guild alt (CF-84) asks members online first, then those no source knows; members known offline (Battle.net,
+  an earlier failure this session) are skipped. The member side's whispers back (GINVACK, GINVFAIL) pass the same
+  check.
+- The filter: the name is read from the line (`Reach.notFoundName`, the game's format string, else the English text
+  with either quote or none) and compared without case and "-Realm" with the names we whispered in the last
+  `Reach.FAILED_WINDOW` (30 s); the line is hidden in every chat window and reported once (WHISPER_FAILED, with the
+  name as we whispered it). A secret line can't be compared: shown, counted. Registered with
+  `ChatFrameUtil.AddMessageEventFilter`, else `ChatFrame_AddMessageEventFilter` (both guarded), again at
+  `PLAYER_ENTERING_WORLD` when neither existed at login. `/cf sync debug` prints which one, the counts, the last
+  name a line had that matched none of ours, and the names blocked.
+- Compatibility (rule 8): nothing stored or sent changes; only fewer whispers go out. Older versions keep whispering
+  as before; ours treats their messages as before.
+- Manual (VERIFY.md CF-112, V53, V129): a member logs out, `/cf sync` within the minute: no line; `/cf sync debug`
+  shows the filter and the block.
+
 ### CF-109 Launch probe: the export of 2026-11-08, and the V60b window check
 The export of 2026-11-08 (6 testers; builds 70790 and 70862). Same rule as CF-105: an answered check leaves the
 probe and FriendProbe's checklist gets a `done` marker. Touches `src/core/Probe.lua`,
