@@ -88,7 +88,9 @@ then stays unranked, with the points shown.
 - **The killer's name** (V120): without the combat log only the death recap can tell who killed you; if it doesn't,
   `p.revenge`, `p.avenge`, `b.revenge3` and `b.avenge3` are retired.
 - **Victim fields come from the target cache**, as for the Hunt: a victim never targeted or moused over has no level,
-  class or race, so it counts for "counted kill" goals but not for level, class or race goals.
+  class or race, so it counts for "counted kill" goals but not for level, class or race goals. On Forever the honor
+  message names nobody (V73), so the victim is the enemy player you target (else mouse over, else a nameplate) who is
+  dead at the kill and was seen alive at most 5 s before (CF-110).
 - **First blood** (`p.firstBlood`, `b.firstBlood3`): the addon decides when it sees the own kill earlier than every
   friend's kill it knows that day. A friend's earlier kill that syncs later doesn't undo it.
 - **`b.huntAll`** waits for every PvP-playing friend's synced Hunt: friends on an older addon or offline all week

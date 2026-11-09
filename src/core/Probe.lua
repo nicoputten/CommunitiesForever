@@ -21,7 +21,7 @@ Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list sta
 -- 2026-11-06 21:33) and gone. CF-105: V60 and V60c answered (export of 2026-11-07, builds 70790 and 70840) and gone;
 -- V60b (a friend's link while they are offline) stays.
 Probe.IDS = {
-  "V82", "V35b", "V73", "Hunt", "V80", "V96", "V101", "V108", "V114", "V120", "V122", "V123",
+  "V82", "V35b", "V73", "Hunt", "V80", "V96", "V101", "V108", "V120", "V122", "V123",
   "V60b",
 }
 
@@ -157,6 +157,21 @@ function Probe.hunt(seen, victim, now)
       tostring(entry.source), math.floor((now or 0) - (entry.at or 0) + 0.5))
   end
   return "info", "victim " .. victim .. " named, but not seen with race and class before the kill"
+end
+
+-- CF-110: the Hunt's result for a kill counted by the lifetime counter, its victim picked from the enemy players at
+-- the kill (core Pvp.pickVictims' entry, or nil): "pass" with race and class, "info" when the victim lacks one or
+-- none fit.
+function Probe.huntPick(pick)
+  if type(pick) ~= "table" then
+    return "info", "kill counted, no enemy player as target, mouseover or nameplate dead and seen alive just before"
+  end
+  if type(pick.race) == "string" and type(pick.class) == "string" then
+    return "pass", string.format("%s: %s %s via %s at the kill", tostring(pick.name or "?"), pick.race, pick.class,
+      tostring(pick.source))
+  end
+  return "info", "victim " .. tostring(pick.name or "?") .. " via " .. tostring(pick.source)
+    .. " at the kill, without race and class"
 end
 
 -- ===== The size cap =====

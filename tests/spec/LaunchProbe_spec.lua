@@ -6,7 +6,7 @@ describe("the hidden launch probe", function()
   local state, ns, addon
   local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "C_DeathRecap", "C_PvP",
                   "UnitFactionGroup", "IsFishingLoot", "GetPVPThisWeekStats", "DoEmote", "hooksecurefunc",
-                  "C_TradeSkillUI", "SetItemRef" }
+                  "C_TradeSkillUI", "SetItemRef", "ProfessionsFrame", "UnitIsDead" }
 
   local function load(serverTime)
     state, ns, addon = helpers.client({ setup = function(s) s.serverTime = serverTime or 1794000000 end })
@@ -60,6 +60,26 @@ describe("the hidden launch probe", function()
       assert.is_nil(state.printed[i]:find("V7", 1, true))
       assert.is_nil(state.printed[i]:lower():find("probe", 1, true))
     end
+  end)
+
+  it("ticks the Hunt from the target at a counted kill when the honor message names nobody (CF-110)", function()
+    load()
+    enemyTarget("Orc")
+    local dead = false
+    _G.UnitIsDead = function() return dead end
+    state.unitGuids = { target = "Player-4619-0A1B2C3D" }
+    state.pvp = { hk = 10 }
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    state.serverTime, dead = state.serverTime + 2, true
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    assert.are.equal("pass", results().Hunt.status)
+    assert.are.equal("Grim Tusk: Orc WARRIOR via target at the kill", results().Hunt.detail)
+  end)
+
+  it("gives the Hunt an info line at a counted kill without a fitting victim (CF-110)", function()
+    load()
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    assert.are.equal("info", results().Hunt.status)
   end)
 
   local function honorKill()
@@ -270,8 +290,8 @@ describe("the hidden launch probe", function()
       tailoring()
       withLinks()
       load()
-      addon.db.global.people["Ada#1001"] = { chars = { ["Player-1-000B"] = { name = "Ada Stormwind" } } }
-      _G.SetItemRef("trade:Player-1-000B:3908:197", "[Tailoring]", "LeftButton")
+      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
+      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
       linked = true
       wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
       local r = results().V60b
@@ -293,15 +313,80 @@ describe("the hidden launch probe", function()
       wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
       assert.are.equal("info", results().V60b.status)
       assert.truthy(results().V60b.detail:find("link of yours opened", 1, true))
-      _G.SetItemRef("trade:Player-1-000C:3908:197", "[Tailoring]", "LeftButton")
+      linked = false
+      _G.SetItemRef("trade:Player-4619-000C:3908:197", "[Tailoring]", "LeftButton")
       wowapi.runTimers(state)
       assert.are.equal("info", results().V60b.status)
       assert.are.equal("link of someone else clicked, no linked window within 5 s", results().V60b.detail)
+      local log = results().V60b.log
+      assert.are.equal("seen: events none; IsTradeSkillLinked false; frame none shown", log[#log])
     end)
 
-    it("counts only V60b of the recipe checks in /cf fp (CF-105)", function()
+    -- CF-109: build 70862 said "no linked window" for links that opened.
+    it("sees a window that opened inside SetItemRef, before the post-hook", function()
+      tailoring()
+      withLinks()
+      _G.SetItemRef = function() linked = true end -- Blizzard opens it at once; the probe hooks this at load
       load()
-      assert.are.equal(13, #ns.Probe.IDS)
+      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
+      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
+      assert.are.equal("pass", results().V60b.status)
+      assert.truthy(results().V60b.detail:find("a friend offline opened", 1, true))
+    end)
+
+    it("sees a link that turns linked after the events, by looking once a second", function()
+      tailoring()
+      withLinks()
+      load()
+      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
+      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
+      wowapi.fireEvent(state, "TRADE_SKILL_SHOW") -- not linked yet
+      assert.is_nil(results().V60b.status)
+      linked = true
+      wowapi.runTimers(state)
+      assert.are.equal("pass", results().V60b.status)
+    end)
+
+    it("counts the own window as opened for the own link, also unlinked (frame or event)", function()
+      tailoring()
+      withLinks()
+      load()
+      _G.SetItemRef("trade:" .. state.player.guid .. ":3908:197", "[Tailoring]", "LeftButton")
+      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
+      assert.are.equal("info", results().V60b.status)
+      assert.are.equal("link of yours opened Blizzard's window (TRADE_SKILL_LIST_UPDATE, IsTradeSkillLinked false)",
+        results().V60b.detail)
+      wowapi.runTimers(state)
+      _G.ProfessionsFrame = { IsShown = function() return true end }
+      _G.SetItemRef("trade:" .. state.player.guid .. ":3908:197", "[Tailoring]", "LeftButton")
+      assert.truthy(results().V60b.detail:find("(ProfessionsFrame, IsTradeSkillLinked false)", 1, true))
+    end)
+
+    it("notes what it saw when a friend's link opened nothing, and the other server", function()
+      tailoring()
+      withLinks()
+      load()
+      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
+      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
+      wowapi.fireEvent(state, "TRADE_SKILL_DATA_SOURCE_CHANGED")
+      wowapi.runTimers(state)
+      assert.are.equal("fail", results().V60b.status)
+      assert.are.equal("link of a friend offline clicked, no linked window within 5 s", results().V60b.detail)
+      local log = results().V60b.log
+      assert.are.equal("seen: events TRADE_SKILL_DATA_SOURCE_CHANGED; IsTradeSkillLinked false; frame none shown",
+        log[#log])
+      addon.db.global.people["Ada#1001"].chars["Player-6940-000D"] = { name = "Ada Stormwind" }
+      _G.SetItemRef("trade:Player-6940-000D:3908:197", "[Tailoring]", "LeftButton")
+      wowapi.runTimers(state)
+      local r = results().V60b
+      assert.are.equal("fail", r.status) -- a later info is kept apart, the fail stays
+      assert.are.equal("link of a friend offline, other server clicked", r.log[#r.log - 1])
+      assert.are.equal("link of a friend offline, other server clicked, no linked window within 5 s", r.later)
+    end)
+
+    it("counts only V60b of the recipe checks in /cf fp (CF-105, CF-109)", function()
+      load()
+      assert.are.equal(12, #ns.Probe.IDS)
       addon:OnSlashCommand("fp")
       local text = ns.ProbeReport.text()
       assert.is_nil(text:find("V60 ", 1, true))

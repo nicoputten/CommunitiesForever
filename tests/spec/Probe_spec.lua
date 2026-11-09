@@ -106,7 +106,8 @@ describe("Probe", function()
     for _, id in ipairs(Probe.IDS) do ids[#ids + 1] = id end
     for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86", "V87",
                           "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105", "V106",
-                          "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117", "V60", "V60c" }) do
+                          "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117", "V60", "V60c",
+                          "V114" }) do
       ids[#ids + 1] = id
     end
 
@@ -190,6 +191,15 @@ describe("Probe", function()
       assert.is_nil(Probe.hunt(seen, "", 2))
     end)
 
+    it("reports the victim picked at a counted kill (CF-110)", function()
+      assert.are.same({ "pass", "Grim Tusk: Orc WARRIOR via target at the kill" },
+        { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target" }) })
+      assert.are.same({ "info", "victim Grim Tusk via mouseover at the kill, without race and class" },
+        { Probe.huntPick({ name = "Grim Tusk", class = "WARRIOR", source = "mouseover" }) })
+      assert.are.equal("info", (Probe.huntPick(nil)))
+      assert.are.equal("pass", (Probe.huntPick({ race = "Orc", class = "MAGE", source = "nameplate" })))
+    end)
+
     it("starts the list over after 200 players", function()
       local seen = {}
       for i = 1, Probe.SEEN_MAX do Probe.remember(seen, { "P" .. i }, { race = "Orc", class = "ROGUE" }, i) end
@@ -234,7 +244,7 @@ describe("Probe", function()
       for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86",
                             "V87", "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105",
                             "V106", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117",
-                            "V60", "V60c" }) do -- CF-105
+                            "V60", "V60c", "V114" }) do -- CF-105, CF-109
         for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
       end
     end)

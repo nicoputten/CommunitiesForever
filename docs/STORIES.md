@@ -8,6 +8,83 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-110 The PvP kill's victim from your target at the kill
+On Forever the kill's honor message is the plain award (`COMBATLOG_HONORAWARD`, V73) and never names the victim, so
+the Hunt, `p.punchUp5` / `p.punchDown5`, `p.skull`, `b.skulls3` and the other victim goals (CF-54, CF-55, CF-101)
+can't complete. Nico decided (2026-11-08): take the victim from the target or mouseover at the moment of the kill.
+Touches `src/core/Pvp.lua`, `src/adapters/PvpInfo.lua`, `src/services/PvpTracker.lua`, `src/core/Probe.lua`,
+`src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua` (V141), their specs, VERIFY.md, `docs/API-FINDINGS.md`, `docs/DOOMSDAY-PVP-CATALOGUE.md`.
+- When the lifetime counter rises (`PLAYER_PVP_KILLS_CHANGED`, or an honor message, then `GetPVPLifetimeStats`), the
+  victim is picked from the enemy players at that moment: your target first, then your mouseover, then an enemy
+  nameplate (`nameplate1` to `nameplate40`). It must be an enemy player, dead now (`UnitIsDead`, unverified: V141)
+  and seen alive at most `Pvp.KILL_WINDOW` (5 s) before. The order within a source: the one seen alive last. Players
+  are keyed by GUID; the name is stored as the game gives it, never parsed.
+- "Seen alive" comes from the target, mouseover and nameplate events and a look once a second
+  (`C_Timer.NewTicker`), so a long fight still has a fresh sighting.
+- Level, class, race and rank come from the unit at the kill, else from when it was seen alive; a missing one stays
+  nil. Several kills in one counter rise take distinct players, best first; no fitting player: the kill counts
+  without a victim, as before (no guessing).
+- An honor message that names the victim (`COMBATLOG_HONORGAIN` and variants, CF-101) still wins: its kill gets the
+  name and the rank from the message, and a picked victim of the same name is not added again.
+- Pure rule in core (`Pvp.seeAlive`, `Pvp.pickVictims`) with busted tests: several candidates, none, stale, a
+  friendly player, unknown death, a secret value (nil from the adapter) ignored. The adapter (`PvpInfo.look`,
+  `PvpInfo.looks`) reads every value through `ns.Safe.call`, so a secret is nil before any comparison (CF-108).
+- The launch probe's Hunt also ticks from the victim picked at a counted kill ("Grim Tusk: Orc WARRIOR via target at
+  the kill"), with a note whether `UnitIsDead` exists; V73 keeps logging the message's shape.
+- Compatibility (rule 8): the `pvpKills` entry keeps its shape (`t, zone, name, lvl, myLvl, class, race, rank, solo,
+  bg`); only more entries carry victim fields. An older version sends entries without them for these kills and
+  reads ours as before; the site and bot read the same fields. Nothing stored or sent changes, no migration.
+- Manual (VERIFY.md CF-110, V141): target an enemy player, kill them; the kill has the victim in the saved data,
+  `/cf fp` shows the Hunt and the Doomsday tab's Today box counts the kill by level.
+
+### CF-111 The own character's last location at a zone change and at logout
+Bug: logged off in Hillsbrad Foothills, the site still showed an older Westfall. `db.global.locations` was only
+written from the community member list (`MemberTracker.refresh`), which runs on member events only; the own zone
+change and the logout fire none. Touches `src/core/Members.lua`, `src/services/MemberTracker.lua`,
+`tests/spec/Members_spec.lua`, `tests/spec/MemberTracker_spec.lua`, VERIFY.md, CHANGELOG.md.
+- `Members.recordOwn(locations, guid, zone, now)` (pure core) writes `locations[guid] = { zone, seenAt = now }`, the
+  shape `recordLocations` writes. It keeps the old entry when the GUID or the zone is not a non-empty string, and
+  never moves `seenAt` back.
+- The zone is `SelfInfo.zone()` (`GetRealZoneText`, verified V35; nil when secret or empty): the zone name, inside an
+  instance the instance's name ("Ruins of Lordaeron"), as the member list shows it.
+- Recorded 1 s after `PLAYER_ENTERING_WORLD` and `ZONE_CHANGED_NEW_AREA` (the zone text can be nil right after a
+  loading screen), and right away at `PLAYER_LEAVING_WORLD` and `PLAYER_LOGOUT` (handlers run before SavedVariables
+  are written, V22). Works without a selected community.
+- At `PLAYER_LEAVING_WORLD` and `PLAYER_LOGOUT` the member list's zones are recorded first (locations only: no roster
+  update, no message), then the own zone, so the own one wins over a member list that hasn't caught up.
+- Everything guarded (`ns.Safe.call`); secret values are nil before any comparison (CF-108).
+- Same stored shape, no migration (rule 8): older versions keep writing it from the member list; the site merges
+  by the newest `seenAt`.
+- Manual (VERIFY.md): change zone, log out, check `global.locations[<GUID>]` and the site after an upload.
+
+### CF-109 Launch probe: the export of 2026-11-08, and the V60b window check
+The export of 2026-11-08 (6 testers; builds 70790 and 70862). Same rule as CF-105: an answered check leaves the
+probe and FriendProbe's checklist gets a `done` marker. Touches `src/core/Probe.lua`,
+`src/services/LaunchProbeMissions.lua`, `src/services/LaunchProbeRecipes.lua`, `tools/FriendProbe/Checklist.lua`, the
+probe specs, `docs/API-FINDINGS.md`, VERIFY.md.
+- V114 passed (1 tester, build 70862): `CONFIRM_SUMMON` with `C_SummonInfo.GetSummonConfirmSummoner()` gives the
+  summoner. To API-FINDINGS; out of VERIFY.md and `Probe.IDS`, its code removed; FriendProbe's item `done`.
+- V73 answered as a finding: on 70862 (2 testers, with CF-101's variants) the kill's message is the plain award
+  (`You x x x 3 Honor.`, only `COMBATLOG_HONORAWARD` matches): no victim in the honor message. Kills still count via
+  `PLAYER_PVP_KILLS_CHANGED` and `GetPVPLifetimeStats` (`GetPVPThisWeekStats` missing). The Hunt and
+  `p.punchUp5` / `p.punchDown5` would need the victim from the target or mouseover at the kill: not built here (Nico
+  decides). VERIFY.md V73 and the CF-101 step closed, FriendProbe's item `done`; the probe keeps logging the shape
+  and the Hunt.
+- V70: 3 testers now, all `lockdown false, in progress false` in a boss fight (API-FINDINGS count updated).
+- V60b fixed: on 70862 it said "no linked window within 5 s" for a friend online and for the own link, though the own
+  link from the Friends tab opens Blizzard's window. The check now looks right after the click (the window may open
+  inside `SetItemRef`, before the post-hook), on `TRADE_SKILL_SHOW`, `TRADE_SKILL_DATA_SOURCE_CHANGED` and
+  `TRADE_SKILL_LIST_UPDATE`, and once a second until the 5 s run out; for the own link an event or Blizzard's frame
+  shown (`ProfessionsFrame` or `TradeSkillFrame`, unverified, looked up by name each time) counts as opened. A click
+  that opened nothing logs `seen: events …; IsTradeSkillLinked …; frame …`; a link of another server (CF-107) says
+  so and is never a `fail`. VERIFY.md V60 stays open (offline friend, old link, the frame's name).
+- Unchanged, still open: V74 (skull `-1`), V100 (inbox sender), V108 (emote), V120 (death to a player); V87 fails as
+  before (closed in CF-96).
+- `Probe.IDS`: 12 checks (V82, V35b, V73, Hunt, V80, V96, V101, V108, V120, V122, V123, V60b).
+- Compatibility (rule 8): nothing stored or sent changes shape; the probe stops writing V114 (its stored result stays
+  and is uploaded as before) and V60b writes one more log line.
+- Manual (VERIFY.md CF-109): the own link, the frame name, a friend online, offline and on another server.
+
 ### CF-108 No Lua error from secret event arguments in combat
 Bug (Nico, v1.6.0, boss fight): "attempt to compare ... (a secret string value, while execution tainted by
 'CommunitiesForever')" via `WorldEvents.lua` onSkill (CHAT_MSG_SKILL). Midnight hands some event arguments to

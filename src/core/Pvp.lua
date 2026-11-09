@@ -223,6 +223,74 @@ function Pvp.killEntry(kill, seen)
            bg = kill.bg == true or nil }
 end
 
+-- ===== The victim at the kill (CF-110) =====
+-- On Forever the kill's honor message never names the victim (V73), so the victim is the enemy player looked at
+-- when the kill counter rises: dead now and seen alive shortly before. Keyed by GUID; names are never parsed.
+
+Pvp.KILL_WINDOW = 5 -- seconds between seeing a victim alive and the kill
+-- The order a kill looks for its victim: your target, your mouseover, then an enemy nameplate.
+Pvp.VICTIM_SOURCES = { target = 1, mouseover = 2, nameplate = 3 }
+
+-- A unit look (adapters/PvpInfo.look) usable as an enemy player: a GUID and enemy == true. A secret value reaches
+-- the core as nil (the adapter's Safe.call), so it fails these checks.
+local function enemyLook(look)
+  return type(look) == "table" and type(look.guid) == "string" and look.guid ~= "" and look.enemy == true
+end
+
+--[[ Remembers when an enemy player was last seen alive, by GUID, in place: alive = { [guid] = { at, name, lvl, class,
+race, rank } }. look = { guid, name, enemy, dead, lvl, class, race, rank } (adapters/PvpInfo.look). Only a look
+with dead == false counts (unknown: nothing). Over CACHE_SIZE GUIDs the oldest goes. ]]
+function Pvp.seeAlive(alive, look, now)
+  if not enemyLook(look) or look.dead ~= false or type(now) ~= "number" then return end
+  alive[look.guid] = { at = now, name = look.name, lvl = look.lvl, class = look.class, race = look.race,
+                       rank = look.rank }
+  local size, oldest, oldestAt = 0, nil, nil
+  for key, entry in pairs(alive) do
+    size = size + 1
+    if not oldestAt or entry.at < oldestAt then oldest, oldestAt = key, entry.at end
+  end
+  if size > Pvp.CACHE_SIZE then alive[oldest] = nil end
+end
+
+local function field(value, kind)
+  return type(value) == kind and value or nil
+end
+
+--[[ The victims of `kills` kills counted at `now`, at most one per GUID, best first: { { name, lvl, class, race,
+rank, source } }, possibly empty (no guessing). looks: the enemy players at the kill (adapters/PvpInfo.looks, each
+with source "target", "mouseover" or "nameplate"); alive: Pvp.seeAlive's cache. A look counts when it is an enemy
+player, dead == true and was seen alive within KILL_WINDOW; target before mouseover before nameplate, then the one
+seen alive last. Its fields come from the look, else from when it was seen alive; a missing one stays nil. ]]
+function Pvp.pickVictims(looks, alive, now, kills)
+  local found, byGuid = {}, {}
+  if type(looks) ~= "table" or type(alive) ~= "table" or type(now) ~= "number" then return found end
+  for _, look in ipairs(looks) do
+    local order = enemyLook(look) and look.dead == true and Pvp.VICTIM_SOURCES[look.source]
+    local seen = order and alive[look.guid]
+    if seen and type(seen.at) == "number" and now - seen.at <= Pvp.KILL_WINDOW and now >= seen.at
+        and (not byGuid[look.guid] or order < byGuid[look.guid].order) then
+      byGuid[look.guid] = { look = look, seen = seen, order = order }
+    end
+  end
+  local list = {}
+  for _, entry in pairs(byGuid) do list[#list + 1] = entry end
+  table.sort(list, function(a, b)
+    if a.order ~= b.order then return a.order < b.order end
+    if a.seen.at ~= b.seen.at then return a.seen.at > b.seen.at end
+    return a.look.guid < b.look.guid
+  end)
+  for i = 1, math.min(#list, type(kills) == "number" and kills or 1) do
+    local look, seen = list[i].look, list[i].seen
+    found[i] = { name = field(look.name, "string") or field(seen.name, "string"),
+                 lvl = field(look.lvl, "number") or field(seen.lvl, "number"),
+                 class = field(look.class, "string") or field(seen.class, "string"),
+                 race = field(look.race, "string") or field(seen.race, "string"),
+                 rank = field(look.rank, "number") or field(seen.rank, "number"), source = look.source }
+    if found[i].name == "" then found[i].name = nil end
+  end
+  return found
+end
+
 local MAX_NUMBER = 10000000
 
 local function cleanCount(value)

@@ -54,6 +54,54 @@ describe("Members", function()
     end)
   end)
 
+  describe("recordOwn", function()
+    local GUID = "Player-1-A"
+
+    it("writes the own zone with the time", function()
+      local locations = { [GUID] = { zone = "Westfall", seenAt = 100 } }
+      assert.is_true(Members.recordOwn(locations, GUID, "Hillsbrad Foothills", 500))
+      assert.are.same({ [GUID] = { zone = "Hillsbrad Foothills", seenAt = 500 } }, locations)
+    end)
+
+    it("writes the same zone again with a newer time", function()
+      local locations = { [GUID] = { zone = "Westfall", seenAt = 100 } }
+      assert.is_true(Members.recordOwn(locations, GUID, "Westfall", 200))
+      assert.are.equal(200, locations[GUID].seenAt)
+    end)
+
+    it("keeps the old entry for an empty or unknown zone", function()
+      for _, zone in ipairs({ "", false, 7 }) do
+        local locations = { [GUID] = { zone = "Westfall", seenAt = 100 } }
+        assert.is_false(Members.recordOwn(locations, GUID, zone, 500))
+        assert.are.same({ zone = "Westfall", seenAt = 100 }, locations[GUID])
+      end
+      local locations = { [GUID] = { zone = "Westfall", seenAt = 100 } }
+      assert.is_false(Members.recordOwn(locations, GUID, nil, 500))
+      assert.are.same({ zone = "Westfall", seenAt = 100 }, locations[GUID])
+    end)
+
+    it("writes nothing without a GUID, a time or a table", function()
+      local locations = {}
+      assert.is_false(Members.recordOwn(locations, nil, "Westfall", 500))
+      assert.is_false(Members.recordOwn(locations, "", "Westfall", 500))
+      assert.is_false(Members.recordOwn(locations, GUID, "Westfall", nil))
+      assert.are.same({}, locations)
+      assert.is_false(Members.recordOwn(nil, GUID, "Westfall", 500))
+    end)
+
+    it("never moves seenAt back", function()
+      local locations = { [GUID] = { zone = "Westfall", seenAt = 900 } }
+      assert.is_false(Members.recordOwn(locations, GUID, "Duskwood", 500))
+      assert.are.same({ zone = "Westfall", seenAt = 900 }, locations[GUID])
+    end)
+
+    it("overwrites an entry of an older shape", function()
+      local locations = { [GUID] = { zone = "Westfall" } }
+      assert.is_true(Members.recordOwn(locations, GUID, "Duskwood", 500))
+      assert.are.same({ zone = "Duskwood", seenAt = 500 }, locations[GUID])
+    end)
+  end)
+
   describe("equal", function()
     it("is true for the same members", function()
       assert.is_true(Members.equal(Members.build({ info() }), Members.build({ info({ isSelf = false }) })))
