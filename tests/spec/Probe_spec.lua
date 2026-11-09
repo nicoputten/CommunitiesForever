@@ -107,7 +107,7 @@ describe("Probe", function()
     for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86", "V87",
                           "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105", "V106",
                           "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117", "V60", "V60c",
-                          "V114" }) do
+                          "V114", "V120" }) do
       ids[#ids + 1] = id
     end
 
@@ -225,7 +225,7 @@ describe("Probe", function()
       local text = table.concat(lines, "\n")
       assert.truthy(text:find("V73 pass: victim and rank [T100, build 65000]", 1, true))
       assert.truthy(text:find("V82 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
-      assert.truthy(text:find("V120 open", 1, true))
+      assert.truthy(text:find("V122 open", 1, true))
       assert.is_nil(text:find("V63", 1, true)) -- answered at launch (CF-96): no longer in the report
       assert.truthy(text:find("error: PLAYER_DEAD: boom", 1, true))
       assert.are.equal("Probe (retail): 1 pass, 1 fail, 0 info, " .. (#Probe.IDS - 2) .. " open; stopped.",
@@ -244,7 +244,7 @@ describe("Probe", function()
       for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86",
                             "V87", "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105",
                             "V106", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117",
-                            "V60", "V60c", "V114" }) do -- CF-105, CF-109
+                            "V60", "V60c", "V114", "V120" }) do -- CF-105, CF-109, CF-113
         for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
       end
     end)
