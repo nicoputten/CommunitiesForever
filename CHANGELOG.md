@@ -6,6 +6,12 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **New:** Doomsday pool version 4. New daily missions: "Earn an uncommon quest reward", "Fish in a group with a
+  friend", "Give a friend a dish cooked by an own character", "Get summoned by a friend" and "Put an item up for
+  auction". New Skirmish missions: "Revenge: kill the player who killed you" (the player who last killed that
+  character, the same day), "Stay flagged for 30 minutes without dying" and "Flag up for PvP"; a new Bounty: "3 hours
+  flagged for PvP". "Defend home" leaves the draw: the game shows your faction's territory only in the capitals.
+  Please update together: a friend still on the previous version keeps seeing the old missions.
 - **Fixed:** PvP kills get their victim again: the enemy player you had targeted (or under the mouse) when they died.
   The game's kill message doesn't name them, so the Hunt, Punch up, Punch down, Skull and the other goals about
   the victim's level, class or race could not complete. Kills on a player you never looked at still count, without

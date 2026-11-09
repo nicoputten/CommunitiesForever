@@ -255,6 +255,38 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     for name in pairs(stubs) do _G[name] = nil end
   end)
 
+  -- CF-104: the pool-4 trackers' events reach today's facts (flag time, revenge, an auction posted).
+  it("counts the flagged time, a revenge and a posted auction locally", function()
+    local flagged, recap = false, nil
+    local stubs = { UnitIsPVP = function(unit) return unit == "player" and flagged end,
+                    C_DeathRecap = { GetRecapEvents = function() return recap end },
+                    ERR_AUCTION_STARTED = "Auction created." }
+    load(function()
+      for name, value in pairs(stubs) do _G[name] = value end
+    end)
+    local me = _G.UnitGUID("player")
+    flagged = true
+    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
+    state.serverTime = state.serverTime + 300
+    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
+    state.serverTime = state.serverTime + 300
+    flagged = false
+    wowapi.fireEvent(state, "PLAYER_FLAGS_CHANGED", "player")
+    recap = { { timestamp = 1, event = "SWING_DAMAGE", sourceGUID = "Player-1-KILLER" } }
+    wowapi.fireEvent(state, "PLAYER_DEAD")
+    wowapi.runTimers(state)
+    addon:SendMessage(ns.PvpTracker.VICTIM, "Player-1-KILLER", false)
+    wowapi.fireEvent(state, "AUCTION_HOUSE_AUCTION_CREATED")
+    wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "Auction created.") -- the same auction: counted once
+    local today = ns.DoomsdayTracker.today()
+    local day = addon.db.global.self.doomsday.days[today]
+    assert.are.same({ 600, 1, 1 }, { day.battle.flagged[me], day.battle.revenge, day.world.auctions })
+    assert.is_nil(day.battle.flagRun[me])
+    local week = addon.db.global.self.doomsday.weeks[ns.Doomsday.week(today)]
+    assert.are.equal(600, week.battle.flagged[me])
+    for name in pairs(stubs) do _G[name] = nil end
+  end)
+
   it("caches the state until something changes, with fresh countdowns (CF-59)", function()
     load()
     local first = ns.DoomsdayTracker.state()

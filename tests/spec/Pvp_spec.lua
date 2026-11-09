@@ -171,7 +171,8 @@ describe("Pvp (CF-52)", function()
     it("picks the target that is dead now and was seen alive just before", function()
       local alive = {}
       seen(alive, { "Player-1-A" }, 100)
-      assert.are.same({ { name = "Name Player-1-A", lvl = 30, class = "ROGUE", race = "Troll", source = "target" } },
+      assert.are.same({ { name = "Name Player-1-A", lvl = 30, class = "ROGUE", race = "Troll", source = "target",
+                          guid = "Player-1-A" } },
         Pvp.pickVictims({ look("Player-1-A", "target", true) }, alive, 104, 1))
     end)
 
@@ -237,7 +238,7 @@ describe("Pvp (CF-52)", function()
       assert.are.equal(30, picked.lvl)
       local bare = {}
       Pvp.seeAlive(bare, { guid = "B", enemy = true, dead = false }, 100)
-      assert.are.same({ source = "target" }, Pvp.pickVictims({ { guid = "B", enemy = true, dead = true,
+      assert.are.same({ source = "target", guid = "B" }, Pvp.pickVictims({ { guid = "B", enemy = true, dead = true,
         source = "target", name = "" } }, bare, 101, 1)[1])
     end)
 

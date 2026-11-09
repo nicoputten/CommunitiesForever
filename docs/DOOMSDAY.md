@@ -387,7 +387,17 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - The pools: 103 dailies in all 15 categories, 49 weeklies in 14 categories, 4 Skirmish goals, Bounty as before (5).
 - Draw, swaps and points: as pool version 2.
 
-**Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use the new version. A friend on an older addon keeps drawing its own version (1 or 2), so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so the older versions' draws stay as they were. Points follow the entry's `pool`, and every id of a newer pool is already in the older addon's catalogue (CF-70, CF-79), so an addon on version 2 scores a friend's version-3 day the same way.
+**Pool version 4** (`Doomsday.POOL_VERSION = 4`, CF-104, Nico's decisions of 2026-11-09):
+- Joins (`since = 4`), each with its registered progress:
+  - PvE dailies: `d.reward`, `d.fishFriend`, `d.feedFriend` (CF-74, their in-game check passed), `d.summoned` (V114), `d.auctionPost` (V101: posting only; `d.auctionBuy` stays out). "Send mail to a friend" is `d.mailFriend`, already in pool version 3; `d.mailbox` (taking from the inbox) stays out.
+  - Skirmish: `p.revenge` (avenge a death: the player who last killed you, within the day), `p.flagHour`, `p.flagUp` (the PvP flag, V121).
+  - Bounty: `b.flagged3h` (V121).
+- Leaves: `p.homeGuard` (`retired = 4`): an own zone's PvP type reads only in the capitals (V123), so it counted only there. Pool versions 1 to 3 draw as before (pool version 3 keeps it).
+- The pools: 108 dailies, 49 weeklies, 6 Skirmish goals (`p.frontLine`, `p.loneWolf`, `p.untouchable`, `p.revenge`, `p.flagHour`, `p.flagUp`), 6 Bounty goals (version 3's and `b.flagged3h`).
+- Draw, swaps and points: as pool version 2. The flag time, the killers and the revenges are local facts of the day and week (`battle.flagged`, `flagRun`, `flagBest`, `killers`, `revenge`; `world.summons`, `world.auctions`); nothing new is sent.
+- An addon on pool version 3 keeps drawing and recording pool version 3 (`pool = 3` on its days and weeks) and scores a friend's version-4 day by its `pool` (every id is already in its catalogue); the release notes ask friends to update.
+
+**Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use the new version. A friend on an older addon keeps drawing its own version (1, 2 or 3), so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so the older versions' draws stay as they were. Points follow the entry's `pool`, and every id of a newer pool is already in the older addon's catalogue (CF-70, CF-79), so an addon on version 2 scores a friend's version-3 day the same way.
 
 **Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
 
@@ -510,13 +520,13 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `d.campfireBuff` | cooking | Sit at a campfire fed with 3 or more items | 3 | the campfire's special buff on a character, with 3 or more items in the fire (the buff and how it shows the items: as the probe finds it) | CF-75, V119 | |
 | `d.eatOwn` | cooking | Eat a dish cooked that day | 3 | a food item eaten whose item ID one of the own characters created that day | CF-75, V105, V116 | no character with Cooking → `d.secondary` |
 | `d.cookRecipe` | cooking | Learn a cooking recipe | 3 | a recipe learned whose spell creates a food or drink item | CF-75, V104 | no character with Cooking → `d.secondary` |
-| `d.feedFriend` | cooking | Give a friend a dish cooked by an own character | 3 | a completed trade giving a friend's community character a food item one of the own characters created | CF-74 | no character with Cooking → `d.trade` |
+| `d.feedFriend` | cooking | Give a friend a dish cooked by an own character | 3 | a completed trade giving a friend's community character a food item one of the own characters created | CF-74 (pool 4, CF-104) | no character with Cooking → `d.trade` |
 | `d.fish20` | fishing | Catch 20 fish | 3 | 20 items from fishing loot | 56 | no character with Fishing → `d.secondary` |
 | `d.fishZones` | fishing | Fish in 2 zones | 3 | fishing loot in 2 different zones | CF-74 | no character with Fishing → `d.secondary` |
 | `d.fish50` | fishing | Catch 50 fish | 5 | 50 items from fishing loot | CF-74 | no character with Fishing → `d.secondary` |
 | `d.fishSkill5` | fishing | Raise Fishing by 5 points | 3 | 5 Fishing skill points over all characters (skill line 356) | CF-72 | no character with Fishing → `d.secondary` |
 | `d.fishKinds3` | fishing | Catch 3 kinds of fish | 3 | fishing loot of 3 different item IDs | CF-75, V106 (item | no character with Fishing → `d.secondary` |
-| `d.fishFriend` | fishing | Fish in a group with a friend | 3 | fishing loot while grouped with a friend's community character in the same zone | CF-74 | no character with Fishing → `d.groupFriend` |
+| `d.fishFriend` | fishing | Fish in a group with a friend | 3 | fishing loot while grouped with a friend's community character in the same zone | CF-74 (pool 4, CF-104) | no character with Fishing → `d.groupFriend` |
 | `d.fishNight` | fishing | Fish at night | 3 | fishing loot between 21:00 and 05:00 realm time (`GetGameTime`, the game's own night) | CF-74 | no character with Fishing → `d.secondary` |
 | `d.bandage3` | firstaid | Make 3 bandages | 3 | 3 bandages created (item class consumable, bandage) | CF-75, V105 | no character with First Aid → `d.secondary` |
 | `d.bandageUp` | firstaid | Use a bandage | 3 | a First Aid bandage cast finished | CF-75, V95 | no character with First Aid → `d.secondary` |
@@ -558,7 +568,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `d.bind` | travel | Make a new inn home | 1 | the hearthstone set to a place other than the one it was set to | CF-76, V96 | |
 | `d.ride` | travel | Ride a mount for 15 minutes | 3 | 15 minutes mounted in total, on one character | CF-76, V98 | no character with riding (CF-53) → `d.roam4` |
 | `d.crossSea` | travel | Cross the sea | 3 | a character changes continent (`GetInstanceInfo` instance ID 0 and 1 outside instances) | CF-73 | |
-| `d.summoned` | travel | Get summoned by a friend | 3 | a summon accepted whose summoner is a friend's community character | CF-76, V114 | |
+| `d.summoned` | travel | Get summoned by a friend | 3 | a summon accepted whose summoner is a friend's community character: the summoner from `CONFIRM_SUMMON` with `C_SummonInfo.GetSummonConfirmSummoner()`, the accept from the summon popup (`C_SummonInfo.ConfirmSummon`) | CF-104 (pool 4), V114 | |
 | `d.kills30` | combat | Defeat 30 enemies | 3 | 30 kill XP messages | CF-76, V90 | all characters at 60 → `d.bosses3` |
 | `d.elite` | combat | Defeat an elite | 3 | a kill XP message naming a creature last seen as elite or rare elite | CF-76, V90, V93 | all characters at 60 → `d.bosses3` |
 | `d.rareMob` | combat | Defeat a rare enemy | 5 | a kill XP message naming a creature last seen as rare or rare elite | CF-76, V90, V93 | all characters at 60 → `d.bosses3` |
@@ -568,13 +578,13 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `d.duoHunt` | combat | Defeat 15 enemies in a group with a friend | 3 | 15 kill XP messages while grouped with a friend's community character | CF-76, V90 | all characters at 60 → `d.dungeonFriend` |
 | `d.rare` | loot | Loot a rare item | 3 | a rare (blue) or better item looted | 53 | |
 | `d.green5` | loot | Loot 5 uncommon items | 3 | 5 uncommon (green) or better items looted or received | CF-74 | |
-| `d.reward` | loot | Earn an uncommon quest reward | 3 | a quest reward of uncommon (green) or better quality | CF-74 | |
+| `d.reward` | loot | Earn an uncommon quest reward | 3 | a quest reward of uncommon (green) or better quality | CF-74 (pool 4, CF-104) | |
 | `d.coins10` | loot | Loot coins from 10 enemies | 3 | 10 money loot messages | CF-75, V109 | |
 | `d.equipNew` | loot | Wear a new find | 3 | an item equipped that the character looted or received that day | CF-75, V113 | |
 | `d.treasure` | loot | Open a treasure chest | 3 | loot from a game object that isn't a herb, ore or fishing node | CF-75, V106 | |
 | `d.vendorSale` | economy | Sell to a merchant | 1 | money gained while a merchant window is open | CF-76, V99 | |
 | `d.vendorBuy` | economy | Buy from a merchant | 1 | an item bought from a merchant (not a repair) | CF-76, V99 | |
-| `d.auctionPost` | economy | Put an item up for auction | 3 | an auction posted | CF-76, V101 | |
+| `d.auctionPost` | economy | Put an item up for auction | 3 | an auction posted (`AUCTION_HOUSE_AUCTION_CREATED` or the game's "auction created" message; one per auction) | CF-104 (pool 4), V101 | |
 | `d.auctionBuy` | economy | Buy at the auction house | 3 | an auction bought or won | CF-76, V101 | |
 | `d.mailFriend` | economy | Send mail to a friend | 1 | mail sent to a friend's community character | CF-76, V100 | |
 | `d.mailbox` | economy | Empty the mailbox | 1 | an item or money taken from the mailbox | CF-76, V100 | |
@@ -678,7 +688,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.firstBlood` | worldKills | kill | First blood: the first kill among friends | 5 | the day's first counted world kill of all friends (by the kill's time in the synced records) | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
 | `p.nightRaid` | worldKills | kill | Night raid: a kill after 23:00 realm time | 3 | a counted kill between 23:00 and 05:00 realm time (`GetGameTime`) | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `p.loneWolf` |
 | `p.enemyLand` | worldKills | kill | Kill in the enemy's territory | 3 | a counted kill in a zone of the enemy faction (`C_PvP.GetZonePVPInfo` "hostile") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
-| `p.homeGuard` | worldKills | kill | Defend home: a kill in friendly territory | 3 | a counted kill in a zone of the own faction: its PvP type (`C_PvP.GetZonePVPInfo`) read "friendly" while the own character was there that day (on entering it or at a kill); a zone without a type (one starting zone, V123) doesn't count | CF-81 (CF-99), V123 "friendly" verified | no character of level 20 or more → `p.loneWolf` |
+| `p.homeGuard` | worldKills | kill | Defend home: a kill in friendly territory | 3 | a counted kill in a zone of the own faction: its PvP type (`C_PvP.GetZonePVPInfo`) read "friendly" while the own character was there that day (on entering it or at a kill); a zone without a type (one starting zone, V123) doesn't count | CF-81 (CF-99), V123 "friendly" verified; retired from pool 4 (CF-104: the type reads only in the capitals) | no character of level 20 or more → `p.loneWolf` |
 | `p.contested` | worldKills | kill | Kills in contested land | 3 | 3 counted kills in contested zones ("contested") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
 | `p.skull` | targets | kill | Slay a skull | 5 | a counted kill of a victim shown as a skull (`lvl = -1`) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.fairFight` | targets | kill | Fair fight: a kill at the same level | 3 | a counted kill with `diff = 0` | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
@@ -691,8 +701,8 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.rankUp` | targets | kill | Kill a player of higher rank | 5 | a counted kill of a victim whose PvP rank is above the killer's | retired from pool version 3: no rank reads on Forever (`UnitPVPRank` missing, V79; Nico, 2026-11-06) |  |
 | `p.huntPair` | targets | kill | Kills of 2 Hunt combinations | 3 | counted kills of 2 different race and class combinations of the enemy list (not only today's Hunt) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.streak3` | streaks | kill | Three in a row without dying | 3 | 3 counted kills on one character with no death in between | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
-| `p.revenge` | streaks | kill | Revenge: kill the player who killed you | 5 | a counted kill of the player who killed that character, within 30 minutes of the death | needs probe V120 (new) |  |
-| `p.flagHour` | streaks | flag | Stay flagged for 30 minutes without dying | 3 | 30 minutes flagged for PvP on one character with no death | needs probe V121 (new) |  |
+| `p.revenge` | streaks | kill | Revenge: kill the player who killed you | 5 | a kill, outside a battleground, of the enemy player who last killed that character that day; once per death. By GUID: the killer is the death recap's last damage source when it is a player (`C_DeathRecap.GetRecapEvents`), the victim the one CF-110 picks at the kill (your target, mouseover or a nameplate) | CF-104 (pool 4), V120 (a player killer unverified) |  |
+| `p.flagHour` | streaks | flag | Stay flagged for 30 minutes without dying | 3 | 30 minutes flagged for PvP on one character in one run: a death or the flag dropping starts it over (`UnitIsPVP("player")`, read on `PLAYER_FLAGS_CHANGED` and each minute) | CF-104 (pool 4), V121 |  |
 | `p.comeback` | streaks | kill | Comeback: a kill within 5 minutes of a death | 3 | a counted kill within 5 minutes after the same character died to a player | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
 | `p.noDeath` | streaks | kill | Score 3 kills and never die that day | 5 | 3 counted kills on a day with no death to a player on any character up to that moment | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
 | `p.duoKills` | teamwork | kill | Kills with a friend | 3 | 3 counted kills while grouped with a friend's community character | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `p.loneWolf` |
@@ -717,7 +727,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.salute` | taunts | emote | Salute a worthy enemy | 1 | the `/salute` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
 | `p.chicken` | taunts | emote | Call an enemy a chicken | 1 | the `/chicken` emote with an enemy-faction player targeted | needs probe V108, V74 |  |
 | `p.bowKill` | taunts | kill | Bow, then win | 3 | the `/bow` emote at an enemy-faction player, then a counted kill of that player within 2 minutes | needs probe V108, V74, V73 |  |
-| `p.flagUp` | taunts | flag | Flag up for PvP | 1 | a character flagged for PvP for 10 minutes | needs probe V121 (new) |  |
+| `p.flagUp` | taunts | flag | Flag up for PvP | 1 | a character flagged for PvP for 10 minutes that day, in total | CF-104 (pool 4), V121 |  |
 
 ### The Duel slot (daily)
 - Your first duel with each friend that day: a win +3, a loss +1.
@@ -754,7 +764,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `b.solo20` | streaks | kill | 20 solo kills | 10 | 20 counted kills with `solo` | existing tracker, waits for its launch check: V73, V76 (CF-55b kills, `solo`) |  |
 | `b.untouchable3` | streaks | kill | Untouchable on 3 days | 10 | 5 counted kills without dying on one character, on 3 days | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
 | `b.revenge3` | streaks | kill | Revenge 3 times | 10 | 3 counted kills of the player who killed that character, each within 30 minutes | needs probe V120 (new) |  |
-| `b.flagged3h` | streaks | flag | 3 hours flagged for PvP | 5 | 3 hours flagged for PvP in total | needs probe V121 (new) |  |
+| `b.flagged3h` | streaks | flag | 3 hours flagged for PvP | 5 | 3 hours flagged for PvP in total, all characters of the week together | CF-104 (pool 4), V121 |  |
 | `b.kd` | streaks | kill | More kills than deaths | 10 | at least 10 counted kills and fewer deaths to players than kills, over the week | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-52 deaths |  |
 | `b.duoKills15` | teamwork | kill | 15 kills with friends | 10 | 15 counted kills while grouped with a friend's community character | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `b.kills50` |
 | `b.warband` | teamwork | kill | A warband of 3 friends | 10 | 5 counted kills while grouped with community characters of 2 other friends | existing tracker, waits for its launch check: V73 (CF-55b kills), CF-53 groups | no other friend in the community → `b.kills50` |

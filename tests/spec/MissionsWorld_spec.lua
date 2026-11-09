@@ -35,11 +35,12 @@ describe("Missions: world (CF-76)", function()
 
   local DAILIES = { "d.kills30", "d.elite", "d.rareMob", "d.bigFoe", "d.streak20", "d.duoHunt", "d.weaponSkill",
                     "d.flight", "d.newFlight", "d.hearth", "d.ride", "d.swim", "d.places10", "d.whisper",
-                    "d.groupPic", "d.mailFriend", "d.vendorBuy", "d.vendorSale", "d.repair", "d.trainer", "d.bank" }
+                    "d.groupPic", "d.mailFriend", "d.vendorBuy", "d.vendorSale", "d.repair", "d.trainer", "d.bank",
+                    "d.summoned", "d.auctionPost" }
   local WEEKLIES = { "w.kills200", "w.elites10", "w.weapon25", "w.flightPaths3" }
 
-  it("registers the progress of its 21 dailies, all in the catalogue", function()
-    assert.are.equal(21, #DAILIES)
+  it("registers the progress of its 23 dailies, all in the catalogue", function()
+    assert.are.equal(23, #DAILIES)
     for _, id in ipairs(DAILIES) do
       assert.is_table(ns.Doomsday.goal(id), id)
       assert.is_number((ns.Doomsday.progress(id, {})), id)
@@ -55,15 +56,16 @@ describe("Missions: world (CF-76)", function()
   end)
 
   it("leaves the missions that still wait, and CF-75's, unregistered", function()
-    for _, id in ipairs({ "d.bind", "d.auctionPost", "d.auctionBuy", "d.summoned", "d.mailbox", "d.restock",
+    for _, id in ipairs({ "d.bind", "d.auctionBuy", "d.mailbox", "d.restock",
                           "d.wave", "d.bandageUp", "d.coins10" }) do
       assert.is_nil(ns.Doomsday.progress(id, {}), id)
     end
   end)
 
-  it("puts all its missions in pool version 3 (CF-99)", function()
+  it("puts its missions in pool version 3 (CF-99), d.summoned and d.auctionPost in 4 (CF-104)", function()
+    local four = { ["d.summoned"] = true, ["d.auctionPost"] = true }
     for _, id in ipairs(World.IDS) do
-      assert.are.equal(3, ns.Doomsday.goal(id).since, id)
+      assert.are.equal(four[id] and 4 or 3, ns.Doomsday.goal(id).since, id)
     end
   end)
 

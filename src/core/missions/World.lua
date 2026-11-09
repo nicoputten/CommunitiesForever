@@ -3,11 +3,12 @@
 -- (Goals.registerKind, facts under its own key) and its goals' progress (Doomsday.registerProgress).
 -- Facts of a day or week under facts.world = { kills, elites, rares, bigFoes, duo (counts), streak = { [guid] =
 -- kills since the last death }, bestStreak, flights, newFlights, hearth, bank, trainer, weaponUps, groupPic,
--- whispers, mailFriend, buys, repairs, sales (counts), swim = { [guid] = seconds }, ride = { [guid] = seconds },
--- places = { [zone|subzone] = true } }.
+-- whispers, mailFriend, buys, repairs, sales, summons, auctions (counts; the last two from CF-104), swim = { [guid] =
+-- seconds }, ride = { [guid] = seconds }, places = { [zone|subzone] = true } }.
 -- Built only for the missions whose launch check passed (docs/API-FINDINGS.md "Forever launch probe": V90, V93,
--- V94, V95, V98, V99, V100, V102, V103, V107, V108 whisper, V111, V115). Waiting: d.bind (V96), d.auctionPost and
--- d.auctionBuy (V101), d.summoned (V114), d.mailbox (V100 inbox), d.restock (V99 item link), d.wave (V108 emote).
+-- V94, V95, V98, V99, V100, V102, V103, V107, V108 whisper, V111, V115). CF-104 (pool version 4): d.summoned (V114)
+-- and d.auctionPost (V101, Nico's pick). Waiting: d.bind (V96), d.auctionBuy (V101), d.mailbox (V100 inbox),
+-- d.restock (V99 item link), d.wave (V108 emote).
 -- d.bandageUp and d.coins10 are CF-75's (Items).
 local _, ns = ... -- requires ns.Goals and ns.Doomsday (loaded before it)
 
@@ -174,10 +175,11 @@ end)
 --[[ worldAction: one of the counted actions. { action } with action one of: "flight" (on a flight master's route,
   V94), "newFlight" (a flight path learned, V94), "hearth" (V95), "bank" (V102), "trainer" (a spell learned at a
   trainer, V103), "weaponUp" (a weapon or defense skill-up, V107), "groupPic" (a screenshot grouped with a friend,
-  V111), "whisper" (to a friend, V108), "mailFriend" (V100), "buy", "repair", "sale" (at a merchant, V99). ]]
+  V111), "whisper" (to a friend, V108), "mailFriend" (V100), "buy", "repair", "sale" (at a merchant, V99),
+  "summoned" (a friend's summon accepted, V114), "auctionPost" (an auction posted, V101). ]]
 local ACTIONS = { flight = "flights", newFlight = "newFlights", hearth = "hearth", bank = "bank", trainer = "trainer",
                   weaponUp = "weaponUps", groupPic = "groupPic", whisper = "whispers", mailFriend = "mailFriend",
-                  buy = "buys", repair = "repairs", sale = "sales" }
+                  buy = "buys", repair = "repairs", sale = "sales", summoned = "summons", auctionPost = "auctions" }
 World.ACTIONS = ACTIONS
 
 ns.Goals.registerKind("worldAction", function(f, obs)
@@ -223,6 +225,8 @@ local PROGRESS = {
   ["d.repair"] = counter("repairs", 1),
   ["d.trainer"] = counter("trainer", 1),
   ["d.bank"] = counter("bank", 1),
+  ["d.summoned"] = counter("summons", 1),
+  ["d.auctionPost"] = counter("auctions", 1),
 
   ["w.kills200"] = counter("kills", 200),
   ["w.elites10"] = counter("elites", 10),

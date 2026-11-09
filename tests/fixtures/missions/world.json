@@ -168,6 +168,22 @@
     { "kind": "worldAction" }
    ],
    "progress": { "d.whisper": [0, 1, false], "d.flight": [0, 1, false], "d.bank": [0, 1, false] }
+  },
+  {
+   "name": "a friend's summon accepted and an auction posted (CF-104)",
+   "observations": [
+    { "kind": "worldAction", "action": "summoned" },
+    { "kind": "worldAction", "action": "auctionPost" },
+    { "kind": "worldAction", "action": "auctionPost" }
+   ],
+   "progress": { "d.summoned": [1, 1, true], "d.auctionPost": [2, 1, true], "d.mailFriend": [0, 1, false] }
+  },
+  {
+   "name": "no summon and no auction (CF-104)",
+   "observations": [
+    { "kind": "worldAction", "action": "mailFriend" }
+   ],
+   "progress": { "d.summoned": [0, 1, false], "d.auctionPost": [0, 1, false] }
   }
  ]
 }

@@ -3,7 +3,11 @@
 -- Verified on Forever (docs/API-FINDINGS.md "Forever launch probe"): kills from CHAT_MSG_COMBAT_XP_GAIN (V90),
 -- creatures by target, mouseover and nameplate (V93), flights (V94), own casts (V95), swimming and mounted (V98),
 -- merchant hooks (V99), SendMail and MAIL_SEND_SUCCESS (V100), BANKFRAME_OPENED (V102), the trainer (V103),
--- CHAT_MSG_SKILL (V107), CHAT_MSG_WHISPER_INFORM (V108), SCREENSHOT_SUCCEEDED (V111), subzones (V115).
+-- CHAT_MSG_SKILL (V107), CHAT_MSG_WHISPER_INFORM (V108), SCREENSHOT_SUCCEEDED (V111), subzones (V115), CONFIRM_SUMMON
+-- and C_SummonInfo.GetSummonConfirmSummoner (V114).
+-- CF-104, unverified and guarded (VERIFY.md CF-104): the accept of a summon (a post-hook on
+-- C_SummonInfo.ConfirmSummon), a posted auction (AUCTION_HOUSE_AUCTION_CREATED or the ERR_AUCTION_STARTED message,
+-- V101).
 -- Unverified and guarded (VERIFY.md CF-76): the whisper's GUID argument, Battle.net whispers, the hearthstone's
 -- spell from its item, money up at a merchant (a sale). Every call stays guarded.
 local _, ns = ...
@@ -26,6 +30,8 @@ local lastNewPath = 0
 local trainerOpen = false
 local merchantOpen, merchantMoney = false, nil
 local mailTo
+local summonFrom -- CF-104: the summon offered by a friend ({ at }), until it is accepted or cancelled
+local lastAuction = 0
 local moved = { swim = 0, ride = 0 } -- seconds polled, not sent yet
 
 local function global() return addonRef.db.global end
@@ -94,6 +100,38 @@ local function onDead()
   if guid then send("worldDeath", { guid = guid }) end
 end
 
+-- ===== Summons and auctions (V114, V101; CF-104) =====
+
+WorldEvents.SUMMON_WINDOW = 180 -- seconds an offered summon can still be accepted (the game's is 2 minutes)
+
+local function onSummonOffered()
+  local get = C_SummonInfo and C_SummonInfo.GetSummonConfirmSummoner
+  local summoner = get and call(get)
+  local g = global()
+  if str(summoner) and ns.Missions.World.isFriendTarget(summoner, nil, nil, g.people, own().battleTag) then
+    summonFrom = { at = GetServerTime() }
+  else
+    summonFrom = nil
+  end
+end
+
+local function onSummonAccepted()
+  if summonFrom and GetServerTime() - summonFrom.at <= WorldEvents.SUMMON_WINDOW then action("summoned") end
+  summonFrom = nil
+end
+
+-- The event and the message can both come for one auction: count it once.
+local function auctionPosted()
+  local now = GetServerTime()
+  if now - lastAuction > 3 then action("auctionPost") end
+  lastAuction = now
+end
+
+local function onAuctionMessage(message)
+  local started = readable(ERR_AUCTION_STARTED)
+  if type(started) == "string" and message == started then auctionPosted() end
+end
+
 -- ===== Flights (V94) =====
 
 local function checkTaxi()
@@ -111,6 +149,7 @@ local function onMessage(message)
     lastNewPath = GetServerTime()
     action("newFlight")
   end
+  onAuctionMessage(message)
 end
 
 -- ===== Swimming and riding (V98) =====
@@ -203,6 +242,10 @@ local function installHooks()
   hook("BuyMerchantItem", function() if merchantOpen then action("buy") end end)
   hook("RepairAllItems", function() if merchantOpen then action("repair") end end)
   hook("SendMail", function(recipient) mailTo = str(recipient) and recipient or nil end)
+  -- CF-104: the summon popup's accept calls C_SummonInfo.ConfirmSummon (unverified hook, VERIFY.md CF-104).
+  if hooksecurefunc and C_SummonInfo and type(C_SummonInfo.ConfirmSummon) == "function" then
+    pcall(hooksecurefunc, C_SummonInfo, "ConfirmSummon", onSummonAccepted)
+  end
 end
 
 -- Called once by DoomsdayTracker.start with the addon (for addon:SendMessage).
@@ -235,6 +278,9 @@ function WorldEvents.watch(addon)
   register("CHAT_MSG_BN_WHISPER_INFORM", onBnWhisper)
   register("MAIL_SEND_SUCCESS", onMailSent)
   register("MAIL_FAILED", function() mailTo = nil end)
+  register("CONFIRM_SUMMON", onSummonOffered)
+  register("CANCEL_SUMMON", function() summonFrom = nil end)
+  register("AUCTION_HOUSE_AUCTION_CREATED", auctionPosted)
   register("MERCHANT_SHOW", function()
     merchantOpen = true
     merchantMoney = call(GetMoney)

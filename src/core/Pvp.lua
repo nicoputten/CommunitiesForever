@@ -257,10 +257,11 @@ local function field(value, kind)
 end
 
 --[[ The victims of `kills` kills counted at `now`, at most one per GUID, best first: { { name, lvl, class, race,
-rank, source } }, possibly empty (no guessing). looks: the enemy players at the kill (adapters/PvpInfo.looks, each
+rank, source, guid } }, possibly empty (no guessing). looks: the enemy players at the kill (adapters/PvpInfo.looks, each
 with source "target", "mouseover" or "nameplate"); alive: Pvp.seeAlive's cache. A look counts when it is an enemy
 player, dead == true and was seen alive within KILL_WINDOW; target before mouseover before nameplate, then the one
-seen alive last. Its fields come from the look, else from when it was seen alive; a missing one stays nil. ]]
+seen alive last. Its fields come from the look, else from when it was seen alive; a missing one stays nil. guid
+(CF-104, for revenge) is the look's; Pvp.killEntry never keeps it. ]]
 function Pvp.pickVictims(looks, alive, now, kills)
   local found, byGuid = {}, {}
   if type(looks) ~= "table" or type(alive) ~= "table" or type(now) ~= "number" then return found end
@@ -285,7 +286,8 @@ function Pvp.pickVictims(looks, alive, now, kills)
                  lvl = field(look.lvl, "number") or field(seen.lvl, "number"),
                  class = field(look.class, "string") or field(seen.class, "string"),
                  race = field(look.race, "string") or field(seen.race, "string"),
-                 rank = field(look.rank, "number") or field(seen.rank, "number"), source = look.source }
+                 rank = field(look.rank, "number") or field(seen.rank, "number"), source = look.source,
+                 guid = look.guid }
     if found[i].name == "" then found[i].name = nil end
   end
   return found

@@ -21,6 +21,9 @@ local seen, rankNumbers, honorKills, counterKills, fallbackLater = {}, nil, 0, 0
 -- rises since the fallback last ran, and the victims the honor messages named in that time.
 local alive, picks, honorNames = {}, {}, {}
 
+-- CF-104: internal message (victimGuid, bg) for each victim picked at a kill counter rise (BattleEvents: revenge).
+PvpTracker.VICTIM = "CF_PVP_VICTIM"
+
 -- Seconds between looks at target, mouseover and nameplates for Pvp.seeAlive.
 PvpTracker.LOOK_EVERY = 1
 
@@ -64,8 +67,10 @@ local function refresh(countKills)
   if kills > 0 then
     ns.FeedTracker.record(char, { { kind = "kills", zone = ns.SelfInfo.zone(), count = kills } })
     counterKills = counterKills + kills
+    local info = ns.Instance.info()
     for _, victim in ipairs(ns.Pvp.pickVictims(ns.PvpInfo.looks(), alive, GetServerTime(), kills)) do
       picks[#picks + 1] = victim
+      addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, info ~= nil and info.type == "pvp")
     end
     fallbackLater()
   end
