@@ -524,6 +524,19 @@ function DoomsdayTracker.state()
   return withTimes(cache, schedule)
 end
 
+-- CF-114: today's Hunt for a character of faction ({ race, class }, nil when there is none) and whether the Hunt
+-- is done today (true or false).
+function DoomsdayTracker.huntFor(faction)
+  if not addonRef then return nil end
+  local s = DoomsdayTracker.state()
+  local facts = store()
+  local df = facts.days[s.day]
+  local hunt = df and df.hunts and df.hunts[faction]
+  if type(hunt) ~= "table" then return nil end
+  local progress = s.progress and s.progress.hunt
+  return hunt, (s.today and s.today.done and s.today.done.hunt ~= nil) or (progress and progress.done == true) or false
+end
+
 function buildState(today, schedule)
   local week = ns.Doomsday.week(today)
   local facts, goals = store()

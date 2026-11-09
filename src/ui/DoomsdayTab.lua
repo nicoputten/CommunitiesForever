@@ -166,9 +166,11 @@ local function goalBox(parent)
 end
 
 -- CF-63 (board CF63DoomBoard): a goal's tooltip: the goal; "Swapped for you · original: …"; "6/10", "Not done yet"
--- or "done Thu 00:14", whose it is (a friend's name first) and when the goals reset.
-local function goalTip(text, instead, done, at, progress, whose)
+-- or "done Thu 00:14", whose it is (a friend's name first) and when the goals reset. CF-114: hint (the Hunt's
+-- nameplate tip) after the goal.
+local function goalTip(text, instead, done, at, progress, whose, hint)
   local lines = { text }
+  if hint then lines[#lines + 1] = hint end
   if instead then
     lines[#lines + 1] = string.format("Swapped for %s \194\183 original: %s", whose or "you", instead)
   end
@@ -219,7 +221,7 @@ local function todayRow(parent, r, y, width)
   cb:SetPoint("TOPLEFT", PAD + 1, -(y + 12))
   cb:SetGoal(r.done, r.instead ~= nil)
   cb.tip = goalTip(r.text, r.instead, r.done, r.at, (r.target or 1) > 1 and string.format("%d/%d", r.value or 0,
-    r.target) or nil)
+    r.target) or nil, nil, r.hint)
   placeText(pools.tiny, parent, PAD + 28, y + 13, 62, r.kind, track)
   local titleX = PAD + 92
   local right = PAD + width - 2 * PAD -- the left column's right edge
@@ -237,6 +239,12 @@ local function todayRow(parent, r, y, width)
     local h = Kit.take(pools.hovers, parent)
     h:SetPoint("TOPLEFT", titleX, -(y + 8))
     h:SetSize(tw + 96, 22)
+    h.tip = cb.tip
+  end
+  if r.hint and not r.instead and not r.tip then -- CF-114: the Hunt's tip on its title too
+    local h = Kit.take(pools.hovers, parent)
+    h:SetPoint("TOPLEFT", titleX, -(y + 8))
+    h:SetSize(tw + 8, 22)
     h.tip = cb.tip
   end
   if r.tip then
@@ -404,7 +412,7 @@ local function points(p) return string.format("PvE %d \194\183 PvP %d", p.pve or
 local function cellTip(cell, row)
   local progress = row.isSelf and cell.target and string.format("%d/%d", cell.value or 0, cell.target) or nil
   return goalTip(ns.DoomsdayView.goalText(cell.id), cell.instead, cell.done, cell.at, progress,
-    not row.isSelf and row.name or nil)
+    not row.isSelf and row.name or nil, cell.id == "hunt" and ns.DoomsdayView.HUNT_TIP or nil)
 end
 
 local function hover(parent, x, y, w, tip)

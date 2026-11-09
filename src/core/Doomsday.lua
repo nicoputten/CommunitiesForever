@@ -924,6 +924,38 @@ function Doomsday.hunt(n, faction, version)
   return draw.hunt and draw.hunt[faction] or nil
 end
 
+-- ===== Prey (CF-114) =====
+
+-- Seconds before the same enemy player gets the "Prey in sight" chat line again.
+Doomsday.PREY_CHAT_EVERY = 300
+
+-- Instance types where a kill never counts for the Hunt (battleground kills score on the bg track).
+local NO_HUNT_INSTANCE = { pvp = true, arena = true }
+
+--[[ CF-114: true when a unit is the Hunt's prey: the current character's Hunt (hunt = { race, class }, nil when
+there is none today) is not done yet, the unit is an enemy player (unit = { enemy, player, race, class }, as the
+adapter read it, a secret value already nil) of that exact race and class, and the player is not in a battleground or
+arena (instanceType from GetInstanceInfo, nil: unknown, counts as outside). ]]
+function Doomsday.isPrey(hunt, done, unit, instanceType)
+  if type(hunt) ~= "table" or done == true or type(unit) ~= "table" then return false end
+  if unit.enemy ~= true or unit.player ~= true then return false end
+  if instanceType ~= nil and NO_HUNT_INSTANCE[instanceType] then return false end
+  if type(hunt.race) ~= "string" or type(hunt.class) ~= "string" then return false end
+  return unit.race == hunt.race and unit.class == hunt.class
+end
+
+--[[ CF-114: true when the prey chat line for key (the unit's GUID) may show at now, and records it. said = { [key] =
+when it was last said }; entries older than PREY_CHAT_EVERY are dropped. A key that isn't a non-empty string: never. ]]
+function Doomsday.preyChatDue(said, key, now)
+  if type(said) ~= "table" or type(key) ~= "string" or key == "" or type(now) ~= "number" then return false end
+  for k, at in pairs(said) do
+    if now - at >= Doomsday.PREY_CHAT_EVERY then said[k] = nil end
+  end
+  if said[key] then return false end
+  said[key] = now
+  return true
+end
+
 -- ===== The schedule from the site (CF-68) =====
 
 -- A scheduled list (dailies, weeklies) when all its ids are active goals of that slot, else the normal draw's.

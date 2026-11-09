@@ -452,4 +452,63 @@ describe("Doomsday (CF-55)", function()
     assert.are.equal(20, #Doomsday.combos("Horde"))
     assert.are.equal(20, #Doomsday.combos("Alliance"))
   end)
+
+  describe("prey (CF-114)", function()
+    local hunt = { race = "NightElf", class = "DRUID" }
+    local function unit(extra)
+      local u = { enemy = true, player = true, race = "NightElf", class = "DRUID" }
+      for k, v in pairs(extra or {}) do u[k] = v end
+      return u
+    end
+
+    it("is an enemy player of the Hunt's race and class while the Hunt is open", function()
+      assert.is_true(Doomsday.isPrey(hunt, false, unit(), "none"))
+      assert.is_true(Doomsday.isPrey(hunt, nil, unit(), nil))
+    end)
+
+    it("is nothing when the Hunt is done or there is none", function()
+      assert.is_false(Doomsday.isPrey(hunt, true, unit(), "none"))
+      assert.is_false(Doomsday.isPrey(nil, false, unit(), "none"))
+      assert.is_false(Doomsday.isPrey({ race = "NightElf" }, false, unit(), "none"))
+    end)
+
+    it("needs both race and class, known", function()
+      assert.is_false(Doomsday.isPrey(hunt, false, unit({ class = "HUNTER" }), "none"))
+      assert.is_false(Doomsday.isPrey(hunt, false, unit({ race = "Human" }), "none"))
+      assert.is_false(Doomsday.isPrey(hunt, false, unit({ race = false }), "none"))
+      local secret = unit()
+      secret.class = nil -- a secret value reaches core as nil
+      assert.is_false(Doomsday.isPrey(hunt, false, secret, "none"))
+    end)
+
+    it("is only an enemy player", function()
+      assert.is_false(Doomsday.isPrey(hunt, false, unit({ enemy = false }), "none"))
+      assert.is_false(Doomsday.isPrey(hunt, false, unit({ player = false }), "none"))
+      assert.is_false(Doomsday.isPrey(hunt, false, nil, "none"))
+    end)
+
+    it("is nothing in a battleground or arena, where kills don't count for the Hunt", function()
+      assert.is_false(Doomsday.isPrey(hunt, false, unit(), "pvp"))
+      assert.is_false(Doomsday.isPrey(hunt, false, unit(), "arena"))
+      assert.is_true(Doomsday.isPrey(hunt, false, unit(), "party"))
+    end)
+
+    it("says the chat line once per player per few minutes", function()
+      local said = {}
+      assert.is_true(Doomsday.preyChatDue(said, "Player-1-A", 1000))
+      assert.is_false(Doomsday.preyChatDue(said, "Player-1-A", 1000 + Doomsday.PREY_CHAT_EVERY - 1))
+      assert.is_true(Doomsday.preyChatDue(said, "Player-1-B", 1010))
+      assert.is_true(Doomsday.preyChatDue(said, "Player-1-A", 1000 + Doomsday.PREY_CHAT_EVERY))
+      assert.is_false(Doomsday.preyChatDue(said, nil, 2000))
+      assert.is_false(Doomsday.preyChatDue(said, "", 2000))
+      assert.is_false(Doomsday.preyChatDue(nil, "Player-1-C", 2000))
+    end)
+
+    it("forgets players not seen for a while", function()
+      local said = { ["Player-1-A"] = 0 }
+      Doomsday.preyChatDue(said, "Player-1-B", Doomsday.PREY_CHAT_EVERY)
+      assert.is_nil(said["Player-1-A"])
+      assert.are.equal(Doomsday.PREY_CHAT_EVERY, said["Player-1-B"])
+    end)
+  end)
 end)

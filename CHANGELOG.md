@@ -6,6 +6,10 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **New:** when The Hunt is in your Doomsday goals, an enemy player of the Hunt's race and class says "Your prey: The
+  Hunt" in their tooltip, and targeting or hovering them prints "Prey in sight" in chat (once per player every few
+  minutes). Keep your prey targeted when they die, so the kill knows who it was. The Hunt's tooltip on the Doomsday
+  tab also suggests turning on enemy nameplates.
 - **Fixed:** no more "No player named '...' is currently playing." lines from the addon. It no longer messages a
   character the game shows offline, stops after one failed try until that character is back online, and
   hides the game's line when it still happens.

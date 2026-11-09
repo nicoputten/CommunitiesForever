@@ -42,6 +42,7 @@ function addon:OnEnable()
   ns.ActivityTracker.start(self) -- CF-23: after MemberTracker (companions must be community members)
   ns.PlayTracker.start(self) -- CF-53: after ActivityTracker (instance events) and MemberTracker (groups)
   ns.DoomsdayTracker.start(self) -- CF-56: after the trackers whose feed events count; before Sync (HELLO dd)
+  ns.HuntPrey.start(self) -- CF-114: the Hunt's prey hint; after PvpTracker (PvpInfo.watch) and DoomsdayTracker
   ns.Presence.watch(self)
   ns.PresenceTracker.start(self)
   ns.MainFrame.start(self)

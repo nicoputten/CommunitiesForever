@@ -654,6 +654,8 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 - A Horde character hunts Alliance combinations and vice versa: the character's own faction decides, with no setting. A friend with characters on both factions sees both Hunts, and either one counts.
 - **Done** with one counted kill of that exact combination.
 - A kill counts only when the victim's race **and** class are known. Midnight hides combat-log details from addons, so they come from the target, mouseover or nameplate cache seen just before the kill (CF-55); a kill on a player never seen counts for points, not for the Hunt.
+- Tip (CF-114): target your prey, or turn on enemy nameplates, so the kill knows who it was. The addon marks an enemy
+  player of the open Hunt's combination in their tooltip ("Your prey: The Hunt") and once in chat ("Prey in sight").
 - If the launch probe (CF-54) shows race and class are rarely known, the Hunt becomes a second Skirmish (a pool-version bump).
 
 ### Skirmish pool (daily)
