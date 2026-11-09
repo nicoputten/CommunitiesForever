@@ -17,7 +17,7 @@ Messenger.UNSUPPORTED = "CF_MESSAGE_UNSUPPORTED"     -- (pv, senderBattleTag): a
 
 local addonRef, codec, outbox, reassembler, pumpTimer, sentStore, missTimer
 local msgPrefix, msgCounter = "", 0
-local stats = { sent = 0, received = 0, dropped = 0, resent = 0, missed = 0 }
+local stats = { sent = 0, received = 0, dropped = 0, resent = 0, missed = 0, offline = 0 }
 local debugging = false -- CF-64: /cf sync debug, for this session only
 
 -- /cf sync debug: one chat line per part, miss, resend and complete message. CF-64 (Nico): not saved, off at every
@@ -48,6 +48,14 @@ local function nextMsgId()
   return msgPrefix .. string.format("%x", msgCounter)
 end
 
+-- CF-112: a community member is whispered only while online by the freshest source (ReachTracker); otherwise its
+-- queued parts are dropped, so the game never answers "No player named '...' is currently playing." for them.
+local function dropOffline(target, status)
+  local count = 1 + outbox:drop(target)
+  stats.offline = stats.offline + count
+  trace("not to %s: %s, %d part(s) dropped", target, status, count)
+end
+
 -- Sends queued chunks one per interval; stops while in combat until PLAYER_REGEN_ENABLED.
 local function pump()
   pumpTimer = nil
@@ -58,12 +66,19 @@ local function pump()
   if target then
     if target == CHANNEL then
       ns.Channels.send(ns.Protocol.PREFIX, chunk, ns.SyncChannel.index())
+      stats.sent = stats.sent + 1
     elseif type(target) == "string" then
-      ns.Transport.whisper(target, ns.Protocol.PREFIX, chunk) -- CF-28: a community member
+      local ok, status = ns.ReachTracker.mayWhisper(target)
+      if ok then
+        ns.Transport.whisper(target, ns.Protocol.PREFIX, chunk) -- CF-28: a community member
+        stats.sent = stats.sent + 1
+      else
+        dropOffline(target, status)
+      end
     else
       ns.Transport.send(target, ns.Protocol.PREFIX, chunk)
+      stats.sent = stats.sent + 1
     end
-    stats.sent = stats.sent + 1
   end
   if outbox:size() > 0 then
     pumpTimer = C_Timer.NewTimer(math.max(outbox:wait(ns.Transport.now()), 0.01), pump)
@@ -86,6 +101,15 @@ function Messenger.send(gameAccountID, message)
      and ns.MemberTracker.belongs(ns.PresenceTracker.battleTagFor(gameAccountID)) ~= true then
     trace("not to %s: not in the community", who(gameAccountID))
     return 0
+  end
+  -- CF-112: a community member not online now (or whose last whisper failed) gets nothing.
+  if type(gameAccountID) == "string" then
+    local ok, status = ns.ReachTracker.mayWhisper(gameAccountID)
+    if not ok then
+      stats.offline = stats.offline + 1
+      trace("not to %s: %s", gameAccountID, status)
+      return 0
+    end
   end
   local msgId = nextMsgId()
   local size = type(gameAccountID) == "string" and ns.Protocol.COMMUNITY_CHUNK or nil
@@ -223,7 +247,7 @@ end
 -- Counters for /cf ping and debugging.
 function Messenger.stats()
   return { sent = stats.sent, received = stats.received, dropped = stats.dropped, queued = outbox:size(),
-           resent = stats.resent, missed = stats.missed }
+           resent = stats.resent, missed = stats.missed, offline = stats.offline }
 end
 
 function Messenger.start(addon)
@@ -240,7 +264,7 @@ function Messenger.start(addon)
   msgCounter = 0
   -- Per-session id prefix, so ids after a /reload do not collide with chunks still pending on the receiver.
   msgPrefix = string.format("%x", GetServerTime() % 1048576) .. "x"
-  stats = { sent = 0, received = 0, dropped = 0, resent = 0, missed = 0 }
+  stats = { sent = 0, received = 0, dropped = 0, resent = 0, missed = 0, offline = 0 }
 
   ns.Transport.registerPrefix(ns.Protocol.PREFIX)
   ns.Transport.watch(addon, ns.Protocol.PREFIX)
@@ -251,6 +275,14 @@ function Messenger.start(addon)
     if ns.SyncChannel.isOurs(target, localID, channelName) then receiveWhisper(text, name) end
   end)
   addon:RegisterMessage(ns.Transport.COMBAT_ENDED, function() schedulePump() end)
+  -- CF-112: a whisper to name failed (offline): its parts still queued are dropped.
+  local events = LibStub("AceEvent-3.0"):Embed({})
+  events:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name)
+    if type(name) ~= "string" then return end
+    local count = outbox:drop(name)
+    stats.offline = stats.offline + count
+    if count > 0 then trace("not to %s: whisper failed, %d part(s) dropped", name, count) end
+  end)
 end
 
 ns.Messenger = Messenger

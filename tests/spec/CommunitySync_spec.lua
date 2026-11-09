@@ -266,6 +266,121 @@ describe("sync over the community (CF-28 part 2b)", function()
     assert.is_false(filter(nil, "CHAT_MSG_SYSTEM", line))
   end)
 
+  describe("whispers only to members online (CF-112)", function()
+    local BO, BO_GUID = "Bo Example", "Player-1-0000B0B1"
+
+    it("hides the line once per line in every chat window, also with a realm, and blocks the name", function()
+      load()
+      flush()
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+      flush()
+      ns.Transport.whisper(DEE, "CommForever", "x")
+      local filter = state.chatFilters.CHAT_MSG_SYSTEM[1]
+      local failed = {}
+      addon:RegisterMessage(ns.Transport.WHISPER_FAILED, function(_, name) failed[#failed + 1] = name end)
+      local line = "No player named 'Dee Example-ClassicBetaPvP' is currently playing."
+      assert.is_true(filter(nil, "CHAT_MSG_SYSTEM", line))
+      assert.is_true(filter(nil, "CHAT_MSG_SYSTEM", line)) -- the same line in a second chat window
+      assert.are.same({ DEE }, failed)
+      assert.are.equal(1, ns.Transport.filterInfo().hidden)
+      assert.are.equal("failed", ns.ReachTracker.status(DEE))
+      state.whispers = {}
+      assert.are.equal(0, ns.Messenger.send(DEE, { t = "PING", at = 1 }))
+      ns.Sync.announce()
+      flush()
+      assert.are.equal(0, #whisperedTo(DEE))
+      -- Dee is heard again: whispers resume.
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+      assert.are.equal("online", ns.ReachTracker.status(DEE))
+      assert.are.equal(1, ns.Messenger.send(DEE, { t = "PING", at = 2 }))
+    end)
+
+    it("drops the parts still queued for a name whose whisper failed", function()
+      load()
+      flush()
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+      flush()
+      state.whispers = {}
+      local pad = {}
+      math.randomseed(112)
+      for i = 1, 2000 do pad[i] = string.char(math.random(33, 126)) end -- hardly compressible
+      local parts = ns.Messenger.send(DEE, { t = "PING", at = 1, pad = table.concat(pad) })
+      assert.is_true(parts > 2)
+      assert.are.equal(1, #state.whispers) -- the first part went out at once, the rest wait for the rate limit
+      local filter = state.chatFilters.CHAT_MSG_SYSTEM[1]
+      assert.is_true(filter(nil, "CHAT_MSG_SYSTEM", string.format(_G.ERR_CHAT_PLAYER_NOT_FOUND_S, DEE)))
+      flush()
+      assert.are.equal(1, #state.whispers)
+      assert.are.equal(0, ns.Messenger.stats().queued)
+    end)
+
+    it("never whispers a member the community shows offline", function()
+      load(nil, { { BO_GUID, BO } })
+      flush()
+      assert.are.equal("offline", ns.ReachTracker.status(BO))
+      assert.are.equal(0, ns.Messenger.send(BO, { t = "BYE" }))
+      ns.Sync.announce()
+      flush()
+      assert.are.equal(0, #whisperedTo(BO))
+      assert.is_true(ns.Messenger.stats().offline >= 1)
+    end)
+
+    it("drops a peer who left without a BYE once the community shows them offline", function()
+      load()
+      flush()
+      fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+      fromDee(deeRecord(950))
+      flush()
+      assert.is_not_nil(ns.Sync.online()[DEE_AID])
+      state.clubMembers[CLUB][#state.clubMembers[CLUB]].presence = 2 -- disconnected: no BYE
+      wowapi.fireEvent(state, "CLUB_MEMBER_PRESENCE_UPDATED", CLUB, 3, 2)
+      flush()
+      assert.is_nil(ns.Sync.online()[DEE_AID])
+      state.whispers = {}
+      ns.Sync.sendKill({ guid = state.player.guid, instance = 36, name = "Edwin VanCleef", encounter = 1, at = 1000 })
+      wowapi.fireEvent(state, "PLAYER_LOGOUT")
+      flush()
+      assert.are.equal(0, #whisperedTo(DEE))
+    end)
+
+    it("shows an unreadable (secret) system line: it can't be compared", function()
+      load()
+      flush()
+      ns.Transport.whisper(DEE, "CommForever", "x")
+      local secret = {}
+      _G.issecretvalue = function(v) return rawequal(v, secret) end
+      local filter = state.chatFilters.CHAT_MSG_SYSTEM[1]
+      assert.is_false(filter(nil, "CHAT_MSG_SYSTEM", secret))
+      _G.issecretvalue = nil
+      assert.are.equal(1, ns.Transport.filterInfo().secret)
+    end)
+
+    it("says how the filter is registered with /cf sync debug", function()
+      load()
+      assert.are.equal("ChatFrame_AddMessageEventFilter", ns.Transport.filterInfo().via)
+      state.printed = {}
+      state.slash.cf("sync debug")
+      local found = false
+      for _, line in ipairs(state.printed) do
+        if line:find("whisper filter: ChatFrame_AddMessageEventFilter", 1, true) then found = true end
+      end
+      assert.is_true(found)
+      state.slash.cf("sync debug")
+    end)
+
+    it("prefers ChatFrameUtil.AddMessageEventFilter when it exists", function()
+      local added = {}
+      load(function()
+        _G.ChatFrameUtil = { AddMessageEventFilter = function(event, fn) added[#added + 1] = { event, fn } end }
+      end)
+      _G.ChatFrameUtil = nil
+      assert.are.equal("ChatFrameUtil.AddMessageEventFilter", ns.Transport.filterInfo().via)
+      local system = 0
+      for _, a in ipairs(added) do if a[1] == "CHAT_MSG_SYSTEM" then system = system + 1 end end
+      assert.are.equal(1, system) -- (CF-31's channel notice filter is another event)
+    end)
+  end)
+
   it("merges a community copy into the BattleTag once a friend's record shows the account ID", function()
     load(function(global)
       global.people[DEE_AID] = { version = 900, aid = "dddddddddddd",

@@ -645,8 +645,10 @@ function Sync.online()
     -- A friend who appears offline on Battle.net stays offline here too (privacy), even when they greet us over
     -- the community: sync and linking only. CF-97: also one known by the BattleTag they claimed over the
     -- community (a Battle.net friend whom Battle.net doesn't show in Forever; V87: the game can't name them).
+    -- CF-112: a peer who left without a BYE (disconnect) drops out once the community shows them offline.
+    local reach = ns.ReachTracker.status(name, peer.guid)
     if not result[peer.key] and not offline[peer.guid] and not friends[peer.key]
-        and not ns.PresenceTracker.isHidden(peer.key) then
+        and not ns.PresenceTracker.isHidden(peer.key) and reach ~= "offline" and reach ~= "failed" then
       local member = members[peer.guid] or {}
       result[peer.key] = { guid = peer.guid, name = name, level = member.level, classID = member.classID,
                            target = name }

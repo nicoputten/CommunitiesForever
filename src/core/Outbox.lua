@@ -12,6 +12,7 @@ Outbox.DEFAULT_INTERVAL = 0.2 -- seconds between chunks, across all targets
                -> nil                    when empty
   box:wait(now) -> seconds until the next chunk may go out
   box:size()
+  box:drop(target) -> count             removes every queued chunk for target (CF-112: it went offline)
 ]]
 function Outbox.new(interval)
   -- queue[first..last]; explicit indexes because # is unreliable once the front is cleared.
@@ -30,6 +31,20 @@ function Outbox.new(interval)
   function box.wait(self, now)
     if not self.nextAt then return 0 end
     return math.max(0, self.nextAt - now)
+  end
+
+  function box.drop(self, target)
+    local kept, count = {}, 0
+    for i = self.first, self.last do
+      local item = self.queue[i]
+      if item and item.target == target then
+        count = count + 1
+      elseif item then
+        kept[#kept + 1] = item
+      end
+    end
+    if count > 0 then self.queue, self.first, self.last = kept, 1, #kept end
+    return count
   end
 
   function box.pop(self, now)
