@@ -6,6 +6,13 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **New:** Doomsday pool version 4. New daily missions: "Earn an uncommon quest reward", "Fish in a group with a
+  friend", "Give a friend a dish cooked by an own character", "Get summoned by a friend" and "Put an item up for
+  auction". New Skirmish missions: "Revenge: kill the player who killed you" (the player who last killed that
+  character, the same day), "Stay flagged for 30 minutes without dying" and "Flag up for PvP"; a new Bounty: "3 hours
+  flagged for PvP". "Defend home" leaves the draw: the game shows your faction's territory only in the capitals.
+  **The Hunt** joins too: each day an enemy race and class to kill (target or mouse over them as they die).
+  Please update together: a friend still on the previous version keeps seeing the old missions.
 - **New:** when The Hunt is in your Doomsday goals, an enemy player of the Hunt's race and class says "Your prey: The
   Hunt" in their tooltip, and targeting or hovering them prints "Prey in sight" in chat (once per player every few
   minutes). Keep your prey targeted when they die, so the kill knows who it was. The Hunt's tooltip on the Doomsday

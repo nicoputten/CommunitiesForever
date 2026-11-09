@@ -30,7 +30,7 @@ the Hunt's text to turn enemy nameplates on. Hints only, nothing is blocked (rec
 - The Hunt's goal tooltip on the Doomsday tab (Today row and Board cell) adds "Target your prey, or turn on enemy
   nameplates, so the kill knows who it was." (`DoomsdayView.HUNT_TIP`), and `docs/DOOMSDAY.md` says it too. The
   site's and bot's Hunt texts live in the web repo: a follow-up there.
-- Today the draw has no Hunt yet (`Doomsday.HUNT_SINCE` is nil), so the hint shows once the Hunt joins the draw.
+- The draw had no Hunt then (`Doomsday.HUNT_SINCE` nil); it joins with pool version 4 (CF-104), so the hint shows from there.
 - No change to stored data or messages (rule 8).
 - Manual: VERIFY.md CF-114.
 
@@ -300,26 +300,38 @@ Dungeon feature (boards DL01–DL05, shared "Data contract 1: kills"): kill time
   Golden fixtures unchanged.
 - Manual (VERIFY.md "CF-103").
 
-### CF-104 Pool version 4 (built now, released only on Nico's go)
-Nico (2026-11-07): retire "Defend home" and add what is ready, but hold the release. Pairs with the site's WEB-101,
-same release. **Not on develop until Nico says release:** the branch stays open (a PR in draft), so an addon or site
-release in between keeps pool 3. Touches: `src/core/Doomsday.lua`, `src/core/missions/Battle.lua`,
-`src/adapters/missions/BattleEvents.lua`, `tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`,
-`docs/DOOMSDAY.md`, VERIFY.md, CHANGELOG.md.
+### CF-104 Pool version 4
+Nico (2026-11-07): retire "Defend home" and add what is ready. Nico (2026-11-09): build and release it now, with the
+joins below. Pairs with the site's WEB-101, same release. Touches: `src/core/Doomsday.lua`,
+`src/core/missions/Battle.lua`, `src/core/missions/World.lua`, `src/adapters/missions/BattleEvents.lua`,
+`src/adapters/missions/WorldEvents.lua`, `src/core/Pvp.lua` and `src/services/PvpTracker.lua` (the victim's GUID),
+`tests/fixtures/doomsday-cases.json`, `tests/fixtures/missions/battle.json`, `tests/fixtures/missions/world.json`,
+`docs/DOOMSDAY.md`, VERIFY.md, CHANGELOG.md. Built 2026-11-09.
 - `Doomsday.POOL_VERSION = 4`.
 - **Retired:** `p.homeGuard` gets `retired = 4` (V123: own zones outside the capitals have no PvP type, so it only
   counts inside a capital). Pool 1 to 3 draws are unchanged.
-- **Joins (`since = 4`):** the flag missions from V121 (`UnitIsPVP("player")` reads after `PLAYER_FLAGS_CHANGED`):
-  `p.flagUp` (flag up), `p.flagHour` (an hour flagged), `b.flagged3h` (3 hours flagged in a week), each with a
-  registered progress and cases in `tests/fixtures/missions/battle.json`. The flagged time is a local fact of the
-  day or week (no new stored or sent shape).
-- **Joins only if their in-game check passed before the release:** `d.reward`, `d.fishFriend`, `d.feedFriend`
-  (VERIFY.md "CF-75"). Otherwise they wait for pool 5.
-- Golden `draws` cases for pool 4's days and weeks from its first day; the cases of pools 1 to 3 unchanged.
-- Compatibility (rule 8): an addon on pool 3 keeps drawing and recording pool 3 (`pool = 3` on its days); the release
-  notes ask friends to update.
-- Manual (VERIFY.md): flag up, stay flagged an hour; on the release day two friends on the new version see the same
-  Skirmish; Defend home never drawn.
+- **Joins (`since = 4`), each with a registered progress and cases:**
+  - The flag missions from V121 (`UnitIsPVP("player")` read on `PLAYER_FLAGS_CHANGED`, at login and each minute):
+    `p.flagUp` (10 minutes flagged on a character), `p.flagHour` (30 minutes flagged in one run, no death or unflag),
+    `b.flagged3h` (3 hours flagged, all characters of the week).
+  - `d.reward`, `d.fishFriend`, `d.feedFriend`: their in-game check passed (Nico, 2026-11-09).
+  - `d.summoned`: a friend's summon (`CONFIRM_SUMMON`, `C_SummonInfo.GetSummonConfirmSummoner()`, V114) accepted (a
+    post-hook on `C_SummonInfo.ConfirmSummon`, unverified).
+  - `d.auctionPost`: an auction posted (`AUCTION_HOUSE_AUCTION_CREATED` or `ERR_AUCTION_STARTED`, V101); buying
+    (`d.auctionBuy`) stays out.
+  - `p.revenge` ("Avenge a death"): a kill, outside a battleground, of the player who last killed that character that
+    day, by GUID: the killer from the death recap's last damage source (V120), the victim from CF-110's pick
+    (`Pvp.pickVictims` now returns the look's `guid`; `Pvp.killEntry` never keeps it).
+  - "Send mail" is `d.mailFriend`, already in pool 3; `d.mailbox` (the inbox) stays out.
+  - **The Hunt** (Nico, 2026-11-09, "add it to the pool"): `Doomsday.HUNT_SINCE = 4`; golden `draws.hunts` cases
+    with `pool: 4` and `huntSince: 4` in the golden file. The victim from CF-110's pick, the prey hint from CF-114.
+- Golden `draws` cases for pool 4's days and weeks from its first day, and three pool-4 swaps; the cases of pools 1
+  to 3 unchanged.
+- Compatibility (rule 8): an addon on pool 3 keeps drawing and recording pool 3 (`pool = 3` on its days); every
+  pool-4 id is already in its catalogue, so it scores a friend's pool-4 day. New local day and week facts only
+  (`battle.flagged`, `flagRun`, `flagBest`, `killers`, `revenge`; `world.summons`, `world.auctions`), read nil-safe;
+  nothing new is sent. The release notes ask friends to update.
+- Manual (VERIFY.md CF-104).
 
 ### CF-99 Pool version 3
 After the launch probe (CF-96) and the three tracker lanes (CF-74 #222, CF-75 #224 #225, CF-76 #221). Follows CF-77.

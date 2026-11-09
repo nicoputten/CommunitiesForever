@@ -60,7 +60,7 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 
 ### CF-114 The Hunt's prey hint
 This build, `/console scriptErrors 1`, a character in the selected community, on a day the Today box has a Hunt row
-(e.g. "Night Elf Druids"; the draw has no Hunt while `Doomsday.HUNT_SINCE` is nil). World PvP, outside battlegrounds.
+(e.g. "Night Elf Druids"; the Hunt is drawn from pool version 4, CF-104). World PvP, outside battlegrounds.
 
 | Step | Expected | Status |
 |---|---|---|
@@ -465,6 +465,27 @@ The release day's draw with this build: `/run local D,s=CommunitiesForever.Dooms
 | On this build, a day that was already drawn before the update (log in on v1.1.0, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `pool` nil (read as version 1: its goals score 5 each); the next day's entry prints `2`. | open |
 | Finish a new daily (e.g. Say something in the community chat, if drawn) | Its banner and the week's total show its size (+1, +3 or +5), not +5 for every goal. | open |
 
+### CF-104 Pool version 4
+"The draw line" as in CF-77; it now prints `4` first. "The battle line": `/run local d=CommunitiesForeverDB.global.self.doomsday.days local n=0 for k in pairs(d) do if k>n then n=k end end local b=d[n].battle or {} for g,s in pairs(b.flagged or {}) do print('flagged',s,'run',(b.flagRun or {})[g],'best',(b.flagBest or {})[g]) end for g,k in pairs(b.killers or {}) do print('killer',k) end print('revenge',b.revenge)`. "The world line 4": `/run local d=CommunitiesForeverDB.global.self.doomsday.days local n=0 for k in pairs(d) do if k>n then n=k end end local w=d[n].world or {} print('summons',w.summons,'auctions',w.auctions)`. `/console scriptErrors 1` for all steps.
+
+| Step | Expected | Status |
+|---|---|---|
+| Two friends on this build, on the release day: the draw line on both, and compare the Doomsday tab | Both print `4` and the same 3 dailies and 3 weeklies; the tabs show the same Skirmish (or its swap). | open |
+| `/run for _,id in ipairs(CommunitiesForever.Doomsday.pool("skirmish")) do print(id) end` | Prints `p.frontLine`, `p.loneWolf`, `p.untouchable`, `p.revenge`, `p.flagHour`, `p.flagUp`; never `p.homeGuard` ("Defend home"). | open |
+| A friend still on the previous release (pool version 3), same day: their Doomsday tab | They see pool version 3's goals. No errors on either side; on the site both friends' points count. | open |
+| A day drawn before the update (log in on the previous release, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `3`; the next day's entry prints `4`. | open |
+| Flag up (`/pvp`, or enter a contested zone), stay flagged and alive 10 minutes; the battle line | `flagged` grows by about 60 each minute (a reload doesn't lose more than a minute); at 600 "Flag up for PvP" is done when it is the Skirmish. | open |
+| Stay flagged 30 minutes without dying; the battle line | `run` and `best` reach 1800: "Stay flagged for 30 minutes without dying" done when drawn. Die, or drop the flag: `run` is gone (nil), `best` stays. | open |
+| Flagged time on two characters in one week: `/run local w=CommunitiesForeverDB.global.self.doomsday.weeks local n=0 for k in pairs(w) do if k>n then n=k end end for g,s in pairs((w[n].battle or {}).flagged or {}) do print(g,s) end` | Both characters print their seconds; at 10800 together "3 hours flagged for PvP" is done when it is the Bounty. | open |
+| Revenge: die to an enemy player (not a duel), then `/run print(select(3, CommunitiesForever.PvpInfo.recapDamage()))` and the battle line | Prints a `Player-...` GUID, and the battle line shows it as `killer`. If it prints a `Creature-...` GUID or nil, say so (V120 saw players named). | open |
+| Then kill that player with them targeted (or moused over); the battle line | `revenge 1`, `killer` gone: "Revenge: kill the player who killed you" done when it is the Skirmish. Killing another player first, or the killer in a battleground, doesn't count. | open |
+| A friend's community character summons you, accept (unverified: a post-hook on `C_SummonInfo.ConfirmSummon`); the world line 4 | `summons 1`: "Get summoned by a friend" done when drawn. A stranger's summon, or declining, leaves it. If accepting a friend's summon gives nothing: `/run print(C_SummonInfo and type(C_SummonInfo.ConfirmSummon))` and say what it prints. | open |
+| Post an auction (`AUCTION_HOUSE_AUCTION_CREATED`, V101; the "auction created" message is a guarded second source); the world line 4 | `auctions 1` per auction posted, not 2: "Put an item up for auction" done when drawn. Buying an auction doesn't count. | open |
+| The Hunt: `/run local D,s=CommunitiesForever.Doomsday,CommunitiesForever.DoomsdayTracker.schedule(); local h=D.draw(D.day(GetServerTime(),s.offset,s.reset)).hunt print(h.Horde.race,h.Horde.class,h.Alliance.race,h.Alliance.class)`, and the Doomsday tab | Prints today's two combinations; the tab shows the Hunt for your faction and counts "of 6" (3 dailies, the Skirmish, the Hunt, the Duel slot). Two friends on this build see the same Hunt. | open |
+| Kill an enemy player of the Hunt's race and class with them targeted (or moused over) | The Hunt crosses out with its banner, +5 PvP. A kill of another combination, or of a player you never looked at, doesn't do it. | open |
+| When drawn: "Earn an uncommon quest reward", "Fish in a group with a friend", "Give a friend a dish cooked by an own character" | Each crosses out with its banner and +3. | open |
+| A friend on the previous release, flagged and fighting next to you | No errors on either side (nothing new is sent). | open |
+
 ### CF-99 Pool version 3
 "The draw line" as in CF-77; it now prints `3` first.
 
@@ -474,9 +495,6 @@ The release day's draw with this build: `/run local D,s=CommunitiesForever.Dooms
 | A friend still on the previous release (pool version 2), same day: their Doomsday tab | They see pool version 2's goals (the ones the site shows for version 2). No errors on either side; on the site both friends' points count. | open |
 | A day drawn before the update (log in on the previous release, log out, update, log in): `/run for n,e in pairs(CommunitiesForeverDB.global.self.goals.days) do print(n,e.pool,table.concat(e.set," ")) end` | That day keeps its set and prints `2`; the next day's entry prints `3`. | open |
 | Finish one of the new dailies when drawn (e.g. Visit the bank, Cook 5 meals, Defeat 30 enemies) | It crosses out with its banner and its size (+1, +3 or +5). | open |
-| p.homeGuard: in your own capital (or another zone of your faction), `/run print(GetRealZoneText(), (C_PvP and C_PvP.GetZonePVPInfo or GetZonePVPInfo)())` | Prints the zone and `friendly`. | open |
-| p.homeGuard (when it is the Skirmish, level 20 or more): kill an enemy player in a zone of your faction, then `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.days) do if d.battle then for z,t in pairs(d.battle.zones) do print(n,z,t) end end end` | That zone prints `friendly`; the Skirmish "Defend home" is done. A kill in a contested or enemy zone doesn't do it. | open |
-| Below level 20 on every character, a day whose Skirmish is "Defend home" | The Skirmish shows "Lone wolf" instead, with the swap mark. | open |
 
 ### CF-74 Existing trackers, extended (tracking only, not in the draw yet)
 The missions aren't in the draw yet (a later pool version): check the facts with this command (call it "the extended
@@ -486,15 +504,12 @@ line" below): `/run for n,d in pairs(CommunitiesForeverDB.global.self.doomsday.d
 |---|---|---|
 | Log in, wait a minute; the extended line | `session` counts up each minute (seconds since the session began; a `/reload` continues it). | open |
 | Fish once in two zones; the extended line | `fishZones 2`. Fishing between 21:00 and 05:00 realm time (`/run print(GetGameTime())`) counts in `fishNight`; earlier it doesn't. | open |
-| Fish while grouped with a friend's community character in the same zone (needs CF-73's "Club member zone text" step) | `fishFriend` 1 or more; with the friend in another zone it stays. | open |
 | Play at or after 23:00 on your PC's clock (before 03:00) | `night` true; before 23:00 `false`. | open |
 | Die once, then play on | `alive` restarts from the death: it stays below `session` and grows again each minute. | open |
 | Kill a dungeon boss without dying in that run | `clean` 1. In another run die first, then kill a boss: `clean` stays. | open |
 | Note your gold, sell an item to a merchant | `profit` true once your gold is above what you had at login; `/reload` keeps the login's amount (`/run print(CommunitiesForeverDB.global.self.doomsday.sessionMoney.money)` unchanged). | open |
 | Loot an uncommon (green) item; create a stack (e.g. 3 bandages at once) | `green` up by 1 (a white or grey item doesn't count), `crafted` up by the stack's count. | open |
-| Hand in a quest and pick an uncommon reward (unverified: the reward's "You receive item" line within 5 s of `QUEST_TURNED_IN`) | `reward` 1. A green bought from a merchant later doesn't count as a reward (it counts in `green`). | open |
 | Trade with a friend's community character | `trades` 1 or more; a stranger doesn't count. | open |
-| Cook a dish, then trade it to a friend (needs V85: what you gave) | `/run print(next(CommunitiesForeverDB.global.self.doomsday.cooked))` shows the dish's item ID; after the trade `fed` 1. | open |
 | Group with a friend's community character, then `/run for w,f in pairs(CommunitiesForeverDB.global.self.doomsday.weeks) do local n=0; for _ in pairs(f.extended and f.extended.groupDays or {}) do n=n+1 end; print(w,n) end` | This week shows 1 (a day with a friend in the group); on two more days it reaches 3. | open |
 | A friend on v1.3.2 | No errors on either side; their Doomsday tab looks as before (nothing new is sent). | open |
 

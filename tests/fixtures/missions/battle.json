@@ -45,7 +45,113 @@
   {
    "name": "no observations",
    "observations": [],
-   "progress": { "p.homeGuard": [0, 1, false] }
+   "progress": { "p.homeGuard": [0, 1, false], "p.flagUp": [0, 10, false], "p.flagHour": [0, 30, false],
+                 "b.flagged3h": [0, 180, false], "p.revenge": [0, 1, false] }
+  },
+  {
+   "name": "10 minutes flagged on one character flags up (CF-104)",
+   "observations": [
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 300 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 300, "on": false }
+   ],
+   "progress": { "p.flagUp": [10, 10, true], "p.flagHour": [10, 30, false], "b.flagged3h": [10, 180, false] }
+  },
+  {
+   "name": "flagged time of two characters adds up for the bounty but not for one character's goals",
+   "observations": [
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 299 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 299 }
+   ],
+   "progress": { "p.flagUp": [4, 10, false], "b.flagged3h": [9, 180, false] }
+  },
+  {
+   "name": "30 minutes flagged without dying, also over a flag that stays up",
+   "observations": [
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 }
+   ],
+   "progress": { "p.flagHour": [30, 30, true], "p.flagUp": [30, 10, true] }
+  },
+  {
+   "name": "a death or a dropped flag starts the run over; the longest run counts",
+   "observations": [
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleDeath", "guid": "Player-1-A" },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 300, "on": false },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 }
+   ],
+   "progress": { "p.flagHour": [20, 30, false], "p.flagUp": [45, 10, true], "b.flagged3h": [45, 180, false] }
+  },
+  {
+   "name": "one observation adds at most 10 minutes; bad seconds add nothing",
+   "observations": [
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 100000 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": -60 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": "600" },
+    { "kind": "battleFlag", "seconds": 600 }
+   ],
+   "progress": { "p.flagUp": [10, 10, true], "b.flagged3h": [10, 180, false] }
+  },
+  {
+   "name": "3 hours flagged over the week's characters fill the bounty",
+   "observations": [
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-A", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 },
+    { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }, { "kind": "battleFlag", "guid": "Player-1-B", "seconds": 600 }
+   ],
+   "progress": { "b.flagged3h": [180, 180, true] }
+  },
+  {
+   "name": "killing the player who last killed the character is a revenge",
+   "observations": [
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Player-2-K" },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-X" },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-K" }
+   ],
+   "progress": { "p.revenge": [1, 1, true] }
+  },
+  {
+   "name": "one revenge per death; the killer of another character or a battleground kill doesn't count",
+   "observations": [
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Player-2-K" },
+    { "kind": "battleVictim", "guid": "Player-1-B", "victim": "Player-2-K" },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-K", "bg": true },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-K" },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-K" }
+   ],
+   "progress": { "p.revenge": [1, 1, true] }
+  },
+  {
+   "name": "only the last death's killer counts, and only a player",
+   "observations": [
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Player-2-K" },
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Creature-0-1-2-3-4-5" },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-K" },
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Player-2-L" },
+    { "kind": "battleDeath", "guid": "Player-1-A" },
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-L" },
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Player-2-M" },
+    { "kind": "battleVictim", "guid": "Player-1-A" },
+    { "kind": "battleVictim", "victim": "Player-2-M" }
+   ],
+   "progress": { "p.revenge": [0, 1, false] }
+  },
+  {
+   "name": "a kill before the death is no revenge",
+   "observations": [
+    { "kind": "battleVictim", "guid": "Player-1-A", "victim": "Player-2-K" },
+    { "kind": "battleDeath", "guid": "Player-1-A", "killer": "Player-2-K" }
+   ],
+   "progress": { "p.revenge": [0, 1, false] }
   }
  ]
 }

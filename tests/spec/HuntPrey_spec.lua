@@ -6,11 +6,11 @@ describe("The Hunt's prey hint (CF-114)", function()
   local PREY = "Player-4619-0000PREY"
   local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass" }
 
-  -- huntOn: load with the Hunt in the draw (Doomsday.HUNT_SINCE is still nil in this pool version).
+  -- huntOn: load with the Hunt in the draw (pool version 4 draws it, CF-104); off: without it (as pools 1 to 3).
   local function load(huntOn)
     state = wowapi.install()
     ns = helpers.loadAddon()
-    if huntOn then ns.Doomsday.HUNT_SINCE = 0 end
+    ns.Doomsday.HUNT_SINCE = huntOn and 0 or nil
     addon = state.addon
     addon:OnInitialize()
     addon.db.global.settings.clubId = "23125681"

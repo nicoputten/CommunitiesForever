@@ -50,7 +50,8 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     local t = texts()
     -- CF-61: "Wed evening" in your own clock, and the Duel slot counts in "N of M done".
     local label = ns.DoomsdayView.dayLabel(D.dayStart(n, CET, RESET), os.date) or D.label(n)
-    assert.is_truthy(t:find("\nToday \194\183 " .. label .. " \194\183 0 of 5 done\n", 1, true))
+    -- CF-104: the Hunt counts too.
+    assert.is_truthy(t:find("\nToday \194\183 " .. label .. " \194\183 0 of 6 done\n", 1, true))
     assert.is_truthy(t:find("\nFinish 10 quests\n", 1, true))
     assert.is_truthy(t:find("\n0/10\n", 1, true))
     assert.is_truthy(t:find("\nFirst duel with each friend\n", 1, true))
@@ -126,7 +127,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     load(function(s) s.serverTime = start + 3600 end)
     local day = addon.db.global.self.goals.days[n]
     for i, id in ipairs(day.set) do
-      if ns.Doomsday.goal(id).slot == "daily" then day.done[id] = start + 60 * i end
+      if (ns.Doomsday.goal(id) or {}).slot == "daily" then day.done[id] = start + 60 * i end
     end
     ns.DoomsdayTracker.invalidate() -- the goals were changed by hand
     addon:SendMessage(ns.DoomsdayTracker.CHANGED, {}, {})
@@ -148,7 +149,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     local goals = { days = { [n] = { set = set, done = done, at = start + 10 } }, weeks = {} }
     addon.db.global.people[bt] = { displayName = "Mira", version = 1, chars = {}, goals = goals }
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
-    assert.is_false(printed("Mira finished Doomsday first today. You're at 0 of 5.")) -- CF-91: no chat line
+    assert.is_false(printed("Mira finished Doomsday first today. You're at 0 of 6.")) -- CF-91: no chat line
     assert.are.equal(0, #ns.CrownToast.shown())
   end)
 
@@ -200,7 +201,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       assert.is_truthy(t:find("\nMira\n", 1, true))
       assert.is_truthy(t:find("\n%d%d:%d%d  crown\n")) -- the finish time and the crown after the name
       assert.is_falsy(t:find("0/10", 1, true)) -- a check or a box, the progress in the tooltip
-      assert.is_truthy(t:find("\nPvE 15 \194\183 PvP 6\n", 1, true))
+      assert.is_truthy(t:find("\nPvE 15 \194\183 PvP 11\n", 1, true)) -- CF-104: the Hunt done, +5
       assert.is_truthy(t:find("\nno Doomsday data yet\n", 1, true)) -- Tok, an older addon
       local tips = table.concat(ns.DoomsdayTab.tips(), "\n|\n")
       assert.is_truthy(tips:find("Finish 10 quests\n0/10", 1, true)) -- your own progress
@@ -224,7 +225,7 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       end
       assert.is_true(mira.crossed)
       assert.is_true(mira.crown)
-      assert.are.same({ pve = 15, pvp = 5 + 1 }, mira.today)
+      assert.are.same({ pve = 15, pvp = 5 + 5 + 1 }, mira.today) -- the Skirmish, the Hunt, a kill
     end)
 
     it("shows Friends today on Today: you, a crossed-out friend with the crown (CF-62)", function()

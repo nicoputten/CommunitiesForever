@@ -27,7 +27,7 @@ describe("Doomsday (CF-55)", function()
     for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
       assert.are.same(cases.pools[slot], Doomsday.pool(slot), slot)
     end
-    assert.is_nil(Doomsday.HUNT_SINCE)
+    assert.are.equal(cases.huntSince, Doomsday.HUNT_SINCE)
     assert.are.same(cases.salts.dailies, Doomsday.SALT.dailies)
     assert.are.same(cases.salts.weeklies, Doomsday.SALT.weeklies)
   end)
@@ -63,7 +63,7 @@ describe("Doomsday (CF-55)", function()
       end
       assert.are.equal(118, dailies)
       assert.are.equal(15, n)
-      for _, id in ipairs({ "d.reward", "d.fishFriend", "d.feedFriend", "d.treasure", "p.flex", "p.punchDown5" }) do
+      for _, id in ipairs({ "d.treasure", "d.auctionBuy", "d.mailbox", "p.flex", "p.punchDown5" }) do
         assert.is_nil(Doomsday.goal(id).since, id)
       end
     end)
@@ -125,6 +125,43 @@ describe("Doomsday (CF-55)", function()
       local n = 0
       for _ in pairs(categories) do n = n + 1 end
       assert.are.equal(15, n)
+    end)
+
+    -- CF-104: pool version 4 adds the flag missions, revenge and five dailies, and retires p.homeGuard.
+    it("grows the pools in version 4 and leaves versions 1 to 3 as they were", function()
+      local sizes = {}
+      for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
+        sizes[slot] = { #Doomsday.pool(slot, 3), #Doomsday.pool(slot, 4) }
+      end
+      assert.are.same({ daily = { 103, 108 }, weekly = { 49, 49 }, skirmish = { 4, 6 }, bounty = { 5, 6 } }, sizes)
+      assert.are.same({ "p.frontLine", "p.loneWolf", "p.untouchable", "p.revenge", "p.flagHour", "p.flagUp" },
+        Doomsday.pool("skirmish", 4))
+      local inThree = false
+      for _, id in ipairs(Doomsday.pool("skirmish", 3)) do inThree = inThree or id == "p.homeGuard" end
+      assert.is_true(inThree)
+      assert.are.same({ 3, 4 }, { Doomsday.goal("p.homeGuard").since, Doomsday.goal("p.homeGuard").retired })
+    end)
+
+    it("gives every goal of pool version 4 a registered progress", function()
+      local all = helpers.coreNs()
+      for _, file in ipairs({ "Doomsday", "Goals", "GameText" }) do
+        helpers.loadAddonFile("src/core/" .. file .. ".lua", all)
+      end
+      for _, name in ipairs({ "Quests", "Records", "Places", "Extended", "Items", "World", "Fights", "Battle" }) do
+        helpers.loadAddonFile("src/core/missions/" .. name .. ".lua", all)
+      end
+      local joined = {}
+      for _, g in ipairs(all.Doomsday.GOALS) do
+        if g.since == 4 then joined[#joined + 1] = g.id end
+      end
+      assert.are.same({ "d.feedFriend", "d.fishFriend", "d.summoned", "d.reward", "d.auctionPost", "p.revenge",
+                        "p.flagHour", "p.flagUp", "b.flagged3h" }, joined)
+      local facts = all.Goals.progressFacts(all.Goals.newFacts())
+      for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
+        for _, id in ipairs(all.Doomsday.pool(slot, 4)) do
+          assert.is_number((all.Doomsday.progress(id, facts)), id)
+        end
+      end
     end)
 
     it("retires the honor rank goals from pool version 3; they were never drawn", function()
@@ -244,8 +281,12 @@ describe("Doomsday (CF-55)", function()
     end
   end)
 
+  -- CF-104: the Hunt is drawn from pool version 4; the cases without `pool` pin its rule as if from version 1.
   it("draws the Hunt once its pool version comes", function()
-    assert.is_nil(Doomsday.draw(cases.epoch).hunt)
+    for version = 1, 3 do assert.is_nil(Doomsday.draw(cases.epoch, version).hunt, version) end
+    for _, c in ipairs(cases.draws.hunts) do
+      if c.pool then assert.are.same(c.expect, Doomsday.draw(c.day, c.pool).hunt, "pool 4 day " .. c.day) end
+    end
     Doomsday.HUNT_SINCE = 1
     for _, c in ipairs(cases.draws.hunts) do
       assert.are.same(c.expect, Doomsday.draw(c.day, c.pool or 1).hunt, "day " .. c.day)
@@ -262,7 +303,7 @@ describe("Doomsday (CF-55)", function()
     return count
   end
 
-  for _, version in ipairs({ 1, 2 }) do
+  for _, version in ipairs({ 1, 2, 4 }) do
     it("keeps the draw's rules over 400 days in pool version " .. version .. ": 3 categories, nothing twice in a row",
       function()
         local before = Doomsday.draw(cases.epoch, version)

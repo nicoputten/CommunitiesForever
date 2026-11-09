@@ -56,7 +56,7 @@ describe("Celebration banners in game (CF-67)", function()
     local b = shown()[1]
     assert.are.equal("Daily goal" .. DOT .. "PvE", b.kicker)
     assert.are.equal("Finish 10 quests", b.title)
-    assert.is_truthy(b.line:find("1 of 5$"))
+    assert.is_truthy(b.line:find("1 of 6$")) -- CF-104: the Hunt counts too
     assert.are.same({ 878 }, state.sounds)
     local frame = ns.CelebrationBanner.frame()
     assert.is_true(frame:IsShown())
@@ -208,7 +208,7 @@ describe("Celebration banners in game (CF-67)", function()
       local start = D.dayStart(n, CET, RESET)
       local day = addon.db.global.self.goals.days[n]
       for i, id in ipairs(day.set) do
-        if ns.Doomsday.goal(id).slot == "daily" then day.done[id] = start + 60 * i end
+        if (ns.Doomsday.goal(id) or {}).slot == "daily" then day.done[id] = start + 60 * i end
       end
       ns.DoomsdayTracker.invalidate() -- the goals were changed by hand
       addon:SendMessage(ns.DoomsdayTracker.CHANGED, {}, {})
