@@ -1,7 +1,8 @@
 {
- "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
+ "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; `huntSince` is the pool version the Hunt is drawn from (CF-104); the `draws.hunts` cases without `pool` pin the Hunt's rule as if it were drawn from pool version 1; a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
  "version": 1,
  "poolVersion": 4,
+ "huntSince": 4,
  "epoch": 20761,
  "defaultReset": 68400,
  "salts": {
@@ -5355,6 +5356,482 @@
      "Alliance": {
       "race": "Scourge",
       "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20761,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20762,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20763,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20764,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20765,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20766,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20767,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "WARLOCK"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20768,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "WARLOCK"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20769,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20770,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20771,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20772,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20773,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20774,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20775,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20776,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "WARLOCK"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20777,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20778,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "WARLOCK"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20779,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20780,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20781,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "DRUID"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20782,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20783,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20784,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20785,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "WARLOCK"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20786,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "MAGE"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20787,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "WARLOCK"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20788,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "DRUID"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20789,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20790,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20800,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20821,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 20900,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 4,
+    "day": 21000,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PRIEST"
      }
     }
    }

@@ -703,8 +703,9 @@ for i, g in ipairs(GOALS) do
   BY_ID[g.id] = g
 end
 
--- The Hunt joins with the pool version that verifies victim race and class (CF-54); nil: not yet.
-Doomsday.HUNT_SINCE = nil
+-- The Hunt joins with the pool version that verifies victim race and class (CF-54): pool version 4 (CF-104, Nico
+-- 2026-11-09; the victim comes from CF-110's pick). Pool versions 1 to 3 draw no Hunt.
+Doomsday.HUNT_SINCE = 4
 
 function Doomsday.goal(id) return BY_ID[id] end
 

@@ -11,6 +11,7 @@ tagging; the release stops if the tag has no section.
   auction". New Skirmish missions: "Revenge: kill the player who killed you" (the player who last killed that
   character, the same day), "Stay flagged for 30 minutes without dying" and "Flag up for PvP"; a new Bounty: "3 hours
   flagged for PvP". "Defend home" leaves the draw: the game shows your faction's territory only in the capitals.
+  **The Hunt** joins too: each day an enemy race and class to kill (target or mouse over them as they die).
   Please update together: a friend still on the previous version keeps seeing the old missions.
 - **Fixed:** no more "No player named '...' is currently playing." lines from the addon. It no longer messages a
   character the game shows offline, stops after one failed try until that character is back online, and

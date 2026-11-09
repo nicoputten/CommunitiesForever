@@ -136,7 +136,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
       local c = cases[1]
       load(function(s) s.serverTime = D.dayStart(c.day, CET, RESET) + 3600 end, file(c.schedule))
       local day = c.schedule.days[tostring(c.day)]
-      local scheduled = { day.daily[1], day.daily[2], day.daily[3], day.skirmish }
+      local scheduled = { day.daily[1], day.daily[2], day.daily[3], day.skirmish, "hunt" } -- CF-104: the Hunt
       assert.are.same(scheduled, beforeSwaps(goals().days[c.day]))
       assert.are.equal(c.schedule.v, addon.db.global.doomsdaySchedule.v)
       assert.are.equal(c.schedule.v, ns.DoomsdayTracker.missionScheduleVersion())
@@ -144,7 +144,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
       state.serverTime = state.serverTime + 86400
       quest()
       local normal = D.draw(c.day + 1)
-      assert.are.same({ normal.dailies[1], normal.dailies[2], normal.dailies[3], normal.skirmish },
+      assert.are.same({ normal.dailies[1], normal.dailies[2], normal.dailies[3], normal.skirmish, "hunt" },
         beforeSwaps(goals().days[c.day + 1]))
     end)
 

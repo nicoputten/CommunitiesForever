@@ -297,6 +297,8 @@ joins below. Pairs with the site's WEB-101, same release. Touches: `src/core/Doo
     day, by GUID: the killer from the death recap's last damage source (V120), the victim from CF-110's pick
     (`Pvp.pickVictims` now returns the look's `guid`; `Pvp.killEntry` never keeps it).
   - "Send mail" is `d.mailFriend`, already in pool 3; `d.mailbox` (the inbox) stays out.
+  - **The Hunt** (Nico, 2026-11-09, "add it to the pool"): `Doomsday.HUNT_SINCE = 4`; golden `draws.hunts` cases
+    with `pool: 4` and `huntSince: 4` in the golden file. The victim from CF-110's pick, the prey hint from CF-114.
 - Golden `draws` cases for pool 4's days and weeks from its first day, and three pool-4 swaps; the cases of pools 1
   to 3 unchanged.
 - Compatibility (rule 8): an addon on pool 3 keeps drawing and recording pool 3 (`pool = 3` on its days); every

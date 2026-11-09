@@ -27,7 +27,7 @@ describe("Doomsday (CF-55)", function()
     for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
       assert.are.same(cases.pools[slot], Doomsday.pool(slot), slot)
     end
-    assert.is_nil(Doomsday.HUNT_SINCE)
+    assert.are.equal(cases.huntSince, Doomsday.HUNT_SINCE)
     assert.are.same(cases.salts.dailies, Doomsday.SALT.dailies)
     assert.are.same(cases.salts.weeklies, Doomsday.SALT.weeklies)
   end)
@@ -281,8 +281,12 @@ describe("Doomsday (CF-55)", function()
     end
   end)
 
+  -- CF-104: the Hunt is drawn from pool version 4; the cases without `pool` pin its rule as if from version 1.
   it("draws the Hunt once its pool version comes", function()
-    assert.is_nil(Doomsday.draw(cases.epoch).hunt)
+    for version = 1, 3 do assert.is_nil(Doomsday.draw(cases.epoch, version).hunt, version) end
+    for _, c in ipairs(cases.draws.hunts) do
+      if c.pool then assert.are.same(c.expect, Doomsday.draw(c.day, c.pool).hunt, "pool 4 day " .. c.day) end
+    end
     Doomsday.HUNT_SINCE = 1
     for _, c in ipairs(cases.draws.hunts) do
       assert.are.same(c.expect, Doomsday.draw(c.day, c.pool or 1).hunt, "day " .. c.day)
