@@ -112,16 +112,24 @@ describe("the hidden launch probe", function()
     assert.are.equal("pass", results().Hunt.status)
   end)
 
-  it("names the killer from the death recap (V120)", function()
+  it("no longer runs the answered death recap check (V120, CF-113)", function()
     load()
     _G.C_DeathRecap = { GetRecapEvents = function()
-      return { { sourceName = "Wolf", sourceGUID = "Creature-0-1" },
-               { sourceName = "Grim Tusk", sourceGUID = "Player-1-0001" } }
+      return { { sourceName = "Grim Tusk", sourceGUID = "Player-1-0001" } }
     end }
     wowapi.fireEvent(state, "PLAYER_DEAD")
     wowapi.runTimers(state)
-    assert.are.equal("killed by player Grim Tusk", results().V120.detail)
+    assert.is_nil(results().V120)
     assert.is_nil(results().V81) -- answered at launch (CF-96)
+  end)
+
+  it("checks only buying at the auction house (V101, CF-113)", function()
+    load()
+    -- posting is answered: AUCTION_HOUSE_AUCTION_CREATED is no longer registered; a stored post pass gives way
+    results().V101 = { status = "pass", detail = "posted: AUCTION_HOUSE_AUCTION_CREATED", at = 1, build = "70862" }
+    wowapi.fireEvent(state, "AUCTION_HOUSE_PURCHASE_COMPLETED")
+    assert.are.equal("pass", results().V101.status)
+    assert.are.equal("bought: AUCTION_HOUSE_PURCHASE_COMPLETED", results().V101.detail)
   end)
 
   it("notes a handler error instead of showing it", function()
@@ -386,7 +394,7 @@ describe("the hidden launch probe", function()
 
     it("counts only V60b of the recipe checks in /cf fp (CF-105, CF-109)", function()
       load()
-      assert.are.equal(12, #ns.Probe.IDS)
+      assert.are.equal(11, #ns.Probe.IDS)
       addon:OnSlashCommand("fp")
       local text = ns.ProbeReport.text()
       assert.is_nil(text:find("V60 ", 1, true))

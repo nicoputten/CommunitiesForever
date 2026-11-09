@@ -5,9 +5,8 @@
 -- merchant hooks (V99), SendMail and MAIL_SEND_SUCCESS (V100), BANKFRAME_OPENED (V102), the trainer (V103),
 -- CHAT_MSG_SKILL (V107), CHAT_MSG_WHISPER_INFORM (V108), SCREENSHOT_SUCCEEDED (V111), subzones (V115), CONFIRM_SUMMON
 -- and C_SummonInfo.GetSummonConfirmSummoner (V114).
--- CF-104, unverified and guarded (VERIFY.md CF-104): the accept of a summon (a post-hook on
--- C_SummonInfo.ConfirmSummon), a posted auction (AUCTION_HOUSE_AUCTION_CREATED or the ERR_AUCTION_STARTED message,
--- V101).
+-- CF-104: a posted auction (AUCTION_HOUSE_AUCTION_CREATED, V101). Unverified and guarded (VERIFY.md CF-104): the
+-- accept of a summon (a post-hook on C_SummonInfo.ConfirmSummon), the ERR_AUCTION_STARTED message as a second source.
 -- Unverified and guarded (VERIFY.md CF-76): the whisper's GUID argument, Battle.net whispers, the hearthstone's
 -- spell from its item, money up at a merchant (a sale). Every call stays guarded.
 local _, ns = ...

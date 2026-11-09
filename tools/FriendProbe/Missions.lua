@@ -411,7 +411,7 @@ local function Message(text)
   local key = matches(text, "ERR_AUCTION_STARTED", "ERR_AUCTION_WON_S", "ERR_AUCTION_BID_PLACED")
   if key then
     log("V101 message", key, text)
-    if key == "ERR_AUCTION_STARTED" then result("V101", "pass", "posted: " .. key) end
+    if key == "ERR_AUCTION_WON_S" then result("V101", "pass", "bought: " .. key) end
   end
   key = matches(text, "ERR_LEARN_SPELL_S", "ERR_LEARN_ABILITY_S")
   if key then
@@ -496,11 +496,11 @@ local handlers = {
   end,
   AUCTION_HOUSE_CLOSED = function() log("V101 auction house closed") end,
   AUCTION_HOUSE_AUCTION_CREATED = function(...)
-    log("V101 AUCTION_HOUSE_AUCTION_CREATED", Vals(function(...) return ... end, ...))
-    result("V101", "pass", "posted: AUCTION_HOUSE_AUCTION_CREATED")
+    log("V101 AUCTION_HOUSE_AUCTION_CREATED", Vals(function(...) return ... end, ...)) -- posting answered (CF-113)
   end,
   AUCTION_HOUSE_PURCHASE_COMPLETED = function(...)
     log("V101 AUCTION_HOUSE_PURCHASE_COMPLETED", Vals(function(...) return ... end, ...))
+    result("V101", "pass", "bought: AUCTION_HOUSE_PURCHASE_COMPLETED")
   end,
   BANKFRAME_OPENED = function() result("V102", "pass", "BANKFRAME_OPENED fired") end,
   TRAINER_SHOW = function()

@@ -8,6 +8,28 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-113 Launch probe: the export of 2026-11-09
+The export of 2026-11-09 (build 70862). Same rule as CF-105 and CF-109: an answered check leaves the probe and
+FriendProbe's checklist gets a `done` marker. Touches `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeMissions.lua`, `tools/FriendProbe/Checklist.lua`, `tools/FriendProbe/Missions.lua`, the
+probe specs, `docs/API-FINDINGS.md`, VERIFY.md.
+- V120 passed (2 testers): `C_DeathRecap.GetRecapEvents()` names a player killer (`Player-` GUID, readable name). To
+  API-FINDINGS; out of VERIFY.md and `Probe.IDS`, its code removed; FriendProbe's item `done`. It unblocks the
+  killer goals of CF-81 (`p.revenge`, `b.revenge3`; `p.avenge`, `b.avenge3` also need a friend's killer, which CF-81
+  keeps local): not built here. The addon reads the recap only for a death's cause (`PvpInfo.recapDamage`).
+- V101 half answered (1 tester): posting an auction fires `AUCTION_HOUSE_AUCTION_CREATED` (`d.auctionPost` can be
+  built). V101 stays open for buying: the probe passes on `AUCTION_HOUSE_PURCHASE_COMPLETED` or `ERR_AUCTION_WON_S`
+  (no longer on a post); a pass stored for a post gives way to the first buy's. FriendProbe's item the same.
+- V60b: CF-109's fix works, the own link reads `opened Blizzard's view (IsTradeSkillLinked true, N recipes)` (2
+  testers). A friend's link while they were online still gave no window for 1 tester, likely another internal server
+  (bug 7, CF-107). V60 stays open for an offline friend and a friend on the same server; the answered own-link step
+  of VERIFY.md CF-109 is closed.
+- Re-confirmed, no change: V73 fails (`You x x x 1 Honor.`, the award without the victim), V70, V87. Still open: V74
+  (skull), V100 (inbox take), V108 (emote).
+- `Probe.IDS`: 11 checks (V82, V35b, V73, Hunt, V80, V96, V101, V108, V122, V123, V60b).
+- Compatibility (rule 8): nothing stored or sent changes shape; the probe stops writing V120 (its stored result stays
+  and is uploaded as before) and V101's detail now names a buy.
+
 ### CF-110 The PvP kill's victim from your target at the kill
 On Forever the kill's honor message is the plain award (`COMBATLOG_HONORAWARD`, V73) and never names the victim, so
 the Hunt, `p.punchUp5` / `p.punchDown5`, `p.skull`, `b.skulls3` and the other victim goals (CF-54, CF-55, CF-101)
@@ -56,6 +78,42 @@ change and the logout fire none. Touches `src/core/Members.lua`, `src/services/M
 - Same stored shape, no migration (rule 8): older versions keep writing it from the member list; the site merges
   by the newest `seenAt`.
 - Manual (VERIFY.md): change zone, log out, check `global.locations[<GUID>]` and the site after an upload.
+
+### CF-112 No "No player named '...' is currently playing." from our whispers
+Bug (Nico, v1.6.1): the line shows twice in chat. It is the game's answer to an addon whisper to a character that is
+offline. Whispers go out from Sync (HELLO, REQ, RECORD, RUNS, SCHED, RUNANSWER, KILL, BYE and the MISS of reliable
+delivery, all through Messenger) and from CF-84's guild invites (GINVREQ, GINVACK, GINVFAIL). Sync whispered every
+member the community list showed online, and that list lags after a logout (V52); peers who left without a BYE
+stayed online for KILL, RUNANSWER and BYE; the alt whispers stored guild members it can't see. The CHAT_MSG_SYSTEM
+filter meant to hide the line compared it with `ERR_CHAT_PLAYER_NOT_FOUND_S:format(name)` exactly, for 10 s: a
+"-Realm" in the line, another case or other quotes, and it never matched, so nothing was hidden and nothing was
+marked offline. Touches `src/core/Reach.lua` (new), `src/core/Outbox.lua`, `src/services/ReachTracker.lua` (new),
+`src/services/Messenger.lua`, `src/services/Sync.lua`, `src/services/GuildInvites.lua`, `src/adapters/Transport.lua`,
+`src/Core.lua`, their specs, VERIFY.md, CHANGELOG.md.
+- Pure rule in core (`Reach`): a character is online by the freshest source: Battle.net when it knows (the friend
+  is on this character: online; on another character: offline; friends who appear offline count as online), else the
+  later of the community presence and the last message heard from it (heard within `Reach.HEARD_FRESH`, 120 s).
+- A failed whisper blocks the name until it shows online again: something heard from it, or its community presence
+  going offline and then online. A presence that stayed online is what made it fail, so it does not lift the block.
+- Messenger whispers a community member only while it is online by that rule: `send` refuses, and parts already
+  queued are dropped at send time and when a whisper to that name fails (`Outbox:drop`). `/cf ping stats` counts
+  them ("not whispered (offline)").
+- `Sync.online()` leaves out a peer the rule shows offline (left without a BYE), so KILL, RUNANSWER and the logout BYE
+  don't go to them.
+- The guild alt (CF-84) asks members online first, then those no source knows; members known offline (Battle.net,
+  an earlier failure this session) are skipped. The member side's whispers back (GINVACK, GINVFAIL) pass the same
+  check.
+- The filter: the name is read from the line (`Reach.notFoundName`, the game's format string, else the English text
+  with either quote or none) and compared without case and "-Realm" with the names we whispered in the last
+  `Reach.FAILED_WINDOW` (30 s); the line is hidden in every chat window and reported once (WHISPER_FAILED, with the
+  name as we whispered it). A secret line can't be compared: shown, counted. Registered with
+  `ChatFrameUtil.AddMessageEventFilter`, else `ChatFrame_AddMessageEventFilter` (both guarded), again at
+  `PLAYER_ENTERING_WORLD` when neither existed at login. `/cf sync debug` prints which one, the counts, the last
+  name a line had that matched none of ours, and the names blocked.
+- Compatibility (rule 8): nothing stored or sent changes; only fewer whispers go out. Older versions keep whispering
+  as before; ours treats their messages as before.
+- Manual (VERIFY.md CF-112, V53, V129): a member logs out, `/cf sync` within the minute: no line; `/cf sync debug`
+  shows the filter and the block.
 
 ### CF-109 Launch probe: the export of 2026-11-08, and the V60b window check
 The export of 2026-11-08 (6 testers; builds 70790 and 70862). Same rule as CF-105: an answered check leaves the

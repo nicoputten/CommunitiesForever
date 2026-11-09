@@ -4,7 +4,7 @@
 -- zone (Instance events: ZONE_CHANGED_NEW_AREA, the login) and on each own PvP kill (DoomsdayTracker.KILL), so the
 -- day's facts know the type of the zone a kill was in. Every unverified call is guarded (VERIFY.md).
 -- CF-104: the PvP flag (UnitIsPVP("player") read on PLAYER_FLAGS_CHANGED, at login and each minute, V121), the
--- death recap's killer at a death (C_DeathRecap through PvpInfo.recapDamage, V120: a player killer is unverified) and
+-- death recap's killer at a death (C_DeathRecap through PvpInfo.recapDamage, V120: names player killers too) and
 -- the victim CF-110 picks at a kill (PvpTracker.VICTIM), both by GUID.
 local _, ns = ...
 
