@@ -8,6 +8,32 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-114 The Hunt's prey: a hint to keep them targeted
+CF-110 takes the kill's victim from your target, then mouseover, then an enemy nameplate that died within 5 s of being
+seen alive (V73: the honor message doesn't name the victim). A kill on someone you never targeted or hovered counts
+without a victim, so the Hunt can't tick. Nico chose (2026-11-09): a prey hint so players target them, and a tip in
+the Hunt's text to turn enemy nameplates on. Hints only, nothing is blocked (recommend, not restrict). Touches
+`src/core/Doomsday.lua`, `src/core/DoomsdayView.lua`, `src/services/HuntPrey.lua` (new), `src/services/DoomsdayTracker.lua`,
+`src/ui/Tooltip.lua`, `src/ui/DoomsdayTab.lua`, their specs, `docs/DOOMSDAY.md`, VERIFY.md.
+- While the current character's Hunt (its faction's combination today) is not done, targeting or hovering an enemy
+  player of exactly that race and class adds "Your prey: The Hunt" to their unit tooltip, in the PvP track's colour
+  (the existing `TooltipDataProcessor` unit post-call, V6).
+- The same target or mouseover also prints "Prey in sight: <race> <class>. Keep them targeted for the kill." (no
+  names), at most once per player (GUID) per `Doomsday.PREY_CHAT_EVERY` (5 minutes). CF-91 removed chat lines that
+  a banner already shows; this one has no other place when you tab-target, and no setting applies.
+- Nothing for friendly players, other combinations, a done Hunt, a day without a Hunt, in a battleground or arena
+  (kills there score on the bg track, not for the Hunt), or without a community this character is in (Doomsday is
+  quiet then, CF-85).
+- The rule is pure core with busted tests: `Doomsday.isPrey(hunt, done, unit, instanceType)` and
+  `Doomsday.preyChatDue(said, key, now)`. Unit values come from `PvpInfo.enemy` (every value through
+  `ns.Safe.call`, a secret one is nil before any comparison, CF-108); the GUID passes `Safe.text`.
+- The Hunt's goal tooltip on the Doomsday tab (Today row and Board cell) adds "Target your prey, or turn on enemy
+  nameplates, so the kill knows who it was." (`DoomsdayView.HUNT_TIP`), and `docs/DOOMSDAY.md` says it too. The
+  site's and bot's Hunt texts live in the web repo: a follow-up there.
+- The draw had no Hunt then (`Doomsday.HUNT_SINCE` nil); it joins with pool version 4 (CF-104), so the hint shows from there.
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-114.
+
 ### CF-113 Launch probe: the export of 2026-11-09
 The export of 2026-11-09 (build 70862). Same rule as CF-105 and CF-109: an answered check leaves the probe and
 FriendProbe's checklist gets a `done` marker. Touches `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,

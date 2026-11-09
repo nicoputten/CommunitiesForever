@@ -13,6 +13,10 @@ tagging; the release stops if the tag has no section.
   flagged for PvP". "Defend home" leaves the draw: the game shows your faction's territory only in the capitals.
   **The Hunt** joins too: each day an enemy race and class to kill (target or mouse over them as they die).
   Please update together: a friend still on the previous version keeps seeing the old missions.
+- **New:** when The Hunt is in your Doomsday goals, an enemy player of the Hunt's race and class says "Your prey: The
+  Hunt" in their tooltip, and targeting or hovering them prints "Prey in sight" in chat (once per player every few
+  minutes). Keep your prey targeted when they die, so the kill knows who it was. The Hunt's tooltip on the Doomsday
+  tab also suggests turning on enemy nameplates.
 - **Fixed:** no more "No player named '...' is currently playing." lines from the addon. It no longer messages a
   character the game shows offline, stops after one failed try until that character is back online, and
   hides the game's line when it still happens.

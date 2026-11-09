@@ -363,7 +363,7 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 **Pool version 1** (`Doomsday.POOL_VERSION = 1`):
 - PvE dailies and weeklies: the goals with Data **now**.
 - Skirmish: `p.frontLine`, `p.loneWolf`, `p.untouchable`. Bounty: `b.zone25`, `b.kills50`, `b.spree10`, `b.duels3`, `b.days5`. These need only the kill's time, zone and `solo`, and deaths.
-- **No Hunt** yet: the slot is empty until the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `b.allClasses`, `b.allRaces`, `b.hunt3` where their fields are readable (`p.ranked` and `b.ranked5` are retired from pool version 3, CF-99), and the goals marked 52, 53, 56 whose APIs are verified.
+- **No Hunt**: the slot is empty in pool versions 1 to 3; the Hunt joins with pool version 4 (CF-104). Originally planned for the pool version that follows the CF-54 probe (victim race and class). The same bump adds `p.punchUp`, `p.variety`, `b.allClasses`, `b.allRaces`, `b.hunt3` where their fields are readable (`p.ranked` and `b.ranked5` are retired from pool version 3, CF-99), and the goals marked 52, 53, 56 whose APIs are verified.
 - Pool order is the order of the tables in this file. The weeklies, Skirmish and Bounty goals of pool version 1 keep their place; the catalogues' other goals follow them, in catalogue order (CF-79).
 
 **Pool version 2** (`Doomsday.POOL_VERSION = 2`, CF-77, the release after v1.1.0):
@@ -665,6 +665,8 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 - A Horde character hunts Alliance combinations and vice versa: the character's own faction decides, with no setting. A friend with characters on both factions sees both Hunts, and either one counts.
 - **Done** with one counted kill of that exact combination.
 - A kill counts only when the victim's race **and** class are known. Midnight hides combat-log details from addons, so they come from the target, mouseover or nameplate cache seen just before the kill (CF-55); a kill on a player never seen counts for points, not for the Hunt.
+- Tip (CF-114): target your prey, or turn on enemy nameplates, so the kill knows who it was. The addon marks an enemy
+  player of the open Hunt's combination in their tooltip ("Your prey: The Hunt") and once in chat ("Prey in sight").
 - If the launch probe (CF-54) shows race and class are rarely known, the Hunt becomes a second Skirmish (a pool-version bump).
 
 ### Skirmish pool (daily)

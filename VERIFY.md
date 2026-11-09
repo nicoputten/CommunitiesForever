@@ -58,6 +58,19 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-114 The Hunt's prey hint
+This build, `/console scriptErrors 1`, a character in the selected community, on a day the Today box has a Hunt row
+(e.g. "Night Elf Druids"; the Hunt is drawn from pool version 4, CF-104). World PvP, outside battlegrounds.
+
+| Step | Expected | Status |
+|---|---|---|
+| `/cf`, Doomsday, hover the Hunt row's box and its title | The tooltip has the combination, then "Target your prey, or turn on enemy nameplates, so the kill knows who it was." | open |
+| Hover an enemy player of the Hunt's race and class | Their tooltip ends with "Your prey: The Hunt" in red. Chat: "CommunitiesForever: Prey in sight: <race> <class>. Keep them targeted for the kill." | open |
+| Target the same player, then hover them again within 5 minutes | No second chat line. The tooltip still has the prey line. | open |
+| Hover an enemy player of another class or race, and a friendly player of the Hunt's race and class (if any) | No prey line, no chat line. | open |
+| Kill the prey while targeted; hover another of the same combination | The Hunt is done; no prey line or chat line any more today. | open |
+| Enter a battleground, hover an enemy of the Hunt's combination | No prey line, no chat line. | open |
+
 ### CF-112 No "No player named" lines from our whispers
 This build on you and on a community member (Bo) who is **not** your Battle.net friend, both in the selected
 community. `/cf sync debug` on you first (prints the `[sync] whisper filter: …` line; it lasts until `/reload`).
