@@ -229,8 +229,8 @@ ns.items = {
   { id = "V98", done = "forever 70790", retail = true, session = 6, auto = true,
     title = "Mounted and swimming (IsMounted, IsSwimming)",
     how = "Ride a mount; swim." },
-  { id = "V101", session = 6, auto = true, title = "The auction house: posting and buying",
-    how = "Post an auction; buy one." },
+  { id = "V101", session = 6, auto = true, title = "The auction house: buying (posting answered, forever 70862)",
+    how = "Buy an auction." },
   { id = "V104", done = "forever 70790", session = 6, auto = true, title = "A recipe learned",
     how = "Learn a recipe (a cooking recipe from a vendor is the cheapest)." },
   { id = "V105", done = "forever 70790", session = 6, auto = true, title = "Crafted items: class and quality",
@@ -239,7 +239,7 @@ ns.items = {
     how = "Light a campfire (Basic Campfire), add 1, then 2, then 3 items: does the log show the buff and its count?" },
 
   -- The PvP catalogue (docs/DOOMSDAY-PVP-CATALOGUE.md).
-  { id = "V120", session = 5, auto = true, title = "Who killed you: the killer's name from the death recap",
+  { id = "V120", done = "forever 70862", session = 5, auto = true, title = "Who killed you: the killer's name from the death recap",
     how = "Die to an enemy player (or let a friend on the other faction kill you)." },
   { id = "V121", done = "forever 70790", retail = true, session = 5, auto = true, title = "The PvP flag (UnitIsPVP)",
     how = "Flag yourself for PvP (/pvp) or enter a contested zone." },
