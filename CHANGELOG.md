@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.6.2 (2026-11-09)
 - **Fixed:** PvP kills get their victim again: the enemy player you had targeted (or under the mouse) when they died.
   The game's kill message doesn't name them, so the Hunt, Punch up, Punch down, Skull and the other goals about
   the victim's level, class or race could not complete. Kills on a player you never looked at still count, without
