@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.7.0 (2026-11-09)
 - **New:** the addon saves and shares which talents each character took, not only the points per tree, so the
   website can show the talent trees with their tooltips.
 - **New:** Doomsday pool version 4. New daily missions: "Earn an uncommon quest reward", "Fish in a group with a
