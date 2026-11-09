@@ -84,4 +84,50 @@ describe("Talents (CF-18)", function()
       assert.are.equal("dps", Talents.role("DRUID", 2, "nonsense"))
     end)
   end)
+
+  describe("cleanNodes (CF-115)", function()
+    it("keeps the taken talents as { id, ranks }, sorted by id", function()
+      local nodes = {
+        { id = 105901, posX = 1620, ranks = 3 }, { id = 105889, posX = 1020, ranks = 5 },
+        { id = 105890, posX = 2220, ranks = 0 },
+      }
+      assert.are.same({ { id = 105889, ranks = 5 }, { id = 105901, ranks = 3 } }, Talents.cleanNodes(nodes))
+    end)
+
+    it("gives an empty list without taken talents and nil without a list", function()
+      assert.are.same({}, Talents.cleanNodes({ { id = 1, ranks = 0 } }))
+      assert.are.same({}, Talents.cleanNodes({}))
+      assert.is_nil(Talents.cleanNodes(nil))
+      assert.is_nil(Talents.cleanNodes("105889"))
+    end)
+
+    it("drops what is not a talent: bad ids and ranks, duplicates, extra fields", function()
+      local nodes = {
+        { id = 0, ranks = 1 }, { id = -4, ranks = 1 }, { id = 1.5, ranks = 1 }, { id = "7", ranks = 1 },
+        { id = 100000000, ranks = 1 }, { ranks = 2 }, { id = 8, ranks = 6 }, { id = 9, ranks = 2.5 },
+        { id = 10, ranks = "2" }, "junk", { id = 11, ranks = 2, name = "|cffff0000x|r", posY = 3 },
+        { id = 11, ranks = 4 }, { id = 12, ranks = 1 },
+      }
+      assert.are.same({ { id = 11, ranks = 2 }, { id = 12, ranks = 1 } }, Talents.cleanNodes(nodes))
+    end)
+
+    it("keeps at most MAX_NODES, the lowest ids", function()
+      local nodes = {}
+      for i = 100, 1, -1 do nodes[#nodes + 1] = { id = i, ranks = 1 } end
+      local clean = Talents.cleanNodes(nodes)
+      assert.are.equal(Talents.MAX_NODES, #clean)
+      assert.are.same({ id = 1, ranks = 1 }, clean[1])
+      assert.are.same({ id = Talents.MAX_NODES, ranks = 1 }, clean[#clean])
+    end)
+
+    it("compares node lists", function()
+      local a = { { id = 1, ranks = 2 }, { id = 3, ranks = 1 } }
+      assert.is_true(Talents.nodesEqual(a, { { id = 1, ranks = 2 }, { id = 3, ranks = 1 } }))
+      assert.is_false(Talents.nodesEqual(a, { { id = 1, ranks = 2 }, { id = 4, ranks = 1 } }))
+      assert.is_false(Talents.nodesEqual(a, { { id = 1, ranks = 3 }, { id = 3, ranks = 1 } }))
+      assert.is_false(Talents.nodesEqual(a, { { id = 1, ranks = 2 } }))
+      assert.is_false(Talents.nodesEqual(a, nil))
+      assert.is_true(Talents.nodesEqual(nil, nil))
+    end)
+  end)
 end)

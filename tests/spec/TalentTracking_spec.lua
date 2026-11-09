@@ -105,6 +105,20 @@ describe("talents and role in the window (CF-18)", function()
     assert.are.equal(17, record.chars[VES].talents[1].points)
   end)
 
+  -- CF-115: the mock's node IDs are 100000 + the index in armsBuild; ranks above 5 are no Vanilla talent.
+  it("stores and sends the taken talents node by node", function()
+    load()
+    state.serverTime = 2000
+    state.talentNodes[3].ranks = 4
+    state.talentNodes[10].ranks = 1
+    wowapi.fireEvent(state, "TRAIT_CONFIG_UPDATED", 9038911)
+    settle()
+    assert.are.same({ { id = 100001, ranks = 2 }, { id = 100003, ranks = 4 }, { id = 100010, ranks = 1 } },
+      me().talentNodes)
+    local nodes = ns.Merge.outgoingRecord(addon.db.global.self).chars[VES].talentNodes
+    assert.are.same(me().talentNodes, nodes)
+  end)
+
   it("shows role and split on the character card", function()
     load()
     roleOption().set({}, "tank")

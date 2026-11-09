@@ -6,6 +6,8 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **New:** the addon saves and shares which talents each character took, not only the points per tree, so the
+  website can show the talent trees with their tooltips.
 - **New:** Doomsday pool version 4. New daily missions: "Earn an uncommon quest reward", "Fish in a group with a
   friend", "Give a friend a dish cooked by an own character", "Get summoned by a friend" and "Put an item up for
   auction". New Skirmish missions: "Revenge: kill the player who killed you" (the player who last killed that

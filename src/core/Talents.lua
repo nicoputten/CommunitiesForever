@@ -87,6 +87,53 @@ function Talents.summarize(nodes, classFile)
   return trees, mainTree
 end
 
+-- CF-115: the talents taken, node by node, as the character record keeps and sends them (the site's WEB-100 reads
+-- them). A class tree has about 55 nodes and a level 60 character spends 51 points, so more than MAX_NODES taken
+-- talents is not a talent tree; a talent has at most MAX_RANKS ranks (Vanilla and Forever: 5, as the site checks).
+Talents.MAX_NODES = 64
+Talents.MAX_RANKS = 5
+local MAX_SCAN = 200    -- entries looked at in a received list (the site reads at most 200 too)
+local MAX_ID = 100000000 -- the site's id limit
+
+local function validId(id)
+  return type(id) == "number" and id > 0 and id < MAX_ID and id == math.floor(id)
+end
+
+--[[ Taken talents, cleaned: nodes = { { id = <TraitNode ID>, ranks = n, ... } } (own nodes from SelfInfo also carry
+posX; received ones may carry anything). Returns a new list { { id, ranks } } with only valid ids and ranks
+1..MAX_RANKS, each id once (the first), sorted by id, at most MAX_NODES; nil when nodes is not a table. An empty
+list means "no talents taken".
+]]
+function Talents.cleanNodes(nodes)
+  if type(nodes) ~= "table" then return nil end
+  local list, seen = {}, {}
+  for i = 1, MAX_SCAN do
+    local node = nodes[i]
+    if node == nil then break end
+    if type(node) == "table" then
+      local id, ranks = node.id, node.ranks
+      if validId(id) and not seen[id] and type(ranks) == "number" and ranks >= 1 and ranks <= Talents.MAX_RANKS
+          and ranks == math.floor(ranks) then
+        seen[id] = true
+        list[#list + 1] = { id = id, ranks = ranks }
+      end
+    end
+  end
+  table.sort(list, function(a, b) return a.id < b.id end)
+  for i = #list, Talents.MAX_NODES + 1, -1 do list[i] = nil end
+  return list
+end
+
+-- True if two cleaned node lists (or nils) are the same.
+function Talents.nodesEqual(a, b)
+  if a == nil or b == nil then return a == b end
+  if #a ~= #b then return false end
+  for i = 1, #a do
+    if a[i].id ~= b[i].id or a[i].ranks ~= b[i].ranks then return false end
+  end
+  return true
+end
+
 -- Role guessed from the main tree, or nil without spent points.
 function Talents.autoRole(classFile, mainTree)
   if not mainTree then return nil end

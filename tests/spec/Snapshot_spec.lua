@@ -198,6 +198,29 @@ describe("Snapshot", function()
       assert.are.equal(5100, record.chars["Player-4619-01627852"].lastPlayed)
     end)
 
+    it("stores the taken talents node by node (CF-115)", function()
+      local record = emptyRecord()
+      Snapshot.apply(record, info({ talentNodes = { { id = 20, posX = 1, ranks = 2 }, { id = 10, posX = 2, ranks = 0 },
+        { id = 5, posX = 3, ranks = 1 } } }), 5000)
+      assert.are.same({ { id = 5, ranks = 1 }, { id = 20, ranks = 2 } },
+        record.chars["Player-4619-01627852"].talentNodes)
+    end)
+
+    it("bumps on a respec that keeps the points per tree (CF-115)", function()
+      local record = emptyRecord()
+      Snapshot.apply(record, info({ talentNodes = { { id = 5, ranks = 1 } } }), 5000)
+      assert.is_true(Snapshot.apply(record, info({ talentNodes = { { id = 6, ranks = 1 } } }), 6000))
+      assert.are.same({ { id = 6, ranks = 1 } }, record.chars["Player-4619-01627852"].talentNodes)
+      assert.is_false(Snapshot.apply(record, info({ talentNodes = { { id = 6, ranks = 1 } } }), 7000))
+    end)
+
+    it("keeps the talent nodes when they cannot be read (CF-115)", function()
+      local record = emptyRecord()
+      Snapshot.apply(record, info({ talentNodes = { { id = 5, ranks = 1 } } }), 5000)
+      assert.is_false(Snapshot.apply(record, info(), 6000))
+      assert.are.same({ { id = 5, ranks = 1 } }, record.chars["Player-4619-01627852"].talentNodes)
+    end)
+
     it("ignores info without a GUID", function()
       local record = emptyRecord()
       assert.is_false(Snapshot.apply(record, { battleTag = "Vestras#1000" }, 5000))

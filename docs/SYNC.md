@@ -172,6 +172,7 @@ in full. Older clients send none and ignore it (rule 8).
       "talents": [ { "name": "Arcane", "points": 0 }, { "name": "Fire", "points": 15 },
                    { "name": "Frost", "points": 0 } ],
       "mainTree": 2, "autoRole": "dps", "roleOverride": null, "role": "dps",
+      "talentNodes": [ { "id": 105889, "ranks": 5 }, { "id": 105893, "ranks": 3 } ],
       "quests": { "1654": { "title": "The Test of Righteousness", "area": "Shadowfang Keep", "dungeon": true } },
       "pvp": { "hk": 140, "rank": 3, "rankName": "Sergeant", "weekKills": 12, "weekHonor": 310,
                "deaths": 57, "duelsWon": 4, "duelsLost": 2 },
@@ -218,6 +219,7 @@ in full. Older clients send none and ignore it (rule 8).
 | `chars.*.lastPlayed` | Last login on that character (updated without a version change) |
 | `chars.*.quests` | Quest log: `{ questID = { title, area, dungeon, level, suggestedGroup } }`, IDs only, no progress. CF-71: `level` (the quest's) and `suggestedGroup` (only above 0) are optional, nil from older versions |
 | `chars.*.pvp` | CF-52, optional: `hk` lifetime honorable kills, `rank` PvP rank number (0 none, 1 to 14) and `rankName` the game's name for it, `weekKills`/`weekHonor` this week's, and the addon's own lifetime counters `deaths` (or the game's death statistic when higher), `duelsWon`, `duelsLost` (counted since the addon recorded them). Each field missing = unknown |
+| `chars.*.talentNodes` | CF-115, optional: the talents taken, `[ { "id": <TraitNode ID>, "ranks": 1..5 } ]`, only nodes with ranks, sorted by id, at most 64 (a level 60 character has 51 points: under 600 bytes, about 190 encoded). `[]` = none taken; missing = not read yet or an older client. Received: only whole ids 1..99999999 and ranks 1..5, each id once, extra fields dropped (`Talents.cleanNodes`). The site's WEB-100 reads it for talent tooltips and the tree grid |
 | `chars.*.riding` | CF-53, optional: riding skill 0, 75 or 150 (missing = unknown) |
 | `chars.*.professions.*.link` | CF-38, optional: the profession link, the `trade:` part of `GetTradeSkillListLink()` (no colour, no `\|H`), saved again on every scan of the own window. Only crafting professions (not Mining, Herbalism, Skinning, Fishing). Missing = never scanned: the Friends tab shows "not scanned". Received: only a `trade:` text without `\|`, `[`, `]` or spaces, at most 1024 bytes, else dropped |
 | `chars.*.professions.*.linkType` | CF-38, optional: `short` (4 colon-separated fields: read live when clicked) or `long` (carries the recipes, goes stale). The receiver recomputes it from `link` |
@@ -445,7 +447,7 @@ The version bumps only when a synced field of the character you are on really ch
 |---|---|
 | Level, race, faction, realm, item level (floored, 2 s debounce on gear changes) | Zone, online status, position |
 | A profession learned, a skill point, a new rank | Quest progress (only the set of quest IDs counts) |
-| Talent points (2 s debounce) or your role override | `lastPlayed` (login and logout) |
+| Talent points (2 s debounce) or your role override; CF-115: also a respec that keeps the points per tree | `lastPlayed` (login and logout) |
 | A quest accepted, abandoned or turned in (2 s debounce) | Logging in on the same character with nothing changed |
 | Display name, invite link | |
 | Activity feed changes: at most one bump per 60 s (questing does not sync per turn-in) | |
@@ -488,6 +490,8 @@ the level-up's handlers run in.
   copy relayed by an older client (which drops `bossKills`) never loses kill times. Kill times more than 5 minutes
   ahead are dropped, also from the owner.
 - `chars.*.pvp` (CF-52): only the expected fields, whole numbers ≥ 0, rank at most 14.
+- `chars.*.talentNodes` (CF-115): only `{ id, ranks }` with a whole id 1..99999999 and ranks 1..5, each id once,
+  sorted by id, at most 64; anything else than a list becomes nil.
 - `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 5 per day and 4 per week, 7 days and 2 weeks, numbers ≥ 0, an entry's `pool` ≥ 1 (else dropped). Ids of a newer pool are kept.
 - `SCHED` (CF-68): as the runs file's schedule (`Goals.cleanMissionSchedule`); a newer `v`, at most 5 minutes ahead, replaces ours whole. Days and weeks already recorded in `goals` keep their set.
 - All received text is cleaned: color, link and texture codes removed; names, feed sizes and days capped.

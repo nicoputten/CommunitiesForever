@@ -199,6 +199,20 @@ describe("Merge", function()
                         chars = { ["Player-1-G"] = { name = "Garraka", level = 11 } } }, people[SJAAK])
     end)
 
+    it("cleans received talent nodes and leaves characters without them alone (CF-115)", function()
+      local people = {}
+      Merge.store(people, record({ chars = {
+        G = { name = "Garraka",
+              talentNodes = { { id = 9, ranks = 2 }, { id = 3, ranks = 9 }, { id = 4, ranks = 1, x = 1 } } },
+        H = { name = "Old" },
+        J = { name = "Odd", talentNodes = "lots" },
+      } }), 1)
+      local chars = people[SJAAK].chars
+      assert.are.same({ { id = 4, ranks = 1 }, { id = 9, ranks = 2 } }, chars.G.talentNodes)
+      assert.is_nil(chars.H.talentNodes)
+      assert.is_nil(chars.J.talentNodes)
+    end)
+
     it("ignores a non-string displayName", function()
       local people = {}
       Merge.store(people, record({ displayName = 5 }), 1)

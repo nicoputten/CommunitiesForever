@@ -58,6 +58,18 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-115 Talents taken, node by node
+This build on you and on a Battle.net friend (Bo) with the addon, `/console scriptErrors 1`, a character with talent
+points spent.
+
+| Step | Expected | Status |
+|---|---|---|
+| Log in, then `/run local c=CommunitiesForeverDB.global.self.chars[UnitGUID("player")] for _,n in ipairs(c.talentNodes or {}) do print(n.id,n.ranks) end` | One line per talent taken (TraitNode ID and ranks 1 to 5), lowest id first; the ranks add up to the points shown on the Friends tab's talent bars. | open |
+| Open the talent window, compare one talent: `/run local cfg=C_ClassTalents.GetActiveConfigID() for _,t in ipairs(C_Traits.GetConfigInfo(cfg).treeIDs) do for _,id in ipairs(C_Traits.GetTreeNodes(t)) do local n=C_Traits.GetNodeInfo(cfg,id) if n.ranksPurchased>0 then print(id,n.ranksPurchased,n.posX,n.posY) end end end` | The same ids and ranks as the line above. | open |
+| Spend a point (or respec and spend the same points elsewhere in the same tree), wait 3 s, run the first line again | The new talent is listed; the moved point shows on its new id. | open |
+| Bo: `/cf sync`, then `/run for _,p in pairs(CommunitiesForeverDB.global.people) do for _,c in pairs(p.chars or {}) do if c.talentNodes then print(c.name,#c.talentNodes) end end end` | Your character's name with the number of talents taken. | open |
+| Upload your SavedVariables to the site, open the character page | The talent trees show the grid with the taken talents and their tooltips (WEB-100, once released). | open |
+
 ### CF-114 The Hunt's prey hint
 This build, `/console scriptErrors 1`, a character in the selected community, on a day the Today box has a Hunt row
 (e.g. "Night Elf Druids"; the Hunt is drawn from pool version 4, CF-104). World PvP, outside battlegrounds.
