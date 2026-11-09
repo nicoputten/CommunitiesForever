@@ -5,6 +5,8 @@ local _, ns = ...
 local Tooltip = {}
 
 local LINE_COLOR = { r = 0.25, g = 0.78, b = 0.92 }
+-- CF-114: the prey line, in Theme's pvp colour (E0625A, the Doomsday PvP track).
+local PREY_COLOR = { r = 0xE0 / 255, g = 0x62 / 255, b = 0x5A / 255 }
 
 local addonRef
 local lines -- { [guid] = text }, rebuilt lazily after a change
@@ -41,6 +43,16 @@ local function onUnitTooltip(tooltip, data)
   end)
   if ok and text then
     tooltip:AddLine(text, LINE_COLOR.r, LINE_COLOR.g, LINE_COLOR.b)
+  end
+  -- CF-114: the Hunt's prey, in the PvP track's colour. The tooltip's unit token (GetUnit, as above), secret: none.
+  local okPrey, prey = pcall(function()
+    if not (tooltip and tooltip.GetUnit and ns.HuntPrey) then return nil end
+    local _, unit = tooltip:GetUnit()
+    unit = ns.Safe.value(unit)
+    return unit and ns.HuntPrey.tooltipLine(unit)
+  end)
+  if okPrey and prey then
+    tooltip:AddLine(prey, PREY_COLOR.r, PREY_COLOR.g, PREY_COLOR.b)
   end
 end
 

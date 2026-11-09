@@ -114,6 +114,7 @@ src\services\PvpTracker.lua
 src\services\PlayTracker.lua
 src\services\DoomsdayTracker.lua
 src\services\DoomsdayBoard.lua
+src\services\HuntPrey.lua
 src\services\SelfTracker.lua
 src\services\RecipeTracker.lua
 src\services\CommunitySelection.lua
