@@ -317,7 +317,8 @@ local function count(map)
 end
 
 --[[ Facts as Doomsday.progress reads them. ctx = { schedule, community = { [name] = true }, zone, hunts,
-factions }. The mission modules' facts pass through under their own keys (CF-70). ]]
+factions, pool (the day's or week's pool version, CF-116) }. The mission modules' facts pass through under their
+own keys (CF-70). ]]
 function Goals.progressFacts(f, ctx)
   ctx = ctx or {}
   local best = 0
@@ -329,7 +330,7 @@ function Goals.progressFacts(f, ctx)
     groupFriends = count(f.friends), rare = f.rare, earlyBird = f.earlyBird, longestSession = f.longestSession,
     scored = ns.Doomsday.scoreKills(f.kills, ctx.schedule, ctx.community), deaths = f.deaths, zone = ctx.zone,
     hunts = ctx.hunts, huntDays = count(f.huntDays), duelFriends = count(f.duelFriends), factions = ctx.factions,
-    fish = f.fish, trades = f.trades, craftTrade = f.craftTrade, discoveries = f.discoveries,
+    fish = f.fish, trades = f.trades, craftTrade = f.craftTrade, discoveries = f.discoveries, pool = ctx.pool,
   }
   for key, value in pairs(f) do
     if not BUILT_IN[key] and result[key] == nil then result[key] = value end

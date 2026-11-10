@@ -8,6 +8,39 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-116 The Hunt draws Forever's combinations (pool version 5); the probe looks for the Skyborne
+The Hunt draws from Vanilla's 20 race and class combinations per enemy faction. Forever's game files (build
+1.60.1.70862, via Everloot, unconfirmed) allow more. Nico decided (2026-11-10): pool version 5 hunts Forever's
+combinations, without the Skyborne races until their race tokens are known. Touches `src/core/Doomsday.lua`,
+`src/core/DoomsdayView.lua`, `src/core/Goals.lua`, `src/services/DoomsdayTracker.lua`, `src/ui/DoomsdayTab.lua`,
+`src/core/Probe.lua`, `src/services/LaunchProbe.lua`, `tools/FriendProbe/Checklist.lua`, their specs,
+`tests/fixtures/doomsday-cases.json`, `docs/DOOMSDAY.md`, VERIFY.md.
+- `Doomsday.POOL_VERSION = 5`; no other mission changes (the pools of version 5 are version 4's).
+- The combination list is versioned: pool versions 1 to 4 draw Vanilla's 20 exactly (golden cases unchanged); from
+  `Doomsday.FOREVER_COMBOS_SINCE = 5` the Hunt draws `pick(n, 1, #available)` from 23 per faction. Hunted by Horde
+  (Alliance victims): Human Warrior, Paladin, Hunter, Rogue, Priest, Mage, Warlock; Dwarf Warrior, Paladin, Hunter,
+  Rogue, Priest, Shaman; NightElf Warrior, Hunter, Rogue, Priest, Druid; Gnome Warrior, Rogue, Priest, Mage, Warlock.
+  Hunted by Alliance (Horde victims): Orc Warrior, Hunter, Rogue, Shaman, Mage, Warlock; Scourge Warrior, Paladin,
+  Rogue, Priest, Mage, Warlock; Tauren Warrior, Hunter, Shaman, Druid; Troll Warrior, Hunter, Rogue, Priest, Shaman,
+  Mage, Warlock. `Doomsday.combos(faction, version)`.
+- `b.allClasses` ("A kill of every enemy class") counts the enemy classes of the week's pool version
+  (`Doomsday.enemyLists(field, version)`, the week entry's `pool` through `Goals.progressFacts`): 8 in versions 1
+  to 4, 9 from version 5 (Dwarf Shaman, Undead Paladin). The races stay. "Still needed for the bounty" follows.
+- Golden pool-5 cases from the epoch (the draw runs forward from it, so they cover its first day): 34 days, 13 weeks,
+  34 Hunts, and a `b.allClasses` progress case.
+- Rule 8: nothing new is stored or sent; a day's and week's entry already records its `pool` (CF-69). An addon on
+  pool version 4 keeps drawing and recording version 4 (its Hunt from the 20). A friend's pool-5 day reaches it as
+  `set`, `done` and `pool = 5`: `hunt` scores 5 points in every version (`Doomsday.pointsFor`), and every id is in
+  its catalogue. The combination itself is never sent; it is stored with the own day's facts (`hunts`) when the
+  day is drawn, so a day drawn before the update keeps its pool-4 Hunt, and the Hunt's progress and the prey hint
+  compare the stored race and class directly (no list lookup), so a combination of another version still scores.
+- Launch probe: V142 (new) records `UnitRace`'s token, ID and race name for a player (enemy or friendly, as target,
+  mouseover or nameplate) whose race isn't one of the eight (`Probe.newRace`); no player names. V73 (the honor
+  message names no victim) and V80 (the duel lines, answered on Retail) are answered and leave the probe; their
+  stored results stay. `Probe.hunt`, `Probe.remember` and `Probe.shape` go with V73. Kept: V82, V35b, Hunt (V141),
+  V96, V101, V108, V122, V123, V60b, V142.
+- Manual: VERIFY.md CF-116 and V142.
+
 ### CF-115 Store and sync the talents taken, node by node (pairs with the site's WEB-100)
 CF-18 reads every node of the class tree in game (`{ posX, ranks }`) but keeps only the points per tree, so the site
 can show trees and points but not which talents. The site's WEB-100 (CommunitiesForever-Web#219) shows talent

@@ -168,16 +168,18 @@ function DoomsdayView.duelText(d)
   return string.format("%s vs %s", d.disputed and "disputed" or (d.won and "won" or "lost"), tostring(d.name))
 end
 
--- What a bounty for every enemy class or race still needs: "Paladin, Priest, Hunter", or nil.
-function DoomsdayView.stillNeeded(id, scored, factions)
-  local lists, field, name
+-- What a bounty for every enemy class or race still needs: "Paladin, Priest, Hunter", or nil. pool: the week's
+-- pool version (nil: 1; CF-116, the enemy classes grow in version 5).
+function DoomsdayView.stillNeeded(id, scored, factions, pool)
+  local field, name
   if id == "b.allClasses" then
-    lists, field, name = ns.Doomsday.ENEMY_CLASSES, "class", DoomsdayView.className
+    field, name = "class", DoomsdayView.className
   elseif id == "b.allRaces" then
-    lists, field, name = ns.Doomsday.ENEMY_RACES, "race", DoomsdayView.raceName
+    field, name = "race", DoomsdayView.raceName
   else
     return nil
   end
+  local lists = ns.Doomsday.enemyLists(field, pool)
   local seen = {}
   for _, s in ipairs(scored or {}) do
     if s.counted and s.track == "pvp" and s.kill[field] then seen[s.kill[field]] = true end

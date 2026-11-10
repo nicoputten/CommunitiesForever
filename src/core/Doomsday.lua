@@ -5,7 +5,7 @@ local _, ns = ... -- requires ns.Calendar (load core/Calendar.lua first)
 
 local Doomsday = {}
 
-Doomsday.POOL_VERSION = 4
+Doomsday.POOL_VERSION = 5
 Doomsday.DEFAULT_RESET = 68400   -- 19:00 realm time, seconds after midnight
 Doomsday.DAY = 86400
 -- The first Doomsday day: the draw runs forward from here, so "never twice in a row" is exact.
@@ -723,7 +723,8 @@ end
 -- ===== Lists =====
 
 -- Enemy race and class combinations, by the hunting character's faction (race token as UnitRace gives it).
-local COMBOS = {
+-- Pool versions 1 to 4: Vanilla's 20 per faction.
+local COMBOS_V1 = {
   Horde = { -- hunts Alliance
     { "Human", { "WARRIOR", "PALADIN", "ROGUE", "PRIEST", "MAGE", "WARLOCK" } },
     { "Dwarf", { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST" } },
@@ -738,21 +739,60 @@ local COMBOS = {
   },
 }
 
--- { { race, class }, ... } a faction hunts, in list order (20 each).
-function Doomsday.combos(faction)
+-- CF-116 (Nico, 2026-11-10): from pool version 5 Forever's combinations, 23 per faction (game files of build
+-- 1.60.1.70862), without the Skyborne races for now.
+local COMBOS_V5 = {
+  Horde = { -- hunts Alliance
+    { "Human", { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "MAGE", "WARLOCK" } },
+    { "Dwarf", { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN" } },
+    { "NightElf", { "WARRIOR", "HUNTER", "ROGUE", "PRIEST", "DRUID" } },
+    { "Gnome", { "WARRIOR", "ROGUE", "PRIEST", "MAGE", "WARLOCK" } },
+  },
+  Alliance = { -- hunts Horde
+    { "Orc", { "WARRIOR", "HUNTER", "ROGUE", "SHAMAN", "MAGE", "WARLOCK" } },
+    { "Scourge", { "WARRIOR", "PALADIN", "ROGUE", "PRIEST", "MAGE", "WARLOCK" } },
+    { "Tauren", { "WARRIOR", "HUNTER", "SHAMAN", "DRUID" } },
+    { "Troll", { "WARRIOR", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK" } },
+  },
+}
+
+-- The pool version from which the Hunt draws Forever's combinations (CF-116).
+Doomsday.FOREVER_COMBOS_SINCE = 5
+
+local function combosOf(version)
+  return (version or Doomsday.POOL_VERSION) >= Doomsday.FOREVER_COMBOS_SINCE and COMBOS_V5 or COMBOS_V1
+end
+
+-- { { race, class }, ... } a faction hunts in a pool version (default the current one), in list order: 20 each in
+-- pool versions 1 to 4, 23 each from version 5.
+function Doomsday.combos(faction, version)
   local list = {}
-  for _, entry in ipairs(COMBOS[faction] or {}) do
+  for _, entry in ipairs(combosOf(version)[faction] or {}) do
     for _, class in ipairs(entry[2]) do list[#list + 1] = { race = entry[1], class = class } end
   end
   return list
 end
 
+-- The enemy classes and races by hunting faction (b.allClasses, b.allRaces), pool versions 1 to 4.
 Doomsday.ENEMY_CLASSES = {
   Horde = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "MAGE", "WARLOCK", "DRUID" },
   Alliance = { "WARRIOR", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" },
 }
 Doomsday.ENEMY_RACES = { Horde = { "Human", "Dwarf", "NightElf", "Gnome" },
                          Alliance = { "Orc", "Scourge", "Tauren", "Troll" } }
+-- CF-116: from pool version 5 both factions have all nine classes (Dwarf Shaman, Undead Paladin); the races stay.
+local ENEMY_CLASSES_V5 = {
+  Horde = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" },
+  Alliance = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" },
+}
+
+-- The enemy classes ("class") or races ("race") by hunting faction in a pool version (nil: 1, as a day or week
+-- entry without `pool`).
+function Doomsday.enemyLists(field, version)
+  if field == "race" then return Doomsday.ENEMY_RACES end
+  if (version or 1) >= Doomsday.FOREVER_COMBOS_SINCE then return ENEMY_CLASSES_V5 end
+  return Doomsday.ENEMY_CLASSES
+end
 
 -- Zone bands by the level of the friend's highest character (the zone names as the feed stores them).
 Doomsday.BANDS = {
@@ -856,9 +896,9 @@ end
 
 local function comboKey(c) return c.race .. ":" .. c.class end
 
-local function drawHunt(faction, n, previous)
+local function drawHunt(faction, n, previous, version)
   local keys = {}
-  for i, c in ipairs(Doomsday.combos(faction)) do keys[i] = comboKey(c) end
+  for i, c in ipairs(Doomsday.combos(faction, version)) do keys[i] = comboKey(c) end
   local key = drawOne(keys, n, SALT.hunt, previous and { previous } or nil)
   if not key then return nil end
   local race, class = key:match("^(.-):(.+)$")
@@ -889,8 +929,9 @@ function Doomsday.draw(n, version)
                  skirmish = drawOne(skirmishPool, day, SALT.skirmish, prev.skirmish and { prev.skirmish }) }
       if huntOn then
         local before = prev.hunt or {}
-        result.hunt = { Horde = drawHunt("Horde", day, before.Horde and comboKey(before.Horde)),
-                        Alliance = drawHunt("Alliance", day, before.Alliance and comboKey(before.Alliance)) }
+        result.hunt = { Horde = drawHunt("Horde", day, before.Horde and comboKey(before.Horde), version),
+                        Alliance = drawHunt("Alliance", day, before.Alliance and comboKey(before.Alliance),
+                                            version) }
       end
       dayCache[k] = result
     end
@@ -1332,7 +1373,8 @@ Doomsday day (dailies) or week (weeklies):
   skill, secondary (bool), learned, capReached (bool), chars, days, groupFriends, trades, rare, earlyBird (bool),
   fish, longestSession (seconds), discoveries, craftTrade,
   scored = Doomsday.scoreKills(...), deaths = { { t, char } }, zone (of the day or week), hunts = { { race,
-  class } } (the day's Hunt per faction), huntDays, duelFriends, killDays, factions = { "Horde", ... } ]]
+  class } } (the day's Hunt per faction), huntDays, duelFriends, killDays, factions = { "Horde", ... }, pool (the
+  day's or week's pool version, nil: 1; CF-116: the enemy classes of b.allClasses) ]]
 local PROGRESS = {
   ["d.quests10"] = function(f) return sum(f.quests), 10 end,
   ["d.quests20"] = function(f) return sum(f.quests), 20 end,
@@ -1408,8 +1450,8 @@ local PROGRESS = {
   end,
 
   ["b.zone25"] = function(f) return counted(f, function(k) return f.zone ~= nil and k.zone == f.zone end), 25 end,
-  ["b.allClasses"] = function(f) return enemyProgress(f, Doomsday.ENEMY_CLASSES, "class") end,
-  ["b.allRaces"] = function(f) return enemyProgress(f, Doomsday.ENEMY_RACES, "race") end,
+  ["b.allClasses"] = function(f) return enemyProgress(f, Doomsday.enemyLists("class", f.pool), "class") end,
+  ["b.allRaces"] = function(f) return enemyProgress(f, Doomsday.enemyLists("race", f.pool), "race") end,
   ["b.ranked5"] = function(f) return counted(f, function(k) return type(k.rank) == "number" and k.rank >= 1 end), 5 end,
   ["b.kills50"] = function(f) return counted(f), 50 end,
   ["b.spree10"] = function(f) return math.min(spree(f), 10), 10 end,

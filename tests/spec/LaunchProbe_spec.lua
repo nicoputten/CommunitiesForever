@@ -44,22 +44,49 @@ describe("the hidden launch probe", function()
     assert.are.equal(ns.Store.SCHEMA_VERSION, addon.db.global.schemaVersion)
   end)
 
-  it("ticks V73 and the Hunt from a target and the honor message, silently", function()
+  -- CF-116: V142, a player of a race beyond Vanilla's eight (the Skyborne): the race's token, ID and name only.
+  it("records a race beyond the eight, enemy or friendly, without the player's name, silently", function()
     load()
     local printed = #state.printed
     enemyTarget("Orc")
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    state.serverTime = state.serverTime + 5
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN",
-      "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)")
-    assert.is_nil(results().V74) -- answered at launch (CF-96); the target still feeds the Hunt
-    assert.are.equal("pass", results().V73.status)
-    assert.are.same("Grim Tusk: Orc WARRIOR via target, 5 s before the kill", results().Hunt.detail)
-    assert.is_nil(results().V73.detail:find("Grim Tusk", 1, true)) -- no names but the Hunt's and the killer's
-    for i = printed + 1, #state.printed do -- the addon's own Doomsday kill line may print; the probe never does
-      assert.is_nil(state.printed[i]:find("V7", 1, true))
+    assert.is_nil(results().V142) -- a known race: nothing
+    assert.is_nil(results().V73) -- answered (CF-116): the honor message isn't watched any more
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    _G.UnitIsEnemy = function() return false end
+    state.unitGuids = { mouseover = "Player-4619-0A1B2C3E" }
+    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
+    _G.UnitExists = function(unit) return unit == "mouseover" end
+    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
+    local r = results().V142
+    assert.are.equal("pass", r.status)
+    assert.are.equal("UnitRace token and id: SkyborneHigh 90", r.detail)
+    assert.are.equal("SkyborneHigh, id 90, name High Order Skyborne, friendly via mouseover", r.log[1])
+    assert.is_nil(r.detail:find("Grim", 1, true))
+    _G.UnitRace = function() return "Windshaper Skyborne", "SkyborneWind", 91 end
+    _G.UnitIsEnemy = function() return true end
+    state.serverTime = state.serverTime + 60
+    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
+    r = results().V142
+    assert.are.equal("pass", r.status) -- the pass lists every race seen; one log line each
+    assert.are.equal("UnitRace token and id: SkyborneHigh 90, SkyborneWind 91", r.detail)
+    assert.are.equal("SkyborneWind, id 91, name Windshaper Skyborne, enemy via mouseover", r.log[2])
+    assert.are.equal(2, #r.log)
+    for _, line in ipairs(r.log) do assert.is_nil(line:find("Grim", 1, true)) end
+    for i = printed + 1, #state.printed do
       assert.is_nil(state.printed[i]:lower():find("probe", 1, true))
     end
+  end)
+
+  it("leaves a secret race token out of V142, without an error", function()
+    load()
+    enemyTarget("SkyborneHigh")
+    _G.issecretvalue = function(v) return v == "SkyborneHigh" or v == 90 end
+    finally(function() _G.issecretvalue = nil end)
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    assert.is_nil(results().V142)
+    assert.is_nil(results().error)
   end)
 
   it("ticks the Hunt from the target at a counted kill when the honor message names nobody (CF-110)", function()
@@ -82,34 +109,17 @@ describe("the hidden launch probe", function()
     assert.are.equal("info", results().Hunt.status)
   end)
 
-  local function honorKill()
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN",
-      "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)")
-  end
-
-  it("leaves a secret race out of the Hunt, without an error", function()
+  it("looks at the same player once a minute (V142)", function()
     load()
     enemyTarget("Orc")
-    _G.issecretvalue = function(v) return v == "Orc" end
+    state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    _G.issecretvalue = nil
-    honorKill()
-    assert.are.equal("info", results().Hunt.status)
-    assert.is_nil(results().error)
-  end)
-
-  it("looks at the same player once a minute", function()
-    load()
-    enemyTarget(nil) -- race missing: not usable for the Hunt
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    enemyTarget("Orc")
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    honorKill()
-    assert.are.equal("info", results().Hunt.status)
+    assert.is_nil(results().V142)
     state.serverTime = state.serverTime + 60
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    honorKill()
-    assert.are.equal("pass", results().Hunt.status)
+    assert.are.equal("pass", results().V142.status)
   end)
 
   it("no longer runs the answered death recap check (V120, CF-113)", function()
@@ -148,10 +158,11 @@ describe("the hidden launch probe", function()
     load(1794960000 - 10)
     local stored = results()
     state.serverTime = 1794960000
-    enemyTarget("Orc")
+    _G.UnitExists = function(unit) return unit == "target" end
+    _G.UnitIsPlayer = function() return true end
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    honorKill()
-    assert.is_nil(stored.V73)
+    assert.is_nil(stored.V142)
     assert.are.equal("info", stored.V82.status)
   end)
 
@@ -179,36 +190,21 @@ describe("the hidden launch probe", function()
       results().V84)
   end)
 
-  it("passes V73 from the honor message variant without a rank, naming the global (CF-101)", function()
+  -- CF-116: V73 (the honor message names no victim) and V80 (the duel lines) are answered and gone.
+  it("no longer runs V73 and V80, and keeps their stored results", function()
     load()
+    results().V73 = { status = "fail", detail = "no honor format matched", at = 1, build = "70862" }
     _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
-    _G.COMBATLOG_HONORGAIN_NO_RANK = "%s dies (Honorable Kill). You gain %d Honor."
-    finally(function() _G.COMBATLOG_HONORGAIN_NO_RANK = nil end)
-    enemyTarget("Orc")
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies (Honorable Kill). You gain 12 Honor.")
-    assert.are.equal("pass", results().V73.status)
-    assert.are.equal("victim from the honor message via COMBATLOG_HONORGAIN_NO_RANK (second argument 12)",
-      results().V73.detail)
-    assert.are.equal("pass", results().Hunt.status)
-  end)
-
-  it("keeps the shape of an honor message no format matched, without the name (CF-101)", function()
-    load()
-    _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies. You gain 12.5 Honor.")
-    local r = results().V73
-    assert.are.equal("fail", r.status)
-    assert.are.equal("no honor format matched: x x dies. You gain 12.5 Honor.", r.detail)
-    assert.truthy(r.log[#r.log - 1]:find("globals: ", 1, true) or r.log[#r.log]:find("globals: ", 1, true))
-    for _, line in ipairs(r.log) do assert.is_nil(line:find("Grim", 1, true)) end
-  end)
-
-  it("notes PLAYER_PVP_KILLS_CHANGED under V73 (V79's open part)", function()
-    load()
-    _G.GetPVPThisWeekStats = function() return 2, 0 end
+    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies (Honorable Kill: Grunt). You gain 12 Honor.")
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
-    assert.are.equal("PLAYER_PVP_KILLS_CHANGED, week 2, 0", results().V73.log[1])
+    wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", state.player.name .. " has defeated Grim Tusk in a duel")
+    assert.are.same({ status = "fail", detail = "no honor format matched", at = 1, build = "70862" }, results().V73)
+    assert.is_nil(results().V80)
+    addon:OnSlashCommand("fp")
+    local text = ns.ProbeReport.text()
+    assert.is_nil(text:find("V73", 1, true))
+    assert.is_nil(text:find("V80", 1, true))
+    assert.truthy(text:find("V142 open", 1, true))
   end)
 
   it("keeps looking at zone types after friendly passed (V123)", function()
@@ -394,7 +390,7 @@ describe("the hidden launch probe", function()
 
     it("counts only V60b of the recipe checks in /cf fp (CF-105, CF-109)", function()
       load()
-      assert.are.equal(11, #ns.Probe.IDS)
+      assert.are.equal(10, #ns.Probe.IDS)
       addon:OnSlashCommand("fp")
       local text = ns.ProbeReport.text()
       assert.is_nil(text:find("V60 ", 1, true))
