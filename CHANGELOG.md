@@ -6,6 +6,9 @@ section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and r
 tagging; the release stops if the tag has no section.
 
 ## Unreleased
+- **Fixed:** a PvP kill now finds its victim when they die a moment after the kill counts (often the case): the
+  addon looks again a second later, and as a last resort takes the enemy you saw at very low health just before. The
+  Hunt, Revenge, Punch up/down and Skull goals complete again.
 - **New:** Doomsday pool version 5: The Hunt now draws from all of Forever's race and class combinations (23 per
   faction instead of 20): Human Hunters, Dwarf Shamans and Gnome Priests on the Alliance side, Orc Mages, Undead
   Paladins and Troll Warlocks on the Horde side. "A kill of every enemy class" counts nine classes from now on. Please

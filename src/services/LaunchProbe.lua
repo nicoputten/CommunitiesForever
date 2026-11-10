@@ -7,8 +7,8 @@ the site. Until Probe.STOP_AT (2026-11-18).
 - Safe: every handler and hook runs in pcall (an error is noted under "error"); every API is guarded; a secret value
   is recorded as "secret", a missing API as "missing".
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
-- Private: no raw chat text, no event log; player names only for the Hunt's victim (the killer's, V120, until
-  CF-113 answered it). V142 records a race's token, ID and name, never the player's.
+- Private: no raw chat text, no event log, no player names (the Hunt's victim and V120's killer had them until CF-117
+  and CF-113). V142 records a race's token, ID and name, never the player's.
 This file: the plumbing, the login and PvP checks and V142 (races beyond Vanilla's eight, CF-116).
 services/LaunchProbeMissions.lua: the mission catalogue's checks and the PvP catalogue's (V122, V123; V120
 answered, CF-113). services/LaunchProbeRecipes.lua: the recipe check (V60b; V60 and V60c answered, CF-105).
@@ -118,7 +118,20 @@ function LaunchProbe.on(event, fn)
   table.insert(handlers[event], fn)
 end
 
+-- name: a global function ("DoEmote") or a function in a global table ("C_ChatInfo.PerformEmote", CF-117).
 function LaunchProbe.hook(name, fn) hooks[#hooks + 1] = { name = name, fn = fn } end
+
+-- The table and key a hook name points at when it is a function there, else nil.
+local function hookTarget(name)
+  local tableName, key = name:match("^([%w_]+)%.([%w_]+)$")
+  local owner = tableName and _G[tableName] or _G
+  key = key or name
+  if type(owner) == "table" and type(owner[key]) == "function" then return owner, key end
+  return nil
+end
+
+-- True when the hook name points at a function now (V108's detail says which emote APIs exist).
+function LaunchProbe.hookable(name) return hookTarget(name) ~= nil end
 function LaunchProbe.atLogin(fn) logins[#logins + 1] = fn end
 
 -- Runs fn guarded; an error is noted, never shown.
@@ -179,14 +192,23 @@ end)
 
 -- ===== The Hunt: the victim picked at a counted kill (CF-110) =====
 -- V73 (the honor message names no victim) and V80 (the duel lines) are answered and gone (CF-116); V76, the group
--- at a kill, CF-101.
+-- at a kill, CF-101. CF-117: the victim is picked Pvp.RECHECK_DELAY after the counter rise (PvpTracker.onResolved);
+-- the line says which path found it, never a name. The note: the target at the re-check.
 
-LaunchProbe.on("PLAYER_PVP_KILLS_CHANGED", function()
-  local pick = ns.PvpTracker and ns.PvpTracker.victimNow and ns.PvpTracker.victimNow()
-  local status, detail = Probe.huntPick(pick)
-  if status == "pass" then result("Hunt", status, detail) else info("Hunt", detail) end
-  note("Hunt", "UnitIsDead " .. (UnitIsDead and "exists" or "missing") .. ", target dead "
-    .. Val(get(UnitIsDead, "target")))
+LaunchProbe.atLogin(function()
+  if not (ns.PvpTracker and ns.PvpTracker.onResolved) then return end
+  ns.PvpTracker.onResolved(function(pick, _, candidates)
+    if not running() then return end
+    guarded("Hunt", function()
+      local status, detail = Probe.huntPick(pick, candidates)
+      if status == "pass" then result("Hunt", status, detail) else info("Hunt", detail) end
+      local health, most = get(UnitHealth, "target"), get(UnitHealthMax, "target")
+      local percent = type(health) == "number" and type(most) == "number" and most > 0
+        and (math.floor(health / most * 100) .. "%") or Vals(UnitHealth, "target")
+      note("Hunt", "UnitIsDead " .. (UnitIsDead and "exists" or "missing") .. ", target dead "
+        .. Val(get(UnitIsDead, "target")) .. ", target health " .. percent)
+    end)
+  end)
 end)
 
 -- ===== V142: races beyond Vanilla's eight, the Skyborne (CF-116) =====
@@ -244,10 +266,12 @@ function LaunchProbe.start(addon)
     pcall(ns.Events.register, listener, event, dispatch)
   end
   for _, h in ipairs(hooks) do
-    if hooksecurefunc and type(_G[h.name]) == "function" then
-      pcall(hooksecurefunc, h.name, function(...)
+    local owner, key = hookTarget(h.name)
+    if hooksecurefunc and owner then
+      local function post(...)
         if running() then guarded(h.name, h.fn, ...) end
-      end)
+      end
+      if owner == _G then pcall(hooksecurefunc, key, post) else pcall(hooksecurefunc, owner, key, post) end
     end
   end
   for _, fn in ipairs(logins) do guarded("login", fn) end

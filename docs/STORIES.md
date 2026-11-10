@@ -8,6 +8,43 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-117 The kill's victim after a short re-check; the probe sees typed emotes
+Two bugs from Nico's in-game tests (2026-11-10, v1.7.0, build 70862). Bug 13: at the kill counter's rise the
+targeted victim is not dead yet (the probe's Hunt: "UnitIsDead exists, target dead false"), so CF-110 picks no
+victim and the Hunt, Revenge, Punch up/down and Skull goals never complete. Bug 14: a typed `/wave` at an enemy player
+never reached the probe's `DoEmote` hook (V108 has no line since 2026-11-05). Ships with pool version 5 (CF-116).
+Touches `src/core/Pvp.lua`, `src/adapters/PvpInfo.lua`, `src/services/PvpTracker.lua`, `src/core/Probe.lua`,
+`src/services/LaunchProbe.lua`, `src/services/LaunchProbeMissions.lua`, `tools/FriendProbe/Checklist.lua` (V143),
+`.luacheckrc`, their specs, VERIFY.md.
+- At a counter rise the tracker remembers the candidates (`Pvp.killCandidates`): enemy players as target, mouseover
+  or nameplate, alive at the rise or seen alive within `Pvp.KILL_WINDOW` (5 s) before, by GUID, with level, class,
+  race, rank, last seen health fraction and when. The ticker and unit events keep looking at them (`Pvp.observe`);
+  `Pvp.RECHECK_DELAY` (1 s) later a last look picks (`Pvp.resolveVictims`): dead at the rise ("dead at once"), else
+  dead by the re-check ("dead after the delay"), else the fallback: last seen at most `Pvp.LOW_HEALTH` (15 %) within
+  `Pvp.LOW_HEALTH_WINDOW` (3 s) before the rise and not seen alive at the re-check ("low health"). Otherwise no
+  victim (no guessing). Dead ones before the fallback; then target, mouseover, nameplate; then the one seen alive
+  last. The revenge message (CF-104) and the feed entries take the victims from the re-check, before the counter
+  fallback (`Pvp.FALLBACK_DELAY`, 3 s).
+- Health is `UnitHealth / UnitHealthMax` through `ns.Safe.call` (unverified for enemy players, likely secret under
+  the Midnight rules: VERIFY.md V143); secret or missing, the fallback never picks.
+- Pure rule in core with busted tests: dead later, already dead, the low health fallback (and its edges: higher, old,
+  still standing), two candidates, stale, friendly, secret values. `Pvp.pickVictims` stays (candidates and resolve at
+  one moment).
+- Launch probe, the Hunt: it reports at the re-check (`PvpTracker.onResolved`) with the path that found the victim and
+  the number of candidates, never a name ("Orc WARRIOR via target, dead after the delay, 2 candidates"); its note
+  adds the target's health.
+- Launch probe, V108: besides `DoEmote` it hooks `C_ChatInfo.PerformEmote` when that exists
+  (`LaunchProbe.hook` takes "Table.function"), and `CHAT_MSG_TEXT_EMOTE` with your own GUID as argument 12 says an
+  emote happened even when no hook fired (`Probe.emote`: the target's relation and whether its GUID is readable, the
+  hookable APIs; never chat text or a name). A chat line right after a hooked emote is only noted.
+- Not in this story: progress for `d.wave`, `p.flex`, `p.boo` (and the other emote goals) does not exist yet; those
+  goals are still not built and wait for V108's answer (which API gives the token).
+- Compatibility (rule 8): nothing stored or sent changes shape. `pvpKills` entries and the revenge message keep their
+  fields; more kills carry a victim. The probe's results keep their shape (`status, detail, at, build, log`); only the
+  Hunt's and V108's texts change, and the Hunt's detail no longer has a name. An older version reads all of it as
+  before. No migration, no protocol change.
+- Manual: VERIFY.md CF-117, V108, V141, V143.
+
 ### CF-116 The Hunt draws Forever's combinations (pool version 5); the probe looks for the Skyborne
 The Hunt draws from Vanilla's 20 race and class combinations per enemy faction. Forever's game files (build
 1.60.1.70862, via Everloot, unconfirmed) allow more. Nico decided (2026-11-10): pool version 5 hunts Forever's

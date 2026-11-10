@@ -137,7 +137,8 @@ describe("PvP, duels and deaths (CF-52)", function()
   end)
 
   describe("raw kills (CF-55b)", function()
-    local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "UnitIsDead" }
+    local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "UnitIsDead", "UnitHealth",
+                    "UnitHealthMax" }
     local HONOR = "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)"
 
     -- An enemy player as the target: Grim Tusk, a level 33 Orc Warrior.
@@ -237,6 +238,10 @@ describe("PvP, duels and deaths (CF-52)", function()
       it("records the dead enemy target, seen alive just before, as the victim", function()
         load(nil, { hk = 10 })
         forever()
+        local resolved = {}
+        ns.PvpTracker.onResolved(function(victim, path, candidates)
+          resolved[#resolved + 1] = { victim and victim.name, path, candidates }
+        end)
         state.zone = "Ashenvale"
         state.serverTime = 1500
         wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
@@ -244,9 +249,74 @@ describe("PvP, duels and deaths (CF-52)", function()
         assert.are.same({ { t = 1503, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
                             race = "Orc", solo = true } }, entry().pvpKills)
         assert.are.same({ Ashenvale = 1 }, entry().kills)
-        assert.are.equal("Grim Tusk", ns.PvpTracker.victimNow().name) -- the probe's Hunt reads the same pick
-        state.serverTime = 1506
-        assert.is_nil(ns.PvpTracker.victimNow())
+        assert.are.same({ { "Grim Tusk", "dead", 1 } }, resolved) -- the probe's Hunt reads the same pick
+      end)
+
+      -- CF-117, bug 13: at the counter rise the target isn't dead yet ("target dead false").
+      it("picks the target that dies just after the counter rise, at the re-check", function()
+        load(nil, { hk = 10 })
+        forever()
+        local paths = {}
+        ns.PvpTracker.onResolved(function(_, path) paths[#paths + 1] = path or "none" end)
+        local victims = {}
+        addon:RegisterMessage(ns.PvpTracker.VICTIM, function(_, guid) victims[#victims + 1] = guid end)
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        state.serverTime, state.pvp.hk = 1502, 11
+        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED") -- still alive here
+        assert.are.same({}, victims)
+        dead = true
+        settle()
+        assert.are.equal("Grim Tusk", entry().pvpKills[1].name)
+        assert.are.equal("WARRIOR", entry().pvpKills[1].class)
+        assert.are.same({ "later" }, paths)
+        assert.are.same({ "Player-4619-0A1B2C3D" }, victims)
+      end)
+
+      it("falls back to a target last seen at very low health, gone at the re-check", function()
+        load(nil, { hk = 10 })
+        forever()
+        _G.UnitIsDead = nil -- no death seen at all
+        _G.UnitHealth = function() return 50 end
+        _G.UnitHealthMax = function() return 1000 end
+        local paths = {}
+        ns.PvpTracker.onResolved(function(_, path) paths[#paths + 1] = path or "none" end)
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED") -- UnitIsDead missing: not "seen alive"
+        _G.UnitIsDead = function() return false end
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED") -- alive at 5 %
+        state.serverTime, state.pvp.hk = 1502, 11
+        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+        _G.UnitExists = function() return false end -- the target is gone
+        settle()
+        assert.are.equal("Grim Tusk", entry().pvpKills[1].name)
+        assert.are.same({ "health" }, paths)
+      end)
+
+      it("picks nobody when the low health target still stands at the re-check, or its health is secret", function()
+        load(nil, { hk = 10 })
+        forever()
+        _G.UnitHealth = function() return 50 end
+        _G.UnitHealthMax = function() return 1000 end
+        local paths = {}
+        ns.PvpTracker.onResolved(function(_, path) paths[#paths + 1] = path or "none" end)
+        state.serverTime = 1500
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        state.serverTime, state.pvp.hk = 1502, 11
+        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+        settle() -- still standing at 5 %
+        _G.issecretvalue = function(v) return v == 50 end
+        finally(function() _G.issecretvalue = nil end)
+        state.serverTime = 1600
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+        state.serverTime, state.pvp.hk = 1602, 12
+        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+        _G.UnitExists = function() return false end
+        settle()
+        assert.are.same({ "none", "none" }, paths)
+        assert.are.equal(2, #entry().pvpKills)
+        assert.is_nil(entry().pvpKills[1].name)
+        assert.is_nil(entry().pvpKills[2].name)
       end)
 
       it("counts the kill without a victim when the target was seen alive too long ago", function()
