@@ -30,7 +30,8 @@ function HuntPrey.preyAt(unit)
   local name, fields = ns.PvpInfo.enemy(unit)
   if not name then return nil end
   local info = ns.Instance.info()
-  local facts = { enemy = true, player = true, race = fields.race, class = fields.class }
+  local facts = { enemy = true, player = true, race = fields.race, class = fields.class, raceId = fields.raceId,
+                  classId = fields.classId }
   if ns.Doomsday.isPrey(hunt, done, facts, info and info.type) then return hunt end
   return nil
 end

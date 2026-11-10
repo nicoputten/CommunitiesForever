@@ -74,9 +74,10 @@ function PvpInfo.recapDamage()
   return readable(last.event), readable(last.environmentalType), readable(last.sourceGUID)
 end
 
--- CF-55b: an enemy player at a unit token: full name, { lvl (-1 skull), class, race (tokens), rank }, or nil.
--- Level, class and race verified on Forever (V74); the skull is open (VERIFY.md V74), the rank missing (V79). Every
--- value guarded, a secret one is nil.
+-- CF-55b: an enemy player at a unit token: full name, { lvl (-1 skull), class, race (tokens), rank, raceId, classId },
+-- or nil. Level, class and race verified on Forever (V74); the skull is open (VERIFY.md V74), the rank missing (V79).
+-- CF-118: raceId and classId are UnitRace's and UnitClass's third returns (the Hunt's ids; for enemy players
+-- unverified, VERIFY.md CF-118). Every value guarded, a secret one is nil.
 function PvpInfo.enemy(unit)
   if not (UnitExists and UnitIsPlayer and GetUnitName) then return nil end
   if not (call(UnitExists, unit) and call(UnitIsPlayer, unit)) then return nil end
@@ -84,9 +85,11 @@ function PvpInfo.enemy(unit)
   if not enemy then return nil end
   local name = call(GetUnitName, unit, true)
   if type(name) ~= "string" or name == "" then return nil end
-  local _, class = call(UnitClass, unit)
-  local _, race = call(UnitRace, unit)
-  local fields = { lvl = call(UnitLevel, unit), class = class, race = race }
+  local _, class, classId = call(UnitClass, unit)
+  local _, race, raceId = call(UnitRace, unit)
+  local fields = { lvl = call(UnitLevel, unit), class = class, race = race,
+                   raceId = type(raceId) == "number" and raceId or nil,
+                   classId = type(classId) == "number" and classId or nil }
   local rankID = call(UnitPVPRank, unit)
   if rankID then
     local _, number = call(GetPVPRankInfo, rankID, unit)
@@ -111,7 +114,21 @@ function PvpInfo.look(unit, source)
   local health, most = call(UnitHealth, unit), call(UnitHealthMax, unit)
   health = type(health) == "number" and type(most) == "number" and most > 0 and health / most or nil
   return { guid = guid, name = name, enemy = true, dead = dead, lvl = fields.lvl, class = fields.class,
-           race = fields.race, rank = fields.rank, health = health, source = source }
+           race = fields.race, rank = fields.rank, raceId = fields.raceId, classId = fields.classId, health = health,
+           source = source }
+end
+
+-- CF-118: the duel opponent's class token and level when your target is that player (vs: the full name the duel
+-- message gave), else nil. A duel usually ends with the opponent targeted; a stranger's class is known only then. Every
+-- value through Safe.call, a secret one is nil.
+function PvpInfo.duelOpponent(vs)
+  if type(vs) ~= "string" or vs == "" or not (UnitExists and GetUnitName) then return nil end
+  if not call(UnitExists, "target") then return nil end
+  local name = call(GetUnitName, "target", true)
+  if type(name) ~= "string" or name ~= vs then return nil end
+  local _, class = call(UnitClass, "target")
+  local level = call(UnitLevel, "target")
+  return type(class) == "string" and class or nil, type(level) == "number" and level > 0 and level or nil
 end
 
 PvpInfo.NAMEPLATES = 40

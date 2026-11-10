@@ -201,6 +201,8 @@ local function dayEntry(n)
   local drawn = ns.Doomsday.goalsForDay(n, situation, nil, DoomsdayTracker.missionSchedule())
   local set = drawn.set
   if drawn.hunt then set[#set + 1] = "hunt" end
+  -- CF-118: the Duel slot's mission last (an addon before pool version 6 keeps 5 ids and drops only this one).
+  if drawn.duel then set[#set + 1] = drawn.duel end
   -- CF-69: the pool version it was drawn in, so its points stay that version's.
   entry = { set = set, swapped = drawn.swapped, done = {}, at = GetServerTime(), pool = ns.Doomsday.POOL_VERSION }
   goals.days[n] = entry
@@ -232,11 +234,67 @@ local function huntList(hunts)
   return list
 end
 
+-- CF-118: friends with an HK (outside battlegrounds) in the Doomsday day n, from their synced feeds:
+-- { [friend key] = true } (p.sharedGlory).
+local function friendKills(n, schedule)
+  local from = ns.Doomsday.dayStart(n, schedule.offset, schedule.reset)
+  local to = from + ns.Doomsday.DAY
+  local result = {}
+  local mine = own().battleTag
+  for bt, person in pairs(global().people or {}) do
+    if bt ~= mine and type(person) == "table" then
+      for _, day in pairs(type(person.feed) == "table" and person.feed or {}) do
+        for _, e in pairs(type(day) == "table" and day or {}) do
+          for _, k in ipairs(type(e) == "table" and type(e.pvpKills) == "table" and e.pvpKills or {}) do
+            if type(k) == "table" and type(k.t) == "number" and k.t >= from and k.t < to and k.bg ~= true then
+              result[bt] = true
+            end
+          end
+        end
+      end
+    end
+  end
+  return result
+end
+
 -- Progress of goal id on facts f, with the schedule and lists it needs; pool: the day's or week's pool version.
-local function progressOf(f, schedule, community, hunts, pool)
+-- day (CF-118): the Doomsday day of daily facts, for the friends' kills of that day (nil: a week).
+local function progressOf(f, schedule, community, hunts, pool, day)
   local pf = ns.Goals.progressFacts(f, { schedule = schedule, community = community, zone = f.zone,
-                                         hunts = huntList(hunts), factions = factions(), pool = pool })
+                                         hunts = huntList(hunts), factions = factions(), pool = pool,
+                                         rareTargets = ns.Doomsday.rareTargets(DoomsdayTracker.missionSchedule()),
+                                         friendKills = day and friendKills(day, schedule) or nil })
   return function(id) return ns.Doomsday.progress(id, pf) end
+end
+
+-- ===== The Hunt log (CF-118: the Hunt feats) =====
+
+DoomsdayTracker.HUNT_LOG_DAYS = 14 -- days kept per character for the streak
+
+--[[ The Hunt log of the own characters, local: self.doomsday.huntLog = { [guid] = { n (quarries bagged), targets =
+{ ["race:class"] = count } (ids), days = { [day] = true } (the last HUNT_LOG_DAYS), streak = { n, last }, best,
+rare (true once a rare target was bagged) } }. A quarry is bagged by the character whose kill finished the day's
+Hunt. ]]
+local function huntLog()
+  local d = store()
+  d.huntLog = d.huntLog or {}
+  return d.huntLog
+end
+DoomsdayTracker.huntLog = huntLog
+
+-- The day's Hunt was just done: the character and target of the first counted kill that matches it go to the log.
+local function logHunt(day, df, schedule, community)
+  local hunts = huntList(df.hunts) or {}
+  for _, s in ipairs(ns.Doomsday.scoreKills(df.kills, schedule, community)) do
+    local k = s.kill
+    local match = false
+    for _, h in ipairs(hunts) do match = match or ns.Doomsday.huntMatches(h, k) end
+    if s.counted and s.track == "pvp" and match and type(k.char) == "string" then
+      ns.Feats.logHunt(huntLog(), k.char, day, ns.Missions.Fights.targetKey(k),
+        ns.Doomsday.rareTargets(DoomsdayTracker.missionSchedule()), DoomsdayTracker.HUNT_LOG_DAYS)
+      return
+    end
+  end
 end
 
 -- The streak and the best from the own days.
@@ -262,10 +320,13 @@ local function evaluate()
   local community = communityNames()
   local day, wk = dayEntry(today), weekEntry(week)
   local df, wf = factsFor(facts.days, today), factsFor(facts.weeks, week)
-  local newly = ns.Goals.mark(day, progressOf(df, schedule, community, df.hunts, ns.Doomsday.entryPool(day)),
+  local newly = ns.Goals.mark(day, progressOf(df, schedule, community, df.hunts, ns.Doomsday.entryPool(day), today),
                               GetServerTime())
   for _, id in ipairs(newly) do
-    if id == "hunt" then ns.Goals.observe(wf, { kind = "hunt", day = today }) end
+    if id == "hunt" then
+      ns.Goals.observe(wf, { kind = "hunt", day = today })
+      logHunt(today, df, schedule, community)
+    end
   end
   local weekly = ns.Goals.mark(wk, progressOf(wf, schedule, community, nil, ns.Doomsday.entryPool(wk)),
                                GetServerTime())
@@ -292,6 +353,19 @@ local function observe(obs)
   local facts = store()
   ns.Goals.observe(factsFor(facts.days, today), obs, ns.Goals.MAX_KILLS)
   ns.Goals.observe(factsFor(facts.weeks, ns.Doomsday.week(today)), obs, ns.Goals.MAX_WEEK_KILLS)
+end
+
+-- CF-118: a friend's community character by full name (people's synced characters), or nil.
+local function charByName(name)
+  local mine = own().battleTag
+  for bt, person in pairs(global().people or {}) do
+    if bt ~= mine and type(person) == "table" then
+      for _, c in pairs(type(person.chars) == "table" and person.chars or {}) do
+        if type(c) == "table" and c.name == name then return c end
+      end
+    end
+  end
+  return nil
 end
 
 local function highestOther(guid)
@@ -330,7 +404,18 @@ local function fromFeed(char, list)
       for _ in pairs(friends) do n = n + 1 end
       observe({ kind = "run", name = e.name, bosses = e.bosses, friends = n })
     elseif k == "pvpKill" then
-      observe({ kind = "kill", kill = e.kill, char = char.guid })
+      -- CF-118: what the pool-6 missions need of the moment, local only (never in the feed).
+      local session = ns.Play.last(own().feed, char.guid)
+      local t = type(e.kill) == "table" and e.kill.t or now
+      local friends, seen = {}, {}
+      for _, guid in ipairs(ns.Instance.groupGuids()) do
+        local bt = byGuid[guid]
+        if bt and not seen[bt] then seen[bt], friends[#friends + 1] = true, bt end
+      end
+      local since = session and type(session.from) == "number" and session.from <= t and t - session.from or nil
+      observe({ kind = "kill", kill = e.kill, char = char.guid,
+                extra = { myClass = char.classFile, myFaction = char.faction, friends = friends,
+                          sinceLogin = since } })
       -- CF-57: score it among today's kills (the 4th of a victim counts nothing) for the chat line.
       local today, schedule = DoomsdayTracker.today()
       local scored = ns.Doomsday.scoreKills(store().days[today] and store().days[today].kills, schedule,
@@ -347,6 +432,11 @@ local function fromFeed(char, list)
       observe({ kind = "death", t = e.t or now, char = char.guid })
     elseif k == "duel" then
       observe({ kind = "duel", friend = byName[e.vs] })
+      -- CF-118: the Duel slot's missions; a friend's character gives the opponent's class and level.
+      local opp = byName[e.vs] and charByName(e.vs) or nil
+      observe({ kind = "fightDuel", t = e.t or now, won = e.won, friend = byName[e.vs],
+                class = e.oppClass or (opp and opp.classFile), lvl = e.oppLvl or (opp and opp.level),
+                myLvl = char.level, zone = e.zone })
     elseif k == "rare" then
       observe({ kind = "rare", count = e.count })
     elseif k == "epic" then
@@ -545,7 +635,7 @@ function buildState(today, schedule)
   local day, wk = dayEntry(today), weekEntry(week)
   local community = communityNames()
   local df, wf = factsFor(facts.days, today), factsFor(facts.weeks, week)
-  local dayProgress = progressOf(df, schedule, community, df.hunts, ns.Doomsday.entryPool(day))
+  local dayProgress = progressOf(df, schedule, community, df.hunts, ns.Doomsday.entryPool(day), today)
   local weekProgress = progressOf(wf, schedule, community, nil, ns.Doomsday.entryPool(wk))
   local function list(entry, fn)
     local result = {}

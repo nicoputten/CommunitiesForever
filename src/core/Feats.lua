@@ -51,9 +51,69 @@ local function rank(char, line)
   return p and p.rank or 0
 end
 
+-- ===== The Hunt feats (CF-118) =====
+
+Feats.HUNT_MANY = 10  -- f.hunt10
+Feats.HUNT_WEEK = 7   -- f.huntWeek: days in a row
+local HUNT_POOL = 6   -- the targets of the Hunt feats: pool version 6's (race and class ids, the Skyborne included)
+
+--[[ Adds a bagged quarry to a Hunt log (in place): log = { [guid] = { n, targets = { ["race:class"] = count }, days =
+{ [day] = true }, streak = { n, last }, best, rare } } (DoomsdayTracker.huntLog). key: the target's "race:class" ids
+(nil: unknown, counts only n); rare: { [key] = true } (Doomsday.rareTargets); keep: days kept. Once per day. ]]
+function Feats.logHunt(log, guid, day, key, rare, keep)
+  if type(log) ~= "table" or type(guid) ~= "string" or type(day) ~= "number" then return end
+  local entry = log[guid] or { n = 0, targets = {}, days = {}, best = 0 }
+  log[guid] = entry
+  entry.targets, entry.days = entry.targets or {}, entry.days or {}
+  if entry.days[day] then return end
+  entry.n = (entry.n or 0) + 1
+  if key then entry.targets[key] = (entry.targets[key] or 0) + 1 end
+  entry.days[day] = true
+  for n in pairs(entry.days) do
+    if n <= day - (keep or 14) then entry.days[n] = nil end
+  end
+  local streak = entry.streak or {}
+  streak.n = streak.last == day - 1 and (streak.n or 0) + 1 or 1
+  streak.last = day
+  entry.streak = streak
+  entry.best = math.max(entry.best or 0, streak.n)
+  if key and type(rare) == "table" and rare[key] then entry.rare = true end
+end
+
+-- The six Hunt feats of a character from its Hunt log (faction: the character's, its targets are the other side's).
+local function huntFeats(add, hunt, faction)
+  if type(hunt) ~= "table" then return end
+  local n = type(hunt.n) == "number" and hunt.n or 0
+  local targets = type(hunt.targets) == "table" and hunt.targets or {}
+  if n >= 1 then add("f.huntFirst", "hunt", "First quarry", "Bagged the first Hunt target") end
+  if n >= Feats.HUNT_MANY then
+    add("f.hunt10", "hunt", "Quarry \195\151" .. Feats.HUNT_MANY, "Bagged 10 Hunt targets")
+  end
+  local all = ns.Doomsday and ns.Doomsday.combos(faction, HUNT_POOL) or {}
+  if #all > 0 then
+    local classes, bagged = {}, 0
+    for _, c in ipairs(all) do
+      classes[c.class] = classes[c.class] or false
+      if targets[c.race .. ":" .. c.class] then
+        bagged = bagged + 1
+        classes[c.class] = true
+      end
+    end
+    local every = true
+    for _, got in pairs(classes) do every = every and got end
+    if every then add("f.huntClasses", "hunt", "Every class", "Bagged every class of the other faction") end
+    if bagged == #all then add("f.huntAll", "hunt", "Big game", "Bagged all " .. #all .. " race and class targets") end
+  end
+  if hunt.rare == true then add("f.huntRare", "hunt", "Rare quarry", "Bagged a target under 1% of the census") end
+  if (hunt.best or 0) >= Feats.HUNT_WEEK then
+    add("f.huntWeek", "hunt", "Hunter's week", "Bagged the quarry 7 days in a row")
+  end
+end
+
 --[[ The feats a character holds now: { { key, kind, title, detail } } in a stable order. char: the stored Char
-(level, professions, pvp, riding, faction); entries: its feed entries of the last days (runs, loot, notable). ]]
-function Feats.derive(char, entries)
+(level, professions, pvp, riding, faction); entries: its feed entries of the last days (runs, loot, notable); hunt
+(CF-118, optional): its Hunt log (Feats.logHunt), local to the own characters. ]]
+function Feats.derive(char, entries, hunt)
   local list = {}
   local function add(key, kind, title, detail)
     list[#list + 1] = { key = key, kind = kind, title = title, detail = detail }
@@ -115,6 +175,7 @@ function Feats.derive(char, entries)
   if primaries >= 2 and rank(char, COOKING) >= 300 and rank(char, FIRST_AID) >= 300 and rank(char, FISHING) >= 300 then
     add("jackOfAllTrades", "jackOfAllTrades", "Jack of all trades", "Cooking, First Aid, Fishing at 300")
   end
+  huntFeats(add, hunt, char.faction)
   -- From the feed: a battleground's first win, the first epic, watch-list items.
   local seen = {}
   for _, e in ipairs(entries or {}) do

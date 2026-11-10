@@ -101,7 +101,8 @@ end
                                 loot = { rare = n, epic = { { id, name, slot, level } } },
                                 notable = { [itemID] = n }, gold = { gained, spent },
                                 sessions = { { from, to } }, groups = { [guid] = true },
-                                pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg } } } } }
+                                pvpKills = { { t, zone, name, lvl, myLvl, class, race, rank, solo, bg, raceId,
+                                               classId } } } } }
 char = { guid, name, classFile }. event: see Feed.changes, { kind = "quest", zone }, a finished run
 (CF-23, see Runs.finish): { kind = "run", instance = "party"|"raid"|"pvp", name, bosses, bossKills, won, with }
 (bossKills, CF-103: { [encounterID] = at }, optional), or
@@ -351,9 +352,12 @@ local function cleanKills(kills)
       local race = type(k.race) == "string" and #k.race <= 12 and k.race:match("^%a+$") or nil
       local rank = cleanNumber(k.rank, 14)
       local myLvl = cleanNumber(k.myLvl, 100)
+      -- CF-118: the victim's race and class ids (the Hunt's), optional next to the tokens.
+      local raceId, classId = cleanNumber(k.raceId, 10000), cleanNumber(k.classId, 10000)
       result[#result + 1] = { t = cleanNumber(k.t, math.huge), zone = cleanText(k.zone), name = cleanText(k.name),
                               lvl = lvl, myLvl = myLvl ~= 0 and myLvl or nil, class = class, race = race,
-                              rank = rank, solo = k.solo == true or nil, bg = k.bg == true or nil }
+                              rank = rank, solo = k.solo == true or nil, bg = k.bg == true or nil,
+                              raceId = raceId ~= 0 and raceId or nil, classId = classId ~= 0 and classId or nil }
     end
   end
   return #result > 0 and result or nil

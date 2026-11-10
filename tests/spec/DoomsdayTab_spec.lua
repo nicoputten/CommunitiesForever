@@ -54,14 +54,18 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     assert.is_truthy(t:find("\nToday \194\183 " .. label .. " \194\183 0 of 6 done\n", 1, true))
     assert.is_truthy(t:find("\nFinish 10 quests\n", 1, true))
     assert.is_truthy(t:find("\n0/10\n", 1, true))
-    assert.is_truthy(t:find("\nFirst duel with each friend\n", 1, true))
+    -- CF-118: from pool version 6 the Duel slot is the day's duel mission ("First duel with each friend" is one).
+    -- (swapped within the duel pool when no friend is known: "Duel a friend" becomes "Win a duel").
+    assert.are.equal("p.spar", D.draw(n).duel)
+    assert.is_truthy(t:find("\nDuel\n", 1, true) and t:find("\nWin a duel\n", 1, true))
     -- CF-62: points per goal, the stat boxes, the Friends today mini board, the swap note in an ⓘ.
     assert.is_truthy(t:find("\n+5\n", 1, true))
     assert.is_truthy(t:find("\nToday\n", 1, true) and t:find("\nThis week\n", 1, true))
     assert.is_truthy(t:find("\nStreak\n", 1, true))
     assert.is_truthy(t:find("0 days", 1, true) and t:find("best 0", 1, true))
     assert.is_truthy(t:find("\nFriends today\n", 1, true))
-    assert.is_truthy(table.concat(ns.DoomsdayTab.tips(), "\n"):find("Win +3", 1, true)) -- the Duel row's tooltip
+    -- The first-duel tooltip ("Win +3") is on the Duel row only when the day's Duel slot is p.duelFirst (CF-118).
+    assert.is_falsy(table.concat(ns.DoomsdayTab.tips(), "\n"):find("Win +3", 1, true))
     -- CF-61/62: the reset in the view's header, with the time; no notes about the rules or the site.
     assert.is_truthy(t:find("in 23 h 0 m\n", 1, true))
     assert.is_truthy(t:find("\nNew goals ", 1, true))
@@ -71,7 +75,8 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
     ns.DoomsdayTab.chips().week:RunScript("OnClick")
     t = texts()
     assert.is_truthy(t:find("\nThis week\n", 1, true))
-    assert.is_truthy(t:find("\nWeek resets %a+ %d%d:%d%d \194\183 in %d+ d %d+ h\n"))
+    -- (CF-118: the pool-6 draw puts the test's day on a Saturday: under a day left)
+    assert.is_truthy(t:find("\nWeek resets %a+ %d%d:%d%d \194\183 in %d+ [dh] %d+ [hm]\n"))
     assert.is_falsy(t:find("New goals in", 1, true))
     assert.is_truthy(t:find("\nPER CHARACTER\n", 1, true))
     assert.is_truthy(t:find("Ves Doombringer", 1, true))
@@ -197,11 +202,13 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       assert.is_truthy(t:find("\nFRIEND\n", 1, true))
       assert.is_truthy(t:find("\n10 QUESTS\n", 1, true)) -- the goal's shortLabel
       assert.is_truthy(t:find("\nPOINTS\n", 1, true))
-      assert.is_falsy(t:find("STREAK", 1, true)) -- CF-61c: the streak is in the name's tooltip
+      -- CF-61c: the streak is in the name's tooltip (CF-118: a goal like "Streak 20" may be a column).
+      assert.is_falsy(t:find("\nSTREAK\n", 1, true))
       assert.is_truthy(t:find("\nMira\n", 1, true))
       assert.is_truthy(t:find("\n%d%d:%d%d  crown\n")) -- the finish time and the crown after the name
       assert.is_falsy(t:find("0/10", 1, true)) -- a check or a box, the progress in the tooltip
-      assert.is_truthy(t:find("\nPvE 15 \194\183 PvP 11\n", 1, true)) -- CF-104: the Hunt done, +5
+      -- CF-104: the Hunt done, +5; CF-118: the Duel slot's mission too (+5: the entry has no pool, so it scores flat)
+      assert.is_truthy(t:find("\nPvE 15 \194\183 PvP 16\n", 1, true))
       assert.is_truthy(t:find("\nno Doomsday data yet\n", 1, true)) -- Tok, an older addon
       local tips = table.concat(ns.DoomsdayTab.tips(), "\n|\n")
       assert.is_truthy(tips:find("Finish 10 quests\n0/10", 1, true)) -- your own progress
@@ -225,7 +232,8 @@ describe("Doomsday tab, chat lines and the toast (CF-57a)", function()
       end
       assert.is_true(mira.crossed)
       assert.is_true(mira.crown)
-      assert.are.same({ pve = 15, pvp = 5 + 5 + 1 }, mira.today) -- the Skirmish, the Hunt, a kill
+      -- the Skirmish, the Hunt, the Duel slot's mission (CF-118), a kill
+      assert.are.same({ pve = 15, pvp = 5 + 5 + 5 + 1 }, mira.today)
     end)
 
     it("shows Friends today on Today: you, a crossed-out friend with the crown (CF-62)", function()

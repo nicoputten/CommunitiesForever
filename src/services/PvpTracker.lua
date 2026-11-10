@@ -190,7 +190,11 @@ local function system(text)
   local duel = ns.Pvp.duel(text, ns.PvpInfo.formats(), ns.SelfInfo.fullName())
   local char = duel and currentChar()
   if not char then return end
-  record(char, { kind = "duel", t = GetServerTime(), won = duel.won, vs = duel.vs })
+  -- CF-118: the opponent's class and level (your target) and the zone go to the Doomsday facts only: the feed keeps
+  -- t, won and vs.
+  local class, lvl = ns.PvpInfo.duelOpponent(duel.vs)
+  record(char, { kind = "duel", t = GetServerTime(), won = duel.won, vs = duel.vs, zone = ns.SelfInfo.zone(),
+                 oppClass = class, oppLvl = lvl })
 end
 
 local HANDLERS = {

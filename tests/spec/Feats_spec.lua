@@ -154,4 +154,50 @@ describe("Feats, scores and sprees (CF-57b)", function()
     assert.is_false(fought({ [day] = { G1 = { runs = { { name = "Warsong Gulch", kind = "pvp" } } } } }))
     assert.is_true(fought({ [day] = { G1 = { pvpKills = { { t = 1, name = "V" } } } } }))
   end)
+
+  -- CF-118: the six Hunt feats from a character's Hunt log.
+  describe("the Hunt feats (CF-118)", function()
+    local function hunts(log, faction)
+      local out = {}
+      for _, f in ipairs(Feats.derive({ faction = faction or "Horde" }, {}, log)) do
+        if f.kind == "hunt" then out[#out + 1] = f.key end
+      end
+      table.sort(out)
+      return out
+    end
+
+    it("logs a bagged quarry once a day, with the streak and the rare targets", function()
+      local log = {}
+      Feats.logHunt(log, "G1", 100, "1:8", {}, 14)
+      Feats.logHunt(log, "G1", 100, "1:8", {}, 14) -- the same day again: nothing
+      Feats.logHunt(log, "G1", 101, "95:3", { ["95:3"] = true }, 14)
+      Feats.logHunt(log, "G1", 103, nil, {}, 14)
+      local e = log.G1
+      assert.are.same({ 3, 2, 1, true }, { e.n, e.best, e.streak.n, e.rare })
+      assert.are.same({ ["1:8"] = 1, ["95:3"] = 1 }, e.targets)
+      Feats.logHunt(log, "G1", 130, nil, {}, 14)
+      assert.are.same({ [130] = true }, e.days) -- older days drop out
+    end)
+
+    it("derives First quarry, Quarry x10, Rare quarry and Hunter's week", function()
+      assert.are.same({}, hunts(nil))
+      assert.are.same({ "f.huntFirst" }, hunts({ n = 1, targets = {}, best = 1 }))
+      assert.are.same({ "f.hunt10", "f.huntFirst", "f.huntRare", "f.huntWeek" },
+        hunts({ n = 10, targets = {}, best = 7, rare = true }))
+      local list = Feats.derive({ faction = "Horde" }, {}, { n = 10, targets = {}, best = 1 })
+      assert.are.equal("Quarry \195\151" .. "10", find(list, "f.hunt10").title)
+    end)
+
+    it("derives Every class and Big game from the other faction's 28 targets", function()
+      local targets = {}
+      for _, c in ipairs(D.combos("Horde", 6)) do targets[c.race .. ":" .. c.class] = 1 end
+      assert.are.same({ "f.hunt10", "f.huntAll", "f.huntClasses", "f.huntFirst" },
+        hunts({ n = 28, targets = targets, best = 1 }))
+      -- Every class: one of each of the 9 classes is enough; an Alliance character needs Horde targets.
+      local classes = { ["1:1"] = 1, ["1:2"] = 1, ["1:3"] = 1, ["1:4"] = 1, ["1:5"] = 1, ["3:7"] = 1, ["1:8"] = 1,
+                        ["1:9"] = 1, ["4:11"] = 1 }
+      assert.are.same({ "f.huntClasses", "f.huntFirst" }, hunts({ n = 9, targets = classes, best = 1 }))
+      assert.are.same({ "f.huntFirst" }, hunts({ n = 9, targets = classes, best = 1 }, "Alliance"))
+    end)
+  end)
 end)

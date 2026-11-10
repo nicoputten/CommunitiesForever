@@ -337,7 +337,11 @@ end
 local function today(parent, state, width)
   local goals = ns.DoomsdayView.rows(state.today, state.progress, state.hunts)
   local duelDone = #state.duels.done > 0
-  local done, total = ns.DoomsdayView.doneCount(goals, duelDone) -- CF-61: the Duel slot counts
+  -- CF-118: from pool version 6 the Duel slot is a mission in the day's set (a row like the others).
+  local duelRow = ns.DoomsdayView.hasDuelRow(state.today)
+  local slotDone = duelDone
+  if duelRow then slotDone = nil end
+  local done, total = ns.DoomsdayView.doneCount(goals, slotDone) -- CF-61: the Duel slot counts
   local points = ns.DoomsdayView.todayPoints(state)
   local leftWidth = width - SIDE_WIDTH - 24
   local title = total > 0 and done == total and "Doomsday done. Go touch grass."
@@ -347,12 +351,6 @@ local function today(parent, state, width)
   local titleHolder = pools.day.items[pools.day.used]
   infoAt(parent, PAD + math.min(leftWidth - 20, textWidth(titleHolder, 300)) + 8, 16, SWAP_TIP)
   local top = y
-  for _, g in ipairs(goals) do
-    local track, p = ns.Doomsday.goalPoints(g.id, ns.Doomsday.entryPool(state.today)) -- CF-69: the day's pool
-    g.track = g.id == "hunt" and "pvp" or track or trackOf(g.id)
-    g.points = p and ("+" .. p) or ""
-    y = y + todayRow(parent, g, y, leftWidth)
-  end
   -- The Duel slot: done after the first duel; points earned today; details on hover.
   local duelPoints, parts = 0, {}
   for _, d in ipairs(state.duels.done) do
@@ -365,10 +363,21 @@ local function today(parent, state, width)
   if #parts > 0 then tip = table.concat(parts, "\n") .. "\n" .. tip end
   if #state.duels.open > 0 then tip = tip .. "\nOpen: " .. table.concat(state.duels.open, ", ") end
   local friends = #state.duels.done + #state.duels.open
-  y = y + todayRow(parent, { kind = "Duel", track = "pvp", text = "First duel with each friend", done = duelDone,
-    value = #state.duels.done, target = math.max(friends, 1),
-    fraction = friends > 0 and #state.duels.done / friends or 0,
-    points = duelPoints > 0 and ("+" .. duelPoints) or "", tip = tip }, y, leftWidth)
+  for _, g in ipairs(goals) do
+    local track, p = ns.Doomsday.goalPoints(g.id, ns.Doomsday.entryPool(state.today)) -- CF-69: the day's pool
+    g.track = g.id == "hunt" and "pvp" or track or trackOf(g.id)
+    g.points = p and p > 0 and ("+" .. p) or ""
+    if g.id == "p.duelFirst" then -- CF-118: the Duel slot as it was, scored per pair of friends
+      g.points, g.tip = duelPoints > 0 and ("+" .. duelPoints) or "", tip
+    end
+    y = y + todayRow(parent, g, y, leftWidth)
+  end
+  if not duelRow then
+    y = y + todayRow(parent, { kind = "Duel", track = "pvp", text = "First duel with each friend", done = duelDone,
+      value = #state.duels.done, target = math.max(friends, 1),
+      fraction = friends > 0 and #state.duels.done / friends or 0,
+      points = duelPoints > 0 and ("+" .. duelPoints) or "", tip = tip }, y, leftWidth)
+  end
   y = y + 12
   y = y + statBoxes(parent, state, points, y, leftWidth - 2 * PAD, ns.DoomsdayView.killSummary(state.dayScored))
   local side = friendsToday(parent, width - PAD - SIDE_WIDTH, top + 8, SIDE_WIDTH)

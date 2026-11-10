@@ -242,8 +242,8 @@ in full. Older clients send none and ignore it (rule 8).
 | `feed.*.*.gold` | CF-53: `{ gained, spent }` in copper that day. Never shown as an amount |
 | `feed.*.*.sessions` | CF-53: `{ from, to }` server times, at most 20, under the day the session started; `to` moves every 5 minutes and at logout, a login within 5 minutes continues the session |
 | `feed.*.*.groups` | CF-53: `{ [guid] = true }` characters of the selected community you were in a group with |
-| `feed.*.*.pvpKills` | CF-55b: one entry per honorable kill, at most 100 (`kills` keeps counting past it): `t`, `zone`, `name` (the victim's full name from the honor message; missing for a kill only the counter showed), `lvl` (-1 skull), `myLvl`, `class` and `race` tokens, `rank` (number), `solo`, `bg`. Victim fields come from the honor message or from what was seen of that player (target, mouseover, nameplate) in the 10 minutes before; each is missing when unknown. Received: tokens checked (`^%u+$`, `^%a+$`), levels -1 to 100, rank 0 to 14 |
-| `goals` | CF-56, optional: the sender's Doomsday goals. `days` (the last 7 Doomsday days) and `weeks` (this and last week), each `{ set, swapped = { [id] = originalId }, done = { [id] = time }, at, pool }` (`pool`, CF-69, optional: the pool version the set was drawn in, a number ≥ 1; missing = the sender's `pool`, then 1); `streak`, `best`, `pool` (the pool version), `reset` (seconds after realm midnight). Always sent (CF-58); `false` from an older client or a missing field = nothing sent, the stored goals stay |
+| `feed.*.*.pvpKills` | CF-55b: one entry per honorable kill, at most 100 (`kills` keeps counting past it): `t`, `zone`, `name` (the victim's full name from the honor message; missing for a kill only the counter showed), `lvl` (-1 skull), `myLvl`, `class` and `race` tokens, `rank` (number), `solo`, `bg`; CF-118, optional: `raceId` and `classId` (the victim's race and class ids, `UnitRace`'s and `UnitClass`'s third returns: the Hunt's targets from pool version 6; the tokens stay). An older client drops them when it stores or relays the record; the site reads the ids when present, else the tokens. Victim fields come from the honor message or from what was seen of that player (target, mouseover, nameplate) in the 10 minutes before; each is missing when unknown. Received: tokens checked (`^%u+$`, `^%a+$`), levels -1 to 100, rank 0 to 14, `raceId` and `classId` integers 1 to 10000 |
+| `goals` | CF-56, optional: the sender's Doomsday goals. `days` (the last 7 Doomsday days) and `weeks` (this and last week), each `{ set (CF-118: up to 6 ids a day from pool version 6: 3 PvE, the Skirmish, `hunt`, the Duel slot's mission last; an older client keeps 5 and drops that last one), swapped = { [id] = originalId }, done = { [id] = time }, at, pool }` (`pool`, CF-69, optional: the pool version the set was drawn in, a number ≥ 1; missing = the sender's `pool`, then 1); `streak`, `best`, `pool` (the pool version), `reset` (seconds after realm midnight). Always sent (CF-58); `false` from an older client or a missing field = nothing sent, the stored goals stay |
 | `feed.*.*.duels` | CF-52: `{ t, won, vs }`, at most 50, every duel of that character; `vs` = the opponent's full name as the game gives it (never split) |
 
 **Recipes (CF-38).** The receiver appends a tail only when it holds exactly `recipesFrom` recipes of that
@@ -292,8 +292,11 @@ the community every `battleTag` is left out. Not sent during an encounter, a key
 ```json
 { "t": "SCHEDREQ", "pv": 1 }
 { "t": "SCHED", "pv": 1, "v": 1794300000,
-  "days": { "20768": { "daily": ["d.quests10", "d.level", "d.dungeon"], "skirmish": "p.loneWolf" } },
-  "weeks": { "2968": { "weekly": ["w.days5", "w.zones5", "w.newProf"], "bounty": "b.spree10" } } }
+  "days": { "20768": { "daily": ["d.quests10", "d.level", "d.dungeon"], "skirmish": "p.loneWolf",
+                       "duel": "p.spar", "pool": 6,
+                       "hunt": { "Alliance": { "race": 95, "class": 11 }, "Horde": { "race": 2, "class": 7 } } } },
+  "weeks": { "2968": { "weekly": ["w.days5", "w.zones5", "w.newProf"], "bounty": "b.spree10" } },
+  "rare": ["95:11"], "census": { "at": 1794200000, "characters": 16400 } }
 ```
 
 The site's schedule as `CF_RUNS.doomsday.schedule` gives it (docs/DOOMSDAY.md "Schedule from the site"), after
@@ -301,7 +304,7 @@ the receiver's check. A HELLO whose `ds` is newer than ours gets `SCHEDREQ` (at 
 60 s), answered with `SCHED` (at most once per target and `v` per 60 s). The receiver checks it like the file
 (`Goals.cleanMissionSchedule`: day and week windows, ids, lists of exactly 3) and keeps it when `v` is newer than its own and
 at most 5 minutes ahead of server time; then it sends a HELLO with the new `ds`. A `{ v }` without days and weeks
-with a newer `v` clears the older one; `days` and `weeks` are left out when empty. No BattleTags in it, so the same over Battle.net and the community. Not sent during an
+with a newer `v` clears the older one; `days` and `weeks` are left out when empty. CF-118, optional (rule 8, within `pv` 1): a day's `duel`, `hunt` (by the hunted faction, race and class ids) and `pool`, and the top-level `rare` and `census` (docs/DOOMSDAY.md "Schedule from the site"). A client before CF-118 drops them when it stores or relays the schedule; so a schedule with the same `v` and more of that detail replaces ours (`Goals.scheduleDetail`). No BattleTags in it, so the same over Battle.net and the community. Not sent during an
 encounter, a keystone or a PvP match (`Instance.messagingRestricted`, V70): tried again 30 s later. Older clients
 send no `ds`, so they are never asked, and they ignore `SCHED` and `SCHEDREQ` (rule 8): they show the normal draw.
 
@@ -492,7 +495,7 @@ the level-up's handlers run in.
 - `chars.*.pvp` (CF-52): only the expected fields, whole numbers ≥ 0, rank at most 14.
 - `chars.*.talentNodes` (CF-115): only `{ id, ranks }` with a whole id 1..99999999 and ranks 1..5, each id once,
   sorted by id, at most 64; anything else than a list becomes nil.
-- `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 5 per day and 4 per week, 7 days and 2 weeks, numbers ≥ 0, an entry's `pool` ≥ 1 (else dropped). Ids of a newer pool are kept.
+- `goals` (CF-56): per day and week the entry with the newer `at` stays (equal: the stored one), from the owner too, so an older record never undoes a goal done; entries more than 5 minutes in the future are ignored. Cleaned: ids at most 24 characters of letters, digits and dots, 6 per day (5 before CF-118) and 4 per week, 7 days and 2 weeks, numbers ≥ 0, an entry's `pool` ≥ 1 (else dropped). Ids of a newer pool are kept.
 - `SCHED` (CF-68): as the runs file's schedule (`Goals.cleanMissionSchedule`); a newer `v`, at most 5 minutes ahead, replaces ours whole. Days and weeks already recorded in `goals` keep their set.
 - All received text is cleaned: color, link and texture codes removed; names, feed sizes and days capped.
 

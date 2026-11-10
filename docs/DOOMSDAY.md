@@ -36,7 +36,8 @@ Every Doomsday day each friend gets:
 - **3 PvE dailies** from 3 different categories
 - **the Hunt:** today's enemy race and class combination
 - **a Skirmish:** one goal from the Skirmish pool
-- **the Duel slot:** your first duel with each friend that day
+- **the Duel slot:** your first duel with each friend that day; from pool version 6 one mission of the Duel kind,
+  in turn (CF-118, "PvP dailies, pool version 6")
 
 Every Doomsday week each friend gets:
 - **3 PvE weeklies**
@@ -84,7 +85,7 @@ CF-55 fixes the exact algorithm in `tests/fixtures/doomsday-cases.json` (golden 
 **Who decides "done".** The addon. It sees the events as they happen, with their time, and the Doomsday day doesn't line up with the feed's realm days (midnight to midnight). It records `done = { [id] = time }` per day and week and shares it (CF-56). The facts behind it are counted live per Doomsday day and week and stay on the player's computer (CF-56, Nico 2026-10-28); progress starts on the day the update is installed. A day's set holds at most 5 ids (3 PvE dailies, the Skirmish, the Hunt as `hunt`), a week's 4 (3 PvE weeklies, the Bounty). The site stores it and counts the points from it, never from an addon total. Kill points are the exception: both sides compute them from the raw kills (`pvpKills`, each with its time), with the same golden cases.
 
 ## Short labels (CF-61)
-Each goal's column title on the addon's Board and the site's and bot's boards: at most 10 characters, the same everywhere (`Doomsday.SHORT_LABELS`). The Hunt is "Hunt". A new goal gets its label in the same change.
+Each goal's column title on the addon's Board and the site's and bot's boards: at most 10 characters, the same everywhere (`Doomsday.SHORT_LABELS`); CF-118: at most 13 for pool version 6's PvP dailies (the designer's names, board MP07). The Hunt is "Hunt". A new goal gets its label in the same change.
 | Goal | Short label |
 |---|---|
 | `d.quests10` | 10 quests |
@@ -260,21 +261,21 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `p.punchUp` | Punch up |
 | `p.loneWolf` | Lone wolf |
 | `p.untouchable` | Untouched |
-| `p.variety` | Variety |
+| `p.variety` | 3 classes |
 | `p.ranked` | Ranked |
 | `p.flex` | Flex |
 | `p.boo` | Boo |
-| `p.punchUp5` | Punch up 5 |
+| `p.punchUp5` | Giant |
 | `p.punchDown5` | Punch down |
-| `p.kills10` | 10 kills |
-| `p.zones3` | 3 zones |
-| `p.double` | Double |
+| `p.kills10` | 10 HKs |
+| `p.zones3` | Roamer |
+| `p.double` | Double 10s |
 | `p.triple` | Triple |
 | `p.firstBlood` | 1st blood |
 | `p.nightRaid` | Night raid |
-| `p.enemyLand` | Enemy land |
+| `p.enemyLand` | Deep strike |
 | `p.homeGuard` | Home guard |
-| `p.contested` | Contested |
+| `p.contested` | Contest x3 |
 | `p.skull` | Skull |
 | `p.fairFight` | Fair fight |
 | `p.mirror` | Mirror |
@@ -291,14 +292,14 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `p.comeback` | Comeback |
 | `p.noDeath` | Spotless |
 | `p.duoKills` | Duo kills |
-| `p.trioKills` | Trio kills |
+| `p.trioKills` | War party |
 | `p.escort` | Escort |
-| `p.avenge` | Avenge |
+| `p.avenge` | Avenger |
 | `p.pack` | Pack hunt |
 | `p.duelWin` | Duel win |
 | `p.duelStranger` | Stranger |
 | `p.duels3` | 3 duels |
-| `p.duelUp` | Duel up |
+| `p.duelUp` | Underdog |
 | `p.duelClass` | Class duel |
 | `p.duelWins2` | 2 in a row |
 | `p.rematch` | Rematch |
@@ -356,6 +357,42 @@ Each goal's column title on the addon's Board and the site's and bot's boards: a
 | `b.rankUp` | Rank up |
 | `b.skirmish5` | Skirmish 5 |
 | `b.taunts5` | Taunts |
+| `p.duelFirst` | First duel |
+| `p.hk3` | 3 HKs |
+| `p.upLevel` | Up a level |
+| `p.healerDown` | Healer down |
+| `p.double30` | Double |
+| `p.closeCall` | Close call |
+| `p.closeEnough` | Close enough |
+| `p.halfHunt` | Half hunt |
+| `p.rareQuarry` | Rare quarry |
+| `p.contestedHk` | Contested |
+| `p.zoneDay` | Zone of day |
+| `p.tourist` | Tourist |
+| `p.raidParty` | Raid party |
+| `p.guardDown` | Guard down |
+| `p.townRaid` | Town raid |
+| `p.flag60` | Flagged 60 |
+| `p.boldQuest` | Bold quest |
+| `p.holdout` | Holdout |
+| `p.duoKill` | Duo kill |
+| `p.patrol` | Patrol |
+| `p.sharedGlory` | Shared glory |
+| `p.assist` | Assist |
+| `p.guardian` | Guardian |
+| `p.selfDefense` | Self-defense |
+| `p.narrowEscape` | Narrow escape |
+| `p.outnumbered` | Outnumbered |
+| `p.earlyBlood` | Early blood |
+| `p.midnightRaid` | Midnight raid |
+| `p.youngBlood` | Young blood |
+| `p.hotStart` | Hot start |
+| `p.twoBlades` | Two blades |
+| `p.duel3` | 3 duels |
+| `p.spar` | Spar |
+| `p.styles3` | 3 styles |
+| `p.cityDuel` | City duel |
+| `p.bothWays` | Both ways |
 
 ## The algorithm, exactly (CF-55)
 Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json` (the addon's `src/core/Doomsday.lua` passes it; the site's copy must too). Where the sections above leave room, this decides. A golden case with `pool` is of that pool version; one without it is of pool version 1.
@@ -404,23 +441,36 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - No other mission changes: the pools, the draw of the missions, the swaps and the points are version 4's.
 - Nothing new is stored or sent. An addon on pool version 4 keeps drawing version 4 (its Hunt from the 20) and scores a friend's version-5 day by its `pool`: `hunt` is worth 5 in every version. The combination is never sent: each addon stores its own day's combination with the day's facts when it draws the day, so a day drawn before the update keeps its version-4 Hunt, and the Hunt's progress compares that stored race and class with the kill, never the list.
 
+**Pool version 6** (`Doomsday.POOL_VERSION = 6`, CF-118, "Mission pool v2 + the Hunt", Nico's decisions of 2026-11-10):
+- **The site decides the draw** (WEB-108: themed PvE weighted Rare / Normal / Often, a census-weighted Hunt, the Skirmish, the Duel slot, locks, pins, the owner's on/off) and sends it 16 days ahead as the mission schedule (below). What follows is the addon's **fallback draw**, used for a day or slot the schedule doesn't give, and pinned by the golden cases with `pool: 6`.
+- **Themes:** every daily PvE mission has a `theme`, from its category: questing (quests, dungeons), loot (loot, economy, care), social (social, play), professions (crafts, cooking, fishing), exploration (exploration, travel), combat (combat, levels, firstaid). Labels: Questing, Loot & gold, Social, Professions, Exploration, Combat & character (`Doomsday.THEMES`, `Doomsday.THEME_LABELS`). The 108 of the pool: 18, 18, 17, 19, 14, 22. The 3 PvE dailies are drawn as before but from 3 different **themes** (instead of categories), so a day never has two quest missions. The addon doesn't know the site's Rare / Normal / Often, so its fallback is even.
+- **Skirmish:** the 6 of pool version 4 and the new PvP dailies of the Skirmish (table "PvP dailies, pool version 6"), 37 in all; drawn as before (salt 2, never twice running).
+- **Check missions** (`check = true`: they need a test on Forever first) are in the catalogue but **Off**: `Doomsday.pool(slot, version)` leaves them out, so they are never drawn; the site's schedule may switch one on (the addon then takes it, `Doomsday.pool(slot, version, true)`).
+- **The Duel slot** is a mission of the kind (`slot`) `duel`: `p.duelFirst` (the first duel with each friend, the Duel slot as it was: 0 points of its own, the duels score per pair as before) and 7 more. The fallback rotates: `duel[n % #duel + 1]` over the duel pool in pool order (`p.duelFirst`, `p.duelWin`, `p.duelUp`, `p.duel3`, `p.spar`, `p.styles3`, `p.cityDuel`, `p.bothWays`). A day's set holds 6 ids: the 3 PvE dailies, the Skirmish, `hunt`, then the Duel slot's mission. Swaps work in the duel pool (`p.duelFirst` and `p.spar` need a friend: `p.duelWin`). It counts in "N of M done" as a row; crossing out and the streak still count only goals (the duel mission is a PvP goal, like the Skirmish).
+- **The Hunt** is a numeric race id and class id (ChrRaces, ChrClasses; `UnitRace`'s and `UnitClass`'s third returns): Forever's 28 targets per faction from the game files, the Skyborne included (Lists). Fallback: `available[pick(n, 1, #available)]` over the 28 in list order minus the targets of the **6 days before** (`Doomsday.HUNT_GAP`: never the same target within 7 days; the epoch day excludes nothing). A kill matches by its `raceId` and `classId` when it has them, else by its tokens (`Doomsday.huntMatches`; the Skyborne match by id only, their token being unknown, V142). The prey hint (CF-114) compares the same way.
+- Points: each goal's own size (`p.duelFirst` 0, the Hunt 5). Ids reused for the new PvP dailies were never drawn before, so their new points and texts change no earlier day; the missions already in the Skirmish (`p.untouchable`, `p.revenge`, `p.flagHour`) keep their points and labels.
+- The Weekly and the Bounty pools and their draws are version 5's.
+- An addon on pool version 5 keeps drawing version 5. A friend's version-6 day reaches it with 6 ids: it keeps 5 (`Goals.clean`, the Duel slot's id is the one dropped as the last) and scores the rest by its catalogue: an id new in version 6 is unknown there and counts nothing (as any newer pool's id), a reused one scores its old size (`p.duelWin` 1, `p.kills10` 3, ...). The site and an updated addon count them right. The release notes ask friends to update.
+
 **Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use the new version. A friend on an older addon keeps drawing its own version (1, 2 or 3), so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so the older versions' draws stay as they were. Points follow the entry's `pool`, and every id of a newer pool is already in the older addon's catalogue (CF-70, CF-79), so an addon on version 2 scores a friend's version-3 day the same way.
 
 **Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
 
 **The draw, never twice in a row.** It runs forward from the **epoch**, day `20761` (the Doomsday day that starts on Wednesday 2026-11-04, launch), and week `2966` (the week holding it). Each day excludes the previous day's draw (before swaps); the epoch day and any day before it exclude nothing. Weeks the same.
-- **PvE dailies:** for slot 1, 2, 3: the candidates are the pool's goals, in pool order, whose category isn't taken yet and that weren't in the previous day's dailies; slot k takes `candidates[pick(n, 10 + k, #candidates)]`. If no candidate is left, the previous day's goals are allowed again (categories still differ).
+- **PvE dailies:** for slot 1, 2, 3: the candidates are the pool's goals, in pool order, whose category (CF-118: from pool version 6 its theme) isn't taken yet and that weren't in the previous day's dailies; slot k takes `candidates[pick(n, 10 + k, #candidates)]`. If no candidate is left, the previous day's goals are allowed again (categories still differ).
 - **Skirmish, Bounty:** `available = pool without the previous draw` (the whole pool when that leaves nothing); `available[pick(n, salt, #available)]`.
 - **PvE weeklies, pool version 1:** as the dailies without categories: slot k takes `candidates[pick(week, 20 + k, #candidates)]` from the pool minus the goals already chosen and minus last week's (if that leaves none, last week's are allowed again).
 - **PvE weeklies, from pool version 2** (CF-77): exactly as the dailies, with the week: the candidates are the pool's weeklies, in pool order, whose category isn't taken yet and that weren't in last week's; slot k takes `candidates[pick(week, 20 + k, #candidates)]`. If no candidate is left, last week's are allowed again (categories still differ).
-- **The Hunt** (once in the pool): per hunting faction, the combinations of the pool version (20 in versions 1 to 4, 23 from version 5; see Lists) in list order minus the previous day's combination (none on the epoch), `available[pick(n, 1, #available)]`.
+- **The Hunt** (once in the pool): per hunting faction, the combinations of the pool version (20 in versions 1 to 4, 23 in version 5, 28 race and class ids from version 6; see Lists) in list order minus the previous day's combination (none on the epoch; CF-118: from version 6 the targets of the 6 days before), `available[pick(n, 1, #available)]`.
+- **The Duel slot** (from pool version 6): `duel[n % #duel + 1]`, the duel pool in pool order.
 - **Zone of the day / week:** `band.zones[pick(n, 4, #zones)]` / `pick(week, 5, #zones)`, the band by level (20–29, 30–44, 45–54, 55–60); below 20 there is none.
 
 **Schedule from the site (CF-68, web WEB-78).** The site's owner can change future days and weeks (Mission pool page). The site sends only the changed ones, as `CF_RUNS.doomsday.schedule` (from the uploader's `Data\Runs.lua`, and between addons as `SCHED`, docs/SYNC.md); every other day and week is the normal draw. Pinned by the `scheduleCheck` and `scheduled` cases of `tests/fixtures/doomsday-cases.json`.
-- Shape: `{ v, days = { ["<n>"] = { daily = { id, id, id }, skirmish = id } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty = id } } }`. `v`: the site's server time of its last change, an integer > 0. Keys are day and week numbers as decimal strings (integer keys are accepted too). The site sends every slot of a changed day or week in full, and `{ v }` alone once nothing is changed any more. No Hunt in this version: a later story adds `hunt = { Horde = "<Race>:<CLASS>", Alliance = ... }` as an optional field when the Hunt goes on.
-- **Check** (`Goals.cleanMissionSchedule(raw, day, week)`, with the reader's current day and week): not a table, `v` not an integer > 0, or `days` / `weeks` present but not a table: no schedule. A key that isn't an integer drops that entry. Days are kept from `day - 1` to `day + 16`, weeks from `week - 1` to `week + 3`. An id is a string of 1 to 24 letters, digits and dots. `daily` / `weekly` count only as exactly 3 valid, distinct ids, else the field is dropped; `skirmish` / `bounty` only as a valid id. Any other field is dropped, and so is a day or week left empty. `days` / `weeks` are left out when empty: `{ v }` is a valid schedule. A newer `v` replaces the whole schedule (so `{ v }` clears an older one); a `v` more than 5 minutes ahead of server time is ignored.
-- **Use** (`Doomsday.scheduledDraw(n, schedule)` / `scheduledWeek`): a listed `daily` is used when all 3 ids are in the reader's `pool("daily")` of its pool version, else the whole list is the normal draw's dailies (an id of a newer pool, or a catalogue id without `since`). A listed `skirmish` is used when it is in `pool("skirmish")`, else the normal draw's. Weeks the same with `weekly` and `bounty`. No category or "not twice running" check on the reader's side: the site keeps to them.
-- The "never twice in a row" chain runs on the normal draw only, so a scheduled day doesn't change the days around it. The Hunt is always the normal draw's.
+- Shape: `{ v, days = { ["<n>"] = { daily = { id, id, id }, skirmish = id } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty = id } } }`. `v`: the site's server time of its last change, an integer > 0. Keys are day and week numbers as decimal strings (integer keys are accepted too). The site sends every slot of a changed day or week in full, and `{ v }` alone once nothing is changed any more. CF-118 adds optional fields (an addon before it drops them, rule 8): a day's `duel = id` (the Duel slot's mission), `hunt = { Alliance = { race = <id>, class = <id> }, Horde = { ... } }` keyed by the **hunted** faction (`Alliance` is what Horde characters hunt), `pool` (the pool version the site drew it with); top level `rare = { "<race>:<class>", ... }` (ids: the targets under 1 % of the census, for `p.rareQuarry` and the Rare quarry feat) and `census = { at, characters }` (display only).
+- **Check** (`Goals.cleanMissionSchedule(raw, day, week)`, with the reader's current day and week; CF-118: `duel` a valid id, `hunt` per faction only as two integer ids, a faction other than Alliance or Horde dropped, `pool` an integer (a day with nothing but its pool is dropped), `rare` at most 56 distinct `"<race>:<class>"` of integers, `census` only with its `at`): not a table, `v` not an integer > 0, or `days` / `weeks` present but not a table: no schedule. A key that isn't an integer drops that entry. Days are kept from `day - 1` to `day + 16`, weeks from `week - 1` to `week + 3`. An id is a string of 1 to 24 letters, digits and dots. `daily` / `weekly` count only as exactly 3 valid, distinct ids, else the field is dropped; `skirmish` / `bounty` only as a valid id. Any other field is dropped, and so is a day or week left empty. `days` / `weeks` are left out when empty: `{ v }` is a valid schedule. A newer `v` replaces the whole schedule (so `{ v }` clears an older one); a `v` more than 5 minutes ahead of server time is ignored.
+- **Use** (`Doomsday.scheduledDraw(n, schedule)` / `scheduledWeek`): a listed `daily` is used when all 3 ids are in the reader's `pool("daily")` of its pool version, else the whole list is the normal draw's dailies (an id of a newer pool, or a catalogue id without `since`). A listed `skirmish` is used when it is in `pool("skirmish")` (CF-118: a check mission too: the site switched it on), else the normal draw's; `duel` the same in the duel pool. A listed `hunt` replaces a faction's target when it is one of the version's targets (from pool version 6). Weeks the same with `weekly` and `bounty`. No category or "not twice running" check on the reader's side: the site keeps to them.
+- The "never twice in a row" chain runs on the normal draw only, so a scheduled day doesn't change the days around it. The Hunt is the normal draw's unless the schedule names it (pool version 6).
+- CF-118: a schedule with the same `v` but more of pool version 6's detail (`rare`, `census`, a day's `duel`, `hunt`, `pool`) replaces ours (`Goals.scheduleDetail`): an older addon's relay of the same schedule lost them.
 - Swaps (below) then run on that set, per friend, as on any day (`goalsForDay(n, situation, version, schedule)`).
 - **A day or week that has started keeps the set already recorded** in `goals` (addon only); a schedule that arrives later doesn't change it. (The site locks today and tomorrow, and a week 24 h before it starts, so a change reaches everyone in time.)
 
@@ -738,7 +788,74 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.bowKill` | taunts | kill | Bow, then win | 3 | the `/bow` emote at an enemy-faction player, then a counted kill of that player within 2 minutes | needs probe V108, V74, V73 |  |
 | `p.flagUp` | taunts | flag | Flag up for PvP | 1 | a character flagged for PvP for 10 minutes that day, in total | CF-104 (pool 4), V121 |  |
 
+### PvP dailies, pool version 6 (CF-118)
+The 50 PvP dailies of the designer's list (board MP07, `PVP-DAILIES-50`), in its order, and the Duel slot's own mission. Kind `skirmish` goes to the Skirmish slot, kind `duel` to the Duel slot. **easy**: built on what the addon already reads (honorable kills with the victim CF-110/117 picks, the duel message, the flag, zone, group, level and time); **check**: Off until tested on Forever (no progress yet: combat details are hidden from addons). A reused id kept its id because its condition was already that mission's; where an existing id's condition differs it stays as it was and the mission got a new id. Each easy mission's progress is in `src/core/missions/Fights.lua` (kills, duels, places) or `Battle.lua` (the flag).
+
+| Group | Id | Kind | Short | Points | Check | Mission | Note |
+|---|---|---|---|---|---|---|---|
+| Kills | `p.hk3` | skirmish | 3 HKs | +3 | easy | Win 3 honorable kills | new |
+| Kills | `p.kills10` | skirmish | 10 HKs | +5 | easy | Win 10 honorable kills | reused (was "Score 10 kills", never drawn): +5, short "10 HKs" |
+| Kills | `p.upLevel` | skirmish | Up a level | +3 | easy | Kill an enemy above your level | new |
+| Kills | `p.punchUp5` | skirmish | Giant | +5 | easy | Kill an enemy 5 or more levels above you | reused (never drawn): short "Giant" |
+| Kills | `p.fairFight` | skirmish | Fair fight | +3 | easy | Kill an enemy of your own level | reused (never drawn) |
+| Kills | `p.mirror` | skirmish | Mirror | +3 | easy | Kill an enemy of your own class | reused (never drawn) |
+| Kills | `p.variety` | skirmish | 3 classes | +5 | easy | Kill 3 different enemy classes | reused (was "Variety", never drawn): +5, short "3 classes" |
+| Kills | `p.races3` | skirmish | 3 races | +5 | easy | Kill 3 different enemy races | reused (never drawn): +5 |
+| Kills | `p.healerDown` | skirmish | Healer down | +3 | easy | Kill an enemy healer class | new (p.healers is 2 kills) |
+| Kills | `p.double30` | skirmish | Double | +5 | easy | Kill 2 enemies within 30 sec | new (p.double is 10 s, kept as it was) |
+| Kills | `p.untouchable` | skirmish | Untouched | +5 | easy | Win 5 honorable kills without dying | existing, in the Skirmish since pool 1: keeps +5 and "Untouched" |
+| Kills | `p.closeCall` | skirmish | Close call | +5 | check (Off) | Kill an enemy while under 20% health | new, check |
+| Hunt-like | `p.closeEnough` | skirmish | Close enough | +3 | easy | Kill an enemy of today's quarry race | new |
+| Hunt-like | `p.halfHunt` | skirmish | Half hunt | +3 | easy | Kill an enemy of today's quarry class | new |
+| Hunt-like | `p.rareQuarry` | skirmish | Rare quarry | +5 | easy | Kill an enemy of a rare race and class (Everloot census) | new: the schedule's `rare` |
+| Hunt-like | `p.revenge` | skirmish | Revenge | +5 | easy | Kill the enemy who last killed you | existing (pool 4): keeps +5 and "Revenge" |
+| Duels | `p.duelWin` | duel | Duel win | +3 | easy | Win a duel | reused (never drawn): moved to the Duel slot, +3 |
+| Duels | `p.duel3` | duel | 3 duels | +5 | easy | Win 3 duels | new (p.duels3 is 3 fought) |
+| Duels | `p.spar` | duel | Spar | +1 | easy | Duel a friend | new |
+| Duels | `p.duelUp` | duel | Underdog | +5 | easy | Win a duel against a higher level | reused (never drawn): moved to the Duel slot, short "Underdog" |
+| Duels | `p.styles3` | duel | 3 styles | +5 | easy | Duel 3 different classes | new |
+| Duels | `p.cityDuel` | duel | City duel | +3 | easy | Win a duel in a capital city | new |
+| Duels | `p.bothWays` | duel | Both ways | +5 | easy | Win a duel and get an HK on the same day | new |
+| Territory | `p.contestedHk` | skirmish | Contested | +3 | easy | Get an HK in a contested zone | new (p.contested is 3 kills, kept as it was) |
+| Territory | `p.enemyLand` | skirmish | Deep strike | +5 | easy | Get an HK in an enemy zone | reused (never drawn): +5, short "Deep strike" |
+| Territory | `p.zones3` | skirmish | Roamer | +5 | easy | Get HKs in 3 different zones | reused (never drawn): +5, short "Roamer" |
+| Territory | `p.zoneDay` | skirmish | Zone of day | +3 | easy | Get an HK in the zone of the day | new (p.frontLine is 5 kills) |
+| Territory | `p.tourist` | skirmish | Tourist | +5 | easy | Enter an enemy capital | new |
+| Territory | `p.raidParty` | skirmish | Raid party | +3 | easy | Visit an enemy town | new |
+| Territory | `p.guardDown` | skirmish | Guard down | +3 | check (Off) | Kill an enemy guard | new, check |
+| Territory | `p.townRaid` | skirmish | Town raid | +5 | check (Off) | Kill 5 enemy faction NPCs | new, check |
+| Flagged | `p.flag60` | skirmish | Flagged 60 | +5 | easy | Stay flagged for 1 hour | new |
+| Flagged | `p.boldQuest` | skirmish | Bold quest | +3 | easy | Quest flagged in a contested zone for 20 min | new |
+| Flagged | `p.flagHour` | skirmish | Flagged 30 | +3 | easy | Stay flagged 30 min without dying | existing (pool 4): keeps +3 and "Flagged 30" |
+| Flagged | `p.holdout` | skirmish | Holdout | +3 | easy | Stay flagged 10 min in the zone of the day | new |
+| Together | `p.duoKill` | skirmish | Duo kill | +3 | easy | Get an HK while grouped with a friend | new (p.duoKills is 3 kills) |
+| Together | `p.trioKills` | skirmish | War party | +5 | easy | Get an HK in a group of 3 friends | reused (never drawn): short "War party" |
+| Together | `p.patrol` | skirmish | Patrol | +5 | easy | Stay grouped and flagged with 2 friends for 20 min | new |
+| Together | `p.sharedGlory` | skirmish | Shared glory | +5 | easy | Everyone in your group gets an HK | new |
+| Together | `p.assist` | skirmish | Assist | +3 | check (Off) | Get an HK where a friend lands the killing blow | new, check |
+| Together | `p.guardian` | skirmish | Guardian | +5 | check (Off) | Kill an enemy who is attacking a friend | new, check |
+| Together | `p.avenge` | skirmish | Avenger | +5 | check (Off) | Kill the enemy who killed a friend | reused (never drawn): short "Avenger"; check: a friend's killer isn't synced |
+| Survive | `p.selfDefense` | skirmish | Self-defense | +3 | check (Off) | Kill an enemy who attacked you first | new, check |
+| Survive | `p.narrowEscape` | skirmish | Narrow escape | +3 | check (Off) | Survive a fight below 10% health | new, check |
+| Survive | `p.outnumbered` | skirmish | Outnumbered | +5 | check (Off) | Win a fight against 2 enemies | new, check |
+| Timing | `p.earlyBlood` | skirmish | Early blood | +3 | easy | Get an HK before 12:00 | new |
+| Timing | `p.midnightRaid` | skirmish | Midnight raid | +3 | easy | Get an HK after midnight | new (p.nightRaid is from 23:00) |
+| Timing | `p.youngBlood` | skirmish | Young blood | +3 | easy | Get an HK on an alt below level 30 | new |
+| Timing | `p.hotStart` | skirmish | Hot start | +3 | easy | Get an HK within 10 min of logging in | new |
+| Timing | `p.twoBlades` | skirmish | Two blades | +5 | easy | Get HKs on 2 characters | new |
+| Duels | `p.duelFirst` | duel | First duel | 0 | easy | First duel with each friend | new id for the Duel slot as it was: scored per pair of friends (win 3, loss 1) |
+
+How the easy ones count (counted world kills only, `Doomsday.scoreKills`; local facts, nothing new is sent):
+- Levels: `diff = victim level - own level`, a skull above anyone; "Up a level" `diff >= 1`, "Giant" `>= 5`, "Fair fight" `= 0`. Mirror: the victim's class is the killer's (`myClass`, the character's class at the kill). Healer down: Priest, Druid, Paladin or Shaman. Double: 2 kills of one character within 30 s. 3 races / 3 classes: by id, else token.
+- Close enough / Half hunt: the race / class of today's Hunt of either of the friend's factions. Rare quarry: a kill whose `"race:class"` (ids; tokens mapped to ids) is in the schedule's `rare`; without a schedule it can't be done.
+- Territory: the kill's zone in `Doomsday.CONTESTED`, or in the enemy's `Doomsday.TERRITORY` (by the killer's faction); Roamer: 3 zones; Zone of day: the zone of the day (p.frontLine's). Tourist: an enemy capital entered (`Doomsday.CAPITALS`), Raid party: an enemy town (`Doomsday.TOWNS`, the subzone), both by the character's faction at the visit (`fightPlace`, ZONE_CHANGED*).
+- Flagged: Flagged 60 is one hour flagged in one run that only the flag dropping ends (a death doesn't); Bold quest: 20 minutes flagged in contested zones and a quest handed in in one that day; Holdout: 10 minutes flagged in the zone of the day; Patrol: 20 minutes flagged while grouped with 2 or more friends (the friends' own flag isn't read).
+- Together: the friends in the group at the kill (`Instance.groupGuids`, by their characters). Shared glory: a kill while grouped with friends, each of whom has an HK (outside a battleground) that Doomsday day in their synced feed. Avenger (`p.avenge`) needs a friend's killer, which only that friend's death recap names and nothing syncs: check (Off).
+- Timing: the kill's realm hour (Early blood before 12:00, Midnight raid 00:00 to 04:59), the character's level below 30 (Young blood), at most 10 minutes after the session started (Hot start, the feed's session), kills on 2 characters (Two blades).
+- Duels (`fightDuel`, from the duel message): won, the opponent's friend (a friend's community character), class and level (a friend's synced character, else your target at the duel's end, `PvpInfo.duelOpponent`), the zone. First duel / Spar: a duel with a friend; Duel win, 3 duels: won; Underdog: won against a higher level; 3 styles: 3 opponent classes; City duel: won in a capital (`Doomsday.CAPITALS`); Both ways: a duel won and an HK the same day.
+
 ### The Duel slot (daily)
+- From pool version 6 (CF-118) the slot holds one mission of the Duel kind (above), in turn; the first duel with each friend scores per pair as below on every day, whatever the mission.
 - Your first duel with each friend that day: a win +3, a loss +1.
 - It counts when the opponent's full name is another friend's community character.
 - Both clients record the same duel, so a pair's duel counts once. When the two records disagree about the winner, the duel counts for neither.
@@ -827,6 +944,17 @@ One-time achievements per character, posted once in Discord as **"Feat unlocked"
 
 The site decides feats; the addon shows the feats it can derive from records it holds (the same kinds, thresholds and titles as the site's `feats.ts`), without "First in the group" and without the group's mount count. It remembers locally when it first saw each feat, so the Feats view lists them newest first; what a character had when the addon first saw it shows as "earlier" (CF-57b).
 
+**The Hunt feats** (CF-118, per character like every feat; local Hunt log `self.doomsday.huntLog[guid]`: quarries bagged, targets by `"race:class"` ids, the days in a row, a rare one). A quarry is bagged by the character whose counted kill finished the day's Hunt.
+
+| Id | Feat | Condition |
+|---|---|---|
+| `f.huntFirst` | First quarry | Bag your first Hunt target |
+| `f.hunt10` | Quarry ×10 | Bag 10 Hunt targets |
+| `f.huntClasses` | Every class | Bag every class of the other faction (9) |
+| `f.huntAll` | Big game | Bag all 28 race and class targets of the other faction (pool version 6's list) |
+| `f.huntRare` | Rare quarry | Bag a target under 1% of the census (the schedule's `rare`) |
+| `f.huntWeek` | Hunter's week | Bag the quarry 7 days in a row |
+
 **PvP rank titles:** the official rank per faction, then "a.k.a." our title, the same for both factions:
 
 | Rank | Horde / Alliance | Our title |
@@ -874,6 +1002,11 @@ From pool version 5 (CF-116, Forever's combinations, 23 each, without the Skybor
   - Tauren: Warrior, Hunter, Shaman, Druid
   - Troll: Warrior, Hunter, Rogue, Priest, Shaman, Mage, Warlock
 
+From pool version 6 (CF-118, race and class ids, the game files of build 1.60.1.70862 via Everloot `class_races`, the Skyborne included; class ids: Warrior 1, Paladin 2, Hunter 3, Rogue 4, Priest 5, Shaman 7, Mage 8, Warlock 9, Druid 11):
+- **Alliance targets** (for Horde characters): Human (1): 1, 2, 3, 4, 5, 8, 9; Dwarf (3): 1, 2, 3, 4, 5, 7; Night Elf (4): 1, 3, 4, 5, 11; Gnome (7): 1, 4, 5, 8, 9; High Order Skyborne (95): 1, 3, 4, 8, 11.
+- **Horde targets** (for Alliance characters): Orc (2): 1, 3, 4, 7, 8, 9; Undead (5): 1, 2, 4, 5, 8, 9; Tauren (6): 1, 3, 7, 11; Troll (8): 1, 3, 4, 5, 7, 8, 9; Windshaper Skyborne (96): 1, 3, 4, 7, 11.
+- 28 per faction. Race tokens by id (`Doomsday.RACE_TOKENS`): 1 Human, 2 Orc, 3 Dwarf, 4 NightElf, 5 Scourge, 6 Tauren, 7 Gnome, 8 Troll; the Skyborne's aren't known yet (V142).
+
 Enemy classes (`b.allClasses`), pool versions 1 to 4:
 - Alliance: Warrior, Paladin, Hunter, Rogue, Priest, Mage, Warlock, Druid
 - Horde: Warrior, Hunter, Rogue, Priest, Shaman, Mage, Warlock, Druid
@@ -885,3 +1018,9 @@ Zone bands (the zone names as the feed stores them):
 - **30–44:** Stranglethorn Vale, Arathi Highlands, Desolace, Dustwallow Marsh, Alterac Mountains
 - **45–54:** Tanaris, Feralas, The Hinterlands, Searing Gorge, Un'Goro Crater, Azshara
 - **55–60:** Burning Steppes, Felwood, Winterspring, Eastern Plaguelands, Western Plaguelands, Silithus
+
+Territory (CF-118, `Doomsday.CAPITALS`, `TERRITORY`, `CONTESTED`, `TOWNS`; zone names as `GetRealZoneText`, towns as `GetSubZoneText`). From Vanilla's zone PvP types, since Forever's own zone type reads only in the capitals (V123); Forever's new zones (the Skyborne's) aren't in them until the launch checks name them (VERIFY.md CF-118):
+- **Capitals:** Alliance: Stormwind City, Ironforge, Darnassus. Horde: Orgrimmar, Thunder Bluff, Undercity.
+- **Territory:** Alliance: Elwynn Forest, Westfall, Redridge Mountains, Duskwood, Dun Morogh, Loch Modan, Wetlands, Teldrassil, Darkshore and the capitals. Horde: Durotar, The Barrens, Mulgore, Tirisfal Glades, Silverpine Forest and the capitals.
+- **Contested:** Hillsbrad Foothills, Alterac Mountains, Arathi Highlands, Stranglethorn Vale, Badlands, Swamp of Sorrows, The Hinterlands, Searing Gorge, Burning Steppes, Blasted Lands, Deadwind Pass, Western Plaguelands, Eastern Plaguelands, Ashenvale, Stonetalon Mountains, Desolace, Thousand Needles, Dustwallow Marsh, Feralas, Tanaris, Azshara, Felwood, Un'Goro Crater, Silithus, Winterspring.
+- **Towns:** Alliance: Goldshire, Sentinel Hill, Lakeshire, Darkshire, Kharanos, Thelsamar, Menethil Harbor, Southshore, Refuge Pointe, Aerie Peak, Nethergarde Keep, Morgan's Vigil, Chillwind Camp, Dolanaar, Rut'theran Village, Auberdine, Astranaar, Stonetalon Peak, Nijel's Point, Theramore Isle, Feathermoon Stronghold, Thalanaar, Talonbranch Glade. Horde: Razor Hill, Sen'jin Village, The Crossroads, Camp Taurajo, Bloodhoof Village, Brill, The Sepulcher, Tarren Mill, Hammerfall, Grom'gol Base Camp, Kargath, Stonard, Splintertree Post, Zoram'gar Outpost, Sun Rock Retreat, Shadowprey Village, Brackenwall Village, Freewind Post, Camp Mojache, Revantusk Village, Bloodvenom Post, Valormok.
