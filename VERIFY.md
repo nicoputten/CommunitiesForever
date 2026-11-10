@@ -183,15 +183,14 @@ fetched runs. Screenshots of each step marked 📷 for Nico's design check. The 
 ### CF-103 Boss kills with their times, shared live
 This build on Forever, `/console scriptErrors 1`. Two accounts A and B with this build, Battle.net friends (or in the
 same guild), both online; A in a dungeon group (B may be elsewhere). On B: `/cf activity debug` (prints the live kills).
+The live kill itself is verified (Nico, 2026-11-10: a boss kill shows right away for the other friend, on the Runs
+tab and the site; API-FINDINGS "Live boss kills").
 
 | Step | Expected | Status |
 |---|---|---|
-| A: kill the dungeon's first boss. A: `/run local r=CommunitiesForeverDB.global.runs[UnitGUID("player")] for id,at in pairs(r.bosses) do print(id,at,date("%H:%M:%S",at)) end` | The boss's encounterID and the time of the kill (your clock). | open |
-| B, within a few seconds of the kill | Chat (debug): `[activity] <A's GUID> killed encounter <id> at <time> (live)`. No Lua error. | open |
-| B: `/run for g,k in pairs(CommunitiesForeverDB.global.liveKills) do for id,at in pairs(k) do print(g,id,date("%H:%M:%S",at)) end end` | A's character GUID, the same encounterID and time as A's line. | open |
 | A: kill the next boss right before pulling the one after (or in a raid, while another encounter runs) | B still gets it, at the latest about 30 s after the encounter ended. | open |
 | A: finish the dungeon (10+ minutes, leave). B after ~15 s (or `/cf sync`): `/run for _,p in pairs(CommunitiesForeverDB.global.people) do for d,c in pairs(p.feed or {}) do for g,e in pairs(c) do for _,r in ipairs(e.runs or {}) do for id,at in pairs(r.bossKills or {}) do print(r.name,r.bosses,id,date("%H:%M:%S",at)) end end end end end end` | The run with its `bosses` count and one line per boss killed, with the same times as the live kills. | open |
-| A with a run started on the previous build (bosses killed, then update and `/reload` inside): the first step's line | The old kills show the run's last time instead of `true` (migration); new kills their own time. | open |
+| A with a run started on the previous build (bosses killed, then update and `/reload` inside): `/run local r=CommunitiesForeverDB.global.runs[UnitGUID("player")] for id,at in pairs(r.bosses) do print(id,at,date("%H:%M:%S",at)) end` | The old kills show the run's last time instead of `true` (migration); new kills their own time. | open |
 | A on an older version, B on this build (and the other way round) | Nothing breaks: no live kill line; the older client shows the run with its boss count as before. | open |
 
 ### CF-38 Recipes: profession scan and profession links (board docs/design/recipes-2026-11/RC07Addon.dc.html)
