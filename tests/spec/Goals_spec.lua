@@ -41,6 +41,20 @@ describe("Goals (CF-56)", function()
       assert.is_false(Goals.newerMissionSchedule({ v = 10 }, { v = 9 }, now))
       assert.is_false(Goals.newerMissionSchedule({ v = 10 }, nil, now))
     end)
+
+    -- CF-118: an addon before pool version 6 relays the same v without duel, hunt, pool, rare and census.
+    it("takes the same v with more of pool version 6's detail, never less", function()
+      local now = 1000
+      local stripped = { v = 10, days = { ["20768"] = { skirmish = "p.hk3" } } }
+      local full = { v = 10, days = { ["20768"] = { skirmish = "p.hk3", duel = "p.spar", pool = 6,
+                                                    hunt = { Alliance = { race = 1, class = 8 } } } },
+                     rare = { "95:3" }, census = { at = 5 } }
+      assert.are.same({ 0, 5 }, { Goals.scheduleDetail(stripped), Goals.scheduleDetail(full) })
+      assert.is_true(Goals.newerMissionSchedule(stripped, full, now))
+      assert.is_false(Goals.newerMissionSchedule(full, stripped, now))
+      assert.is_false(Goals.newerMissionSchedule(full, full, now))
+      assert.is_true(Goals.newerMissionSchedule(full, { v = 11 }, now)) -- a newer v replaces it whole
+    end)
   end)
 
   describe("schedule", function()
@@ -144,7 +158,7 @@ describe("Goals (CF-56)", function()
     assert.are.same({ chars = 2, below60 = 1, altBelow60 = 1, highest = 60, highestToday = 24, ilvlReadable = true,
                       hasProfession = true, hasFishing = true, hasCraftingProfession = false,
                       professionBelow300 = true, friendQuestLog = false, dungeonInRange = true,
-                      below20 = 0, hasCooking = true, hasFirstAid = false, hasGathering = true }, s)
+                      below20 = 0, below30 = 1, hasCooking = true, hasFirstAid = false, hasGathering = true }, s)
   end)
 
   -- CF-70: the catalogue's swap fields; riding, canBuff and idle7 only when every character tells.
@@ -225,7 +239,7 @@ describe("Goals (CF-56)", function()
       return { set = set or { "d.quests10" }, swapped = {}, done = done or {}, at = at }
     end
 
-    it("cleans received goals: ids, 5 a day, 4 a week, 7 days, 2 weeks, numbers", function()
+    it("cleans received goals: ids, 6 a day (CF-118), 4 a week, 7 days, 2 weeks, numbers", function()
       local days = {}
       for n = 1, 9 do days[n] = entry(n) end
       days[1] = { set = { "a", "b", "c", "d", "e", "f", "bad id!", string.rep("x", 30) },
@@ -237,7 +251,7 @@ describe("Goals (CF-56)", function()
       for _ in pairs(clean.days) do n = n + 1 end
       assert.are.equal(7, n)
       if clean.days[1] then
-        assert.are.same({ "a", "b", "c", "d", "e" }, clean.days[1].set)
+        assert.are.same({ "a", "b", "c", "d", "e", "f" }, clean.days[1].set)
         assert.are.same({ a = 5 }, clean.days[1].done)
       end
       local kept = 0

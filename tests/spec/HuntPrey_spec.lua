@@ -18,17 +18,19 @@ describe("The Hunt's prey hint (CF-114)", function()
     hunt = ns.DoomsdayTracker.huntFor("Horde")
   end
 
-  -- An enemy player at the target and the mouseover, of race and class (default: the Hunt's).
+  -- An enemy player at the target and the mouseover, of race and class ids (default: the Hunt's; CF-118: pool
+  -- version 6's Hunt is ids, the unit gives tokens and ids).
   local function enemy(race, class, isEnemy)
+    race, class = race or hunt.race, class or hunt.class
     state.unitGuids = { target = PREY, mouseover = PREY }
     _G.UnitExists = function(unit) return unit == "target" or unit == "mouseover" or unit == "player" end
     _G.UnitIsPlayer = function() return true end
     _G.UnitIsEnemy = function(_, unit) return unit ~= "player" and isEnemy ~= false end
-    _G.UnitClass = function() return "Someone", class or hunt.class end
+    _G.UnitClass = function() return "Someone", ns.Doomsday.CLASS_TOKENS[class], class end
     _G.GetUnitName = function(unit) return unit == "player" and "Ves Doombringer" or "Grim Tusk" end
     _G.UnitRace = function(unit)
       if unit == "player" then return unpack(state.player.race) end
-      return "Someone", race or hunt.race, 1
+      return "Someone", ns.Doomsday.RACE_TOKENS[race], race
     end
   end
 
@@ -48,7 +50,7 @@ describe("The Hunt's prey hint (CF-114)", function()
   it("has no Hunt while the draw has none", function()
     load(false)
     assert.is_nil(hunt)
-    enemy("Orc", "WARRIOR")
+    enemy(2, 1)
     assert.are.same({}, hover())
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
     assert.are.same({}, state.printed)
@@ -59,8 +61,8 @@ describe("The Hunt's prey hint (CF-114)", function()
 
     it("knows today's Hunt of a Horde character", function()
       assert.is_table(hunt)
-      assert.is_string(hunt.race)
-      assert.is_string(hunt.class)
+      assert.is_number(hunt.race) -- CF-118: race and class ids from pool version 6
+      assert.is_number(hunt.class)
     end)
 
     it("marks the prey's tooltip", function()
@@ -81,7 +83,7 @@ describe("The Hunt's prey hint (CF-114)", function()
     end)
 
     it("skips other classes, friendly players and the battleground", function()
-      enemy(hunt.race, hunt.class == "WARRIOR" and "ROGUE" or "WARRIOR")
+      enemy(hunt.race, hunt.class == 1 and 4 or 1)
       assert.are.same({}, hover())
       enemy(nil, nil, false)
       assert.are.same({}, hover())
@@ -103,7 +105,8 @@ describe("The Hunt's prey hint (CF-114)", function()
 
     it("ignores a secret race instead of comparing it", function()
       enemy()
-      _G.issecretvalue = function(v) return v == hunt.race end
+      -- CF-118: a secret race is secret in every return (the token and the id).
+      _G.issecretvalue = function(v) return v == hunt.race or v == ns.Doomsday.RACE_TOKENS[hunt.race] end
       finally(function() _G.issecretvalue = nil end)
       assert.are.same({}, hover())
     end)

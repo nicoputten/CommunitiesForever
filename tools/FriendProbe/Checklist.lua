@@ -129,6 +129,10 @@ ns.items = {
     how = "Target or mouse over a High Order or Windshaper Skyborne player: the print line of VERIFY.md V142." },
   { id = "V143", session = 5, title = "An enemy player's health is readable (UnitHealth, CF-117)",
     how = "World PvP: the print lines of VERIFY.md V143, out of combat and while fighting." },
+  { id = "V144", session = 5, title = "An enemy player's race and class IDs (UnitRace, UnitClass, CF-118)",
+    how = "Target an enemy player, then kill one: the print lines of VERIFY.md V144." },
+  { id = "V145", session = 5, title = "Enemy capitals and towns are named as the lists say (CF-118)",
+    how = "In an enemy capital and an enemy town: the print line of VERIFY.md V145; send the Skyborne zone names." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 

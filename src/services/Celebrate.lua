@@ -131,18 +131,20 @@ end
 -- group, CB04).
 local function othersFeats(exceptGuid)
   local others = {}
-  local function derive(chars, feed)
+  local function derive(chars, feed, hunts)
     for guid, c in pairs(type(chars) == "table" and chars or {}) do
       if guid ~= exceptGuid and type(c) == "table" then
         local entries = {}
         for _, day in pairs(type(feed) == "table" and feed or {}) do
           if type(day) == "table" and type(day[guid]) == "table" then entries[#entries + 1] = day[guid] end
         end
-        others[#others + 1] = ns.Feats.derive(c, entries)
+        others[#others + 1] = ns.Feats.derive(c, entries, hunts and hunts[guid])
       end
     end
   end
-  derive(own().chars, own().feed)
+  -- CF-118: the own characters' Hunt logs (local; friends' aren't synced).
+  local log = own().doomsday and own().doomsday.huntLog
+  derive(own().chars, own().feed, type(log) == "table" and log or nil)
   for bt, person in pairs(addonRef.db.global.people or {}) do
     if bt ~= own().battleTag then derive(person.chars, person.feed) end
   end

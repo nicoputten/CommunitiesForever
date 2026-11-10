@@ -9,7 +9,8 @@
 --   BYE   {}                (CF-28, community) on logout, best effort: the sender is offline.
 --   RUNS  {runs}            (CF-46) planned runs, to a peer whose HELLO showed an older ru (runs updatedAt).
 --   RUNREQ {}               (CF-46) asks a peer whose HELLO showed a newer ru for its runs.
---   SCHED {v, days, weeks}  (CF-68) the site's Doomsday mission schedule, answer to SCHEDREQ.
+--   SCHED {v, days, weeks, rare, census}  (CF-68; rare, census CF-118, optional) the site's Doomsday mission
+--     schedule, answer to SCHEDREQ.
 --   SCHEDREQ {}             (CF-68) asks a peer whose HELLO showed a newer ds (schedule v) for its schedule.
 --   RUNANSWER {run, answer, guid, name, role, note}  (CF-47; note CF-63, optional) your answer to a run, to its
 --     organiser when online.
@@ -230,7 +231,9 @@ local function sendSchedule(target)
   end
   if recentlySent(lastSched, target, schedule.v) then return end
   remember(lastSched, target, schedule.v)
-  ns.Messenger.send(target, { t = "SCHED", v = schedule.v, days = schedule.days, weeks = schedule.weeks })
+  -- CF-118: with the optional rare and census (an older addon drops them).
+  ns.Messenger.send(target, { t = "SCHED", v = schedule.v, days = schedule.days, weeks = schedule.weeks,
+                              rare = schedule.rare, census = schedule.census })
 end
 
 local function storedVersion(key)
@@ -454,7 +457,8 @@ end
 
 -- CF-68: a mission schedule from a peer (checked like the file); a newer one replaces ours and is announced.
 function handlers.SCHED(message)
-  if ns.DoomsdayTracker.receiveMissionSchedule({ v = message.v, days = message.days, weeks = message.weeks }) then
+  if ns.DoomsdayTracker.receiveMissionSchedule({ v = message.v, days = message.days, weeks = message.weeks,
+                                                 rare = message.rare, census = message.census }) then
     helloDebounced()
   end
 end

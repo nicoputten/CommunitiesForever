@@ -11,8 +11,15 @@ local RACES = { Human = "Human", Dwarf = "Dwarf", NightElf = "Night Elf", Gnome 
 local CLASSES = { WARRIOR = "Warrior", PALADIN = "Paladin", HUNTER = "Hunter", ROGUE = "Rogue", PRIEST = "Priest",
                   SHAMAN = "Shaman", MAGE = "Mage", WARLOCK = "Warlock", DRUID = "Druid" }
 
-function DoomsdayView.className(token) return CLASSES[token] or tostring(token) end
-function DoomsdayView.raceName(token) return RACES[token] or tostring(token) end
+-- CF-118: a race or class id (pool version 6's Hunt) names through Doomsday's ids.
+function DoomsdayView.className(token)
+  if type(token) == "number" then token = ns.Doomsday.CLASS_TOKENS[token] or token end
+  return CLASSES[token] or tostring(token)
+end
+function DoomsdayView.raceName(token)
+  if type(token) == "number" then return ns.Doomsday.RACE_NAMES[token] or tostring(token) end
+  return RACES[token] or tostring(token)
+end
 
 -- "Night Elf Druids" (plural) or "a Night Elf Druid".
 function DoomsdayView.huntText(hunt, single)
@@ -41,7 +48,16 @@ function DoomsdayView.until_(seconds)
   return ns.Doomsday.duration(seconds)
 end
 
-local KIND = { daily = "Daily", weekly = "Weekly", skirmish = "Skirmish", bounty = "Bounty" }
+local KIND = { daily = "Daily", weekly = "Weekly", skirmish = "Skirmish", bounty = "Bounty", duel = "Duel" }
+
+-- CF-118: whether a day's set holds the Duel slot's mission (pool version 6 on); then the Duel slot is a row.
+function DoomsdayView.hasDuelRow(entry)
+  for _, id in ipairs(entry and entry.set or {}) do
+    local g = ns.Doomsday.goal(id)
+    if g and g.slot == "duel" then return true end
+  end
+  return false
+end
 
 -- The text of a goal id (the Hunt with its combination), or "A goal from a newer version" for an unknown id.
 function DoomsdayView.goalText(id, hunts)
@@ -212,7 +228,8 @@ end
 
 -- ===== Board and Ladder (CF-57b; board DD08AddonBoard) =====
 
--- Column labels of the Board: the goal's shortLabel (CF-61, at most 10 characters, as on the site).
+-- Column labels of the Board: the goal's shortLabel (CF-61: at most 10 characters; CF-118: 13 for the designer's
+-- pool-6 names; as on the site).
 function DoomsdayView.short(id)
   if id == "hunt" then return "Hunt" end
   local g = ns.Doomsday.goal(id)

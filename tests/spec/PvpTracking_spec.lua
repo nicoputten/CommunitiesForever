@@ -174,7 +174,7 @@ describe("PvP, duels and deaths (CF-52)", function()
         wowapi.runTimers(state)
       end
       assert.are.same({ { t = 1500, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
-                          race = "Orc", solo = true } }, entry().pvpKills)
+                          race = "Orc", raceId = 2, solo = true } }, entry().pvpKills)
       assert.are.same({ Ashenvale = 1 }, entry().kills)
     end)
 
@@ -195,7 +195,7 @@ describe("PvP, duels and deaths (CF-52)", function()
         wowapi.runTimers(state)
       end
       assert.are.same({ { t = 1500, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
-                          race = "Orc", solo = true } }, entry().pvpKills)
+                          race = "Orc", raceId = 2, solo = true } }, entry().pvpKills)
     end)
 
     it("adds kills the counter shows without an honor message, without a victim", function()
@@ -247,7 +247,7 @@ describe("PvP, duels and deaths (CF-52)", function()
         wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
         kill(1503)
         assert.are.same({ { t = 1503, zone = "Ashenvale", name = "Grim Tusk", lvl = 33, myLvl = 11, class = "WARRIOR",
-                            race = "Orc", solo = true } }, entry().pvpKills)
+                            race = "Orc", raceId = 2, solo = true } }, entry().pvpKills)
         assert.are.same({ Ashenvale = 1 }, entry().kills)
         assert.are.same({ { "Grim Tusk", "dead", 1 } }, resolved) -- the probe's Hunt reads the same pick
       end)

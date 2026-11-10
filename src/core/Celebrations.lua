@@ -23,7 +23,9 @@ local DOT = " \194\183 "
 local D = function() return ns.Doomsday end
 
 -- Feat kinds that are PvP (crossed swords on the medallion).
-local PVP_FEATS = { honorKills = true, pvpRank = true, duelWins = true, deaths100 = true, bgFirstWin = true }
+-- CF-118: the Hunt feats (kind "hunt") too.
+local PVP_FEATS = { honorKills = true, pvpRank = true, duelWins = true, deaths100 = true, bgFirstWin = true,
+                    hunt = true }
 
 local function plural(n, one, many) return n == 1 and ("+1 " .. one) or ("+" .. n .. " " .. many) end
 
@@ -83,7 +85,9 @@ function Celebrations.goalMoments(input)
     end
   end
   local rows = ns.DoomsdayView.rows(today, nil, input.hunts)
-  local done, total = ns.DoomsdayView.doneCount(rows, input.duelDone)
+  local duelDone = input.duelDone
+  if ns.DoomsdayView.hasDuelRow(today) then duelDone = nil end -- CF-118: the Duel slot is a row from pool version 6
+  local done, total = ns.DoomsdayView.doneCount(rows, duelDone)
   for _, id in ipairs(input.newly or {}) do
     local g = Doomsday.goal(id)
     if id ~= finishing and (id == "hunt" or g) then

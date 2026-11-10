@@ -38,11 +38,25 @@ end
 
 local function send(kind, obs) addonRef:SendMessage(ns.DoomsdayTracker.MISSION_EVENT, kind, obs) end
 
--- Sends the flagged time since the last send. on: false when the flag dropped.
+-- CF-118: other friends in the group now (by their characters' GUIDs, Places.owners), for p.patrol.
+local function groupFriends()
+  local g = addonRef.db.global
+  local byGuid = ns.Missions.Places.owners(g.people, g.presence, g.self and g.self.battleTag)
+  local seen, n = {}, 0
+  for _, guid in ipairs(ns.Instance.groupGuids()) do
+    local bt = byGuid[guid]
+    if bt and not seen[bt] then seen[bt], n = true, n + 1 end
+  end
+  return n
+end
+
+-- Sends the flagged time since the last send. on: false when the flag dropped. CF-118: with the zone and the friends
+-- in the group now (p.boldQuest, p.holdout, p.patrol).
 local function flushFlag(now, on)
   local guid = ns.SelfInfo.guid()
   if flaggedSince and guid and now > flaggedSince then
-    send("battleFlag", { guid = guid, seconds = now - flaggedSince, on = on })
+    send("battleFlag", { guid = guid, seconds = now - flaggedSince, on = on, zone = ns.SelfInfo.zone(),
+                         friends = groupFriends() })
   elseif guid and on == false then
     send("battleFlag", { guid = guid, seconds = 0, on = false })
   end

@@ -174,7 +174,8 @@ Pvp.FALLBACK_DELAY = 3    -- seconds a counter rise waits for its honor messages
 cache = { [name] = { lvl, class, race, rank, at } }. Over CACHE_SIZE names the oldest goes. ]]
 function Pvp.remember(cache, name, fields, now)
   if type(name) ~= "string" or name == "" or type(fields) ~= "table" then return end
-  cache[name] = { lvl = fields.lvl, class = fields.class, race = fields.race, rank = fields.rank, at = now }
+  cache[name] = { lvl = fields.lvl, class = fields.class, race = fields.race, rank = fields.rank,
+                  raceId = fields.raceId, classId = fields.classId, at = now }
   local size, oldest, oldestAt = 0, nil, nil
   for key, entry in pairs(cache) do
     size = size + 1
@@ -214,13 +215,15 @@ function Pvp.victim(text, formats, rankNumbers)
   return args[1], type(rank) == "number" and rank or nil
 end
 
---[[ A pvpKills entry: { t, zone, name, lvl, myLvl, class, race, rank, solo, bg }. seen: Pvp.recall's entry (its
-lvl, class, race; its rank when the message gave none). Each victim field is nil when unknown. ]]
+--[[ A pvpKills entry: { t, zone, name, lvl, myLvl, class, race, rank, solo, bg, raceId, classId }. seen: Pvp.recall's
+entry (its lvl, class, race; its rank when the message gave none; CF-118: its raceId and classId, the Hunt's ids, next
+to the tokens). Each victim field is nil when unknown. ]]
 function Pvp.killEntry(kill, seen)
   seen = seen or {}
+  local function id(v) return type(v) == "number" and v >= 1 and v == math.floor(v) and v or nil end
   return { t = kill.t, zone = kill.zone, name = kill.name, lvl = seen.lvl, myLvl = kill.myLvl, class = seen.class,
            race = seen.race, rank = kill.rank or seen.rank, solo = kill.solo == true or nil,
-           bg = kill.bg == true or nil }
+           bg = kill.bg == true or nil, raceId = id(seen.raceId), classId = id(seen.classId) }
 end
 
 -- ===== The victim at the kill (CF-110, CF-117) =====
@@ -261,7 +264,8 @@ oldest goes. ]]
 function Pvp.seeAlive(alive, look, now)
   if not enemyLook(look) or look.dead ~= false or type(now) ~= "number" then return end
   alive[look.guid] = { at = now, name = look.name, lvl = look.lvl, class = look.class, race = look.race,
-                       rank = look.rank, health = fraction(look.health) }
+                       rank = look.rank, raceId = field(look.raceId, "number"), classId = field(look.classId, "number"),
+                       health = fraction(look.health) }
   local size, oldest, oldestAt = 0, nil, nil
   for key, entry in pairs(alive) do
     size = size + 1
@@ -294,6 +298,8 @@ function Pvp.killCandidates(looks, alive, now)
                           class = field(look.class, "string") or field(seen.class, "string"),
                           race = field(look.race, "string") or field(seen.race, "string"),
                           rank = field(look.rank, "number") or field(seen.rank, "number"),
+                          raceId = field(look.raceId, "number") or field(seen.raceId, "number"),
+                          classId = field(look.classId, "number") or field(seen.classId, "number"),
                           health = health, healthAt = health and healthAt or nil,
                           dead = look.dead == true and "dead" or nil }
       if had then
@@ -355,8 +361,8 @@ function Pvp.resolveVictims(pending, kills)
   end)
   for i = 1, math.min(#list, type(kills) == "number" and kills or 1) do
     local c = list[i].c
-    found[i] = { name = c.name, lvl = c.lvl, class = c.class, race = c.race, rank = c.rank, source = c.source,
-                 guid = c.guid, path = list[i].path }
+    found[i] = { name = c.name, lvl = c.lvl, class = c.class, race = c.race, rank = c.rank, raceId = c.raceId,
+                 classId = c.classId, source = c.source, guid = c.guid, path = list[i].path }
   end
   return found
 end

@@ -8,7 +8,7 @@ local Goals = {}
 Goals.KEEP_DAYS = 14   -- stored days and weeks of the own goals and facts
 Goals.KEEP_WEEKS = 2
 Goals.SEND_DAYS = 7    -- sent in RECORD: the last 7 days, this and last week
-Goals.MAX_SET_DAY = 5  -- 3 PvE dailies, the Skirmish, the Hunt
+Goals.MAX_SET_DAY = 6  -- 3 PvE dailies, the Skirmish, the Hunt, the Duel slot (CF-118, pool version 6)
 Goals.MAX_SET_WEEK = 4 -- 3 PvE weeklies, the Bounty
 Goals.MAX_ID = 24
 Goals.MAX_KILLS = 300  -- kills kept per day (a week keeps 1000)
@@ -116,22 +116,75 @@ local function scheduleKey(key)
   return nil
 end
 
--- The entries of days or weeks in [from, to], each cleaned (nil: dropped); nil when none is left.
-local function cleanEntries(map, from, to, listField, oneField)
+Goals.MAX_RARE = 56 -- CF-118: the rare targets kept (both factions' 28)
+
+-- CF-118: a positive integer id (a race or class id), or nil.
+local function targetId(v)
+  if type(v) ~= "number" or v ~= math.floor(v) or v < 1 or v > 10000 then return nil end
+  return v
+end
+
+-- CF-118: a day's `hunt` = { Alliance = { race, class }, Horde = { race, class } } by the HUNTED faction, ids only;
+-- a faction with a broken target is dropped; nil when none is left.
+local function scheduleHunt(raw)
+  if type(raw) ~= "table" then return nil end
+  local result = {}
+  for _, faction in ipairs({ "Alliance", "Horde" }) do
+    local t = raw[faction]
+    local race, class = type(t) == "table" and targetId(t.race), type(t) == "table" and targetId(t.class)
+    if race and class then result[faction] = { race = race, class = class } end
+  end
+  return next(result) and result or nil
+end
+
+-- The entries of days or weeks in [from, to], each cleaned (nil: dropped); nil when none is left. extra (CF-118):
+-- the optional fields of a day: duel (an id), hunt, pool (a pool version).
+local function cleanEntries(map, from, to, listField, oneField, extra)
   local result = {}
   for key, raw in pairs(map or {}) do
     local n = scheduleKey(key)
     if n and n >= from and n <= to and type(raw) == "table" then
       local e = { [listField] = scheduleList(raw[listField]), [oneField] = scheduleId(raw[oneField]) }
+      if extra then
+        e.duel, e.hunt = scheduleId(raw.duel), scheduleHunt(raw.hunt)
+        e.pool = number(raw.pool, 1, 1e4)
+        if not (e[listField] or e[oneField] or e.duel or e.hunt) then e.pool = nil end -- a pool alone says nothing
+      end
       if next(e) then result[tostring(n)] = e end
     end
   end
   return next(result) and result or nil
 end
 
+-- CF-118: the schedule's `rare` = { "<race>:<class>", ... } (ids), at most MAX_RARE, duplicates dropped; nil when
+-- none is left.
+local function scheduleRare(raw)
+  if type(raw) ~= "table" then return nil end
+  local result, seen = {}, {}
+  for _, key in ipairs(raw) do
+    if #result >= Goals.MAX_RARE then break end
+    local race, class
+    if type(key) == "string" then race, class = key:match("^(%d+):(%d+)$") end
+    if race and targetId(tonumber(race)) and targetId(tonumber(class)) and not seen[key] then
+      result[#result + 1], seen[key] = key, true
+    end
+  end
+  return #result > 0 and result or nil
+end
+
+-- CF-118: the schedule's `census` = { at, characters } (display only); nil when broken.
+local function scheduleCensus(raw)
+  if type(raw) ~= "table" then return nil end
+  local at, characters = number(raw.at, 1, 1e11), number(raw.characters, 0, 1e9)
+  if not at then return nil end
+  return { at = at, characters = characters }
+end
+
 --[[ The mission schedule from the runs file, a friend's SCHED or SavedVariables, checked (docs/DOOMSDAY.md
 "Schedule from the site"; golden cases `scheduleCheck`): { v, days = { ["<n>"] = { daily = { id, id, id },
-skirmish } }, weeks = { ["<week>"] = { weekly = { id, id, id }, bounty } } }. day, week: the reader's current
+skirmish, duel, hunt = { Alliance = { race, class }, Horde = ... }, pool } }, weeks = { ["<week>"] = { weekly =
+{ id, id, id }, bounty } }, rare = { "<race>:<class>", ... }, census = { at, characters } } (CF-118: duel, hunt,
+pool, rare and census are optional). day, week: the reader's current
 Doomsday day and week. nil when raw isn't a table, v isn't an integer > 0, or days or weeks aren't tables. Days
 from day - 1 to day + 16 and weeks from week - 1 to week + 3 are kept; a list counts only as exactly 3 valid,
 distinct ids; any other field is dropped, and so is an entry left empty. days and weeks are left out when empty:
@@ -144,15 +197,30 @@ function Goals.cleanMissionSchedule(raw, day, week)
   if raw.days ~= nil and type(raw.days) ~= "table" then return nil end
   if raw.weeks ~= nil and type(raw.weeks) ~= "table" then return nil end
   return { v = v,
-           days = cleanEntries(raw.days, day - 1, day + Goals.SCHEDULE_DAYS_AHEAD, "daily", "skirmish"),
-           weeks = cleanEntries(raw.weeks, week - 1, week + Goals.SCHEDULE_WEEKS_AHEAD, "weekly", "bounty") }
+           days = cleanEntries(raw.days, day - 1, day + Goals.SCHEDULE_DAYS_AHEAD, "daily", "skirmish", true),
+           weeks = cleanEntries(raw.weeks, week - 1, week + Goals.SCHEDULE_WEEKS_AHEAD, "weekly", "bounty"),
+           rare = scheduleRare(raw.rare), census = scheduleCensus(raw.census) }
 end
 
--- True when incoming (checked) replaces current: a newer v, at most 5 minutes ahead of server time.
+-- CF-118: how much of pool version 6's optional detail a checked schedule holds (rare, census, and each day's duel,
+-- hunt and pool). An addon before CF-118 drops them, so its relay of the same v holds less.
+function Goals.scheduleDetail(s)
+  if type(s) ~= "table" then return 0 end
+  local n = (s.rare and 1 or 0) + (s.census and 1 or 0)
+  for _, e in pairs(type(s.days) == "table" and s.days or {}) do
+    n = n + (e.duel and 1 or 0) + (e.hunt and 1 or 0) + (e.pool and 1 or 0)
+  end
+  return n
+end
+
+-- True when incoming (checked) replaces current: a newer v, at most 5 minutes ahead of server time. CF-118: the same
+-- v with more detail too (an older addon's relay of the site's schedule lost it).
 function Goals.newerMissionSchedule(current, incoming, now)
   if not (incoming and incoming.v) then return false end
   if now and incoming.v > now + Goals.SCHEDULE_MAX_FUTURE then return false end
-  return incoming.v > (current and current.v or 0)
+  local v = current and current.v or 0
+  if incoming.v == v then return Goals.scheduleDetail(incoming) > Goals.scheduleDetail(current) end
+  return incoming.v > v
 end
 
 --[[ The schedule to use at serverTime: { reset, offset, source }. offset: from the game clock (gameOffset, nil
@@ -187,7 +255,7 @@ local function push(list, item, max)
 end
 
 -- The fields of Goals.newFacts and the ones the tracker adds: a mission module's facts never use them.
-local BUILT_IN = { zone = true, hunts = true }
+local BUILT_IN = { zone = true, hunts = true, offset = true, rareTargets = true, friendKills = true }
 for key in pairs(Goals.newFacts()) do BUILT_IN[key] = true end
 
 -- CF-70: the observation kinds of the mission modules (src/core/missions/*).
@@ -210,7 +278,8 @@ end
   previous level) } | { kind = "run", name, bosses, friends } | { kind = "learned" }
   | { kind = "char", guid, ilvl, professions = { [skillLine] = { rank, max } }, day } (seen: login, a change)
   | { kind = "group", friend } | { kind = "rare", count } | { kind = "earlyBird" } | { kind = "session", seconds }
-  | { kind = "kill", kill (a pvpKills entry), char } | { kind = "death", t, char } | { kind = "duel", friend }
+  | { kind = "kill", kill (a pvpKills entry), char, extra (CF-118: { myClass, myFaction, friends = { friend key, ... },
+  sinceLogin }) } | { kind = "death", t, char } | { kind = "duel", friend }
   | { kind = "shared", count } | { kind = "hunt", day }
   | { kind = "fish", count } | { kind = "crafted", id } | { kind = "trade", friend, items = { itemID, ... } }
   | { kind = "discovery" } (CF-56's local trackers for goals that wait for data)
@@ -278,6 +347,10 @@ function Goals.observe(f, obs, maxKills)
   elseif k == "kill" then
     local kill = {}
     for key, v in pairs(obs.kill or {}) do kill[key] = v end
+    -- CF-118: local extras at the kill (myClass, myFaction, friends, sinceLogin), never sent.
+    for key, v in pairs(type(obs.extra) == "table" and obs.extra or {}) do
+      if kill[key] == nil then kill[key] = v end
+    end
     kill.char = obs.char
     push(f.kills, kill, maxKills or Goals.MAX_KILLS)
   elseif k == "death" then
@@ -317,7 +390,9 @@ local function count(map)
 end
 
 --[[ Facts as Doomsday.progress reads them. ctx = { schedule, community = { [name] = true }, zone, hunts,
-factions, pool (the day's or week's pool version, CF-116) }. The mission modules' facts pass through under their
+factions, pool (the day's or week's pool version, CF-116), rareTargets (CF-118: { ["race:class"] = true }),
+friendKills (CF-118: { [friend key] = true } for friends with an HK that day) }. The mission modules' facts pass
+through under their
 own keys (CF-70). ]]
 function Goals.progressFacts(f, ctx)
   ctx = ctx or {}
@@ -331,6 +406,7 @@ function Goals.progressFacts(f, ctx)
     scored = ns.Doomsday.scoreKills(f.kills, ctx.schedule, ctx.community), deaths = f.deaths, zone = ctx.zone,
     hunts = ctx.hunts, huntDays = count(f.huntDays), duelFriends = count(f.duelFriends), factions = ctx.factions,
     fish = f.fish, trades = f.trades, craftTrade = f.craftTrade, discoveries = f.discoveries, pool = ctx.pool,
+    offset = ctx.schedule and ctx.schedule.offset, rareTargets = ctx.rareTargets, friendKills = ctx.friendKills,
   }
   for key, value in pairs(f) do
     if not BUILT_IN[key] and result[key] == nil then result[key] = value end
@@ -355,7 +431,7 @@ function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange, ext
   local s = { chars = 0, below60 = 0, altBelow60 = 0, ilvlReadable = false, hasProfession = false,
               hasFishing = false, hasCraftingProfession = false, professionBelow300 = false,
               friendQuestLog = friendQuestLog == true, dungeonInRange = dungeonInRange ~= false,
-              below20 = 0, hasCooking = false, hasFirstAid = false, hasGathering = false }
+              below20 = 0, below30 = 0, hasCooking = false, hasFirstAid = false, hasGathering = false }
   if type(extra.friends) == "number" then s.friends = extra.friends end
   local now = type(extra.now) == "number" and extra.now or nil
   local riding, buff, idle, idleUnknown = false, false, 0, now == nil
@@ -395,6 +471,7 @@ function Goals.situation(chars, playedToday, friendQuestLog, dungeonInRange, ext
       if guid ~= highestGuid then s.altBelow60 = s.altBelow60 + 1 end
     end
     if (c.level or 0) < 20 then s.below20 = s.below20 + 1 end
+    if (c.level or 0) < 30 then s.below30 = s.below30 + 1 end
   end
   if idle == 0 and idleUnknown then idle = nil end
   s.riding, s.canBuff, s.idle7 = riding, buff, idle
