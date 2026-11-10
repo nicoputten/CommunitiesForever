@@ -172,7 +172,8 @@ local function rememberFeats()
       if e then entries[#entries + 1] = e end
     end
     own().feats[guid] = own().feats[guid] or {}
-    local derived = ns.Feats.derive(c, entries)
+    local hunts = own().doomsday and own().doomsday.huntLog -- CF-118: the Hunt feats
+    local derived = ns.Feats.derive(c, entries, type(hunts) == "table" and hunts[guid] or nil)
     local byKey = {}
     for _, f in ipairs(derived) do byKey[f.key] = f end
     for _, key in ipairs(ns.Feats.remember(own().feats[guid], derived, GetServerTime())) do

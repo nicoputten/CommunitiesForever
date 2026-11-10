@@ -8,6 +8,44 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-118 Pool version 6: themed PvE, 50 PvP dailies, the Duel slot and the Hunt by ids (with WEB-108 to WEB-110)
+Nico's "Mission pool v2 + the Hunt" (2026-11-10): every day 3 PvE + the Hunt + 2 PvP (the Skirmish and the Duel slot),
+the site decides the draw and sends it as the mission schedule, one release for addon and site. This is the addon side:
+it owns the catalogue (ids, themes, points, short names, check flags, the Duel pool, the Hunt targets), the pool version
+and the fallback draw with its golden cases. Touches `src/core/Doomsday.lua`, `Goals.lua`, `Feats.lua`, `Feed.lua`,
+`Pvp.lua`, `DoomsdayView.lua`, `Celebrations.lua`, `src/core/missions/Fights.lua` and `Battle.lua`,
+`src/adapters/PvpInfo.lua`, `src/adapters/missions/FightEvents.lua` and `BattleEvents.lua`, `src/services/DoomsdayTracker.lua`,
+`PvpTracker.lua`, `HuntPrey.lua`, `DoomsdayBoard.lua`, `Sync.lua`, `src/ui/DoomsdayTab.lua`, their specs,
+`tests/fixtures/doomsday-cases.json`, `docs/DOOMSDAY.md`, `docs/SYNC.md`, VERIFY.md.
+- `Doomsday.POOL_VERSION = 6`. Pools 1 to 5, their draws and golden cases are unchanged.
+- Catalogue: a `theme` on every daily PvE mission (questing, loot, social, professions, exploration, combat, from the
+  category); the 50 PvP dailies of the designer's list with ids, short names (up to 13 characters), points and `check`
+  (Off: never drawn unless the schedule names it); existing ids reused where the condition is the same, new ids where
+  it differs (`p.double30`, `p.contestedHk`); the Duel kind (`slot = "duel"`): `p.duelFirst` (the Duel slot as it was,
+  0 points of its own) and 7 duel missions. The final table: docs/DOOMSDAY.md "PvP dailies, pool version 6".
+- Progress for every easy mission (Fights: kills, territory, timing, Hunt-like, duels, enemy capitals and towns;
+  Battle: flagged 60, bold quest, holdout, patrol), from local facts only. Zone lists (capitals, territory, contested,
+  towns) in `Doomsday` next to `BANDS`, from Vanilla's zone PvP types. Shared glory reads the friends' synced kills;
+  Avenger needs a friend's killer, which nothing syncs: check (Off).
+- Hunt v2: 28 targets per faction as race id + class id (the Skyborne 95/96 included); the victim pick records
+  `raceId` and `classId` (`UnitRace`'s, `UnitClass`'s third returns, guarded); `pvpKills` entries carry them next to
+  the tokens; the Hunt, the prey hint and the Hunt-like missions match by ids (tokens when a kill has none). Fallback:
+  even over the 28, never the same target within 7 days.
+- Schedule: `Goals.cleanMissionSchedule` keeps a day's `duel`, `hunt` (by the hunted faction), `pool`, and the top-level
+  `rare` and `census`; `Doomsday.scheduledDraw` uses them. Without them the fallback draw: 3 PvE of 3 themes (even),
+  the Hunt, the Skirmish (Off excluded), the Duel slot in turn (`n % 8 + 1`). A schedule with the same `v` and more of
+  this detail replaces ours (an older addon's relay lost it); SCHED carries `rare` and `census`.
+- Hunt feats: `f.huntFirst`, `f.hunt10`, `f.huntClasses`, `f.huntAll`, `f.huntRare` (the schedule's `rare`),
+  `f.huntWeek`, per character from a local Hunt log, in the Feats view and the banners like other feats.
+- UI: the Doomsday tab shows the 6 daily goals (3 PvE, Hunt, Skirmish, Duel); the Duel slot is a row of the set; the
+  first-duel tooltip stays on `p.duelFirst`. No other redesign (the boards are the site's).
+- Compatibility (rule 8): stored: new optional local data (`doomsday.huntLog`, new fact keys), a day's set of 6 ids;
+  no reshape, no migration. Sent: optional `raceId`, `classId` on `pvpKills`, a 6th id in a day's `set`, optional
+  `rare`, `census` in SCHED; all within `pv` 1. A pool-5 addon keeps 5 ids (drops the Duel slot's, the last),
+  drops the new fields when it stores or relays, scores new ids as nothing (as any newer pool's) and draws its own
+  pool 5. Compat_spec passes on every earlier release's fixtures.
+- Manual: VERIFY.md CF-118.
+
 ### CF-117 The kill's victim after a short re-check; the probe sees typed emotes
 Two bugs from Nico's in-game tests (2026-11-10, v1.7.0, build 70862). Bug 13: at the kill counter's rise the
 targeted victim is not dead yet (the probe's Hunt: "UnitIsDead exists, target dead false"), so CF-110 picks no

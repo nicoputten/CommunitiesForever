@@ -5,7 +5,7 @@ local _, ns = ... -- requires ns.Calendar (load core/Calendar.lua first)
 
 local Doomsday = {}
 
-Doomsday.POOL_VERSION = 5
+Doomsday.POOL_VERSION = 6
 Doomsday.DEFAULT_RESET = 68400   -- 19:00 realm time, seconds after midnight
 Doomsday.DAY = 86400
 -- The first Doomsday day: the draw runs forward from here, so "never twice in a row" is exact.
@@ -432,23 +432,23 @@ local GOALS = {
     text = "Lone wolf: 3 solo kills" },
   { id = "p.untouchable", slot = "skirmish", category = "streaks", needs = "kill", since = 1, points = 5,
     text = "Untouchable: 5 kills without dying" },
-  { id = "p.variety", slot = "skirmish", category = "targets", needs = "kill", points = 3,
-    text = "Variety: kills of 3 different classes" },
+  { id = "p.variety", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 5,
+    text = "Kill 3 different enemy classes", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.ranked", slot = "skirmish", category = "targets", needs = "kill", points = 5,
     text = "Ranked bounty: kill a ranked player", retired = 3 },
   { id = "p.flex", slot = "skirmish", category = "taunts", needs = "emote", points = 1,
     text = "Flex at a player of the other faction" },
   { id = "p.boo", slot = "skirmish", category = "taunts", needs = "emote", points = 1,
     text = "Boo a player of the other faction" },
-  { id = "p.punchUp5", slot = "skirmish", category = "targets", needs = "kill", points = 5,
-    text = "Kill an enemy player 5+ levels higher" },
+  { id = "p.punchUp5", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 5,
+    text = "Kill an enemy 5 or more levels above you", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.punchDown5", slot = "skirmish", category = "targets", needs = "kill", points = 3,
     text = "Kill an enemy player 5+ levels lower" },
   -- CF-79: the new skirmish missions of the PvP catalogue, in its order (no since: they wait for data).
-  { id = "p.kills10", slot = "skirmish", category = "worldKills", needs = "kill", points = 3, text = "Score 10 kills",
-    can = "level20", fallback = { "p.loneWolf" } },
-  { id = "p.zones3", slot = "skirmish", category = "worldKills", needs = "kill", points = 3,
-    text = "Kills in 3 zones", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.kills10", slot = "skirmish", category = "worldKills", needs = "kill", since = 6, points = 5,
+    text = "Win 10 honorable kills", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.zones3", slot = "skirmish", category = "worldKills", needs = "kill", since = 6, points = 5,
+    text = "Get HKs in 3 different zones", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.double", slot = "skirmish", category = "worldKills", needs = "kill", points = 5,
     text = "Double: 2 kills within 10 seconds", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.triple", slot = "skirmish", category = "worldKills", needs = "kill", points = 5,
@@ -457,19 +457,19 @@ local GOALS = {
     text = "First blood: the first kill among friends", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.nightRaid", slot = "skirmish", category = "worldKills", needs = "kill", points = 3,
     text = "Night raid: a kill after 23:00 realm time", can = "level20", fallback = { "p.loneWolf" } },
-  { id = "p.enemyLand", slot = "skirmish", category = "worldKills", needs = "kill", points = 3,
-    text = "Kill in the enemy's territory", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.enemyLand", slot = "skirmish", category = "worldKills", needs = "kill", since = 6, points = 5,
+    text = "Get an HK in an enemy zone", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.homeGuard", slot = "skirmish", category = "worldKills", needs = "kill", since = 3, points = 3,
     text = "Defend home: a kill in friendly territory", can = "level20", fallback = { "p.loneWolf" }, retired = 4 },
   { id = "p.contested", slot = "skirmish", category = "worldKills", needs = "kill", points = 3,
     text = "Kills in contested land", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.skull", slot = "skirmish", category = "targets", needs = "kill", points = 5, text = "Slay a skull" },
-  { id = "p.fairFight", slot = "skirmish", category = "targets", needs = "kill", points = 3,
-    text = "Fair fight: a kill at the same level" },
-  { id = "p.mirror", slot = "skirmish", category = "targets", needs = "kill", points = 3,
-    text = "Mirror match: kill an enemy of the same class" },
-  { id = "p.races3", slot = "skirmish", category = "targets", needs = "kill", points = 3,
-    text = "Kills of 3 different races" },
+  { id = "p.fairFight", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy of your own level", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.mirror", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy of your own class", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.races3", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 5,
+    text = "Kill 3 different enemy races", can = "level20", fallback = { "p.loneWolf" } },
   { id = "p.healers", slot = "skirmish", category = "targets", needs = "kill", points = 3,
     text = "Silence the healers: 2 healer-class kills" },
   { id = "p.casters3", slot = "skirmish", category = "targets", needs = "kill", points = 3, text = "Kill 3 casters" },
@@ -492,20 +492,24 @@ local GOALS = {
     text = "Score 3 kills and never die that day" },
   { id = "p.duoKills", slot = "skirmish", category = "teamwork", needs = "kill", points = 3,
     text = "Kills with a friend", can = "friends1", fallback = { "p.loneWolf" } },
-  { id = "p.trioKills", slot = "skirmish", category = "teamwork", needs = "kill", points = 5,
-    text = "Kills with 2 friends", can = "friends1", fallback = { "p.loneWolf" } },
+  { id = "p.trioKills", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, points = 5,
+    text = "Get an HK in a group of 3 friends", can = "friends2", fallback = { "p.loneWolf" } },
   { id = "p.escort", slot = "skirmish", category = "teamwork", needs = "kill", points = 3,
     text = "Escort: a kill grouped with a lower friend", can = "friends1", fallback = { "p.loneWolf" } },
-  { id = "p.avenge", slot = "skirmish", category = "teamwork", needs = "kill", points = 5, text = "Avenge a friend",
-    can = "friends1", fallback = { "p.loneWolf" } },
+  { id = "p.avenge", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, check = true, points = 5,
+    text = "Kill the enemy who killed a friend", can = "friends1", fallback = { "p.loneWolf" } },
   { id = "p.pack", slot = "skirmish", category = "teamwork", needs = "kill", points = 3,
     text = "Pack hunt: a kill in a full party" },
-  { id = "p.duelWin", slot = "skirmish", category = "duels", needs = "duel", points = 1, text = "Win a duel" },
+  -- CF-118: the Duel slot's missions (slot "duel", rotating). p.duelFirst is the Duel slot as it was: the first duel
+  -- with each friend, scored per pair (Doomsday.duels), so its own points are 0.
+  { id = "p.duelFirst", slot = "duel", category = "duels", needs = "duel", since = 6, points = 0,
+    text = "First duel with each friend", can = "friends1", fallback = { "p.duelWin" } },
+  { id = "p.duelWin", slot = "duel", category = "duels", needs = "duel", since = 6, points = 3, text = "Win a duel" },
   { id = "p.duelStranger", slot = "skirmish", category = "duels", needs = "duel", points = 3,
     text = "Beat a stranger in a duel" },
   { id = "p.duels3", slot = "skirmish", category = "duels", needs = "duel", points = 3, text = "Fight 3 duels" },
-  { id = "p.duelUp", slot = "skirmish", category = "duels", needs = "duel", points = 5,
-    text = "Win a duel against a higher level", can = "friends1", fallback = { "p.loneWolf" } },
+  { id = "p.duelUp", slot = "duel", category = "duels", needs = "duel", since = 6, points = 5,
+    text = "Win a duel against a higher level" },
   { id = "p.duelClass", slot = "skirmish", category = "duels", needs = "duel", points = 1,
     text = "Duel a friend of another class", can = "friends1", fallback = { "p.loneWolf" } },
   { id = "p.duelWins2", slot = "skirmish", category = "duels", needs = "duel", points = 3,
@@ -533,6 +537,80 @@ local GOALS = {
   { id = "p.bowKill", slot = "skirmish", category = "taunts", needs = "kill", points = 3, text = "Bow, then win" },
   { id = "p.flagUp", slot = "skirmish", category = "taunts", needs = "flag", since = 4, points = 1,
     text = "Flag up for PvP" },
+  -- CF-118 (pool version 6): the new PvP dailies of the Skirmish (docs/DOOMSDAY.md "PvP dailies, pool version 6")
+  -- and the Duel slot's new missions. check = true: needs a test on Forever first; Off (never drawn) until the
+  -- site's schedule switches it on.
+  { id = "p.hk3", slot = "skirmish", category = "worldKills", needs = "kill", since = 6, points = 3,
+    text = "Win 3 honorable kills", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.upLevel", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy above your level", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.healerDown", slot = "skirmish", category = "targets", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy healer class", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.double30", slot = "skirmish", category = "worldKills", needs = "kill", since = 6, points = 5,
+    text = "Kill 2 enemies within 30 sec", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.closeCall", slot = "skirmish", category = "streaks", needs = "kill", since = 6, points = 5,
+    text = "Kill an enemy while under 20% health", check = true },
+  { id = "p.closeEnough", slot = "skirmish", category = "hunt", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy of today's quarry race" },
+  { id = "p.halfHunt", slot = "skirmish", category = "hunt", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy of today's quarry class" },
+  { id = "p.rareQuarry", slot = "skirmish", category = "hunt", needs = "kill", since = 6, points = 5,
+    text = "Kill an enemy of a rare race and class" },
+  { id = "p.contestedHk", slot = "skirmish", category = "territory", needs = "kill", since = 6, points = 3,
+    text = "Get an HK in a contested zone", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.zoneDay", slot = "skirmish", category = "territory", needs = "kill", since = 6, points = 3,
+    text = "Get an HK in the zone of the day", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.tourist", slot = "skirmish", category = "territory", needs = "visit", since = 6, points = 5,
+    text = "Enter an enemy capital" },
+  { id = "p.raidParty", slot = "skirmish", category = "territory", needs = "visit", since = 6, points = 3,
+    text = "Visit an enemy town" },
+  { id = "p.guardDown", slot = "skirmish", category = "territory", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy guard", check = true },
+  { id = "p.townRaid", slot = "skirmish", category = "territory", needs = "kill", since = 6, points = 5,
+    text = "Kill 5 enemy faction NPCs", check = true },
+  { id = "p.flag60", slot = "skirmish", category = "flagged", needs = "flag", since = 6, points = 5,
+    text = "Stay flagged for 1 hour" },
+  { id = "p.boldQuest", slot = "skirmish", category = "flagged", needs = "flag", since = 6, points = 3,
+    text = "Quest flagged in a contested zone for 20 min" },
+  { id = "p.holdout", slot = "skirmish", category = "flagged", needs = "flag", since = 6, points = 3,
+    text = "Stay flagged 10 min in the zone of the day" },
+  { id = "p.duoKill", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, points = 3,
+    text = "Get an HK while grouped with a friend", can = "friends1", fallback = { "p.loneWolf" } },
+  { id = "p.patrol", slot = "skirmish", category = "teamwork", needs = "flag", since = 6, points = 5,
+    text = "Stay grouped and flagged with 2 friends for 20 min", can = "friends2", fallback = { "p.loneWolf" } },
+  { id = "p.sharedGlory", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, points = 5,
+    text = "Everyone in your group gets an HK", can = "friends1", fallback = { "p.loneWolf" } },
+  { id = "p.assist", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, points = 3,
+    text = "Get an HK where a friend lands the killing blow", check = true, can = "friends1",
+    fallback = { "p.loneWolf" } },
+  { id = "p.guardian", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, points = 5,
+    text = "Kill an enemy who is attacking a friend", check = true, can = "friends1", fallback = { "p.loneWolf" } },
+  { id = "p.selfDefense", slot = "skirmish", category = "survive", needs = "kill", since = 6, points = 3,
+    text = "Kill an enemy who attacked you first", check = true },
+  { id = "p.narrowEscape", slot = "skirmish", category = "survive", needs = "kill", since = 6, points = 3,
+    text = "Survive a fight below 10% health", check = true },
+  { id = "p.outnumbered", slot = "skirmish", category = "survive", needs = "kill", since = 6, points = 5,
+    text = "Win a fight against 2 enemies", check = true },
+  { id = "p.earlyBlood", slot = "skirmish", category = "timing", needs = "kill", since = 6, points = 3,
+    text = "Get an HK before 12:00", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.midnightRaid", slot = "skirmish", category = "timing", needs = "kill", since = 6, points = 3,
+    text = "Get an HK after midnight", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.youngBlood", slot = "skirmish", category = "timing", needs = "kill", since = 6, points = 3,
+    text = "Get an HK on an alt below level 30", can = "below30", fallback = { "p.hk3" } },
+  { id = "p.hotStart", slot = "skirmish", category = "timing", needs = "kill", since = 6, points = 3,
+    text = "Get an HK within 10 min of logging in", can = "level20", fallback = { "p.loneWolf" } },
+  { id = "p.twoBlades", slot = "skirmish", category = "timing", needs = "kill", since = 6, points = 5,
+    text = "Get HKs on 2 characters", can = "chars2", fallback = { "p.hk3" } },
+  { id = "p.duel3", slot = "duel", category = "duels", needs = "duel", since = 6, points = 5,
+    text = "Win 3 duels" },
+  { id = "p.spar", slot = "duel", category = "duels", needs = "duel", since = 6, points = 1,
+    text = "Duel a friend", can = "friends1", fallback = { "p.duelWin" } },
+  { id = "p.styles3", slot = "duel", category = "duels", needs = "duel", since = 6, points = 5,
+    text = "Duel 3 different classes" },
+  { id = "p.cityDuel", slot = "duel", category = "duels", needs = "duel", since = 6, points = 3,
+    text = "Win a duel in a capital city" },
+  { id = "p.bothWays", slot = "duel", category = "duels", needs = "duel", since = 6, points = 5,
+    text = "Win a duel and get an HK on the same day" },
 
   { id = "b.zone25", slot = "bounty", category = "worldKills", needs = "kill", since = 1, points = 10,
     text = "25 kills in the zone of the week", can = "level20", fallback = { "b.kills50" }, canFrom = 2 },
@@ -656,8 +734,9 @@ Doomsday.SHORT_LABELS = {
   ["w.skill25"] = "25 skill", ["w.cap"] = "Skill cap", ["w.newProf"] = "New prof", ["w.ilvl3"] = "Item lvl+3",
   ["w.friends3"] = "3 friends", ["w.rare5"] = "5 rares", ["w.session2h"] = "2h session",
   ["w.discover5"] = "Discover 5", ["w.craftTrade"] = "Craft gift", ["p.frontLine"] = "Front line",
-  ["p.punchUp"] = "Punch up", ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouched", ["p.variety"] = "Variety",
-  ["p.ranked"] = "Ranked", ["p.flex"] = "Flex", ["p.boo"] = "Boo", ["p.punchUp5"] = "Punch up 5",
+  ["p.punchUp"] = "Punch up", ["p.loneWolf"] = "Lone wolf", ["p.untouchable"] = "Untouched",
+  ["p.variety"] = "3 classes",
+  ["p.ranked"] = "Ranked", ["p.flex"] = "Flex", ["p.boo"] = "Boo", ["p.punchUp5"] = "Giant",
   ["p.punchDown5"] = "Punch down", ["b.zone25"] = "Zone 25", ["b.allClasses"] = "Classes", ["b.allRaces"] = "Races",
   ["b.ranked5"] = "5 ranked", ["b.kills50"] = "50 kills", ["b.spree10"] = "Spree 10", ["b.hunt3"] = "3 hunts",
   ["b.duels3"] = "3 duels", ["b.days5"] = "Kill days",
@@ -671,15 +750,16 @@ Doomsday.SHORT_LABELS = {
   ["w.deathless3h"] = "Iron 3h", ["w.friendDays3"] = "Duo days", ["w.trades3"] = "3 trades", ["w.chatDays5"] = "Chatty",
   ["w.mentor3"] = "Mentor", ["w.newZones3"] = "3 new zns", ["w.roam10"] = "Roam 10", ["w.flightPaths3"] = "3 paths",
   ["w.kills200"] = "200 foes", ["w.elites10"] = "10 elites", ["w.weapon25"] = "Weapon +25",
-  ["w.potions5"] = "5 potions", ["p.kills10"] = "10 kills", ["p.zones3"] = "3 zones", ["p.double"] = "Double",
+  ["w.potions5"] = "5 potions", ["p.kills10"] = "10 HKs", ["p.zones3"] = "Roamer", ["p.double"] = "Double 10s",
   ["p.triple"] = "Triple", ["p.firstBlood"] = "1st blood", ["p.nightRaid"] = "Night raid",
-  ["p.enemyLand"] = "Enemy land", ["p.homeGuard"] = "Home guard", ["p.contested"] = "Contested", ["p.skull"] = "Skull",
+  ["p.enemyLand"] = "Deep strike", ["p.homeGuard"] = "Home guard", ["p.contested"] = "Contest x3",
+  ["p.skull"] = "Skull",
   ["p.fairFight"] = "Fair fight", ["p.mirror"] = "Mirror", ["p.races3"] = "3 races", ["p.healers"] = "Healers",
   ["p.casters3"] = "Casters", ["p.melee3"] = "Fighters", ["p.nemesis"] = "Nemesis", ["p.rankUp"] = "Outrank",
   ["p.huntPair"] = "Hunt pair", ["p.streak3"] = "Streak 3", ["p.revenge"] = "Revenge", ["p.flagHour"] = "Flagged 30",
-  ["p.comeback"] = "Comeback", ["p.noDeath"] = "Spotless", ["p.duoKills"] = "Duo kills", ["p.trioKills"] = "Trio kills",
-  ["p.escort"] = "Escort", ["p.avenge"] = "Avenge", ["p.pack"] = "Pack hunt", ["p.duelWin"] = "Duel win",
-  ["p.duelStranger"] = "Stranger", ["p.duels3"] = "3 duels", ["p.duelUp"] = "Duel up", ["p.duelClass"] = "Class duel",
+  ["p.comeback"] = "Comeback", ["p.noDeath"] = "Spotless", ["p.duoKills"] = "Duo kills", ["p.trioKills"] = "War party",
+  ["p.escort"] = "Escort", ["p.avenge"] = "Avenger", ["p.pack"] = "Pack hunt", ["p.duelWin"] = "Duel win",
+  ["p.duelStranger"] = "Stranger", ["p.duels3"] = "3 duels", ["p.duelUp"] = "Underdog", ["p.duelClass"] = "Class duel",
   ["p.duelWins2"] = "2 in a row", ["p.rematch"] = "Rematch", ["p.bgPlay"] = "BG played", ["p.bgWin"] = "BG win",
   ["p.bgKills5"] = "BG kills 5", ["p.bgFriend"] = "BG buddy", ["p.bgFlag"] = "Flag cap", ["p.bgBase"] = "Base",
   ["p.bgTop"] = "BG top", ["p.salute"] = "Salute", ["p.chicken"] = "Chicken", ["p.bowKill"] = "Bow first",
@@ -693,13 +773,40 @@ Doomsday.SHORT_LABELS = {
   ["b.bgWins3"] = "3 BG wins", ["b.bgEach"] = "Every BG", ["b.bgDays3"] = "BG days", ["b.bgKills30"] = "BG kill 30",
   ["b.bgFlags3"] = "3 flags", ["b.bgBases5"] = "5 bases", ["b.bgFriends"] = "BG trio", ["b.rankUp"] = "Rank up",
   ["b.skirmish5"] = "Skirmish 5", ["b.taunts5"] = "Taunts",
+  -- CF-118: pool version 6's PvP dailies (the designer's short names, MP07; at most 13 characters).
+  ["p.duelFirst"] = "First duel", ["p.hk3"] = "3 HKs", ["p.upLevel"] = "Up a level", ["p.healerDown"] = "Healer down",
+  ["p.double30"] = "Double", ["p.closeCall"] = "Close call", ["p.closeEnough"] = "Close enough",
+  ["p.halfHunt"] = "Half hunt", ["p.rareQuarry"] = "Rare quarry", ["p.contestedHk"] = "Contested",
+  ["p.zoneDay"] = "Zone of day", ["p.tourist"] = "Tourist", ["p.raidParty"] = "Raid party",
+  ["p.guardDown"] = "Guard down", ["p.townRaid"] = "Town raid", ["p.flag60"] = "Flagged 60",
+  ["p.boldQuest"] = "Bold quest", ["p.holdout"] = "Holdout", ["p.duoKill"] = "Duo kill", ["p.patrol"] = "Patrol",
+  ["p.sharedGlory"] = "Shared glory", ["p.assist"] = "Assist", ["p.guardian"] = "Guardian",
+  ["p.selfDefense"] = "Self-defense", ["p.narrowEscape"] = "Narrow escape", ["p.outnumbered"] = "Outnumbered",
+  ["p.earlyBlood"] = "Early blood", ["p.midnightRaid"] = "Midnight raid", ["p.youngBlood"] = "Young blood",
+  ["p.hotStart"] = "Hot start", ["p.twoBlades"] = "Two blades", ["p.duel3"] = "3 duels", ["p.spar"] = "Spar",
+  ["p.styles3"] = "3 styles", ["p.cityDuel"] = "City duel", ["p.bothWays"] = "Both ways",
 }
+
+-- CF-118: the six themes of the daily PvE missions (pool version 6 draws its 3 PvE dailies from 3 different themes),
+-- by the catalogue's category. Every daily carries its `theme`; the site shows them as Questing, Loot & gold, Social,
+-- Professions, Exploration and Combat & character.
+Doomsday.THEMES = { "questing", "loot", "social", "professions", "exploration", "combat" }
+Doomsday.THEME_LABELS = { questing = "Questing", loot = "Loot & gold", social = "Social", professions = "Professions",
+                          exploration = "Exploration", combat = "Combat & character" }
+local THEME_OF = { quests = "questing", dungeons = "questing", loot = "loot", economy = "loot", care = "loot",
+                   social = "social", play = "social", crafts = "professions", cooking = "professions",
+                   fishing = "professions", exploration = "exploration", travel = "exploration", combat = "combat",
+                   levels = "combat", firstaid = "combat" }
+-- CF-118: the pool version from which the PvE dailies are drawn by theme, the Duel slot draws a mission and the
+-- Hunt is a race id and class id (Forever's 28 per faction, the Skyborne included).
+Doomsday.THEMES_SINCE = 6
 
 Doomsday.GOALS = GOALS
 local BY_ID = {}
 for i, g in ipairs(GOALS) do
   g.order = i
   g.shortLabel = Doomsday.SHORT_LABELS[g.id]
+  if g.slot == "daily" then g.theme = THEME_OF[g.category] end
   BY_ID[g.id] = g
 end
 
@@ -709,13 +816,17 @@ Doomsday.HUNT_SINCE = 4
 
 function Doomsday.goal(id) return BY_ID[id] end
 
--- The active goals of a slot in pool order, for a pool version (default the current one).
-function Doomsday.pool(slot, version)
+--[[ The active goals of a slot in pool order, for a pool version (default the current one). CF-118: a goal marked
+`check` (it needs a test on Forever first) is Off: never drawn, so left out unless withCheck (the site's schedule may
+switch it on). ]]
+function Doomsday.pool(slot, version, withCheck)
   version = version or Doomsday.POOL_VERSION
   local list = {}
   for _, g in ipairs(GOALS) do
     local retired = g.retired == true or (type(g.retired) == "number" and version >= g.retired)
-    if g.slot == slot and g.since and g.since <= version and not retired then list[#list + 1] = g.id end
+    if g.slot == slot and g.since and g.since <= version and not retired and (withCheck or not g.check) then
+      list[#list + 1] = g.id
+    end
   end
   return list
 end
@@ -759,18 +870,76 @@ local COMBOS_V5 = {
 -- The pool version from which the Hunt draws Forever's combinations (CF-116).
 Doomsday.FOREVER_COMBOS_SINCE = 5
 
+--[[ CF-118 (Nico, 2026-11-10): from pool version 6 the Hunt's targets are numeric race and class ids (ChrRaces and
+ChrClasses, as UnitRace's and UnitClass's third returns give them), Forever's 28 per faction from the game files
+(build 1.60.1.70862, Everloot class_races), the Skyborne included: High Order Skyborne (95, Alliance) and Windshaper
+Skyborne (96, Horde). By the hunting character's faction. ]]
+local COMBOS_V6 = {
+  Horde = { -- hunts Alliance
+    { 1, { 1, 2, 3, 4, 5, 8, 9 } },  -- Human
+    { 3, { 1, 2, 3, 4, 5, 7 } },     -- Dwarf
+    { 4, { 1, 3, 4, 5, 11 } },       -- Night Elf
+    { 7, { 1, 4, 5, 8, 9 } },        -- Gnome
+    { 95, { 1, 3, 4, 8, 11 } },      -- High Order Skyborne
+  },
+  Alliance = { -- hunts Horde
+    { 2, { 1, 3, 4, 7, 8, 9 } },     -- Orc
+    { 5, { 1, 2, 4, 5, 8, 9 } },     -- Undead
+    { 6, { 1, 3, 7, 11 } },          -- Tauren
+    { 8, { 1, 3, 4, 5, 7, 8, 9 } },  -- Troll
+    { 96, { 1, 3, 4, 7, 11 } },      -- Windshaper Skyborne
+  },
+}
+
+-- Race and class ids and the tokens UnitRace's second and UnitClass's second returns give (CF-118). The Skyborne
+-- tokens aren't known yet (launch probe V142): their kills match by id only.
+Doomsday.RACE_TOKENS = { [1] = "Human", [2] = "Orc", [3] = "Dwarf", [4] = "NightElf", [5] = "Scourge", [6] = "Tauren",
+                         [7] = "Gnome", [8] = "Troll" }
+Doomsday.CLASS_TOKENS = { [1] = "WARRIOR", [2] = "PALADIN", [3] = "HUNTER", [4] = "ROGUE", [5] = "PRIEST",
+                          [7] = "SHAMAN", [8] = "MAGE", [9] = "WARLOCK", [11] = "DRUID" }
+-- English names by id, for the texts (rule 6: hardcoded English).
+Doomsday.RACE_NAMES = { [1] = "Human", [2] = "Orc", [3] = "Dwarf", [4] = "Night Elf", [5] = "Undead", [6] = "Tauren",
+                        [7] = "Gnome", [8] = "Troll", [95] = "High Order Skyborne", [96] = "Windshaper Skyborne" }
+-- The faction a race id belongs to (the hunted side).
+Doomsday.RACE_FACTION = { [1] = "Alliance", [3] = "Alliance", [4] = "Alliance", [7] = "Alliance", [95] = "Alliance",
+                          [2] = "Horde", [5] = "Horde", [6] = "Horde", [8] = "Horde", [96] = "Horde" }
+-- The hunting faction of a hunted one.
+Doomsday.HUNTER_OF = { Alliance = "Horde", Horde = "Alliance" }
+
 local function combosOf(version)
-  return (version or Doomsday.POOL_VERSION) >= Doomsday.FOREVER_COMBOS_SINCE and COMBOS_V5 or COMBOS_V1
+  version = version or Doomsday.POOL_VERSION
+  if version >= Doomsday.THEMES_SINCE then return COMBOS_V6 end
+  return version >= Doomsday.FOREVER_COMBOS_SINCE and COMBOS_V5 or COMBOS_V1
 end
 
 -- { { race, class }, ... } a faction hunts in a pool version (default the current one), in list order: 20 each in
--- pool versions 1 to 4, 23 each from version 5.
+-- pool versions 1 to 4, 23 each in version 5 (race and class tokens), 28 each from version 6 (race and class ids).
 function Doomsday.combos(faction, version)
   local list = {}
   for _, entry in ipairs(combosOf(version)[faction] or {}) do
     for _, class in ipairs(entry[2]) do list[#list + 1] = { race = entry[1], class = class } end
   end
   return list
+end
+
+--[[ CF-118: whether a kill (a pvpKills entry: race and class tokens, raceId and classId ids, each optional) is of a
+Hunt target: { race, class } as tokens (pool versions 4 and 5) or as ids (from version 6). With ids, the kill's
+ids decide when it has them, else its tokens through RACE_TOKENS and CLASS_TOKENS (a race without a known token, the
+Skyborne, needs the id). Either part may be left out (`part`: "race" or "class" alone). ]]
+function Doomsday.huntMatches(hunt, kill, part)
+  if type(hunt) ~= "table" or type(kill) ~= "table" then return false end
+  local function same(value, id, token, tokens)
+    if type(value) == "number" then
+      if type(id) == "number" then return id == value end
+      return tokens[value] ~= nil and token == tokens[value]
+    end
+    return value ~= nil and token == value
+  end
+  local race = same(hunt.race, kill.raceId, kill.race, Doomsday.RACE_TOKENS)
+  local class = same(hunt.class, kill.classId, kill.class, Doomsday.CLASS_TOKENS)
+  if part == "race" then return race end
+  if part == "class" then return class end
+  return race and class
 end
 
 -- The enemy classes and races by hunting faction (b.allClasses, b.allRaces), pool versions 1 to 4.
@@ -804,6 +973,45 @@ Doomsday.BANDS = {
   { min = 55, max = 60, zones = { "Burning Steppes", "Felwood", "Winterspring", "Eastern Plaguelands",
                                   "Western Plaguelands", "Silithus" } },
 }
+
+--[[ CF-118: the zone lists of the territory missions (zone names as GetRealZoneText gives them, the feed's zone; town
+names as GetSubZoneText gives them). From Vanilla's zone PvP types (the game's own territory of each faction, the rest
+contested; the starting zones, the capitals and the towns with their own faction's flight master and guards), since
+Forever's zone PvP type reads only in the capitals (V123). Forever's own zones (the Skyborne's) aren't listed until
+the launch checks name them (VERIFY.md CF-118). By the faction the land belongs to. ]]
+Doomsday.CAPITALS = { Alliance = { "Stormwind City", "Ironforge", "Darnassus" },
+                      Horde = { "Orgrimmar", "Thunder Bluff", "Undercity" } }
+Doomsday.TERRITORY = {
+  Alliance = { "Elwynn Forest", "Westfall", "Redridge Mountains", "Duskwood", "Dun Morogh", "Loch Modan", "Wetlands",
+               "Teldrassil", "Darkshore", "Stormwind City", "Ironforge", "Darnassus" },
+  Horde = { "Durotar", "The Barrens", "Mulgore", "Tirisfal Glades", "Silverpine Forest", "Orgrimmar", "Thunder Bluff",
+            "Undercity" },
+}
+Doomsday.CONTESTED = { "Hillsbrad Foothills", "Alterac Mountains", "Arathi Highlands", "Stranglethorn Vale", "Badlands",
+                       "Swamp of Sorrows", "The Hinterlands", "Searing Gorge", "Burning Steppes", "Blasted Lands",
+                       "Deadwind Pass", "Western Plaguelands", "Eastern Plaguelands", "Ashenvale",
+                       "Stonetalon Mountains", "Desolace", "Thousand Needles", "Dustwallow Marsh", "Feralas", "Tanaris",
+                       "Azshara", "Felwood", "Un'Goro Crater", "Silithus", "Winterspring" }
+Doomsday.TOWNS = {
+  Alliance = { "Goldshire", "Sentinel Hill", "Lakeshire", "Darkshire", "Kharanos", "Thelsamar", "Menethil Harbor",
+               "Southshore", "Refuge Pointe", "Aerie Peak", "Nethergarde Keep", "Morgan's Vigil", "Chillwind Camp",
+               "Dolanaar", "Rut'theran Village", "Auberdine", "Astranaar", "Stonetalon Peak", "Nijel's Point",
+               "Theramore Isle", "Feathermoon Stronghold", "Thalanaar", "Talonbranch Glade" },
+  Horde = { "Razor Hill", "Sen'jin Village", "The Crossroads", "Camp Taurajo", "Bloodhoof Village", "Brill",
+            "The Sepulcher", "Tarren Mill", "Hammerfall", "Grom'gol Base Camp", "Kargath", "Stonard",
+            "Splintertree Post", "Zoram'gar Outpost", "Sun Rock Retreat", "Shadowprey Village", "Brackenwall Village",
+            "Freewind Post", "Camp Mojache", "Revantusk Village", "Bloodvenom Post", "Valormok" },
+}
+
+-- CF-118: true when a zone (or town) is in a list of Doomsday.CAPITALS, TERRITORY, TOWNS (by the land's faction) or
+-- CONTESTED.
+function Doomsday.inList(list, name)
+  if type(name) ~= "string" then return false end
+  for _, v in ipairs(list or {}) do
+    if v == name then return true end
+  end
+  return false
+end
 
 local function band(level)
   for _, b in ipairs(Doomsday.BANDS) do
@@ -847,8 +1055,10 @@ local function drawOne(pool, n, salt, previous)
 end
 
 -- Three goals of different categories, none of `previous` while enough are left: the PvE dailies, and the
--- weeklies from pool version 2 (CF-77). salts: one per slot.
-local function drawByCategory(pool, n, previous, salts)
+-- weeklies from pool version 2 (CF-77). salts: one per slot. field (CF-118): the goal field that must differ,
+-- "category" (default) or "theme" (the PvE dailies from pool version 6).
+local function drawByCategory(pool, n, previous, salts, field)
+  field = field or "category"
   local chosen, categories = {}, {}
   local excluded = asSet(previous)
   for slot = 1, 3 do
@@ -856,7 +1066,7 @@ local function drawByCategory(pool, n, previous, salts)
       local list = {}
       for _, id in ipairs(pool) do
         local g = BY_ID[id]
-        if not categories[g.category] and not (skipPrevious and excluded[id]) then list[#list + 1] = id end
+        if not categories[g[field]] and not (skipPrevious and excluded[id]) then list[#list + 1] = id end
       end
       return list
     end
@@ -865,7 +1075,7 @@ local function drawByCategory(pool, n, previous, salts)
     if #list == 0 then break end
     local id = list[Doomsday.pick(n, salts[slot], #list)]
     chosen[#chosen + 1] = id
-    categories[BY_ID[id].category] = true
+    categories[BY_ID[id][field]] = true
   end
   return chosen
 end
@@ -896,13 +1106,24 @@ end
 
 local function comboKey(c) return c.race .. ":" .. c.class end
 
+-- previous: the keys of the combinations not to draw (the day before; CF-118: the 6 days before from pool version 6).
 local function drawHunt(faction, n, previous, version)
   local keys = {}
   for i, c in ipairs(Doomsday.combos(faction, version)) do keys[i] = comboKey(c) end
-  local key = drawOne(keys, n, SALT.hunt, previous and { previous } or nil)
+  local key = drawOne(keys, n, SALT.hunt, previous)
   if not key then return nil end
   local race, class = key:match("^(.-):(.+)$")
+  if version >= Doomsday.THEMES_SINCE then return { race = tonumber(race), class = tonumber(class) } end
   return { race = race, class = class }
+end
+
+-- CF-118: from pool version 6 a Hunt target never comes back within 7 days (the 6 days before are excluded).
+Doomsday.HUNT_GAP = 6
+
+-- The Duel slot's mission of day n (pool version 6 on): the duel pool in turn, n % #pool + 1.
+local function drawDuel(pool, n)
+  if #pool == 0 then return nil end
+  return pool[n % #pool + 1]
 end
 
 local dayCache, weekCache = {}, {}
@@ -914,28 +1135,38 @@ from EPOCH, each day excluding the day before. Days before EPOCH exclude nothing
 function Doomsday.draw(n, version)
   version = version or Doomsday.POOL_VERSION
   local huntOn = Doomsday.HUNT_SINCE ~= nil and Doomsday.HUNT_SINCE <= version
+  local themed = version >= Doomsday.THEMES_SINCE
   local prefix = version .. (huntOn and "h:" or ":")
   local key = prefix .. n
   if dayCache[key] then return dayCache[key] end
   local dailyPool, skirmishPool = Doomsday.pool("daily", version), Doomsday.pool("skirmish", version)
+  local duelPool = themed and Doomsday.pool("duel", version) or nil
+  local gap = themed and Doomsday.HUNT_GAP or 1
   local first = n < Doomsday.EPOCH and n or Doomsday.EPOCH
-  local previous
+  local recent = {} -- the drawn days before, newest last (the Hunt's exclusions)
   for day = first, n do
     local k = prefix .. day
     local result = dayCache[k]
     if not result then
-      local prev = previous or { dailies = {} }
-      result = { dailies = drawByCategory(dailyPool, day, prev.dailies, SALT.dailies),
+      local prev = recent[#recent] or { dailies = {} }
+      result = { dailies = drawByCategory(dailyPool, day, prev.dailies, SALT.dailies, themed and "theme" or nil),
                  skirmish = drawOne(skirmishPool, day, SALT.skirmish, prev.skirmish and { prev.skirmish }) }
       if huntOn then
-        local before = prev.hunt or {}
-        result.hunt = { Horde = drawHunt("Horde", day, before.Horde and comboKey(before.Horde), version),
-                        Alliance = drawHunt("Alliance", day, before.Alliance and comboKey(before.Alliance),
-                                            version) }
+        local before = { Horde = {}, Alliance = {} }
+        for i = math.max(1, #recent - gap + 1), #recent do
+          for faction, list in pairs(before) do
+            local h = recent[i].hunt and recent[i].hunt[faction]
+            if h then list[#list + 1] = comboKey(h) end
+          end
+        end
+        result.hunt = { Horde = drawHunt("Horde", day, before.Horde, version),
+                        Alliance = drawHunt("Alliance", day, before.Alliance, version) }
       end
+      if duelPool then result.duel = drawDuel(duelPool, day) end
       dayCache[k] = result
     end
-    previous = result
+    recent[#recent + 1] = result
+    if #recent > gap then table.remove(recent, 1) end
   end
   return dayCache[key]
 end
@@ -980,13 +1211,14 @@ local NO_HUNT_INSTANCE = { pvp = true, arena = true }
 --[[ CF-114: true when a unit is the Hunt's prey: the current character's Hunt (hunt = { race, class }, nil when
 there is none today) is not done yet, the unit is an enemy player (unit = { enemy, player, race, class }, as the
 adapter read it, a secret value already nil) of that exact race and class, and the player is not in a battleground or
-arena (instanceType from GetInstanceInfo, nil: unknown, counts as outside). ]]
+arena (instanceType from GetInstanceInfo, nil: unknown, counts as outside). CF-118: from pool version 6 the Hunt is
+race and class ids, matched with the unit's raceId and classId (else its tokens). ]]
 function Doomsday.isPrey(hunt, done, unit, instanceType)
   if type(hunt) ~= "table" or done == true or type(unit) ~= "table" then return false end
   if unit.enemy ~= true or unit.player ~= true then return false end
   if instanceType ~= nil and NO_HUNT_INSTANCE[instanceType] then return false end
-  if type(hunt.race) ~= "string" or type(hunt.class) ~= "string" then return false end
-  return unit.race == hunt.race and unit.class == hunt.class
+  if hunt.race == nil or hunt.class == nil then return false end
+  return Doomsday.huntMatches(hunt, unit) -- CF-118: tokens (pool versions 4, 5) or ids (from 6)
 end
 
 --[[ CF-114: true when the prey chat line for key (the unit's GUID) may show at now, and records it. said = { [key] =
@@ -1013,21 +1245,60 @@ local function overlayList(base, scheduled, slot, version)
   return { scheduled[1], scheduled[2], scheduled[3] }
 end
 
+-- CF-118: a check mission (Off until tested) may be scheduled by the site: the site switches it on.
 local function overlayOne(base, scheduled, slot, version)
-  if scheduled ~= nil and asSet(Doomsday.pool(slot, version))[scheduled] then return scheduled end
+  if scheduled ~= nil and asSet(Doomsday.pool(slot, version, true))[scheduled] then return scheduled end
   return base
 end
 
+-- CF-118: true when { race, class } (ids) is a Hunt target of the hunted faction in this pool version.
+function Doomsday.isTarget(target, hunted, version)
+  local hunter = Doomsday.HUNTER_OF[hunted]
+  if not hunter or type(target) ~= "table" then return false end
+  for _, c in ipairs(Doomsday.combos(hunter, version)) do
+    if c.race == target.race and c.class == target.class then return true end
+  end
+  return false
+end
+
+--[[ CF-118: the Hunt with the schedule's `hunt` on top. The schedule keys it by the HUNTED faction ({ Alliance =
+{ race, class } }: what Horde characters hunt); the draw by the hunting one. Pool version 6 on, each faction's target
+when it is one of that version's targets (ids), else the draw's. ]]
+local function overlayHunt(base, scheduled, version)
+  if type(scheduled) ~= "table" or not base or (version or Doomsday.POOL_VERSION) < Doomsday.THEMES_SINCE then
+    return base
+  end
+  local result = { Horde = base.Horde, Alliance = base.Alliance }
+  for hunted, target in pairs(scheduled) do
+    if Doomsday.isTarget(target, hunted, version) then
+      result[Doomsday.HUNTER_OF[hunted]] = { race = target.race, class = target.class }
+    end
+  end
+  return result
+end
+
 --[[ The day's draw with the site's schedule on top (Goals.cleanMissionSchedule's shape; nil: none): a listed
-`daily` is used when all 3 ids are in this pool version, a listed `skirmish` when it is; every other slot is the
-normal draw's. The normal draw (and its "never twice in a row" chain) is never changed by it. The Hunt is always
-the normal draw's (the schedule has no Hunt yet). ]]
+`daily` is used when all 3 ids are in this pool version, a listed `skirmish` (CF-118: or `duel`) when it is (a check
+mission too); CF-118: a listed `hunt` per faction when it is a target of this pool version. Every other slot is the
+normal draw's. The normal draw (and its "never twice in a row" chain) is never changed by it. ]]
 function Doomsday.scheduledDraw(n, schedule, version)
   local draw = Doomsday.draw(n, version)
   local e = type(schedule) == "table" and type(schedule.days) == "table" and schedule.days[tostring(n)]
   if type(e) ~= "table" then return draw end
   return { dailies = overlayList(draw.dailies, e.daily, "daily", version),
-           skirmish = overlayOne(draw.skirmish, e.skirmish, "skirmish", version), hunt = draw.hunt }
+           skirmish = overlayOne(draw.skirmish, e.skirmish, "skirmish", version),
+           duel = draw.duel and overlayOne(draw.duel, e.duel, "duel", version) or nil,
+           hunt = overlayHunt(draw.hunt, e.hunt, version) }
+end
+
+-- CF-118: the targets under 1 % of the census the schedule names ({ ["race:class"] = true }, ids), for
+-- p.rareQuarry and the Rare quarry feat. Empty without a schedule.
+function Doomsday.rareTargets(schedule)
+  local set = {}
+  for _, key in ipairs(type(schedule) == "table" and type(schedule.rare) == "table" and schedule.rare or {}) do
+    if type(key) == "string" then set[key] = true end
+  end
+  return set
 end
 
 -- The week's draw with the site's schedule on top. As Doomsday.scheduledDraw, with `weekly` and `bounty`.
@@ -1043,7 +1314,8 @@ end
 
 --[[ situation (one friend, over all their characters): { chars, below60, altBelow60, highest, highestToday,
 ilvlReadable, dungeonInRange, hasProfession, hasFishing, hasCraftingProfession, professionBelow300,
-friendQuestLog, below20, hasCooking, hasFirstAid, hasGathering, riding, friends, canBuff, idle7 }. chars: number
+friendQuestLog, below20, below30 (CF-118), hasCooking, hasFirstAid, hasGathering, riding, friends, canBuff,
+idle7 }. chars: number
 of characters; below60, below20: characters below 60, below 20; altBelow60: characters below 60 other than the
 highest one; highest: the highest level; highestToday: the highest level that played that day (nil: none yet);
 friends: other friends in the community; idle7: characters not played for 7 days or more; the rest booleans
@@ -1067,6 +1339,8 @@ local CAN = {
   canBuff = function(s) return s.canBuff ~= false end,
   friends1 = function(s) return atLeast(s.friends, 1) end,
   friends3 = function(s) return atLeast(s.friends, 3) end,
+  friends2 = function(s) return atLeast(s.friends, 2) end, -- CF-118: p.trioKills, p.patrol
+  below30 = function(s) return s.below30 == nil or s.below30 > 0 end, -- CF-118: p.youngBlood
   idle7 = function(s) return atLeast(s.idle7, 1) end,
   level30 = function(s) return atLeast(s.highest, 30) end,
   altBelow60 = function(s) return s.altBelow60 == nil or s.altBelow60 > 0 end,
@@ -1137,8 +1411,9 @@ local function swapList(list, situation, swapped, version)
   return result
 end
 
---[[ One friend's goals for day n: { set = { id, ... }, swapped = { [newId] = originalId }, zone, hunt }.
-set: the 3 PvE dailies, then the Skirmish. zone: the zone of the day (p.frontLine) for that friend's highest
+--[[ One friend's goals for day n: { set = { id, ... }, swapped = { [newId] = originalId }, zone, hunt, duel }.
+set: the 3 PvE dailies, then the Skirmish; duel (CF-118, pool version 6 on): the Duel slot's mission. zone: the
+zone of the day (p.frontLine) for that friend's highest
 character that played that day (else the highest). hunt: the draw's Hunt (both factions). schedule (CF-68,
 optional): the site's schedule, put on the draw before the swaps (Doomsday.scheduledDraw). ]]
 function Doomsday.goalsForDay(n, situation, version, schedule)
@@ -1151,7 +1426,10 @@ function Doomsday.goalsForDay(n, situation, version, schedule)
   if draw.skirmish then
     set[#set + 1] = swapList({ draw.skirmish }, situation, swapped, version)[1]
   end
-  return { set = set, swapped = swapped, hunt = draw.hunt,
+  -- CF-118: the Duel slot's mission (pool version 6 on), swapped within the duel pool; the caller puts it after the
+  -- Hunt.
+  local duel = draw.duel and swapList({ draw.duel }, situation, swapped, version)[1] or nil
+  return { set = set, swapped = swapped, hunt = draw.hunt, duel = duel,
            zone = Doomsday.zone(n, 4, situation.highestToday or situation.highest) }
 end
 
@@ -1443,7 +1721,7 @@ local PROGRESS = {
   hunt = function(f)
     return counted(f, function(k)
       for _, h in ipairs(f.hunts or {}) do
-        if k.race == h.race and k.class == h.class then return true end
+        if Doomsday.huntMatches(h, k) then return true end
       end
       return false
     end) > 0 and 1 or 0, 1
@@ -1485,7 +1763,7 @@ end
 
 -- ===== Points, crossing out, the crown, the streak =====
 
-local TRACK = { daily = "pve", weekly = "pve", skirmish = "pvp", bounty = "pvp" }
+local TRACK = { daily = "pve", weekly = "pve", skirmish = "pvp", bounty = "pvp", duel = "pvp" }
 
 --[[ CF-69: the pool version a day's or week's points count in: the entry's own `pool` (recorded with its set),
 else the friend's `goals.pool`, else 1 (an entry from before CF-69, or an older addon). ]]

@@ -7,6 +7,9 @@
 -- (CF-110), both by GUID. Facts of a day or week under facts.battle = { zones = { [zone] = pvpType }, flagged =
 -- { [guid] = seconds }, flagRun = { [guid] = seconds flagged since the last death or unflag }, flagBest = { [guid] =
 -- longest such run }, killers = { [guid] = the GUID of the player who last killed that character }, revenge (count) }.
+-- CF-118 (pool version 6): flagStay = { [guid] = seconds flagged since the flag last dropped (a death doesn't end
+-- it) }, flagStayBest, flagZone = { [zone] = seconds flagged there, all characters }, flagParty (seconds flagged
+-- while grouped with 2 or more friends) for p.flag60, p.boldQuest, p.holdout, p.patrol.
 -- Local facts of the day or week only: nothing new is sent.
 local _, ns = ... -- requires ns.Goals and ns.Doomsday (loaded before it)
 
@@ -32,7 +35,8 @@ local function factsOf(f)
     f.battle = b
   end
   -- Facts of an earlier version have only the zones: the newer maps start empty.
-  for _, key in ipairs({ "zones", "flagged", "flagRun", "flagBest", "killers" }) do
+  for _, key in ipairs({ "zones", "flagged", "flagRun", "flagBest", "killers", "flagStay", "flagStayBest",
+                         "flagZone" }) do
     if type(b[key]) ~= "table" then b[key] = {} end
   end
   return b
@@ -64,7 +68,8 @@ end)
 
 --[[ battleFlag: time the own character was flagged for PvP (UnitIsPVP("player"), V121), sent while flagged and
   when the flag drops. { guid (the character), seconds (flagged since the last observation, at most MAX_SECONDS),
-  on (false: the flag dropped, the run ends after these seconds) } ]]
+  on (false: the flag dropped, the run ends after these seconds), zone (CF-118: the zone now, nil: unknown),
+  friends (CF-118: friends in the group now, nil: unknown) } ]]
 ns.Goals.registerKind("battleFlag", function(f, obs)
   local guid = guidOf(obs.guid)
   if not guid then return end
@@ -74,8 +79,20 @@ ns.Goals.registerKind("battleFlag", function(f, obs)
     keep(b.flagged, guid, (b.flagged[guid] or 0) + s)
     keep(b.flagRun, guid, (b.flagRun[guid] or 0) + s)
     if (b.flagRun[guid] or 0) > (b.flagBest[guid] or 0) then keep(b.flagBest, guid, b.flagRun[guid]) end
+    keep(b.flagStay, guid, (b.flagStay[guid] or 0) + s)
+    if (b.flagStay[guid] or 0) > (b.flagStayBest[guid] or 0) then keep(b.flagStayBest, guid, b.flagStay[guid]) end
+    local zone = text(obs.zone)
+    if zone and (b.flagZone[zone] or count(b.flagZone) < Battle.MAX_ZONES) then
+      b.flagZone[zone] = (b.flagZone[zone] or 0) + s
+    end
+    if type(obs.friends) == "number" and obs.friends >= 2 then
+      b.flagParty = (type(b.flagParty) == "number" and b.flagParty or 0) + s
+    end
   end
-  if obs.on == false then b.flagRun[guid] = nil end
+  if obs.on == false then
+    b.flagRun[guid] = nil
+    b.flagStay[guid] = nil
+  end
 end)
 
 --[[ battleDeath: the own character died (PLAYER_DEAD). { guid (the character), killer (the GUID of the death
@@ -147,7 +164,39 @@ local function totalMinutes(m)
   return math.floor(total / 60)
 end
 
+-- CF-118: minutes flagged in the zones of a list, all characters.
+local function zoneMinutes(f, test)
+  local total = 0
+  for zone, s in pairs(map(f, "flagZone")) do
+    if type(s) == "number" and s > 0 and test(zone) then total = total + s end
+  end
+  return math.floor(total / 60)
+end
+
+-- CF-118: whether a quest was handed in in a contested zone (facts.quests = { [zone] = n }).
+local function contestedQuest(f)
+  for zone, n in pairs(type(f.quests) == "table" and f.quests or {}) do
+    if type(n) == "number" and n > 0 and ns.Doomsday.inList(ns.Doomsday.CONTESTED, zone) then return true end
+  end
+  return false
+end
+
 local PROGRESS = {
+  ["p.flag60"] = function(f) return math.min(bestMinutes(map(f, "flagStayBest")), 60), 60 end,
+  -- Quest flagged in a contested zone for 20 min: 20 minutes flagged in contested zones and a quest handed in in one.
+  ["p.boldQuest"] = function(f)
+    local minutes = math.min(zoneMinutes(f, function(zone) return ns.Doomsday.inList(ns.Doomsday.CONTESTED, zone) end),
+      20)
+    if minutes >= 20 and not contestedQuest(f) then minutes = 19 end
+    return minutes, 20
+  end,
+  ["p.holdout"] = function(f)
+    return math.min(zoneMinutes(f, function(zone) return f.zone ~= nil and zone == f.zone end), 10), 10
+  end,
+  ["p.patrol"] = function(f)
+    local s = battle(f).flagParty
+    return math.min(math.floor((type(s) == "number" and s or 0) / 60), 20), 20
+  end,
   ["p.homeGuard"] = function(f) return countedIn(f, Battle.FRIENDLY), 1 end,
   ["p.flagUp"] = function(f) return bestMinutes(map(f, "flagged")), 10 end,
   ["p.flagHour"] = function(f) return bestMinutes(map(f, "flagBest")), 30 end,

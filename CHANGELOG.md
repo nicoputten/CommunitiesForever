@@ -5,6 +5,18 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.9.0 (2026-11-10)
+- **New:** Doomsday pool version 6, with the website. Every day: 3 PvE goals from 3 different themes (Questing, Loot &
+  gold, Social, Professions, Exploration, Combat & character), the Hunt, a Skirmish and a Duel mission. 50 new PvP
+  missions ("3 HKs", "Giant", "Tourist", "Patrol", "Midnight raid", ...); the ones that need a test on Forever first
+  stay off for now. The Duel slot takes turns between "First duel with each friend" and 7 duel missions ("Underdog",
+  "City duel", "Both ways", ...). The website now plans the days; the addon follows its plan and draws on its own
+  without it.
+- **New:** the Hunt covers all 28 race and class targets of each faction, the High Order and Windshaper Skyborne
+  included, never the same target twice in a week. Six Hunt feats: First quarry, Quarry ×10, Every class, Big game,
+  Rare quarry and Hunter's week. Please update together: a friend still on the previous version keeps the old
+  missions and doesn't see the new ones count.
+
 ## v1.8.0 (2026-11-10)
 - **Fixed:** a PvP kill now finds its victim when they die a moment after the kill counts (often the case): the
   addon looks again a second later, and as a last resort takes the enemy you saw at very low health just before. The

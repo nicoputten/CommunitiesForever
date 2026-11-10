@@ -24,7 +24,7 @@ describe("Doomsday (CF-55)", function()
     assert.are.equal(cases.poolVersion, Doomsday.POOL_VERSION)
     assert.are.equal(cases.epoch, Doomsday.EPOCH)
     assert.are.equal(cases.defaultReset, Doomsday.DEFAULT_RESET)
-    for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty" }) do
+    for _, slot in ipairs({ "daily", "weekly", "skirmish", "bounty", "duel" }) do
       assert.are.same(cases.pools[slot], Doomsday.pool(slot), slot)
     end
     assert.are.equal(cases.huntSince, Doomsday.HUNT_SINCE)
@@ -32,10 +32,13 @@ describe("Doomsday (CF-55)", function()
     assert.are.same(cases.salts.weeklies, Doomsday.SALT.weeklies)
   end)
 
-  it("gives every goal a short label of at most 10 characters (CF-61, the same on the site)", function()
+  -- CF-118: the designer's names of pool version 6's PvP dailies have up to 13 characters.
+  it("gives every goal a short label of at most 10 characters (CF-61; 13 from pool version 6, the same on the site)",
+    function()
     for _, g in ipairs(Doomsday.GOALS) do
       assert.is_string(g.shortLabel, g.id)
-      assert.is_true(#g.shortLabel >= 1 and #g.shortLabel <= 10, g.id .. ": " .. g.shortLabel)
+      local most = (g.since or 0) >= 6 and 13 or 10
+      assert.is_true(#g.shortLabel >= 1 and #g.shortLabel <= most, g.id .. ": " .. g.shortLabel)
     end
     for id in pairs(Doomsday.SHORT_LABELS) do assert.is_table(Doomsday.goal(id), id) end
   end)
@@ -45,9 +48,9 @@ describe("Doomsday (CF-55)", function()
     it("matches the file's catalogue, in pool order", function()
       local list = {}
       for i, g in ipairs(Doomsday.GOALS) do
-        list[i] = { id = g.id, slot = g.slot, category = g.category, needs = g.needs, since = g.since,
-                    points = g.points, text = g.text, short = g.shortLabel, can = g.can, fallback = g.fallback,
-                    retired = g.retired, canFrom = g.canFrom }
+        list[i] = { id = g.id, slot = g.slot, category = g.category, theme = g.theme, needs = g.needs,
+                    since = g.since, check = g.check, points = g.points, text = g.text, short = g.shortLabel,
+                    can = g.can, fallback = g.fallback, retired = g.retired, canFrom = g.canFrom }
       end
       assert.are.same(cases.pools.catalogue, list)
     end)
@@ -97,18 +100,22 @@ describe("Doomsday (CF-55)", function()
       assert.is_false(has(Doomsday.pool("weekly", 2), "w.ilvl3"))
     end)
 
-    it("has 57 Skirmish and 43 Bounty goals, each with what it needs", function()
-      local count, sizes = { skirmish = 0, bounty = 0 }, { skirmish = { 1, 3, 5 }, bounty = { 5, 10, 15 } }
-      local needs = { kill = true, duel = true, bg = true, emote = true, flag = true }
+    -- CF-118: pool version 6 adds 30 Skirmish goals (and "visit") and the Duel slot's 8 (two of them moved there).
+    it("has 85 Skirmish, 8 Duel and 43 Bounty goals, each with what it needs", function()
+      local count = { skirmish = 0, bounty = 0, duel = 0 }
+      local sizes = { skirmish = { 1, 3, 5 }, bounty = { 5, 10, 15 }, duel = { 0, 1, 3, 5 } }
+      local needs = { kill = true, duel = true, bg = true, emote = true, flag = true, visit = true }
       for _, g in ipairs(Doomsday.GOALS) do
         if sizes[g.slot] then
           count[g.slot] = count[g.slot] + 1
           assert.is_true(needs[g.needs], g.id)
-          local s = sizes[g.slot]
-          assert.is_true(g.points == s[1] or g.points == s[2] or g.points == s[3], g.id)
+          local fits = false
+          for _, size in ipairs(sizes[g.slot]) do fits = fits or g.points == size end
+          assert.is_true(fits, g.id)
         end
       end
-      assert.are.same({ skirmish = 57, bounty = 43 }, count)
+      assert.are.same({ skirmish = 85, bounty = 43, duel = 8 }, count)
+      assert.are.equal(0, Doomsday.goal("p.duelFirst").points)
       assert.are.same({ "taunts", "emote" }, { Doomsday.goal("p.flex").category, Doomsday.goal("p.flex").needs })
     end)
 
@@ -305,7 +312,7 @@ describe("Doomsday (CF-55)", function()
     return count
   end
 
-  for _, version in ipairs({ 1, 2, 4, 5 }) do
+  for _, version in ipairs({ 1, 2, 4, 5, 6 }) do
     it("keeps the draw's rules over 400 days in pool version " .. version .. ": 3 categories, nothing twice in a row",
       function()
         local before = Doomsday.draw(cases.epoch, version)
@@ -492,8 +499,8 @@ describe("Doomsday (CF-55)", function()
       assert.is_true(#g.id <= 24, g.id)
       for _, f in ipairs(g.fallback or {}) do assert.are.equal(g.slot, Doomsday.goal(f).slot, g.id) end
     end
-    assert.are.equal(23, #Doomsday.combos("Horde"))
-    assert.are.equal(23, #Doomsday.combos("Alliance"))
+    assert.are.equal(28, #Doomsday.combos("Horde")) -- CF-118: pool version 6
+    assert.are.equal(28, #Doomsday.combos("Alliance"))
   end)
 
   -- CF-116: pool version 5 hunts Forever's 23 combinations per faction; versions 1 to 4 keep Vanilla's 20.
@@ -623,6 +630,122 @@ describe("Doomsday (CF-55)", function()
       Doomsday.preyChatDue(said, "Player-1-B", Doomsday.PREY_CHAT_EVERY)
       assert.is_nil(said["Player-1-A"])
       assert.are.equal(Doomsday.PREY_CHAT_EVERY, said["Player-1-B"])
+    end)
+  end)
+  -- CF-118: pool version 6, the addon's fallback draw (the site's schedule decides when it has one).
+  describe("pool version 6 (CF-118)", function()
+    local function key(h) return h.race .. ":" .. h.class end
+
+    it("tags every daily PvE mission with one of the 6 themes", function()
+      local themes, n = set(Doomsday.THEMES), 0
+      for _, g in ipairs(Doomsday.GOALS) do
+        if g.slot == "daily" then
+          assert.is_true(themes[g.theme] == true, g.id)
+          n = n + 1
+        else
+          assert.is_nil(g.theme, g.id)
+        end
+      end
+      assert.are.equal(118, n)
+      local counts = {}
+      for _, id in ipairs(Doomsday.pool("daily", 6)) do
+        local t = Doomsday.goal(id).theme
+        counts[t] = (counts[t] or 0) + 1
+      end
+      assert.are.same({ questing = 18, loot = 18, social = 17, professions = 19, exploration = 14, combat = 22 },
+        counts)
+      for _, t in ipairs(Doomsday.THEMES) do assert.is_string(Doomsday.THEME_LABELS[t], t) end
+    end)
+
+    it("draws the 3 PvE dailies from 3 themes, the Duel slot in turn and no check mission", function()
+      local duels = Doomsday.pool("duel", 6)
+      assert.are.same({ "p.duelFirst", "p.duelWin", "p.duelUp", "p.duel3", "p.spar", "p.styles3", "p.cityDuel",
+                        "p.bothWays" }, duels)
+      local skirmish = set(Doomsday.pool("skirmish", 6))
+      for n = cases.epoch, cases.epoch + 400 do
+        local draw = Doomsday.draw(n, 6)
+        local themes = {}
+        for _, id in ipairs(draw.dailies) do themes[Doomsday.goal(id).theme] = true end
+        local count = 0
+        for _ in pairs(themes) do count = count + 1 end
+        assert.are.equal(3, count, "day " .. n)
+        assert.are.equal(duels[n % #duels + 1], draw.duel, "day " .. n)
+        assert.is_true(skirmish[draw.skirmish] == true, draw.skirmish)
+        assert.is_nil(Doomsday.goal(draw.skirmish).check, draw.skirmish)
+      end
+    end)
+
+    it("leaves the check missions Off: in the catalogue, never in the pool unless asked for", function()
+      local check = {}
+      for _, g in ipairs(Doomsday.GOALS) do
+        if g.check then check[#check + 1] = g.id end
+      end
+      assert.are.same({ "p.avenge", "p.closeCall", "p.guardDown", "p.townRaid", "p.assist", "p.guardian",
+                        "p.selfDefense", "p.narrowEscape", "p.outnumbered" }, check)
+      local off, with = set(Doomsday.pool("skirmish", 6)), set(Doomsday.pool("skirmish", 6, true))
+      for _, id in ipairs(check) do
+        assert.is_nil(off[id], id)
+        assert.is_true(with[id], id)
+      end
+    end)
+
+    it("hunts the 28 race and class ids of each faction, the Skyborne included, never twice within 7 days", function()
+      for _, faction in ipairs({ "Horde", "Alliance" }) do
+        local allowed, races = set({}), {}
+        for _, c in ipairs(Doomsday.combos(faction, 6)) do
+          allowed[key(c)] = true
+          races[c.race] = true
+          assert.are.equal(Doomsday.HUNTER_OF[Doomsday.RACE_FACTION[c.race]], faction, key(c))
+        end
+        assert.is_true(races[faction == "Horde" and 95 or 96])
+        local recent = {}
+        for n = cases.epoch, cases.epoch + 400 do
+          local h = Doomsday.hunt(n, faction, 6)
+          assert.is_number(h.race)
+          assert.is_true(allowed[key(h)], faction .. " " .. n)
+          for i = math.max(1, #recent - 5), #recent do assert.are_not.equal(recent[i], key(h), faction .. " " .. n) end
+          recent[#recent + 1] = key(h)
+        end
+      end
+    end)
+
+    it("keeps pool versions 1 to 5 as they were", function()
+      for version = 1, 5 do assert.is_nil(Doomsday.draw(cases.epoch + 3, version).duel, version) end
+      assert.are.same({ "p.frontLine", "p.loneWolf", "p.untouchable", "p.revenge", "p.flagHour", "p.flagUp" },
+        Doomsday.pool("skirmish", 5))
+      assert.are.same({}, Doomsday.pool("duel", 5))
+      assert.are.equal(108, #Doomsday.pool("daily", 5))
+      assert.are.same({ race = "Dwarf", class = "WARRIOR" }, Doomsday.hunt(cases.epoch, "Horde", 4))
+    end)
+
+    it("matches a kill with a Hunt target by ids, or by tokens when the kill has no ids", function()
+      local target = { race = 4, class = 11 }
+      assert.is_true(Doomsday.huntMatches(target, { raceId = 4, classId = 11 }))
+      assert.is_true(Doomsday.huntMatches(target, { race = "NightElf", class = "DRUID" }))
+      assert.is_false(Doomsday.huntMatches(target, { raceId = 4, classId = 5, race = "NightElf", class = "DRUID" }))
+      assert.is_true(Doomsday.huntMatches(target, { race = "NightElf", class = "PRIEST" }, "race"))
+      assert.is_true(Doomsday.huntMatches(target, { raceId = 1, classId = 11 }, "class"))
+      -- The Skyborne match by id only (their token isn't known yet).
+      assert.is_true(Doomsday.huntMatches({ race = 95, class = 3 }, { raceId = 95, classId = 3, race = "Unknown" }))
+      assert.is_false(Doomsday.huntMatches({ race = 95, class = 3 }, { race = "Unknown", class = "HUNTER" }))
+      -- Pool versions 4 and 5: tokens, as before.
+      assert.is_true(Doomsday.huntMatches({ race = "Dwarf", class = "SHAMAN" }, { race = "Dwarf", class = "SHAMAN" }))
+      local facts = { hunts = { target },
+                      scored = { { counted = true, track = "pvp", kill = { raceId = 4, classId = 11 } } } }
+      assert.are.same({ 1, 1, true }, { Doomsday.progress("hunt", facts) })
+    end)
+
+    it("puts the Duel slot's mission after the swaps and scores it on the PvP track", function()
+      local goals = Doomsday.goalsForDay(20768, { friends = 0 }, 6)
+      assert.are.equal("p.duelWin", goals.duel) -- p.duelFirst needs a friend: its fallback
+      assert.are.equal("p.duelFirst", goals.swapped["p.duelWin"])
+      assert.are.same({ "pvp", 5 }, { Doomsday.goalPoints("p.styles3", 6) })
+      assert.are.same({ "pvp", 0 }, { Doomsday.goalPoints("p.duelFirst", 6) })
+    end)
+
+    it("reads the schedule's rare targets", function()
+      assert.are.same({ ["95:11"] = true }, Doomsday.rareTargets({ v = 1, rare = { "95:11" } }))
+      assert.are.same({}, Doomsday.rareTargets(nil))
     end)
   end)
 end)
