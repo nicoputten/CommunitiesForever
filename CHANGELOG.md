@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.8.0 (2026-11-10)
 - **Fixed:** a PvP kill now finds its victim when they die a moment after the kill counts (often the case): the
   addon looks again a second later, and as a last resort takes the enemy you saw at very low health just before. The
   Hunt, Revenge, Punch up/down and Skull goals complete again.

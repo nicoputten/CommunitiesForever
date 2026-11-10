@@ -8,7 +8,7 @@ local wowapi = require("mocks.wowapi")
 -- SavedVariables file as that version left it. Add a label here after capturing a new release.
 local VERSIONS = {
   "v0.3", "v0.4", "v0.5", "v0.6", "v0.7", "v0.8", "v0.9", "v1.1", "v1.2", "v1.2.1", "v1.3.0", "v1.3.1", "v1.4.0",
-  "v1.5.0", "v1.6.0", "v1.7.0",
+  "v1.5.0", "v1.6.0", "v1.7.0", "v1.8.0",
 }
 local PEOPLE = dofile("tests/fixtures/people.lua")
 
