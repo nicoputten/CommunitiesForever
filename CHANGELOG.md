@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.9.0 (2026-11-10)
 - **New:** Doomsday pool version 6, with the website. Every day: 3 PvE goals from 3 different themes (Questing, Loot &
   gold, Social, Professions, Exploration, Combat & character), the Hunt, a Skirmish and a Duel mission. 50 new PvP
   missions ("3 HKs", "Giant", "Tourist", "Patrol", "Midnight raid", ...); the ones that need a test on Forever first
