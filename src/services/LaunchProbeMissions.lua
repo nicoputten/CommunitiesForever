@@ -7,6 +7,7 @@ V120 to V123. The answered ones are in docs/API-FINDINGS.md "Forever launch prob
 posting an auction answered (AUCTION_HOUSE_AUCTION_CREATED), V101 checks only buying. ]]
 local _, ns = ...
 
+local Probe = ns.Probe
 local LaunchProbe = ns.LaunchProbe
 local u = LaunchProbe.util
 local Val, Vals, readable, str, get = u.Val, u.Vals, u.readable, u.str, u.get
@@ -14,16 +15,47 @@ local matches, result, note, info, passed, now = u.matches, u.result, u.note, u.
 local on = LaunchProbe.on
 
 -- ===== V108: an emote on a target (the whisper part is answered) =====
-LaunchProbe.hook("DoEmote", function(token)
+-- CF-117, bug 14: a typed /wave never reached the DoEmote hook on Forever. Also hooked: C_ChatInfo.PerformEmote (only
+-- when it exists), and CHAT_MSG_TEXT_EMOTE with your own GUID as the sender (its 12th argument) shows that an emote
+-- happened even when no hook fired. No chat text and no names are kept (Probe.emote).
+local EMOTE_APIS = { "DoEmote", "C_ChatInfo.PerformEmote" }
+local lastEmote -- { via, at }: the last hooked emote
+
+-- Your target as Probe.emote's target ("enemy", "friendly", "unknown", "none") and whether its GUID is readable.
+local function EmoteTarget()
+  if not get(UnitIsPlayer, "target") then return "none", false end
+  local guid = str(get(UnitGUID, "target")) and true or false
+  local theirs, mine = get(UnitFactionGroup, "target"), get(UnitFactionGroup, "player")
+  if not (str(theirs) and str(mine)) then return "unknown", guid end
+  return theirs ~= mine and "enemy" or "friendly", guid
+end
+
+local function Emote(via, token)
+  lastEmote = { via = via, at = now() }
   if passed("V108") then return end
-  local theirs = get(UnitFactionGroup, "target")
-  local enemy = get(UnitIsPlayer, "target") and theirs ~= nil and theirs ~= get(UnitFactionGroup, "player")
-  local seen = "emote " .. Val(token) .. " on " .. (enemy and "an enemy-faction player" or "no enemy player")
-  if str(token) and enemy then
-    result("V108", "pass", seen)
-  else
-    info("V108", seen .. "; an emote at an enemy-faction player still to see")
+  local target, guid = EmoteTarget()
+  local status, detail = Probe.emote(via, str(token) and token or nil, target, guid)
+  if status == "pass" then result("V108", status, detail) else info("V108", detail) end
+end
+
+for _, api in ipairs(EMOTE_APIS) do
+  LaunchProbe.hook(api, function(token) Emote(api, token) end)
+end
+
+on("CHAT_MSG_TEXT_EMOTE", function(...)
+  local sender, mine = select(12, ...), get(UnitGUID, "player")
+  if not (str(sender) and str(mine) and sender == mine) then return end
+  if lastEmote and now() - lastEmote.at <= Probe.EMOTE_PAIR then
+    note("V108", "chat line after " .. lastEmote.via)
+    return
   end
+  local target, guid = EmoteTarget()
+  local apis = {}
+  for _, api in ipairs(EMOTE_APIS) do
+    if LaunchProbe.hookable(api) then apis[api] = true end
+  end
+  local _, detail = Probe.emote("chat", nil, target, guid, apis)
+  info("V108", detail)
 end)
 
 -- ===== V96, V101: home inn, buying at the auction house (posting and V114, summons, answered: CF-113, CF-109) =====

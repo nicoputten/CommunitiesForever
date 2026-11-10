@@ -95,10 +95,12 @@ function PvpInfo.enemy(unit)
   return name, fields
 end
 
--- CF-110: an enemy player at a unit token for the victim at a kill (core Pvp.seeAlive, Pvp.pickVictims):
--- { guid, name, enemy = true, dead, lvl, class, race, rank, source }, or nil when no enemy player is there.
--- UnitIsDead is unverified on Forever (VERIFY.md V141): missing, it gives dead nil and no victim is picked. Every
--- value through Safe.call, so a secret one is nil before anything compares it.
+-- CF-110: an enemy player at a unit token for the victim at a kill (core Pvp.seeAlive, Pvp.killCandidates):
+-- { guid, name, enemy = true, dead, lvl, class, race, rank, health, source }, or nil when no enemy player is there.
+-- UnitIsDead exists on Forever (bug 13's probe line); missing, it gives dead nil and no victim is picked. CF-117:
+-- health is UnitHealth / UnitHealthMax (0 to 1; unverified for enemy players on Forever, VERIFY.md V143; likely
+-- secret under the Midnight rules, then nil). Every value through Safe.call, so a secret one is nil before anything
+-- compares it.
 function PvpInfo.look(unit, source)
   local name, fields = PvpInfo.enemy(unit)
   if not name then return nil end
@@ -106,8 +108,10 @@ function PvpInfo.look(unit, source)
   if type(guid) ~= "string" or guid == "" then return nil end
   local dead = call(UnitIsDead, unit)
   if dead ~= nil then dead = dead == true end
+  local health, most = call(UnitHealth, unit), call(UnitHealthMax, unit)
+  health = type(health) == "number" and type(most) == "number" and most > 0 and health / most or nil
   return { guid = guid, name = name, enemy = true, dead = dead, lvl = fields.lvl, class = fields.class,
-           race = fields.race, rank = fields.rank, source = source }
+           race = fields.race, rank = fields.rank, health = health, source = source }
 end
 
 PvpInfo.NAMEPLATES = 40

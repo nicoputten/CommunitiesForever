@@ -115,19 +115,54 @@ end
 
 -- ===== The Hunt: the victim picked at a kill =====
 
--- CF-110: the Hunt's result for a kill counted by the lifetime counter, its victim picked from the enemy players at
--- the kill (core Pvp.pickVictims' entry, or nil): "pass" with race and class, "info" when the victim lacks one or
--- none fit.
-function Probe.huntPick(pick)
+-- CF-110: the Hunt's result for a kill counted by the lifetime counter, its victim picked from the enemy players
+-- around the kill (core Pvp.resolveVictims' first entry, or nil): "pass" with race and class, "info" when the victim
+-- lacks one or none fit. CF-117: it says which path found the victim (HUNT_PATHS: dead at once, dead after the
+-- delay, low health) and how many candidates there were; never the victim's name.
+Probe.HUNT_PATHS = { dead = "dead at once", later = "dead after the delay", health = "low health" }
+
+function Probe.huntPick(pick, candidates)
+  local seen = type(candidates) == "number" and (", " .. candidates .. " candidate" .. (candidates == 1 and "" or "s"))
+    or ""
   if type(pick) ~= "table" then
-    return "info", "kill counted, no enemy player as target, mouseover or nameplate dead and seen alive just before"
+    return "info", "kill counted, no victim: no enemy player as target, mouseover or nameplate dead or at low health"
+      .. seen
   end
+  local path = Probe.HUNT_PATHS[pick.path]
+  local how = "via " .. tostring(pick.source) .. (path and (", " .. path) or "")
   if type(pick.race) == "string" and type(pick.class) == "string" then
-    return "pass", string.format("%s: %s %s via %s at the kill", tostring(pick.name or "?"), pick.race, pick.class,
-      tostring(pick.source))
+    return "pass", string.format("%s %s %s%s", pick.race, pick.class, how, seen)
   end
-  return "info", "victim " .. tostring(pick.name or "?") .. " via " .. tostring(pick.source)
-    .. " at the kill, without race and class"
+  return "info", string.format("victim %s, without race and class%s", how, seen)
+end
+
+-- ===== V108: an emote at a target (CF-117) =====
+-- Bug 14: a typed /wave never called the global DoEmote on Forever (build 70862). The probe also hooks
+-- C_ChatInfo.PerformEmote (when it exists) and watches CHAT_MSG_TEXT_EMOTE with your own GUID as the sender.
+
+Probe.EMOTE_PAIR = 3 -- seconds: a chat line this soon after a hooked emote is that emote's line
+Probe.EMOTE_TARGETS = { enemy = "an enemy-faction player", friendly = "a friendly player", unknown =
+  "a player of unknown faction", none = "no player" }
+
+--[[ V108's result for one of your emotes: status, detail. via: the hooked API ("DoEmote", "C_ChatInfo.PerformEmote")
+or "chat" (CHAT_MSG_TEXT_EMOTE from you, no hooked emote just before); token: the hook's emote token (nil from chat);
+target: "enemy", "friendly", "unknown" (faction unreadable) or "none" (no player targeted); guid: the target's
+UnitGUID was readable; apis: { [api name] = true when hookable }, listed for a chat line. "pass" only for a token at
+an enemy-faction player. Never a name or chat text. ]]
+function Probe.emote(via, token, target, guid, apis)
+  local at = (Probe.EMOTE_TARGETS[target] or Probe.EMOTE_TARGETS.none)
+    .. (target ~= "none" and target ~= nil and (guid and ", GUID readable" or ", GUID missing") or "")
+  if via ~= "chat" then
+    local seen = string.format("emote %s via %s on %s", type(token) == "string" and token or "missing",
+      tostring(via), at)
+    if type(token) == "string" and token ~= "" and target == "enemy" then return "pass", seen end
+    return "info", seen .. "; an emote at an enemy-faction player still to see"
+  end
+  local names = {}
+  for name in pairs(type(apis) == "table" and apis or {}) do names[#names + 1] = name end
+  table.sort(names)
+  return "info", string.format("own emote in chat on %s, no emote hook before it (hookable: %s)", at,
+    #names > 0 and table.concat(names, ", ") or "none")
 end
 
 -- ===== V142: races beyond Vanilla's eight (CF-116) =====

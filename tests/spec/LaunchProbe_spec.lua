@@ -96,17 +96,28 @@ describe("the hidden launch probe", function()
     _G.UnitIsDead = function() return dead end
     state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     state.pvp = { hk = 10 }
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED") -- the counter's base
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    state.serverTime, dead = state.serverTime + 2, true
+    state.serverTime = state.serverTime + 2
+    state.pvp.hk = 11
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    assert.is_nil(results().Hunt) -- CF-117: picked at the re-check, not at the rise
+    dead = true
+    wowapi.runTimers(state)
     assert.are.equal("pass", results().Hunt.status)
-    assert.are.equal("Grim Tusk: Orc WARRIOR via target at the kill", results().Hunt.detail)
+    assert.are.equal("Orc WARRIOR via target, dead after the delay, 1 candidate", results().Hunt.detail)
+    assert.are.equal("UnitIsDead exists, target dead true, target health missing", results().Hunt.log[1])
   end)
 
   it("gives the Hunt an info line at a counted kill without a fitting victim (CF-110)", function()
     load()
+    state.pvp = { hk = 10 }
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED") -- the counter's base
+    state.pvp.hk = 11
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    wowapi.runTimers(state)
     assert.are.equal("info", results().Hunt.status)
+    assert.truthy(results().Hunt.detail:find("no victim", 1, true))
   end)
 
   it("looks at the same player once a minute (V142)", function()
@@ -223,21 +234,82 @@ describe("the hidden launch probe", function()
     assert.are.equal(2, #results().V123.log) -- friendly, hostile (none at login: GetZonePVPInfo was missing)
   end)
 
-  it("passes V108 on an emote at an enemy-faction player alone (the whisper part is answered)", function()
-    _G.DoEmote = function() end
-    _G.hooksecurefunc = function(name, fn)
-      local original = _G[name]
-      _G[name] = function(...)
-        original(...)
-        fn(...)
+  describe("V108: an emote at a target (CF-117)", function()
+    -- hooksecurefunc(name, fn) or hooksecurefunc(table, key, fn), as the game's.
+    local function hooks()
+      _G.hooksecurefunc = function(owner, key, fn)
+        if type(owner) ~= "table" then owner, key, fn = _G, owner, key end
+        local original = owner[key]
+        owner[key] = function(...)
+          original(...)
+          fn(...)
+        end
       end
     end
-    load()
-    _G.UnitIsPlayer = function() return true end
-    _G.UnitFactionGroup = function(unit) return unit == "player" and "Horde" or "Alliance" end
-    _G.DoEmote("FLEX", "target")
-    assert.are.equal("pass", results().V108.status)
-    assert.are.equal("emote FLEX on an enemy-faction player", results().V108.detail)
+
+    local function enemyFaction()
+      _G.UnitIsPlayer = function() return true end
+      _G.UnitFactionGroup = function(unit) return unit == "player" and "Horde" or "Alliance" end
+      state.unitGuids = { target = "Player-4619-0A1B2C3D" }
+    end
+
+    -- CHAT_MSG_TEXT_EMOTE's arguments: text, sender name, ..., the sender's GUID 12th.
+    local function chatEmote(guid)
+      wowapi.fireEvent(state, "CHAT_MSG_TEXT_EMOTE", "You wave at Grim Tusk.", "Ves Doombringer", "", "", "", "", 0, 0,
+        "", 0, 1, guid)
+    end
+
+    it("passes on a DoEmote at an enemy-faction player (the whisper part is answered)", function()
+      _G.DoEmote = function() end
+      hooks()
+      load()
+      enemyFaction()
+      _G.DoEmote("FLEX", "target")
+      assert.are.equal("pass", results().V108.status)
+      assert.are.equal("emote FLEX via DoEmote on an enemy-faction player, GUID readable", results().V108.detail)
+    end)
+
+    it("hooks C_ChatInfo.PerformEmote when it exists (bug 14: a typed /wave never reached DoEmote)", function()
+      hooks()
+      local performed
+      state, ns, addon = helpers.client({ setup = function(s)
+        s.serverTime = 1794000000
+        _G.C_ChatInfo.PerformEmote = function(token) performed = token end
+      end })
+      enemyFaction()
+      _G.C_ChatInfo.PerformEmote("WAVE", "Grim Tusk")
+      assert.are.equal("WAVE", performed)
+      assert.are.equal("pass", results().V108.status)
+      assert.are.equal("emote WAVE via C_ChatInfo.PerformEmote on an enemy-faction player, GUID readable",
+        results().V108.detail)
+      chatEmote(state.player.guid)
+      assert.are.same({ "chat line after C_ChatInfo.PerformEmote" }, results().V108.log)
+    end)
+
+    it("notes your own emote seen only in chat, without its text or a name", function()
+      hooks()
+      load()
+      enemyFaction()
+      chatEmote("Player-4619-0FFFFFFF") -- someone else's emote: nothing
+      assert.is_nil(results().V108)
+      chatEmote(state.player.guid)
+      local r = results().V108
+      assert.are.equal("info", r.status)
+      assert.are.equal("own emote in chat on an enemy-faction player, GUID readable, no emote hook before it "
+        .. "(hookable: none)", r.detail)
+      assert.is_nil(r.detail:find("Grim", 1, true))
+      assert.is_nil(r.detail:find("wave", 1, true))
+    end)
+
+    it("ignores a secret sender GUID without an error", function()
+      load()
+      enemyFaction()
+      _G.issecretvalue = function(v) return v == state.player.guid end
+      finally(function() _G.issecretvalue = nil end)
+      chatEmote(state.player.guid)
+      assert.is_nil(results().V108)
+      assert.is_nil(results().error)
+    end)
   end)
 
   -- CF-98: the recipe checks (services/LaunchProbeRecipes.lua); since CF-105 only V60b.

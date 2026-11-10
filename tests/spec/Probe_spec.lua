@@ -166,13 +166,44 @@ describe("Probe", function()
   end)
 
   describe("the Hunt", function()
-    it("reports the victim picked at a counted kill (CF-110)", function()
-      assert.are.same({ "pass", "Grim Tusk: Orc WARRIOR via target at the kill" },
-        { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target" }) })
-      assert.are.same({ "info", "victim Grim Tusk via mouseover at the kill, without race and class" },
-        { Probe.huntPick({ name = "Grim Tusk", class = "WARRIOR", source = "mouseover" }) })
-      assert.are.equal("info", (Probe.huntPick(nil)))
+    it("reports the victim picked at a counted kill and the path that found it, without a name (CF-110, CF-117)",
+      function()
+      assert.are.same({ "pass", "Orc WARRIOR via target, dead after the delay, 2 candidates" },
+        { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target", path = "later" },
+          2) })
+      assert.are.same({ "pass", "Orc WARRIOR via target, dead at once" },
+        { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target", path = "dead" }) })
+      assert.are.same({ "info", "victim via mouseover, low health, without race and class, 1 candidate" },
+        { Probe.huntPick({ name = "Grim Tusk", class = "WARRIOR", source = "mouseover", path = "health" }, 1) })
+      assert.are.same({ "info", "kill counted, no victim: no enemy player as target, mouseover or nameplate dead or "
+        .. "at low health, 0 candidates" }, { Probe.huntPick(nil, 0) })
       assert.are.equal("pass", (Probe.huntPick({ race = "Orc", class = "MAGE", source = "nameplate" })))
+      for _, pick in ipairs({ { name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target" },
+                              { name = "Grim Tusk", source = "target", path = "dead" } }) do
+        assert.is_nil(select(2, Probe.huntPick(pick, 1)):find("Grim", 1, true))
+      end
+    end)
+  end)
+
+  -- CF-117: V108, bug 14 (a typed /wave never reached the DoEmote hook).
+  describe("an emote at a target (V108)", function()
+    it("passes only for a hooked token at an enemy-faction player", function()
+      assert.are.same({ "pass", "emote WAVE via C_ChatInfo.PerformEmote on an enemy-faction player, GUID readable" },
+        { Probe.emote("C_ChatInfo.PerformEmote", "WAVE", "enemy", true) })
+      assert.are.same({ "info", "emote BOO via DoEmote on a friendly player, GUID missing; an emote at an "
+        .. "enemy-faction player still to see" }, { Probe.emote("DoEmote", "BOO", "friendly", false) })
+      assert.are.equal("info", (Probe.emote("DoEmote", nil, "enemy", true)))
+      assert.are.equal("info", (Probe.emote("DoEmote", "FLEX", "unknown", true)))
+      assert.are.same({ "info", "emote FLEX via DoEmote on no player; an emote at an enemy-faction player still to "
+        .. "see" }, { Probe.emote("DoEmote", "FLEX", "none") })
+    end)
+
+    it("describes an emote seen only in chat with the hookable emote APIs", function()
+      assert.are.same({ "info", "own emote in chat on an enemy-faction player, GUID readable, no emote hook before it "
+        .. "(hookable: C_ChatInfo.PerformEmote, DoEmote)" },
+        { Probe.emote("chat", nil, "enemy", true, { DoEmote = true, ["C_ChatInfo.PerformEmote"] = true }) })
+      assert.are.equal("own emote in chat on no player, no emote hook before it (hookable: none)",
+        select(2, Probe.emote("chat", nil, "none")))
     end)
   end)
 
