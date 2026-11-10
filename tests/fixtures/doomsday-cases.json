@@ -1,7 +1,7 @@
 {
- "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; `huntSince` is the pool version the Hunt is drawn from (CF-104); the `draws.hunts` cases without `pool` pin the Hunt's rule as if it were drawn from pool version 1; a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
+ "about": "Golden cases for docs/DOOMSDAY.md, shared by the addon (tests/spec/Doomsday_spec.lua) and the site. Never edit a case to make code pass: a rule change updates DOOMSDAY.md, this file and both copies in the same release. A case with `pool` is of that pool version; `huntSince` is the pool version the Hunt is drawn from (CF-104); the `draws.hunts` cases without `pool` pin the Hunt's rule as if it were drawn from pool version 1 (Vanilla's 20 combinations; pool version 5 draws from Forever's 23, CF-116); a case without it is of pool version 1. Cases marked addonOnly are the addon's (goal progress); the site may skip them.",
  "version": 1,
- "poolVersion": 4,
+ "poolVersion": 5,
  "huntSince": 4,
  "epoch": 20761,
  "defaultReset": 68400,
@@ -4708,6 +4708,414 @@
      ],
      "skirmish": "p.flagUp"
     }
+   },
+   {
+    "pool": 5,
+    "day": 20761,
+    "expect": {
+     "dailies": [
+      "d.eatOwn",
+      "d.bank",
+      "d.switchUp"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20762,
+    "expect": {
+     "dailies": [
+      "d.discover1",
+      "d.vendorSale",
+      "d.wellFed"
+     ],
+     "skirmish": "p.flagHour"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20763,
+    "expect": {
+     "dailies": [
+      "d.kills30",
+      "d.scrolls10",
+      "d.bandageFriend"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20764,
+    "expect": {
+     "dailies": [
+      "d.feedFriend",
+      "d.dungeon",
+      "d.roam4"
+     ],
+     "skirmish": "p.flagUp"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20765,
+    "expect": {
+     "dailies": [
+      "d.dustOff",
+      "d.trade",
+      "d.level"
+     ],
+     "skirmish": "p.flagHour"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20766,
+    "expect": {
+     "dailies": [
+      "d.roam4",
+      "d.gather10",
+      "d.dingDungeon"
+     ],
+     "skirmish": "p.flagUp"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20767,
+    "expect": {
+     "dailies": [
+      "d.dungeons2",
+      "d.aidSkill5",
+      "d.bank"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20768,
+    "expect": {
+     "dailies": [
+      "d.fishZones",
+      "d.potion",
+      "d.cleanLevel"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20769,
+    "expect": {
+     "dailies": [
+      "d.wellFed",
+      "d.bandage10",
+      "d.questTogether"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20770,
+    "expect": {
+     "dailies": [
+      "d.level",
+      "d.groupQuest",
+      "d.dustOff"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20771,
+    "expect": {
+     "dailies": [
+      "d.secondary",
+      "d.cleanRun",
+      "d.session1h"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20772,
+    "expect": {
+     "dailies": [
+      "d.duoHunt",
+      "d.dungeons2",
+      "d.skill5"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20773,
+    "expect": {
+     "dailies": [
+      "d.bank",
+      "d.roam4",
+      "d.ride"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20774,
+    "expect": {
+     "dailies": [
+      "d.altLevel",
+      "d.switchUp",
+      "d.dungeons2"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20775,
+    "expect": {
+     "dailies": [
+      "d.nostalgia",
+      "d.trade",
+      "d.dungeonQuest"
+     ],
+     "skirmish": "p.flagHour"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20776,
+    "expect": {
+     "dailies": [
+      "d.rare",
+      "d.questBurst",
+      "d.scrolls10"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20777,
+    "expect": {
+     "dailies": [
+      "d.fishNight",
+      "d.nostalgia",
+      "d.chars2"
+     ],
+     "skirmish": "p.flagUp"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20778,
+    "expect": {
+     "dailies": [
+      "d.groupFriend",
+      "d.mailFriend",
+      "d.fish20"
+     ],
+     "skirmish": "p.flagHour"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20779,
+    "expect": {
+     "dailies": [
+      "d.nostalgia",
+      "d.quests20",
+      "d.dungeons2"
+     ],
+     "skirmish": "p.flagUp"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20780,
+    "expect": {
+     "dailies": [
+      "d.craftGreen",
+      "d.profit",
+      "d.questBurst"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20781,
+    "expect": {
+     "dailies": [
+      "d.bandageUp",
+      "d.groupPic",
+      "d.nightOwl"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20782,
+    "expect": {
+     "dailies": [
+      "d.quests10",
+      "d.chatHello",
+      "d.swim"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20783,
+    "expect": {
+     "dailies": [
+      "d.dingFriend",
+      "d.streak20",
+      "d.fish50"
+     ],
+     "skirmish": "p.loneWolf"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20784,
+    "expect": {
+     "dailies": [
+      "d.craftGreen",
+      "d.groupFriend",
+      "d.dungeon"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20785,
+    "expect": {
+     "dailies": [
+      "d.equipNew",
+      "d.ride",
+      "d.secondary"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20786,
+    "expect": {
+     "dailies": [
+      "d.quests20",
+      "d.groupPic",
+      "d.chars2"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20787,
+    "expect": {
+     "dailies": [
+      "d.lowbie",
+      "d.craft5",
+      "d.fishZones"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20788,
+    "expect": {
+     "dailies": [
+      "d.ride",
+      "d.dungeonFriend",
+      "d.zone5"
+     ],
+     "skirmish": "p.flagHour"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20789,
+    "expect": {
+     "dailies": [
+      "d.vendorSale",
+      "d.cookKinds3",
+      "d.questBurst"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20790,
+    "expect": {
+     "dailies": [
+      "d.aidSkill5",
+      "d.coins10",
+      "d.accept5"
+     ],
+     "skirmish": "p.flagUp"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20800,
+    "expect": {
+     "dailies": [
+      "d.cleanRun",
+      "d.profit",
+      "d.fishFriend"
+     ],
+     "skirmish": "p.revenge"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20821,
+    "expect": {
+     "dailies": [
+      "d.flight",
+      "d.discover1",
+      "d.nightOwl"
+     ],
+     "skirmish": "p.frontLine"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20900,
+    "expect": {
+     "dailies": [
+      "d.questTogether",
+      "d.dungeon",
+      "d.deathless"
+     ],
+     "skirmish": "p.untouchable"
+    }
+   },
+   {
+    "pool": 5,
+    "day": 21000,
+    "expect": {
+     "dailies": [
+      "d.switchUp",
+      "d.craft5",
+      "d.profit"
+     ],
+     "skirmish": "p.flagUp"
+    }
    }
   ],
   "weeks": [
@@ -5243,6 +5651,162 @@
    },
    {
     "pool": 4,
+    "week": 3020,
+    "expect": {
+     "weeklies": [
+      "w.mentor3",
+      "w.fish100",
+      "w.weapon25"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2966,
+    "expect": {
+     "weeklies": [
+      "w.recipes3",
+      "w.levelDays3",
+      "w.dungeons5"
+     ],
+     "bounty": "b.flagged3h"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2967,
+    "expect": {
+     "weeklies": [
+      "w.trades3",
+      "w.flightPaths3",
+      "w.bosses15"
+     ],
+     "bounty": "b.spree10"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2968,
+    "expect": {
+     "weeklies": [
+      "w.dayAndNight",
+      "w.cook30",
+      "w.zones5"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2969,
+    "expect": {
+     "weeklies": [
+      "w.days3",
+      "w.skill25",
+      "w.newZones3"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2970,
+    "expect": {
+     "weeklies": [
+      "w.potions5",
+      "w.questUp5",
+      "w.chatDays5"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2971,
+    "expect": {
+     "weeklies": [
+      "w.elites10",
+      "w.dungeonsDiff3",
+      "w.fish100"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2972,
+    "expect": {
+     "weeklies": [
+      "w.fullClear",
+      "w.zones5",
+      "w.levels3"
+     ],
+     "bounty": "b.flagged3h"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2973,
+    "expect": {
+     "weeklies": [
+      "w.skill25",
+      "w.altLevels2",
+      "w.mentor3"
+     ],
+     "bounty": "b.days5"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2974,
+    "expect": {
+     "weeklies": [
+      "w.dungeonsDiff3",
+      "w.weapon25",
+      "w.rare5"
+     ],
+     "bounty": "b.flagged3h"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2975,
+    "expect": {
+     "weeklies": [
+      "w.duoQuests5",
+      "w.bosses15",
+      "w.altLevels2"
+     ],
+     "bounty": "b.zone25"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 2980,
+    "expect": {
+     "weeklies": [
+      "w.trades3",
+      "w.kills200",
+      "w.questUp5"
+     ],
+     "bounty": "b.duels3"
+    }
+   },
+   {
+    "pool": 5,
+    "week": 3000,
+    "expect": {
+     "weeklies": [
+      "w.skill25",
+      "w.roam10",
+      "w.cook30"
+     ],
+     "bounty": "b.flagged3h"
+    }
+   },
+   {
+    "pool": 5,
     "week": 3020,
     "expect": {
      "weeklies": [
@@ -5831,6 +6395,482 @@
      },
      "Alliance": {
       "race": "Scourge",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20761,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20762,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20763,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "MAGE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20764,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20765,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "MAGE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20766,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "DRUID"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20767,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20768,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20769,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20770,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20771,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "MAGE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "MAGE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20772,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20773,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20774,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PRIEST"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20775,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20776,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20777,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20778,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20779,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20780,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20781,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20782,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PALADIN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20783,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20784,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "PRIEST"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "SHAMAN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20785,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Troll",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20786,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20787,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20788,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PALADIN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20789,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "HUNTER"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "ROGUE"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20790,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "PALADIN"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "HUNTER"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20800,
+    "expect": {
+     "Horde": {
+      "race": "Dwarf",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Scourge",
+      "class": "PALADIN"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20821,
+    "expect": {
+     "Horde": {
+      "race": "Human",
+      "class": "WARRIOR"
+     },
+     "Alliance": {
+      "race": "Orc",
+      "class": "WARRIOR"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 20900,
+    "expect": {
+     "Horde": {
+      "race": "NightElf",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Tauren",
+      "class": "DRUID"
+     }
+    }
+   },
+   {
+    "pool": 5,
+    "day": 21000,
+    "expect": {
+     "Horde": {
+      "race": "Gnome",
+      "class": "ROGUE"
+     },
+     "Alliance": {
+      "race": "Troll",
       "class": "PRIEST"
      }
     }
@@ -8459,6 +9499,52 @@
     "done": false
    },
    "note": "a Shaman isn't on the Alliance list",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.allClasses",
+   "facts": {
+    "factions": [
+     "Horde"
+    ],
+    "kills": [
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "WARRIOR"
+     },
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "MAGE"
+     },
+     {
+      "t": 1794333660,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "class": "SHAMAN"
+     }
+    ],
+    "pool": 5
+   },
+   "expect": {
+    "value": 3,
+    "target": 9,
+    "done": false
+   },
+   "note": "pool version 5 (CF-116): a Dwarf Shaman makes the Shaman an Alliance class; 9 classes",
    "schedule": {
     "offset": 3600,
     "reset": 68400

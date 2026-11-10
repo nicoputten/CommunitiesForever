@@ -51,6 +51,7 @@ stds.wow = {
     "ERR_ZONE_EXPLORED_XP", -- CF-56 (V84-V86)
     "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitCanAttack", "UnitClass", "IsInGroup", -- CF-55b (V74, V76)
     "UnitIsDead", -- CF-110 (V141)
+    "UnitHealth", "UnitHealthMax", -- CF-117 (V143)
     "LOOT_ITEM_SELF", "LOOT_ITEM_SELF_MULTIPLE", "LOOT_ITEM_PUSHED_SELF", "LOOT_ITEM_PUSHED_SELF_MULTIPLE", -- CF-53
     "LOOT_ITEM_CREATED_SELF", "LOOT_ITEM_CREATED_SELF_MULTIPLE", "C_Item", "GetMoney", -- CF-53 (V83)
     "C_TradeSkillUI", "C_SpellBook", "IsSpellKnown", "GetNumSkillLines", "GetSkillLineInfo", -- CF-53 (V82)

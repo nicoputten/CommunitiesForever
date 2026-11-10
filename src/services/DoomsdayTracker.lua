@@ -232,10 +232,10 @@ local function huntList(hunts)
   return list
 end
 
--- Progress of goal id on facts f, with the schedule and lists it needs.
-local function progressOf(f, schedule, community, hunts)
+-- Progress of goal id on facts f, with the schedule and lists it needs; pool: the day's or week's pool version.
+local function progressOf(f, schedule, community, hunts, pool)
   local pf = ns.Goals.progressFacts(f, { schedule = schedule, community = community, zone = f.zone,
-                                         hunts = huntList(hunts), factions = factions() })
+                                         hunts = huntList(hunts), factions = factions(), pool = pool })
   return function(id) return ns.Doomsday.progress(id, pf) end
 end
 
@@ -262,11 +262,13 @@ local function evaluate()
   local community = communityNames()
   local day, wk = dayEntry(today), weekEntry(week)
   local df, wf = factsFor(facts.days, today), factsFor(facts.weeks, week)
-  local newly = ns.Goals.mark(day, progressOf(df, schedule, community, df.hunts), GetServerTime())
+  local newly = ns.Goals.mark(day, progressOf(df, schedule, community, df.hunts, ns.Doomsday.entryPool(day)),
+                              GetServerTime())
   for _, id in ipairs(newly) do
     if id == "hunt" then ns.Goals.observe(wf, { kind = "hunt", day = today }) end
   end
-  local weekly = ns.Goals.mark(wk, progressOf(wf, schedule, community), GetServerTime())
+  local weekly = ns.Goals.mark(wk, progressOf(wf, schedule, community, nil, ns.Doomsday.entryPool(wk)),
+                               GetServerTime())
   updateStreak(today)
   ns.Goals.prune(facts.days, today, ns.Goals.KEEP_DAYS)
   ns.Goals.prune(facts.weeks, week, ns.Goals.KEEP_WEEKS)
@@ -543,7 +545,8 @@ function buildState(today, schedule)
   local day, wk = dayEntry(today), weekEntry(week)
   local community = communityNames()
   local df, wf = factsFor(facts.days, today), factsFor(facts.weeks, week)
-  local dayProgress, weekProgress = progressOf(df, schedule, community, df.hunts), progressOf(wf, schedule, community)
+  local dayProgress = progressOf(df, schedule, community, df.hunts, ns.Doomsday.entryPool(day))
+  local weekProgress = progressOf(wf, schedule, community, nil, ns.Doomsday.entryPool(wk))
   local function list(entry, fn)
     local result = {}
     for _, id in ipairs(entry.set) do

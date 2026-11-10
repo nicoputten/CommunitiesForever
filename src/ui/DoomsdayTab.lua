@@ -380,7 +380,8 @@ local function week(parent, state, width)
   local y = header(parent, "This week", 0, width, weekResets(state))
   for _, row in ipairs(rows) do
     y = y + goalRow(parent, row, y, width)
-    local needed = not row.done and ns.DoomsdayView.stillNeeded(row.id, state.weekScored, state.factions)
+    local needed = not row.done and ns.DoomsdayView.stillNeeded(row.id, state.weekScored, state.factions,
+                                                                 ns.Doomsday.entryPool(state.thisWeek))
     if needed then
       placeText(pools.small, parent, PAD + KIND_WIDTH, y - 6, width - 2 * PAD - KIND_WIDTH,
         "Still needed for the bounty: " .. needed, "muted")

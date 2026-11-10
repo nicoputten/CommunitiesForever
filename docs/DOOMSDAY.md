@@ -398,6 +398,12 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - Draw, swaps and points: as pool version 2. The flag time, the killers and the revenges are local facts of the day and week (`battle.flagged`, `flagRun`, `flagBest`, `killers`, `revenge`; `world.summons`, `world.auctions`); nothing new is sent.
 - An addon on pool version 3 keeps drawing and recording pool version 3 (`pool = 3` on its days and weeks) and scores a friend's version-4 day by its `pool` (every id is already in its catalogue); the release notes ask friends to update.
 
+**Pool version 5** (`Doomsday.POOL_VERSION = 5`, CF-116, Nico's decision of 2026-11-10):
+- **The Hunt draws Forever's combinations** (`Doomsday.FOREVER_COMBOS_SINCE = 5`): 23 per enemy faction instead of Vanilla's 20 (Lists, "From pool version 5"), from Forever's game files (build 1.60.1.70862), without the Skyborne races until their race tokens are known (launch probe V142). Pool versions 1 to 4 draw from the 20 exactly as before. The golden `draws.hunts` cases with `pool: 5` pin it.
+- `b.allClasses` counts the enemy classes of the week's pool version: 9 per faction from version 5 (Dwarf Shaman, Undead Paladin), 8 before. The races stay.
+- No other mission changes: the pools, the draw of the missions, the swaps and the points are version 4's.
+- Nothing new is stored or sent. An addon on pool version 4 keeps drawing version 4 (its Hunt from the 20) and scores a friend's version-5 day by its `pool`: `hunt` is worth 5 in every version. The combination is never sent: each addon stores its own day's combination with the day's facts when it draws the day, so a day drawn before the update keeps its version-4 Hunt, and the Hunt's progress compares that stored race and class with the kill, never the list.
+
 **Which version a day uses.** There is no switch date: a client draws with the pool version it has (`Doomsday.POOL_VERSION`) and records it with the day's and week's entry when it first draws them (CF-69, `pool`). A day or week drawn before the update keeps its set and its version; the first day and week drawn after it use the new version. A friend on an older addon keeps drawing its own version (1, 2 or 3), so on the release day friends on different versions see different sets (the release notes ask everyone to update). Each version's draw runs its own chain from the epoch, so the older versions' draws stay as they were. Points follow the entry's `pool`, and every id of a newer pool is already in the older addon's catalogue (CF-70, CF-79), so an addon on version 2 scores a friend's version-3 day the same way.
 
 **Salts:** Hunt 1, Skirmish 2, Bounty 3, zone of the day 4, zone of the week 5, the 3 PvE dailies 11, 12, 13, the 3 PvE weeklies 21, 22, 23.
@@ -407,7 +413,7 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - **Skirmish, Bounty:** `available = pool without the previous draw` (the whole pool when that leaves nothing); `available[pick(n, salt, #available)]`.
 - **PvE weeklies, pool version 1:** as the dailies without categories: slot k takes `candidates[pick(week, 20 + k, #candidates)]` from the pool minus the goals already chosen and minus last week's (if that leaves none, last week's are allowed again).
 - **PvE weeklies, from pool version 2** (CF-77): exactly as the dailies, with the week: the candidates are the pool's weeklies, in pool order, whose category isn't taken yet and that weren't in last week's; slot k takes `candidates[pick(week, 20 + k, #candidates)]`. If no candidate is left, last week's are allowed again (categories still differ).
-- **The Hunt** (once in the pool): per hunting faction, the 20 combinations in list order minus the previous day's combination (none on the epoch), `available[pick(n, 1, #available)]`.
+- **The Hunt** (once in the pool): per hunting faction, the combinations of the pool version (20 in versions 1 to 4, 23 from version 5; see Lists) in list order minus the previous day's combination (none on the epoch), `available[pick(n, 1, #available)]`.
 - **Zone of the day / week:** `band.zones[pick(n, 4, #zones)]` / `pick(week, 5, #zones)`, the band by level (20–29, 30–44, 45–54, 55–60); below 20 there is none.
 
 **Schedule from the site (CF-68, web WEB-78).** The site's owner can change future days and weeks (Mission pool page). The site sends only the changed ones, as `CF_RUNS.doomsday.schedule` (from the uploader's `Data\Runs.lua`, and between addons as `SCHED`, docs/SYNC.md); every other day and week is the normal draw. Pinned by the `scheduleCheck` and `scheduled` cases of `tests/fixtures/doomsday-cases.json`.
@@ -661,7 +667,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 ## PvP goals
 
 ### The Hunt (daily)
-- The day's enemy race and class combination: `pick(n, 1, 20)` from the list of the friend's enemy faction (see Lists).
+- The day's enemy race and class combination: `pick(n, 1, #list)` from the list of the friend's enemy faction for the day's pool version (see Lists: 20 in pool versions 1 to 4, 23 from version 5, CF-116).
 - A Horde character hunts Alliance combinations and vice versa: the character's own faction decides, with no setting. A friend with characters on both factions sees both Hunts, and either one counts.
 - **Done** with one counted kill of that exact combination.
 - A kill counts only when the victim's race **and** class are known. Midnight hides combat-log details from addons, so they come from the target, mouseover or nameplate cache seen just before the kill (CF-55); a kill on a player never seen counts for points, not for the Hunt.
@@ -844,7 +850,7 @@ The site decides feats; the addon shows the feats it can derive from records it 
 On Forever the own PvP rank isn't readable (`UnitPVPRank` missing, V79; Nico, 2026-11-06): `pvp.rank` stays empty, so no rank title shows, rank 0's rule included, and the rank goals are retired from pool version 3 (CF-99). The titles stay for when a rank reads.
 
 ## Lists
-Enemy combinations (race token as `UnitRace` gives it, class token):
+Enemy combinations, pool versions 1 to 4 (race token as `UnitRace` gives it, class token):
 - **Alliance** (for Horde characters):
   - Human: Warrior, Paladin, Rogue, Priest, Mage, Warlock
   - Dwarf: Warrior, Paladin, Hunter, Rogue, Priest
@@ -856,9 +862,23 @@ Enemy combinations (race token as `UnitRace` gives it, class token):
   - Tauren: Warrior, Hunter, Shaman, Druid
   - Troll: Warrior, Hunter, Rogue, Priest, Shaman, Mage
 
-Enemy classes:
+From pool version 5 (CF-116, Forever's combinations, 23 each, without the Skyborne races):
+- **Alliance** (for Horde characters):
+  - Human: Warrior, Paladin, Hunter, Rogue, Priest, Mage, Warlock
+  - Dwarf: Warrior, Paladin, Hunter, Rogue, Priest, Shaman
+  - NightElf: Warrior, Hunter, Rogue, Priest, Druid
+  - Gnome: Warrior, Rogue, Priest, Mage, Warlock
+- **Horde** (for Alliance characters):
+  - Orc: Warrior, Hunter, Rogue, Shaman, Mage, Warlock
+  - Scourge: Warrior, Paladin, Rogue, Priest, Mage, Warlock
+  - Tauren: Warrior, Hunter, Shaman, Druid
+  - Troll: Warrior, Hunter, Rogue, Priest, Shaman, Mage, Warlock
+
+Enemy classes (`b.allClasses`), pool versions 1 to 4:
 - Alliance: Warrior, Paladin, Hunter, Rogue, Priest, Mage, Warlock, Druid
 - Horde: Warrior, Hunter, Rogue, Priest, Shaman, Mage, Warlock, Druid
+
+From pool version 5: all nine for both (Warrior, Paladin, Hunter, Rogue, Priest, Shaman, Mage, Warlock, Druid).
 
 Zone bands (the zone names as the feed stores them):
 - **20–29:** Hillsbrad Foothills, Ashenvale, Stonetalon Mountains

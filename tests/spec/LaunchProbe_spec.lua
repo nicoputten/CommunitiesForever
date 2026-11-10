@@ -44,22 +44,49 @@ describe("the hidden launch probe", function()
     assert.are.equal(ns.Store.SCHEMA_VERSION, addon.db.global.schemaVersion)
   end)
 
-  it("ticks V73 and the Hunt from a target and the honor message, silently", function()
+  -- CF-116: V142, a player of a race beyond Vanilla's eight (the Skyborne): the race's token, ID and name only.
+  it("records a race beyond the eight, enemy or friendly, without the player's name, silently", function()
     load()
     local printed = #state.printed
     enemyTarget("Orc")
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    state.serverTime = state.serverTime + 5
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN",
-      "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)")
-    assert.is_nil(results().V74) -- answered at launch (CF-96); the target still feeds the Hunt
-    assert.are.equal("pass", results().V73.status)
-    assert.are.same("Grim Tusk: Orc WARRIOR via target, 5 s before the kill", results().Hunt.detail)
-    assert.is_nil(results().V73.detail:find("Grim Tusk", 1, true)) -- no names but the Hunt's and the killer's
-    for i = printed + 1, #state.printed do -- the addon's own Doomsday kill line may print; the probe never does
-      assert.is_nil(state.printed[i]:find("V7", 1, true))
+    assert.is_nil(results().V142) -- a known race: nothing
+    assert.is_nil(results().V73) -- answered (CF-116): the honor message isn't watched any more
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    _G.UnitIsEnemy = function() return false end
+    state.unitGuids = { mouseover = "Player-4619-0A1B2C3E" }
+    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
+    _G.UnitExists = function(unit) return unit == "mouseover" end
+    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
+    local r = results().V142
+    assert.are.equal("pass", r.status)
+    assert.are.equal("UnitRace token and id: SkyborneHigh 90", r.detail)
+    assert.are.equal("SkyborneHigh, id 90, name High Order Skyborne, friendly via mouseover", r.log[1])
+    assert.is_nil(r.detail:find("Grim", 1, true))
+    _G.UnitRace = function() return "Windshaper Skyborne", "SkyborneWind", 91 end
+    _G.UnitIsEnemy = function() return true end
+    state.serverTime = state.serverTime + 60
+    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
+    r = results().V142
+    assert.are.equal("pass", r.status) -- the pass lists every race seen; one log line each
+    assert.are.equal("UnitRace token and id: SkyborneHigh 90, SkyborneWind 91", r.detail)
+    assert.are.equal("SkyborneWind, id 91, name Windshaper Skyborne, enemy via mouseover", r.log[2])
+    assert.are.equal(2, #r.log)
+    for _, line in ipairs(r.log) do assert.is_nil(line:find("Grim", 1, true)) end
+    for i = printed + 1, #state.printed do
       assert.is_nil(state.printed[i]:lower():find("probe", 1, true))
     end
+  end)
+
+  it("leaves a secret race token out of V142, without an error", function()
+    load()
+    enemyTarget("SkyborneHigh")
+    _G.issecretvalue = function(v) return v == "SkyborneHigh" or v == 90 end
+    finally(function() _G.issecretvalue = nil end)
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    assert.is_nil(results().V142)
+    assert.is_nil(results().error)
   end)
 
   it("ticks the Hunt from the target at a counted kill when the honor message names nobody (CF-110)", function()
@@ -69,47 +96,41 @@ describe("the hidden launch probe", function()
     _G.UnitIsDead = function() return dead end
     state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     state.pvp = { hk = 10 }
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED") -- the counter's base
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    state.serverTime, dead = state.serverTime + 2, true
+    state.serverTime = state.serverTime + 2
+    state.pvp.hk = 11
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    assert.is_nil(results().Hunt) -- CF-117: picked at the re-check, not at the rise
+    dead = true
+    wowapi.runTimers(state)
     assert.are.equal("pass", results().Hunt.status)
-    assert.are.equal("Grim Tusk: Orc WARRIOR via target at the kill", results().Hunt.detail)
+    assert.are.equal("Orc WARRIOR via target, dead after the delay, 1 candidate", results().Hunt.detail)
+    assert.are.equal("UnitIsDead exists, target dead true, target health missing", results().Hunt.log[1])
   end)
 
   it("gives the Hunt an info line at a counted kill without a fitting victim (CF-110)", function()
     load()
+    state.pvp = { hk = 10 }
+    wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED") -- the counter's base
+    state.pvp.hk = 11
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
+    wowapi.runTimers(state)
     assert.are.equal("info", results().Hunt.status)
+    assert.truthy(results().Hunt.detail:find("no victim", 1, true))
   end)
 
-  local function honorKill()
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN",
-      "Grim Tusk dies, honorable kill Rank: Grunt (Estimated Honor Points: 12)")
-  end
-
-  it("leaves a secret race out of the Hunt, without an error", function()
+  it("looks at the same player once a minute (V142)", function()
     load()
     enemyTarget("Orc")
-    _G.issecretvalue = function(v) return v == "Orc" end
+    state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    _G.issecretvalue = nil
-    honorKill()
-    assert.are.equal("info", results().Hunt.status)
-    assert.is_nil(results().error)
-  end)
-
-  it("looks at the same player once a minute", function()
-    load()
-    enemyTarget(nil) -- race missing: not usable for the Hunt
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    enemyTarget("Orc")
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    honorKill()
-    assert.are.equal("info", results().Hunt.status)
+    assert.is_nil(results().V142)
     state.serverTime = state.serverTime + 60
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    honorKill()
-    assert.are.equal("pass", results().Hunt.status)
+    assert.are.equal("pass", results().V142.status)
   end)
 
   it("no longer runs the answered death recap check (V120, CF-113)", function()
@@ -148,10 +169,11 @@ describe("the hidden launch probe", function()
     load(1794960000 - 10)
     local stored = results()
     state.serverTime = 1794960000
-    enemyTarget("Orc")
+    _G.UnitExists = function(unit) return unit == "target" end
+    _G.UnitIsPlayer = function() return true end
+    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    honorKill()
-    assert.is_nil(stored.V73)
+    assert.is_nil(stored.V142)
     assert.are.equal("info", stored.V82.status)
   end)
 
@@ -179,36 +201,21 @@ describe("the hidden launch probe", function()
       results().V84)
   end)
 
-  it("passes V73 from the honor message variant without a rank, naming the global (CF-101)", function()
+  -- CF-116: V73 (the honor message names no victim) and V80 (the duel lines) are answered and gone.
+  it("no longer runs V73 and V80, and keeps their stored results", function()
     load()
+    results().V73 = { status = "fail", detail = "no honor format matched", at = 1, build = "70862" }
     _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
-    _G.COMBATLOG_HONORGAIN_NO_RANK = "%s dies (Honorable Kill). You gain %d Honor."
-    finally(function() _G.COMBATLOG_HONORGAIN_NO_RANK = nil end)
-    enemyTarget("Orc")
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies (Honorable Kill). You gain 12 Honor.")
-    assert.are.equal("pass", results().V73.status)
-    assert.are.equal("victim from the honor message via COMBATLOG_HONORGAIN_NO_RANK (second argument 12)",
-      results().V73.detail)
-    assert.are.equal("pass", results().Hunt.status)
-  end)
-
-  it("keeps the shape of an honor message no format matched, without the name (CF-101)", function()
-    load()
-    _G.COMBATLOG_HONORGAIN = "%s dies (Honorable Kill: %s). You gain %d Honor."
-    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies. You gain 12.5 Honor.")
-    local r = results().V73
-    assert.are.equal("fail", r.status)
-    assert.are.equal("no honor format matched: x x dies. You gain 12.5 Honor.", r.detail)
-    assert.truthy(r.log[#r.log - 1]:find("globals: ", 1, true) or r.log[#r.log]:find("globals: ", 1, true))
-    for _, line in ipairs(r.log) do assert.is_nil(line:find("Grim", 1, true)) end
-  end)
-
-  it("notes PLAYER_PVP_KILLS_CHANGED under V73 (V79's open part)", function()
-    load()
-    _G.GetPVPThisWeekStats = function() return 2, 0 end
+    wowapi.fireEvent(state, "CHAT_MSG_COMBAT_HONOR_GAIN", "Grim Tusk dies (Honorable Kill: Grunt). You gain 12 Honor.")
     wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
-    assert.are.equal("PLAYER_PVP_KILLS_CHANGED, week 2, 0", results().V73.log[1])
+    wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", state.player.name .. " has defeated Grim Tusk in a duel")
+    assert.are.same({ status = "fail", detail = "no honor format matched", at = 1, build = "70862" }, results().V73)
+    assert.is_nil(results().V80)
+    addon:OnSlashCommand("fp")
+    local text = ns.ProbeReport.text()
+    assert.is_nil(text:find("V73", 1, true))
+    assert.is_nil(text:find("V80", 1, true))
+    assert.truthy(text:find("V142 open", 1, true))
   end)
 
   it("keeps looking at zone types after friendly passed (V123)", function()
@@ -227,21 +234,82 @@ describe("the hidden launch probe", function()
     assert.are.equal(2, #results().V123.log) -- friendly, hostile (none at login: GetZonePVPInfo was missing)
   end)
 
-  it("passes V108 on an emote at an enemy-faction player alone (the whisper part is answered)", function()
-    _G.DoEmote = function() end
-    _G.hooksecurefunc = function(name, fn)
-      local original = _G[name]
-      _G[name] = function(...)
-        original(...)
-        fn(...)
+  describe("V108: an emote at a target (CF-117)", function()
+    -- hooksecurefunc(name, fn) or hooksecurefunc(table, key, fn), as the game's.
+    local function hooks()
+      _G.hooksecurefunc = function(owner, key, fn)
+        if type(owner) ~= "table" then owner, key, fn = _G, owner, key end
+        local original = owner[key]
+        owner[key] = function(...)
+          original(...)
+          fn(...)
+        end
       end
     end
-    load()
-    _G.UnitIsPlayer = function() return true end
-    _G.UnitFactionGroup = function(unit) return unit == "player" and "Horde" or "Alliance" end
-    _G.DoEmote("FLEX", "target")
-    assert.are.equal("pass", results().V108.status)
-    assert.are.equal("emote FLEX on an enemy-faction player", results().V108.detail)
+
+    local function enemyFaction()
+      _G.UnitIsPlayer = function() return true end
+      _G.UnitFactionGroup = function(unit) return unit == "player" and "Horde" or "Alliance" end
+      state.unitGuids = { target = "Player-4619-0A1B2C3D" }
+    end
+
+    -- CHAT_MSG_TEXT_EMOTE's arguments: text, sender name, ..., the sender's GUID 12th.
+    local function chatEmote(guid)
+      wowapi.fireEvent(state, "CHAT_MSG_TEXT_EMOTE", "You wave at Grim Tusk.", "Ves Doombringer", "", "", "", "", 0, 0,
+        "", 0, 1, guid)
+    end
+
+    it("passes on a DoEmote at an enemy-faction player (the whisper part is answered)", function()
+      _G.DoEmote = function() end
+      hooks()
+      load()
+      enemyFaction()
+      _G.DoEmote("FLEX", "target")
+      assert.are.equal("pass", results().V108.status)
+      assert.are.equal("emote FLEX via DoEmote on an enemy-faction player, GUID readable", results().V108.detail)
+    end)
+
+    it("hooks C_ChatInfo.PerformEmote when it exists (bug 14: a typed /wave never reached DoEmote)", function()
+      hooks()
+      local performed
+      state, ns, addon = helpers.client({ setup = function(s)
+        s.serverTime = 1794000000
+        _G.C_ChatInfo.PerformEmote = function(token) performed = token end
+      end })
+      enemyFaction()
+      _G.C_ChatInfo.PerformEmote("WAVE", "Grim Tusk")
+      assert.are.equal("WAVE", performed)
+      assert.are.equal("pass", results().V108.status)
+      assert.are.equal("emote WAVE via C_ChatInfo.PerformEmote on an enemy-faction player, GUID readable",
+        results().V108.detail)
+      chatEmote(state.player.guid)
+      assert.are.same({ "chat line after C_ChatInfo.PerformEmote" }, results().V108.log)
+    end)
+
+    it("notes your own emote seen only in chat, without its text or a name", function()
+      hooks()
+      load()
+      enemyFaction()
+      chatEmote("Player-4619-0FFFFFFF") -- someone else's emote: nothing
+      assert.is_nil(results().V108)
+      chatEmote(state.player.guid)
+      local r = results().V108
+      assert.are.equal("info", r.status)
+      assert.are.equal("own emote in chat on an enemy-faction player, GUID readable, no emote hook before it "
+        .. "(hookable: none)", r.detail)
+      assert.is_nil(r.detail:find("Grim", 1, true))
+      assert.is_nil(r.detail:find("wave", 1, true))
+    end)
+
+    it("ignores a secret sender GUID without an error", function()
+      load()
+      enemyFaction()
+      _G.issecretvalue = function(v) return v == state.player.guid end
+      finally(function() _G.issecretvalue = nil end)
+      chatEmote(state.player.guid)
+      assert.is_nil(results().V108)
+      assert.is_nil(results().error)
+    end)
   end)
 
   -- CF-98: the recipe checks (services/LaunchProbeRecipes.lua); since CF-105 only V60b.
@@ -394,7 +462,7 @@ describe("the hidden launch probe", function()
 
     it("counts only V60b of the recipe checks in /cf fp (CF-105, CF-109)", function()
       load()
-      assert.are.equal(11, #ns.Probe.IDS)
+      assert.are.equal(10, #ns.Probe.IDS)
       addon:OnSlashCommand("fp")
       local text = ns.ProbeReport.text()
       assert.is_nil(text:find("V60 ", 1, true))

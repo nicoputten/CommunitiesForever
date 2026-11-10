@@ -7,6 +7,9 @@
 -- CF-110: Forever's honor message never names the victim (V73), so a counter rise picks the victim from the enemy
 -- players looked at right then (Pvp.pickVictims: your target, mouseover or a nameplate, dead now and seen alive within
 -- Pvp.KILL_WINDOW). A ticker keeps "seen alive" fresh during a fight. No fitting player: no victim, as before.
+-- CF-117: the victim is often not dead yet at the rise (bug 13), so the rise remembers the candidates
+-- (Pvp.killCandidates), the ticker and unit events keep looking at them (Pvp.observe), and Pvp.RECHECK_DELAY later a
+-- last look picks (Pvp.resolveVictims: dead at once, dead after the delay, or the low health fallback).
 local _, ns = ...
 
 local PvpTracker = {}
@@ -20,6 +23,11 @@ local seen, rankNumbers, honorKills, counterKills, fallbackLater = {}, nil, 0, 0
 -- CF-110: enemy players by GUID with when they were last seen alive (Pvp.seeAlive), the victims picked at counter
 -- rises since the fallback last ran, and the victims the honor messages named in that time.
 local alive, picks, honorNames = {}, {}, {}
+-- CF-117: the candidates of counter rises waiting for their re-check: { { pending, kills, bg } }.
+local waiting = {}
+-- CF-117: functions called with (victim or nil, path or nil, candidates) for each counter rise once resolved (the
+-- launch probe's Hunt).
+local resolvedFns = {}
 
 -- CF-104: internal message (victimGuid, bg) for each victim picked at a kill counter rise (BattleEvents: revenge).
 PvpTracker.VICTIM = "CF_PVP_VICTIM"
@@ -27,9 +35,14 @@ PvpTracker.VICTIM = "CF_PVP_VICTIM"
 -- Seconds between looks at target, mouseover and nameplates for Pvp.seeAlive.
 PvpTracker.LOOK_EVERY = 1
 
+-- Remembers the enemy players seen alive and shows the looks to the rises waiting for their re-check.
+local function see(looks, now)
+  for _, look in ipairs(looks) do ns.Pvp.seeAlive(alive, look, now) end
+  for _, wait in ipairs(waiting) do ns.Pvp.observe(wait.pending, looks, now) end
+end
+
 local function lookAround()
-  local now = GetServerTime()
-  for _, look in ipairs(ns.PvpInfo.looks()) do ns.Pvp.seeAlive(alive, look, now) end
+  see(ns.PvpInfo.looks(), GetServerTime())
 end
 
 local function own() return addonRef.db.global.self end
@@ -68,10 +81,10 @@ local function refresh(countKills)
     ns.FeedTracker.record(char, { { kind = "kills", zone = ns.SelfInfo.zone(), count = kills } })
     counterKills = counterKills + kills
     local info = ns.Instance.info()
-    for _, victim in ipairs(ns.Pvp.pickVictims(ns.PvpInfo.looks(), alive, GetServerTime(), kills)) do
-      picks[#picks + 1] = victim
-      addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, info ~= nil and info.type == "pvp")
-    end
+    local wait = { pending = ns.Pvp.killCandidates(ns.PvpInfo.looks(), alive, GetServerTime()), kills = kills,
+                   bg = info ~= nil and info.type == "pvp" }
+    waiting[#waiting + 1] = wait
+    ns.Timer.after(ns.Pvp.RECHECK_DELAY, function() PvpTracker.resolve(wait) end)
     fallbackLater()
   end
   if pvp and pvp.rank ~= nil and pvp.rank ~= (before and before.rank) then
@@ -106,9 +119,29 @@ local function fallback()
   for i = 1, math.min(missing, ns.Pvp.MAX_KILLS_PER_CHANGE) do recordKill(char, nil, nil, victims[i]) end
 end
 
--- CF-110: the victim a kill counted now would get (Pvp.pickVictims' first), or nil. For the launch probe's Hunt.
-function PvpTracker.victimNow()
-  return ns.Pvp.pickVictims(ns.PvpInfo.looks(), alive, GetServerTime(), 1)[1]
+-- CF-117: a counter rise's re-check, Pvp.RECHECK_DELAY after it: one last look, then its victims (picks for the
+-- feed entries, the VICTIM message for revenge) and the resolved functions. Before the fallback (Pvp.FALLBACK_DELAY).
+function PvpTracker.resolve(wait)
+  for i, w in ipairs(waiting) do
+    if w == wait then table.remove(waiting, i) break end
+  end
+  local now = GetServerTime()
+  local looks = ns.PvpInfo.looks()
+  for _, look in ipairs(looks) do ns.Pvp.seeAlive(alive, look, now) end
+  ns.Pvp.observe(wait.pending, looks, now, true)
+  local victims = ns.Pvp.resolveVictims(wait.pending, wait.kills)
+  for _, victim in ipairs(victims) do
+    picks[#picks + 1] = victim
+    addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, wait.bg)
+  end
+  for _, fn in ipairs(resolvedFns) do
+    pcall(fn, victims[1], victims[1] and victims[1].path, #wait.pending.list)
+  end
+end
+
+-- CF-117: fn(victim or nil, path or nil, candidates) runs once per counter rise when its victim is resolved.
+function PvpTracker.onResolved(fn)
+  resolvedFns[#resolvedFns + 1] = fn
 end
 
 -- Without a readable lifetime count, each honor message of a kill (the game's COMBATLOG_HONORGAIN or a variant,
@@ -175,7 +208,8 @@ local HANDLERS = {
     local name, fields = ns.PvpInfo.enemy(unit)
     if not name then return end
     ns.Pvp.remember(seen, name, fields, GetServerTime())
-    ns.Pvp.seeAlive(alive, ns.PvpInfo.look(unit, "unit"), GetServerTime())
+    local look = ns.PvpInfo.look(unit, "unit")
+    if look then see({ look }, GetServerTime()) end
   end,
   damage = function(subevent, environment, sourceFlags, sourceGuid)
     lastDamage = ns.Pvp.damage(subevent, environment, sourceFlags, sourceGuid, GetServerTime()) or lastDamage
@@ -186,7 +220,7 @@ function PvpTracker.start(addon)
   addonRef = addon
   lastDamage, timers = nil, {}
   seen, rankNumbers, honorKills, counterKills = {}, nil, 0, 0
-  alive, picks, honorNames = {}, {}, {}
+  alive, picks, honorNames, waiting = {}, {}, {}, {}
   fallbackLater = ns.Timer.debounce(ns.Pvp.FALLBACK_DELAY, fallback)
   PvpTracker.combatLog = ns.PvpInfo.watch(addon)
   addon:RegisterMessage(ns.PvpInfo.CHANGED, function(_, reason, ...)

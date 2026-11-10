@@ -125,6 +125,10 @@ ns.items = {
     how = "The print line of VERIFY.md V140." },
   { id = "V141", session = 5, title = "A dead enemy player reads as dead (UnitIsDead, CF-110)",
     how = "World PvP: the print lines of VERIFY.md V141 before and after a kill." },
+  { id = "V142", session = 5, title = "A Skyborne player's race token and ID (UnitRace, CF-116)",
+    how = "Target or mouse over a High Order or Windshaper Skyborne player: the print line of VERIFY.md V142." },
+  { id = "V143", session = 5, title = "An enemy player's health is readable (UnitHealth, CF-117)",
+    how = "World PvP: the print lines of VERIFY.md V143, out of combat and while fighting." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 

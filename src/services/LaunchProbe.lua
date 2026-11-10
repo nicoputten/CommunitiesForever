@@ -7,11 +7,11 @@ the site. Until Probe.STOP_AT (2026-11-18).
 - Safe: every handler and hook runs in pcall (an error is noted under "error"); every API is guarded; a secret value
   is recorded as "secret", a missing API as "missing".
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
-- Private: no raw chat text, no event log; player names only for the Hunt's victim (the killer's, V120, until
-  CF-113 answered it).
-This file: the plumbing and the login and PvP checks. services/LaunchProbeMissions.lua: the mission catalogue's
-checks and the PvP catalogue's (V122, V123; V120 answered, CF-113). services/LaunchProbeRecipes.lua: the recipe
-check (V60b; V60 and V60c answered, CF-105).
+- Private: no raw chat text, no event log, no player names (the Hunt's victim and V120's killer had them until CF-117
+  and CF-113). V142 records a race's token, ID and name, never the player's.
+This file: the plumbing, the login and PvP checks and V142 (races beyond Vanilla's eight, CF-116).
+services/LaunchProbeMissions.lua: the mission catalogue's checks and the PvP catalogue's (V122, V123; V120
+answered, CF-113). services/LaunchProbeRecipes.lua: the recipe check (V60b; V60 and V60c answered, CF-105).
 CF-96: the checks answered by the launch results (build 70790, docs/API-FINDINGS.md "Forever launch probe") are gone;
 their stored results stay in the saved data as they are. ]]
 local _, ns = ...
@@ -118,7 +118,20 @@ function LaunchProbe.on(event, fn)
   table.insert(handlers[event], fn)
 end
 
+-- name: a global function ("DoEmote") or a function in a global table ("C_ChatInfo.PerformEmote", CF-117).
 function LaunchProbe.hook(name, fn) hooks[#hooks + 1] = { name = name, fn = fn } end
+
+-- The table and key a hook name points at when it is a function there, else nil.
+local function hookTarget(name)
+  local tableName, key = name:match("^([%w_]+)%.([%w_]+)$")
+  local owner = tableName and _G[tableName] or _G
+  key = key or name
+  if type(owner) == "table" and type(owner[key]) == "function" then return owner, key end
+  return nil
+end
+
+-- True when the hook name points at a function now (V108's detail says which emote APIs exist).
+function LaunchProbe.hookable(name) return hookTarget(name) ~= nil end
 function LaunchProbe.atLogin(fn) logins[#logins + 1] = fn end
 
 -- Runs fn guarded; an error is noted, never shown.
@@ -177,96 +190,61 @@ LaunchProbe.on("PVP_MATCH_COMPLETE", function(winner)
   end
 end)
 
--- ===== V73, the Hunt: enemy players and honorable kills (V76, the group at a kill, answered: CF-101) =====
--- Enemy players are still looked at for the Hunt (their race and class before a kill); V74 itself is answered.
+-- ===== The Hunt: the victim picked at a counted kill (CF-110) =====
+-- V73 (the honor message names no victim) and V80 (the duel lines) are answered and gone (CF-116); V76, the group
+-- at a kill, CF-101. CF-117: the victim is picked Pvp.RECHECK_DELAY after the counter rise (PvpTracker.onResolved);
+-- the line says which path found it, never a name. The note: the target at the re-check.
+
+LaunchProbe.atLogin(function()
+  if not (ns.PvpTracker and ns.PvpTracker.onResolved) then return end
+  ns.PvpTracker.onResolved(function(pick, _, candidates)
+    if not running() then return end
+    guarded("Hunt", function()
+      local status, detail = Probe.huntPick(pick, candidates)
+      if status == "pass" then result("Hunt", status, detail) else info("Hunt", detail) end
+      local health, most = get(UnitHealth, "target"), get(UnitHealthMax, "target")
+      local percent = type(health) == "number" and type(most) == "number" and most > 0
+        and (math.floor(health / most * 100) .. "%") or Vals(UnitHealth, "target")
+      note("Hunt", "UnitIsDead " .. (UnitIsDead and "exists" or "missing") .. ", target dead "
+        .. Val(get(UnitIsDead, "target")) .. ", target health " .. percent)
+    end)
+  end)
+end)
+
+-- ===== V142: races beyond Vanilla's eight, the Skyborne (CF-116) =====
+-- Any player, enemy or friendly, seen as target, mouseover or nameplate: UnitRace's three returns when the race isn't
+-- one of the eight. No player names: only the race's token, ID and name.
 
 local unitSeen = {} -- guid -> server time of the last look (Probe.THROTTLE)
-local seenByName = {} -- the Hunt: name -> { race, class, source, at }
+local racesSeen = {} -- line -> true, this session
+local raceKeys = {} -- "<token> <id>" of each race seen, in order: the result's detail
 
-local function Enemy(unit, source)
+local function Player(unit, source)
   if not (get(UnitExists, unit) and get(UnitIsPlayer, unit)) then return end
-  if not (get(UnitIsEnemy, "player", unit) or get(UnitCanAttack, "player", unit)) then return end
   local guid = UnitGUID and UnitGUID(unit)
   local key = readable(guid) and guid or (unit .. source)
   if Probe.throttled(unitSeen, key, now()) then return end
-  local class = UnitClass and select(2, UnitClass(unit))
-  local race = UnitRace and select(2, UnitRace(unit))
-  Probe.remember(seenByName, { get(GetUnitName, unit, true), get(UnitName, unit) },
-    { race = str(race) and race or nil, class = str(class) and class or nil, source = source }, now())
+  if type(UnitRace) ~= "function" then return end
+  local ok, name, token, id = pcall(UnitRace, unit)
+  if not ok then return end
+  local enemy = get(UnitIsEnemy, "player", unit) or get(UnitCanAttack, "player", unit)
+  token = str(token) and token or nil
+  id = (type(id) == "number" and readable(id)) and id or nil
+  local line = Probe.newRace(str(name) and name or nil, token, id, enemy and "enemy" or "friendly", source)
+  if not line or racesSeen[line] then return end
+  racesSeen[line] = true
+  note("V142", line)
+  local race = tostring(token or "?") .. " " .. tostring(id or "?")
+  for _, k in ipairs(raceKeys) do
+    if k == race then return end
+  end
+  raceKeys[#raceKeys + 1] = race
+  result("V142", "pass", "UnitRace token and id: " .. table.concat(raceKeys, ", "))
 end
 
-LaunchProbe.on("PLAYER_TARGET_CHANGED", function() Enemy("target", "target") end)
-LaunchProbe.on("UPDATE_MOUSEOVER_UNIT", function() Enemy("mouseover", "mouseover") end)
-LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Enemy(unit, "nameplate") end end)
-
--- CF-101: the game's honor message globals ("COMBATLOG_HONOR..."), sorted, as "NAME" or "NAME (matches)": which
--- variant Forever uses. Looked up once, at the first message no format matched.
-local honorGlobals
-local function HonorGlobals(text)
-  if honorGlobals then return honorGlobals end
-  local names = {}
-  for key, value in pairs(_G) do
-    if type(key) == "string" and key:find("^COMBATLOG_HONOR") and type(value) == "string" then
-      names[#names + 1] = key .. (ns.GameText.parse(text, value) and " (matches)" or "")
-    end
-  end
-  table.sort(names)
-  honorGlobals = #names > 0 and table.concat(names, ", ") or "none"
-  return honorGlobals
-end
-
-LaunchProbe.on("CHAT_MSG_COMBAT_HONOR_GAIN", function(text)
-  local formats = ns.PvpInfo.formats().honors
-  local args, format = nil, nil
-  if str(text) then args, format = ns.Pvp.honorArgs(text, formats) end
-  local victim = args and args[1]
-  if victim then
-    local name = "?"
-    for _, global in ipairs(ns.PvpInfo.HONOR_FORMATS) do
-      if _G[global] == format then name = global break end
-    end
-    result("V73", "pass", "victim from the honor message via " .. name .. " (second argument " .. Val(args[2]) .. ")")
-  elseif #formats == 0 then
-    result("V73", "fail", "COMBATLOG_HONORGAIN and its variants missing")
-  elseif not str(text) then
-    result("V73", "fail", "honor message " .. Val(text))
-  else
-    result("V73", "fail", "no honor format matched: " .. Val(ns.Probe.shape(text, formats)))
-    note("V73", "globals: " .. HonorGlobals(text))
-  end
-  local status, detail = Probe.hunt(seenByName, victim, now())
-  if status == "pass" then
-    result("Hunt", status, detail)
-  elseif status then
-    info("Hunt", detail)
-  end
-  note("V73", "at a kill: lifetime " .. Vals(GetPVPLifetimeStats) .. ", week " .. Vals(GetPVPThisWeekStats))
-end)
-
--- V79's open part: does PLAYER_PVP_KILLS_CHANGED fire on Forever (noted with the kill it belongs to)?
--- CF-110: the Hunt also from the victim picked at the kill (your target, mouseover or a nameplate, dead now).
-LaunchProbe.on("PLAYER_PVP_KILLS_CHANGED", function()
-  note("V73", "PLAYER_PVP_KILLS_CHANGED, week " .. Vals(GetPVPThisWeekStats))
-  local pick = ns.PvpTracker and ns.PvpTracker.victimNow and ns.PvpTracker.victimNow()
-  local status, detail = Probe.huntPick(pick)
-  if status == "pass" then result("Hunt", status, detail) else info("Hunt", detail) end
-  note("Hunt", "UnitIsDead " .. (UnitIsDead and "exists" or "missing") .. ", target dead "
-    .. Val(get(UnitIsDead, "target")))
-end)
-
--- ===== V80: duel lines =====
-
-LaunchProbe.on("CHAT_MSG_SYSTEM", function(text)
-  if not str(text) or passed("V80") then return end
-  local me = get(GetUnitName, "player", true)
-  local short = get(UnitName, "player")
-  for _, key in ipairs({ "DUEL_WINNER_KNOCKOUT", "DUEL_WINNER_RETREAT" }) do
-    local args = ns.GameText.parse(text, _G[key])
-    if args and (args[1] == me or args[2] == me or args[1] == short or args[2] == short) then
-      result("V80", "pass", key .. " parsed with your name")
-    end
-  end
-end)
+LaunchProbe.on("PLAYER_TARGET_CHANGED", function() Player("target", "target") end)
+LaunchProbe.on("UPDATE_MOUSEOVER_UNIT", function() Player("mouseover", "mouseover") end)
+LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Player(unit, "nameplate") end end)
 
 -- ===== Start =====
 
@@ -288,10 +266,12 @@ function LaunchProbe.start(addon)
     pcall(ns.Events.register, listener, event, dispatch)
   end
   for _, h in ipairs(hooks) do
-    if hooksecurefunc and type(_G[h.name]) == "function" then
-      pcall(hooksecurefunc, h.name, function(...)
+    local owner, key = hookTarget(h.name)
+    if hooksecurefunc and owner then
+      local function post(...)
         if running() then guarded(h.name, h.fn, ...) end
-      end)
+      end
+      if owner == _G then pcall(hooksecurefunc, key, post) else pcall(hooksecurefunc, owner, key, post) end
     end
   end
   for _, fn in ipairs(logins) do guarded("login", fn) end

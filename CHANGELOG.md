@@ -5,6 +5,15 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## v1.8.0 (2026-11-10)
+- **Fixed:** a PvP kill now finds its victim when they die a moment after the kill counts (often the case): the
+  addon looks again a second later, and as a last resort takes the enemy you saw at very low health just before. The
+  Hunt, Revenge, Punch up/down and Skull goals complete again.
+- **New:** Doomsday pool version 5: The Hunt now draws from all of Forever's race and class combinations (23 per
+  faction instead of 20): Human Hunters, Dwarf Shamans and Gnome Priests on the Alliance side, Orc Mages, Undead
+  Paladins and Troll Warlocks on the Horde side. "A kill of every enemy class" counts nine classes from now on. Please
+  update together: a friend still on the previous version keeps drawing the old Hunt.
+
 ## v1.7.0 (2026-11-09)
 - **New:** the addon saves and shares which talents each character took, not only the points per tree, so the
   website can show the talent trees with their tooltips.
