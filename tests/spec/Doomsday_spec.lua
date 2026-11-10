@@ -285,7 +285,9 @@ describe("Doomsday (CF-55)", function()
   it("draws the Hunt once its pool version comes", function()
     for version = 1, 3 do assert.is_nil(Doomsday.draw(cases.epoch, version).hunt, version) end
     for _, c in ipairs(cases.draws.hunts) do
-      if c.pool then assert.are.same(c.expect, Doomsday.draw(c.day, c.pool).hunt, "pool 4 day " .. c.day) end
+      if c.pool then
+        assert.are.same(c.expect, Doomsday.draw(c.day, c.pool).hunt, "pool " .. c.pool .. " day " .. c.day)
+      end
     end
     Doomsday.HUNT_SINCE = 1
     for _, c in ipairs(cases.draws.hunts) do
@@ -303,7 +305,7 @@ describe("Doomsday (CF-55)", function()
     return count
   end
 
-  for _, version in ipairs({ 1, 2, 4 }) do
+  for _, version in ipairs({ 1, 2, 4, 5 }) do
     it("keeps the draw's rules over 400 days in pool version " .. version .. ": 3 categories, nothing twice in a row",
       function()
         local before = Doomsday.draw(cases.epoch, version)
@@ -490,8 +492,79 @@ describe("Doomsday (CF-55)", function()
       assert.is_true(#g.id <= 24, g.id)
       for _, f in ipairs(g.fallback or {}) do assert.are.equal(g.slot, Doomsday.goal(f).slot, g.id) end
     end
-    assert.are.equal(20, #Doomsday.combos("Horde"))
-    assert.are.equal(20, #Doomsday.combos("Alliance"))
+    assert.are.equal(23, #Doomsday.combos("Horde"))
+    assert.are.equal(23, #Doomsday.combos("Alliance"))
+  end)
+
+  -- CF-116: pool version 5 hunts Forever's 23 combinations per faction; versions 1 to 4 keep Vanilla's 20.
+  describe("Forever's combinations (CF-116)", function()
+    local function keys(list)
+      local result = {}
+      for _, c in ipairs(list) do result[#result + 1] = c.race .. ":" .. c.class end
+      return result
+    end
+
+    it("keeps Vanilla's 20 in pool versions 1 to 4 and draws 23 from version 5", function()
+      for version = 1, 4 do
+        assert.are.equal(20, #Doomsday.combos("Horde", version), version)
+        assert.are.equal(20, #Doomsday.combos("Alliance", version), version)
+      end
+      assert.are.equal(23, #Doomsday.combos("Horde", 5))
+      assert.are.equal(23, #Doomsday.combos("Alliance", 5))
+      assert.are.same({}, Doomsday.combos("Neutral", 5))
+    end)
+
+    it("adds exactly the new combinations and drops none", function()
+      for _, faction in ipairs({ "Horde", "Alliance" }) do
+        local old, new = set(keys(Doomsday.combos(faction, 4))), set(keys(Doomsday.combos(faction, 5)))
+        for k in pairs(old) do assert.is_true(new[k], faction .. " " .. k) end
+        local added = {}
+        for _, k in ipairs(keys(Doomsday.combos(faction, 5))) do
+          if not old[k] then added[#added + 1] = k end
+        end
+        if faction == "Horde" then
+          assert.are.same({ "Human:HUNTER", "Dwarf:SHAMAN", "Gnome:PRIEST" }, added)
+        else
+          assert.are.same({ "Orc:MAGE", "Scourge:PALADIN", "Troll:WARLOCK" }, added)
+        end
+      end
+    end)
+
+    it("draws each pool version's Hunt from its own list, never the same combination twice in a row", function()
+      for _, version in ipairs({ 4, 5 }) do
+        for _, faction in ipairs({ "Horde", "Alliance" }) do
+          local allowed = set(keys(Doomsday.combos(faction, version)))
+          local before
+          for n = cases.epoch, cases.epoch + 400 do
+            local h = Doomsday.hunt(n, faction, version)
+            local k = h.race .. ":" .. h.class
+            assert.is_true(allowed[k], version .. " " .. faction .. " " .. n)
+            assert.are_not.equal(before, k)
+            before = k
+          end
+        end
+      end
+    end)
+
+    it("gives b.allClasses nine enemy classes from pool version 5; the races stay", function()
+      assert.are.equal(Doomsday.ENEMY_CLASSES, Doomsday.enemyLists("class"))
+      assert.are.equal(Doomsday.ENEMY_CLASSES, Doomsday.enemyLists("class", 4))
+      for _, faction in ipairs({ "Horde", "Alliance" }) do
+        local classes = {}
+        for _, c in ipairs(Doomsday.combos(faction, 5)) do classes[c.class] = true end
+        local list = Doomsday.enemyLists("class", 5)[faction]
+        assert.are.equal(9, #list)
+        assert.are.same(classes, set(list))
+        assert.are.same(Doomsday.ENEMY_RACES[faction], Doomsday.enemyLists("race", 5)[faction])
+      end
+    end)
+
+    it("still scores a stored Hunt combination that isn't on the current list (a day of another version)", function()
+      local facts = { hunts = { { race = "Dwarf", class = "SHAMAN" } },
+                      scored = { { counted = true, track = "pvp", kill = { race = "Dwarf", class = "SHAMAN" } } } }
+      local value, target, done = Doomsday.progress("hunt", facts)
+      assert.are.same({ 1, 1, true }, { value, target, done })
+    end)
   end)
 
   describe("prey (CF-114)", function()

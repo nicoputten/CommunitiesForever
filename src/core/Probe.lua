@@ -11,7 +11,6 @@ Probe.DETAIL_MAX = 120    -- characters of a result's detail and of a log line
 Probe.LOG_LINES = 3       -- log lines kept per item
 Probe.MAX_BYTES = 30 * 1024 -- the whole section, as the saved file writes it (estimated)
 Probe.THROTTLE = 60       -- seconds between two looks at the same unit
-Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list starts over
 
 -- The checks the probe runs, in report order (FriendProbe's `auto` items without those that show something or
 -- act: V47, V48, V50b, V51, V67, V68, V75, V118). CF-96: the checks the launch results (build 70790) answered are
@@ -20,10 +19,12 @@ Probe.SEEN_MAX = 200      -- players remembered for the Hunt before the list sta
 -- CF-101: V60c (a recipe's profession and details for CF-38) added; V70, V76 and V121 answered (export of
 -- 2026-11-06 21:33) and gone. CF-105: V60 and V60c answered (export of 2026-11-07, builds 70790 and 70840) and gone;
 -- V60b (a friend's link while they are offline) stays. CF-109: V114 answered and gone. CF-113: V120 answered (export
--- of 2026-11-09) and gone; V101 checks only buying (posting answered).
+-- of 2026-11-09) and gone; V101 checks only buying (posting answered). CF-116: V73 (the honor message has no
+-- victim) and V80 (the duel lines, answered on Retail) are gone; V142 (races beyond Vanilla's eight, the Skyborne)
+-- added.
 Probe.IDS = {
-  "V82", "V35b", "V73", "Hunt", "V80", "V96", "V101", "V108", "V122", "V123",
-  "V60b",
+  "V82", "V35b", "Hunt", "V96", "V101", "V108", "V122", "V123",
+  "V60b", "V142",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.
@@ -104,23 +105,6 @@ function Probe.note(results, id, line)
   while #log > Probe.LOG_LINES do table.remove(log, 1) end
 end
 
---[[ CF-101: the shape of a game message without anything private: every word that is not a word of one of the
-formats (the game's own text) becomes "x", so a player's name ("Ann Example") reads "x x"; numbers and
-punctuation stay. Colour codes are dropped and any other "|" becomes "!" (no escape codes in the log). nil when text
-is not a string. ]]
-function Probe.shape(text, formats)
-  if type(text) ~= "string" then return nil end
-  local known = {}
-  for _, format in ipairs(type(formats) == "table" and formats or {}) do
-    if type(format) == "string" then
-      for word in format:gsub("%%%d?%$?[sd]", " "):gmatch("%a+") do known[word] = true end
-    end
-  end
-  local plain = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-  local shaped = plain:gsub("%a+", function(word) return known[word] and word or "x" end)
-  return (shaped:gsub("|", "!"))
-end
-
 -- True when key was looked at less than `seconds` ago; otherwise remembers now and returns false.
 function Probe.throttled(seen, key, now, seconds)
   local last = seen[key]
@@ -129,36 +113,7 @@ function Probe.throttled(seen, key, now, seconds)
   return false
 end
 
--- ===== The Hunt: a kill's victim, matched to an enemy player seen just before =====
-
---[[ Remembers an enemy player seen as target, mouseover or nameplate, under every name the game gave for them
-(the name with and without realm, as the API returns them: names are never split, rule 4). fields = { race, class,
-source }: readable strings or nil (secret or missing). ]]
-function Probe.remember(seen, names, fields, now)
-  if seen.count and seen.count >= Probe.SEEN_MAX then
-    for k in pairs(seen) do seen[k] = nil end
-  end
-  local entry = { race = fields.race, class = fields.class, source = fields.source, at = now }
-  for i = 1, table.maxn(names) do
-    local name = names[i]
-    if type(name) == "string" and name ~= "" then
-      if not seen[name] then seen.count = (seen.count or 0) + 1 end
-      seen[name] = entry
-    end
-  end
-end
-
--- The Hunt's result for a kill whose honor message named `victim`: "pass" with race and class when the victim was
--- seen with both readable, "info" when named but not seen so, nil without a victim.
-function Probe.hunt(seen, victim, now)
-  if type(victim) ~= "string" or victim == "" then return nil end
-  local entry = seen[victim]
-  if type(entry) == "table" and type(entry.race) == "string" and type(entry.class) == "string" then
-    return "pass", string.format("%s: %s %s via %s, %d s before the kill", victim, entry.race, entry.class,
-      tostring(entry.source), math.floor((now or 0) - (entry.at or 0) + 0.5))
-  end
-  return "info", "victim " .. victim .. " named, but not seen with race and class before the kill"
-end
+-- ===== The Hunt: the victim picked at a kill =====
 
 -- CF-110: the Hunt's result for a kill counted by the lifetime counter, its victim picked from the enemy players at
 -- the kill (core Pvp.pickVictims' entry, or nil): "pass" with race and class, "info" when the victim lacks one or
@@ -173,6 +128,24 @@ function Probe.huntPick(pick)
   end
   return "info", "victim " .. tostring(pick.name or "?") .. " via " .. tostring(pick.source)
     .. " at the kill, without race and class"
+end
+
+-- ===== V142: races beyond Vanilla's eight (CF-116) =====
+
+-- The race tokens UnitRace gives for Vanilla's eight races, and their race IDs (1 to 8).
+Probe.KNOWN_RACES = { Human = 1, Orc = 2, Dwarf = 3, NightElf = 4, Scourge = 5, Tauren = 6, Gnome = 7, Troll = 8 }
+
+--[[ CF-116: a player of a race that isn't one of the eight (Forever's Skyborne), as one line: "<token>, id <id>,
+name <race name>, <relation> via <source>"; nil for a known race (by token, or by ID when the token isn't
+readable) or when neither token nor ID is readable. name, token, id: UnitRace's three returns, nil when missing or
+secret. Never a player's name: only the race's own name, token and ID. ]]
+function Probe.newRace(name, token, id, relation, source)
+  local hasToken, hasId = type(token) == "string" and token ~= "", type(id) == "number"
+  if not hasToken and not hasId then return nil end
+  if hasToken and Probe.KNOWN_RACES[token] then return nil end
+  if not hasToken and id >= 1 and id <= 8 then return nil end
+  return string.format("%s, id %s, name %s, %s via %s", hasToken and token or "?", hasId and tostring(id) or "?",
+    type(name) == "string" and name or "?", tostring(relation), tostring(source))
 end
 
 -- ===== The size cap =====

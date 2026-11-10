@@ -57,6 +57,11 @@ describe("DoomsdayView (CF-57)", function()
     local list = { scored({ class = "WARRIOR" }, 1), scored({ class = "MAGE" }, 1) }
     assert.are.equal("Paladin, Hunter, Rogue, Priest, Warlock, Druid", V.stillNeeded("b.allClasses", list, { "Horde" }))
     assert.are.equal("Human, Dwarf, Night Elf, Gnome", V.stillNeeded("b.allRaces", {}, { "Horde" }))
+    -- CF-116: a week of pool version 5 also needs the Shaman (Dwarf Shaman); version 4 doesn't.
+    assert.are.equal("Paladin, Hunter, Rogue, Priest, Shaman, Warlock, Druid",
+      V.stillNeeded("b.allClasses", list, { "Horde" }, 5))
+    assert.are.equal("Paladin, Hunter, Rogue, Priest, Warlock, Druid",
+      V.stillNeeded("b.allClasses", list, { "Horde" }, 4))
     assert.is_nil(V.stillNeeded("b.kills50", list, { "Horde" }))
   end)
 

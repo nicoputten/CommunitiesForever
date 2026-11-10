@@ -53,10 +53,24 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 | V139 | CF-106: does `GameTooltip:SetItemByID(id)` exist and show the game's own item tooltip? (Else the tab falls back to `SetHyperlink("item:<id>")`.) | `/run print(GameTooltip.SetItemByID)`, then hover a loot row in the Dungeons tab: the game's item tooltip (name, binds, damage, Requires Level). | open |
 | V140 | CF-106: does `C_QuestLog.GetTitleForQuestID(id)` give a quest's name for a quest not in your log? (The "Quest" tag's tooltip names the quest a drop needs.) | `/run print(C_QuestLog.GetTitleForQuestID(167))`: a quest name, or nil. | open |
 | V141 | CF-110: does `UnitIsDead(unit)` exist on Forever and give `true` for an enemy player who just died (target, mouseover, nameplate), `false` while alive? And does a dead enemy player keep a nameplate (`nameplateN`) for a moment? (Without `UnitIsDead` no victim is picked at a kill.) | Target a living enemy player: `/run print(UnitIsDead, UnitIsDead("target"))` prints a function and `false`. Kill them, keep the target: the same line prints `true`. With enemy nameplates on, right after a kill on a player you did not target: `/run for i=1,40 do local u="nameplate"..i if UnitExists(u) and UnitIsPlayer(u) then print(u, UnitName(u), UnitIsDead(u)) end end`: a line with `true` answers the nameplate part (none: dead players lose their nameplate). `/cf fp` after a kill also notes "UnitIsDead exists, target dead true" under the Hunt. | open |
+| V142 | CF-116: which race token, race ID and race name does `UnitRace(unit)` give for a Skyborne player (High Order Skyborne, Windshaper Skyborne)? The Hunt's pool version 5 leaves them out until their tokens are known. | Target (or mouse over) a High Order Skyborne or Windshaper Skyborne player, enemy or friendly: `/run print(UnitRace("target"))` prints the race name, the token and the ID (send all three, for each Skyborne race you meet). Or play as usual with this build until 2026-11-18 and send `/cf fp`: the V142 line reads `pass UnitRace token and id: <token> <id>` with a log line `<token>, id <id>, name <race name>, enemy via nameplate` per race (no player names). No V142 line (`V142 open`): no Skyborne player was seen yet. | open |
 | V130 | Does `EditBox:SetPassword(true)` show dots instead of the typed letters? (CF-84: the guild code field in `/cf settings`) | `/fp`, Test: guild invites: type in the box at the bottom of the window. Mark Yes when it shows dots (or stars), No when it shows the letters. | open |
 
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
+
+### CF-116 The Hunt draws Forever's combinations (pool version 5)
+This build, `/console scriptErrors 1`, a character in the selected community. Steps 1 to 3 on the first day after the
+update (a day drawn before it keeps its pool version 4 Hunt).
+
+| Step | Expected | Status |
+|---|---|---|
+| `/run local D,s=CommunitiesForever.Doomsday,CommunitiesForever.DoomsdayTracker.schedule(); local n=D.day(GetServerTime(),s.offset,s.reset) print(D.POOL_VERSION, #D.combos("Horde"), #D.combos("Alliance")) local h=D.draw(n).hunt print(h.Horde.race,h.Horde.class,h.Alliance.race,h.Alliance.class)` | `5 23 23`, then today's two combinations: the same as the site's pool-5 Hunt list for that day (`tests/fixtures/doomsday-cases.json`, `draws.hunts` with `pool: 5`). | open |
+| `/run local D=CommunitiesForever.Doomsday local g=CommunitiesForeverDB.global.self.doomsday.goals local n=0 for k in pairs(g.days) do if k>n then n=k end end print(n, g.days[n].pool)` | Today's day number and `5` (a day drawn before the update prints `4` and keeps its old Hunt). | open |
+| `/cf`, Doomsday: the Hunt row | The combination of the first line for your faction, e.g. "Dwarf Shamans" or "Undead Paladins" on a day that draws one of the new combinations. | open |
+| On a day whose Hunt is a new combination (Human Hunter, Dwarf Shaman, Gnome Priest; Orc Mage, Undead Paladin, Troll Warlock): kill one with them targeted | The Hunt crosses out with its banner, +5 PvP; the prey line (CF-114) shows on them before the kill. | open |
+| A week drawn after the update with "A kill of every enemy class" as the Bounty: `/cf`, Doomsday, This week | "Still needed for the bounty" lists nine classes minus those killed (Shaman for a Horde character, Paladin for an Alliance one). A week drawn before the update lists eight. | open |
+| A friend still on v1.7.0 (pool version 4), both play the same day | No errors on either side. The friend draws the pool-4 Hunt; their done Hunt and yours each count +5 on both Boards (nothing new is sent). | open |
 
 ### CF-115 Talents taken, node by node
 This build on you and on a Battle.net friend (Bo) with the addon, `/console scriptErrors 1`, a character with talent
@@ -220,7 +234,7 @@ This build on Forever (before 2026-11-18), on a character that ran an earlier bu
 
 | Step | Expected | Status |
 |---|---|---|
-| Open a profession window, wait 15 s, close it; then `/cf fp` | No Lua error, nothing in chat. The report counts 11 checks (CF-109: V114 answered; CF-113: V120 answered): V82, V35b, V73, Hunt, V80, V96, V101, V108, V122, V123, V60b; no V60, V60c, V114 or V120 line (answered). | open |
+| Open a profession window, wait 15 s, close it; then `/cf fp` | No Lua error, nothing in chat. The report counts 10 checks (CF-109: V114 answered; CF-113: V120 answered; CF-116: V73 and V80 answered, V142 added): V82, V35b, Hunt, V96, V101, V108, V122, V123, V60b, V142; no V60, V60c, V73, V80, V114 or V120 line (answered). | open |
 | `/run local r=CommunitiesForeverDB.global.probe.results.forever print(r.V60 and r.V60.status, r.V60c and r.V60c.status)` | The stored results stay as they were (e.g. `pass pass`, or `nil nil` on a character that never had them): the upload still carries them. | open |
 
 ### CF-97 A friend who appears offline, known over the guild

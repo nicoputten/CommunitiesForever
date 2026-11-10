@@ -107,7 +107,7 @@ describe("Probe", function()
     for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86", "V87",
                           "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105", "V106",
                           "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117", "V60", "V60c",
-                          "V114", "V120" }) do
+                          "V114", "V120", "V73", "V80" }) do
       ids[#ids + 1] = id
     end
 
@@ -166,31 +166,6 @@ describe("Probe", function()
   end)
 
   describe("the Hunt", function()
-    it("matches the honor message's victim to the race and class seen before the kill", function()
-      local seen = {}
-      Probe.remember(seen, { "Grim Tusk-Realm", "Grim Tusk" }, { race = "Orc", class = "WARRIOR", source = "target" },
-        1000)
-      assert.are.same({ "pass", "Grim Tusk: Orc WARRIOR via target, 12 s before the kill" },
-        { Probe.hunt(seen, "Grim Tusk", 1012) })
-      assert.are.equal("pass", (Probe.hunt(seen, "Grim Tusk-Realm", 1012)))
-    end)
-
-    it("gives info when the victim was not seen, or not with race and class", function()
-      local seen = {}
-      Probe.remember(seen, { "Ada Hollow" }, { class = "MAGE", source = "nameplate" }, 1000)
-      assert.are.same({ "info", "victim Ada Hollow named, but not seen with race and class before the kill" },
-        { Probe.hunt(seen, "Ada Hollow", 1010) })
-      assert.are.equal("info", (Probe.hunt(seen, "Someone Else", 1010)))
-    end)
-
-    it("has no result without a victim, and skips missing names", function()
-      local seen = {}
-      Probe.remember(seen, { nil, "Grim Tusk" }, { race = "Orc", class = "WARRIOR", source = "target" }, 1)
-      assert.are.equal("pass", (Probe.hunt(seen, "Grim Tusk", 2)))
-      assert.is_nil(Probe.hunt(seen, nil, 2))
-      assert.is_nil(Probe.hunt(seen, "", 2))
-    end)
-
     it("reports the victim picked at a counted kill (CF-110)", function()
       assert.are.same({ "pass", "Grim Tusk: Orc WARRIOR via target at the kill" },
         { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target" }) })
@@ -199,20 +174,32 @@ describe("Probe", function()
       assert.are.equal("info", (Probe.huntPick(nil)))
       assert.are.equal("pass", (Probe.huntPick({ race = "Orc", class = "MAGE", source = "nameplate" })))
     end)
+  end)
 
-    it("starts the list over after 200 players", function()
-      local seen = {}
-      for i = 1, Probe.SEEN_MAX do Probe.remember(seen, { "P" .. i }, { race = "Orc", class = "ROGUE" }, i) end
-      Probe.remember(seen, { "Last One" }, { race = "Troll", class = "MAGE" }, 300)
-      assert.is_nil(seen.P1)
-      assert.are.equal("pass", (Probe.hunt(seen, "Last One", 301)))
+  -- CF-116: V142, a race beyond Vanilla's eight (the Skyborne), without the player's name.
+  describe("races beyond Vanilla's eight (V142)", function()
+    it("gives nothing for the eight known races, by token or, without one, by ID", function()
+      for token, id in pairs(Probe.KNOWN_RACES) do
+        assert.is_nil(Probe.newRace(token, token, id, "enemy", "target"), token)
+        assert.is_nil(Probe.newRace(nil, nil, id, "enemy", "target"), token)
+      end
+      assert.is_nil(Probe.newRace(nil, nil, nil, "enemy", "target"))
+      assert.is_nil(Probe.newRace("Human", "", nil, "friendly", "mouseover"))
+    end)
+
+    it("gives a new race's token, ID and name, the relation and the source", function()
+      assert.are.equal("SkyborneHigh, id 90, name High Order Skyborne, enemy via nameplate",
+        Probe.newRace("High Order Skyborne", "SkyborneHigh", 90, "enemy", "nameplate"))
+      assert.are.equal("?, id 91, name ?, friendly via target", Probe.newRace(nil, nil, 91, "friendly", "target"))
+      assert.are.equal("Windshaper, id ?, name ?, enemy via mouseover",
+        Probe.newRace(nil, "Windshaper", nil, "enemy", "mouseover"))
     end)
   end)
 
   describe("the report", function()
     it("summarises and lists every check, open ones too", function()
       local results = {}
-      Probe.record(results, "V73", "pass", "victim and rank", 100, "65000")
+      Probe.record(results, "V96", "pass", "GetBindLocation Inn", 100, "65000")
       Probe.record(results, "V82", "fail", "IsInGroup secret", 100, "65000")
       Probe.record(results, "V82", "info", "later one", 100, "65000")
       Probe.note(results, "V82", "a line")
@@ -223,7 +210,7 @@ describe("Probe", function()
       assert.are.equal(string.format("Probe (forever): 1 pass, 1 fail, 0 info, %d open; running until 18 November.",
         #Probe.IDS - 2), lines[1])
       local text = table.concat(lines, "\n")
-      assert.truthy(text:find("V73 pass: victim and rank [T100, build 65000]", 1, true))
+      assert.truthy(text:find("V96 pass: GetBindLocation Inn [T100, build 65000]", 1, true))
       assert.truthy(text:find("V82 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
       assert.truthy(text:find("V122 open", 1, true))
       assert.is_nil(text:find("V63", 1, true)) -- answered at launch (CF-96): no longer in the report
@@ -244,19 +231,9 @@ describe("Probe", function()
       for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86",
                             "V87", "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105",
                             "V106", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117",
-                            "V60", "V60c", "V114", "V120" }) do -- CF-105, CF-109, CF-113
+                            "V60", "V60c", "V114", "V120", "V73", "V80" }) do -- CF-105, CF-109, CF-113, CF-116
         for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
       end
     end)
-  end)
-
-  it("shapes a game message without names (CF-101)", function()
-    local formats = { "%s dies (Honorable Kill: %s). You gain %d Honor.", "%1$s dies" }
-    assert.are.equal("x x dies (Honorable Kill). You gain 12.5 Honor.",
-      Probe.shape("Ann Example dies (Honorable Kill). You gain 12.5 Honor.", formats))
-    assert.are.equal("x dies", Probe.shape("|cff00ff00Grim|r dies", formats))
-    assert.are.equal("!x!x dies", Probe.shape("|Hplayer|h dies", formats))
-    assert.are.equal("x x", Probe.shape("Grim Tusk", nil))
-    assert.is_nil(Probe.shape(nil, formats))
   end)
 end)
