@@ -31,7 +31,8 @@ end
 --   "none"    nothing stored
 --   "ok"      stored club is selectable
 --   "missing" club data is loaded and the stored club is not among the selectable clubs
---   "unknown" stored club not found, but club data may not be loaded yet (empty list, not loaded)
+--   "unknown" stored club not found, but club data may not be loaded yet (empty list, not loaded), or a club's id
+--             or type is hidden (nil, CF-119)
 function Clubs.status(storedId, clubs, types, loaded)
   if storedId == nil then
     return "none"
@@ -39,6 +40,10 @@ function Clubs.status(storedId, clubs, types, loaded)
   local selectable = Clubs.selectable(clubs, types)
   for _, club in ipairs(selectable) do
     if club.clubId == storedId then return "ok" end
+  end
+  -- CF-119: a club whose id or type the game hides (nil) may be the stored one: not "missing" yet.
+  for _, club in ipairs(clubs or {}) do
+    if club.clubId == nil or club.clubType == nil then return "unknown" end
   end
   if loaded or #(clubs or {}) > 0 then
     return "missing"

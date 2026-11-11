@@ -343,4 +343,31 @@ describe("GuildInvite (CF-84)", function()
     assert.is_nil(G.cleanDisplayName(""))
     assert.is_nil(G.cleanDisplayName(5))
   end)
+
+  describe("the guild this character is in (CF-119)", function()
+    local GUILD = 2
+
+    it("is the guild club's name", function()
+      assert.are.equal("My Guild", G.guildOf({ { clubId = "1", name = "Friends", clubType = 1 },
+        { clubId = "9", name = "My Guild", clubType = GUILD } }, GUILD))
+    end)
+
+    it("is \"\" while the guild's name is hidden: in a guild, never a match", function()
+      local guild = G.guildOf({ { clubId = "9", clubType = GUILD } }, GUILD)
+      assert.are.equal("", guild)
+      assert.is_false(G.same(guild, "My Guild"))
+    end)
+
+    it("is \"\" (can't tell) while a club's type is hidden, so no guild is never assumed", function()
+      assert.are.equal("", G.guildOf({ { clubId = "1", name = "Friends", clubType = 1 }, { clubId = "9" } }, GUILD))
+    end)
+
+    it("is nil in no guild, and for odd input", function()
+      assert.is_nil(G.guildOf({ { clubId = "1", name = "Friends", clubType = 1 } }, GUILD))
+      assert.is_nil(G.guildOf({}, GUILD))
+      assert.is_nil(G.guildOf(nil, GUILD))
+      assert.is_nil(G.guildOf({ "x", 5 }, GUILD))
+      assert.is_nil(G.guildOf({ { clubId = "9", name = "My Guild", clubType = GUILD } }, nil))
+    end)
+  end)
 end)

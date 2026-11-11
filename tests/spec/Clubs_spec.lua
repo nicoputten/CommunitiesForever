@@ -67,6 +67,13 @@ describe("Clubs", function()
       assert.are.equal("missing", Clubs.status("2", clubs, CHARACTER, false))
     end)
 
+    it("is unknown, not missing, while a club's id or type is hidden (CF-119)", function()
+      local hidden = { { clubId = "3", clubType = nil, name = "Ours" }, { clubId = "5", clubType = 1 } }
+      assert.are.equal("unknown", Clubs.status("3", hidden, CHARACTER, true))
+      assert.are.equal("unknown", Clubs.status("3", { { clubId = nil, clubType = 1 } }, CHARACTER, true))
+      assert.are.equal("ok", Clubs.status("5", hidden, CHARACTER, true))
+    end)
+
     it("is unknown when the list is empty and not known to be loaded", function()
       assert.are.equal("unknown", Clubs.status("3", {}, CHARACTER, false))
     end)
