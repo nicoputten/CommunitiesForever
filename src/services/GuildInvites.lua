@@ -69,13 +69,10 @@ local function rememberedGuild()
   return ns.CommunitySelection.name()
 end
 
--- The guild this character is in, from the club list: its name, or nil when in no guild.
+-- The guild this character is in, from the club list: its name, "" while it can't be read (CF-119: hidden in
+-- combat or right after login), or nil when in no guild.
 local function currentGuild()
-  local guildType = ns.Community.guildType()
-  for _, club in ipairs(ns.Community.subscribedClubs()) do
-    if club.clubType == guildType then return club.name or "" end
-  end
-  return nil
+  return ns.GuildInvite.guildOf(ns.Community.subscribedClubs(), ns.Community.guildType())
 end
 
 -- The picked guild's name while this character is in it, else nil.
@@ -534,8 +531,16 @@ local function onGuildMessage(text, sender)
 end
 
 -- After login, once the club list had time to load: members share their code (or ask for one), alts ask.
+-- CF-119: while the guild's name is hidden, nothing happens (no roster change, no alt request): checked again later.
+local nameTries = 0
 local function afterLogin()
   if not GuildInvites.available() then return end -- no vault folder: the feature is off
+  if rememberedGuild() and currentGuild() == "" then
+    nameTries = nameTries + 1
+    trace("guild name not readable yet (%d)", nameTries)
+    if nameTries < ns.GuildInvite.NAME_TRIES then C_Timer.NewTimer(ns.GuildInvite.NAME_RETRY, afterLogin) end
+    return
+  end
   keepRoster()
   local guild = memberGuild()
   if guild then
@@ -552,6 +557,7 @@ function GuildInvites.start(addon)
   alt, requestedAt = nil, nil
   seen, lastHandled, pending = {}, {}, {}
   answerTimer, lastAnswerAt, debugging = nil, nil, false
+  nameTries = 0
   events = LibStub("AceEvent-3.0"):Embed({})
   ns.Guild.registerPrefix(ns.GuildInvite.PREFIX)
   ns.Guild.watch(addon, ns.GuildInvite.PREFIX)

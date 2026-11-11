@@ -38,14 +38,20 @@ function Community.selectableTypes()
   return { [Community.characterType()] = true, [Community.guildType()] = true }
 end
 
--- Subscribed clubs as { clubId, name, clubType }; empty if the API is missing.
+local readable = ns.Safe.value
+
+-- Subscribed clubs as { clubId, name, clubType }; empty if the API is missing. CF-119: a field the game hides
+-- (secret, e.g. the guild's name right after login) is nil.
 function Community.subscribedClubs()
   local list = {}
   if not (C_Club and C_Club.GetSubscribedClubs) then
     return list
   end
-  for _, info in ipairs(C_Club.GetSubscribedClubs() or {}) do
-    list[#list + 1] = { clubId = info.clubId, name = info.name, clubType = info.clubType }
+  for _, info in ipairs(ns.Safe.call(C_Club.GetSubscribedClubs) or {}) do
+    if type(info) == "table" then
+      list[#list + 1] = { clubId = readable(info.clubId), name = readable(info.name),
+                          clubType = readable(info.clubType) }
+    end
   end
   return list
 end
@@ -73,10 +79,13 @@ function Community.members(clubId)
   if not (C_Club and C_Club.GetClubMembers and C_Club.GetMemberInfo) then
     return list
   end
-  for _, memberId in ipairs(C_Club.GetClubMembers(clubId) or {}) do
-    local info = C_Club.GetMemberInfo(clubId, memberId)
-    if info then
-      list[#list + 1] = info
+  for _, memberId in ipairs(ns.Safe.call(C_Club.GetClubMembers, clubId) or {}) do
+    local info = memberId ~= nil and ns.Safe.call(C_Club.GetMemberInfo, clubId, memberId)
+    if type(info) == "table" then
+      -- CF-119: a copy with hidden (secret) fields as nil.
+      local copy = {}
+      for k, v in pairs(info) do copy[k] = readable(v) end
+      list[#list + 1] = copy
     end
   end
   return list

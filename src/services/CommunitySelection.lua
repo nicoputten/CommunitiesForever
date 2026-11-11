@@ -27,6 +27,14 @@ local function findClub(clubId)
   end
 end
 
+-- CF-119: the club as the game lists it (name nil while hidden), so a hidden name never replaces the remembered one.
+local function rawClub(clubId)
+  if clubId == nil then return nil end
+  for _, club in ipairs(ns.Community.subscribedClubs()) do
+    if club.clubId == clubId then return club end
+  end
+end
+
 local function refreshPassive()
   local now = ns.Clubs.passive(settings().clubId, ns.Community.subscribedClubs(), ns.Community.selectableTypes())
   if now ~= passive then
@@ -43,7 +51,8 @@ local function refreshAvailability()
     initialClubsLoaded)
   local club = clubId and findClub(clubId)
   if club and club.clubId ~= removedClubId then
-    settings().clubName = club.name
+    local raw = rawClub(clubId)
+    if raw and raw.name ~= nil then settings().clubName = raw.name end
     settings().clubType = club.clubType
   end
   -- "unknown" (club data not loaded yet) counts as available, so nothing flickers at login.
@@ -58,7 +67,8 @@ local function setClub(clubId)
   if settings().clubId == clubId then return end
   settings().clubId = clubId
   local club = clubId and findClub(clubId)
-  settings().clubName = club and club.name or nil
+  local raw = club and rawClub(clubId)
+  settings().clubName = raw and raw.name or nil
   settings().clubType = club and club.clubType or nil
   removedClubId = nil
   available = clubId ~= nil
