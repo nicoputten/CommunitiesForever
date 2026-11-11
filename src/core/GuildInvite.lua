@@ -16,6 +16,8 @@ GuildInvite.CANDIDATES_MAX = 10      -- members one attempt asks, one after anot
 GuildInvite.ACK_WAIT = 6             -- seconds to wait for a member's ack before asking the next one
 GuildInvite.RETRY_SECONDS = 300      -- a new attempt this long after one that got no ack
 GuildInvite.MAX_ATTEMPTS = 3         -- attempts per login
+GuildInvite.NAME_RETRY = 30          -- CF-119: in a guild whose name is hidden: check again this much later,
+GuildInvite.NAME_TRIES = 20          -- at most this often after login
 GuildInvite.LOGIN_DELAY = 15         -- seconds after login before the alt checks (club data needs to load)
 GuildInvite.HANDLE_COOLDOWN = 60     -- a member handles one request per requester this often
 GuildInvite.ACCEPT_WINDOW = 180      -- an invite this long after our last request gets "Click Accept"
@@ -33,6 +35,24 @@ local function same(a, b)
   return type(a) == "string" and type(b) == "string" and a:lower() == b:lower()
 end
 GuildInvite.same = same
+
+--[[ CF-119: the guild this character is in, from the club list ({ clubId, name, clubType }, hidden fields nil):
+  its name; "" when in a guild whose name is hidden, or when a club's type is hidden (can't tell); nil when in no
+  guild. "" never matches a guild name, and is never "no guild": the alt flow does not start on it. ]]
+function GuildInvite.guildOf(clubs, guildType)
+  if guildType == nil then return nil end
+  local unsure = false
+  for _, club in ipairs(type(clubs) == "table" and clubs or {}) do
+    if type(club) == "table" then
+      if club.clubType == guildType then
+        return type(club.name) == "string" and club.name or ""
+      elseif club.clubType == nil then
+        unsure = true
+      end
+    end
+  end
+  return unsure and "" or nil
+end
 
 local function integer(value)
   return type(value) == "number" and value == value and value % 1 == 0

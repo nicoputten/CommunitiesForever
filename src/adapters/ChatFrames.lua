@@ -13,12 +13,14 @@ ChatFrames.GUILD = "GUILD"
 -- Channel name of a community's General stream ("Community:<clubId>:<streamId>"), or nil.
 function ChatFrames.channel(clubId)
   if not (clubId and C_Club and C_Club.GetStreams and Chat_GetCommunitiesChannelName) then return nil end
-  local streams = C_Club.GetStreams(clubId) or {}
+  local streams = ns.Safe.call(C_Club.GetStreams, clubId) or {}
   local stream = streams[1]
   for _, s in ipairs(streams) do
-    if Enum and Enum.ClubStreamType and s.streamType == Enum.ClubStreamType.General then stream = s end
+    -- CF-119: a hidden (secret) stream type or id reads as nil.
+    if Enum and Enum.ClubStreamType and ns.Safe.value(s.streamType) == Enum.ClubStreamType.General then stream = s end
   end
-  return stream and Chat_GetCommunitiesChannelName(clubId, stream.streamId) or nil
+  local streamId = stream and ns.Safe.value(stream.streamId)
+  return streamId ~= nil and ns.Safe.value(Chat_GetCommunitiesChannelName(clubId, streamId)) or nil
 end
 
 -- Channel index (0 or nil while the client has not joined it yet).

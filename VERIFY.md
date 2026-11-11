@@ -62,6 +62,16 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-119 A hidden guild name after login
+This build, `/console scriptErrors 1`, `/cf sync debug` on, a guild picked as the community (`/cf`), a guild code
+set, one character in the guild and one alt outside it.
+
+| Step | Expected | Status |
+|---|---|---|
+| Guild character inside a dungeon: `/reload`, and once more in combat | No Lua error. If the name is hidden, `[guild] guild name not readable yet (1)` lines in chat; no guild invite whispers. | open |
+| Leave combat and the instance, wait up to a minute | The `[guild]` lines stop; invites work as before (the alt step below gets an answer from this character). `/cf` still shows the guild picked under its name. | open |
+| The alt outside the guild: log in as usual | Asks a member for an invite as before (CF-84 steps unchanged). | open |
+
 ### CF-118 Pool version 6: themed PvE, the new PvP dailies, the Duel slot, the Hunt by ids
 This build, `/console scriptErrors 1`, a character in the selected community. Steps 1 to 4 on the first day after the
 update (a day drawn before it keeps its pool version 5 set). Without a schedule from the site the addon draws on its

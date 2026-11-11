@@ -55,6 +55,7 @@ describe("GuildInvites (CF-84)", function()
     assert.are.equal(0, accepted)
     _G.C_GuildInfo, _G.AcceptGuild, _G.StaticPopup_Hide, _G.ERR_GUILD_INVITE_S = nil, nil, nil, nil
     _G.ERR_GUILD_PERMISSIONS, _G.ERR_GUILD_NOT_ALLIED = nil, nil
+    _G.issecretvalue = nil
     wowapi.uninstall()
   end)
 
@@ -851,6 +852,62 @@ describe("GuildInvites (CF-84)", function()
       install({ inGuild = false, vault = false })
       wowapi.runTimers(state)
       assert.are.same({}, requests())
+    end)
+  end)
+
+  -- CF-119: right after login (or in combat) the game can hide the guild's name (a secret value): "don't know yet".
+  describe("while the guild's name is hidden", function()
+    local HIDDEN = "<hidden guild name>"
+    local VAULT
+
+    before_each(function()
+      VAULT = { guilds = { ["my guild"] = { code = "Open Sesame", v = 1, at = 900, roster = {
+        ["Player-4619-0AAAAAAA"] = { name = "Ada Lovewell", seen = 500 },
+      } } } }
+    end)
+
+    local function hide(field)
+      _G.issecretvalue = function(v) return v == HIDDEN end
+      state.clubs = { { clubId = GUILD_CLUB, name = "My Guild", clubType = 2 } }
+      state.clubs[1][field] = HIDDEN
+    end
+
+    local function show()
+      state.clubs = { { clubId = GUILD_CLUB, name = "My Guild", clubType = 2 } }
+    end
+
+    for _, field in ipairs({ "name", "clubType" }) do
+      it("sends nothing, keeps the roster and the remembered name, and picks up once readable (" .. field .. ")",
+        function()
+          install({ vault = VAULT, members = {
+            { memberId = 1, guid = "Player-4619-01627852", name = "Ves Doombringer", presence = 1, isSelf = true },
+          } })
+          hide(field)
+          wowapi.fireEvent(state, "CLUB_UPDATED", GUILD_CLUB)
+          wowapi.runTimers(state)
+          assert.are.same({}, sentOfType("GINVREQ")) -- never the alt flow
+          assert.are.same({}, sentOfType("GKEY"))
+          assert.are.same({}, sentOfType("GKICK"))
+          assert.are.same({ ["Player-4619-0AAAAAAA"] = { name = "Ada Lovewell", seen = 500 } },
+            _G.CommunitiesForeverVaultDB.guilds["my guild"].roster)
+          assert.are.equal("My Guild", addon.db.global.settings.clubName)
+          assert.are.equal(2, addon.db.global.settings.clubType)
+          assert.are.equal(GUILD_CLUB, addon.db.global.settings.clubId)
+          show()
+          wowapi.runTimers(state)
+          assert.are.equal(1, #sentOfType("GKEY"))
+          assert.are.same({}, sentOfType("GINVREQ"))
+        end)
+    end
+
+    it("never starts the alt flow, and stops checking after a while", function()
+      install({ vault = VAULT })
+      hide("name")
+      for _ = 1, ns.GuildInvite.NAME_TRIES + 2 do wowapi.runTimers(state) end
+      assert.are.same({}, sentOfType("GINVREQ"))
+      show()
+      wowapi.runTimers(state)
+      assert.are.same({}, sentOfType("GKEY"))
     end)
   end)
 end)

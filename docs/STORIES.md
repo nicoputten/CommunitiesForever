@@ -8,6 +8,24 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-119 No Lua error from a hidden guild name (secret value)
+Bug (addon v1.9.0, after login): `core/GuildInvite.lua:33: attempt to index local 'a' (a secret string value, while
+execution tainted by 'CommunitiesForever')` from `GuildInvites` afterLogin -> keepRoster -> memberGuild ->
+`GuildInvite.same(currentGuild(), remembered)`. `Community.subscribedClubs()` copied `C_Club.GetSubscribedClubs`
+fields raw; the guild club's name was secret at that moment. Same kind as CF-108. Touches:
+`src/adapters/Community.lua`, `src/adapters/ChatFrames.lua`, `src/core/Clubs.lua`, `src/core/GuildInvite.lua`,
+`src/services/CommunitySelection.lua`, `src/services/GuildInvites.lua`, their specs, VERIFY.md, CHANGELOG.md.
+- Every `C_Club` read in the adapters goes through `Safe` (secret -> nil): subscribed clubs (id, name, type),
+  member infos (each field), streams (type, id) and the stream's channel name; the calls are guarded.
+- `GuildInvite.guildOf(clubs, guildType)` (core, unit tested): the guild's name; "" while in a guild whose name is
+  hidden, or while a club's type is hidden (can't tell); nil in no guild. "" never matches a guild name.
+- GuildInvites: with a guild picked and its name not readable, afterLogin does nothing (no roster change, no code
+  sent, never the alt flow) and checks again every `NAME_RETRY` seconds, at most `NAME_TRIES` times.
+- CommunitySelection never replaces the remembered community name with a hidden one (nil); `Clubs.status` says
+  "unknown", not "missing", while a club's id or type is hidden, so the selection stays available.
+- No change to stored data or messages (rule 8).
+- Manual: VERIFY.md CF-119.
+
 ### CF-118 Pool version 6: themed PvE, 50 PvP dailies, the Duel slot and the Hunt by ids (with WEB-108 to WEB-110)
 Nico's "Mission pool v2 + the Hunt" (2026-11-10): every day 3 PvE + the Hunt + 2 PvP (the Skirmish and the Duel slot),
 the site decides the draw and sends it as the mission schedule, one release for addon and site. This is the addon side:
