@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.9.1 (2026-11-11)
 - **Fixed:** no more "attempt to index local 'a' (a secret string value)" Lua error after logging in with a guild
   picked. While the game hides the guild's name (right after login, in an instance or in combat), guild invites wait
   until it can be read again; an alt in the guild never starts asking for an invite meanwhile.
