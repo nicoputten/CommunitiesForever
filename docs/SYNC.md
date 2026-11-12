@@ -344,6 +344,26 @@ sending character, over Battle.net a character of the sender's stored record), w
 `runs.*.bossKills` once the run is over; both count, the earliest time wins (`BossKills.collect`). Not relayed.
 Older clients ignore the unknown type (rule 8).
 
+### FELL (CF-121, an own death to a player, live)
+
+```json
+{ "t": "FELL", "pv": 1, "guid": "Player-1-0000AAAA", "killer": "Player-1-0000BBBB", "name": "Grim Tusk",
+  "at": 1730000100 }
+```
+
+Sent when your character dies and the death recap's last source (V120, read 1 s after `PLAYER_DEAD`) is a player,
+one per death, to everyone online who gets our HELLO, held like KILL while messaging is restricted. `guid` = your
+dead character, `killer` = the killer's GUID (only a `Player-` GUID; missing when the recap's GUID is secret or
+missing), `name` = the killer's name as the game gives it (optional, never split), `at` = the death's server time.
+A death to a creature sends nothing (`Pvp.fellMessage`). For the Avenger missions (`p.avenge`, `b.avenge3`).
+
+The receiver accepts it only for the sender's own character (as KILL), with `killer` a `Player-` GUID or a `name`
+(without `|`, at most 64 characters), and `at` at most 5 minutes ahead and at most 10 minutes old (`Pvp.cleanFell`).
+It counts while that character is in the receiver's group (`Instance.groupGuids`): kept in the day's and week's
+local Doomsday facts (`battle.fallen`) for 10 minutes, until the receiver's own kill of that player (by GUID, else
+the whole name) avenges it. Nothing is stored in the record and nothing is relayed. Older clients ignore the unknown
+type (rule 8).
+
 ### ASK and ANSWER (CF-27, "Who's up for it?")
 
 ```json
@@ -430,6 +450,7 @@ channel. Only while the community picked is a guild (CF-83).
 | A SCHEDREQ arrives | SCHED | That peer only |
 | A newer mission schedule was accepted | HELLO, 5 s debounced | Everyone |
 | A boss of your run dies (CF-103) | KILL (held while messaging is restricted, tried again 30 s later) | Everyone online |
+| Your character dies to a player (CF-121) | FELL (held like KILL) | Everyone online |
 | A message stays incomplete for 3 s | MISS | Its sender only |
 | Logout | BYE | Community peers |
 | `/cf sync` | HELLO (forced) | Everyone online |

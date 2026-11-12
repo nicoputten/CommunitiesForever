@@ -273,50 +273,24 @@ describe("PvP, duels and deaths (CF-52)", function()
         assert.are.same({ "Player-4619-0A1B2C3D" }, victims)
       end)
 
-      it("falls back to a target last seen at very low health, gone at the re-check", function()
+      -- CF-120: no low health fallback (V143: an enemy player's health is secret on Forever).
+      it("picks nobody when the target is gone at the re-check without being seen dead", function()
         load(nil, { hk = 10 })
         forever()
-        _G.UnitIsDead = nil -- no death seen at all
         _G.UnitHealth = function() return 50 end
         _G.UnitHealthMax = function() return 1000 end
         local paths = {}
         ns.PvpTracker.onResolved(function(_, path) paths[#paths + 1] = path or "none" end)
         state.serverTime = 1500
-        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED") -- UnitIsDead missing: not "seen alive"
         _G.UnitIsDead = function() return false end
-        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED") -- alive at 5 %
+        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED") -- alive (at 5 %, which no longer counts)
         state.serverTime, state.pvp.hk = 1502, 11
         wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
         _G.UnitExists = function() return false end -- the target is gone
         settle()
-        assert.are.equal("Grim Tusk", entry().pvpKills[1].name)
-        assert.are.same({ "health" }, paths)
-      end)
-
-      it("picks nobody when the low health target still stands at the re-check, or its health is secret", function()
-        load(nil, { hk = 10 })
-        forever()
-        _G.UnitHealth = function() return 50 end
-        _G.UnitHealthMax = function() return 1000 end
-        local paths = {}
-        ns.PvpTracker.onResolved(function(_, path) paths[#paths + 1] = path or "none" end)
-        state.serverTime = 1500
-        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-        state.serverTime, state.pvp.hk = 1502, 11
-        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
-        settle() -- still standing at 5 %
-        _G.issecretvalue = function(v) return v == 50 end
-        finally(function() _G.issecretvalue = nil end)
-        state.serverTime = 1600
-        wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-        state.serverTime, state.pvp.hk = 1602, 12
-        wowapi.fireEvent(state, "PLAYER_PVP_KILLS_CHANGED")
-        _G.UnitExists = function() return false end
-        settle()
-        assert.are.same({ "none", "none" }, paths)
-        assert.are.equal(2, #entry().pvpKills)
+        assert.are.same({ "none" }, paths)
+        assert.are.equal(1, #entry().pvpKills)
         assert.is_nil(entry().pvpKills[1].name)
-        assert.is_nil(entry().pvpKills[2].name)
       end)
 
       it("counts the kill without a victim when the target was seen alive too long ago", function()

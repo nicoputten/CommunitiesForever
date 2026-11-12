@@ -2,16 +2,17 @@
 installing FriendProbe. Results go to CommunitiesForeverDB.global.probe (core/Probe.lua), which the uploader sends to
 the site. Until Probe.STOP_AT (2026-11-18).
 - Invisible: nothing in chat, no frame, sound or popup; only post-hooks (hooksecurefunc). Left out: what can show
-  something or act (the combat log V75, whispers, invites, sending links, reloads, the jump hook V118). A clicked
-  link is only watched (a SetItemRef post-hook, V60b).
+  something or act (the combat log V75, whispers, invites, sending links, reloads). CF-120: the jump hook (V118) is
+  a post-hook too and runs (services/LaunchProbeWorld.lua); a blocked action of this addon is noted under V118.
 - Safe: every handler and hook runs in pcall (an error is noted under "error"); every API is guarded; a secret value
   is recorded as "secret", a missing API as "missing".
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
 - Private: no raw chat text, no event log, no player names (the Hunt's victim and V120's killer had them until CF-117
-  and CF-113). V142 records a race's token, ID and name, never the player's.
-This file: the plumbing, the login and PvP checks and V142 (races beyond Vanilla's eight, CF-116).
-services/LaunchProbeMissions.lua: the mission catalogue's checks and the PvP catalogue's (V122, V123; V120
-answered, CF-113). services/LaunchProbeRecipes.lua: the recipe check (V60b; V60 and V60c answered, CF-105).
+  and CF-113).
+This file: the plumbing, the login and PvP checks and V74 (a skull's level, CF-120).
+services/LaunchProbeMissions.lua: the PvP catalogue's checks (V122, V123). CF-120: V60b (the recipe link, its file
+LaunchProbeRecipes.lua), V101, V108 and V142 are gone (answered); services/LaunchProbeWorld.lua tries other ways
+for the checks that never answered (V8, V79, V96, V99, V100, V106, V118, V119).
 CF-96: the checks answered by the launch results (build 70790, docs/API-FINDINGS.md "Forever launch probe") are gone;
 their stored results stay in the saved data as they are. ]]
 local _, ns = ...
@@ -202,49 +203,36 @@ LaunchProbe.atLogin(function()
     guarded("Hunt", function()
       local status, detail = Probe.huntPick(pick, candidates)
       if status == "pass" then result("Hunt", status, detail) else info("Hunt", detail) end
-      local health, most = get(UnitHealth, "target"), get(UnitHealthMax, "target")
-      local percent = type(health) == "number" and type(most) == "number" and most > 0
-        and (math.floor(health / most * 100) .. "%") or Vals(UnitHealth, "target")
       note("Hunt", "UnitIsDead " .. (UnitIsDead and "exists" or "missing") .. ", target dead "
-        .. Val(get(UnitIsDead, "target")) .. ", target health " .. percent)
+        .. Val(get(UnitIsDead, "target")))
     end)
   end)
 end)
 
--- ===== V142: races beyond Vanilla's eight, the Skyborne (CF-116) =====
--- Any player, enemy or friendly, seen as target, mouseover or nameplate: UnitRace's three returns when the race isn't
--- one of the eight. No player names: only the race's token, ID and name.
+-- ===== V74: an enemy player with a skull (CF-120) =====
+-- Each enemy player seen as target, mouseover or nameplate (once a minute per GUID): UnitLevel against your own
+-- (Probe.skull). No names: only the level and where it was read.
 
 local unitSeen = {} -- guid -> server time of the last look (Probe.THROTTLE)
-local racesSeen = {} -- line -> true, this session
-local raceKeys = {} -- "<token> <id>" of each race seen, in order: the result's detail
 
-local function Player(unit, source)
+local function Enemy(unit, source)
+  if passed("V74") then return end
   if not (get(UnitExists, unit) and get(UnitIsPlayer, unit)) then return end
+  if not (get(UnitIsEnemy, "player", unit) or get(UnitCanAttack, "player", unit)) then return end
   local guid = UnitGUID and UnitGUID(unit)
   local key = readable(guid) and guid or (unit .. source)
   if Probe.throttled(unitSeen, key, now()) then return end
-  if type(UnitRace) ~= "function" then return end
-  local ok, name, token, id = pcall(UnitRace, unit)
+  if type(UnitLevel) ~= "function" then return end
+  local ok, level = pcall(UnitLevel, unit)
   if not ok then return end
-  local enemy = get(UnitIsEnemy, "player", unit) or get(UnitCanAttack, "player", unit)
-  token = str(token) and token or nil
-  id = (type(id) == "number" and readable(id)) and id or nil
-  local line = Probe.newRace(str(name) and name or nil, token, id, enemy and "enemy" or "friendly", source)
-  if not line or racesSeen[line] then return end
-  racesSeen[line] = true
-  note("V142", line)
-  local race = tostring(token or "?") .. " " .. tostring(id or "?")
-  for _, k in ipairs(raceKeys) do
-    if k == race then return end
-  end
-  raceKeys[#raceKeys + 1] = race
-  result("V142", "pass", "UnitRace token and id: " .. table.concat(raceKeys, ", "))
+  local hidden = level ~= nil and not readable(level)
+  local status, detail = Probe.skull(not hidden and level or nil, get(UnitLevel, "player"), hidden, source)
+  if status == "pass" then result("V74", status, detail) elseif status then info("V74", detail) end
 end
 
-LaunchProbe.on("PLAYER_TARGET_CHANGED", function() Player("target", "target") end)
-LaunchProbe.on("UPDATE_MOUSEOVER_UNIT", function() Player("mouseover", "mouseover") end)
-LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Player(unit, "nameplate") end end)
+LaunchProbe.on("PLAYER_TARGET_CHANGED", function() Enemy("target", "target") end)
+LaunchProbe.on("UPDATE_MOUSEOVER_UNIT", function() Enemy("mouseover", "mouseover") end)
+LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Enemy(unit, "nameplate") end end)
 
 -- ===== Start =====
 

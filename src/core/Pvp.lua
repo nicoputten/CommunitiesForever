@@ -230,14 +230,12 @@ end
 -- On Forever the kill's honor message never names the victim (V73), so the victim is an enemy player looked at
 -- around the kill counter's rise. CF-117: at the rise the victim is often not dead yet (bug 13: "target dead false"),
 -- so the rise only remembers the candidates (Pvp.killCandidates), looks at them again until Pvp.RECHECK_DELAY later
--- (Pvp.observe) and then picks (Pvp.resolveVictims): dead at the rise, else dead by the re-check, else one last seen
--- at very low health shortly before who isn't seen alive at the re-check; otherwise no victim (no guessing). Keyed by
--- GUID; names are never parsed.
+-- (Pvp.observe) and then picks (Pvp.resolveVictims): dead at the rise, else dead by the re-check; otherwise no victim
+-- (no guessing). Keyed by GUID; names are never parsed. CF-120: the low health fallback is gone: an enemy player's
+-- health is secret on Forever (V143), so it could never pick.
 
 Pvp.KILL_WINDOW = 5         -- seconds between seeing a victim alive and the kill
 Pvp.RECHECK_DELAY = 1       -- seconds after the counter rise the candidates are looked at a last time
-Pvp.LOW_HEALTH = 0.15       -- the fallback: last seen health fraction at most this ...
-Pvp.LOW_HEALTH_WINDOW = 3   -- ... within this many seconds before the rise
 -- The order a kill looks for its victim: your target, your mouseover, then an enemy nameplate.
 Pvp.VICTIM_SOURCES = { target = 1, mouseover = 2, nameplate = 3 }
 
@@ -251,21 +249,14 @@ local function field(value, kind)
   return type(value) == kind and value or nil
 end
 
--- A health fraction from 0 to 1, else nil (missing, secret, nonsense).
-local function fraction(value)
-  if type(value) ~= "number" or value ~= value or value < 0 or value > 1 then return nil end
-  return value
-end
-
 --[[ Remembers when an enemy player was last seen alive, by GUID, in place: alive = { [guid] = { at, name, lvl, class,
-race, rank, health } }. look = { guid, name, enemy, dead, lvl, class, race, rank, health } (adapters/PvpInfo.look;
-health: a fraction from 0 to 1). Only a look with dead == false counts (unknown: nothing). Over CACHE_SIZE GUIDs the
-oldest goes. ]]
+race, rank } }. look = { guid, name, enemy, dead, lvl, class, race, rank } (adapters/PvpInfo.look). Only a look with
+dead == false counts (unknown: nothing). Over CACHE_SIZE GUIDs the oldest goes. ]]
 function Pvp.seeAlive(alive, look, now)
   if not enemyLook(look) or look.dead ~= false or type(now) ~= "number" then return end
   alive[look.guid] = { at = now, name = look.name, lvl = look.lvl, class = look.class, race = look.race,
-                       rank = look.rank, raceId = field(look.raceId, "number"), classId = field(look.classId, "number"),
-                       health = fraction(look.health) }
+                       rank = look.rank, raceId = field(look.raceId, "number"),
+                       classId = field(look.classId, "number") }
   local size, oldest, oldestAt = 0, nil, nil
   for key, entry in pairs(alive) do
     size = size + 1
@@ -277,8 +268,8 @@ end
 --[[ The candidates for the victims of a kill counter rise at `now`: { at = now, list = { candidate }, byGuid }. looks:
 the enemy players at the rise (adapters/PvpInfo.looks, each with source "target", "mouseover" or "nameplate");
 alive: Pvp.seeAlive's cache. A candidate is an enemy player alive at the rise or seen alive within KILL_WINDOW before
-it, once per GUID under its best source: { guid, source, order, seenAt, name, lvl, class, race, rank, health,
-healthAt, dead = "dead" when dead at the rise }. Its fields come from the look, else from when it was seen alive. ]]
+it, once per GUID under its best source: { guid, source, order, seenAt, name, lvl, class, race, rank,
+dead = "dead" when dead at the rise }. Its fields come from the look, else from when it was seen alive. ]]
 function Pvp.killCandidates(looks, alive, now)
   local pending = { at = now, list = {}, byGuid = {} }
   if type(looks) ~= "table" or type(alive) ~= "table" or type(now) ~= "number" then return pending end
@@ -289,8 +280,6 @@ function Pvp.killCandidates(looks, alive, now)
     local fits = order and seenAt and now - seenAt <= Pvp.KILL_WINDOW and now >= seenAt
     local had = fits and pending.byGuid[look.guid]
     if fits and (not had or order < had.order) then
-      local health, healthAt = fraction(seen.health), field(seen.at, "number")
-      if look.dead == false and fraction(look.health) then health, healthAt = fraction(look.health), now end
       local name = field(look.name, "string") or field(seen.name, "string")
       local candidate = { guid = look.guid, source = look.source, order = order, seenAt = seenAt,
                           name = name ~= "" and name or nil,
@@ -300,7 +289,6 @@ function Pvp.killCandidates(looks, alive, now)
                           rank = field(look.rank, "number") or field(seen.rank, "number"),
                           raceId = field(look.raceId, "number") or field(seen.raceId, "number"),
                           classId = field(look.classId, "number") or field(seen.classId, "number"),
-                          health = health, healthAt = health and healthAt or nil,
                           dead = look.dead == true and "dead" or nil }
       if had then
         for i, c in ipairs(pending.list) do
@@ -316,45 +304,28 @@ function Pvp.killCandidates(looks, alive, now)
 end
 
 --[[ Looks at the candidates again, in place: a candidate's look with dead == true marks it dead by the re-check
-("later"); an alive look updates its health. final: the re-check itself, where a candidate seen alive is no victim
-for the low health fallback. ]]
-function Pvp.observe(pending, looks, now, final)
+("later"). ]]
+function Pvp.observe(pending, looks)
   if type(pending) ~= "table" or type(pending.byGuid) ~= "table" or type(looks) ~= "table" then return end
   for _, look in ipairs(looks) do
     local candidate = enemyLook(look) and pending.byGuid[look.guid]
-    if candidate then
-      if look.dead == true then
-        candidate.dead = candidate.dead or "later"
-      elseif look.dead == false then
-        if fraction(look.health) and type(now) == "number" then
-          candidate.health, candidate.healthAt = fraction(look.health), now
-        end
-        if final then candidate.living = true end
-      end
-    end
+    if candidate and look.dead == true then candidate.dead = candidate.dead or "later" end
   end
 end
 
 --[[ The victims of `kills` kills (default 1) from the candidates (Pvp.killCandidates, Pvp.observe), best first:
-{ { name, lvl, class, race, rank, source, guid, path } }, possibly empty (no guessing). First the dead ones (path "dead"
-at the rise, "later" by the re-check), then the low health fallback ("health": not seen alive at the re-check, its
-last seen health at most LOW_HEALTH within LOW_HEALTH_WINDOW before the rise); within each, target before mouseover
-before nameplate, then the one seen alive last. guid (CF-104, for revenge) is the look's; Pvp.killEntry never keeps
+{ { name, lvl, class, race, rank, source, guid, path } }, possibly empty (no guessing). Only the dead ones (path
+"dead" at the rise, "later" by the re-check); target before mouseover before nameplate, then the one seen alive
+last. guid (CF-104, for revenge) is the look's; Pvp.killEntry never keeps
 it. ]]
 function Pvp.resolveVictims(pending, kills)
   local found = {}
   if type(pending) ~= "table" or type(pending.list) ~= "table" or type(pending.at) ~= "number" then return found end
   local list = {}
   for _, c in ipairs(pending.list) do
-    local path = c.dead
-    if not path and not c.living and c.health and c.health <= Pvp.LOW_HEALTH and c.healthAt
-        and pending.at - c.healthAt <= Pvp.LOW_HEALTH_WINDOW then
-      path = "health"
-    end
-    if path then list[#list + 1] = { c = c, path = path, group = path == "health" and 2 or 1 } end
+    if c.dead then list[#list + 1] = { c = c, path = c.dead } end
   end
   table.sort(list, function(a, b)
-    if a.group ~= b.group then return a.group < b.group end
     if a.c.order ~= b.c.order then return a.c.order < b.c.order end
     if a.c.seenAt ~= b.c.seenAt then return a.c.seenAt > b.c.seenAt end
     return a.c.guid < b.c.guid
@@ -370,6 +341,42 @@ end
 -- The victims picked from the looks at one moment, without a re-check (Pvp.killCandidates, then Pvp.resolveVictims).
 function Pvp.pickVictims(looks, alive, now, kills)
   return Pvp.resolveVictims(Pvp.killCandidates(looks, alive, now), kills)
+end
+
+-- ===== A friend's death to a player (CF-121, the FELL message) =====
+
+Pvp.FELL_MAX_AGE = 600 -- seconds: an older death can't be avenged any more (missions/Battle.lua AVENGE_WINDOW)
+local MAX_GUID, MAX_NAME = 80, 64
+
+--[[ The FELL message an own character's death to a player sends (docs/SYNC.md "FELL"): { guid, killer, name, at }, or
+nil when no player killer is known. guid: the dead character; killerGuid, killerName: the death recap's last source
+(V120). A player GUID ("Player-...", not your own) is sent with the name; a GUID of anything else (a creature) sends
+nothing; without a GUID (secret or missing) the name alone is sent, as the game gives it (never split). ]]
+function Pvp.fellMessage(guid, killerGuid, killerName, at)
+  if type(guid) ~= "string" or guid == "" or type(at) ~= "number" then return nil end
+  local player = type(killerGuid) == "string" and killerGuid:match("^Player%-") and killerGuid ~= guid
+  if type(killerGuid) == "string" and not player then return nil end -- a creature, or yourself
+  local name = type(killerName) == "string" and killerName ~= "" and killerName or nil
+  if not player and not name then return nil end
+  return { guid = guid, killer = player and killerGuid or nil, name = name, at = math.floor(at) }
+end
+
+--[[ A received FELL message, cleaned: { guid, killer, name, at }, or nil. guid: a non-empty string; killer: a player
+GUID or nil; name: text without "|", at most MAX_NAME characters, or nil; at least one of killer and name; at: a time
+at most maxFuture ahead of now and at most FELL_MAX_AGE old. ]]
+function Pvp.cleanFell(message, now, maxFuture)
+  if type(message) ~= "table" or type(message.guid) ~= "string" or message.guid == "" or #message.guid > MAX_GUID then
+    return nil
+  end
+  local at = message.at
+  if type(at) ~= "number" or at ~= at or type(now) ~= "number" then return nil end
+  if at > now + (maxFuture or 0) or at < now - Pvp.FELL_MAX_AGE then return nil end
+  local killer = message.killer
+  if not (type(killer) == "string" and #killer <= MAX_GUID and killer:match("^Player%-")) then killer = nil end
+  local name = type(message.name) == "string" and message.name:gsub("|", ""):sub(1, MAX_NAME) or nil
+  if name == "" then name = nil end
+  if not (killer or name) then return nil end
+  return { guid = message.guid, killer = killer, name = name, at = math.floor(at) }
 end
 
 local MAX_NUMBER = 10000000

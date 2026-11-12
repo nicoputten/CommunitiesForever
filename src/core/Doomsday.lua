@@ -87,7 +87,9 @@ situation check (Doomsday.canDo); canFrom: the pool version the check applies fr
 replacements in order. needs (PvP goals, CF-79): kill, duel, bg, emote or flag; only kill, duel and bg are a real
 fight (CF-78). The PvE dailies follow the catalogue (CF-70), the weeklies, Skirmish and Bounty goals theirs (CF-79):
 the pool-1 goals keep their place, so pool version 1 draws as before. Ids are never reused or renamed; a retired goal
-stays here with retired = the pool version it leaves from. ]]
+stays here with retired = the pool version it leaves from. siteOnly (CF-121): tested and tracked, but never in the
+addon's own draw (so no pool version's draw changes); only the site's schedule switches it on (Doomsday.pool's
+withCheck, as a check goal). ]]
 local GOALS = {
   -- quests
   { id = "d.quests10", slot = "daily", category = "quests", since = 1, points = 3, text = "Finish 10 quests" },
@@ -303,7 +305,8 @@ local GOALS = {
   { id = "d.vendorBuy", slot = "daily", category = "economy", since = 3, points = 1, text = "Buy from a merchant" },
   { id = "d.auctionPost", slot = "daily", category = "economy", since = 4, points = 3,
     text = "Put an item up for auction" },
-  { id = "d.auctionBuy", slot = "daily", category = "economy", points = 3, text = "Buy at the auction house" },
+  { id = "d.auctionBuy", slot = "daily", category = "economy", since = 6, siteOnly = true, points = 3,
+    text = "Buy at the auction house" },
   { id = "d.mailFriend", slot = "daily", category = "economy", since = 3, points = 1, text = "Send mail to a friend" },
   { id = "d.mailbox", slot = "daily", category = "economy", points = 1, text = "Empty the mailbox" },
   { id = "d.profit", slot = "daily", category = "economy", since = 3, points = 3, text = "End a session in profit" },
@@ -496,7 +499,7 @@ local GOALS = {
     text = "Get an HK in a group of 3 friends", can = "friends2", fallback = { "p.loneWolf" } },
   { id = "p.escort", slot = "skirmish", category = "teamwork", needs = "kill", points = 3,
     text = "Escort: a kill grouped with a lower friend", can = "friends1", fallback = { "p.loneWolf" } },
-  { id = "p.avenge", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, check = true, points = 5,
+  { id = "p.avenge", slot = "skirmish", category = "teamwork", needs = "kill", since = 6, siteOnly = true, points = 5,
     text = "Kill the enemy who killed a friend", can = "friends1", fallback = { "p.loneWolf" } },
   { id = "p.pack", slot = "skirmish", category = "teamwork", needs = "kill", points = 3,
     text = "Pack hunt: a kill in a full party" },
@@ -662,7 +665,7 @@ local GOALS = {
     text = "15 kills with friends", can = "friends1", fallback = { "b.kills50" } },
   { id = "b.warband", slot = "bounty", category = "teamwork", needs = "kill", points = 10,
     text = "A warband of 3 friends", can = "friends1", fallback = { "b.kills50" } },
-  { id = "b.avenge3", slot = "bounty", category = "teamwork", needs = "kill", points = 15,
+  { id = "b.avenge3", slot = "bounty", category = "teamwork", needs = "kill", since = 6, siteOnly = true, points = 15,
     text = "Avenge friends 3 times", can = "friends1", fallback = { "b.kills50" } },
   { id = "b.huntAll", slot = "bounty", category = "teamwork", needs = "kill", points = 10,
     text = "Every friend does the Hunt", can = "friends1", fallback = { "b.kills50" } },
@@ -818,13 +821,14 @@ function Doomsday.goal(id) return BY_ID[id] end
 
 --[[ The active goals of a slot in pool order, for a pool version (default the current one). CF-118: a goal marked
 `check` (it needs a test on Forever first) is Off: never drawn, so left out unless withCheck (the site's schedule may
-switch it on). ]]
+switch it on). CF-121: a `siteOnly` goal likewise (tested, but only the site draws it). ]]
 function Doomsday.pool(slot, version, withCheck)
   version = version or Doomsday.POOL_VERSION
   local list = {}
   for _, g in ipairs(GOALS) do
     local retired = g.retired == true or (type(g.retired) == "number" and version >= g.retired)
-    if g.slot == slot and g.since and g.since <= version and not retired and (withCheck or not g.check) then
+    local off = g.check or g.siteOnly
+    if g.slot == slot and g.since and g.since <= version and not retired and (withCheck or not off) then
       list[#list + 1] = g.id
     end
   end
@@ -1236,9 +1240,10 @@ end
 -- ===== The schedule from the site (CF-68) =====
 
 -- A scheduled list (dailies, weeklies) when all its ids are active goals of that slot, else the normal draw's.
+-- CF-121: a siteOnly (or check) goal of that slot counts as active here: the site switched it on.
 local function overlayList(base, scheduled, slot, version)
   if type(scheduled) ~= "table" or #scheduled ~= 3 then return base end
-  local active = asSet(Doomsday.pool(slot, version))
+  local active = asSet(Doomsday.pool(slot, version, true))
   for _, id in ipairs(scheduled) do
     if not active[id] then return base end
   end

@@ -7,6 +7,8 @@
 -- and C_SummonInfo.GetSummonConfirmSummoner (V114).
 -- CF-104: a posted auction (AUCTION_HOUSE_AUCTION_CREATED, V101). Unverified and guarded (VERIFY.md CF-104): the
 -- accept of a summon (a post-hook on C_SummonInfo.ConfirmSummon), the ERR_AUCTION_STARTED message as a second source.
+-- CF-121: a bought auction (AUCTION_HOUSE_PURCHASE_COMPLETED, V101, build 70888), one per event; registered only when
+-- the client knows the event (Events.register).
 -- Unverified and guarded (VERIFY.md CF-76): the whisper's GUID argument, Battle.net whispers, the hearthstone's
 -- spell from its item, money up at a merchant (a sale). Every call stays guarded.
 local _, ns = ...
@@ -280,6 +282,7 @@ function WorldEvents.watch(addon)
   register("CONFIRM_SUMMON", onSummonOffered)
   register("CANCEL_SUMMON", function() summonFrom = nil end)
   register("AUCTION_HOUSE_AUCTION_CREATED", auctionPosted)
+  register("AUCTION_HOUSE_PURCHASE_COMPLETED", function() action("auctionBuy") end)
   register("MERCHANT_SHOW", function()
     merchantOpen = true
     merchantMoney = call(GetMoney)

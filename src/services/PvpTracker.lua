@@ -9,7 +9,7 @@
 -- Pvp.KILL_WINDOW). A ticker keeps "seen alive" fresh during a fight. No fitting player: no victim, as before.
 -- CF-117: the victim is often not dead yet at the rise (bug 13), so the rise remembers the candidates
 -- (Pvp.killCandidates), the ticker and unit events keep looking at them (Pvp.observe), and Pvp.RECHECK_DELAY later a
--- last look picks (Pvp.resolveVictims: dead at once, dead after the delay, or the low health fallback).
+-- last look picks (Pvp.resolveVictims: dead at once or dead after the delay; CF-120: no low health fallback, V143).
 local _, ns = ...
 
 local PvpTracker = {}
@@ -29,7 +29,8 @@ local waiting = {}
 -- launch probe's Hunt).
 local resolvedFns = {}
 
--- CF-104: internal message (victimGuid, bg) for each victim picked at a kill counter rise (BattleEvents: revenge).
+-- CF-104: internal message (victimGuid, bg, victimName) for each victim picked at a kill counter rise (BattleEvents:
+-- revenge; CF-121: avenge, the name for a friend's killer known only by name).
 PvpTracker.VICTIM = "CF_PVP_VICTIM"
 
 -- Seconds between looks at target, mouseover and nameplates for Pvp.seeAlive.
@@ -38,7 +39,7 @@ PvpTracker.LOOK_EVERY = 1
 -- Remembers the enemy players seen alive and shows the looks to the rises waiting for their re-check.
 local function see(looks, now)
   for _, look in ipairs(looks) do ns.Pvp.seeAlive(alive, look, now) end
-  for _, wait in ipairs(waiting) do ns.Pvp.observe(wait.pending, looks, now) end
+  for _, wait in ipairs(waiting) do ns.Pvp.observe(wait.pending, looks) end
 end
 
 local function lookAround()
@@ -128,11 +129,11 @@ function PvpTracker.resolve(wait)
   local now = GetServerTime()
   local looks = ns.PvpInfo.looks()
   for _, look in ipairs(looks) do ns.Pvp.seeAlive(alive, look, now) end
-  ns.Pvp.observe(wait.pending, looks, now, true)
+  ns.Pvp.observe(wait.pending, looks)
   local victims = ns.Pvp.resolveVictims(wait.pending, wait.kills)
   for _, victim in ipairs(victims) do
     picks[#picks + 1] = victim
-    addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, wait.bg)
+    addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, wait.bg, victim.name)
   end
   for _, fn in ipairs(resolvedFns) do
     pcall(fn, victims[1], victims[1] and victims[1].path, #wait.pending.list)

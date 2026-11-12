@@ -16,11 +16,17 @@
 --     organiser when online.
 --   KILL {guid, instance, name, encounter, at}  (CF-103) an own boss kill, to everyone online at once; held back
 --     like RUNS while messaging is restricted.
+--   FELL {guid, killer, name, at}  (CF-121) an own character died to a player (the death recap's killer), to everyone
+--     online at once, held back like KILL. For the Avenger missions of friends grouped with it.
 -- Over the community every person key is an "aid:<accountId>" key (core/Identity.lua). CF-90: the owner's own
 -- HELLO and RECORD there also carry its own BattleTag (btag); relayed records never carry one.
 local _, ns = ...
 
 local Sync = {}
+
+-- CF-121: internal message (fell) for a friend's FELL ({ guid, killer, name, at }, Pvp.cleanFell): their character
+-- died to a player. BattleEvents keeps it when that character is in your group.
+Sync.FRIEND_FELL = "CF_FRIEND_FELL"
 
 -- Internal message, sent after an accepted RECORD changed people[key].
 Sync.PEOPLE_UPDATED = "CF_PEOPLE_UPDATED"
@@ -48,7 +54,8 @@ local addonRef, helloDebounced
 local lastHello, lastReq, lastRuns, noticeShown
 local runsRetry = {} -- CF-46: target -> true while a retry timer is waiting
 local lastSched, schedRetry = {}, {} -- CF-68: as lastRuns and runsRetry, for SCHED
-local killsWaiting, killsRetry = {}, false -- CF-103: own kills held back while messaging is restricted
+-- CF-103: own kills held back while messaging is restricted (CF-121: and own deaths, FELL): the messages to send.
+local killsWaiting, killsRetry = {}, false
 local MAX_KILLS_WAITING = 20
 local releaseNoticeShown -- CF-35: once per session
 local peers = {}   -- CF-28: community peers met by HELLO: name -> { guid, key, at }
@@ -481,6 +488,19 @@ function handlers.KILL(message, senderKey, _, guid)
   ns.ActivityTracker.liveKill(kill)
 end
 
+-- CF-121: a friend's character died to a player. As KILL: only the sender's own character counts. Not relayed.
+function handlers.FELL(message, senderKey, _, guid)
+  local fell = ns.Pvp.cleanFell(message, now(), ns.Merge.MAX_FUTURE_SECONDS)
+  if not fell then return end
+  if guid then
+    if fell.guid ~= guid then return end
+  else
+    local person = global().people[senderKey]
+    if not (person and type(person.chars) == "table" and person.chars[fell.guid]) then return end
+  end
+  addonRef:SendMessage(Sync.FRIEND_FELL, fell)
+end
+
 -- CF-47: a friend answered a run you organise, in game.
 function handlers.RUNANSWER(message, senderKey)
   ns.Planner.answerReceived(message, senderKey)
@@ -593,7 +613,8 @@ function Sync.sendRunAnswer(run, item)
 end
 
 -- CF-103: the kills waiting go to everyone online now (Battle.net friends who belong, community peers), one KILL
--- each. While messaging is restricted (an encounter, a PvP match) they wait and are tried again RUNS_RETRY later.
+-- each (CF-121: and FELL). While messaging is restricted (an encounter, a PvP match) they wait and are tried again
+-- RUNS_RETRY later.
 local function flushKills()
   if #killsWaiting == 0 then return end
   if ns.Instance.messagingRestricted() then
@@ -611,21 +632,29 @@ local function flushKills()
   for _, presence in pairs(Sync.online()) do
     local target = presence.gameAccountID or presence.target
     if target and reachable(target) then
-      for _, kill in ipairs(kills) do
-        ns.Messenger.send(target, { t = "KILL", guid = kill.guid, instance = kill.instance, name = kill.name,
-                                    encounter = kill.encounter, at = kill.at })
-      end
+      for _, message in ipairs(kills) do ns.Messenger.send(target, message) end
     end
   end
 end
 
 -- CF-103: an own boss kill { guid, instance, name, encounter, at } for online friends, now or once messaging is
 -- allowed again.
+local function queue(message)
+  if #killsWaiting >= MAX_KILLS_WAITING then table.remove(killsWaiting, 1) end
+  killsWaiting[#killsWaiting + 1] = message
+  flushKills()
+end
+
 function Sync.sendKill(kill)
   if not addonRef or type(kill) ~= "table" then return end
-  if #killsWaiting >= MAX_KILLS_WAITING then table.remove(killsWaiting, 1) end
-  killsWaiting[#killsWaiting + 1] = kill
-  flushKills()
+  queue({ t = "KILL", guid = kill.guid, instance = kill.instance, name = kill.name, encounter = kill.encounter,
+          at = kill.at })
+end
+
+-- CF-121: an own character's death to a player (Pvp.fellMessage) for online friends, now or once messaging is allowed.
+function Sync.sendFell(fell)
+  if not addonRef or type(fell) ~= "table" then return end
+  queue({ t = "FELL", guid = fell.guid, killer = fell.killer, name = fell.name, at = fell.at })
 end
 
 -- The own record changed outside SelfTracker (e.g. invite link, CF-21): HELLO after the debounce.

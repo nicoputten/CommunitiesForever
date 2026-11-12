@@ -70,6 +70,8 @@ stds.wow = {
     "GetCurrentRegion", "UnitOnTaxi", "COMBATLOG_XPGAIN_FIRSTPERSON", "UnitClassification", "C_PvP", "GetZonePVPInfo",
     "GetBattlefieldScore", "GetBattlefieldStatInfo", "GetNumBattlefieldStats", "GetNumBattlefieldScores", "UnitIsPVP",
     "GetSubZoneText", "C_SummonInfo", "GetInventoryItemID", "GetLootSourceInfo", "GetSpellInfo", "C_Spell",
+    "GetMerchantItemLink", "CanMerchantRepair", "GetRepairAllCost", "GetInboxHeaderInfo", "GetInboxNumItems",
+    "GetLootSlotLink", -- CF-120 (VERIFY.md V99, V100, V106)
     "GetBindLocation", "ERR_NEWTAXIPATH", "ERR_AUCTION_STARTED", "SKILL_RANK_UP", "IsSwimming", "IsMounted", "C_UnitAuras", "C_Container",
     "issecretvalue",
     "YOU_LOOT_MONEY", "LOOT_MONEY_SPLIT", -- CF-75 (V109)

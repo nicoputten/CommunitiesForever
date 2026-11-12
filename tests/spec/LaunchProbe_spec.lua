@@ -6,7 +6,7 @@ describe("the hidden launch probe", function()
   local state, ns, addon
   local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "IsInGroup", "C_DeathRecap", "C_PvP",
                   "UnitFactionGroup", "IsFishingLoot", "GetPVPThisWeekStats", "DoEmote", "hooksecurefunc",
-                  "C_TradeSkillUI", "SetItemRef", "ProfessionsFrame", "UnitIsDead" }
+                  "C_TradeSkillUI", "SetItemRef", "ProfessionsFrame", "UnitIsDead", "GetRealZoneText" }
 
   local function load(serverTime)
     state, ns, addon = helpers.client({ setup = function(s) s.serverTime = serverTime or 1794000000 end })
@@ -44,48 +44,52 @@ describe("the hidden launch probe", function()
     assert.are.equal(ns.Store.SCHEMA_VERSION, addon.db.global.schemaVersion)
   end)
 
-  -- CF-116: V142, a player of a race beyond Vanilla's eight (the Skyborne): the race's token, ID and name only.
-  it("records a race beyond the eight, enemy or friendly, without the player's name, silently", function()
+  -- CF-120: V74, an enemy player with a skull: UnitLevel -1, or a level 10 or more above yours; no names.
+  it("records a skull's UnitLevel -1 without a name, silently (V74)", function()
     load()
     local printed = #state.printed
     enemyTarget("Orc")
+    _G.UnitLevel = function(unit) return unit == "player" and 20 or 25 end
+    state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(results().V142) -- a known race: nothing
+    assert.is_nil(results().V74) -- an ordinary level: nothing
     assert.is_nil(results().V73) -- answered (CF-116): the honor message isn't watched any more
-    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
-    _G.UnitIsEnemy = function() return false end
+    _G.UnitLevel = function(unit) return unit == "player" and 20 or -1 end
+    _G.UnitExists = function(unit) return unit == "mouseover" end
     state.unitGuids = { mouseover = "Player-4619-0A1B2C3E" }
     wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
-    _G.UnitExists = function(unit) return unit == "mouseover" end
-    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
-    local r = results().V142
+    local r = results().V74
     assert.are.equal("pass", r.status)
-    assert.are.equal("UnitRace token and id: SkyborneHigh 90", r.detail)
-    assert.are.equal("SkyborneHigh, id 90, name High Order Skyborne, friendly via mouseover", r.log[1])
+    assert.are.equal("skull: UnitLevel -1 via mouseover", r.detail)
     assert.is_nil(r.detail:find("Grim", 1, true))
-    _G.UnitRace = function() return "Windshaper Skyborne", "SkyborneWind", 91 end
-    _G.UnitIsEnemy = function() return true end
-    state.serverTime = state.serverTime + 60
-    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
-    r = results().V142
-    assert.are.equal("pass", r.status) -- the pass lists every race seen; one log line each
-    assert.are.equal("UnitRace token and id: SkyborneHigh 90, SkyborneWind 91", r.detail)
-    assert.are.equal("SkyborneWind, id 91, name Windshaper Skyborne, enemy via mouseover", r.log[2])
-    assert.are.equal(2, #r.log)
-    for _, line in ipairs(r.log) do assert.is_nil(line:find("Grim", 1, true)) end
     for i = printed + 1, #state.printed do
       assert.is_nil(state.printed[i]:lower():find("probe", 1, true))
     end
   end)
 
-  it("leaves a secret race token out of V142, without an error", function()
+  it("passes V74 on a readable level 10 or more above yours, and ignores friendly players", function()
     load()
-    enemyTarget("SkyborneHigh")
-    _G.issecretvalue = function(v) return v == "SkyborneHigh" or v == 90 end
-    finally(function() _G.issecretvalue = nil end)
-    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    enemyTarget("Orc")
+    _G.UnitIsEnemy = function() return false end
+    _G.UnitLevel = function(unit) return unit == "player" and 20 or -1 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(results().V142)
+    assert.is_nil(results().V74) -- not an enemy
+    _G.UnitIsEnemy = function() return true end
+    _G.UnitLevel = function(unit) return unit == "player" and 20 or 31 end
+    state.serverTime = state.serverTime + 60
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    assert.are.equal("pass", results().V74.status)
+    assert.are.equal("10+ levels above: UnitLevel 31 at own 20 (not -1) via target", results().V74.detail)
+  end)
+
+  it("notes a secret enemy level in V74 as info, without an error", function()
+    load()
+    enemyTarget("Orc")
+    _G.issecretvalue = function(v) return v == 33 end
+    finally(function() _G.issecretvalue = nil end)
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    assert.are.equal("info", results().V74.status)
+    assert.are.equal("enemy player's UnitLevel secret via target", results().V74.detail)
     assert.is_nil(results().error)
   end)
 
@@ -106,7 +110,7 @@ describe("the hidden launch probe", function()
     wowapi.runTimers(state)
     assert.are.equal("pass", results().Hunt.status)
     assert.are.equal("Orc WARRIOR via target, dead after the delay, 1 candidate", results().Hunt.detail)
-    assert.are.equal("UnitIsDead exists, target dead true, target health missing", results().Hunt.log[1])
+    assert.are.equal("UnitIsDead exists, target dead true", results().Hunt.log[1]) -- CF-120: no health (V143)
   end)
 
   it("gives the Hunt an info line at a counted kill without a fitting victim (CF-110)", function()
@@ -120,17 +124,18 @@ describe("the hidden launch probe", function()
     assert.truthy(results().Hunt.detail:find("no victim", 1, true))
   end)
 
-  it("looks at the same player once a minute (V142)", function()
+  it("looks at the same player once a minute (V74)", function()
     load()
     enemyTarget("Orc")
+    _G.UnitLevel = function(unit) return unit == "player" and 30 or 33 end
     state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    _G.UnitLevel = function(unit) return unit == "player" and 30 or -1 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(results().V142)
+    assert.is_nil(results().V74)
     state.serverTime = state.serverTime + 60
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.are.equal("pass", results().V142.status)
+    assert.are.equal("pass", results().V74.status)
   end)
 
   it("no longer runs the answered death recap check (V120, CF-113)", function()
@@ -144,22 +149,46 @@ describe("the hidden launch probe", function()
     assert.is_nil(results().V81) -- answered at launch (CF-96)
   end)
 
-  it("checks only buying at the auction house (V101, CF-113)", function()
+  -- CF-120: V85, the items you put in a trade: only the item ID.
+  it("records the item put in a trade (V85)", function()
     load()
-    -- posting is answered: AUCTION_HOUSE_AUCTION_CREATED is no longer registered; a stored post pass gives way
-    results().V101 = { status = "pass", detail = "posted: AUCTION_HOUSE_AUCTION_CREATED", at = 1, build = "70862" }
-    wowapi.fireEvent(state, "AUCTION_HOUSE_PURCHASE_COMPLETED")
-    assert.are.equal("pass", results().V101.status)
-    assert.are.equal("bought: AUCTION_HOUSE_PURCHASE_COMPLETED", results().V101.detail)
+    _G.GetTradePlayerItemLink = function() return nil end
+    finally(function() _G.GetTradePlayerItemLink = nil end)
+    wowapi.fireEvent(state, "TRADE_PLAYER_ITEM_CHANGED", 1)
+    assert.are.equal("info", results().V85.status)
+    assert.are.equal("TRADE_PLAYER_ITEM_CHANGED slot 1, GetTradePlayerItemLink missing", results().V85.detail)
+    _G.GetTradePlayerItemLink = function() return "|cffffffff|Hitem:2589::::::::20:::::|h[Linen Cloth]|h|r" end
+    wowapi.fireEvent(state, "TRADE_PLAYER_ITEM_CHANGED", 1)
+    assert.are.equal("pass", results().V85.status)
+    assert.are.equal("TRADE_PLAYER_ITEM_CHANGED slot 1: item 2589", results().V85.detail)
+  end)
+
+  -- CF-120: V101, V108, V60b and V142 are answered; their stored results stay.
+  it("no longer runs V101, V108, V60b and V142, and keeps their stored results", function()
+    load()
+    results().V101 = { status = "pass", detail = "bought: AUCTION_HOUSE_PURCHASE_COMPLETED", at = 1, build = "70888" }
+    enemyTarget("Orc")
+    _G.UnitRace = function() return "Windshaper Skyborne", "Skyborne", 96 end
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    assert.is_nil(results().V142)
+    assert.is_nil(ns.LaunchProbe.recipes)
+    assert.are.same({ status = "pass", detail = "bought: AUCTION_HOUSE_PURCHASE_COMPLETED", at = 1, build = "70888" },
+      results().V101)
+    assert.are.same({ "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
+                      "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119" }, ns.Probe.IDS)
+    addon:OnSlashCommand("fp")
+    local text = ns.ProbeReport.text()
+    for _, id in ipairs({ "V101", "V108", "V60b", "V142" }) do assert.is_nil(text:find(id, 1, true), id) end
   end)
 
   it("notes a handler error instead of showing it", function()
     load()
-    ns.LaunchProbe.recipes.clicked("trade:Player-1-000C:3908:197") -- V60b waits for the window (CF-105)
-    _G.C_TradeSkillUI = setmetatable({}, { __index = function() error("boom") end })
-    wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-    _G.C_TradeSkillUI = nil
-    assert.truthy(results().error.log[1]:find("TRADE_SKILL_SHOW", 1, true))
+    _G.UnitName = function() return state.player.name end
+    _G.GetNumBattlefieldScores = function() return 1 end
+    _G.GetBattlefieldScore = function() error("boom") end
+    finally(function() _G.GetNumBattlefieldScores, _G.GetBattlefieldScore = nil, nil end)
+    wowapi.fireEvent(state, "UPDATE_BATTLEFIELD_SCORE")
+    assert.truthy(results().error.log[1]:find("UPDATE_BATTLEFIELD_SCORE", 1, true))
   end)
 
   it("registers nothing from 2026-11-18 and keeps the results", function()
@@ -169,11 +198,10 @@ describe("the hidden launch probe", function()
     load(1794960000 - 10)
     local stored = results()
     state.serverTime = 1794960000
-    _G.UnitExists = function(unit) return unit == "target" end
-    _G.UnitIsPlayer = function() return true end
-    _G.UnitRace = function() return "High Order Skyborne", "SkyborneHigh", 90 end
+    enemyTarget("Orc")
+    _G.UnitLevel = function(unit) return unit == "player" and state.player.level or -1 end
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(stored.V142)
+    assert.is_nil(stored.V74)
     assert.are.equal("info", stored.V82.status)
   end)
 
@@ -194,7 +222,7 @@ describe("the hidden launch probe", function()
     wowapi.fireEvent(state, "LOOT_OPENED")
     wowapi.fireEvent(state, "PLAYER_DEAD")
     wowapi.fireEvent(state, "UI_INFO_MESSAGE", 0, "Trade complete.")
-    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V79", "V81", "V83", "V85", "V86", "V87" }) do
+    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V81", "V83", "V86", "V87" }) do
       assert.is_nil(results()[id], id)
     end
     assert.are.same({ status = "pass", detail = "IsFishingLoot true, 1 items", at = 1, build = "70790" },
@@ -215,259 +243,148 @@ describe("the hidden launch probe", function()
     local text = ns.ProbeReport.text()
     assert.is_nil(text:find("V73", 1, true))
     assert.is_nil(text:find("V80", 1, true))
-    assert.truthy(text:find("V142 open", 1, true))
+    assert.truthy(text:find("V74 open", 1, true))
   end)
 
-  it("keeps looking at zone types after friendly passed (V123)", function()
+  -- CF-120: V123 reads the type at every zone change and again 2 s later, and counts zones per type.
+  it("reads the zone's PvP type at every zone change and counts zones per type (V123)", function()
+    local zone, kind = "Durotar", nil
+    _G.C_PvP = { GetZonePVPInfo = function() return kind end }
     load()
-    local zone = "friendly"
-    _G.C_PvP = { GetZonePVPInfo = function() return zone end }
+    results().V123 = nil -- the login's own read (the mock's zone)
+    ns.LaunchProbe.zoneReset()
+    _G.GetRealZoneText = function() return zone end
     wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+    assert.are.equal("info", results().V123.status)
+    assert.are.equal("zones per type: none 1", results().V123.detail)
+    assert.truthy(results().V123.log[#results().V123.log]:find("Durotar: missing, flagged", 1, true))
+    zone, kind = "Orgrimmar", "friendly"
+    wowapi.fireEvent(state, "ZONE_CHANGED")
+    assert.are.equal("zones per type: friendly 1, none 1", results().V123.detail)
+    zone, kind = "Ashenvale", nil
+    wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+    kind = "contested" -- the type catches up after the event
+    wowapi.runTimers(state)
     assert.are.equal("pass", results().V123.status)
-    assert.truthy(results().V123.detail:find("friendly", 1, true))
-    zone = "hostile"
-    wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
-    assert.truthy(results().V123.detail:find("hostile", 1, true))
-    zone = "friendly"
-    wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
-    assert.truthy(results().V123.detail:find("hostile", 1, true)) -- friendly again changes nothing
-    assert.are.equal(2, #results().V123.log) -- friendly, hostile (none at login: GetZonePVPInfo was missing)
+    assert.are.equal("zones per type: contested 1, friendly 1, none 2", results().V123.detail)
+    wowapi.fireEvent(state, "ZONE_CHANGED_INDOORS") -- the same zone and type again: nothing new
+    assert.are.equal("zones per type: contested 1, friendly 1, none 2", results().V123.detail)
   end)
 
-  describe("V108: an emote at a target (CF-117)", function()
+  -- CF-120 (Nico): checks that never answered try other ways (services/LaunchProbeWorld.lua).
+  describe("other ways for the unanswered checks (CF-120)", function()
+    local saved = {}
+    local names = { "GetPVPRankInfo", "GetBindLocation", "GetMerchantItemLink", "CanMerchantRepair",
+                    "GetRepairAllCost", "GetInboxHeaderInfo", "GetInboxNumItems", "TakeInboxItem", "GetLootSourceInfo",
+                    "GetLootSlotLink", "JumpOrAscendStart", "C_UnitAuras", "C_Spell", "GetSpellInfo" }
+    before_each(function()
+      for _, n in ipairs(names) do saved[n] = _G[n] end
+    end)
+    after_each(function()
+      for _, n in ipairs(names) do _G[n] = saved[n] end
+    end)
+
     -- hooksecurefunc(name, fn) or hooksecurefunc(table, key, fn), as the game's.
     local function hooks()
       _G.hooksecurefunc = function(owner, key, fn)
-        if type(owner) ~= "table" then owner, key, fn = _G, owner, key end
+        if type(owner) == "string" then owner, key, fn = _G, owner, key end
         local original = owner[key]
         owner[key] = function(...)
-          original(...)
+          local r = { original(...) }
           fn(...)
+          return unpack(r)
         end
       end
     end
 
-    local function enemyFaction()
-      _G.UnitIsPlayer = function() return true end
-      _G.UnitFactionGroup = function(unit) return unit == "player" and "Horde" or "Alliance" end
-      state.unitGuids = { target = "Player-4619-0A1B2C3D" }
-    end
+    it("reads the clubIds and whether GetPVPRankInfo exists at login (V8, V79)", function()
+      load() -- the mock's clubs
+      assert.are.equal("clubs: type 1 id 23125681, type 2 id 999, type 1 id 777", results().V8.detail)
+      assert.are.equal("info", results().V8.status)
+      assert.are.equal("pass", results().V79.status) -- the mock has it
+      assert.truthy(results().V79.detail:find("GetPVPRankInfo exists", 1, true))
+    end)
 
-    -- CHAT_MSG_TEXT_EMOTE's arguments: text, sender name, ..., the sender's GUID 12th.
-    local function chatEmote(guid)
-      wowapi.fireEvent(state, "CHAT_MSG_TEXT_EMOTE", "You wave at Grim Tusk.", "Ves Doombringer", "", "", "", "", 0, 0,
-        "", 0, 1, guid)
-    end
-
-    it("passes on a DoEmote at an enemy-faction player (the whisper part is answered)", function()
-      _G.DoEmote = function() end
+    it("sees the hearthstone's place by the event, the ConfirmBinder hook or a change since login (V96)", function()
+      local place = "Orgrimmar"
+      _G.GetBindLocation = function() return place end
+      _G.ConfirmBinder = function() place = "Crossroads" end
       hooks()
       load()
-      enemyFaction()
-      _G.DoEmote("FLEX", "target")
-      assert.are.equal("pass", results().V108.status)
-      assert.are.equal("emote FLEX via DoEmote on an enemy-faction player, GUID readable", results().V108.detail)
+      assert.is_nil(results().V96)
+      _G.ConfirmBinder()
+      wowapi.runTimers(state)
+      assert.are.same({ "pass", "ConfirmBinder: GetBindLocation readable" },
+        { results().V96.status, results().V96.detail })
+      assert.are.equal("ConfirmBinder: GetBindLocation Crossroads", results().V96.log[1])
+      results().V96 = nil
+      wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+      assert.are.equal("GetBindLocation changed since login, seen at a zone change", results().V96.detail)
+      _G.ConfirmBinder = nil
     end)
 
-    it("hooks C_ChatInfo.PerformEmote when it exists (bug 14: a typed /wave never reached DoEmote)", function()
+    it("reads the merchant's first item and the repair cost (V99)", function()
+      load()
+      _G.GetMerchantItemLink = function() return nil end
+      _G.CanMerchantRepair = function() return true end
+      _G.GetRepairAllCost = function() return 1250, true end
+      wowapi.fireEvent(state, "MERCHANT_SHOW")
+      assert.are.equal("info", results().V99.status)
+      _G.GetMerchantItemLink = function() return "|cffffffff|Hitem:159::::::::20:::::|h[Water]|h|r" end
+      wowapi.fireEvent(state, "MERCHANT_UPDATE")
+      assert.are.same({ "pass", "MERCHANT_UPDATE: GetMerchantItemLink(1) item 159, CanMerchantRepair true, "
+        .. "GetRepairAllCost 1250, true" }, { results().V99.status, results().V99.detail })
+    end)
+
+    it("tells whether a mail's sender is readable when taking from it, never the name (V100)", function()
+      _G.GetInboxHeaderInfo = function() return nil, nil, "Ada Lovelace", "Hi" end
+      _G.TakeInboxItem = function() end
       hooks()
-      local performed
-      state, ns, addon = helpers.client({ setup = function(s)
-        s.serverTime = 1794000000
-        _G.C_ChatInfo.PerformEmote = function(token) performed = token end
-      end })
-      enemyFaction()
-      _G.C_ChatInfo.PerformEmote("WAVE", "Grim Tusk")
-      assert.are.equal("WAVE", performed)
-      assert.are.equal("pass", results().V108.status)
-      assert.are.equal("emote WAVE via C_ChatInfo.PerformEmote on an enemy-faction player, GUID readable",
-        results().V108.detail)
-      chatEmote(state.player.guid)
-      assert.are.same({ "chat line after C_ChatInfo.PerformEmote" }, results().V108.log)
+      load()
+      _G.TakeInboxItem(1, 1)
+      assert.are.same({ "pass", "TakeInboxItem: sender readable" }, { results().V100.status, results().V100.detail })
+      assert.is_nil(results().V100.detail:find("Ada", 1, true))
+      _G.TakeInboxItem = nil
     end)
 
-    it("notes your own emote seen only in chat, without its text or a name", function()
+    it("reads fishing loot's source, also when only a Fishing cast tells it was fishing (V106)", function()
+      load()
+      _G.GetLootSourceInfo = function() return "GameObject-0-1-2-3-35591-0000" end
+      _G.GetLootSlotLink = function() return "|cffffffff|Hitem:6303::::::::20:::::|h[Raw Slitherskin Mackerel]|h|r" end
+      wowapi.fireEvent(state, "LOOT_OPENED")
+      assert.is_nil(results().V106) -- not fishing
+      wowapi.fireEvent(state, "UNIT_SPELLCAST_CHANNEL_START", "player", "Cast-1", 7620)
+      wowapi.fireEvent(state, "LOOT_READY")
+      assert.are.same({ "pass", "LOOT_READY (a Fishing cast): source GameObject, item 6303" },
+        { results().V106.status, results().V106.detail })
+    end)
+
+    it("counts jumps from a JumpOrAscendStart post-hook (V118)", function()
+      _G.JumpOrAscendStart = function() end
       hooks()
       load()
-      enemyFaction()
-      chatEmote("Player-4619-0FFFFFFF") -- someone else's emote: nothing
-      assert.is_nil(results().V108)
-      chatEmote(state.player.guid)
-      local r = results().V108
-      assert.are.equal("info", r.status)
-      assert.are.equal("own emote in chat on an enemy-faction player, GUID readable, no emote hook before it "
-        .. "(hookable: none)", r.detail)
-      assert.is_nil(r.detail:find("Grim", 1, true))
-      assert.is_nil(r.detail:find("wave", 1, true))
+      for _ = 1, 3 do _G.JumpOrAscendStart() end
+      assert.are.same({ "pass", "JumpOrAscendStart post-hook ran 3 times" },
+        { results().V118.status, results().V118.detail })
+      _G.JumpOrAscendStart = nil
     end)
 
-    it("ignores a secret sender GUID without an error", function()
+    it("notes the campfire's spell and a new aura while it burns (V119)", function()
+      local list = {}
+      _G.C_UnitAuras = { GetAuraDataByIndex = function(_, i) return list[i] end }
+      _G.C_Spell = { GetSpellInfo = function(id) return { name = id == 818 and "Basic Campfire" or "Other" } end }
       load()
-      enemyFaction()
-      _G.issecretvalue = function(v) return v == state.player.guid end
-      finally(function() _G.issecretvalue = nil end)
-      chatEmote(state.player.guid)
-      assert.is_nil(results().V108)
-      assert.is_nil(results().error)
-    end)
-  end)
-
-  -- CF-98: the recipe checks (services/LaunchProbeRecipes.lua); since CF-105 only V60b.
-  describe("recipes", function()
-    local linked, recipeIDs
-
-    -- Tailoring with three recipes, two learned; Bolt of Silk Cloth (item 4305) from each way.
-    local function tailoring()
-      linked, recipeIDs = false, { 3839, 3840, 3841 }
-      _G.C_TradeSkillUI = {
-        GetAllRecipeIDs = function() return recipeIDs end,
-        GetRecipeInfo = function(id)
-          return { recipeID = id, name = "Bolt of Silk Cloth", learned = id ~= 3841, relativeDifficulty = 1,
-                   numSkillUps = 1, numAvailable = 3, categoryID = 1100 }
-        end,
-        GetRecipeOutputItemData = function() return { itemID = 4305 } end,
-        GetRecipeItemLink = function() return "|cffffffff|Hitem:4305::::::::60:::::|h[Bolt of Silk Cloth]|h|r" end,
-        GetRecipeSchematic = function()
-          return { outputItemID = 4305, name = "Bolt of Silk Cloth",
-                   reagentSlotSchematics = { { quantityRequired = 4, reagents = { { itemID = 4306 } } } } }
-        end,
-        GetBaseProfessionInfo = function() return { professionID = 197, professionName = "Tailoring" } end,
-        GetChildProfessionInfo = function() return { professionID = 2540 } end,
-        GetTradeSkillListLink = function() return "|cffffd000|Htrade:Player-1-000A:3908:197|h[Tailoring]|h|r" end,
-        IsTradeSkillLinked = function() return linked, linked and "Ada Stormwind" or nil end,
-        OpenTradeSkill = function() end,
-        GetTradeSkillLineForRecipe = function(id) return 2540, "Tailoring", id == 3839 and 197 or 185 end,
-        GetRecipeCooldown = function() return nil end,
-        GetRecipeSourceText = function() return "Trainer: Tailoring" end,
-      }
-    end
-
-    local function withLinks()
-      _G.SetItemRef = function() end
-      _G.hooksecurefunc = function(name, fn)
-        local original = _G[name]
-        _G[name] = function(...)
-          original(...)
-          fn(...)
-        end
-      end
-    end
-
-    it("no longer reads the own profession window (V60 and V60c answered, CF-105)", function()
-      tailoring()
-      load()
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
-      assert.is_nil(results().V60)
-      assert.is_nil(results().V60c)
-    end)
-
-    it("passes V60b when a friend's link opens Blizzard's view while they are offline, without their GUID", function()
-      tailoring()
-      withLinks()
-      load()
-      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
-      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
-      linked = true
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      local r = results().V60b
-      assert.are.equal("pass", r.status)
-      assert.are.equal("link of a friend offline opened Blizzard's view (IsTradeSkillLinked true, 3 recipes)", r.detail)
-      assert.are.same({ "link of a friend offline clicked" }, r.log)
-      wowapi.runTimers(state)
-      assert.are.equal("pass", results().V60b.status)
-    end)
-
-    it("keeps V60b info for the own link, and notes a click that opened nothing", function()
-      tailoring()
-      withLinks()
-      load()
-      _G.SetItemRef("item:4305", "[Bolt of Silk Cloth]", "LeftButton") -- not a profession link
-      assert.is_nil(results().V60b)
-      _G.SetItemRef("trade:" .. state.player.guid .. ":3908:197", "[Tailoring]", "LeftButton")
-      linked = true
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW")
-      assert.are.equal("info", results().V60b.status)
-      assert.truthy(results().V60b.detail:find("link of yours opened", 1, true))
-      linked = false
-      _G.SetItemRef("trade:Player-4619-000C:3908:197", "[Tailoring]", "LeftButton")
-      wowapi.runTimers(state)
-      assert.are.equal("info", results().V60b.status)
-      assert.are.equal("link of someone else clicked, no linked window within 5 s", results().V60b.detail)
-      local log = results().V60b.log
-      assert.are.equal("seen: events none; IsTradeSkillLinked false; frame none shown", log[#log])
-    end)
-
-    -- CF-109: build 70862 said "no linked window" for links that opened.
-    it("sees a window that opened inside SetItemRef, before the post-hook", function()
-      tailoring()
-      withLinks()
-      _G.SetItemRef = function() linked = true end -- Blizzard opens it at once; the probe hooks this at load
-      load()
-      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
-      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
-      assert.are.equal("pass", results().V60b.status)
-      assert.truthy(results().V60b.detail:find("a friend offline opened", 1, true))
-    end)
-
-    it("sees a link that turns linked after the events, by looking once a second", function()
-      tailoring()
-      withLinks()
-      load()
-      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
-      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
-      wowapi.fireEvent(state, "TRADE_SKILL_SHOW") -- not linked yet
-      assert.is_nil(results().V60b.status)
-      linked = true
-      wowapi.runTimers(state)
-      assert.are.equal("pass", results().V60b.status)
-    end)
-
-    it("counts the own window as opened for the own link, also unlinked (frame or event)", function()
-      tailoring()
-      withLinks()
-      load()
-      _G.SetItemRef("trade:" .. state.player.guid .. ":3908:197", "[Tailoring]", "LeftButton")
-      wowapi.fireEvent(state, "TRADE_SKILL_LIST_UPDATE")
-      assert.are.equal("info", results().V60b.status)
-      assert.are.equal("link of yours opened Blizzard's window (TRADE_SKILL_LIST_UPDATE, IsTradeSkillLinked false)",
-        results().V60b.detail)
-      wowapi.runTimers(state)
-      _G.ProfessionsFrame = { IsShown = function() return true end }
-      _G.SetItemRef("trade:" .. state.player.guid .. ":3908:197", "[Tailoring]", "LeftButton")
-      assert.truthy(results().V60b.detail:find("(ProfessionsFrame, IsTradeSkillLinked false)", 1, true))
-    end)
-
-    it("notes what it saw when a friend's link opened nothing, and the other server", function()
-      tailoring()
-      withLinks()
-      load()
-      addon.db.global.people["Ada#1001"] = { chars = { ["Player-4619-000B"] = { name = "Ada Stormwind" } } }
-      _G.SetItemRef("trade:Player-4619-000B:3908:197", "[Tailoring]", "LeftButton")
-      wowapi.fireEvent(state, "TRADE_SKILL_DATA_SOURCE_CHANGED")
-      wowapi.runTimers(state)
-      assert.are.equal("fail", results().V60b.status)
-      assert.are.equal("link of a friend offline clicked, no linked window within 5 s", results().V60b.detail)
-      local log = results().V60b.log
-      assert.are.equal("seen: events TRADE_SKILL_DATA_SOURCE_CHANGED; IsTradeSkillLinked false; frame none shown",
-        log[#log])
-      addon.db.global.people["Ada#1001"].chars["Player-6940-000D"] = { name = "Ada Stormwind" }
-      _G.SetItemRef("trade:Player-6940-000D:3908:197", "[Tailoring]", "LeftButton")
-      wowapi.runTimers(state)
-      local r = results().V60b
-      assert.are.equal("fail", r.status) -- a later info is kept apart, the fail stays
-      assert.are.equal("link of a friend offline, other server clicked", r.log[#r.log - 1])
-      assert.are.equal("link of a friend offline, other server clicked, no linked window within 5 s", r.later)
-    end)
-
-    it("counts only V60b of the recipe checks in /cf fp (CF-105, CF-109)", function()
-      load()
-      assert.are.equal(10, #ns.Probe.IDS)
-      addon:OnSlashCommand("fp")
-      local text = ns.ProbeReport.text()
-      assert.is_nil(text:find("V60 ", 1, true))
-      assert.is_nil(text:find("V60c", 1, true))
-      assert.truthy(text:find("V60b open", 1, true))
+      wowapi.fireEvent(state, "UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-2", 818)
+      assert.are.same({ "info", "campfire lit: spell 818 Basic Campfire" },
+        { results().V119.status, results().V119.detail })
+      list[1] = { name = "Cozy Fire", spellId = 7353, applications = 1, points = { 5 } }
+      wowapi.fireEvent(state, "UNIT_AURA", "player")
+      assert.are.same({ "pass", "campfire lit; new aura Cozy Fire 7353 stacks 1 points 5" },
+        { results().V119.status, results().V119.detail })
+      list[1].applications = 2
+      wowapi.fireEvent(state, "UNIT_AURA", "player")
+      assert.are.equal("aura near the campfire: Cozy Fire 7353 stacks 2 points 5",
+        results().V119.log[#results().V119.log])
     end)
   end)
 end)
