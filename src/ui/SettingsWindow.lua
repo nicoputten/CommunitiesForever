@@ -157,6 +157,7 @@ local function build()
   ry = section(body, right, ry + 12, "Celebrations")
   ry = ry + toggle(body, "celebrations", right, ry)
   ry = ry + toggle(body, "celebrationSounds", right, ry)
+  ry = ry + toggle(body, "huntAlerts", right, ry) -- CF-122
   ry = ry + toggle(body, "celebrationFriends", right, ry)
   local preview = Kit.button(body, option("celebrationPreview").name, function()
     option("celebrationPreview").func()

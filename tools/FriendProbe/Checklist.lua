@@ -135,6 +135,8 @@ ns.items = {
     how = "Target an enemy player, then kill one: the print lines of VERIFY.md V144." },
   { id = "V145", done = "works in use, CF-120", session = 5, title = "Enemy capitals and towns are named as the lists say (CF-118)",
     how = "In an enemy capital and an enemy town: the print line of VERIFY.md V145; send the Skyborne zone names." },
+  { id = "V146", session = 5, title = "The target frame's portrait and the prey toast's sound (CF-122)",
+    how = "The print lines of VERIFY.md V146; then target today's Hunt quarry: the red ring sits on their portrait." },
   { id = "Board", session = 2, friend = true, title = "Doomsday Board and Ladder show the friend",
     how = "/cf, Doomsday, Board and Ladder: compare with VERIFY.md CF-57b." },
 

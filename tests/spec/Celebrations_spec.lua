@@ -13,6 +13,7 @@ describe("Celebrations (CF-67)", function()
     helpers.loadAddonFile("src/core/Doomsday.lua", ns)
     helpers.loadAddonFile("src/core/DoomsdayView.lua", ns)
     C = helpers.loadAddonFile("src/core/Celebrations.lua", ns)
+    helpers.loadAddonFile("src/core/HuntAlerts.lua", ns) -- CF-122
   end)
 
   local DOT = " \194\183 "

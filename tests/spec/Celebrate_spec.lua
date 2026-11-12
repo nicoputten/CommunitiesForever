@@ -143,7 +143,9 @@ describe("Celebration banners in game (CF-67)", function()
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt) -- the first sight: known
     assert.are.same({}, ns.CelebrationBanner.friendTexts())
     local done = {}
-    for _, id in ipairs(set) do done[id] = state.serverTime end
+    for _, id in ipairs(set) do
+      if id ~= "hunt" then done[id] = state.serverTime end -- CF-122: the Hunt has a line of its own
+    end
     person.goals.days[n] = { set = set, done = done, at = start }
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
     local lines = ns.CelebrationBanner.friendTexts()
@@ -153,6 +155,25 @@ describe("Celebration banners in game (CF-67)", function()
     assert.are.same({}, state.sounds)
     addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
     assert.are.equal(1, #ns.CelebrationBanner.friendTexts()) -- never twice
+  end)
+
+  it("a friend bags the quarry: a line in the friend bar with today's combination (CF-122)", function()
+    local n = load()
+    local bt = state.friends[1].battleTag
+    local person = { displayName = "Grom", version = 1, goals = { days = {}, weeks = {} },
+                     chars = { G1 = { name = "Grom Ashfeller", classFile = "WARRIOR", faction = "Horde", level = 30,
+                                      updatedAt = 1 } } }
+    addon.db.global.people[bt] = person
+    addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt) -- the first sight: known
+    person.goals.days[n] = { set = { "hunt" }, done = { hunt = state.serverTime }, at = state.serverTime }
+    addon:SendMessage(ns.Sync.PEOPLE_UPDATED, bt)
+    local lines = ns.CelebrationBanner.friendTexts()
+    assert.are.equal(1, #lines)
+    local plain = lines[1]:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    local combo = ns.HuntAlerts.comboText(ns.DoomsdayTracker.huntFor("Horde"))
+    assert.is_string(combo)
+    assert.are.equal("Grom Grom Ashfeller" .. DOT .. "bagged the quarry" .. DOT .. combo, plain)
+    assert.are.same({}, state.sounds)
   end)
 
   it("new feats right after login are known, later ones celebrate (CB04)", function()

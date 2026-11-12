@@ -75,6 +75,14 @@ Theme.COLORS = {
   killed = hex("3BA55D"),           -- a killed boss's check box
   questTag = hex("6B5A2E"),         -- the edge of a loot row's "Quest" tag
   learnTag = hex("2E6B48"),         -- the edge of "Nobody knows it"
+  -- CF-122: the Hunt alerts (board HB01)
+  prey = hex("F08A80"),             -- the prey ring, the Prey tag's edge, the toast's left edge and kicker
+  preyBorder = hex("B0453C"),       -- the toast's border, the Prey tag
+  preyFace = hex("5A120E", 0.92),   -- the toast's face, left to right
+  preyFaceEnd = hex("120A0E", 0.92),
+  preyLine = hex("C9A9A4"),         -- the toast's line
+  preyBagged = hex("8E98A8"),       -- the ring when the quarry is already bagged today (grey)
+  preyMedal = hex("121A2A"),        -- the toast's race medallion
 }
 
 -- r, g, b, a of a colour; alpha (optional) replaces its own, e.g. Theme.color("gold", 0.16).
@@ -188,6 +196,9 @@ Theme.TEXTURES = {
   swords = MEDIA .. "textures\\swords.tga",
   rank = MEDIA .. "textures\\rank.tga",
   epic = MEDIA .. "textures\\epic.tga",
+  -- CF-122: the Hunt alerts (tools/make-textures.py, from board HB01), white for tinting.
+  crosshair = MEDIA .. "textures\\crosshair.tga",
+  preyMark = MEDIA .. "textures\\preymark.tga",
 }
 
 -- Sizes (px at UI scale 1) from the design.
