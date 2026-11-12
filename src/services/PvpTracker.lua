@@ -9,7 +9,7 @@
 -- Pvp.KILL_WINDOW). A ticker keeps "seen alive" fresh during a fight. No fitting player: no victim, as before.
 -- CF-117: the victim is often not dead yet at the rise (bug 13), so the rise remembers the candidates
 -- (Pvp.killCandidates), the ticker and unit events keep looking at them (Pvp.observe), and Pvp.RECHECK_DELAY later a
--- last look picks (Pvp.resolveVictims: dead at once, dead after the delay, or the low health fallback).
+-- last look picks (Pvp.resolveVictims: dead at once or dead after the delay; CF-120: no low health fallback, V143).
 local _, ns = ...
 
 local PvpTracker = {}
@@ -38,7 +38,7 @@ PvpTracker.LOOK_EVERY = 1
 -- Remembers the enemy players seen alive and shows the looks to the rises waiting for their re-check.
 local function see(looks, now)
   for _, look in ipairs(looks) do ns.Pvp.seeAlive(alive, look, now) end
-  for _, wait in ipairs(waiting) do ns.Pvp.observe(wait.pending, looks, now) end
+  for _, wait in ipairs(waiting) do ns.Pvp.observe(wait.pending, looks) end
 end
 
 local function lookAround()
@@ -128,7 +128,7 @@ function PvpTracker.resolve(wait)
   local now = GetServerTime()
   local looks = ns.PvpInfo.looks()
   for _, look in ipairs(looks) do ns.Pvp.seeAlive(alive, look, now) end
-  ns.Pvp.observe(wait.pending, looks, now, true)
+  ns.Pvp.observe(wait.pending, looks)
   local victims = ns.Pvp.resolveVictims(wait.pending, wait.kills)
   for _, victim in ipairs(victims) do
     picks[#picks + 1] = victim
