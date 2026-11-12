@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.10.0 (2026-11-12)
 - **New:** two more Doomsday missions the website can switch on: **Bargain** ("Buy at the auction house") and
   **Avenger** ("Kill the enemy who killed a friend", and the bounty "Avenge friends 3 times"). For Avenger, when a
   friend in your group dies to an enemy player, their addon tells yours who did it; kill that player within 10
