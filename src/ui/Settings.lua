@@ -213,6 +213,14 @@ function Settings.options()
           if ns.HuntPrey then ns.HuntPrey.refreshMark() end
         end,
       },
+      -- HB02 D: move the Hunt alerts' toast (also /cf hunt move).
+      huntMove = {
+        type = "execute",
+        order = 5.176,
+        name = "Move",
+        tip = "Drag the Hunt alerts' note where you want it. Reset puts it back next to the target frame.",
+        func = function() ns.HuntPrey.move() end,
+      },
       celebrationFriends = {
         type = "toggle",
         order = 5.18,

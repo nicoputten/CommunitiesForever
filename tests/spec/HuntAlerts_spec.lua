@@ -99,6 +99,37 @@ describe("Hunt alerts (CF-122)", function()
     end)
   end)
 
+  describe("the toast's placement (HB02)", function()
+    local screen = { width = 1920, height = 1080 }
+    local function at(frame, saved)
+      return H.placement({ frame = frame, saved = saved, screen = screen, width = 340, height = 62 })
+    end
+
+    it("goes above a target frame in the lower half, below one in the upper half, left edges in line", function()
+      assert.are.same({ mode = "above", x = 1100, y = 408 }, at({ left = 1100, bottom = 300, top = 400 }))
+      assert.are.same({ mode = "below", x = 140, y = 900 - 8 - 62 }, at({ left = 140, bottom = 900, top = 1000 }))
+    end)
+
+    it("flips when it would leave the screen, and stays on screen sideways", function()
+      -- Low frame whose top is near the screen's top (a very tall frame): above doesn't fit, below does.
+      assert.are.equal("below", at({ left = 10, bottom = 500, top = 1050 }).mode)
+      -- High frame whose bottom is near the screen's bottom: below doesn't fit, above does.
+      assert.are.equal("above", at({ left = 10, bottom = 30, top = 600 }).mode)
+      assert.are.equal(1920 - 340, at({ left = 1800, bottom = 300, top = 400 }).x)
+      assert.are.equal(0, at({ left = -50, bottom = 300, top = 400 }).x)
+    end)
+
+    it("uses its own spot in the upper centre without Blizzard's target frame", function()
+      assert.are.same({ mode = "own", x = 790, y = 1080 - 230 - 62 }, at(nil))
+      assert.are.equal("own", at({ left = 1 }).mode) -- incomplete
+    end)
+
+    it("always uses the spot the player moved it to", function()
+      assert.are.same({ mode = "saved", x = 5, y = 6 }, at({ left = 1100, bottom = 300, top = 400 }, { x = 5, y = 6 }))
+      assert.are.equal("own", at(nil, { x = "5" }).mode)
+    end)
+  end)
+
   describe("the kill", function()
     it("is first in the group when no friend bagged one earlier today", function()
       assert.is_true(H.firstInGroup(500, {}))

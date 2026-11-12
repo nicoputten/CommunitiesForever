@@ -4,7 +4,7 @@ local wowapi = require("mocks.wowapi")
 describe("The Hunt's prey hint and alerts (CF-114, CF-122)", function()
   local state, ns, addon, hunt
   local PREY = "Player-4619-0000PREY"
-  local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "TargetFrame" }
+  local stubs = { "UnitExists", "UnitIsPlayer", "UnitIsEnemy", "UnitClass", "TargetFrame", "C_NamePlate" }
 
   -- huntOn: load with the Hunt in the draw (pool version 4 draws it, CF-104); off: without it (as pools 1 to 3).
   local function load(huntOn)
@@ -16,13 +16,25 @@ describe("The Hunt's prey hint and alerts (CF-114, CF-122)", function()
     addon.db.global.settings.clubId = "23125681"
     addon:OnEnable()
     hunt = ns.DoomsdayTracker.huntFor("Horde")
-    -- CF-122: a target frame with its portrait (Retail layout) for the mark and the toast.
-    _G.TargetFrame = _G.CreateFrame("Frame", nil, _G.UIParent)
-    _G.TargetFrame.TargetFrameContainer = { Portrait = _G.CreateFrame("Frame", nil, _G.TargetFrame) }
+    -- CF-122: a 1920 x 1080 screen and Blizzard's target frame (Retail layout, Edit Mode default: low, right of the
+    -- centre: left 1100, bottom 300, top 400) with its portrait, for the mark and the toast.
+    _G.UIParent:SetSize(1920, 1080)
+    _G.UIParent:Show()
+    local tf = _G.CreateFrame("Frame", nil, _G.UIParent)
+    tf.left, tf.top = 1100, 400
+    tf.GetBottom = function(self) return self.bottom or 300 end
+    tf.IsEventRegistered = function(self) return self.events ~= false end
+    tf:Show()
+    tf.TargetFrameContainer = { Portrait = _G.CreateFrame("Frame", nil, tf) }
+    _G.TargetFrame = tf
     _G.SOUNDKIT.MAP_PING = 3175
   end
 
-  local function target() wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED") end
+  -- PLAYER_TARGET_CHANGED; the target is looked at a moment later (after Blizzard's target frame updated).
+  local function target()
+    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
+    wowapi.runTimers(state)
+  end
   local function mouseover() wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT") end
   local function toasts() return ns.HuntToast.shown() end
 
@@ -54,6 +66,7 @@ describe("The Hunt's prey hint and alerts (CF-114, CF-122)", function()
     for _, name in ipairs(stubs) do _G[name] = nil end
     ns.HuntToast.reset()
     ns.HuntMark.reset()
+    ns.HuntPlate.reset()
     wowapi.uninstall()
   end)
 
@@ -186,6 +199,104 @@ describe("The Hunt's prey hint and alerts (CF-114, CF-122)", function()
       local b = ns.CelebrationBanner.shown()[1]
       assert.are.same({ "big", "Quarry bagged", combo, "+5 PvP", "crosshair", "First in the group" },
         { b.weight, b.kicker, b.title, b.points, b.icon, b.badge })
+    end)
+
+    describe("placement (HB02)", function()
+      it("puts the toast above the target frame when it sits low (Edit Mode default), left edges in line", function()
+        enemy()
+        target()
+        assert.are.same({ mode = "above", x = 1100, y = 408 }, ns.HuntToast.placement())
+        assert.are.equal("open", ns.HuntMark.shown())
+      end)
+
+      it("below it when the target frame sits at the top", function()
+        _G.TargetFrame.top, _G.TargetFrame.bottom = 1060, 980
+        enemy()
+        target()
+        assert.are.same({ mode = "below", x = 1100, y = 980 - 8 - 62 }, ns.HuntToast.placement())
+      end)
+
+      it("a unit-frame mod hides the target frame: no mark, the toast at its own spot", function()
+        _G.TargetFrame.events = false -- the mod took its events away
+        enemy()
+        target()
+        assert.is_nil(ns.HuntMark.shown())
+        assert.are.same({ mode = "own", x = (1920 - 340) / 2, y = 1080 - 230 - 62 }, ns.HuntToast.placement())
+        _G.TargetFrame.events = nil
+        _G.TargetFrame:Hide() -- hidden while there is a target
+        ns.HuntToast.reset()
+        ns.HuntPrey.memory().seen, ns.HuntPrey.memory().last = {}, nil
+        target()
+        assert.is_nil(ns.HuntMark.shown())
+        assert.are.equal("own", ns.HuntToast.placement().mode)
+      end)
+
+      it("moves: /cf hunt move shows the box, the spot is saved per character and always wins; Reset", function()
+        addon:OnSlashCommand("hunt move")
+        assert.is_true(ns.HuntToast.isMoving())
+        local box = ns.HuntToast.mover()
+        box.left, box.bottom = 200, 700
+        box.GetBottom = function(self) return self.bottom end
+        box:RunScript("OnDragStop")
+        local guid = state.player.guid
+        assert.are.same({ x = 200, y = 700 }, addon.db.global.settings.huntToastSpots[guid])
+        box.done:RunScript("OnClick")
+        assert.is_false(ns.HuntToast.isMoving())
+        enemy()
+        target()
+        assert.are.same({ mode = "saved", x = 200, y = 700 }, ns.HuntToast.placement())
+        ns.HuntPrey.move()
+        ns.HuntToast.mover().reset:RunScript("OnClick")
+        assert.is_nil(addon.db.global.settings.huntToastSpots[guid])
+      end)
+
+      it("Settings has the Move button", function()
+        ns.SettingsWindow.open()
+        ns.SettingsWindow.control("huntMove"):RunScript("OnClick")
+        assert.is_true(ns.HuntToast.isMoving())
+      end)
+    end)
+
+    describe("the nameplate crosshair (HB02 E)", function()
+      it("sits on the target's nameplate while they are today's quarry, and reports V146", function()
+        local nameplate = _G.CreateFrame("Frame", nil, _G.UIParent)
+        _G.C_NamePlate = { GetNamePlateForUnit = function(unit) return unit == "target" and nameplate or nil end }
+        enemy()
+        target()
+        assert.is_true(ns.HuntPlate.isShown())
+        assert.are.equal("attached", ns.HuntPlate.status())
+        enemy(hunt.race, hunt.class == 1 and 4 or 1)
+        target()
+        assert.is_false(ns.HuntPlate.isShown())
+      end)
+
+      it("stays off without the API, on a forbidden plate, and for the session once anchoring errors", function()
+        enemy()
+        target()
+        assert.are.equal("no api", ns.HuntPlate.status())
+        local nameplate = _G.CreateFrame("Frame", nil, _G.UIParent)
+        nameplate.IsForbidden = function() return true end
+        _G.C_NamePlate = { GetNamePlateForUnit = function() return nameplate end }
+        target()
+        assert.are.equal("forbidden", ns.HuntPlate.status())
+        nameplate.IsForbidden = nil
+        local frame = ns.HuntMark.frame() -- any frame will do: make SetPoint fail on the crosshair's next try
+        assert.is_table(frame)
+        local real = _G.CreateFrame
+        finally(function() _G.CreateFrame = real end)
+        ns.HuntPlate.reset()
+        _G.CreateFrame = function(...)
+          local f = real(...)
+          f.SetPoint = function() error("blocked") end
+          return f
+        end
+        target()
+        assert.is_truthy(ns.HuntPlate.status():find("^blocked"))
+        assert.is_false(ns.HuntPlate.isShown())
+        _G.CreateFrame = real
+        target()
+        assert.is_truthy(ns.HuntPlate.status():find("^blocked")) -- off for the session
+      end)
     end)
 
     it("ignores a secret race instead of comparing it", function()

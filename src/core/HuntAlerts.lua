@@ -93,6 +93,40 @@ function HuntAlerts.toastText(kind, hunt)
   }
 end
 
+-- ===== Placement (board HB02) =====
+
+HuntAlerts.GAP = 8          -- pixels between the target frame and the toast
+HuntAlerts.OWN_TOP = 230    -- the toast's own spot: its top this far below the screen's top, centred
+
+--[[ Where the toast goes, in UIParent units from the screen's bottom left: { mode, x, y } (its bottom left corner).
+input = { saved = { x, y } (moved by the player, per character), frame = { left, bottom, top } (Blizzard's target
+frame when it is in use, nil when a unit-frame mod replaced it), screen = { width, height }, width, height (the
+toast's size in the same units) }. Modes: "saved" (always wins), "above" or "below" the target frame (above when its
+bottom is in the lower half of the screen, below otherwise; flipped when it would leave the screen; left edges in
+line, kept on screen), "own" (upper centre, OWN_TOP from the top). ]]
+function HuntAlerts.placement(input)
+  input = input or {}
+  local screen = input.screen or {}
+  local sw, sh = tonumber(screen.width) or 0, tonumber(screen.height) or 0
+  local w, h = tonumber(input.width) or 0, tonumber(input.height) or 0
+  local saved = input.saved
+  if type(saved) == "table" and type(saved.x) == "number" and type(saved.y) == "number" then
+    return { mode = "saved", x = saved.x, y = saved.y }
+  end
+  local f = input.frame
+  if type(f) == "table" and type(f.left) == "number" and type(f.bottom) == "number" and type(f.top) == "number" then
+    local above = { mode = "above", y = f.top + HuntAlerts.GAP }
+    local below = { mode = "below", y = f.bottom - HuntAlerts.GAP - h }
+    local first, second = above, below
+    if f.bottom >= sh / 2 then first, second = below, above end
+    local function fits(p) return p.y >= 0 and p.y + h <= sh end
+    local pick = (fits(first) or not fits(second)) and first or second
+    pick.x = math.max(0, math.min(f.left, sw - w))
+    return pick
+  end
+  return { mode = "own", x = math.max(0, (sw - w) / 2), y = sh - HuntAlerts.OWN_TOP - h }
+end
+
 HuntAlerts.MARK_TIP = "Today's quarry"
 HuntAlerts.MARK_TAG = "Prey"
 

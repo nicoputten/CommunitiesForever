@@ -7,8 +7,9 @@ tagging; the release stops if the tag has no section.
 
 ## Unreleased
 - **New:** Hunt alerts. When you target today's Hunt quarry, a red ring and a "Prey" tag mark them on your target
-  frame, and a small "Prey in sight" note shows under it for a few seconds (once per enemy every 10 minutes, with a
-  soft sound the first time each day). Bagging the quarry gets the big "Quarry bagged" banner, with "First in the
+  frame, a red crosshair above their nameplate, and a small "Prey in sight" note shows next to the target frame for
+  a few seconds (once per enemy every 10 minutes, with a soft sound the first time each day). The note follows your
+  target frame wherever you put it; `/cf hunt move` (or Move in the settings) puts it where you like. Bagging the quarry gets the big "Quarry bagged" banner, with "First in the
   group" when you beat your friends to it, and one chat line. When a friend bags theirs, you see it in the friend bar.
   Already bagged today: a grey ring and a quiet note. In battlegrounds only the ring. Turn it off with "Hunt alerts"
   in the settings (Celebrations). The old "Prey in sight ... keep them targeted" chat line is gone.

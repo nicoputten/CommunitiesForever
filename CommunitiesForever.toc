@@ -158,6 +158,7 @@ src\ui\CrownToast.lua
 src\ui\CelebrationBanner.lua
 src\ui\HuntMark.lua
 src\ui\HuntToast.lua
+src\ui\HuntPlate.lua
 src\ui\StartPanel.lua
 src\ui\FriendsTab.lua
 src\ui\ActivityTab.lua

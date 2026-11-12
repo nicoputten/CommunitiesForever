@@ -14,7 +14,9 @@ design canvas. Spotting today's quarry stays small, the kill is big. Touches `sr
 `src/core/Celebrations.lua`, `src/core/Doomsday.lua` and `src/core/DoomsdayView.lua` (the CF-114 chat line removed),
 `src/services/HuntPrey.lua`, `src/services/Celebrate.lua`, `src/services/DoomsdayTracker.lua`, `src/ui/HuntMark.lua`
 and `src/ui/HuntToast.lua` (new), `src/ui/CelebrationBanner.lua`, `src/ui/Settings.lua`, `src/ui/SettingsWindow.lua`,
-`src/ui/kit/Theme.lua`, `src/adapters/Sounds.lua`, `tools/make-textures.py` (`crosshair.tga`, `preymark.tga`), specs.
+`src/ui/kit/Theme.lua`, `src/adapters/Sounds.lua`, `tools/make-textures.py` (`crosshair.tga`, `preymark.tga`); HB02:
+`src/ui/HuntPlate.lua` (new), `src/Core.lua` (`/cf hunt move`), `src/core/Probe.lua`, `src/services/LaunchProbe.lua`,
+`tools/FriendProbe/Checklist.lua`; specs.
 - Target or mouse over an enemy player of the current character's Hunt: while they are your target, a red crosshair
   ring over the target frame's portrait and a "PREY" tag under it (hover: "Today's quarry"); grey once the Hunt is
   done today. Our own frame on UIParent anchored to `TargetFrame.TargetFrameContainer.Portrait` (V146); nothing of
@@ -39,8 +41,21 @@ and `src/ui/HuntToast.lua` (new), `src/ui/CelebrationBanner.lua`, `src/ui/Settin
 - Pure rules with busted tests (`HuntAlerts`: the mark, the toast's 10-minute, one-minute and once-a-day sound rules,
   quiet cases, first in the group, the banner, the chat and friend texts); unit values through `PvpInfo.enemy`
   (`ns.Safe.call`, a secret value nil before any comparison, CF-108).
-- Compatibility (rule 8): one new settings key, `huntAlerts`, read as on when missing (older data), so no migration;
-  older versions ignore it. Nothing sent changes; the friend line reads the goals older versions already send.
+- Compatibility (rule 8): two new settings keys, `huntAlerts` (missing = on) and `huntToastSpots` (missing =
+  automatic placement), so no migration; older versions ignore them. Nothing sent changes; the friend line reads the goals older versions already send.
+- Placement (board HB02, replaces HB01's): the toast reads Blizzard's `TargetFrame` each time it opens and goes 8 px
+  above it when its bottom is in the lower half of the screen (the Edit Mode default), else below it, flipped when it
+  would leave the screen, left edges in line, at the target frame's scale (`HuntAlerts.placement`). The ring anchors
+  to the portrait and takes the target frame's scale, so Edit Mode moves and scaling are followed.
+- Unit-frame mods: when `TargetFrame` is replaced (hidden while there is a target, re-parented to a hidden frame, or
+  its events taken away), no ring, and the toast uses its own spot: upper centre, 230 px from the top.
+- Movable: `/cf hunt move` and Settings › Celebrations › Move show a box to drag with Reset and Done; the spot is
+  saved per character (`settings.huntToastSpots[guid]`, missing = automatic) and then always used.
+- Nameplate crosshair: a 26 px red crosshair above the target's nameplate while they are today's quarry (our frame
+  anchored to `C_NamePlate.GetNamePlateForUnit("target")`, V146). Fully guarded: no API, no plate or a forbidden
+  plate shows nothing; an anchoring error turns it off for the session. The launch probe's V146 line logs whether it
+  attached (`LaunchProbe.report`).
+- The "Quarry bagged" banner and the friend bar keep their Celebrations spots.
 - Manual: VERIFY.md CF-122, V146.
 
 ### CF-121 Bargain and Avenger: two missions the site can switch on

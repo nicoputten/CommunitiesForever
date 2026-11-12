@@ -725,8 +725,8 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 - Tip (CF-114): target your prey, or turn on enemy nameplates, so the kill knows who it was. The addon marks an enemy
   player of the open Hunt's combination in their tooltip ("Your prey: The Hunt").
 - Hunt alerts (CF-122, board HB01; the "Hunt alerts" switch, on by default): today's quarry as your target gets a red
-  ring and a "Prey" tag on the target frame (grey once bagged today; in battlegrounds too), and a small toast under
-  the target frame ("Prey in sight", 3 s) once per enemy per 10 minutes and at most once a minute, with a soft sound
+  ring and a "Prey" tag on the target frame (grey once bagged today; in battlegrounds too) and a crosshair above
+  their nameplate, and a small toast next to the target frame or where the player moved it ("Prey in sight", 3 s) once per enemy per 10 minutes and at most once a minute, with a soft sound
   only at the first sighting of the day; none in battlegrounds. The kill is the big "Quarry bagged" banner ("First in
   the group" when no friend bagged one earlier today) and one chat line; a friend's Hunt done today is a line in the
   friend bar ("bagged the quarry").

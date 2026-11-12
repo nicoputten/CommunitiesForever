@@ -1,10 +1,11 @@
--- HuntMark: the prey mark on the target frame (CF-122, board HB01): a red crosshair ring over the target's portrait
--- and a "Prey" tag under it, while today's quarry is your target; a grey ring when it is already bagged today. Our
--- own frame, parented to UIParent and anchored to the target frame's portrait: nothing of Blizzard's is moved,
--- re-parented or hooked, so nothing protected is touched in combat (anchoring our frame to theirs is allowed).
--- TargetFrame and TargetFrame.TargetFrameContainer.Portrait are unverified on Forever (VERIFY.md V146): every
--- lookup is guarded; without the portrait the ring sits on the target frame's top right, without TargetFrame it
--- never shows.
+-- HuntMark: the prey mark on the target frame (CF-122, boards HB01 and HB02): a red crosshair ring over the target's
+-- portrait and a "Prey" tag under it, while today's quarry is your target; a grey ring when it is already bagged
+-- today. Our own frame, parented to UIParent and anchored to the target frame's portrait: nothing of Blizzard's is
+-- moved, re-parented or hooked, so nothing protected is touched in combat (anchoring our frame to theirs is allowed).
+-- It follows Edit Mode moves (anchored to the portrait) and scaling (the target frame's scale against UIParent's).
+-- TargetFrame and TargetFrame.TargetFrameContainer.Portrait are unverified on Forever (VERIFY.md V146): every lookup
+-- is guarded. HB02: only when Blizzard's target frame is in use (HuntToast.targetFrame: not replaced by a unit-frame
+-- mod) and its portrait is found; otherwise no mark (the nameplate crosshair still shows, ui/HuntPlate.lua).
 local _, ns = ...
 
 local HuntMark = {}
@@ -52,21 +53,17 @@ local function create()
   mark:Hide()
 end
 
--- Places the ring over the portrait (sized to it), else on the target frame's top right. False without a target frame.
+-- Places the ring over the portrait (sized to it). False without Blizzard's target frame in use or its portrait.
 local function place()
-  local p = portrait()
-  local tf = rawget(_G, "TargetFrame")
-  if not (p or tf) then return false end
+  local rect = ns.HuntToast.targetFrame()
+  local p = rect and portrait()
+  if not p then return false end
+  local w = p.GetWidth and p:GetWidth()
+  local size = type(w) == "number" and w > 0 and w * HuntMark.SIZE / HuntMark.PORTRAIT or HuntMark.SIZE
+  if mark.SetScale then mark:SetScale(rect.scale or 1) end
   mark:ClearAllPoints()
-  if p then
-    local w = p.GetWidth and p:GetWidth()
-    local size = type(w) == "number" and w > 0 and w * HuntMark.SIZE / HuntMark.PORTRAIT or HuntMark.SIZE
-    mark:SetSize(size, size)
-    mark:SetPoint("CENTER", p, "CENTER", 0, 0)
-  else
-    mark:SetSize(HuntMark.SIZE, HuntMark.SIZE)
-    mark:SetPoint("CENTER", tf, "TOPRIGHT", -HuntMark.SIZE / 2, -HuntMark.SIZE / 2)
-  end
+  mark:SetSize(size, size)
+  mark:SetPoint("CENTER", p, "CENTER", 0, 0)
   return true
 end
 
