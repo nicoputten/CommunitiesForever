@@ -1,77 +1,30 @@
---[[ LaunchProbeMissions (CF-82): the hidden probe's checks for the Doomsday mission catalogue and the PvP catalogue
-(V122, V123). Same rules as services/LaunchProbe.lua: silent, guarded, cheap, no raw chat text and no player names.
-Left out: the jump hook (V118, a "blocked" popup is a possible answer) and the campfire (V119, judged by eye).
-CF-96: only the checks the launch results (build 70790) left open run: V96, V101, V108 (the emote part), V114 and
-V120 to V123. The answered ones are in docs/API-FINDINGS.md "Forever launch probe". CF-109: V114 answered (build
-70862), its check is gone. CF-113: V120 answered (build 70862: the recap names a player killer), its check is gone;
-posting an auction answered (AUCTION_HOUSE_AUCTION_CREATED), V101 checks only buying. ]]
+--[[ LaunchProbeMissions (CF-82): the hidden probe's checks for the PvP catalogue (V122, V123) and the trade
+(V85). Same rules as services/LaunchProbe.lua: silent, guarded, cheap, no raw chat text and no player names.
+CF-96: only the checks the launch results (build 70790) left open run. The answered ones are in
+docs/API-FINDINGS.md "Forever launch probe". CF-109 to CF-117 removed V114, V120 and the auction post. CF-120: V101
+and V108 answered and gone, V96 tried other ways (services/LaunchProbeWorld.lua); V123 reads the zone's type at every
+zone change. ]]
 local _, ns = ...
 
 local Probe = ns.Probe
 local LaunchProbe = ns.LaunchProbe
 local u = LaunchProbe.util
 local Val, Vals, readable, str, get = u.Val, u.Vals, u.readable, u.str, u.get
-local matches, result, note, info, passed, now = u.matches, u.result, u.note, u.info, u.passed, u.now
+local result, note, info, passed, after, now = u.result, u.note, u.info, u.passed, u.after, u.now
 local on = LaunchProbe.on
 
--- ===== V108: an emote on a target (the whisper part is answered) =====
--- CF-117, bug 14: a typed /wave never reached the DoEmote hook on Forever. Also hooked: C_ChatInfo.PerformEmote (only
--- when it exists), and CHAT_MSG_TEXT_EMOTE with your own GUID as the sender (its 12th argument) shows that an emote
--- happened even when no hook fired. No chat text and no names are kept (Probe.emote).
-local EMOTE_APIS = { "DoEmote", "C_ChatInfo.PerformEmote" }
-local lastEmote -- { via, at }: the last hooked emote
-
--- Your target as Probe.emote's target ("enemy", "friendly", "unknown", "none") and whether its GUID is readable.
-local function EmoteTarget()
-  if not get(UnitIsPlayer, "target") then return "none", false end
-  local guid = str(get(UnitGUID, "target")) and true or false
-  local theirs, mine = get(UnitFactionGroup, "target"), get(UnitFactionGroup, "player")
-  if not (str(theirs) and str(mine)) then return "unknown", guid end
-  return theirs ~= mine and "enemy" or "friendly", guid
-end
-
-local function Emote(via, token)
-  lastEmote = { via = via, at = now() }
-  if passed("V108") then return end
-  local target, guid = EmoteTarget()
-  local status, detail = Probe.emote(via, str(token) and token or nil, target, guid)
-  if status == "pass" then result("V108", status, detail) else info("V108", detail) end
-end
-
-for _, api in ipairs(EMOTE_APIS) do
-  LaunchProbe.hook(api, function(token) Emote(api, token) end)
-end
-
-on("CHAT_MSG_TEXT_EMOTE", function(...)
-  local sender, mine = select(12, ...), get(UnitGUID, "player")
-  if not (str(sender) and str(mine) and sender == mine) then return end
-  if lastEmote and now() - lastEmote.at <= Probe.EMOTE_PAIR then
-    note("V108", "chat line after " .. lastEmote.via)
-    return
+-- ===== V85: the items you put in a trade (CF-120; w.craftTrade, adapters/GoalEvents.lua reads the same) =====
+-- TRADE_PLAYER_ITEM_CHANGED(slot) and GetTradePlayerItemLink(slot): only the item ID is kept, never the partner.
+on("TRADE_PLAYER_ITEM_CHANGED", function(slot)
+  if passed("V85") then return end
+  local link = type(slot) == "number" and readable(slot) and get(GetTradePlayerItemLink, slot)
+  local id = str(link) and link:match("|Hitem:(%d+)")
+  if id then
+    result("V85", "pass", "TRADE_PLAYER_ITEM_CHANGED slot " .. slot .. ": item " .. id)
+  else
+    info("V85", "TRADE_PLAYER_ITEM_CHANGED slot " .. Val(slot) .. ", GetTradePlayerItemLink "
+      .. (GetTradePlayerItemLink and Val(link or nil) or "missing"))
   end
-  local target, guid = EmoteTarget()
-  local apis = {}
-  for _, api in ipairs(EMOTE_APIS) do
-    if LaunchProbe.hookable(api) then apis[api] = true end
-  end
-  local _, detail = Probe.emote("chat", nil, target, guid, apis)
-  info("V108", detail)
-end)
-
--- ===== V96, V101: home inn, buying at the auction house (posting and V114, summons, answered: CF-113, CF-109) =====
--- A pass stored for a posted auction (before CF-113) is replaced by the first buy's pass (Probe.record).
-local function Message(text)
-  if str(text) and matches(text, "ERR_AUCTION_WON_S") then result("V101", "pass", "bought: ERR_AUCTION_WON_S") end
-end
-on("UI_INFO_MESSAGE", function(_, text) Message(text) end)
-on("CHAT_MSG_SYSTEM", Message)
-
-on("AUCTION_HOUSE_PURCHASE_COMPLETED", function()
-  result("V101", "pass", "bought: AUCTION_HOUSE_PURCHASE_COMPLETED")
-end)
-on("PLAYER_BINDING_CHANGED", function()
-  local place = get(GetBindLocation)
-  result("V96", str(place) and "pass" or "fail", "GetBindLocation " .. Val(place))
 end)
 
 -- ===== V122: the battleground score (at most once a minute) =====
@@ -97,10 +50,11 @@ on("UPDATE_BATTLEFIELD_SCORE", function()
   end
 end)
 
--- ===== V123: the zone's PvP type =====
--- "friendly" is answered (capital cities); it keeps looking for the other types (CF-96): each new type in a session
--- is noted, and a type other than "friendly" becomes the result.
-local zoneTypes = {} -- this session's types seen: { [type] = true }
+-- ===== V123: the zone's PvP type (CF-120) =====
+-- Read at every zone change (ZONE_CHANGED_NEW_AREA, ZONE_CHANGED, ZONE_CHANGED_INDOORS, PLAYER_ENTERING_WORLD and the
+-- login) and again Probe.ZONE_RECHECK seconds later. Each zone new for its type is noted with the type string read,
+-- the PvP flag and the realm type's hint (C_PvP.IsWarModeActive, guarded); the result counts zones per type.
+local zoneCounts = {} -- this session: { [type] = { [zone] = true } }
 local function ZonePvp()
   local zonePvp = (C_PvP and C_PvP.GetZonePVPInfo) or GetZonePVPInfo
   if not zonePvp then
@@ -108,16 +62,21 @@ local function ZonePvp()
     return
   end
   local pvpType = get(zonePvp)
-  local zone = Val(get(GetRealZoneText))
-  local kind = str(pvpType) and pvpType or "none"
-  if zoneTypes[kind] then return end
-  zoneTypes[kind] = true
-  note("V123", zone .. ": " .. (str(pvpType) and pvpType or Val(pvpType)))
-  if not str(pvpType) then
-    info("V123", "no PvP type in " .. zone .. " (" .. Val(pvpType) .. ")")
-  elseif pvpType ~= "friendly" or not passed("V123") then
-    result("V123", "pass", zone .. ": " .. pvpType)
-  end
+  local zone = get(GetRealZoneText)
+  if not Probe.zoneSeen(zoneCounts, str(zone) and zone or nil, str(pvpType) and pvpType or nil) then return end
+  local warMode = C_PvP and C_PvP.IsWarModeActive
+  note("V123", Val(zone) .. ": " .. Val(pvpType) .. ", flagged " .. Val(get(UnitIsPVP, "player"))
+    .. (warMode and (", war mode " .. Val(get(warMode))) or ""))
+  local status, detail = Probe.zoneResult(zoneCounts)
+  if status == "pass" then result("V123", status, detail) else info("V123", detail) end
 end
-on("ZONE_CHANGED_NEW_AREA", ZonePvp)
-LaunchProbe.atLogin(ZonePvp)
+local function ZoneChanged()
+  ZonePvp()
+  after(Probe.ZONE_RECHECK, ZonePvp)
+end
+for _, event in ipairs({ "ZONE_CHANGED_NEW_AREA", "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "PLAYER_ENTERING_WORLD" }) do
+  on(event, ZoneChanged)
+end
+LaunchProbe.atLogin(ZoneChanged)
+-- For tests: forget this session's zones.
+function LaunchProbe.zoneReset() zoneCounts = {} end
