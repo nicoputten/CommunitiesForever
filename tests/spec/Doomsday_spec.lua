@@ -49,7 +49,8 @@ describe("Doomsday (CF-55)", function()
       local list = {}
       for i, g in ipairs(Doomsday.GOALS) do
         list[i] = { id = g.id, slot = g.slot, category = g.category, theme = g.theme, needs = g.needs,
-                    since = g.since, check = g.check, points = g.points, text = g.text, short = g.shortLabel,
+                    since = g.since, check = g.check, siteOnly = g.siteOnly, points = g.points, text = g.text,
+                    short = g.shortLabel,
                     can = g.can, fallback = g.fallback, retired = g.retired, canFrom = g.canFrom }
       end
       assert.are.same(cases.pools.catalogue, list)
@@ -66,7 +67,7 @@ describe("Doomsday (CF-55)", function()
       end
       assert.are.equal(118, dailies)
       assert.are.equal(15, n)
-      for _, id in ipairs({ "d.treasure", "d.auctionBuy", "d.mailbox", "p.flex", "p.punchDown5" }) do
+      for _, id in ipairs({ "d.treasure", "d.mailbox", "p.flex", "p.punchDown5" }) do
         assert.is_nil(Doomsday.goal(id).since, id)
       end
     end)
@@ -680,7 +681,7 @@ describe("Doomsday (CF-55)", function()
       for _, g in ipairs(Doomsday.GOALS) do
         if g.check then check[#check + 1] = g.id end
       end
-      assert.are.same({ "p.avenge", "p.closeCall", "p.guardDown", "p.townRaid", "p.assist", "p.guardian",
+      assert.are.same({ "p.closeCall", "p.guardDown", "p.townRaid", "p.assist", "p.guardian",
                         "p.selfDefense", "p.narrowEscape", "p.outnumbered" }, check)
       local off, with = set(Doomsday.pool("skirmish", 6)), set(Doomsday.pool("skirmish", 6, true))
       for _, id in ipairs(check) do

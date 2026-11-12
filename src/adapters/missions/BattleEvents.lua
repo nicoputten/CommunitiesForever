@@ -6,6 +6,8 @@
 -- CF-104: the PvP flag (UnitIsPVP("player") read on PLAYER_FLAGS_CHANGED, at login and each minute, V121), the
 -- death recap's killer at a death (C_DeathRecap through PvpInfo.recapDamage, V120: names player killers too) and
 -- the victim CF-110 picks at a kill (PvpTracker.VICTIM), both by GUID.
+-- CF-121: an own death to a player goes to online friends (Sync.sendFell, the FELL message); a friend's FELL
+-- (Sync.FRIEND_FELL) counts when that character is in your group now (Instance.groupGuids).
 local _, ns = ...
 
 local BattleEvents = {}
@@ -82,15 +84,32 @@ local function onDead()
     flushFlag(now, true)
     flaggedSince = now
   end
+  local at = GetServerTime()
   ns.Timer.after(BattleEvents.RECAP_DELAY, function()
-    local _, _, killer = ns.PvpInfo.recapDamage()
+    local _, _, killer, killerName = ns.PvpInfo.recapDamage()
     send("battleDeath", { guid = guid, killer = type(killer) == "string" and killer or nil })
+    local fell = ns.Pvp.fellMessage(guid, killer, killerName, at)
+    if fell then ns.Sync.sendFell(fell) end
   end)
 end
 
-local function onVictim(_, victim, bg)
+local function onVictim(_, victim, bg, name)
   local guid = ns.SelfInfo.guid()
-  if guid and type(victim) == "string" then send("battleVictim", { guid = guid, victim = victim, bg = bg == true }) end
+  if guid and type(victim) == "string" then
+    send("battleVictim", { guid = guid, victim = victim, bg = bg == true, at = GetServerTime(),
+                           name = type(name) == "string" and name or nil })
+  end
+end
+
+-- CF-121: a friend's character died to a player; it counts while that character is in your group.
+local function onFriendFell(_, fell)
+  if type(fell) ~= "table" then return end
+  for _, member in ipairs(ns.Instance.groupGuids()) do
+    if member == fell.guid then
+      send("battleFriendFell", { killer = fell.killer, name = fell.name, at = fell.at })
+      return
+    end
+  end
 end
 
 -- Called once by DoomsdayTracker.start with the addon (for addon:SendMessage).
@@ -112,6 +131,7 @@ function BattleEvents.watch(addon)
   ns.Events.register(events, "PLAYER_FLAGS_CHANGED", checkFlag) -- any unit: the read is the player's own flag
   ns.Events.register(events, "PLAYER_DEAD", onDead)
   events:RegisterMessage(ns.PvpTracker.VICTIM, onVictim)
+  events:RegisterMessage(ns.Sync.FRIEND_FELL, onFriendFell)
   events:RegisterMessage(ns.SelfInfo.CHANGED, function(_, reason)
     if reason == "logout" and flaggedSince then flushFlag(GetServerTime(), true) end
   end)

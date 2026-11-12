@@ -8,6 +8,36 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-121 Bargain and Avenger: two missions the site can switch on
+Nico (2026-11-12): "Build both", now that the probe answered V101 (a bought auction fires
+`AUCTION_HOUSE_PURCHASE_COMPLETED`, build 70888) and V120 (the death recap names a player killer). Touches
+`src/core/Doomsday.lua`, `src/core/missions/World.lua`, `src/core/missions/Battle.lua`, `src/core/Pvp.lua`,
+`src/adapters/missions/WorldEvents.lua`, `src/adapters/missions/BattleEvents.lua`, `src/adapters/PvpInfo.lua`,
+`src/services/Sync.lua`, `src/services/PvpTracker.lua`, their specs, `tests/fixtures/doomsday-cases.json`
+(`pools.catalogue` only), `docs/DOOMSDAY.md`, `docs/SYNC.md`, VERIFY.md.
+- Catalogue flag `siteOnly` (`docs/DOOMSDAY.md` "Site-only missions"): tested and tracked, never in the addon's own
+  draw or a swap's replacement, only when the site's schedule names it. `d.auctionBuy`, `p.avenge` (was `check`) and
+  `b.avenge3`, all `since = 6`. Every draw and golden draw case stays as it is; only the catalogue section of
+  `doomsday-cases.json` changes (the site's copy follows). A scheduled daily or weekly list may now hold a site-only
+  (or check) goal.
+- Bargain: one per `AUCTION_HOUSE_PURCHASE_COMPLETED` (registered only when the client knows the event), the
+  `auctionBuy` world action, facts `world.auctionBuys`.
+- Avenger: an own death whose recap names a player sends FELL (`docs/SYNC.md`: the killer's GUID when the recap gives
+  a player's, its name too, else the name alone; `Pvp.fellMessage`). A friend's FELL (`Pvp.cleanFell`, only for
+  their own character) counts while that character is in your group: kept in the day's and week's facts
+  (`battle.fallen`, at most 20, 10 minutes). Your counted kill whose victim (CF-110's pick: seen dead; CF-120
+  removed the low health fallback) is that killer, by GUID, else by the whole name, within 10 minutes after the death, avenges it once
+  (`battle.avenge`); a battleground kill counts too. `p.avenge` needs 1, `b.avenge3` 3 in the week.
+- Pure rules with busted tests: the catalogue flag (pools, draws unchanged), Bargain's counter, `Battle.avenged` and the
+  kinds `battleFriendFell` / `battleVictim` (window, before the death, other player, name only, once per death,
+  cap), `Pvp.fellMessage` and `Pvp.cleanFell`; Sync specs for sending and receiving FELL.
+- Compatibility (rule 8): FELL is a new message type, optional; older clients ignore it and send none, so a friend
+  on an older version is never avenged. Stored: only new optional keys in the local Doomsday facts
+  (`world.auctionBuys`, `battle.fallen`, `battle.avenge`); facts are not sent, older versions ignore the keys. The
+  record, the goals' shape and `Protocol.VERSION` are unchanged. An older addon ignores a schedule naming
+  `d.auctionBuy` or `b.avenge3` (its own draw stands) and never completes a scheduled `p.avenge`.
+- Manual: VERIFY.md CF-121.
+
 ### CF-120 Clean up VERIFY.md and the launch probe (export of 2026-11-12)
 Nico (2026-11-12): the friends have done nearly everything the open items ask for. The export of 2026-11-12 (6
 testers, builds 70790 to 70888) and Nico's decisions close most of VERIFY.md. Touches `src/core/Probe.lua`,

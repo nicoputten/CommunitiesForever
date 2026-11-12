@@ -29,7 +29,8 @@ local waiting = {}
 -- launch probe's Hunt).
 local resolvedFns = {}
 
--- CF-104: internal message (victimGuid, bg) for each victim picked at a kill counter rise (BattleEvents: revenge).
+-- CF-104: internal message (victimGuid, bg, victimName) for each victim picked at a kill counter rise (BattleEvents:
+-- revenge; CF-121: avenge, the name for a friend's killer known only by name).
 PvpTracker.VICTIM = "CF_PVP_VICTIM"
 
 -- Seconds between looks at target, mouseover and nameplates for Pvp.seeAlive.
@@ -132,7 +133,7 @@ function PvpTracker.resolve(wait)
   local victims = ns.Pvp.resolveVictims(wait.pending, wait.kills)
   for _, victim in ipairs(victims) do
     picks[#picks + 1] = victim
-    addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, wait.bg)
+    addonRef:SendMessage(PvpTracker.VICTIM, victim.guid, wait.bg, victim.name)
   end
   for _, fn in ipairs(resolvedFns) do
     pcall(fn, victims[1], victims[1] and victims[1].path, #wait.pending.list)

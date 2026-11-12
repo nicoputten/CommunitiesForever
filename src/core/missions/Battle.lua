@@ -10,7 +10,9 @@
 -- CF-118 (pool version 6): flagStay = { [guid] = seconds flagged since the flag last dropped (a death doesn't end
 -- it) }, flagStayBest, flagZone = { [zone] = seconds flagged there, all characters }, flagParty (seconds flagged
 -- while grouped with 2 or more friends) for p.flag60, p.boldQuest, p.holdout, p.patrol.
--- Local facts of the day or week only: nothing new is sent.
+-- CF-121: fallen = { { killer, name, at } } (a grouped friend's character died to that player, from the friend's FELL
+-- message; at most MAX_FALLEN), avenge (count) for p.avenge and b.avenge3.
+-- Local facts of the day or week only (the FELL message is CF-121's, docs/SYNC.md).
 local _, ns = ... -- requires ns.Goals and ns.Doomsday (loaded before it)
 
 local Battle = {}
@@ -19,6 +21,8 @@ Battle.MAX_ZONES = 50 -- zones kept per day or week (a cap, as Goals' lists)
 Battle.FRIENDLY = "friendly"
 Battle.MAX_SECONDS = 600 -- the most one flag observation may add (a stuck timer never fills a goal)
 Battle.MAX_CHARS = 50    -- characters kept per day or week in the flag and killer maps
+Battle.AVENGE_WINDOW = 600 -- CF-121: seconds after a friend's death its killer can be avenged
+Battle.MAX_FALLEN = 20     -- CF-121: friends' deaths kept per day or week
 
 local function count(map)
   local n = 0
@@ -36,7 +40,7 @@ local function factsOf(f)
   end
   -- Facts of an earlier version have only the zones: the newer maps start empty.
   for _, key in ipairs({ "zones", "flagged", "flagRun", "flagBest", "killers", "flagStay", "flagStayBest",
-                         "flagZone" }) do
+                         "flagZone", "fallen" }) do
     if type(b[key]) ~= "table" then b[key] = {} end
   end
   return b
@@ -110,13 +114,55 @@ ns.Goals.registerKind("battleDeath", function(f, obs)
   end
 end)
 
+--[[ battleFriendFell (CF-121): a friend's character in your group died to a player (their FELL message: their
+  death recap's killer). { killer (the killer's GUID, nil when the recap gave none), name (the killer's name as the
+  game gives it, never split; nil: unknown), at (server time of the death) }. Kept until avenged or
+  AVENGE_WINDOW has passed; one without a player GUID and without a name is dropped. ]]
+ns.Goals.registerKind("battleFriendFell", function(f, obs)
+  local killer = Battle.isPlayerGuid(obs.killer) and obs.killer or nil
+  local name = text(obs.name)
+  if not (killer or name) or type(obs.at) ~= "number" then return end
+  local b = factsOf(f)
+  local kept = {}
+  for _, e in ipairs(b.fallen) do
+    if type(e) == "table" and type(e.at) == "number" and obs.at - e.at <= Battle.AVENGE_WINDOW then
+      kept[#kept + 1] = e
+    end
+  end
+  if #kept >= Battle.MAX_FALLEN then table.remove(kept, 1) end
+  kept[#kept + 1] = { killer = killer, name = name, at = obs.at }
+  b.fallen = kept
+end)
+
+-- CF-121: the fallen friend's entry whose killer is this victim: by GUID when the friend's recap gave one, else by
+-- the whole name; the death at most AVENGE_WINDOW before the kill (and not after it). Its index, or nil.
+function Battle.avenged(fallen, victim, name, at)
+  if type(fallen) ~= "table" or type(at) ~= "number" then return nil end
+  for i, e in ipairs(fallen) do
+    local fits = type(e) == "table" and type(e.at) == "number" and at >= e.at and at - e.at <= Battle.AVENGE_WINDOW
+    local same = fits and ((e.killer ~= nil and e.killer == victim) or (e.killer == nil and e.name ~= nil
+      and e.name == name))
+    if fits and same then return i end
+  end
+  return nil
+end
+
 --[[ battleVictim: an own PvP kill whose victim was picked by GUID (CF-110: your target, mouseover or a nameplate).
-  { guid (the character), victim (the victim's GUID), bg (true: in a battleground) } The kill of the player who
-  last killed that character, outside a battleground, is a revenge; that killer is avenged then (once per death). ]]
+  { guid (the character), victim (the victim's GUID), bg (true: in a battleground), name (CF-121: the victim's name,
+  nil: unknown), at (CF-121: server time of the kill, nil: unknown) } The kill of the player who last killed that
+  character, outside a battleground, is a revenge; that killer is avenged then (once per death). CF-121: the kill of
+  a player who killed a grouped friend within AVENGE_WINDOW is an avenge (once per friend's death; a battleground
+  counts too). ]]
 ns.Goals.registerKind("battleVictim", function(f, obs)
   local guid, victim = guidOf(obs.guid), guidOf(obs.victim)
-  if not guid or not victim or obs.bg == true then return end
+  if not guid or not victim then return end
   local b = factsOf(f)
+  local i = Battle.avenged(b.fallen, victim, text(obs.name), obs.at)
+  if i then
+    table.remove(b.fallen, i)
+    b.avenge = (type(b.avenge) == "number" and b.avenge or 0) + 1
+  end
+  if obs.bg == true then return end
   if b.killers[guid] == victim then
     b.killers[guid] = nil
     b.revenge = (type(b.revenge) == "number" and b.revenge or 0) + 1
@@ -204,6 +250,15 @@ local PROGRESS = {
   ["p.revenge"] = function(f)
     local n = battle(f).revenge
     return type(n) == "number" and n or 0, 1
+  end,
+  -- CF-121
+  ["p.avenge"] = function(f)
+    local n = battle(f).avenge
+    return type(n) == "number" and n or 0, 1
+  end,
+  ["b.avenge3"] = function(f)
+    local n = battle(f).avenge
+    return type(n) == "number" and n or 0, 3
   end,
 }
 

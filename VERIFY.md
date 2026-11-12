@@ -28,6 +28,20 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-121 Bargain and Avenger
+This build on two accounts (A and B, friends in the same community), `/console scriptErrors 1`. The website's mission
+pool switches the missions on: until it does, schedule them by hand only if you know how; otherwise check the facts
+with the lines below. Today's facts:
+`/run local d=CommunitiesForeverDB.global.self.doomsday local f=d.days[CommunitiesForever.DoomsdayTracker.today()] print(f.world and f.world.auctionBuys, f.battle and f.battle.avenge, f.battle and #f.battle.fallen)`
+
+| Step | Expected | Status |
+|---|---|---|
+| Buy an auction (buyout), then the facts line | The first value is 1 (2 after a second purchase). With Bargain scheduled for today: Bargain is done on the Doomsday tab. | open |
+| A and B in one group in world PvP. B dies to an enemy player. On A, the facts line | The third value is 1 (B's death to a player reached A). No Lua error on either side. | open |
+| Within 10 minutes A kills that player (targeted or hovered as they die), then the facts line on A | The second value is 1, the third 0. With Avenger scheduled for today: Avenger is done. | open |
+| B dies to an enemy player while A is not in B's group; A kills that player | Nothing counts on A (second value unchanged). | open |
+| B dies to a creature | Nothing reaches A (third value unchanged). | open |
+
 ### CF-120 The launch probe after the export of 2026-11-12
 This build on Forever (before 2026-11-18), on a character that ran an earlier build, `/console scriptErrors 1`,
 enemy nameplates on.

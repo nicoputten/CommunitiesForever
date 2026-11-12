@@ -257,7 +257,7 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
   end)
 
   -- CF-104: the pool-4 trackers' events reach today's facts (flag time, revenge, an auction posted).
-  it("counts the flagged time, a revenge and a posted auction locally", function()
+  it("counts the flagged time, a revenge, a posted and a bought auction (CF-121) locally", function()
     local flagged, recap = false, nil
     local stubs = { UnitIsPVP = function(unit) return unit == "player" and flagged end,
                     C_DeathRecap = { GetRecapEvents = function() return recap end },
@@ -279,10 +279,14 @@ describe("Doomsday goals tracked and shared (CF-56)", function()
     addon:SendMessage(ns.PvpTracker.VICTIM, "Player-1-KILLER", false)
     wowapi.fireEvent(state, "AUCTION_HOUSE_AUCTION_CREATED")
     wowapi.fireEvent(state, "CHAT_MSG_SYSTEM", "Auction created.") -- the same auction: counted once
+    wowapi.fireEvent(state, "AUCTION_HOUSE_PURCHASE_COMPLETED") -- CF-121: two auctions bought
+    wowapi.fireEvent(state, "AUCTION_HOUSE_PURCHASE_COMPLETED")
     local today = ns.DoomsdayTracker.today()
     local day = addon.db.global.self.doomsday.days[today]
     assert.are.same({ 600, 1, 1 }, { day.battle.flagged[me], day.battle.revenge, day.world.auctions })
     assert.is_nil(day.battle.flagRun[me])
+    assert.are.same({ 2, 2, 1, true }, { day.world.auctionBuys, ns.Doomsday.progress("d.auctionBuy",
+      ns.Goals.progressFacts(day)) })
     local week = addon.db.global.self.doomsday.weeks[ns.Doomsday.week(today)]
     assert.are.equal(600, week.battle.flagged[me])
     for name in pairs(stubs) do _G[name] = nil end

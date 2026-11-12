@@ -365,4 +365,38 @@ describe("Pvp (CF-52)", function()
     assert.is_nil(Pvp.clean({ hk = -3 }))
     assert.is_nil(Pvp.clean("nope"))
   end)
+
+  -- CF-121: the FELL message (docs/SYNC.md).
+  describe("a death to a player (CF-121)", function()
+    local MINE, K = "Player-1-000000ME", "Player-2-0000000K"
+
+    it("makes the message from the death recap's killer: a player's GUID and name, or a name alone", function()
+      assert.are.same({ guid = MINE, killer = K, name = "Grim Tusk", at = 100 },
+        Pvp.fellMessage(MINE, K, "Grim Tusk", 100.4))
+      assert.are.same({ guid = MINE, name = "Grim Tusk", at = 100 }, Pvp.fellMessage(MINE, nil, "Grim Tusk", 100))
+      assert.are.same({ guid = MINE, killer = K, at = 100 }, Pvp.fellMessage(MINE, K, "", 100))
+      assert.is_nil(Pvp.fellMessage(MINE, "Creature-0-1-2-3-4", "Wolf", 100))
+      assert.is_nil(Pvp.fellMessage(MINE, MINE, "Me Myself", 100))
+      assert.is_nil(Pvp.fellMessage(MINE, nil, nil, 100))
+      assert.is_nil(Pvp.fellMessage(nil, K, "Grim Tusk", 100))
+      assert.is_nil(Pvp.fellMessage(MINE, K, "Grim Tusk", nil))
+    end)
+
+    it("cleans a received one: a player GUID or a name, recent, no escape codes", function()
+      assert.are.same({ guid = MINE, killer = K, name = "Grim Tusk", at = 1000 },
+        Pvp.cleanFell({ t = "FELL", guid = MINE, killer = K, name = "Grim |Tusk", at = 1000.7 }, 1000, 300))
+      assert.are.same({ guid = MINE, name = "Grim Tusk", at = 400 },
+        Pvp.cleanFell({ guid = MINE, killer = "Creature-1", name = "Grim Tusk", at = 400 }, 1000, 300))
+      assert.are.equal(64, #Pvp.cleanFell({ guid = MINE, name = string.rep("a", 99), at = 1000 }, 1000, 300).name)
+      assert.is_nil(Pvp.cleanFell({ guid = MINE, killer = "Creature-1", at = 1000 }, 1000, 300))
+      assert.is_nil(Pvp.cleanFell({ guid = MINE, killer = K, at = 399 }, 1000, 300))   -- older than 10 minutes
+      assert.is_nil(Pvp.cleanFell({ guid = MINE, killer = K, at = 1301 }, 1000, 300))  -- too far ahead
+      assert.is_nil(Pvp.cleanFell({ guid = MINE, killer = K, at = 0 / 0 }, 1000, 300))
+      assert.is_nil(Pvp.cleanFell({ guid = "", killer = K, at = 1000 }, 1000, 300))
+      assert.are.same({ guid = MINE, killer = K, at = 1000 },
+        Pvp.cleanFell({ guid = MINE, killer = K, name = "|", at = 1000 }, 1000, 300))
+      assert.is_nil(Pvp.cleanFell({ guid = MINE, name = "", at = 1000 }, 1000, 300))
+      assert.is_nil(Pvp.cleanFell("FELL", 1000, 300))
+    end)
+  end)
 end)
