@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.11.0 (2026-11-13)
 - **New:** Hunt alerts. When you target today's Hunt quarry, a red ring and a "Prey" tag mark them on your target
   frame, a red crosshair above their nameplate, and a small "Prey in sight" note shows next to the target frame for
   a few seconds (once per enemy every 10 minutes, with a soft sound the first time each day). The note follows your
