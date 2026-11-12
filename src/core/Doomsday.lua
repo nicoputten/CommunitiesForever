@@ -1206,9 +1206,6 @@ end
 
 -- ===== Prey (CF-114) =====
 
--- Seconds before the same enemy player gets the "Prey in sight" chat line again.
-Doomsday.PREY_CHAT_EVERY = 300
-
 -- Instance types where a kill never counts for the Hunt (battleground kills score on the bg track).
 local NO_HUNT_INSTANCE = { pvp = true, arena = true }
 
@@ -1223,18 +1220,6 @@ function Doomsday.isPrey(hunt, done, unit, instanceType)
   if instanceType ~= nil and NO_HUNT_INSTANCE[instanceType] then return false end
   if hunt.race == nil or hunt.class == nil then return false end
   return Doomsday.huntMatches(hunt, unit) -- CF-118: tokens (pool versions 4, 5) or ids (from 6)
-end
-
---[[ CF-114: true when the prey chat line for key (the unit's GUID) may show at now, and records it. said = { [key] =
-when it was last said }; entries older than PREY_CHAT_EVERY are dropped. A key that isn't a non-empty string: never. ]]
-function Doomsday.preyChatDue(said, key, now)
-  if type(said) ~= "table" or type(key) ~= "string" or key == "" or type(now) ~= "number" then return false end
-  for k, at in pairs(said) do
-    if now - at >= Doomsday.PREY_CHAT_EVERY then said[k] = nil end
-  end
-  if said[key] then return false end
-  said[key] = now
-  return true
 end
 
 -- ===== The schedule from the site (CF-68) =====

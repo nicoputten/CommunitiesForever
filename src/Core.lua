@@ -197,6 +197,11 @@ local COMMANDS = {
                                 "/cf activity debug - print instance events for the activity feed (on/off)" },
     run = activityCommand },
   { name = "settings", help = { "/cf settings - open the settings" }, run = function() ns.Settings.open() end },
+  -- CF-122 (board HB02): move the Hunt alerts' toast.
+  { name = "hunt", help = { "/cf hunt move - move the Hunt alerts' note" },
+    run = function(self, argument)
+      if argument and argument:lower() == "move" then ns.HuntPrey.move() else self:Print("Usage: /cf hunt move") end
+    end },
   { name = "setup", help = { "/cf setup - run the setup again" }, run = function() ns.Setup.open() end },
   { name = "ask", help = { "/cf ask <dungeon> - ask friends who's up for a dungeon now" }, run = askCommand },
   { name = "fp", run = probeCommand },

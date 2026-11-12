@@ -32,6 +32,7 @@ CelebrationBanner.EDGES = { pve = "celebPve", pvp = "celebPvp", day = "celebDay"
 local ICONS = {
   goal = { "goalDone", 28 / 58 }, emblem = { "emblem", 54 / 74 }, hourglass = { "hourglass", 48 / 74 },
   swords = { "swords", 48 / 74 }, rank = { "rank", 62 / 92 }, epic = { "epic", 71 / 92 },
+  crosshair = { "crosshair", 54 / 92, "goldPale" }, -- CF-122: the Hunt's kill (board HB01), tinted pale gold
 }
 
 local END = 18 -- the angled ends' width
@@ -272,6 +273,10 @@ local function layout(b)
   banner.medalRing:SetVertexColor(Theme.color(edge))
   local icon = ICONS[b.icon] or ICONS.emblem
   banner.icon:SetTexture(Theme.TEXTURES[icon[1]])
+  -- CF-122: a white icon takes its tint (the crosshair); the others keep their own colours.
+  if banner.icon.SetVertexColor then
+    if icon[3] then banner.icon:SetVertexColor(Theme.color(icon[3])) else banner.icon:SetVertexColor(1, 1, 1, 1) end
+  end
   banner.icon:SetSize(math.floor(m * icon[2] + 0.5), math.floor(m * icon[2] + 0.5))
   banner.crown:ClearAllPoints()
   banner.crown:SetPoint("TOPLEFT", banner, "TOPLEFT", 25, 14)

@@ -282,19 +282,39 @@ local function huntLog()
 end
 DoomsdayTracker.huntLog = huntLog
 
--- The day's Hunt was just done: the character and target of the first counted kill that matches it go to the log.
-local function logHunt(day, df, schedule, community)
+-- The first counted kill of a day that matches its Hunt: the kill and the Hunt it matched, or nil.
+local function huntKillOf(df, schedule, community)
   local hunts = huntList(df.hunts) or {}
   for _, s in ipairs(ns.Doomsday.scoreKills(df.kills, schedule, community)) do
     local k = s.kill
-    local match = false
-    for _, h in ipairs(hunts) do match = match or ns.Doomsday.huntMatches(h, k) end
-    if s.counted and s.track == "pvp" and match and type(k.char) == "string" then
-      ns.Feats.logHunt(huntLog(), k.char, day, ns.Missions.Fights.targetKey(k),
-        ns.Doomsday.rareTargets(DoomsdayTracker.missionSchedule()), DoomsdayTracker.HUNT_LOG_DAYS)
-      return
+    local matched
+    for _, h in ipairs(hunts) do
+      if not matched and ns.Doomsday.huntMatches(h, k) then matched = h end
     end
+    if s.counted and s.track == "pvp" and matched and type(k.char) == "string" then return k, matched end
   end
+  return nil
+end
+
+-- The day's Hunt was just done: the character and target of the first counted kill that matches it go to the log.
+local function logHunt(day, df, schedule, community)
+  local k = huntKillOf(df, schedule, community)
+  if k and type(k.char) == "string" then
+    ns.Feats.logHunt(huntLog(), k.char, day, ns.Missions.Fights.targetKey(k),
+      ns.Doomsday.rareTargets(DoomsdayTracker.missionSchedule()), DoomsdayTracker.HUNT_LOG_DAYS)
+  end
+end
+
+-- CF-122: the kill that bagged today's quarry: { hunt = { race, class } (the Hunt it matched), zone, t }, or nil.
+function DoomsdayTracker.huntKill()
+  if not addonRef then return nil end
+  local today, schedule = DoomsdayTracker.today()
+  local facts = store()
+  local df = facts.days[today]
+  if not df then return nil end
+  local k, h = huntKillOf(df, schedule, communityNames())
+  if not k then return nil end
+  return { hunt = h, zone = k.zone, t = k.t }
 end
 
 -- The streak and the best from the own days.

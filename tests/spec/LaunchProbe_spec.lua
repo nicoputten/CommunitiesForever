@@ -175,7 +175,7 @@ describe("the hidden launch probe", function()
     assert.are.same({ status = "pass", detail = "bought: AUCTION_HOUSE_PURCHASE_COMPLETED", at = 1, build = "70888" },
       results().V101)
     assert.are.same({ "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
-                      "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119" }, ns.Probe.IDS)
+                      "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119", "V146" }, ns.Probe.IDS)
     addon:OnSlashCommand("fp")
     local text = ns.ProbeReport.text()
     for _, id in ipairs({ "V101", "V108", "V60b", "V142" }) do assert.is_nil(text:find(id, 1, true), id) end

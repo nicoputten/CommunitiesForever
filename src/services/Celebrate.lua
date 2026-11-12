@@ -20,6 +20,8 @@ local function own() return addonRef.db.global.self end
 function Celebrate.bannersOn() return addonRef ~= nil and settings().celebrations ~= false end
 function Celebrate.soundsOn() return addonRef ~= nil and settings().celebrationSounds ~= false end
 function Celebrate.friendsOn() return Celebrate.bannersOn() and settings().celebrationFriends ~= false end
+-- CF-122: the Hunt alerts (the target-frame mark, the sighting toast, the kill's chat line); nil = on.
+function Celebrate.huntAlertsOn() return addonRef ~= nil and settings().huntAlerts ~= false end
 
 -- CF-85: without a community this character is in (none selected, or not a member), Doomsday is tracked quietly:
 -- moments are remembered as shown, but no banner, line or sound comes up (the same gate as the crown toast).
@@ -112,18 +114,49 @@ local function add(moments, guid)
   check()
 end
 
+-- CF-122: friends' done times of today's Hunt (their synced goals), for "First in the group".
+local function friendsHuntTimes(day)
+  local times = {}
+  for bt, person in pairs(addonRef.db.global.people or {}) do
+    local goals = bt ~= own().battleTag and type(person) == "table" and type(person.goals) == "table" and person.goals
+    local e = goals and type(goals.days) == "table" and goals.days[day]
+    if type(e) == "table" and type(e.done) == "table" then times[#times + 1] = e.done.hunt end
+  end
+  return times
+end
+
+-- CF-122: the kill that bagged the quarry, for the banner: { hunt, zone, clock } (the player's clock), or nil.
+local function huntKill()
+  local k = ns.DoomsdayTracker.huntKill()
+  if not k then return nil end
+  local clock = type(k.t) == "number" and date and date("%H:%M", k.t) or nil
+  return { hunt = k.hunt, zone = k.zone, clock = clock }
+end
+
 -- Goals just done (DoomsdayTracker.CHANGED: newly done today, this week).
 local function goalsDone(newly, weekly)
   if #(newly or {}) + #(weekly or {}) == 0 then return end
   local state = ns.DoomsdayTracker.state()
   if not state then return end
+  local kill, first
+  for _, id in ipairs(newly or {}) do
+    if id == "hunt" then
+      kill = huntKill()
+      first = ns.HuntAlerts.firstInGroup(state.today and state.today.done and state.today.done.hunt,
+        friendsHuntTimes(state.day))
+      -- The one chat line of the Hunt (HB01 note 6): after your kill.
+      if Celebrate.huntAlertsOn() and not Celebrate.quiet() then
+        addonRef:Print(ns.HuntAlerts.chatLine(kill and kill.hunt or (state.hunts or {})[1]))
+      end
+    end
+  end
   local weekStart = ns.Doomsday.dayStart(ns.Doomsday.weekStart(state.week), state.offset, state.reset)
   add(ns.Celebrations.goalMoments({
     newly = newly, weekly = weekly, today = state.today, thisWeek = state.thisWeek, dayLabel = state.label,
     weekLabel = date and ns.Celebrations.weekLabel(weekStart, date) or nil,
     duelDone = #(state.duels and state.duels.done or {}) > 0, hunts = state.hunts,
     crownMine = state.crown ~= nil and state.crown.mine == true, points = ns.DoomsdayView.todayPoints(state),
-    streak = state.streak,
+    streak = state.streak, huntKill = kill, huntFirst = first,
   }))
 end
 
@@ -177,8 +210,11 @@ local function peopleUpdated()
       people[bt] = person
     end
   end
+  -- CF-122: today's Hunt per faction, for a friend's "bagged the quarry" line.
+  local hunts = { Horde = ns.DoomsdayTracker.huntFor("Horde"), Alliance = ns.DoomsdayTracker.huntFor("Alliance") }
   local lines = ns.Celebrations.friendMoments(store().friends, people, { day = day, week = ns.Doomsday.week(day),
-                                              now = GetServerTime(), since = since, derive = ns.Feats.derive })
+                                              now = GetServerTime(), since = since, derive = ns.Feats.derive,
+                                              hunts = hunts })
   if #lines == 0 or not Celebrate.friendsOn() or Celebrate.quiet() then return end
   ns.Celebrations.pushFriends(waiting, lines)
   check()

@@ -238,6 +238,17 @@ LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Enemy(u
 
 -- The client's results, readable for /cf fp.
 function LaunchProbe.results() return results end
+
+-- CF-122: a result from another module (HuntPrey's V146), while the probe runs. "pass" is kept once reached; anything
+-- else after a pass is a log line.
+function LaunchProbe.report(id, status, detail)
+  if not (results and running()) then return end
+  if passed(id) and status ~= "pass" then
+    note(id, detail)
+  else
+    result(id, status, detail)
+  end
+end
 function LaunchProbe.client() return Probe.client(WOW_PROJECT_ID) end
 function LaunchProbe.running() return section ~= nil and running() end
 

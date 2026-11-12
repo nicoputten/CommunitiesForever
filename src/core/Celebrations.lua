@@ -60,8 +60,8 @@ end
 -- ===== Your goals =====
 
 -- A goal's title on the banner: a Skirmish's name before its colon ("Lone wolf"), else the goal's text.
-local function goalTitle(id, hunts)
-  local text = ns.DoomsdayView.goalText(id, hunts)
+local function goalTitle(id)
+  local text = ns.DoomsdayView.goalText(id)
   local g = D().goal(id)
   if g and g.slot == "skirmish" then return text:match("^(.-):") or text end
   return text
@@ -69,8 +69,10 @@ end
 
 --[[ The moments of goals just done. input = { newly = { id }, weekly = { id } (Goals.mark), today = { set, done },
 thisWeek = { set, done }, dayLabel ("Wed evening"), weekLabel ("Week 44"), duelDone, hunts, crownMine, points =
-{ pve, pvp } (today), streak }. Returns { moment } in order: the dailies, the day complete, the weeklies. The day is
-complete when this batch crossed you out (all three PvE dailies); the daily that finished it is part of that moment.
+{ pve, pvp } (today), streak, huntKill = { hunt, zone, clock } (CF-122: the kill that bagged the quarry), huntFirst }.
+CF-122: the Hunt is the big "Quarry bagged" banner (HuntAlerts.killMoment). Returns { moment } in order: the
+dailies, the day complete, the weeklies. The day is complete when this batch crossed you out (all three PvE
+dailies); the daily that finished it is part of that moment.
 moment = { key, kind, weight, edge, icon, kicker, title, line, points, crown, streak, view }. ]]
 function Celebrations.goalMoments(input)
   local Doomsday = D()
@@ -90,12 +92,16 @@ function Celebrations.goalMoments(input)
   local done, total = ns.DoomsdayView.doneCount(rows, duelDone)
   for _, id in ipairs(input.newly or {}) do
     local g = Doomsday.goal(id)
-    if id ~= finishing and (id == "hunt" or g) then
-      local pvp = id == "hunt" or (g and g.slot ~= "daily")
+    if id == "hunt" then
+      -- CF-122 (board HB01): the kill is big. Without the kill, the first Hunt of today names the quarry.
+      dailies[#dailies + 1] = ns.HuntAlerts.killMoment(input.huntKill or { hunt = (input.hunts or {})[1] },
+        input.huntFirst == true)
+    elseif id ~= finishing and g then
+      local pvp = g.slot ~= "daily"
       local count = string.format("%d of %d", done, total)
       dailies[#dailies + 1] = {
         key = "daily:" .. id, kind = "daily", weight = "small", edge = pvp and "pvp" or "pve", icon = "goal",
-        kicker = "Daily goal" .. DOT .. (pvp and "PvP" or "PvE"), title = goalTitle(id, input.hunts),
+        kicker = "Daily goal" .. DOT .. (pvp and "PvP" or "PvE"), title = goalTitle(id),
         line = input.dayLabel and (input.dayLabel .. DOT .. count) or count,
         points = "+" .. (Doomsday.pointsFor(id, Doomsday.entryPool(today)) or Doomsday.POINTS.daily), view = "today",
       }
@@ -322,9 +328,9 @@ end
 --[[ Friends' big moments since the last call: a day complete, a weekly, a special feat. known = { [friend] = { keys =
 { [key] = true }, chars = { [guid] = true } } } (in place, remembered between sessions); people = { [friend] = {
 displayName, chars, feed, goals } } (friends only, not you); ctx = { day, week, now, since (your login), derive =
-Feats.derive }. Everything is remembered; a line comes only for a friend and character seen before, for a moment
-after `since` and at most FRIEND_MAX_AGE old. Returns { { key, friend, name, charName, classFile, text, edge, at,
-view } } oldest first. ]]
+Feats.derive, hunts = { [faction] = { race, class } } (CF-122: today's Hunt per faction) }. Everything is
+remembered; a line comes only for a friend and character seen before, for a moment after `since` and at most
+FRIEND_MAX_AGE old. Returns { { key, friend, name, charName, classFile, text, edge, at, view } } oldest first. ]]
 function Celebrations.friendMoments(known, people, ctx)
   local Doomsday = D()
   local lines = {}
@@ -352,6 +358,12 @@ function Celebrations.friendMoments(known, people, ctx)
     local e = type(goals.days) == "table" and goals.days[ctx.day]
     if type(e) == "table" and Doomsday.crossedOut(e.set, e.done) then
       add("d" .. ctx.day .. ":day", Doomsday.finishedAt(e.set, e.done), "completed the day", "day", now)
+    end
+    -- CF-122: a friend's Hunt done today (their synced goals): "bagged the quarry · Night Elf Druid", the
+    -- combination from today's Hunt of their current character's faction.
+    if type(e) == "table" and type(e.done) == "table" and type(e.done.hunt) == "number" then
+      local hunt = ctx.hunts and now and ctx.hunts[now.faction]
+      add("d" .. ctx.day .. ":hunt", e.done.hunt, ns.HuntAlerts.friendText(hunt), "pvp", now)
     end
     local w = type(goals.weeks) == "table" and goals.weeks[ctx.week]
     if type(w) == "table" and type(w.done) == "table" then

@@ -46,6 +46,7 @@ stds.wow = {
     "GetPVPLifetimeStats", "UnitPVPRank", "GetPVPRankInfo", "GetPVPThisWeekStats", "GetStatistic", -- CF-52 (V79)
     "DUEL_WINNER_KNOCKOUT", "DUEL_WINNER_RETREAT", "COMBATLOG_HONORGAIN", -- CF-52 (V79, V80)
     "C_DeathRecap", "CombatLogGetCurrentEventInfo", -- CF-52 (V81)
+    "C_NamePlate", -- CF-122 (V146)
     "GetGameTime", -- CF-56 (V78)
     "IsFishingLoot", "GetNumLootItems", "GetTradePlayerItemLink", "ERR_TRADE_COMPLETE", "ERR_ZONE_EXPLORED",
     "ERR_ZONE_EXPLORED_XP", -- CF-56 (V84-V86)

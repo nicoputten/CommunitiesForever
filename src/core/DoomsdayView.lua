@@ -29,15 +29,9 @@ function DoomsdayView.huntText(hunt, single)
   return text .. "s"
 end
 
--- CF-114: the Hunt's tip (its goal tooltip) and the prey hint's tooltip line and chat line.
+-- CF-114: the Hunt's tip (its goal tooltip) and the prey hint's tooltip line (CF-122: the chat line is gone).
 DoomsdayView.HUNT_TIP = "Target your prey, or turn on enemy nameplates, so the kill knows who it was."
 DoomsdayView.PREY_LINE = "Your prey: The Hunt"
-
--- "Prey in sight: Night Elf Druid. Keep them targeted for the kill."
-function DoomsdayView.preyChat(hunt)
-  local text = hunt and (DoomsdayView.raceName(hunt.race) .. " " .. DoomsdayView.className(hunt.class)) or "the Hunt"
-  return "Prey in sight: " .. text .. ". Keep them targeted for the kill."
-end
 
 -- "3 d 4 h", "11 h 30 m", "12 m".
 function DoomsdayView.until_(seconds)

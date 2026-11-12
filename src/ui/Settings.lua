@@ -200,6 +200,27 @@ function Settings.options()
         get = function() return ns.db.global.settings.celebrationSounds ~= false end,
         set = function(_, value) ns.db.global.settings.celebrationSounds = value end,
       },
+      -- CF-122 (board HB01): the Hunt alerts; nil = on (no migration: older data has no key).
+      huntAlerts = {
+        type = "toggle",
+        order = 5.175,
+        width = "full",
+        name = "Hunt alerts",
+        tip = "Marks today's Hunt target on your target frame, a toast when you spot one, a line after your kill.",
+        get = function() return ns.db.global.settings.huntAlerts ~= false end,
+        set = function(_, value)
+          ns.db.global.settings.huntAlerts = value
+          if ns.HuntPrey then ns.HuntPrey.refreshMark() end
+        end,
+      },
+      -- HB02 D: move the Hunt alerts' toast (also /cf hunt move).
+      huntMove = {
+        type = "execute",
+        order = 5.176,
+        name = "Move",
+        tip = "Drag the Hunt alerts' note where you want it. Reset puts it back next to the target frame.",
+        func = function() ns.HuntPrey.move() end,
+      },
       celebrationFriends = {
         type = "toggle",
         order = 5.18,

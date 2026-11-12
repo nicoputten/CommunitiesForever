@@ -157,6 +157,12 @@ local function build()
   ry = section(body, right, ry + 12, "Celebrations")
   ry = ry + toggle(body, "celebrations", right, ry)
   ry = ry + toggle(body, "celebrationSounds", right, ry)
+  ry = ry + toggle(body, "huntAlerts", right, ry) -- CF-122
+  local huntMove = Kit.button(body, option("huntMove").name, function() option("huntMove").func() end)
+  huntMove:SetPoint("TOPLEFT", right, -(ry + 2))
+  tip(huntMove, option("huntMove").tip)
+  controls.huntMove = huntMove
+  ry = ry + 34
   ry = ry + toggle(body, "celebrationFriends", right, ry)
   local preview = Kit.button(body, option("celebrationPreview").name, function()
     option("celebrationPreview").func()

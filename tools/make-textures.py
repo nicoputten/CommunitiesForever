@@ -145,6 +145,7 @@ def main():
     write_tga("quest.tga", 16, 16, quest)
 
     celebrations()
+    hunt()
 
     print("textures written to", OUT)
 
@@ -317,6 +318,26 @@ def celebrations():
         (polygon(robe), "2A1438"), (polygon_outline(robe, 2.4), "C27BFF"),
         (line(22, 10, 32, 22, 2.4), "C27BFF"), (line(32, 22, 42, 10, 2.4), "C27BFF"),
         (lambda x, y: 0.6 if segment_distance(x, y, 32, 22, 32, 54) <= 0.8 else 0.0, "C27BFF"),
+    ]))
+
+
+def hunt():
+    """CF-122: the Hunt alerts (board HB01): the crosshair (the toast's kicker and the kill banner's medallion, viewBox
+    24) and the prey ring on the target frame (viewBox 76), white for tinting."""
+    def ring_test(cx, cy, r, width):
+        return lambda x, y: abs(math.hypot(x - cx, y - cy) - r) <= width / 2
+
+    s = 64 / 24
+    write_tga("crosshair.tga", 64, 64, paint([
+        (scaled(s, ring_test(12, 12, 8, 2)), "FFFFFF"), (scaled(s, disc(12, 12, 2)), "FFFFFF"),
+        (scaled(s, line(12, 1, 12, 7, 2)), "FFFFFF"), (scaled(s, line(12, 17, 12, 23, 2)), "FFFFFF"),
+        (scaled(s, line(1, 12, 7, 12, 2)), "FFFFFF"), (scaled(s, line(17, 12, 23, 12, 2)), "FFFFFF"),
+    ]))
+    s = 128 / 76
+    write_tga("preymark.tga", 128, 128, paint([
+        (scaled(s, ring_test(38, 38, 35, 3)), "FFFFFF"),
+        (scaled(s, line(38, 0, 38, 10, 3)), "FFFFFF"), (scaled(s, line(38, 66, 38, 76, 3)), "FFFFFF"),
+        (scaled(s, line(0, 38, 10, 38, 3)), "FFFFFF"), (scaled(s, line(66, 38, 76, 38, 3)), "FFFFFF"),
     ]))
 
 
