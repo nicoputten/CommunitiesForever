@@ -372,6 +372,42 @@ function Pvp.pickVictims(looks, alive, now, kills)
   return Pvp.resolveVictims(Pvp.killCandidates(looks, alive, now), kills)
 end
 
+-- ===== A friend's death to a player (CF-121, the FELL message) =====
+
+Pvp.FELL_MAX_AGE = 600 -- seconds: an older death can't be avenged any more (missions/Battle.lua AVENGE_WINDOW)
+local MAX_GUID, MAX_NAME = 80, 64
+
+--[[ The FELL message an own character's death to a player sends (docs/SYNC.md "FELL"): { guid, killer, name, at }, or
+nil when no player killer is known. guid: the dead character; killerGuid, killerName: the death recap's last source
+(V120). A player GUID ("Player-...", not your own) is sent with the name; a GUID of anything else (a creature) sends
+nothing; without a GUID (secret or missing) the name alone is sent, as the game gives it (never split). ]]
+function Pvp.fellMessage(guid, killerGuid, killerName, at)
+  if type(guid) ~= "string" or guid == "" or type(at) ~= "number" then return nil end
+  local player = type(killerGuid) == "string" and killerGuid:match("^Player%-") and killerGuid ~= guid
+  if type(killerGuid) == "string" and not player then return nil end -- a creature, or yourself
+  local name = type(killerName) == "string" and killerName ~= "" and killerName or nil
+  if not player and not name then return nil end
+  return { guid = guid, killer = player and killerGuid or nil, name = name, at = math.floor(at) }
+end
+
+--[[ A received FELL message, cleaned: { guid, killer, name, at }, or nil. guid: a non-empty string; killer: a player
+GUID or nil; name: text without "|", at most MAX_NAME characters, or nil; at least one of killer and name; at: a time
+at most maxFuture ahead of now and at most FELL_MAX_AGE old. ]]
+function Pvp.cleanFell(message, now, maxFuture)
+  if type(message) ~= "table" or type(message.guid) ~= "string" or message.guid == "" or #message.guid > MAX_GUID then
+    return nil
+  end
+  local at = message.at
+  if type(at) ~= "number" or at ~= at or type(now) ~= "number" then return nil end
+  if at > now + (maxFuture or 0) or at < now - Pvp.FELL_MAX_AGE then return nil end
+  local killer = message.killer
+  if not (type(killer) == "string" and #killer <= MAX_GUID and killer:match("^Player%-")) then killer = nil end
+  local name = type(message.name) == "string" and message.name:gsub("|", ""):sub(1, MAX_NAME) or nil
+  if name == "" then name = nil end
+  if not (killer or name) then return nil end
+  return { guid = message.guid, killer = killer, name = name, at = math.floor(at) }
+end
+
 local MAX_NUMBER = 10000000
 
 local function cleanCount(value)

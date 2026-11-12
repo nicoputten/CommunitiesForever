@@ -830,4 +830,87 @@ describe("Sync", function()
       assert.are.same({}, addon.db.global.liveKills)
     end)
   end)
+
+  -- CF-121: Avenger (p.avenge, b.avenge3). An own death to a player goes out as FELL; a grouped friend's FELL and an
+  -- own kill of that player within 10 minutes avenge them.
+  describe("a friend's death to a player (CF-121)", function()
+    local NOW = 1794500000
+    local KILLER = "Player-4619-0000BAD1"
+    local recap
+
+    local function loadAt()
+      load(function(s)
+        s.serverTime = NOW
+        _G.C_DeathRecap = { GetRecapEvents = function() return recap end }
+      end)
+    end
+
+    local function today()
+      return addon.db.global.self.doomsday.days[ns.DoomsdayTracker.today()]
+    end
+
+    after_each(function()
+      _G.C_DeathRecap, recap = nil, nil
+    end)
+
+    it("sends an own death to a player, with the killer's GUID and name", function()
+      loadAt()
+      outgoing()
+      recap = { { timestamp = 1, event = "SWING_DAMAGE", sourceGUID = KILLER, sourceName = "Grim Tusk" } }
+      wowapi.fireEvent(state, "PLAYER_DEAD")
+      local fell = ofType(outgoing(), "FELL")
+      assert.are.equal(1, #fell)
+      assert.are.same({ SJAAK_GA, VES, KILLER, "Grim Tusk", NOW },
+        { fell[1].to, fell[1].guid, fell[1].killer, fell[1].name, fell[1].at })
+    end)
+
+    it("sends nothing for a death to a creature, or with nothing in the recap", function()
+      loadAt()
+      outgoing()
+      recap = { { timestamp = 1, event = "SWING_DAMAGE", sourceGUID = "Creature-0-1-2-3-4-5", sourceName = "Wolf" } }
+      wowapi.fireEvent(state, "PLAYER_DEAD")
+      recap = {}
+      wowapi.fireEvent(state, "PLAYER_DEAD")
+      assert.are.equal(0, #ofType(outgoing(), "FELL"))
+    end)
+
+    it("avenges a grouped friend: their FELL, then your kill of that player within 10 minutes", function()
+      loadAt()
+      fromSjaak(sjaakRecord(2000))
+      state.setGroup({ SJAAK_ALT })
+      fromSjaak({ t = "FELL", guid = SJAAK_ALT, killer = KILLER, name = "Grim Tusk", at = NOW - 30 })
+      assert.are.equal(1, #today().battle.fallen)
+      addon:SendMessage(ns.PvpTracker.VICTIM, KILLER, false, "Grim Tusk")
+      assert.are.equal(1, today().battle.avenge)
+      assert.are.same({}, today().battle.fallen) -- once per death
+      addon:SendMessage(ns.PvpTracker.VICTIM, KILLER, false, "Grim Tusk")
+      assert.are.equal(1, today().battle.avenge)
+      local week = addon.db.global.self.doomsday.weeks[ns.Doomsday.week(ns.DoomsdayTracker.today())]
+      assert.are.equal(1, week.battle.avenge)
+    end)
+
+    it("matches a killer known only by name, whole", function()
+      loadAt()
+      fromSjaak(sjaakRecord(2000))
+      state.setGroup({ SJAAK_ALT })
+      fromSjaak({ t = "FELL", guid = SJAAK_ALT, name = "Grim Tusk", at = NOW })
+      addon:SendMessage(ns.PvpTracker.VICTIM, "Player-4619-0000OTHR", false, "Grim")
+      assert.is_nil(today().battle.avenge)
+      addon:SendMessage(ns.PvpTracker.VICTIM, "Player-4619-0000BAD2", false, "Grim Tusk")
+      assert.are.equal(1, today().battle.avenge)
+    end)
+
+    it("ignores a FELL of a friend not in your group, of another character, too old or without a killer", function()
+      loadAt()
+      fromSjaak(sjaakRecord(2000))
+      fromSjaak({ t = "FELL", guid = SJAAK_ALT, killer = KILLER, at = NOW }) -- not grouped
+      state.setGroup({ SJAAK_ALT, "Player-4619-SOMEONE" })
+      fromSjaak({ t = "FELL", guid = "Player-4619-SOMEONE", killer = KILLER, at = NOW }) -- not Sjaak's character
+      fromSjaak({ t = "FELL", guid = SJAAK_ALT, killer = KILLER, at = NOW - 601 })
+      fromSjaak({ t = "FELL", guid = SJAAK_ALT, killer = "Creature-0-1-2-3-4-5", at = NOW })
+      fromSjaak({ t = "FELL", guid = SJAAK_ALT, at = NOW })
+      local day = today()
+      assert.is_true(day == nil or day.battle == nil or #day.battle.fallen == 0)
+    end)
+  end)
 end)

@@ -59,7 +59,8 @@ function PvpInfo.formats()
            honor = readable(COMBATLOG_HONORGAIN), honors = honors }
 end
 
--- The last damage of the latest death recap: subevent, environmentalType, sourceGUID; or nil.
+-- The last damage of the latest death recap: subevent, environmentalType, sourceGUID, sourceName (CF-121; V120: a
+-- player killer's name is readable); or nil.
 -- C_DeathRecap.GetRecapEvents() without an id gives the latest death (V81, verified on Forever).
 function PvpInfo.recapDamage()
   if not (C_DeathRecap and C_DeathRecap.GetRecapEvents) then return nil end
@@ -71,7 +72,7 @@ function PvpInfo.recapDamage()
     if type(at) == "number" and (not lastAt or at > lastAt) then last, lastAt = e, at end
   end
   if not last then return nil end
-  return readable(last.event), readable(last.environmentalType), readable(last.sourceGUID)
+  return readable(last.event), readable(last.environmentalType), readable(last.sourceGUID), readable(last.sourceName)
 end
 
 -- CF-55b: an enemy player at a unit token: full name, { lvl (-1 skull), class, race (tokens), rank, raceId, classId },
