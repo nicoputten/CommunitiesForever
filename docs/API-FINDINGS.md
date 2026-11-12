@@ -189,6 +189,35 @@ these checks (CF-96).
 | CF-74 reward, fish buddy, feed a friend (in game, Nico, 2026-11-09) | **passed**: the VERIFY.md CF-74 steps for an uncommon quest reward (`reward`, its "You receive item" line within 5 s of `QUEST_TURNED_IN`), fishing grouped with a friend in the same zone (`fishFriend`) and an own cooked dish traded to a friend (`fed`, V85's given item) | `d.reward`, `d.fishFriend`, `d.feedFriend` join pool version 4 (CF-104). |
 | V82 riding | no riding skill seen (no tester has riding yet); `C_TradeSkillUI.GetProfessionInfoBySkillLineID` exists, 6 of 6 | Still open (VERIFY.md V82). |
 
+### Export of 2026-11-12 and the VERIFY.md cleanup (CF-120)
+The probe export of 2026-11-12 (6 testers, builds 70790 to 70888) and Nico's decisions of 2026-11-12. Where a row
+above says "still open", this table has the newer answer. "Works in use": the friends used the feature for a week
+and reported no bug, so the item is closed without a probe line. "Removed": nothing built depends on it (or it needs
+two factions: every tester plays Horde), so the question is dropped. Still open (VERIFY.md): V35b, V74, V82, V85,
+V122, V123.
+| Item | Seen | What it means |
+|---|---|---|
+| V101 auction bought | **passes**: a bought auction fires `AUCTION_HOUSE_PURCHASE_COMPLETED` (build 70888) | `d.auctionBuy` can be built (not built yet). The probe no longer runs V101. |
+| V108 emote on a target | **passes**: `C_ChatInfo.PerformEmote` sees typed emotes (`WAVE`, `SLEEP`, `READ`) with the token, on an enemy-faction player whose GUID is readable; the own `CHAT_MSG_TEXT_EMOTE` line follows, 3 testers (build 70888). The global `DoEmote` is not called for a typed emote (bug 14) | `d.wave`, `p.flex`, `p.boo` can count from a `C_ChatInfo.PerformEmote` post-hook. The probe no longer runs V108. |
+| V142 Skyborne races | **passes**: `UnitRace` token `Skyborne` for both; race ID `96` "Windshaper Skyborne" (Horde) and `95` "High Order Skyborne" (Alliance), by nameplate and mouseover, 4 testers (build 70888) | The two races share one token, so a Hunt target for them needs the race ID. The probe no longer runs V142. |
+| V143 enemy health | **secret**: `UnitHealth` of an enemy player as target is a secret value | The kill's low health fallback (CF-117) could never pick: removed in CF-120. A victim is only one seen dead. |
+| V141 `UnitIsDead` | exists; one Hunt kill matched (a Skyborne warrior by nameplate, dead at once, 1 candidate); another kill on 70888 had 0 candidates (no enemy player dead as target, mouseover or nameplate) | Dead enemy players read as dead and can keep their nameplate for a moment; a kill without any of them in view has no victim. The probe keeps the Hunt line. |
+| V144 race and class IDs | the race ID (third return of `UnitRace`) of enemy players reads by nameplate and mouseover (V142: `95`, `96`); the Hunt matched a kill by its IDs | The Hunt's ID targets (pool version 6) work. |
+| V120 player killer | passes again (recap source `Player` with a readable name) | As CF-113. |
+| V74 enemy players | level, class and race readable by nameplate, again; still no skull seen | No probe looked for a skull before: CF-120 adds a V74 check (VERIFY.md V74). |
+| V75 combat log | **fails**: addons cannot read the combat log on Forever (`COMBAT_LOG_EVENT_UNFILTERED` is Blizzard UI only, as on Retail 12.1.5) (Nico) | No `PARTY_KILL` and no killer from the combat log: the victim comes from the target at the kill (CF-110), the killer from the death recap (V120). FriendProbe's "Test the combat log" button is gone. |
+| V85 trade | a completed trade and the partner's GUID, again; the items given were never reported | `w.craftTrade` reads them (`adapters/GoalEvents.lua`): CF-120 adds a V85 check to the probe (VERIFY.md V85). |
+| V99 merchant | the buy and repair hooks run, money goes down and up while the window is open | `d.repair` and the merchant goals work. `GetMerchantItemLink` (for `d.restock`, not built) is not asked any more. |
+| V100 mail | the `SendMail` recipient is readable, again; the inbox take hooks were never reported | `d.mailFriend` works. `d.mailbox` (not built) needs the inbox: removed. |
+| V106 loot source | `GetLootSourceInfo` gives `Creature` and `GameObject` GUIDs, again; fishing loot's source was never reported | Removed: `d.fishKinds3` and `d.treasure` are not built (`IsFishingLoot`, V84, answers fishing). |
+| V98, V102, V110, V111, V114, V121, V76, V80, V84 | as above, again (build 70888) | No change. |
+| V73, V70, V87, V60b | fail as before: the honor line `You … 1 Honor.` matches no format; the encounter state reads false in a boss fight; a hidden game account gives no GUID or BattleTag; another internal server's profession link doesn't open | Known limits. The probe no longer runs V60b (CF-120). |
+| V60 profession links | the own link and a same-server friend's link open Blizzard's view (CF-109, CF-113); the shift-click into chat (V134) and the scan's window close (V135) work in use | Closed (works in use). An offline friend's and an old link were not checked one by one. |
+| V124, V125, V127 to V133 guild | works in practice (Nico, 2026-11-12): a guild is a club (`C_Club.GetSubscribedClubs`, `clubType` 2) and works as the community; guild addon messages arrive (V128); guild invites and the refusal texts (V132) work | Closed with the guild route; V125, V127, V129 to V131 and V133 were not checked one by one. FriendProbe's guild test buttons are gone. |
+| V48, V52, V53, V64, V69, V88, V89, V136, V138, V139, V140, V145 | works in use (CF-27 invite by name, presence, the whisper line filter after CF-112, ambient effects, invite all, celebration sounds and banner, specialisations, the Dungeons tab's items, tooltips and quest names, the territory names) | Closed. Not checked one by one: a bug in one of them is a new bug report. |
+| V96 hearthstone | no export ever had a V96 result, although testers set their hearthstone | Removed: `d.bind` is not built. If it is built later, `PLAYER_BINDING_CHANGED` must be checked again. |
+| V8, V51, V59, V79, V118, V119 | not checked | Removed: V8 (the design doesn't depend on it), V51 (needs two factions), V59 (communities can't be created on Forever; sync runs over the guild), V79 (the rank goals are retired), V118 and V119 (`d.jump100`, `d.campfire` are not built). |
+
 ## Retail dry runs (not Forever)
 Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.
 | API | Result |

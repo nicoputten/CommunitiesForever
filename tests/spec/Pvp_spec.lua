@@ -267,7 +267,7 @@ describe("Pvp (CF-52)", function()
 
     it("picks a target alive at the rise and dead by the re-check: dead after the delay", function()
       local alive = {}
-      local pending = Pvp.killCandidates({ look("A", "target", false, { health = 0.4 }) }, alive, 100)
+      local pending = Pvp.killCandidates({ look("A", "target", false) }, alive, 100)
       assert.are.same({}, Pvp.resolveVictims(pending, 1)) -- not dead yet: nothing at once
       Pvp.observe(pending, { look("A", "target", true) }, 101, true)
       local picked = Pvp.resolveVictims(pending, 1)
@@ -292,39 +292,23 @@ describe("Pvp (CF-52)", function()
       assert.are.same({ "dead", "later" }, { picked[1].path, picked[2].path })
     end)
 
-    it("falls back to a candidate last seen at very low health just before, gone at the re-check", function()
+    -- CF-120: no low health fallback (an enemy player's health is secret on Forever, V143).
+    it("never picks a candidate who isn't seen dead, even one last seen at very low health", function()
       local alive = {}
       Pvp.seeAlive(alive, look("A", "target", false, { health = 0.08 }), 98)
       local pending = Pvp.killCandidates({ look("A", "target", nil) }, alive, 100) -- UnitIsDead unknown at the rise
       Pvp.observe(pending, {}, 101, true)
-      local picked = Pvp.resolveVictims(pending, 1)
-      assert.are.equal("A", picked[1].guid)
-      assert.are.equal("health", picked[1].path)
-      -- the health seen at the rise itself counts too (the 15 % edge included)
-      pending = Pvp.killCandidates({ look("B", "mouseover", false, { health = 0.15 }) }, {}, 100)
-      Pvp.observe(pending, {}, 101, true)
-      assert.are.equal("health", Pvp.resolveVictims(pending, 1)[1].path)
-    end)
-
-    it("never falls back on higher health, old health, or a candidate seen alive at the re-check", function()
-      local alive = {}
-      Pvp.seeAlive(alive, look("High", "target", false, { health = 0.16 }), 99)
-      Pvp.seeAlive(alive, look("Old", "target", false, { health = 0.05 }), 96) -- 4 s before the rise
-      local pending = Pvp.killCandidates({ look("High", "target", nil), look("Old", "mouseover", nil) }, alive, 100)
-      Pvp.observe(pending, {}, 101, true)
-      assert.are.same({}, Pvp.resolveVictims(pending, 2))
-      pending = Pvp.killCandidates({ look("A", "target", false, { health = 0.05 }) }, {}, 100)
-      Pvp.observe(pending, { look("A", "target", false, { health = 0.05 }) }, 101, true) -- still standing
       assert.are.same({}, Pvp.resolveVictims(pending, 1))
+      assert.is_nil(Pvp.LOW_HEALTH)
     end)
 
-    it("prefers a dead candidate over a low health one, then target over mouseover over nameplate", function()
-      local pending = Pvp.killCandidates({ look("N", "nameplate", false), look("T", "target", false, { health = 0.1 }),
+    it("prefers target over mouseover over nameplate among the dead", function()
+      local pending = Pvp.killCandidates({ look("N", "nameplate", false), look("T", "target", false),
                                            look("M", "mouseover", false) }, {}, 100)
-      Pvp.observe(pending, { look("N", "nameplate", true), look("M", "mouseover", true) }, 101, true)
+      Pvp.observe(pending, { look("N", "nameplate", true), look("M", "mouseover", true), look("T", "target", true) })
       local picked = Pvp.resolveVictims(pending, 3)
-      assert.are.same({ "M", "N", "T" }, { picked[1].guid, picked[2].guid, picked[3].guid })
-      assert.are.same({ "later", "later", "health" }, { picked[1].path, picked[2].path, picked[3].path })
+      assert.are.same({ "T", "M", "N" }, { picked[1].guid, picked[2].guid, picked[3].guid })
+      assert.are.same({ "later", "later", "later" }, { picked[1].path, picked[2].path, picked[3].path })
       assert.are.equal(1, #Pvp.resolveVictims(pending)) -- one kill by default
     end)
 
@@ -339,17 +323,12 @@ describe("Pvp (CF-52)", function()
       assert.are.same({}, Pvp.resolveVictims(pending, 3))
     end)
 
-    it("ignores secret values (nil from the adapter): no GUID, no death, no health", function()
+    it("ignores secret values (nil from the adapter): no GUID, no death", function()
       local pending = Pvp.killCandidates({ look("A", "target", false, { guid = false }),
-                                           look("B", "target", false, { health = nil }) }, {}, 100)
+                                           look("B", "target", false) }, {}, 100)
       assert.are.equal(1, #pending.list)
       Pvp.observe(pending, { look("B", "target", nil), { enemy = true, dead = true, source = "target" } }, 101, true)
       assert.are.same({}, Pvp.resolveVictims(pending, 1))
-      -- nonsense health values never count as low
-      pending = Pvp.killCandidates({ look("C", "target", false, { health = -1 }),
-                                     look("D", "mouseover", false, { health = 0 / 0 }) }, {}, 100)
-      Pvp.observe(pending, {}, 101, true)
-      assert.are.same({}, Pvp.resolveVictims(pending, 2))
       assert.are.same({}, Pvp.resolveVictims(nil, 1))
       assert.are.same({}, Pvp.killCandidates(nil, {}, 100).list)
       Pvp.observe(nil, {}, 101, true) -- no error

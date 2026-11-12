@@ -21,10 +21,11 @@ Probe.THROTTLE = 60       -- seconds between two looks at the same unit
 -- V60b (a friend's link while they are offline) stays. CF-109: V114 answered and gone. CF-113: V120 answered (export
 -- of 2026-11-09) and gone; V101 checks only buying (posting answered). CF-116: V73 (the honor message has no
 -- victim) and V80 (the duel lines, answered on Retail) are gone; V142 (races beyond Vanilla's eight, the Skyborne)
--- added.
+-- added. CF-120 (export of 2026-11-12): V101, V108 and V142 answered, V60b (a known fail) and V96 closed, all gone;
+-- V74 (a skull's UnitLevel) added back, as no probe ever looked for it; V123 looks at every zone change; V85 (the
+-- items you put in a trade, which w.craftTrade reads) added, as no export ever reported it.
 Probe.IDS = {
-  "V82", "V35b", "Hunt", "V96", "V101", "V108", "V122", "V123",
-  "V60b", "V142",
+  "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.
@@ -118,14 +119,14 @@ end
 -- CF-110: the Hunt's result for a kill counted by the lifetime counter, its victim picked from the enemy players
 -- around the kill (core Pvp.resolveVictims' first entry, or nil): "pass" with race and class, "info" when the victim
 -- lacks one or none fit. CF-117: it says which path found the victim (HUNT_PATHS: dead at once, dead after the
--- delay, low health) and how many candidates there were; never the victim's name.
-Probe.HUNT_PATHS = { dead = "dead at once", later = "dead after the delay", health = "low health" }
+-- delay; CF-120: the low health path is gone, V143) and how many candidates there were; never the victim's name.
+Probe.HUNT_PATHS = { dead = "dead at once", later = "dead after the delay" }
 
 function Probe.huntPick(pick, candidates)
   local seen = type(candidates) == "number" and (", " .. candidates .. " candidate" .. (candidates == 1 and "" or "s"))
     or ""
   if type(pick) ~= "table" then
-    return "info", "kill counted, no victim: no enemy player as target, mouseover or nameplate dead or at low health"
+    return "info", "kill counted, no victim: no enemy player as target, mouseover or nameplate dead"
       .. seen
   end
   local path = Probe.HUNT_PATHS[pick.path]
@@ -136,51 +137,58 @@ function Probe.huntPick(pick, candidates)
   return "info", string.format("victim %s, without race and class%s", how, seen)
 end
 
--- ===== V108: an emote at a target (CF-117) =====
--- Bug 14: a typed /wave never called the global DoEmote on Forever (build 70862). The probe also hooks
--- C_ChatInfo.PerformEmote (when it exists) and watches CHAT_MSG_TEXT_EMOTE with your own GUID as the sender.
+-- ===== V74: an enemy player shown with a skull (CF-120) =====
+-- The game shows a skull for an enemy player 10 or more levels above you (SKULL_GAP). No probe looked for it before
+-- CF-120 (FriendProbe only logged it), so the exports never answered it.
 
-Probe.EMOTE_PAIR = 3 -- seconds: a chat line this soon after a hooked emote is that emote's line
-Probe.EMOTE_TARGETS = { enemy = "an enemy-faction player", friendly = "a friendly player", unknown =
-  "a player of unknown faction", none = "no player" }
+Probe.SKULL_GAP = 10
 
---[[ V108's result for one of your emotes: status, detail. via: the hooked API ("DoEmote", "C_ChatInfo.PerformEmote")
-or "chat" (CHAT_MSG_TEXT_EMOTE from you, no hooked emote just before); token: the hook's emote token (nil from chat);
-target: "enemy", "friendly", "unknown" (faction unreadable) or "none" (no player targeted); guid: the target's
-UnitGUID was readable; apis: { [api name] = true when hookable }, listed for a chat line. "pass" only for a token at
-an enemy-faction player. Never a name or chat text. ]]
-function Probe.emote(via, token, target, guid, apis)
-  local at = (Probe.EMOTE_TARGETS[target] or Probe.EMOTE_TARGETS.none)
-    .. (target ~= "none" and target ~= nil and (guid and ", GUID readable" or ", GUID missing") or "")
-  if via ~= "chat" then
-    local seen = string.format("emote %s via %s on %s", type(token) == "string" and token or "missing",
-      tostring(via), at)
-    if type(token) == "string" and token ~= "" and target == "enemy" then return "pass", seen end
-    return "info", seen .. "; an emote at an enemy-faction player still to see"
+--[[ V74's result for one enemy player looked at: status, detail, or nil for an ordinary level. level: UnitLevel of
+the enemy (nil when missing or secret, secret: true then); own: your UnitLevel; source: "target", "mouseover",
+"nameplate". "pass" for -1 (the skull), and for a readable level SKULL_GAP or more above yours (a skull that reads as
+its level); "info" for a secret level. ]]
+function Probe.skull(level, own, secret, source)
+  local via = " via " .. tostring(source)
+  if secret then return "info", "enemy player's UnitLevel secret" .. via end
+  if level == -1 then return "pass", "skull: UnitLevel -1" .. via end
+  if type(level) == "number" and type(own) == "number" and own > 0 and level >= own + Probe.SKULL_GAP then
+    return "pass", string.format("%d+ levels above: UnitLevel %d at own %d (not -1)%s", Probe.SKULL_GAP, level, own,
+      via)
   end
-  local names = {}
-  for name in pairs(type(apis) == "table" and apis or {}) do names[#names + 1] = name end
-  table.sort(names)
-  return "info", string.format("own emote in chat on %s, no emote hook before it (hookable: %s)", at,
-    #names > 0 and table.concat(names, ", ") or "none")
+  return nil
 end
 
--- ===== V142: races beyond Vanilla's eight (CF-116) =====
+-- ===== V123: the zone's PvP type (CF-120) =====
+-- Up to CF-120 the probe read the type once per new type in a session, only on ZONE_CHANGED_NEW_AREA and at login,
+-- so only "friendly" and "sanctuary" ever showed. It now reads at every zone change and again ZONE_RECHECK seconds
+-- later, and keeps a count of the zones seen per type.
 
--- The race tokens UnitRace gives for Vanilla's eight races, and their race IDs (1 to 8).
-Probe.KNOWN_RACES = { Human = 1, Orc = 2, Dwarf = 3, NightElf = 4, Scourge = 5, Tauren = 6, Gnome = 7, Troll = 8 }
+Probe.ZONE_RECHECK = 2 -- seconds after a zone change the type is read again (it may lag behind the event)
 
---[[ CF-116: a player of a race that isn't one of the eight (Forever's Skyborne), as one line: "<token>, id <id>,
-name <race name>, <relation> via <source>"; nil for a known race (by token, or by ID when the token isn't
-readable) or when neither token nor ID is readable. name, token, id: UnitRace's three returns, nil when missing or
-secret. Never a player's name: only the race's own name, token and ID. ]]
-function Probe.newRace(name, token, id, relation, source)
-  local hasToken, hasId = type(token) == "string" and token ~= "", type(id) == "number"
-  if not hasToken and not hasId then return nil end
-  if hasToken and Probe.KNOWN_RACES[token] then return nil end
-  if not hasToken and id >= 1 and id <= 8 then return nil end
-  return string.format("%s, id %s, name %s, %s via %s", hasToken and token or "?", hasId and tostring(id) or "?",
-    type(name) == "string" and name or "?", tostring(relation), tostring(source))
+--[[ Adds a zone's type to the session's counts in place: counts = { [type] = { [zone] = true } } (type "none" for
+no type). Returns true when this zone is new for its type. ]]
+function Probe.zoneSeen(counts, zone, pvpType)
+  local kind = type(pvpType) == "string" and pvpType ~= "" and pvpType or "none"
+  zone = type(zone) == "string" and zone ~= "" and zone or "?"
+  counts[kind] = counts[kind] or {}
+  if counts[kind][zone] then return false end
+  counts[kind][zone] = true
+  return true
+end
+
+--[[ V123's result from the counts: status, detail. "pass" once a type other than "friendly", "sanctuary" or none was
+read (the question: "hostile", "contested"); else "info". The detail lists the types with how many zones gave each,
+sorted by type. ]]
+function Probe.zoneResult(counts)
+  local kinds, other = {}, false
+  for kind, zones in pairs(counts) do
+    local n = 0
+    for _ in pairs(zones) do n = n + 1 end
+    kinds[#kinds + 1] = kind .. " " .. n
+    if kind ~= "friendly" and kind ~= "sanctuary" and kind ~= "none" then other = true end
+  end
+  table.sort(kinds)
+  return other and "pass" or "info", "zones per type: " .. table.concat(kinds, ", ")
 end
 
 -- ===== The size cap =====

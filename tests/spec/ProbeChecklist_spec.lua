@@ -44,11 +44,13 @@ describe("FriendProbe launch checklist (CF-60)", function()
       if item.done then done[#done + 1] = item.id end
     end
     table.sort(done)
-    assert.are.same({ "V102", "V103", "V104", "V105", "V107", "V109", "V110", "V111", "V112", "V113", "V114", "V115",
-                      "V116", "V117", "V120", "V121", "V137",
-                      "V47", "V50b", "V54", "V55", "V61", "V62", "V63", "V65", "V66", "V67", "V68",
-                      "V70", "V71", "V72", "V73", "V76", "V77", "V78", "V80", "V81", "V83", "V84", "V86", "V87", "V90",
-                      "V93", "V94", "V95", "V98" }, done)
+    assert.are.same({ "V100", "V101", "V102", "V103", "V104", "V105", "V106", "V107", "V108", "V109", "V110", "V111",
+                      "V112", "V113", "V114", "V115", "V116", "V117", "V118", "V119", "V120", "V121", "V124", "V125",
+                      "V127", "V128", "V129", "V130", "V131", "V132", "V133", "V134", "V135", "V136", "V137", "V138",
+                      "V139", "V140", "V141", "V142", "V143", "V144", "V145", "V47", "V48", "V50b", "V51", "V52",
+                      "V53", "V54", "V55", "V59", "V60", "V61", "V62", "V63", "V64", "V65", "V66", "V67", "V68",
+                      "V69", "V70", "V71", "V72", "V73", "V75", "V76", "V77", "V78", "V79", "V8", "V80", "V81",
+                      "V83", "V84", "V86", "V87", "V88", "V89", "V90", "V93", "V94", "V95", "V96", "V98", "V99" }, done)
   end)
 
   it("lists in the TOC only files that exist", function()
@@ -157,30 +159,21 @@ describe("FriendProbe launch checklist (CF-60)", function()
                         "V99" }, retail)
     end)
 
-    it("never registers the combat log by itself, only from its button (Blizzard's popup on Retail)", function()
+    -- CF-120: V75 answered (addons can't read the combat log on Forever); its button and the guild tests are gone.
+    it("never registers the combat log, and has no combat log or guild test button", function()
       for _, project in ipairs({ 18, 1 }) do
         local ns = login(1793300000, project)
         assert.is_nil(registered.COMBAT_LOG_EVENT_UNFILTERED)
         assert.is_true(registered.CHAT_MSG_COMBAT_HONOR_GAIN) -- the rest of the PvP logging runs
         for _, t in ipairs(ns.tests) do
-          if t.text:find("combat log", 1, true) then t.run() end
+          assert.is_nil(t.text:find("combat log", 1, true))
+          assert.is_nil(t.text:find("guild", 1, true))
         end
-        assert.is_true(registered.COMBAT_LOG_EVENT_UNFILTERED)
-        assert.is_table(ns.results().V75)
         if project == 18 then -- the last login is cleaned up by after_each
           _G.FriendProbeDB = nil
           wowapi.uninstall()
         end
       end
-    end)
-
-    it("opens the guild invite test without errors and asks about the masked field (CF-84)", function()
-      local ns = login(1793300000)
-      for _, t in ipairs(ns.tests) do
-        if t.text:find("guild invites", 1, true) then t.run() end
-      end
-      assert.are.equal("info", ns.results().V130.status)
-      assert.are.same({}, printed)
     end)
 
     it("shows what a test button found on its row (CF-62: V67 only logged)", function()

@@ -104,10 +104,10 @@ describe("Probe", function()
     -- Saved files keep the results of the checks answered at launch (CF-96) next to the running ones.
     local ids = {}
     for _, id in ipairs(Probe.IDS) do ids[#ids + 1] = id end
-    for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86", "V87",
+    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V79", "V81", "V83", "V84", "V86", "V87",
                           "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105", "V106",
                           "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117", "V60", "V60c",
-                          "V114", "V120", "V73", "V80" }) do
+                          "V114", "V120", "V73", "V80", "V96", "V101", "V108", "V60b", "V142" }) do
       ids[#ids + 1] = id
     end
 
@@ -173,10 +173,11 @@ describe("Probe", function()
           2) })
       assert.are.same({ "pass", "Orc WARRIOR via target, dead at once" },
         { Probe.huntPick({ name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target", path = "dead" }) })
-      assert.are.same({ "info", "victim via mouseover, low health, without race and class, 1 candidate" },
-        { Probe.huntPick({ name = "Grim Tusk", class = "WARRIOR", source = "mouseover", path = "health" }, 1) })
-      assert.are.same({ "info", "kill counted, no victim: no enemy player as target, mouseover or nameplate dead or "
-        .. "at low health, 0 candidates" }, { Probe.huntPick(nil, 0) })
+      assert.are.same({ "info", "victim via mouseover, dead at once, without race and class, 1 candidate" },
+        { Probe.huntPick({ name = "Grim Tusk", class = "WARRIOR", source = "mouseover", path = "dead" }, 1) })
+      assert.are.same({ "info", "kill counted, no victim: no enemy player as target, mouseover or nameplate dead, "
+        .. "0 candidates" }, { Probe.huntPick(nil, 0) })
+      assert.is_nil(Probe.HUNT_PATHS.health) -- CF-120: no low health path (V143: health is secret)
       assert.are.equal("pass", (Probe.huntPick({ race = "Orc", class = "MAGE", source = "nameplate" })))
       for _, pick in ipairs({ { name = "Grim Tusk", race = "Orc", class = "WARRIOR", source = "target" },
                               { name = "Grim Tusk", source = "target", path = "dead" } }) do
@@ -185,52 +186,50 @@ describe("Probe", function()
     end)
   end)
 
-  -- CF-117: V108, bug 14 (a typed /wave never reached the DoEmote hook).
-  describe("an emote at a target (V108)", function()
-    it("passes only for a hooked token at an enemy-faction player", function()
-      assert.are.same({ "pass", "emote WAVE via C_ChatInfo.PerformEmote on an enemy-faction player, GUID readable" },
-        { Probe.emote("C_ChatInfo.PerformEmote", "WAVE", "enemy", true) })
-      assert.are.same({ "info", "emote BOO via DoEmote on a friendly player, GUID missing; an emote at an "
-        .. "enemy-faction player still to see" }, { Probe.emote("DoEmote", "BOO", "friendly", false) })
-      assert.are.equal("info", (Probe.emote("DoEmote", nil, "enemy", true)))
-      assert.are.equal("info", (Probe.emote("DoEmote", "FLEX", "unknown", true)))
-      assert.are.same({ "info", "emote FLEX via DoEmote on no player; an emote at an enemy-faction player still to "
-        .. "see" }, { Probe.emote("DoEmote", "FLEX", "none") })
+  -- CF-120: V74, an enemy player with a skull.
+  describe("a skull's level (V74)", function()
+    it("passes on -1 and on a readable level 10 or more above yours", function()
+      assert.are.same({ "pass", "skull: UnitLevel -1 via nameplate" }, { Probe.skull(-1, 20, false, "nameplate") })
+      assert.are.same({ "pass", "10+ levels above: UnitLevel 30 at own 20 (not -1) via target" },
+        { Probe.skull(30, 20, false, "target") })
+      assert.are.same({ "info", "enemy player's UnitLevel secret via mouseover" },
+        { Probe.skull(nil, 20, true, "mouseover") })
     end)
 
-    it("describes an emote seen only in chat with the hookable emote APIs", function()
-      assert.are.same({ "info", "own emote in chat on an enemy-faction player, GUID readable, no emote hook before it "
-        .. "(hookable: C_ChatInfo.PerformEmote, DoEmote)" },
-        { Probe.emote("chat", nil, "enemy", true, { DoEmote = true, ["C_ChatInfo.PerformEmote"] = true }) })
-      assert.are.equal("own emote in chat on no player, no emote hook before it (hookable: none)",
-        select(2, Probe.emote("chat", nil, "none")))
+    it("gives nothing for an ordinary or unknown level", function()
+      assert.is_nil(Probe.skull(29, 20, false, "target"))
+      assert.is_nil(Probe.skull(25, nil, false, "target"))
+      assert.is_nil(Probe.skull(nil, 20, false, "target"))
+      assert.is_nil(Probe.skull(30, 0, false, "target"))
     end)
   end)
 
-  -- CF-116: V142, a race beyond Vanilla's eight (the Skyborne), without the player's name.
-  describe("races beyond Vanilla's eight (V142)", function()
-    it("gives nothing for the eight known races, by token or, without one, by ID", function()
-      for token, id in pairs(Probe.KNOWN_RACES) do
-        assert.is_nil(Probe.newRace(token, token, id, "enemy", "target"), token)
-        assert.is_nil(Probe.newRace(nil, nil, id, "enemy", "target"), token)
-      end
-      assert.is_nil(Probe.newRace(nil, nil, nil, "enemy", "target"))
-      assert.is_nil(Probe.newRace("Human", "", nil, "friendly", "mouseover"))
+  -- CF-120: V123, the zone's PvP type at every zone change.
+  describe("the zone's PvP type (V123)", function()
+    it("counts each zone once per type", function()
+      local counts = {}
+      assert.is_true(Probe.zoneSeen(counts, "Durotar", nil))
+      assert.is_false(Probe.zoneSeen(counts, "Durotar", ""))
+      assert.is_true(Probe.zoneSeen(counts, "Orgrimmar", "friendly"))
+      assert.is_true(Probe.zoneSeen(counts, nil, "sanctuary"))
+      assert.are.same({ none = { Durotar = true }, friendly = { Orgrimmar = true }, sanctuary = { ["?"] = true } },
+        counts)
+      assert.are.same({ "info", "zones per type: friendly 1, none 1, sanctuary 1" }, { Probe.zoneResult(counts) })
     end)
 
-    it("gives a new race's token, ID and name, the relation and the source", function()
-      assert.are.equal("SkyborneHigh, id 90, name High Order Skyborne, enemy via nameplate",
-        Probe.newRace("High Order Skyborne", "SkyborneHigh", 90, "enemy", "nameplate"))
-      assert.are.equal("?, id 91, name ?, friendly via target", Probe.newRace(nil, nil, 91, "friendly", "target"))
-      assert.are.equal("Windshaper, id ?, name ?, enemy via mouseover",
-        Probe.newRace(nil, "Windshaper", nil, "enemy", "mouseover"))
+    it("passes once a type other than friendly, sanctuary or none was read", function()
+      local counts = {}
+      Probe.zoneSeen(counts, "Ashenvale", "hostile")
+      Probe.zoneSeen(counts, "The Barrens", nil)
+      Probe.zoneSeen(counts, "Ratchet", nil)
+      assert.are.same({ "pass", "zones per type: hostile 1, none 2" }, { Probe.zoneResult(counts) })
     end)
   end)
 
   describe("the report", function()
     it("summarises and lists every check, open ones too", function()
       local results = {}
-      Probe.record(results, "V96", "pass", "GetBindLocation Inn", 100, "65000")
+      Probe.record(results, "V74", "pass", "skull: UnitLevel -1 via target", 100, "65000")
       Probe.record(results, "V82", "fail", "IsInGroup secret", 100, "65000")
       Probe.record(results, "V82", "info", "later one", 100, "65000")
       Probe.note(results, "V82", "a line")
@@ -241,7 +240,7 @@ describe("Probe", function()
       assert.are.equal(string.format("Probe (forever): 1 pass, 1 fail, 0 info, %d open; running until 18 November.",
         #Probe.IDS - 2), lines[1])
       local text = table.concat(lines, "\n")
-      assert.truthy(text:find("V96 pass: GetBindLocation Inn [T100, build 65000]", 1, true))
+      assert.truthy(text:find("V74 pass: skull: UnitLevel -1 via target [T100, build 65000]", 1, true))
       assert.truthy(text:find("V82 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
       assert.truthy(text:find("V122 open", 1, true))
       assert.is_nil(text:find("V63", 1, true)) -- answered at launch (CF-96): no longer in the report
@@ -259,10 +258,11 @@ describe("Probe", function()
       local text = table.concat(Probe.report(results, "forever", true), "\n")
       assert.is_nil(text:find("V87", 1, true))
       assert.are.equal("pass", results.V63.status) -- untouched: the upload still carries it
-      for _, id in ipairs({ "V55", "V63", "V71", "V74", "V77", "V78", "V79", "V81", "V83", "V84", "V85", "V86",
+      for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V79", "V81", "V83", "V84", "V86",
                             "V87", "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105",
                             "V106", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117",
-                            "V60", "V60c", "V114", "V120", "V73", "V80" }) do -- CF-105, CF-109, CF-113, CF-116
+                            "V60", "V60c", "V114", "V120", "V73", "V80",
+                            "V96", "V101", "V108", "V60b", "V142" }) do -- CF-105, CF-109, CF-113, CF-116, CF-120
         for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
       end
     end)

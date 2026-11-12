@@ -8,6 +8,35 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-120 Clean up VERIFY.md and the launch probe (export of 2026-11-12)
+Nico (2026-11-12): the friends have done nearly everything the open items ask for. The export of 2026-11-12 (6
+testers, builds 70790 to 70888) and Nico's decisions close most of VERIFY.md. Touches `src/core/Probe.lua`,
+`src/core/Pvp.lua`, `src/adapters/PvpInfo.lua`, `src/services/PvpTracker.lua`, `src/services/LaunchProbe.lua`,
+`src/services/LaunchProbeMissions.lua`, `src/services/LaunchProbeRecipes.lua` (removed), the TOC,
+`tools/FriendProbe/Checklist.lua`, `tools/FriendProbe/FriendProbe.lua`, the specs, `docs/API-FINDINGS.md`, VERIFY.md.
+- Answered (export): V101 (a bought auction fires `AUCTION_HOUSE_PURCHASE_COMPLETED`), V108 (`C_ChatInfo.PerformEmote`
+  sees typed emotes on an enemy-faction player), V142 (Skyborne: token `Skyborne`, race IDs 95 and 96), V143
+  (an enemy's health is secret), V141 (`UnitIsDead` exists; one kill matched, one had no candidate), V144, V120.
+  V75 fails (Nico): addons can't read the combat log. To API-FINDINGS, out of VERIFY.md and the probe.
+- V143: the Hunt's low health fallback (CF-117) is removed from the victim pick (`Pvp.LOW_HEALTH`,
+  `Pvp.LOW_HEALTH_WINDOW`, the health in `PvpInfo.look`); a victim is only one seen dead, with tests.
+- V124 to V133 (guild): removed; the guild route works in practice. FriendProbe's guild and combat log test
+  buttons are gone.
+- Each other open item closed per Nico's rule (API-FINDINGS "Export of 2026-11-12 and the VERIFY.md cleanup"):
+  works in use (closed), or nothing depends on it / two factions needed (removed).
+- Probe fixes: V123 read the zone's type only on `ZONE_CHANGED_NEW_AREA` and at login, once per new type in a
+  session; it now reads at every zone change (also `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`,
+  `PLAYER_ENTERING_WORLD`) and 2 s later, notes each zone new for its type (type string, PvP flag, war mode) and
+  counts zones per type (`Probe.zoneSeen`, `Probe.zoneResult`). V74 had no probe check at all since CF-96: it now
+  reads `UnitLevel` of each enemy player as target, mouseover and nameplate (`Probe.skull`: `-1`, or 10+ levels
+  above, or secret). V85 (the items you put in a trade, read by `w.craftTrade`) gets a probe check.
+- Still open: V35b, V74, V82, V85, V122, V123. `Probe.IDS`: V82, V35b, V74, Hunt, V85, V122, V123.
+- Compatibility (rule 8): nothing stored or sent changes shape. The probe stops writing V60b, V96, V101, V108 and
+  V142 (their stored results stay and are uploaded as before) and starts writing V74 and V85 in the same
+  `{ status, detail, at, build, later, log }` shape. A `pvpKills` entry no longer gets a victim by low health
+  (that path never fired: health is secret).
+- Manual (VERIFY.md CF-120, V74, V85, V123).
+
 ### CF-119 No Lua error from a hidden guild name (secret value)
 Bug (addon v1.9.0, after login): `core/GuildInvite.lua:33: attempt to index local 'a' (a secret string value, while
 execution tainted by 'CommunitiesForever')` from `GuildInvites` afterLogin -> keepRoster -> memberGuild ->
