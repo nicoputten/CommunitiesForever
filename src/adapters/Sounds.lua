@@ -24,6 +24,19 @@ function Sounds.celebrate(weight)
   return nil
 end
 
+-- CF-122: the soft cue of the first prey sighting of the day (board HB01), the first of these the game has. The keys
+-- are unverified on Forever (VERIFY.md V146). Returns the key played, or nil.
+Sounds.PREY = { "MAP_PING", "IG_QUEST_LIST_OPEN" }
+
+function Sounds.prey()
+  if not (PlaySound and SOUNDKIT) then return nil end
+  for _, key in ipairs(Sounds.PREY) do
+    local id = SOUNDKIT[key]
+    if id and pcall(PlaySound, id, "SFX") then return key end
+  end
+  return nil
+end
+
 -- CF-88: plays one SOUNDKIT sound by key (keys not checked one by one: API-FINDINGS.md, V136). True when played.
 function Sounds.play(key)
   local id = PlaySound and SOUNDKIT and SOUNDKIT[key]

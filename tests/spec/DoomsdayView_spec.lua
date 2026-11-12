@@ -124,7 +124,5 @@ describe("DoomsdayView (CF-57)", function()
     assert.is_nil(rows[1].hint)
     assert.are.equal("Target your prey, or turn on enemy nameplates, so the kill knows who it was.", rows[2].hint)
     assert.are.equal("Your prey: The Hunt", V.PREY_LINE)
-    assert.are.equal("Prey in sight: Undead Mage. Keep them targeted for the kill.",
-      V.preyChat({ race = "Scourge", class = "MAGE" }))
   end)
 end)

@@ -31,6 +31,7 @@ src\core\Doomsday.lua
 src\core\Goals.lua
 src\core\DoomsdayView.lua
 src\core\Celebrations.lua
+src\core\HuntAlerts.lua
 src\core\Runs.lua
 src\core\BossKills.lua
 src\core\PlannedRuns.lua
@@ -155,6 +156,9 @@ src\ui\RunDialogs.lua
 src\ui\RunBanner.lua
 src\ui\CrownToast.lua
 src\ui\CelebrationBanner.lua
+src\ui\HuntMark.lua
+src\ui\HuntToast.lua
+src\ui\HuntPlate.lua
 src\ui\StartPanel.lua
 src\ui\FriendsTab.lua
 src\ui\ActivityTab.lua
