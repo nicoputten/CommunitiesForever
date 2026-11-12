@@ -23,9 +23,12 @@ Probe.THROTTLE = 60       -- seconds between two looks at the same unit
 -- victim) and V80 (the duel lines, answered on Retail) are gone; V142 (races beyond Vanilla's eight, the Skyborne)
 -- added. CF-120 (export of 2026-11-12): V101, V108 and V142 answered, V60b (a known fail) and V96 closed, all gone;
 -- V74 (a skull's UnitLevel) added back, as no probe ever looked for it; V123 looks at every zone change; V85 (the
--- items you put in a trade, which w.craftTrade reads) added, as no export ever reported it.
+-- items you put in a trade, which w.craftTrade reads) added, as no export ever reported it. CF-120 (Nico): a check
+-- that never answered is not dropped but tried another way: V8, V79, V96, V99, V100, V106, V118, V119
+-- (services/LaunchProbeWorld.lua).
 Probe.IDS = {
   "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
+  "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.

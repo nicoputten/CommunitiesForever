@@ -1,8 +1,9 @@
 --[[ LaunchProbeMissions (CF-82): the hidden probe's checks for the PvP catalogue (V122, V123) and the trade
 (V85). Same rules as services/LaunchProbe.lua: silent, guarded, cheap, no raw chat text and no player names.
 CF-96: only the checks the launch results (build 70790) left open run. The answered ones are in
-docs/API-FINDINGS.md "Forever launch probe". CF-109 to CF-117 removed V114, V120 and the auction post. CF-120: V96,
-V101 and V108 (the mission catalogue's checks) are gone; V123 reads the zone's type at every zone change. ]]
+docs/API-FINDINGS.md "Forever launch probe". CF-109 to CF-117 removed V114, V120 and the auction post. CF-120: V101
+and V108 answered and gone, V96 tried other ways (services/LaunchProbeWorld.lua); V123 reads the zone's type at every
+zone change. ]]
 local _, ns = ...
 
 local Probe = ns.Probe

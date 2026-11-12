@@ -192,9 +192,10 @@ these checks (CF-96).
 ### Export of 2026-11-12 and the VERIFY.md cleanup (CF-120)
 The probe export of 2026-11-12 (6 testers, builds 70790 to 70888) and Nico's decisions of 2026-11-12. Where a row
 above says "still open", this table has the newer answer. "Works in use": the friends used the feature for a week
-and reported no bug, so the item is closed without a probe line. "Removed": nothing built depends on it (or it needs
-two factions: every tester plays Horde), so the question is dropped. Still open (VERIFY.md): V35b, V74, V82, V85,
-V122, V123.
+and reported no bug, so the item is closed without a probe line. An item is closed only with an answer (a probe
+result, a feature that works in use, or Nico's call); where the action happened but no probe answered, the probe
+tries other ways (Nico, 2026-11-12). Still open (VERIFY.md): V8, V35b, V51 (needs a character of the other
+faction), V59 (needs a community), V74, V79, V82, V85, V96, V99, V100, V106, V118, V119, V122, V123.
 | Item | Seen | What it means |
 |---|---|---|
 | V101 auction bought | **passes**: a bought auction fires `AUCTION_HOUSE_PURCHASE_COMPLETED` (build 70888) | `d.auctionBuy` can be built (not built yet). The probe no longer runs V101. |
@@ -207,16 +208,17 @@ V122, V123.
 | V74 enemy players | level, class and race readable by nameplate, again; still no skull seen | No probe looked for a skull before: CF-120 adds a V74 check (VERIFY.md V74). |
 | V75 combat log | **fails**: addons cannot read the combat log on Forever (`COMBAT_LOG_EVENT_UNFILTERED` is Blizzard UI only, as on Retail 12.1.5) (Nico) | No `PARTY_KILL` and no killer from the combat log: the victim comes from the target at the kill (CF-110), the killer from the death recap (V120). FriendProbe's "Test the combat log" button is gone. |
 | V85 trade | a completed trade and the partner's GUID, again; the items given were never reported | `w.craftTrade` reads them (`adapters/GoalEvents.lua`): CF-120 adds a V85 check to the probe (VERIFY.md V85). |
-| V99 merchant | the buy and repair hooks run, money goes down and up while the window is open | `d.repair` and the merchant goals work. `GetMerchantItemLink` (for `d.restock`, not built) is not asked any more. |
-| V100 mail | the `SendMail` recipient is readable, again; the inbox take hooks were never reported | `d.mailFriend` works. `d.mailbox` (not built) needs the inbox: removed. |
-| V106 loot source | `GetLootSourceInfo` gives `Creature` and `GameObject` GUIDs, again; fishing loot's source was never reported | Removed: `d.fishKinds3` and `d.treasure` are not built (`IsFishingLoot`, V84, answers fishing). |
+| V99 merchant | the buy and repair hooks run, money goes down and up while the window is open | `d.repair` and the merchant goals work. Still open: `GetMerchantItemLink`, `CanMerchantRepair`, `GetRepairAllCost` (VERIFY.md V99; the probe reads them at the merchant since CF-120). |
+| V100 mail | the `SendMail` recipient is readable, again; the inbox take hooks were never reported (only FriendProbe had them) | `d.mailFriend` works. Still open: the sender when taking from a mail (VERIFY.md V100; the addon's probe hooks the take functions and reads mail 1 at `MAIL_SHOW` since CF-120). |
+| V106 loot source | `GetLootSourceInfo` gives `Creature` and `GameObject` GUIDs, again; fishing loot's source was never reported | Still open: fishing loot's source and item IDs (VERIFY.md V106; the probe reads them at `LOOT_READY` and `LOOT_OPENED`, fishing told by `IsFishingLoot` or an own Fishing cast, since CF-120). |
 | V98, V102, V110, V111, V114, V121, V76, V80, V84 | as above, again (build 70888) | No change. |
 | V73, V70, V87, V60b | fail as before: the honor line `You … 1 Honor.` matches no format; the encounter state reads false in a boss fight; a hidden game account gives no GUID or BattleTag; another internal server's profession link doesn't open | Known limits. The probe no longer runs V60b (CF-120). |
 | V60 profession links | the own link and a same-server friend's link open Blizzard's view (CF-109, CF-113); the shift-click into chat (V134) and the scan's window close (V135) work in use | Closed (works in use). An offline friend's and an old link were not checked one by one. |
 | V124, V125, V127 to V133 guild | works in practice (Nico, 2026-11-12): a guild is a club (`C_Club.GetSubscribedClubs`, `clubType` 2) and works as the community; guild addon messages arrive (V128); guild invites and the refusal texts (V132) work | Closed with the guild route; V125, V127, V129 to V131 and V133 were not checked one by one. FriendProbe's guild test buttons are gone. |
 | V48, V52, V53, V64, V69, V88, V89, V136, V138, V139, V140, V145 | works in use (CF-27 invite by name, presence, the whisper line filter after CF-112, ambient effects, invite all, celebration sounds and banner, specialisations, the Dungeons tab's items, tooltips and quest names, the territory names) | Closed. Not checked one by one: a bug in one of them is a new bug report. |
-| V96 hearthstone | no export ever had a V96 result, although testers set their hearthstone | Removed: `d.bind` is not built. If it is built later, `PLAYER_BINDING_CHANGED` must be checked again. |
-| V8, V51, V59, V79, V118, V119 | not checked | Removed: V8 (the design doesn't depend on it), V51 (needs two factions), V59 (communities can't be created on Forever; sync runs over the guild), V79 (the rank goals are retired), V118 and V119 (`d.jump100`, `d.campfire` are not built). |
+| V96 hearthstone | no export ever had a V96 result, although testers set their hearthstone: `PLAYER_BINDING_CHANGED` alone never answered | Still open (VERIFY.md V96): since CF-120 the probe also watches `CONFIRM_BINDER`, a `ConfirmBinder` post-hook and `GetBindLocation` at login against later zone changes. |
+| V8, V79, V118, V119 | never answered: only FriendProbe looked, and no FriendProbe log came back | Still open: since CF-120 the addon's own probe reads them (V8 the clubIds and V79 `GetPVPRankInfo` at login, V118 a `JumpOrAscendStart` post-hook, V119 the campfire's spell and the auras while it burns). |
+| V51, V59 | the action could not happen | Still open: V51 needs a character of the other faction (every tester plays Horde); V59 needs a community, and none can be created on Forever. |
 
 ## Retail dry runs (not Forever)
 Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.

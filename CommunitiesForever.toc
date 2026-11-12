@@ -140,6 +140,7 @@ src\services\DoomsdayAlerts.lua
 src\services\Celebrate.lua
 src\services\LaunchProbe.lua
 src\services\LaunchProbeMissions.lua
+src\services\LaunchProbeWorld.lua
 
 src\ui\kit\Theme.lua
 src\ui\kit\Widgets.lua

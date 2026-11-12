@@ -6,7 +6,7 @@
 -- note: what is known already (shown under the item while it is open);
 -- done: answered elsewhere, no recheck needed (CF-61, Nico 2026-10-29: what he checked on Retail 12.1.5 counts;
 -- CF-96: "forever 70790", answered by the addon's launch probe on Forever; CF-120: "works in use" (the feature works
--- for the friends, nothing reported) and "removed" (nothing depends on it, or it needs two factions)). Shown ticked in a Done list at the bottom,
+-- for the friends, nothing reported)). Shown ticked in a Done list at the bottom,
 -- out of the sessions.
 -- Results are kept per client, so a Retail answer never closes a Forever item by itself.
 local _, ns = ...
@@ -72,7 +72,7 @@ ns.items = {
   { id = "V85", retail = true, session = 2, auto = true, friend = true,
     title = "The items you put in a trade (GetTradePlayerItemLink)",
     how = "Trade any item to a friend: CommunitiesForever's /cf fp shows V85 (a trade and its partner are answered)." },
-  { id = "V59", done = "removed, CF-120", session = 2, friend = true, title = "A friend receives the hidden sync channel's HELLO",
+  { id = "V59", session = 2, friend = true, title = "A friend receives the hidden sync channel's HELLO",
     how = "Two community members who aren't Battle.net friends: VERIFY.md V59 (sending works already)." },
   { id = "V60", done = "works in use, CF-120", session = 2, friend = true,
     title = "A friend's profession link while they are offline, and an old link",
@@ -88,7 +88,7 @@ ns.items = {
   { id = "V72", done = "retail 12.1.5", retail = true, session = 2, friend = true,
     title = "Whisper on the start panel fills the chat input",
     how = "Start panel of a run, Whisper on a friend on another character." },
-  { id = "V8", done = "removed, CF-120", session = 2, friend = true, title = "The community's clubId is the same on two clients",
+  { id = "V8", session = 2, friend = true, title = "The community's clubId is the same on two clients",
     how = "Both send the saved file: the probe logs the IDs (V8 COMMUNITIES)." },
   { id = "V124", done = "works in use, CF-120", retail = true, session = 2, friend = true, title = "The guild as the community: club, members, events",
     how = "In a guild: Test: guild. A guild member logs in or out within a minute." },
@@ -166,7 +166,7 @@ ns.items = {
     how = "Enemy nameplates on. Target or mouse over an enemy player, then get the honorable kill on them.",
     note = "Forever's honor message names nobody (V73): since CF-110 the victim is your target (or mouseover)"
       .. " dead at the kill, and CommunitiesForever's /cf fp ticks the Hunt from it." },
-  { id = "V79", done = "removed, CF-120", session = 5, auto = true, title = "PvP counters, rank and deaths" },
+  { id = "V79", session = 5, auto = true, title = "PvP counters, rank and deaths" },
   { id = "V81", done = "retail 12.1.5", retail = true, session = 5, auto = true,
     title = "Where a death's cause comes from" },
 
@@ -178,14 +178,14 @@ ns.items = {
   { id = "V87", done = "forever 70790", session = 2, auto = true, friend = true,
     title = "Data from a friend who appears offline",
     how = "A friend sets Battle.net to Appear offline; both run CommunitiesForever; /cf ping on their side." },
-  { id = "V51", done = "removed, CF-120", session = 6, auto = true, friend = true, title = "Addon whispers reach the other faction",
+  { id = "V51", session = 6, auto = true, friend = true, title = "Addon whispers reach the other faction",
     how = "Both run the probe: /fp whisper <their character>; their probe ticks it." },
 
   -- The Doomsday mission catalogue (docs/DOOMSDAY-CATALOGUE.md): Missions.lua ticks these while you play.
   { id = "V95", done = "forever 70790", retail = true, session = 1, auto = true,
     title = "Own spell casts: a readable spell ID",
     how = "Cast any spell, e.g. the Hearthstone." },
-  { id = "V99", done = "works in use, CF-120", retail = true, session = 1, auto = true, title = "Merchant: buy and repair seen",
+  { id = "V99", retail = true, session = 1, auto = true, title = "Merchant: buy and repair seen",
     how = "At a merchant: buy something, or repair." },
   { id = "V102", done = "forever 70790", retail = true, session = 1, auto = true,
     title = "The bank window opens (BANKFRAME_OPENED)",
@@ -200,9 +200,9 @@ ns.items = {
   { id = "V117", done = "forever 70790", retail = true, session = 1, auto = true,
     title = "A cast's target name (UNIT_SPELLCAST_SENT)",
     how = "Cast a spell on yourself or a target, e.g. a bandage or a buff." },
-  { id = "V118", done = "removed, CF-120", retail = true, session = 1, auto = true, title = "Counting jumps (a hook on JumpOrAscendStart)",
+  { id = "V118", retail = true, session = 1, auto = true, title = "Counting jumps (a hook on JumpOrAscendStart)",
     how = "Jump 3 times. A 'blocked' popup means No." },
-  { id = "V100", done = "removed, CF-120", retail = true, session = 2, auto = true, title = "Mail: the recipient of a sent mail",
+  { id = "V100", retail = true, session = 2, auto = true, title = "Mail: the recipient of a sent mail",
     how = "Send a mail (to a friend, or to your own alt)." },
   { id = "V108", done = "forever 70888", retail = true, session = 2, auto = true, title = "Whisper target and emotes on a target",
     how = "Whisper someone; target a player and /wave. In world PvP: /flex and /boo at an enemy-faction player." },
@@ -219,12 +219,12 @@ ns.items = {
   { id = "V94", done = "forever 70790", retail = true, session = 3, auto = true,
     title = "A flight, and learning a flight path",
     how = "Take a flight; talk to a new flight master." },
-  { id = "V96", done = "removed, CF-120", retail = true, session = 3, auto = true, title = "Setting the hearthstone (GetBindLocation)",
+  { id = "V96", retail = true, session = 3, auto = true, title = "Setting the hearthstone (GetBindLocation)",
     how = "Make an inn your home." },
   { id = "V103", done = "forever 70790", retail = true, session = 3, auto = true,
     title = "A spell learned at a trainer",
     how = "Learn a spell or rank at your class trainer." },
-  { id = "V106", done = "removed, CF-120", session = 3, auto = true, title = "Loot: the source (creature, node, chest) and item IDs",
+  { id = "V106", session = 3, auto = true, title = "Loot: the source (creature, node, chest) and item IDs",
     how = "Loot an enemy, a herb or ore node, a chest; fish once." },
   { id = "V107", done = "forever 70790", session = 3, auto = true, title = "Weapon skill-ups (SKILL_RANK_UP)",
     how = "Fight with a weapon whose skill isn't maxed." },
@@ -245,7 +245,7 @@ ns.items = {
     how = "Learn a recipe (a cooking recipe from a vendor is the cheapest)." },
   { id = "V105", done = "forever 70790", session = 6, auto = true, title = "Crafted items: class and quality",
     how = "Cook something and make a bandage." },
-  { id = "V119", done = "removed, CF-120", session = 6, title = "The campfire and its special buff",
+  { id = "V119", session = 6, title = "The campfire and its special buff",
     how = "Light a campfire (Basic Campfire), add 1, then 2, then 3 items: does the log show the buff and its count?" },
 
   -- The PvP catalogue (docs/DOOMSDAY-PVP-CATALOGUE.md).

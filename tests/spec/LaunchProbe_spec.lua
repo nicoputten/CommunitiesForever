@@ -163,8 +163,8 @@ describe("the hidden launch probe", function()
     assert.are.equal("TRADE_PLAYER_ITEM_CHANGED slot 1: item 2589", results().V85.detail)
   end)
 
-  -- CF-120: V96, V101, V108, V60b and V142 are answered or closed; their stored results stay.
-  it("no longer runs V96, V101, V108, V60b and V142, and keeps their stored results", function()
+  -- CF-120: V101, V108, V60b and V142 are answered; their stored results stay.
+  it("no longer runs V101, V108, V60b and V142, and keeps their stored results", function()
     load()
     results().V101 = { status = "pass", detail = "bought: AUCTION_HOUSE_PURCHASE_COMPLETED", at = 1, build = "70888" }
     enemyTarget("Orc")
@@ -174,10 +174,11 @@ describe("the hidden launch probe", function()
     assert.is_nil(ns.LaunchProbe.recipes)
     assert.are.same({ status = "pass", detail = "bought: AUCTION_HOUSE_PURCHASE_COMPLETED", at = 1, build = "70888" },
       results().V101)
-    assert.are.same({ "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123" }, ns.Probe.IDS)
+    assert.are.same({ "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
+                      "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119" }, ns.Probe.IDS)
     addon:OnSlashCommand("fp")
     local text = ns.ProbeReport.text()
-    for _, id in ipairs({ "V96", "V101", "V108", "V60b", "V142" }) do assert.is_nil(text:find(id, 1, true), id) end
+    for _, id in ipairs({ "V101", "V108", "V60b", "V142" }) do assert.is_nil(text:find(id, 1, true), id) end
   end)
 
   it("notes a handler error instead of showing it", function()
@@ -221,7 +222,7 @@ describe("the hidden launch probe", function()
     wowapi.fireEvent(state, "LOOT_OPENED")
     wowapi.fireEvent(state, "PLAYER_DEAD")
     wowapi.fireEvent(state, "UI_INFO_MESSAGE", 0, "Trade complete.")
-    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V79", "V81", "V83", "V85", "V86", "V87" }) do
+    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V81", "V83", "V86", "V87" }) do
       assert.is_nil(results()[id], id)
     end
     assert.are.same({ status = "pass", detail = "IsFishingLoot true, 1 items", at = 1, build = "70790" },
@@ -268,5 +269,122 @@ describe("the hidden launch probe", function()
     assert.are.equal("zones per type: contested 1, friendly 1, none 2", results().V123.detail)
     wowapi.fireEvent(state, "ZONE_CHANGED_INDOORS") -- the same zone and type again: nothing new
     assert.are.equal("zones per type: contested 1, friendly 1, none 2", results().V123.detail)
+  end)
+
+  -- CF-120 (Nico): checks that never answered try other ways (services/LaunchProbeWorld.lua).
+  describe("other ways for the unanswered checks (CF-120)", function()
+    local saved = {}
+    local names = { "GetPVPRankInfo", "GetBindLocation", "GetMerchantItemLink", "CanMerchantRepair",
+                    "GetRepairAllCost", "GetInboxHeaderInfo", "GetInboxNumItems", "TakeInboxItem", "GetLootSourceInfo",
+                    "GetLootSlotLink", "JumpOrAscendStart", "C_UnitAuras", "C_Spell", "GetSpellInfo" }
+    before_each(function()
+      for _, n in ipairs(names) do saved[n] = _G[n] end
+    end)
+    after_each(function()
+      for _, n in ipairs(names) do _G[n] = saved[n] end
+    end)
+
+    -- hooksecurefunc(name, fn) or hooksecurefunc(table, key, fn), as the game's.
+    local function hooks()
+      _G.hooksecurefunc = function(owner, key, fn)
+        if type(owner) == "string" then owner, key, fn = _G, owner, key end
+        local original = owner[key]
+        owner[key] = function(...)
+          local r = { original(...) }
+          fn(...)
+          return unpack(r)
+        end
+      end
+    end
+
+    it("reads the clubIds and whether GetPVPRankInfo exists at login (V8, V79)", function()
+      load() -- the mock's clubs
+      assert.are.equal("clubs: type 1 id 23125681, type 2 id 999, type 1 id 777", results().V8.detail)
+      assert.are.equal("info", results().V8.status)
+      assert.are.equal("pass", results().V79.status) -- the mock has it
+      assert.truthy(results().V79.detail:find("GetPVPRankInfo exists", 1, true))
+    end)
+
+    it("sees the hearthstone's place by the event, the ConfirmBinder hook or a change since login (V96)", function()
+      local place = "Orgrimmar"
+      _G.GetBindLocation = function() return place end
+      _G.ConfirmBinder = function() place = "Crossroads" end
+      hooks()
+      load()
+      assert.is_nil(results().V96)
+      _G.ConfirmBinder()
+      wowapi.runTimers(state)
+      assert.are.same({ "pass", "ConfirmBinder: GetBindLocation readable" },
+        { results().V96.status, results().V96.detail })
+      assert.are.equal("ConfirmBinder: GetBindLocation Crossroads", results().V96.log[1])
+      results().V96 = nil
+      wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+      assert.are.equal("GetBindLocation changed since login, seen at a zone change", results().V96.detail)
+      _G.ConfirmBinder = nil
+    end)
+
+    it("reads the merchant's first item and the repair cost (V99)", function()
+      load()
+      _G.GetMerchantItemLink = function() return nil end
+      _G.CanMerchantRepair = function() return true end
+      _G.GetRepairAllCost = function() return 1250, true end
+      wowapi.fireEvent(state, "MERCHANT_SHOW")
+      assert.are.equal("info", results().V99.status)
+      _G.GetMerchantItemLink = function() return "|cffffffff|Hitem:159::::::::20:::::|h[Water]|h|r" end
+      wowapi.fireEvent(state, "MERCHANT_UPDATE")
+      assert.are.same({ "pass", "MERCHANT_UPDATE: GetMerchantItemLink(1) item 159, CanMerchantRepair true, "
+        .. "GetRepairAllCost 1250, true" }, { results().V99.status, results().V99.detail })
+    end)
+
+    it("tells whether a mail's sender is readable when taking from it, never the name (V100)", function()
+      _G.GetInboxHeaderInfo = function() return nil, nil, "Ada Lovelace", "Hi" end
+      _G.TakeInboxItem = function() end
+      hooks()
+      load()
+      _G.TakeInboxItem(1, 1)
+      assert.are.same({ "pass", "TakeInboxItem: sender readable" }, { results().V100.status, results().V100.detail })
+      assert.is_nil(results().V100.detail:find("Ada", 1, true))
+      _G.TakeInboxItem = nil
+    end)
+
+    it("reads fishing loot's source, also when only a Fishing cast tells it was fishing (V106)", function()
+      load()
+      _G.GetLootSourceInfo = function() return "GameObject-0-1-2-3-35591-0000" end
+      _G.GetLootSlotLink = function() return "|cffffffff|Hitem:6303::::::::20:::::|h[Raw Slitherskin Mackerel]|h|r" end
+      wowapi.fireEvent(state, "LOOT_OPENED")
+      assert.is_nil(results().V106) -- not fishing
+      wowapi.fireEvent(state, "UNIT_SPELLCAST_CHANNEL_START", "player", "Cast-1", 7620)
+      wowapi.fireEvent(state, "LOOT_READY")
+      assert.are.same({ "pass", "LOOT_READY (a Fishing cast): source GameObject, item 6303" },
+        { results().V106.status, results().V106.detail })
+    end)
+
+    it("counts jumps from a JumpOrAscendStart post-hook (V118)", function()
+      _G.JumpOrAscendStart = function() end
+      hooks()
+      load()
+      for _ = 1, 3 do _G.JumpOrAscendStart() end
+      assert.are.same({ "pass", "JumpOrAscendStart post-hook ran 3 times" },
+        { results().V118.status, results().V118.detail })
+      _G.JumpOrAscendStart = nil
+    end)
+
+    it("notes the campfire's spell and a new aura while it burns (V119)", function()
+      local list = {}
+      _G.C_UnitAuras = { GetAuraDataByIndex = function(_, i) return list[i] end }
+      _G.C_Spell = { GetSpellInfo = function(id) return { name = id == 818 and "Basic Campfire" or "Other" } end }
+      load()
+      wowapi.fireEvent(state, "UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-2", 818)
+      assert.are.same({ "info", "campfire lit: spell 818 Basic Campfire" },
+        { results().V119.status, results().V119.detail })
+      list[1] = { name = "Cozy Fire", spellId = 7353, applications = 1, points = { 5 } }
+      wowapi.fireEvent(state, "UNIT_AURA", "player")
+      assert.are.same({ "pass", "campfire lit; new aura Cozy Fire 7353 stacks 1 points 5" },
+        { results().V119.status, results().V119.detail })
+      list[1].applications = 2
+      wowapi.fireEvent(state, "UNIT_AURA", "player")
+      assert.are.equal("aura near the campfire: Cozy Fire 7353 stacks 2 points 5",
+        results().V119.log[#results().V119.log])
+    end)
   end)
 end)

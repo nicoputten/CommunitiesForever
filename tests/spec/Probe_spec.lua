@@ -104,10 +104,10 @@ describe("Probe", function()
     -- Saved files keep the results of the checks answered at launch (CF-96) next to the running ones.
     local ids = {}
     for _, id in ipairs(Probe.IDS) do ids[#ids + 1] = id end
-    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V79", "V81", "V83", "V84", "V86", "V87",
-                          "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105", "V106",
+    for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V81", "V83", "V84", "V86", "V87",
+                          "V90", "V93", "V94", "V95", "V98", "V102", "V103", "V104", "V105",
                           "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117", "V60", "V60c",
-                          "V114", "V120", "V73", "V80", "V96", "V101", "V108", "V60b", "V142" }) do
+                          "V114", "V120", "V73", "V80", "V101", "V108", "V60b", "V142" }) do
       ids[#ids + 1] = id
     end
 
@@ -258,11 +258,11 @@ describe("Probe", function()
       local text = table.concat(Probe.report(results, "forever", true), "\n")
       assert.is_nil(text:find("V87", 1, true))
       assert.are.equal("pass", results.V63.status) -- untouched: the upload still carries it
-      for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V79", "V81", "V83", "V84", "V86",
-                            "V87", "V90", "V93", "V94", "V95", "V98", "V99", "V100", "V102", "V103", "V104", "V105",
-                            "V106", "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117",
+      for _, id in ipairs({ "V55", "V63", "V71", "V77", "V78", "V81", "V83", "V84", "V86",
+                            "V87", "V90", "V93", "V94", "V95", "V98", "V102", "V103", "V104", "V105",
+                            "V107", "V109", "V110", "V111", "V112", "V113", "V115", "V116", "V117",
                             "V60", "V60c", "V114", "V120", "V73", "V80",
-                            "V96", "V101", "V108", "V60b", "V142" }) do -- CF-105, CF-109, CF-113, CF-116, CF-120
+                            "V101", "V108", "V60b", "V142" }) do -- CF-105, CF-109, CF-113, CF-116, CF-120
         for _, current in ipairs(Probe.IDS) do assert.are_not.equal(id, current) end
       end
     end)
