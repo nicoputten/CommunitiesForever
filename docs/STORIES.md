@@ -8,6 +8,23 @@ Build order:
    V60 answered at launch).
 2. E18, the mission catalogue: CF-70 first, then in parallel lanes (see E18 "Building in parallel"), CF-77 last.
 
+### CF-123 A friend's level stays behind after a level-up (bug 17)
+Nico (2026-11-14): a friend's character still showed level 1 after three level-ups, while the level-up toasts for
+those levels came (from the synced record, `Merge.levelUps`). The row took the community member list's level first
+(`level = member.level or record.level`), and the game keeps that level cached. Touches `src/core/Members.lua`,
+`src/core/Linker.lua`, `src/core/missions/Places.lua`, `src/services/Sync.lua`, their specs, VERIFY.md, CHANGELOG.md.
+- `Members.level(rosterLevel, recordLevel)` (pure core): the higher of both (levels only rise), the one that is a
+  number when only one is, nil when neither is. Busted: roster 1 + record 4 is 4; record nil is the roster's; roster
+  nil is the record's.
+- The same rule wherever a friend's roster level is read: the Friends tab rows and cards (`Linker`), community peers
+  in `Sync.online()` (run dialogs), and the carry mission (`Places.carry`).
+- The other fields `Linker` takes from the roster first stay: name, class and race don't change for a character;
+  the live zone is the roster's (synced records carry no zone) and the last zone comes from `locations` (CF-111);
+  online is already decided by Battle.net presence and HELLO/BYE (CF-15, CF-28, CF-112).
+- No change to what is stored or sent (rule 8).
+- Manual (VERIFY.md): a friend levels up while you're online; their row and card show the new level without
+  `/reload`.
+
 ### CF-122 Hunt alerts (board HB01)
 Nico (2026-11-12): "Can we build this for the hunt?", the designer's board HB01 "Addon · Hunt alerts" on the Doomsday
 design canvas. Spotting today's quarry stays small, the kill is big. Touches `src/core/HuntAlerts.lua` (new),

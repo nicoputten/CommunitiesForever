@@ -29,6 +29,17 @@ The FriendProbe launch checklist (CF-60) answers most of them: unzip `FriendProb
 ## Manual test steps per story
 (Added by Claude Code as stories are completed. Format: story ID, steps, expected result, status.)
 
+### CF-123 A friend's level after a level-up
+This build for you and a friend (Bo) in the selected community (guild), both online, synced (`/cf sync`). Bo plays a
+character a few XP short of a level-up.
+
+| Step | Expected | Status |
+|---|---|---|
+| You: `/cf`, Friends tab, note Bo's character's level on the row and the card | The level Bo's character has now. | open |
+| Bo levels up. You: wait for the level-up toast, then look at the Friends tab again (no `/reload`) | Row and card show the new level within a few seconds of the toast. | open |
+| You: what the game's member list says: `/run for _,c in ipairs(C_Club.GetSubscribedClubs()) do for _,m in ipairs(C_Club.GetClubMembers(c.clubId)) do local i=C_Club.GetMemberInfo(c.clubId,m) if i and i.name=="<Bo's character>" then print(c.name, i.level) end end end` | Note the level it prints (the old one = the game caches it; the addon shows the higher one either way). | open |
+| If Bo is not your Battle.net friend (known over the guild only): Bo levels up again, then you open a run dialog (Runs tab, a run, Ask now) | Bo's line shows the new level. | open |
+
 ### CF-122 Hunt alerts
 This build, `/console scriptErrors 1`, a character in the selected community, world PvP. Today's quarry: `/cf`,
 Doomsday, the Hunt row (e.g. "Night Elf Druids"). Whether the Hunt is done today:

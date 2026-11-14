@@ -73,19 +73,18 @@ function Places.friendsNow(members, byGuid, zone)
 end
 
 --[[ Whether the group holds a friend's community character CARRY_GAP or more levels below level (the own
-character's). The friend's level: the member's (C_Club), else the friend's synced record (people). ]]
+character's). The friend's level: the higher of the member's (C_Club, can lag behind) and the friend's synced
+record's (people), CF-123. ]]
 function Places.carry(groupGuids, members, byGuid, people, level)
   if type(groupGuids) ~= "table" or type(level) ~= "number" then return false end
   members = type(members) == "table" and members or {}
   for _, guid in ipairs(groupGuids) do
     local bt = type(byGuid) == "table" and byGuid[guid]
     if bt and members[guid] then
-      local theirs = type(members[guid]) == "table" and members[guid].level
-      if type(theirs) ~= "number" then
-        local person = type(people) == "table" and people[bt]
-        local char = type(person) == "table" and type(person.chars) == "table" and person.chars[guid]
-        theirs = type(char) == "table" and char.level or nil
-      end
+      local person = type(people) == "table" and people[bt]
+      local char = type(person) == "table" and type(person.chars) == "table" and person.chars[guid]
+      local theirs = ns.Members.level(type(members[guid]) == "table" and members[guid].level or nil,
+        type(char) == "table" and char.level or nil)
       if type(theirs) == "number" and theirs <= level - Places.CARRY_GAP then return true end
     end
   end

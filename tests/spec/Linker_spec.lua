@@ -262,6 +262,23 @@ describe("Linker", function()
       assert.is_true(row.online)
     end)
 
+    it("shows the higher of the roster's and the record's level (CF-123)", function()
+      local function levelOf(memberLevel, recordLevel)
+        local view = Linker.build(input({
+          -- false: no level (the helpers skip nil overrides); the rule treats it like nil
+          members = { G1 = member("Garraka", 1, { level = memberLevel or false }) },
+          people = { [SJAAK] = { chars = { G1 = char("Garraka", { level = recordLevel or false }) } } },
+          online = { [SJAAK] = { guid = "G1", name = "Garraka", className = "Mage", level = 4 } },
+        }))
+        return person(view, SJAAK).chars[1].level
+      end
+      assert.are.equal(4, levelOf(1, 4)) -- the roster still says 1 after three level-ups
+      assert.are.equal(12, levelOf(12, 11))
+      assert.are.equal(7, levelOf(7, nil))
+      assert.are.equal(4, levelOf(nil, 4))
+      assert.is_nil(levelOf(nil, nil))
+    end)
+
     it("adds the last zone seen", function()
       local view = Linker.build(input({
         members = { G1 = member("Garraka") },

@@ -68,5 +68,15 @@ function Members.recordOwn(locations, guid, zone, now)
   return true
 end
 
+--[[ CF-123: the level to show for a character known from the member list (C_Club, cached by the game: it can stay
+behind after a level-up) and from a synced record (sent at every level-up). Levels only rise, so the higher one;
+the one that is a number when only one is; nil when neither is. ]]
+function Members.level(rosterLevel, recordLevel)
+  local a = type(rosterLevel) == "number" and rosterLevel or nil
+  local b = type(recordLevel) == "number" and recordLevel or nil
+  if a and b then return a > b and a or b end
+  return a or b
+end
+
 ns.Members = Members
 return Members
