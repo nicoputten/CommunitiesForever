@@ -120,6 +120,15 @@ describe("sync over the community (CF-28 part 2b)", function()
     assert.are.equal(DEE_GUID, ns.Sync.online()[DEE_AID].guid)
   end)
 
+  it("lists a member peer with their synced level when the roster's is behind (CF-123)", function()
+    load()
+    flush()
+    fromDee({ t = "HELLO", bt = DEE_AID, ver = 950, known = {} })
+    assert.are.equal(20, ns.Sync.online()[DEE_AID].level) -- the roster's, no record yet
+    addon.db.global.people[DEE_AID] = { chars = { [DEE_GUID] = { level = 23 } } }
+    assert.are.equal(23, ns.Sync.online()[DEE_AID].level)
+  end)
+
   it("stores the member's own record and shows them as a person", function()
     load()
     flush()

@@ -54,6 +54,26 @@ describe("Members", function()
     end)
   end)
 
+  describe("level (CF-123)", function()
+    it("takes the higher of the roster's and the record's level", function()
+      assert.are.equal(4, Members.level(1, 4))
+      assert.are.equal(12, Members.level(12, 11))
+      assert.are.equal(9, Members.level(9, 9))
+    end)
+
+    it("takes the one there is", function()
+      assert.are.equal(7, Members.level(7, nil))
+      assert.are.equal(4, Members.level(nil, 4))
+      assert.is_nil(Members.level(nil, nil))
+    end)
+
+    it("ignores values that are not numbers (a secret read as nil, a broken record)", function()
+      assert.are.equal(5, Members.level("12", 5))
+      assert.are.equal(5, Members.level(5, false))
+      assert.is_nil(Members.level({}, "x"))
+    end)
+  end)
+
   describe("recordOwn", function()
     local GUID = "Player-1-A"
 
