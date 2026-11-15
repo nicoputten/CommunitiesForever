@@ -158,6 +158,12 @@ describe("Missions: places (CF-73)", function()
       assert.is_false(Places.carry({ "Player-1-F" }, { ["Player-1-F"] = {} }, byGuid, {}, 60))
     end)
 
+    it("takes the synced level when the member list's is behind (CF-123)", function()
+      local people = { ["Ada#1001"] = { chars = { ["Player-1-F"] = { level = 17 } } } }
+      assert.is_false(Places.carry({ "Player-1-F" }, members, byGuid, people, 21)) -- 17, not the roster's 15
+      assert.is_true(Places.carry({ "Player-1-F" }, members, byGuid, people, 22))
+    end)
+
     it("is false without the own level or a group", function()
       assert.is_false(Places.carry({ "Player-1-F" }, members, byGuid, {}, nil))
       assert.is_false(Places.carry(nil, members, byGuid, {}, 60))

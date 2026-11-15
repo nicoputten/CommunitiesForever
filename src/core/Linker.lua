@@ -83,7 +83,7 @@ local function charRow(guid, member, record, presence, location, source)
     name = member.name or record.name,
     classID = member.classID,
     classFile = record.classFile,
-    level = member.level or record.level,
+    level = ns.Members.level(member.level, record.level), -- CF-123: the roster's level can lag behind
     raceID = member.raceID or record.raceID,
     zone = member.zone,
     online = IN_GAME_PRESENCE[member.presence] == true,

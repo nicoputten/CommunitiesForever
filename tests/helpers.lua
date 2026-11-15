@@ -29,6 +29,7 @@ function helpers.coreNs()
   helpers.loadAddonFile("src/core/Text.lua", ns)
   helpers.loadAddonFile("src/core/Dungeons.lua", ns) -- CF-106: the fit rule PlannedRuns uses
   helpers.loadAddonFile("src/core/Talents.lua", ns) -- CF-115: Snapshot and Merge clean talentNodes
+  helpers.loadAddonFile("src/core/Members.lua", ns) -- CF-123: the level rule Linker and Places use
   return ns
 end
 

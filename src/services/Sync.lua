@@ -683,7 +683,11 @@ function Sync.online()
     if not result[peer.key] and not offline[peer.guid] and not friends[peer.key]
         and not ns.PresenceTracker.isHidden(peer.key) and reach ~= "offline" and reach ~= "failed" then
       local member = members[peer.guid] or {}
-      result[peer.key] = { guid = peer.guid, name = name, level = member.level, classID = member.classID,
+      -- CF-123: the roster's level can lag behind a level-up; their synced record has the new one.
+      local person = global().people[peer.key]
+      local char = type(person) == "table" and type(person.chars) == "table" and person.chars[peer.guid]
+      local level = ns.Members.level(member.level, type(char) == "table" and char.level or nil)
+      result[peer.key] = { guid = peer.guid, name = name, level = level, classID = member.classID,
                            target = name }
     end
   end

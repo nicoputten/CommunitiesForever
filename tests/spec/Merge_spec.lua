@@ -3,6 +3,7 @@ local helpers = require("helpers")
 describe("Merge", function()
   local Merge
   local SJAAK = "Solvar#2032"
+  local OTHER = "Other#4444"
 
   local function record(overrides)
     local r = { t = "RECORD", bt = SJAAK, displayName = "Sjaak", version = 2000,
@@ -197,6 +198,29 @@ describe("Merge", function()
       Merge.store(people, record(), 5000)
       assert.are.same({ displayName = "Sjaak", version = 2000, receivedAt = 5000,
                         chars = { ["Player-1-G"] = { name = "Garraka", level = 11 } } }, people[SJAAK])
+    end)
+
+    it("keeps the newest level over a run of level-ups from the owner and a late relayed copy (CF-123)", function()
+      local people = {}
+      local function direct(level, version)
+        local before = people[SJAAK] and people[SJAAK].chars
+        Merge.store(people, record({ version = version,
+          chars = { G = { name = "Garraka", level = level, updatedAt = version } } }), version, SJAAK)
+        return Merge.levelUps(before, people[SJAAK].chars)
+      end
+      direct(1, 100)
+      for level = 2, 4 do
+        assert.is_true(Merge.accept(people[SJAAK], record({ version = 100 + level }), SJAAK))
+        local ups = direct(level, 100 + level)
+        assert.are.equal(level, ups[1].level) -- the toast
+        assert.are.equal(level, people[SJAAK].chars.G.level) -- and what is stored
+      end
+      -- A relayed copy from before the level-ups (a friend's older copy) is refused, and would never lower it.
+      assert.is_false(Merge.accept(people[SJAAK], record({ version = 102 }), OTHER, { ownBattleTag = "Me#1",
+        now = 200, members = { G = true } }))
+      Merge.store(people, record({ version = 105, chars = { G = { name = "Garraka", level = 2, updatedAt = 99 } } }),
+        200, OTHER)
+      assert.are.equal(4, people[SJAAK].chars.G.level)
     end)
 
     it("cleans received talent nodes and leaves characters without them alone (CF-115)", function()
