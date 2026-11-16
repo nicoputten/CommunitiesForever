@@ -71,6 +71,8 @@ describe("Missions: fights (CF-80)", function()
       assert.is_false(done("p.upLevel", { { lvl = 20, myLvl = 20 } }))
       assert.is_true(done("p.punchUp5", { { lvl = 25, myLvl = 20 } }))
       assert.is_false(done("p.punchUp5", { { lvl = 24, myLvl = 20 } }))
+      assert.is_true(done("p.punchUp5", { { lvl = 36, myLvl = 17 } })) -- CF-124: a skull read as its level
+      assert.is_false(done("p.fairFight", { { lvl = 36, myLvl = 17 } }))
       assert.is_true(done("p.fairFight", { { lvl = 20, myLvl = 20 } }))
       assert.is_false(done("p.fairFight", { { myLvl = 20 } })) -- level unknown
     end)

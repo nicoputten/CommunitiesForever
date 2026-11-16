@@ -5,6 +5,11 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
+## Unreleased
+- **Fixed:** killing an enemy player 10 or more levels above you (a skull) now counts as a skull kill: 3 Doomsday
+  points instead of 2, and it counts toward the "Slay a skull" and "Slay 3 skulls" goals. The game shows these
+  players' real level instead of a skull level, so the addon missed them before.
+
 ## v1.11.1 (2026-11-15)
 - **Fixed:** a friend's character no longer shows an old level after a level-up. The game's guild list can keep the
   old level for a while; the addon now shows the newer level your friend's addon sent.

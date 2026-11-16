@@ -26,10 +26,11 @@ Probe.THROTTLE = 60       -- seconds between two looks at the same unit
 -- items you put in a trade, which w.craftTrade reads) added, as no export ever reported it. CF-120 (Nico): a check
 -- that never answered is not dropped but tried another way: V8, V79, V96, V99, V100, V106, V118, V119
 -- (services/LaunchProbeWorld.lua). CF-122: V146 (the Hunt alerts' nameplate crosshair, the target frame's portrait)
--- added; HuntPrey reports it (LaunchProbe.report).
+-- added; HuntPrey reported it. CF-124 (export of 2026-11-16, builds 70888 and 70938): V74 (a skull reads as its
+-- real level, never -1), V96, V100, V118 and V146's crosshair answered and gone.
 Probe.IDS = {
-  "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
-  "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119", "V146",
+  "V82", "V35b", "Hunt", "V85", "V122", "V123",
+  "V8", "V79", "V99", "V106", "V119",
 }
 
 -- True while the probe should run: before STOP_AT and not stopped by hand.
@@ -139,27 +140,6 @@ function Probe.huntPick(pick, candidates)
     return "pass", string.format("%s %s %s%s", pick.race, pick.class, how, seen)
   end
   return "info", string.format("victim %s, without race and class%s", how, seen)
-end
-
--- ===== V74: an enemy player shown with a skull (CF-120) =====
--- The game shows a skull for an enemy player 10 or more levels above you (SKULL_GAP). No probe looked for it before
--- CF-120 (FriendProbe only logged it), so the exports never answered it.
-
-Probe.SKULL_GAP = 10
-
---[[ V74's result for one enemy player looked at: status, detail, or nil for an ordinary level. level: UnitLevel of
-the enemy (nil when missing or secret, secret: true then); own: your UnitLevel; source: "target", "mouseover",
-"nameplate". "pass" for -1 (the skull), and for a readable level SKULL_GAP or more above yours (a skull that reads as
-its level); "info" for a secret level. ]]
-function Probe.skull(level, own, secret, source)
-  local via = " via " .. tostring(source)
-  if secret then return "info", "enemy player's UnitLevel secret" .. via end
-  if level == -1 then return "pass", "skull: UnitLevel -1" .. via end
-  if type(level) == "number" and type(own) == "number" and own > 0 and level >= own + Probe.SKULL_GAP then
-    return "pass", string.format("%d+ levels above: UnitLevel %d at own %d (not -1)%s", Probe.SKULL_GAP, level, own,
-      via)
-  end
-  return nil
 end
 
 -- ===== V123: the zone's PvP type (CF-120) =====

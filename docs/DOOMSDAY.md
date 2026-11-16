@@ -481,7 +481,7 @@ Fixed with Nico on 2026-10-28 and pinned by `tests/fixtures/doomsday-cases.json`
 - `p.frontLine` can't be done when the highest level that played today (else the highest) is below 20; its zone comes from that level.
 - The replacement: the fallbacks in order (`w.cap`: `w.skill25`, then `w.quests50`), skipping ones already in the set or that can't be done; then the next goals in pool order after the original, wrapping around, with the same skips. Slots are swapped in set order (dailies, then the Skirmish; weeklies, then the Bounty), so an earlier swap takes its replacement first. If nothing fits, the original stays.
 
-**Kills.** A friend's kills are taken in time order. The "4th or later kill of the same victim name" counts per track (world, battleground) and Doomsday day; a kill without a name never counts as a repeat. A skull is 3 whatever your level; without your level (or the victim's) a kill is "level unknown" (1). Solo adds 1 only to a kill worth more than 0. Battleground kills score the same way on their own track.
+**Kills.** A friend's kills are taken in time order. The "4th or later kill of the same victim name" counts per track (world, battleground) and Doomsday day; a kill without a name never counts as a repeat. A skull is 3 whatever your level: a victim level of `-1`, or 10 or more levels above yours (CF-124: on Forever the game gives a skull's real level, never `-1`; `Doomsday.isSkull`); without your level (or the victim's) a kill is "level unknown" (1). Solo adds 1 only to a kill worth more than 0. Battleground kills score the same way on their own track.
 
 **The Duel slot.** Per pair of friends and Doomsday day, the earliest record of each side. Both records: the winner per both, else disputed (nobody scores). One record: as recorded. Only opponents that are another friend's community character count (not strangers, not your own alts).
 
@@ -520,10 +520,10 @@ Points for a counted kill, from `diff = victim level - own level`:
 | Victim | Points |
 |---|---|
 | level unknown | 1 |
-| skull (`-1`) | 3 |
+| skull (`-1`, or 10+ above) | 3 |
 | `diff <= -4` (4 or more below) | 0 |
 | `-3 <= diff <= 2` | 1 |
-| `diff >= 3` (3 or more above) | 2 |
+| `3 <= diff <= 9` (3 to 9 above) | 2 |
 
 **Solo:** +1 when `solo` is true and the kill was worth more than 0. Without the own level, the kill counts as "level unknown".
 
@@ -756,7 +756,7 @@ The PvE dailies are the approved catalogue (`docs/DOOMSDAY-CATALOGUE.md`, CF-70)
 | `p.enemyLand` | worldKills | kill | Kill in the enemy's territory | 3 | a counted kill in a zone of the enemy faction (`C_PvP.GetZonePVPInfo` "hostile") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
 | `p.homeGuard` | worldKills | kill | Defend home: a kill in friendly territory | 3 | a counted kill in a zone of the own faction: its PvP type (`C_PvP.GetZonePVPInfo`) read "friendly" while the own character was there that day (on entering it or at a kill); a zone without a type (one starting zone, V123) doesn't count | CF-81 (CF-99), V123 "friendly" verified; retired from pool 4 (CF-104: the type reads only in the capitals) | no character of level 20 or more → `p.loneWolf` |
 | `p.contested` | worldKills | kill | Kills in contested land | 3 | 3 counted kills in contested zones ("contested") | needs probe V123 (new) | no character of level 20 or more → `p.loneWolf` |
-| `p.skull` | targets | kill | Slay a skull | 5 | a counted kill of a victim shown as a skull (`lvl = -1`) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `p.skull` | targets | kill | Slay a skull | 5 | a counted kill of a skull victim (`lvl = -1`, or `diff >= 10`: CF-124) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.fairFight` | targets | kill | Fair fight: a kill at the same level | 3 | a counted kill with `diff = 0` | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.mirror` | targets | kill | Mirror match: kill an enemy of the same class | 3 | a counted kill of a victim of the killer's own class | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `p.races3` | targets | kill | Kills of 3 different races | 3 | 3 different victim races | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
@@ -891,7 +891,7 @@ How the easy ones count (counted world kills only, `Doomsday.scoreKills`; local 
 | `b.firstBlood3` | worldKills | kill | First blood on 3 days | 10 | the day's first counted kill of all friends, on 3 days | existing tracker, waits for its launch check: V73 (CF-55b kills) | no character of level 20 or more → `b.kills50` |
 | `b.combos10` | targets | kill | 10 different Hunt combinations | 15 | counted kills of 10 different race and class combinations of the enemy list | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `b.punchUp10` | targets | kill | 10 kills on players 3+ levels above | 10 | 10 counted kills with `diff >= 3` (a skull counts) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
-| `b.skulls3` | targets | kill | Slay 3 skulls | 15 | 3 counted kills of skull victims | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
+| `b.skulls3` | targets | kill | Slay 3 skulls | 15 | 3 counted kills of skull victims (`lvl = -1`, or `diff >= 10`: CF-124) | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `b.fair10` | targets | kill | 10 fair fights | 10 | 10 counted kills with `-2 <= diff <= 2` | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `b.nemesis` | targets | kill | Nemesis: the same player 3 times | 5 | counted kills of the same victim name on 3 different days | existing tracker, waits for its launch check: V73, V74 (CF-55b kills with the victim) |  |
 | `b.solo20` | streaks | kill | 20 solo kills | 10 | 20 counted kills with `solo` | existing tracker, waits for its launch check: V73, V76 (CF-55b kills, `solo`) |  |

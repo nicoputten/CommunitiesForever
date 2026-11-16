@@ -2,7 +2,7 @@
 -- enemy player of the current character's Hunt (race and class):
 -- - the target frame gets the prey mark (ui/HuntMark.lua) while they are your target: red while the Hunt is open,
 --   grey when it is already bagged today, also in battlegrounds; their nameplate gets a red crosshair
---   (ui/HuntPlate.lua, HB02; fully guarded, the launch probe's V146 line tells whether it could attach);
+--   (ui/HuntPlate.lua, HB02; fully guarded; it attaches on Forever: API-FINDINGS V146);
 -- - a small toast (ui/HuntToast.lua) for 3 s, once per enemy per 10 minutes and at most once a minute, its sound only
 --   at the first sighting of the day; "Already bagged today · no points" without sound; none in a battleground. HB02:
 --   next to Blizzard's target frame, or at the spot the player moved it to (/cf hunt move; settings.huntToastSpots,
@@ -95,12 +95,9 @@ function HuntPrey.tooltipLine(unit)
   return HuntPrey.preyAt(unit) and ns.DoomsdayView.PREY_LINE or nil
 end
 
--- HB02 E: the crosshair over the target's nameplate, and the probe's V146 line about it.
+-- HB02 E: the crosshair over the target's nameplate (it attaches on Forever: API-FINDINGS V146, CF-124).
 local function plate(kind)
-  local status = ns.HuntPlate.show(kind ~= nil)
-  if kind and status and ns.LaunchProbe and ns.LaunchProbe.report then
-    ns.LaunchProbe.report("V146", status == "attached" and "pass" or "info", "nameplate crosshair: " .. status)
-  end
+  ns.HuntPlate.show(kind ~= nil)
 end
 
 -- The target's mark, again (a new target, the Hunt just done, a setting changed, a nameplate came or went).

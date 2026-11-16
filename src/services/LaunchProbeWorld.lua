@@ -4,24 +4,20 @@ notes which way saw what. Same rules as services/LaunchProbe.lua: silent, guarde
 player names (a mail's sender only as "readable"). Every API here is guarded; the unverified ones are in VERIFY.md.
 - V8: the clubIds of the subscribed clubs, to compare between friends' exports.
 - V79: whether GetPVPRankInfo exists.
-- V96: the hearthstone's place: PLAYER_BINDING_CHANGED, CONFIRM_BINDER, a ConfirmBinder post-hook, and
-  GetBindLocation at login against later zone changes.
 - V99: at a merchant, GetMerchantItemLink(1), CanMerchantRepair and GetRepairAllCost (MERCHANT_SHOW and
   MERCHANT_UPDATE).
-- V100: a mail's sender from GetInboxHeaderInfo, at MAIL_SHOW and in post-hooks on TakeInboxItem, TakeInboxMoney
-  and AutoLootMailItem.
 - V106: fishing loot's source and items (LOOT_READY and LOOT_OPENED; fishing told by IsFishingLoot or by an own
   Fishing cast just before).
-- V118: a post-hook on JumpOrAscendStart, counting jumps; a blocked action of this addon is noted.
 - V119: the campfire's spell when lit (UNIT_SPELLCAST_SUCCEEDED) and the helpful auras that appear or change on
-  you while it burns (UNIT_AURA, C_UnitAuras.GetAuraDataByIndex). ]]
+  you while it burns (UNIT_AURA, C_UnitAuras.GetAuraDataByIndex).
+CF-124: V96 (the hearthstone), V100 (a mail's sender) and V118 (jumps) answered (export of 2026-11-16) and gone. ]]
 local _, ns = ...
 
 local LaunchProbe = ns.LaunchProbe
 local u = LaunchProbe.util
 local Val, Vals, readable, str, get = u.Val, u.Vals, u.readable, u.str, u.get
-local result, note, info, passed, after, now = u.result, u.note, u.info, u.passed, u.after, u.now
-local on, hook = LaunchProbe.on, LaunchProbe.hook
+local result, note, info, passed, now = u.result, u.note, u.info, u.passed, u.now
+local on = LaunchProbe.on
 
 -- A readable number, else nil.
 local function num(v)
@@ -57,34 +53,6 @@ LaunchProbe.atLogin(function()
   end
 end)
 
--- ===== V96: the hearthstone's place =====
-local bindAtLogin -- GetBindLocation at login
-
-local function Bind(way, changedOnly)
-  if passed("V96") then return end
-  local place = get(GetBindLocation)
-  if changedOnly then
-    if not (str(place) and str(bindAtLogin) and place ~= bindAtLogin) then return end
-    result("V96", "pass", "GetBindLocation changed since login, seen at " .. way)
-    return
-  end
-  note("V96", way .. ": GetBindLocation " .. Val(place))
-  if str(place) then
-    result("V96", "pass", way .. ": GetBindLocation readable")
-  else
-    info("V96", way .. ": GetBindLocation " .. Val(place))
-  end
-end
-
-LaunchProbe.atLogin(function()
-  bindAtLogin = get(GetBindLocation)
-  if not str(bindAtLogin) then info("V96", "login: GetBindLocation " .. Val(bindAtLogin)) end
-end)
-on("PLAYER_BINDING_CHANGED", function() Bind("PLAYER_BINDING_CHANGED") end)
-on("CONFIRM_BINDER", function() note("V96", "CONFIRM_BINDER fired") end)
-hook("ConfirmBinder", function() after(1, function() Bind("ConfirmBinder") end) end)
-on("ZONE_CHANGED_NEW_AREA", function() Bind("a zone change", true) end)
-
 -- ===== V99: the merchant's item link and the repair cost =====
 local function Merchant(event)
   if passed("V99") then return end
@@ -97,34 +65,6 @@ local function Merchant(event)
 end
 on("MERCHANT_SHOW", function() Merchant("MERCHANT_SHOW") end)
 on("MERCHANT_UPDATE", function() Merchant("MERCHANT_UPDATE") end)
-
--- ===== V100: a mail's sender =====
-local function Sender(index)
-  if type(GetInboxHeaderInfo) ~= "function" then return "GetInboxHeaderInfo missing" end
-  if not num(index) then return "index " .. Val(index) end
-  local ok, _, _, sender = pcall(GetInboxHeaderInfo, index)
-  if not ok then return "GetInboxHeaderInfo error" end
-  if sender == nil then return "sender missing" end
-  return readable(sender) and "sender readable" or "sender secret"
-end
-
-for _, api in ipairs({ "TakeInboxItem", "TakeInboxMoney", "AutoLootMailItem" }) do
-  hook(api, function(index)
-    if passed("V100") then return end
-    local seen = Sender(index)
-    if seen == "sender readable" then
-      result("V100", "pass", api .. ": " .. seen)
-    else
-      info("V100", api .. ": " .. seen)
-    end
-  end)
-end
-on("MAIL_SHOW", function()
-  after(1, function()
-    if passed("V100") then return end
-    note("V100", "MAIL_SHOW, " .. Val(num(get(GetInboxNumItems))) .. " mails, mail 1: " .. Sender(1))
-  end)
-end)
 
 -- ===== V106: fishing loot's source =====
 -- Fishing: IsFishingLoot, or an own cast of a Fishing spell (Vanilla's ranks 7620, 7731, 7732, 18248) within
@@ -151,20 +91,6 @@ local function Loot(event)
 end
 on("LOOT_READY", function() Loot("LOOT_READY") end)
 on("LOOT_OPENED", function() Loot("LOOT_OPENED") end)
-
--- ===== V118: jumps =====
-local jumps = 0
-hook("JumpOrAscendStart", function()
-  jumps = jumps + 1
-  if jumps == 1 or jumps == 3 or jumps == 10 then
-    result("V118", jumps >= 3 and "pass" or "info", "JumpOrAscendStart post-hook ran " .. jumps .. " times")
-  end
-end)
-for _, event in ipairs({ "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN" }) do
-  on(event, function(addonName, fn)
-    if addonName == "CommunitiesForever" then note("V118", event .. " " .. Val(fn)) end
-  end)
-end
 
 -- ===== V119: the campfire =====
 -- Basic Campfire is spell 818 in Vanilla; a spell whose name has "Campfire" counts too (Forever may differ).

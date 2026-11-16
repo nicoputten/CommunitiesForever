@@ -2,17 +2,17 @@
 installing FriendProbe. Results go to CommunitiesForeverDB.global.probe (core/Probe.lua), which the uploader sends to
 the site. Until Probe.STOP_AT (2026-11-18).
 - Invisible: nothing in chat, no frame, sound or popup; only post-hooks (hooksecurefunc). Left out: what can show
-  something or act (the combat log V75, whispers, invites, sending links, reloads). CF-120: the jump hook (V118) is
-  a post-hook too and runs (services/LaunchProbeWorld.lua); a blocked action of this addon is noted under V118.
+  something or act (the combat log V75, whispers, invites, sending links, reloads). CF-120: the jump hook (V118) was
+  a post-hook too (answered and gone, CF-124).
 - Safe: every handler and hook runs in pcall (an error is noted under "error"); every API is guarded; a secret value
   is recorded as "secret", a missing API as "missing".
 - Cheap: one AceEvent object; units throttled per GUID (60 s); a check's costly scan stops once it passed.
 - Private: no raw chat text, no event log, no player names (the Hunt's victim and V120's killer had them until CF-117
   and CF-113).
-This file: the plumbing, the login and PvP checks and V74 (a skull's level, CF-120).
+This file: the plumbing and the login and PvP checks (V74, a skull's level, answered and gone: CF-124).
 services/LaunchProbeMissions.lua: the PvP catalogue's checks (V122, V123). CF-120: V60b (the recipe link, its file
 LaunchProbeRecipes.lua), V101, V108 and V142 are gone (answered); services/LaunchProbeWorld.lua tries other ways
-for the checks that never answered (V8, V79, V96, V99, V100, V106, V118, V119).
+for the checks that never answered (V8, V79, V99, V106, V119; V96, V100 and V118 answered and gone, CF-124).
 CF-96: the checks answered by the launch results (build 70790, docs/API-FINDINGS.md "Forever launch probe") are gone;
 their stored results stay in the saved data as they are. ]]
 local _, ns = ...
@@ -209,46 +209,11 @@ LaunchProbe.atLogin(function()
   end)
 end)
 
--- ===== V74: an enemy player with a skull (CF-120) =====
--- Each enemy player seen as target, mouseover or nameplate (once a minute per GUID): UnitLevel against your own
--- (Probe.skull). No names: only the level and where it was read.
-
-local unitSeen = {} -- guid -> server time of the last look (Probe.THROTTLE)
-
-local function Enemy(unit, source)
-  if passed("V74") then return end
-  if not (get(UnitExists, unit) and get(UnitIsPlayer, unit)) then return end
-  if not (get(UnitIsEnemy, "player", unit) or get(UnitCanAttack, "player", unit)) then return end
-  local guid = UnitGUID and UnitGUID(unit)
-  local key = readable(guid) and guid or (unit .. source)
-  if Probe.throttled(unitSeen, key, now()) then return end
-  if type(UnitLevel) ~= "function" then return end
-  local ok, level = pcall(UnitLevel, unit)
-  if not ok then return end
-  local hidden = level ~= nil and not readable(level)
-  local status, detail = Probe.skull(not hidden and level or nil, get(UnitLevel, "player"), hidden, source)
-  if status == "pass" then result("V74", status, detail) elseif status then info("V74", detail) end
-end
-
-LaunchProbe.on("PLAYER_TARGET_CHANGED", function() Enemy("target", "target") end)
-LaunchProbe.on("UPDATE_MOUSEOVER_UNIT", function() Enemy("mouseover", "mouseover") end)
-LaunchProbe.on("NAME_PLATE_UNIT_ADDED", function(unit) if str(unit) then Enemy(unit, "nameplate") end end)
-
 -- ===== Start =====
 
 -- The client's results, readable for /cf fp.
 function LaunchProbe.results() return results end
 
--- CF-122: a result from another module (HuntPrey's V146), while the probe runs. "pass" is kept once reached; anything
--- else after a pass is a log line.
-function LaunchProbe.report(id, status, detail)
-  if not (results and running()) then return end
-  if passed(id) and status ~= "pass" then
-    note(id, detail)
-  else
-    result(id, status, detail)
-  end
-end
 function LaunchProbe.client() return Probe.client(WOW_PROJECT_ID) end
 function LaunchProbe.running() return section ~= nil and running() end
 
