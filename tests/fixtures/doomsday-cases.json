@@ -9953,6 +9953,96 @@
     "bg": 5,
     "counted": 14
    }
+  },
+  {
+   "note": "CF-124: a skull is -1 or a victim 10 or more levels above (Forever reads a skull's real level): 10 above is 3, 9 above stays 2, solo adds 1; at level 5 a level-15 victim is a skull too.",
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ],
+   "kills": [
+    {
+     "t": 1794333720,
+     "zone": "Ashenvale",
+     "name": "Victim 1",
+     "char": "Player-1-A",
+     "lvl": 27,
+     "myLvl": 17
+    },
+    {
+     "t": 1794333780,
+     "zone": "Ashenvale",
+     "name": "Victim 2",
+     "char": "Player-1-A",
+     "lvl": 26,
+     "myLvl": 17
+    },
+    {
+     "t": 1794333840,
+     "zone": "Ashenvale",
+     "name": "Victim 3",
+     "char": "Player-1-A",
+     "lvl": 30,
+     "myLvl": 20,
+     "solo": true
+    },
+    {
+     "t": 1794333900,
+     "zone": "Ashenvale",
+     "name": "Victim 4",
+     "char": "Player-1-A",
+     "lvl": -1,
+     "myLvl": 20
+    },
+    {
+     "t": 1794333960,
+     "zone": "Ashenvale",
+     "name": "Victim 5",
+     "char": "Player-1-A",
+     "lvl": 15,
+     "myLvl": 5
+    }
+   ],
+   "expect": {
+    "kills": [
+     {
+      "counted": true,
+      "points": 3,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 2,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 4,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 3,
+      "track": "pvp",
+      "day": 20767
+     },
+     {
+      "counted": true,
+      "points": 3,
+      "track": "pvp",
+      "day": 20767
+     }
+    ],
+    "pvp": 15,
+    "bg": 0,
+    "counted": 5
+   }
   }
  ],
  "duels": [
@@ -11759,6 +11849,133 @@
    "expect": {
     "value": 25,
     "target": 25,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.skull",
+   "note": "CF-124: 10 or more above is a skull, 9 above is not",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "lvl": 26,
+      "myLvl": 17
+     }
+    ]
+   },
+   "expect": {
+    "value": 0,
+    "target": 1,
+    "done": false
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "p.skull",
+   "note": "CF-124: a victim 10 above (Forever) is a skull",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "lvl": 26,
+      "myLvl": 17
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "lvl": 27,
+      "myLvl": 17
+     }
+    ]
+   },
+   "expect": {
+    "value": 1,
+    "target": 1,
+    "done": true
+   },
+   "schedule": {
+    "offset": 3600,
+    "reset": 68400
+   },
+   "community": [
+    "Bob Example"
+   ]
+  },
+  {
+   "addonOnly": true,
+   "id": "b.skulls3",
+   "note": "CF-124: -1 and 10 or more above count, a community victim and 9 above do not",
+   "facts": {
+    "kills": [
+     {
+      "t": 1794333720,
+      "zone": "Ashenvale",
+      "name": "Victim 1",
+      "char": "Player-1-A",
+      "lvl": -1,
+      "myLvl": 20
+     },
+     {
+      "t": 1794333780,
+      "zone": "Ashenvale",
+      "name": "Victim 2",
+      "char": "Player-1-A",
+      "lvl": 30,
+      "myLvl": 20
+     },
+     {
+      "t": 1794333840,
+      "zone": "Ashenvale",
+      "name": "Victim 3",
+      "char": "Player-1-A",
+      "lvl": 29,
+      "myLvl": 20
+     },
+     {
+      "t": 1794333900,
+      "zone": "Ashenvale",
+      "name": "Bob Example",
+      "char": "Player-1-A",
+      "lvl": 40,
+      "myLvl": 20
+     },
+     {
+      "t": 1794333960,
+      "zone": "Ashenvale",
+      "name": "Victim 5",
+      "char": "Player-1-A",
+      "lvl": 45,
+      "myLvl": 30
+     }
+    ]
+   },
+   "expect": {
+    "value": 3,
+    "target": 3,
     "done": true
    },
    "schedule": {

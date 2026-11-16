@@ -1,8 +1,8 @@
 -- HuntPlate: a 26 px red crosshair above the enemy's nameplate while today's quarry is your target (CF-122, board
 -- HB02 E; works with any unit frames). Midnight limits what addons may do with nameplates, so this is fully guarded:
--- our own frame on UIParent, anchored to the plate C_NamePlate.GetNamePlateForUnit("target") gives (unverified on
--- Forever, VERIFY.md V146). A missing API or a forbidden plate shows nothing; if anchoring errors, the crosshair
--- turns itself off for the session. HuntPlate.status() tells what happened, for the launch probe's V146 line.
+-- our own frame on UIParent, anchored to the plate C_NamePlate.GetNamePlateForUnit("target") gives (it attaches on
+-- Forever: API-FINDINGS V146, CF-124). A missing API or a forbidden plate shows nothing; if anchoring errors, the
+-- crosshair turns itself off for the session. HuntPlate.status() tells what happened.
 local _, ns = ...
 
 local HuntPlate = {}

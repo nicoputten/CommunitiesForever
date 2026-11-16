@@ -14,6 +14,16 @@ Doomsday.EPOCH = 20761
 
 Doomsday.POINTS = { daily = 5, weekly = 15, duelWin = 3, duelLoss = 1 }
 Doomsday.SAME_VICTIM_LIMIT = 3   -- the 4th and later kill of one victim name in a day doesn't count
+-- CF-124: the game shows a skull for an enemy player this many levels or more above you. On Forever UnitLevel gives
+-- such a player's real level, never -1 (API-FINDINGS V74), so a skull is -1 or a victim SKULL_GAP or more above.
+Doomsday.SKULL_GAP = 10
+
+--[[ Whether a victim of level `lvl` was a skull for a killer of level `myLvl`: -1 (a skull as Classic gives it), or
+SKULL_GAP or more levels above (Forever reads the real level). Without either level only -1 is one. ]]
+function Doomsday.isSkull(lvl, myLvl)
+  if lvl == -1 then return true end
+  return type(lvl) == "number" and type(myLvl) == "number" and myLvl > 0 and lvl >= myLvl + Doomsday.SKULL_GAP
+end
 
 -- ===== Schedule =====
 
@@ -1435,11 +1445,12 @@ end
 
 -- ===== Kill points =====
 
---[[ Points of one counted kill: victim level `lvl` (-1 skull, nil unknown) against your level `myLvl`. ]]
+--[[ Points of one counted kill: victim level `lvl` (-1 skull, nil unknown) against your level `myLvl`. A skull
+(Doomsday.isSkull: -1, or SKULL_GAP or more above) is 3. ]]
 function Doomsday.killValue(kill)
   local lvl, my = kill.lvl, kill.myLvl
   local points
-  if lvl == -1 then
+  if Doomsday.isSkull(lvl, my) then
     points = 3
   elseif type(lvl) ~= "number" or type(my) ~= "number" then
     points = 1
@@ -1704,6 +1715,10 @@ local PROGRESS = {
       return k.lvl == -1 or (type(k.lvl) == "number" and type(k.myLvl) == "number" and k.lvl - k.myLvl >= 3)
     end), 2
   end,
+  -- CF-124: a counted kill of a skull (Doomsday.isSkull). Not in the draw yet (no `since`).
+  ["p.skull"] = function(f)
+    return counted(f, function(k) return Doomsday.isSkull(k.lvl, k.myLvl) end), 1
+  end,
   ["p.loneWolf"] = function(f) return counted(f, function(k) return k.solo == true end), 3 end,
   ["p.untouchable"] = function(f) return math.min(spree(f), 5), 5 end,
   ["p.variety"] = function(f) return count(distinct(f, "class")), 3 end,
@@ -1722,6 +1737,9 @@ local PROGRESS = {
   ["b.allRaces"] = function(f) return enemyProgress(f, Doomsday.enemyLists("race", f.pool), "race") end,
   ["b.ranked5"] = function(f) return counted(f, function(k) return type(k.rank) == "number" and k.rank >= 1 end), 5 end,
   ["b.kills50"] = function(f) return counted(f), 50 end,
+  ["b.skulls3"] = function(f)
+    return counted(f, function(k) return Doomsday.isSkull(k.lvl, k.myLvl) end), 3
+  end,
   ["b.spree10"] = function(f) return math.min(spree(f), 10), 10 end,
   ["b.hunt3"] = function(f) return f.huntDays or 0, 3 end,
   ["b.duels3"] = function(f) return f.duelFriends or 0, 3 end,

@@ -186,24 +186,6 @@ describe("Probe", function()
     end)
   end)
 
-  -- CF-120: V74, an enemy player with a skull.
-  describe("a skull's level (V74)", function()
-    it("passes on -1 and on a readable level 10 or more above yours", function()
-      assert.are.same({ "pass", "skull: UnitLevel -1 via nameplate" }, { Probe.skull(-1, 20, false, "nameplate") })
-      assert.are.same({ "pass", "10+ levels above: UnitLevel 30 at own 20 (not -1) via target" },
-        { Probe.skull(30, 20, false, "target") })
-      assert.are.same({ "info", "enemy player's UnitLevel secret via mouseover" },
-        { Probe.skull(nil, 20, true, "mouseover") })
-    end)
-
-    it("gives nothing for an ordinary or unknown level", function()
-      assert.is_nil(Probe.skull(29, 20, false, "target"))
-      assert.is_nil(Probe.skull(25, nil, false, "target"))
-      assert.is_nil(Probe.skull(nil, 20, false, "target"))
-      assert.is_nil(Probe.skull(30, 0, false, "target"))
-    end)
-  end)
-
   -- CF-120: V123, the zone's PvP type at every zone change.
   describe("the zone's PvP type (V123)", function()
     it("counts each zone once per type", function()
@@ -229,7 +211,7 @@ describe("Probe", function()
   describe("the report", function()
     it("summarises and lists every check, open ones too", function()
       local results = {}
-      Probe.record(results, "V74", "pass", "skull: UnitLevel -1 via target", 100, "65000")
+      Probe.record(results, "V85", "pass", "TRADE_PLAYER_ITEM_CHANGED slot 1: item 2589", 100, "65000")
       Probe.record(results, "V82", "fail", "IsInGroup secret", 100, "65000")
       Probe.record(results, "V82", "info", "later one", 100, "65000")
       Probe.note(results, "V82", "a line")
@@ -240,7 +222,7 @@ describe("Probe", function()
       assert.are.equal(string.format("Probe (forever): 1 pass, 1 fail, 0 info, %d open; running until 18 November.",
         #Probe.IDS - 2), lines[1])
       local text = table.concat(lines, "\n")
-      assert.truthy(text:find("V74 pass: skull: UnitLevel -1 via target [T100, build 65000]", 1, true))
+      assert.truthy(text:find("V85 pass: TRADE_PLAYER_ITEM_CHANGED slot 1: item 2589 [T100, build 65000]", 1, true))
       assert.truthy(text:find("V82 fail: IsInGroup secret (later: later one) [T100, build 65000]\n  a line", 1, true))
       assert.truthy(text:find("V122 open", 1, true))
       assert.is_nil(text:find("V63", 1, true)) -- answered at launch (CF-96): no longer in the report

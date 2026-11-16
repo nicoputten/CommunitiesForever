@@ -258,7 +258,7 @@ describe("The Hunt's prey hint and alerts (CF-114, CF-122)", function()
     end)
 
     describe("the nameplate crosshair (HB02 E)", function()
-      it("sits on the target's nameplate while they are today's quarry, and reports V146", function()
+      it("sits on the target's nameplate while they are today's quarry", function()
         local nameplate = _G.CreateFrame("Frame", nil, _G.UIParent)
         _G.C_NamePlate = { GetNamePlateForUnit = function(unit) return unit == "target" and nameplate or nil end }
         enemy()

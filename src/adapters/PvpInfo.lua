@@ -76,7 +76,8 @@ function PvpInfo.recapDamage()
 end
 
 -- CF-55b: an enemy player at a unit token: full name, { lvl (-1 skull), class, race (tokens), rank, raceId, classId },
--- or nil. Level, class and race verified on Forever (V74); the skull is open (VERIFY.md V74), the rank missing (V79).
+-- or nil. Level, class and race verified on Forever (V74). A skull (10 or more levels above you) reads as its real
+-- level on Forever, never -1 (API-FINDINGS V74, CF-124: Doomsday.isSkull); the rank is missing (V79).
 -- CF-118: raceId and classId are UnitRace's and UnitClass's third returns (the Hunt's ids; for enemy players
 -- unverified, VERIFY.md CF-118). Every value guarded, a secret one is nil.
 function PvpInfo.enemy(unit)

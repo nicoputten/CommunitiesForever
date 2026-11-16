@@ -9,7 +9,7 @@
 -- Built only for the missions whose launch check passed (docs/API-FINDINGS.md "Forever launch probe": V90, V93,
 -- V94, V95, V98, V99, V100, V102, V103, V107, V108 whisper, V111, V115). CF-104 (pool version 4): d.summoned (V114)
 -- and d.auctionPost (V101, Nico's pick). CF-121: d.auctionBuy (V101: AUCTION_HOUSE_PURCHASE_COMPLETED, build 70888;
--- siteOnly). Waiting: d.bind (V96), d.mailbox (V100 inbox),
+-- siteOnly). Waiting: d.bind (V96), d.mailbox (V100 inbox) (both answered, CF-124: not built yet),
 -- d.restock (V99 item link), d.wave (V108 emote).
 -- d.bandageUp and d.coins10 are CF-75's (Items).
 local _, ns = ... -- requires ns.Goals and ns.Doomsday (loaded before it)
@@ -54,7 +54,8 @@ function World.isElite(classification) return ELITE[classification] == true end
 function World.isRare(classification) return RARE[classification] == true end
 
 --[[ Whether a creature was a big foe for a character of charLevel: BIG_FOE_GAP or more levels above, or a skull
-(UnitLevel -1). A missing level is never one. ]]
+(UnitLevel -1). A missing level is never one. CF-124: a skull read as its real level (10 or more above, as enemy
+players on Forever, Doomsday.isSkull) is already BIG_FOE_GAP or more above. ]]
 function World.isBigFoe(level, charLevel)
   if level == -1 then return true end
   return type(level) == "number" and type(charLevel) == "number" and level >= charLevel + World.BIG_FOE_GAP

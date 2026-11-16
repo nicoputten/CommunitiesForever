@@ -220,6 +220,24 @@ faction), V59 (needs a community), V74, V79, V82, V85, V96, V99, V100, V106, V11
 | V8, V79, V118, V119 | never answered: only FriendProbe looked, and no FriendProbe log came back | Still open: since CF-120 the addon's own probe reads them (V8 the clubIds and V79 `GetPVPRankInfo` at login, V118 a `JumpOrAscendStart` post-hook, V119 the campfire's spell and the auras while it burns). |
 | V51, V59 | the action could not happen | Still open: V51 needs a character of the other faction (every tester plays Horde); V59 needs a community, and none can be created on Forever. |
 
+### Export of 2026-11-16 (CF-124)
+The probe export of 2026-11-16 (builds 70888 and 70938). Where a row above says "still open", this table has the
+newer answer. Still open (VERIFY.md): V8, V35b, V51, V59, V79, V82, V85, V99, V106, V119, V122, V123, V146 (the
+target frame's portrait and the soft sounds).
+| Item | Seen | What it means |
+|---|---|---|
+| V74 skull | **answered**: an enemy player 10 or more levels above you reads their **real level** from `UnitLevel` on the nameplate (e.g. 36 at own 17, 55 at own 20), never `-1`; 2 testers (builds 70888, 70938) | A skull is `-1` or a victim 10 or more levels above (`Doomsday.isSkull`, CF-124): 3 kill points, `p.skull`, `b.skulls3`. The probe no longer runs V74. |
+| V146 nameplate crosshair | **passes**: our own frame anchors to the target's nameplate (`C_NamePlate.GetNamePlateForUnit("target")`), "attached", 2 testers (builds 70888, 70938) | The Hunt's crosshair (HB02 E) works. The probe no longer reports V146; the target frame's portrait and the `SOUNDKIT` sounds stay open (VERIFY.md V146). |
+| Hunt victim | "dead at once, 1 candidate" by nameplate, 2 testers (build 70938) | The Hunt's victim pick works (CF-117). The probe keeps the Hunt line. |
+| V96 hearthstone | **answered** (first answer): `CONFIRM_BINDER` fired, and `GetBindLocation` changed since login, seen at a zone change; 1 tester (build 70938) | `d.bind` can be built from `CONFIRM_BINDER` and `GetBindLocation` (not built yet). The probe no longer runs V96. |
+| V118 jumps | **passes**: a `JumpOrAscendStart` post-hook runs, no blocked action; 4 testers | `d.jump100` can be built (not built yet). The probe no longer runs V118. |
+| V100 inbox | **passes**: a `TakeInboxItem` post-hook runs and the sender (`GetInboxHeaderInfo`, third return) is readable; 2 testers (builds 70888, 70938). At `MAIL_SHOW` with 0 mails there is no sender | `d.mailbox` can be built (not built yet). The probe no longer runs V100. |
+| V8 clubId | one tester has a guild club (`clubType` 2) readable; the others "no club" | Still partial: no two exports to compare a guild's id yet (VERIFY.md V8). |
+| V79 `GetPVPRankInfo` | still missing | Still open (VERIFY.md V79). |
+| V123 zone PvP type | "Zephras Isle" reads `sanctuary`; contested land with the PvP flag on reads nil ("missing") | Still open (VERIFY.md V123): contested land gives no type, so `p.contested` can't tell it by `C_PvP.GetZonePVPInfo`. |
+| V73, V70, V87, V60b | fail as before | Known limits. |
+| V82 riding | no tester had riding yet | Still open (VERIFY.md V82). |
+
 ## Retail dry runs (not Forever)
 Answers from the FriendProbe dry run on Retail 12.1.5 (interface 120105, same Mainline API and Midnight restrictions). They never close a Forever item: Forever is checked on its own at launch.
 | API | Result |

@@ -38,6 +38,9 @@ describe("DoomsdayView (CF-57)", function()
       scored({ lvl = 30, myLvl = 30 }, 1, { track = "bg" }),
     }
     assert.are.equal("5 kills: 1 near level, 1 solo, 2 above, 1 below", V.killSummary(list))
+    -- CF-124: a skull read as its level (Forever) is above, as -1 is.
+    assert.are.equal("2 kills: 2 above",
+      V.killSummary({ scored({ lvl = 55, myLvl = 20 }, 3), scored({ lvl = -1 }, 3) }))
   end)
 
   it("shows the Duel slot: who you dueled and who's still open", function()

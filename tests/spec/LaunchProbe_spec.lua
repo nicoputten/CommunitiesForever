@@ -44,53 +44,19 @@ describe("the hidden launch probe", function()
     assert.are.equal(ns.Store.SCHEMA_VERSION, addon.db.global.schemaVersion)
   end)
 
-  -- CF-120: V74, an enemy player with a skull: UnitLevel -1, or a level 10 or more above yours; no names.
-  it("records a skull's UnitLevel -1 without a name, silently (V74)", function()
+  -- CF-124: V74 answered (a skull reads as its real level on Forever) and gone; a stored result stays.
+  it("no longer looks at enemy players' levels (V74), and keeps its stored result", function()
     load()
-    local printed = #state.printed
+    results().V74 = { status = "pass", detail = "10+ levels above: UnitLevel 36 at own 17 (not -1) via nameplate",
+                      at = 1, build = "70938" }
     enemyTarget("Orc")
-    _G.UnitLevel = function(unit) return unit == "player" and 20 or 25 end
+    _G.UnitLevel = function(unit) return unit == "player" and 20 or -1 end
     state.unitGuids = { target = "Player-4619-0A1B2C3D" }
     wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(results().V74) -- an ordinary level: nothing
+    assert.are.equal("10+ levels above: UnitLevel 36 at own 17 (not -1) via nameplate", results().V74.detail)
     assert.is_nil(results().V73) -- answered (CF-116): the honor message isn't watched any more
-    _G.UnitLevel = function(unit) return unit == "player" and 20 or -1 end
-    _G.UnitExists = function(unit) return unit == "mouseover" end
-    state.unitGuids = { mouseover = "Player-4619-0A1B2C3E" }
-    wowapi.fireEvent(state, "UPDATE_MOUSEOVER_UNIT")
-    local r = results().V74
-    assert.are.equal("pass", r.status)
-    assert.are.equal("skull: UnitLevel -1 via mouseover", r.detail)
-    assert.is_nil(r.detail:find("Grim", 1, true))
-    for i = printed + 1, #state.printed do
-      assert.is_nil(state.printed[i]:lower():find("probe", 1, true))
-    end
-  end)
-
-  it("passes V74 on a readable level 10 or more above yours, and ignores friendly players", function()
-    load()
-    enemyTarget("Orc")
-    _G.UnitIsEnemy = function() return false end
-    _G.UnitLevel = function(unit) return unit == "player" and 20 or -1 end
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(results().V74) -- not an enemy
-    _G.UnitIsEnemy = function() return true end
-    _G.UnitLevel = function(unit) return unit == "player" and 20 or 31 end
-    state.serverTime = state.serverTime + 60
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.are.equal("pass", results().V74.status)
-    assert.are.equal("10+ levels above: UnitLevel 31 at own 20 (not -1) via target", results().V74.detail)
-  end)
-
-  it("notes a secret enemy level in V74 as info, without an error", function()
-    load()
-    enemyTarget("Orc")
-    _G.issecretvalue = function(v) return v == 33 end
-    finally(function() _G.issecretvalue = nil end)
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.are.equal("info", results().V74.status)
-    assert.are.equal("enemy player's UnitLevel secret via target", results().V74.detail)
-    assert.is_nil(results().error)
+    addon:OnSlashCommand("fp")
+    assert.is_nil(ns.ProbeReport.text():find("V74", 1, true))
   end)
 
   it("ticks the Hunt from the target at a counted kill when the honor message names nobody (CF-110)", function()
@@ -122,20 +88,6 @@ describe("the hidden launch probe", function()
     wowapi.runTimers(state)
     assert.are.equal("info", results().Hunt.status)
     assert.truthy(results().Hunt.detail:find("no victim", 1, true))
-  end)
-
-  it("looks at the same player once a minute (V74)", function()
-    load()
-    enemyTarget("Orc")
-    _G.UnitLevel = function(unit) return unit == "player" and 30 or 33 end
-    state.unitGuids = { target = "Player-4619-0A1B2C3D" }
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    _G.UnitLevel = function(unit) return unit == "player" and 30 or -1 end
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.is_nil(results().V74)
-    state.serverTime = state.serverTime + 60
-    wowapi.fireEvent(state, "PLAYER_TARGET_CHANGED")
-    assert.are.equal("pass", results().V74.status)
   end)
 
   it("no longer runs the answered death recap check (V120, CF-113)", function()
@@ -174,8 +126,8 @@ describe("the hidden launch probe", function()
     assert.is_nil(ns.LaunchProbe.recipes)
     assert.are.same({ status = "pass", detail = "bought: AUCTION_HOUSE_PURCHASE_COMPLETED", at = 1, build = "70888" },
       results().V101)
-    assert.are.same({ "V82", "V35b", "V74", "Hunt", "V85", "V122", "V123",
-                      "V8", "V79", "V96", "V99", "V100", "V106", "V118", "V119", "V146" }, ns.Probe.IDS)
+    assert.are.same({ "V82", "V35b", "Hunt", "V85", "V122", "V123", "V8", "V79", "V99", "V106", "V119" },
+      ns.Probe.IDS)
     addon:OnSlashCommand("fp")
     local text = ns.ProbeReport.text()
     for _, id in ipairs({ "V101", "V108", "V60b", "V142" }) do assert.is_nil(text:find(id, 1, true), id) end
@@ -243,7 +195,7 @@ describe("the hidden launch probe", function()
     local text = ns.ProbeReport.text()
     assert.is_nil(text:find("V73", 1, true))
     assert.is_nil(text:find("V80", 1, true))
-    assert.truthy(text:find("V74 open", 1, true))
+    assert.truthy(text:find("V119 open", 1, true))
   end)
 
   -- CF-120: V123 reads the type at every zone change and again 2 s later, and counts zones per type.
@@ -305,22 +257,28 @@ describe("the hidden launch probe", function()
       assert.truthy(results().V79.detail:find("GetPVPRankInfo exists", 1, true))
     end)
 
-    it("sees the hearthstone's place by the event, the ConfirmBinder hook or a change since login (V96)", function()
+    -- CF-124: V96, V100 and V118 answered (export of 2026-11-16) and gone; stored results stay.
+    it("no longer runs V96, V100 and V118, and keeps their stored results", function()
       local place = "Orgrimmar"
       _G.GetBindLocation = function() return place end
       _G.ConfirmBinder = function() place = "Crossroads" end
+      _G.GetInboxHeaderInfo = function() return nil, nil, "Ada Lovelace", "Hi" end
+      _G.TakeInboxItem = function() end
+      _G.JumpOrAscendStart = function() end
       hooks()
       load()
-      assert.is_nil(results().V96)
+      results().V96 = { status = "pass", detail = "GetBindLocation changed since login, seen at a zone change", at = 1,
+                        build = "70938" }
       _G.ConfirmBinder()
       wowapi.runTimers(state)
-      assert.are.same({ "pass", "ConfirmBinder: GetBindLocation readable" },
-        { results().V96.status, results().V96.detail })
-      assert.are.equal("ConfirmBinder: GetBindLocation Crossroads", results().V96.log[1])
-      results().V96 = nil
       wowapi.fireEvent(state, "ZONE_CHANGED_NEW_AREA")
+      _G.TakeInboxItem(1, 1)
+      for _ = 1, 3 do _G.JumpOrAscendStart() end
+      assert.is_nil(results().V100)
+      assert.is_nil(results().V118)
       assert.are.equal("GetBindLocation changed since login, seen at a zone change", results().V96.detail)
-      _G.ConfirmBinder = nil
+      assert.is_nil(results().V96.log)
+      _G.ConfirmBinder, _G.TakeInboxItem, _G.JumpOrAscendStart = nil, nil, nil
     end)
 
     it("reads the merchant's first item and the repair cost (V99)", function()
@@ -336,17 +294,6 @@ describe("the hidden launch probe", function()
         .. "GetRepairAllCost 1250, true" }, { results().V99.status, results().V99.detail })
     end)
 
-    it("tells whether a mail's sender is readable when taking from it, never the name (V100)", function()
-      _G.GetInboxHeaderInfo = function() return nil, nil, "Ada Lovelace", "Hi" end
-      _G.TakeInboxItem = function() end
-      hooks()
-      load()
-      _G.TakeInboxItem(1, 1)
-      assert.are.same({ "pass", "TakeInboxItem: sender readable" }, { results().V100.status, results().V100.detail })
-      assert.is_nil(results().V100.detail:find("Ada", 1, true))
-      _G.TakeInboxItem = nil
-    end)
-
     it("reads fishing loot's source, also when only a Fishing cast tells it was fishing (V106)", function()
       load()
       _G.GetLootSourceInfo = function() return "GameObject-0-1-2-3-35591-0000" end
@@ -357,16 +304,6 @@ describe("the hidden launch probe", function()
       wowapi.fireEvent(state, "LOOT_READY")
       assert.are.same({ "pass", "LOOT_READY (a Fishing cast): source GameObject, item 6303" },
         { results().V106.status, results().V106.detail })
-    end)
-
-    it("counts jumps from a JumpOrAscendStart post-hook (V118)", function()
-      _G.JumpOrAscendStart = function() end
-      hooks()
-      load()
-      for _ = 1, 3 do _G.JumpOrAscendStart() end
-      assert.are.same({ "pass", "JumpOrAscendStart post-hook ran 3 times" },
-        { results().V118.status, results().V118.detail })
-      _G.JumpOrAscendStart = nil
     end)
 
     it("notes the campfire's spell and a new aura while it burns (V119)", function()
