@@ -5,7 +5,7 @@ Hand-written (the packager's automatic changelog from commit messages is off). E
 section (`tools/release-notes.lua`). Collect changes under `## Unreleased` and rename it to the tag before
 tagging; the release stops if the tag has no section.
 
-## Unreleased
+## v1.11.2 (2026-11-19)
 - **Fixed:** killing an enemy player 10 or more levels above you (a skull) now counts as a skull kill: 3 Doomsday
   points instead of 2, and it counts toward the "Slay a skull" and "Slay 3 skulls" goals. The game shows these
   players' real level instead of a skull level, so the addon missed them before.
