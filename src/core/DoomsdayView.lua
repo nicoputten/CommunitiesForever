@@ -126,14 +126,15 @@ function DoomsdayView.timeText(at, startAt, dateFn)
 end
 
 --[[ "9 kills: 4 near level, 2 solo, 1 above" from scored kills (Doomsday.scoreKills), the PvP track only.
-near level: -3 to +2; above: +3 or more or a skull; below: 4 or more below. nil without kills. ]]
+near level: -3 to +2; above: +3 or more or a skull (Doomsday.isSkull: -1, or 10 or more above, CF-124); below: 4 or
+more below. nil without kills. ]]
 function DoomsdayView.killSummary(scored)
   local n, near, solo, above, below = 0, 0, 0, 0, 0
   for _, s in ipairs(scored or {}) do
     if s.track == "pvp" then
       n = n + 1
       local k = s.kill
-      if k.lvl == -1 then
+      if ns.Doomsday.isSkull(k.lvl, k.myLvl) then
         above = above + 1
       elseif type(k.lvl) == "number" and type(k.myLvl) == "number" then
         local diff = k.lvl - k.myLvl

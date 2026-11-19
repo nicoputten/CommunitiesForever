@@ -78,7 +78,8 @@ end
 local function any(f, test) return #kills(f, test) > 0 and 1 or 0, 1 end
 
 local function diff(k)
-  if k.lvl == -1 then return 99 end -- a skull is above anyone
+  -- A skull read as -1 is above anyone; one read as its level (Forever, CF-124: Doomsday.isSkull) keeps its real gap.
+  if k.lvl == -1 then return 99 end
   if type(k.lvl) ~= "number" or type(k.myLvl) ~= "number" then return nil end
   return k.lvl - k.myLvl
 end

@@ -115,6 +115,7 @@ describe("Missions: world (CF-76)", function()
       assert.is_true(World.isBigFoe(-1, 60))
       assert.is_false(World.isBigFoe(nil, 20))
       assert.is_false(World.isBigFoe(25, nil))
+      assert.is_true(World.isBigFoe(30, 20)) -- CF-124: a skull read as its level is a big foe too
     end)
   end)
 

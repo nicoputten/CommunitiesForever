@@ -405,6 +405,21 @@ describe("Doomsday (CF-55)", function()
     assert.are.same(Doomsday.draw(n).hunt, Doomsday.goalsForDay(n, {}, nil, schedule).hunt)
   end)
 
+  -- CF-124: on Forever a skull reads as its real level (API-FINDINGS V74), so 10 or more above is one too.
+  it("knows a skull by -1 or by a victim 10 or more levels above", function()
+    assert.is_true(Doomsday.isSkull(-1, 20))
+    assert.is_true(Doomsday.isSkull(-1, nil))
+    assert.is_true(Doomsday.isSkull(36, 17))
+    assert.is_true(Doomsday.isSkull(30, 20))
+    assert.is_false(Doomsday.isSkull(29, 20))
+    assert.is_false(Doomsday.isSkull(30, nil))
+    assert.is_false(Doomsday.isSkull(nil, 20))
+    assert.is_false(Doomsday.isSkull(30, 0))
+    assert.are.equal(3, Doomsday.killValue({ lvl = 55, myLvl = 20 }))
+    assert.are.equal(4, Doomsday.killValue({ lvl = 30, myLvl = 20, solo = true }))
+    assert.are.equal(2, Doomsday.killValue({ lvl = 29, myLvl = 20 }))
+  end)
+
   it("scores kills", function()
     for _, c in ipairs(cases.kills) do
       local result = scored(c)
